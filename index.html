@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>학습 게임 놀이터</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Arial Rounded MT Bold', 'Nanum Gothic', sans-serif;
+      background: linear-gradient(135deg, #ffecd2, #fcb69f);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 20px;
+      gap: 32px;
+      overflow-x: hidden;
+    }
+
+    /* ── 헤더 ─────────────────────── */
+    header { text-align: center; }
+
+    header h1 {
+      font-size: 2.8rem;
+      color: #e65c00;
+      text-shadow: 3px 3px 0 #fff;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      font-size: 1.2rem;
+      color: #a04000;
+    }
+
+    /* ── 게임 카드 그리드 ──────────── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      width: 100%;
+      max-width: 560px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 28px;
+      padding: 32px 20px 28px;
+      text-align: center;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.13);
+      text-decoration: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+      transition: transform 0.18s, box-shadow 0.18s;
+      cursor: pointer;
+    }
+
+    .card:not(.locked):hover {
+      transform: translateY(-6px) scale(1.03);
+      box-shadow: 0 16px 36px rgba(0,0,0,0.18);
+    }
+
+    .card.locked {
+      opacity: 0.62;
+      cursor: default;
+      filter: grayscale(0.3);
+    }
+
+    .card-emoji { font-size: 3.2rem; line-height: 1; }
+
+    .card-title {
+      font-size: 1.35rem;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .card-desc {
+      font-size: 0.88rem;
+      color: #888;
+      line-height: 1.4;
+    }
+
+    /* 과목별 상단 컬러 바 */
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 6px;
+      border-radius: 28px 28px 0 0;
+      background: var(--accent);
+    }
+
+    .card-math    { --accent: linear-gradient(90deg, #ff9800, #ff5722); }
+    .card-english { --accent: linear-gradient(90deg, #42a5f5, #1565c0); }
+    .card-korean  { --accent: linear-gradient(90deg, #ab47bc, #6a1b9a); }
+    .card-science { --accent: linear-gradient(90deg, #26a69a, #00695c); }
+
+    /* SOON 배지 */
+    .badge-soon {
+      position: absolute;
+      top: 14px; right: 14px;
+      background: #ffb300;
+      color: white;
+      font-size: 0.7rem;
+      font-weight: bold;
+      padding: 3px 8px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+    }
+
+    /* 플레이 버튼 */
+    .card-btn {
+      margin-top: 6px;
+      padding: 10px 28px;
+      border: none;
+      border-radius: 20px;
+      font-size: 1rem;
+      font-weight: bold;
+      color: white;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      transition: opacity 0.15s;
+      pointer-events: none; /* card 전체가 링크 역할 */
+    }
+
+    .card:not(.locked) .card-btn { pointer-events: none; }
+    .card.locked .card-btn { background: #ccc; box-shadow: none; }
+
+    /* ── 별 배경 파티클 ───────────── */
+    .star-field {
+      position: fixed; inset: 0;
+      pointer-events: none; overflow: hidden; z-index: 0;
+    }
+
+    .sf-star {
+      position: absolute;
+      font-size: 1.1rem;
+      opacity: 0.25;
+      animation: sf-float linear infinite;
+    }
+
+    @keyframes sf-float {
+      0%   { transform: translateY(110vh) rotate(0deg);   opacity: 0; }
+      10%  { opacity: 0.22; }
+      90%  { opacity: 0.22; }
+      100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+    }
+
+    body > * { position: relative; z-index: 1; }
+
+    /* ── 푸터 ─────────────────────── */
+    footer {
+      font-size: 0.8rem;
+      color: #c07040;
+      text-align: center;
+    }
+
+    /* ── 반응형 ───────────────────── */
+    @media (max-width: 400px) {
+      .grid { grid-template-columns: 1fr 1fr; gap: 14px; }
+      header h1 { font-size: 2rem; }
+      .card { padding: 24px 12px 20px; }
+      .card-emoji { font-size: 2.4rem; }
+      .card-title { font-size: 1.1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="star-field" id="stars"></div>
+
+<header>
+  <h1>🎮 학습 게임 놀이터</h1>
+  <p>어떤 공부를 해볼까요?</p>
+</header>
+
+<div class="grid">
+
+  <a class="card card-math" href="math/index.html">
+    <div class="card-emoji">🔢</div>
+    <div class="card-title">수학 놀이</div>
+    <div class="card-desc">덧셈 · 뺄셈 · 곱셈<br>연속 정답 로켓 발사!</div>
+    <button class="card-btn">시작하기</button>
+  </a>
+
+  <a class="card card-english" href="english/index.html">
+    <div class="card-emoji">📚</div>
+    <div class="card-title">영어 놀이</div>
+    <div class="card-desc">단어 · 문장 퀴즈<br>영어 실력을 키워요!</div>
+    <button class="card-btn">시작하기</button>
+  </a>
+
+  <div class="card card-korean locked">
+    <span class="badge-soon">COMING SOON</span>
+    <div class="card-emoji">📖</div>
+    <div class="card-title">국어 놀이</div>
+    <div class="card-desc">받침 · 맞춤법 · 어휘<br>준비 중이에요!</div>
+    <button class="card-btn">준비 중</button>
+  </div>
+
+  <div class="card card-science locked">
+    <span class="badge-soon">COMING SOON</span>
+    <div class="card-emoji">🔬</div>
+    <div class="card-title">과학 놀이</div>
+    <div class="card-desc">분류 · 개념 퀴즈<br>준비 중이에요!</div>
+    <button class="card-btn">준비 중</button>
+  </div>
+
+</div>
+
+<footer>🚀 열심히 공부하면 로켓이 날아가요!</footer>
+
+<script>
+  /* 떠다니는 별 파티클 */
+  const ITEMS = ['⭐','🌟','✨','💫','🎈','🎉','🎊'];
+  const field = document.getElementById('stars');
+  for (let i = 0; i < 18; i++) {
+    const el = document.createElement('div');
+    el.className = 'sf-star';
+    el.textContent = ITEMS[Math.floor(Math.random() * ITEMS.length)];
+    el.style.left              = Math.random() * 100 + 'vw';
+    el.style.animationDuration = (8 + Math.random() * 12) + 's';
+    el.style.animationDelay    = (-Math.random() * 20) + 's';
+    el.style.fontSize          = (0.8 + Math.random() * 0.8) + 'rem';
+    field.appendChild(el);
+  }
+</script>
+
+</body>
+</html>

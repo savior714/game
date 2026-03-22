@@ -33,9 +33,9 @@ function renderSeqWord() {
     } else if (seqFilled[bPos] != null) {
       html += `<span class="sl sl-filled">${seqFilled[bPos]}</span>`;
     } else if (bPos === seqStep) {
-      html += `<span class="sl sl-active">_</span>`;
+      html += `<span class="sl sl-active">&nbsp;</span>`;
     } else {
-      html += `<span class="sl sl-dim">_</span>`;
+      html += `<span class="sl sl-dim">&nbsp;</span>`;
     }
   }
   document.getElementById('seq-word').innerHTML = html;

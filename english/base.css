@@ -72,17 +72,20 @@ h1 {
 }
 
 /* ── 순차 빈칸 글자 ── */
-.sl { display: inline-block; min-width: 1.6rem; text-align: center; }
+.sl        { display: inline-block; text-align: center; vertical-align: baseline; }
 .sl-active {
-  color: #1565c0;
-  border-bottom: 4px solid #1565c0;
-  animation: blank-pulse 0.7s ease-in-out infinite;
+  background: #dbeafe; border: 2.5px solid #1565c0; border-radius: 8px;
+  color: transparent; padding: 0 6px; min-width: 1.1em;
+  animation: blank-pulse 0.8s ease-in-out infinite;
 }
-.sl-dim    { color: #bdbdbd; }
+.sl-dim {
+  background: #f3f4f6; border: 2px dashed #bdbdbd; border-radius: 8px;
+  color: transparent; padding: 0 6px; min-width: 1.1em;
+}
 .sl-filled { color: #2e7d32; }
 @keyframes blank-pulse {
-  0%,100% { border-bottom-color: #1565c0; }
-  50%     { border-bottom-color: #90caf9; }
+  0%,100% { border-color: #1565c0; background: #dbeafe; }
+  50%     { border-color: #93c5fd; background: #eff6ff; }
 }
 
 /* ── 보기 버튼 (2x2) ── */

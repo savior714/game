@@ -71,6 +71,20 @@ h1 {
   font-size: 2.2rem; font-weight: bold; letter-spacing: 8px; color: #333;
 }
 
+/* ── 순차 빈칸 글자 ── */
+.sl { display: inline-block; min-width: 1.6rem; text-align: center; }
+.sl-active {
+  color: #1565c0;
+  border-bottom: 4px solid #1565c0;
+  animation: blank-pulse 0.7s ease-in-out infinite;
+}
+.sl-dim    { color: #bdbdbd; }
+.sl-filled { color: #2e7d32; }
+@keyframes blank-pulse {
+  0%,100% { border-bottom-color: #1565c0; }
+  50%     { border-bottom-color: #90caf9; }
+}
+
 /* ── 보기 버튼 (2x2) ── */
 #answer-buttons {
   display: grid; grid-template-columns: repeat(2, 1fr);

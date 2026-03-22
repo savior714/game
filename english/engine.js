@@ -263,9 +263,14 @@ function buildQuestion(type, word) {
       let idx2;
       do { idx2 = Math.floor(Math.random() * en.length); } while (idx2 === idx1);
       const [i, j] = [idx1, idx2].sort((a, b) => a - b);
-      const display = en.slice(0, i) + ' _ ' + en.slice(i + 1, j) + ' _ ' + en.slice(j + 1);
       const correct = (en[i] + en[j]).toLowerCase();
-      return { type, ico, main: display, hint: ko, answer: correct, choices: makeSpellingChoices(correct) };
+      return {
+        type, ico, hint: ko, answer: correct, word: en, blankIndices: [i, j],
+        blanks: [
+          { char: en[i].toLowerCase(), choices: makeSpellingChoices(en[i].toLowerCase()) },
+          { char: en[j].toLowerCase(), choices: makeSpellingChoices(en[j].toLowerCase()) },
+        ],
+      };
     }
     const blankIdx = Math.floor(Math.random() * en.length);
     const correct  = en[blankIdx].toLowerCase();

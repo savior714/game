@@ -1,37 +1,84 @@
 /* ═══════════════════════════════════
-   문제 표시
+   순차 빈칸 상태
 ═══════════════════════════════════ */
-function askQuestion() {
-  answered = false;
-  const q  = generateQuestion();
-  answer   = q.answer;
+let seqBlanks = null;  // { word, blankIndices, blanks, ico, hint }
+let seqStep   = 0;     // 현재 빈칸 인덱스 (0 or 1)
+let seqFilled = [];    // 채워진 글자 배열
 
-  document.getElementById('q-count').textContent       = currentQ + 1;
-  document.getElementById('feedback').textContent      = '';
-  document.getElementById('feedback').className        = '';
-  document.getElementById('next-btn').style.display   = 'none';
-
-  const qEl = document.getElementById('question');
-  if (q.hint) {
-    qEl.innerHTML =
-      `<span class="q-emoji">${q.ico}</span>` +
-      `<div class="q-hint">${q.hint}</div>` +
-      `<div class="q-blanked">${q.main}</div>`;
-  } else {
-    qEl.innerHTML =
-      `<span class="q-emoji">${q.ico}</span>` +
-      `<div class="q-main">${q.main}</div>`;
-  }
-
+/* ═══════════════════════════════════
+   공통 보기 버튼 렌더
+═══════════════════════════════════ */
+function renderChoiceBtns(choices) {
   const container = document.getElementById('answer-buttons');
   container.innerHTML = '';
-  q.choices.forEach(val => {
+  choices.forEach(val => {
     const btn = document.createElement('button');
     btn.className   = 'answer-btn';
     btn.textContent = val;
     btn.onclick     = () => checkAnswer(val, btn);
     container.appendChild(btn);
   });
+}
+
+/* ═══════════════════════════════════
+   순차 빈칸 단어 표시 렌더
+═══════════════════════════════════ */
+function renderSeqWord() {
+  const { word, blankIndices } = seqBlanks;
+  let html = '';
+  for (let k = 0; k < word.length; k++) {
+    const bPos = blankIndices.indexOf(k);
+    if (bPos === -1) {
+      html += `<span class="sl">${word[k]}</span>`;
+    } else if (seqFilled[bPos] != null) {
+      html += `<span class="sl sl-filled">${seqFilled[bPos]}</span>`;
+    } else if (bPos === seqStep) {
+      html += `<span class="sl sl-active">_</span>`;
+    } else {
+      html += `<span class="sl sl-dim">_</span>`;
+    }
+  }
+  document.getElementById('seq-word').innerHTML = html;
+}
+
+/* ═══════════════════════════════════
+   문제 표시
+═══════════════════════════════════ */
+function askQuestion() {
+  answered  = false;
+  seqBlanks = null;
+  seqStep   = 0;
+  seqFilled = [];
+  const q   = generateQuestion();
+  answer    = q.answer;
+
+  document.getElementById('q-count').textContent     = currentQ + 1;
+  document.getElementById('feedback').textContent    = '';
+  document.getElementById('feedback').className      = '';
+  document.getElementById('next-btn').style.display = 'none';
+
+  const qEl = document.getElementById('question');
+  if (q.blanks) {
+    // 순차 2-빈칸 모드
+    seqBlanks = q;
+    qEl.innerHTML =
+      `<span class="q-emoji">${q.ico}</span>` +
+      `<div class="q-hint">${q.hint}</div>` +
+      `<div class="q-blanked" id="seq-word"></div>`;
+    renderSeqWord();
+    renderChoiceBtns(q.blanks[0].choices);
+  } else if (q.hint) {
+    qEl.innerHTML =
+      `<span class="q-emoji">${q.ico}</span>` +
+      `<div class="q-hint">${q.hint}</div>` +
+      `<div class="q-blanked">${q.main}</div>`;
+    renderChoiceBtns(q.choices);
+  } else {
+    qEl.innerHTML =
+      `<span class="q-emoji">${q.ico}</span>` +
+      `<div class="q-main">${q.main}</div>`;
+    renderChoiceBtns(q.choices);
+  }
 
   startTimer();
 }
@@ -93,9 +140,17 @@ function timeOut() {
   if (answered) return;
   answered = true;
   recordResult(false, TIME_LIMIT);
-  document.querySelectorAll('.answer-btn').forEach(b => {
-    if (b.textContent === answer) b.classList.add('correct');
-  });
+  if (seqBlanks) {
+    const blank = seqBlanks.blanks[seqStep];
+    document.querySelectorAll('.answer-btn').forEach(b => {
+      if (b.textContent === blank.char) b.classList.add('correct');
+    });
+    seqBlanks = null;
+  } else {
+    document.querySelectorAll('.answer-btn').forEach(b => {
+      if (b.textContent === answer) b.classList.add('correct');
+    });
+  }
   const fb = document.getElementById('feedback');
   fb.textContent = `⏰ 시간 초과! 정답은 "${answer}"이에요!`;
   fb.className   = 'feedback-wrong';
@@ -103,12 +158,62 @@ function timeOut() {
 }
 
 /* ═══════════════════════════════════
+   순차 빈칸 정답 확인
+═══════════════════════════════════ */
+function checkSeqAnswer(val, btn) {
+  const blank = seqBlanks.blanks[seqStep];
+  if (val === blank.char) {
+    btn.classList.add('correct');
+    seqFilled[seqStep] = val;
+    seqStep++;
+    renderSeqWord();
+    if (seqStep >= seqBlanks.blanks.length) {
+      // 모든 빈칸 완료!
+      answered = true;
+      const elapsed = TIME_LIMIT - timeLeft;
+      stopTimer();
+      recordResult(true, elapsed);
+      score++;
+      document.getElementById('q-score').textContent = score;
+      const fb = document.getElementById('feedback');
+      fb.textContent = ['잘했어요! 🎉', '맞았어요! ⭐', '완벽해요! 🌟', '훌륭해요! 👏'][Math.floor(Math.random()*4)];
+      fb.className   = 'feedback-correct';
+      spawnConfetti();
+      document.getElementById('next-btn').style.display = 'inline-block';
+      seqBlanks = null;
+    } else {
+      // 다음 빈칸 보기 표시
+      setTimeout(() => {
+        if (seqBlanks) renderChoiceBtns(seqBlanks.blanks[seqStep].choices);
+      }, 350);
+    }
+  } else {
+    // 오답 — 문제 종료
+    answered = true;
+    const elapsed = TIME_LIMIT - timeLeft;
+    stopTimer();
+    btn.classList.add('wrong');
+    document.querySelectorAll('.answer-btn').forEach(b => {
+      if (b.textContent === blank.char) b.classList.add('correct');
+    });
+    recordResult(false, elapsed);
+    const fb = document.getElementById('feedback');
+    fb.textContent = `정답은 "${answer}"이에요! 😊`;
+    fb.className   = 'feedback-wrong';
+    document.getElementById('next-btn').style.display = 'inline-block';
+    seqBlanks = null;
+  }
+}
+
+/* ═══════════════════════════════════
    정답 확인
 ═══════════════════════════════════ */
 function checkAnswer(val, btn) {
   if (answered) return;
-  answered       = true;
-  const elapsed  = TIME_LIMIT - timeLeft;
+  if (seqBlanks) { checkSeqAnswer(val, btn); return; }
+
+  answered      = true;
+  const elapsed = TIME_LIMIT - timeLeft;
   stopTimer();
 
   document.querySelectorAll('.answer-btn').forEach(b => {

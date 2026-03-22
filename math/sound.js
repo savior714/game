@@ -41,14 +41,3 @@ function playTimeout() {
   _tone('square', [300, 200, 150], [0, 0.1, 0.2], 0.15, 0.38);
 }
 
-/* 구슬 드롭 — 짧은 탁 소리 */
-function playDrop() {
-  _tone('sine', [660, 440], [0, 0.04], 0.1, 0.12);
-}
-
-/* 구슬 합체 — 레벨별 음높이 */
-function playMerge(level) {
-  const notes = [262, 294, 330, 370, 415, 466, 523];
-  const f = notes[Math.min(level - 1, notes.length - 1)];
-  _tone('sine', [f, f * 1.5], [0, 0.05], 0.22, 0.45);
-}

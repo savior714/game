@@ -15,7 +15,7 @@
   <div class="score-item">문제 <span id="q-count">1</span> / 10</div>
   <div class="score-item">점수 <span id="q-score">0</span></div>
   <button id="stats-btn" onclick="openStats()">📊 통계</button>
-  <button id="marble-btn" onclick="showMarbleGame()">🎮 마블 게임!</button>
+  <button id="marble-btn" onclick="openMarbleReward()">🎮 마블 게임!</button>
 </div>
 
 <div id="main-area">
@@ -55,26 +55,6 @@
 
 </div>
 
-<!-- 마블 머지 미니게임 모달 -->
-<div id="marble-modal">
-  <div id="marble-wrap">
-    <div id="marble-header">
-      <span>🔮 마블 머지!</span>
-      <span>점수: <strong id="mb-score-val">0</strong></span>
-      <button id="mb-close-btn" onclick="closeMarbleGame()">✕</button>
-    </div>
-    <canvas id="marble-canvas" width="320" height="480"
-      onclick="onMbInput(event)"
-      ontouchstart="onMbInput(event)"></canvas>
-    <div id="marble-over">
-      <h3>게임 종료!</h3>
-      <p>점수: <strong id="mb-final">0</strong></p>
-      <button class="mb-btn mb-btn-primary" onclick="_mbInit()">다시 하기</button>
-      <button class="mb-btn mb-btn-secondary" onclick="closeMarbleGame()">닫기</button>
-    </div>
-  </div>
-</div>
-
 <!-- 통계 모달 -->
 <div id="stats-modal" onclick="onModalBackdrop(event)">
   <div id="stats-box">
@@ -95,7 +75,6 @@
 </div>
 
 <script src="sound.js"></script>
-<script src="marble.js"></script>
 <script src="engine.js"></script>
 <script src="rocket.js"></script>
 <script src="ui.js"></script>

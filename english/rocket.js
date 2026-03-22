@@ -87,6 +87,27 @@ function showBoostBanner() {
   document.body.appendChild(banner);
   setTimeout(() => banner.remove(), 3000);
   spawnConfetti(); spawnConfetti();
+  document.getElementById('marble-btn').style.display = 'inline-block';
+}
+
+/* ═══════════════════════════════════
+   마블 머지 보상 게임 (iframe 오버레이)
+═══════════════════════════════════ */
+function openMarbleReward() {
+  const overlay = document.createElement('div');
+  overlay.id = 'marble-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);' +
+    'z-index:800;display:flex;align-items:center;justify-content:center;';
+  const iframe = document.createElement('iframe');
+  iframe.src = '../marble/';
+  iframe.style.cssText = 'border:none;border-radius:20px;' +
+    'width:360px;height:560px;max-width:96vw;max-height:95vh;';
+  overlay.appendChild(iframe);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+  window.addEventListener('message', (e) => {
+    if (e.data === 'closeMarble') document.getElementById('marble-overlay')?.remove();
+  }, { once: true });
 }
 
 /* ═══════════════════════════════════

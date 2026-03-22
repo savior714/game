@@ -1,0 +1,77 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0f0f1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: 'Arial Rounded MT Bold', 'Nanum Gothic', sans-serif;
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  padding: 12px;
+}
+
+#mb-header {
+  display: flex;
+  width: 320px;
+  justify-content: space-between;
+  align-items: center;
+  color: #e2e8f0;
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+#mb-close-btn {
+  background: rgba(255,255,255,0.12);
+  border: none; border-radius: 50%;
+  width: 30px; height: 30px;
+  color: white; font-size: 1rem; cursor: pointer; line-height: 1;
+}
+#mb-close-btn:hover { background: rgba(239,68,68,0.6); }
+
+#marble-canvas {
+  border-radius: 12px;
+  cursor: crosshair;
+  display: block;
+  touch-action: none;
+  max-width: 100%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+
+#marble-over {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(15,15,26,0.94);
+  border-radius: 20px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: white;
+  z-index: 100;
+}
+#marble-over h3 { font-size: 2rem; }
+#marble-over p  { font-size: 1.2rem; opacity: 0.85; }
+
+.mb-btn {
+  border: none; border-radius: 14px;
+  font-size: 1rem; font-weight: bold;
+  padding: 11px 26px; cursor: pointer;
+}
+.mb-btn-primary   { background: #ff7043; color: white; }
+.mb-btn-secondary { background: rgba(255,255,255,0.15); color: white; }
+.mb-btn:hover { opacity: 0.85; }
+
+@keyframes mb-spark {
+  0%   { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%,-50%) scale(2.8) translateY(-18px); }
+}

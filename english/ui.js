@@ -41,6 +41,13 @@ function renderSeqWord() {
   document.getElementById('seq-word').innerHTML = html;
 }
 
+function renderSeqWordComplete() {
+  const html = [...seqBlanks.word].map(ch =>
+    `<span class="sl sl-filled">${ch}</span>`
+  ).join('');
+  document.getElementById('seq-word').innerHTML = html;
+}
+
 /* ═══════════════════════════════════
    문제 표시
 ═══════════════════════════════════ */
@@ -168,7 +175,8 @@ function checkSeqAnswer(val, btn) {
     seqStep++;
     renderSeqWord();
     if (seqStep >= seqBlanks.blanks.length) {
-      // 모든 빈칸 완료!
+      // 모든 빈칸 완료 — 단어 전체를 초록으로 표시
+      renderSeqWordComplete();
       answered = true;
       const elapsed = TIME_LIMIT - timeLeft;
       stopTimer();

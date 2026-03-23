@@ -88,6 +88,9 @@ function showBoostBanner() {
   setTimeout(() => banner.remove(), 3000);
   spawnConfetti(); spawnConfetti();
   document.getElementById('marble-btn').style.display = 'inline-block';
+  setTimeout(() => {
+    if (!document.getElementById('marble-overlay')) openMarbleReward();
+  }, 800);
 }
 
 /* ═══════════════════════════════════

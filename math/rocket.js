@@ -135,6 +135,9 @@ function showBoostBanner() {
   spawnConfetti();
   spawnConfetti();
   document.getElementById('marble-btn').style.display = 'inline-block';
+  setTimeout(() => {
+    if (!document.getElementById('marble-overlay')) openMarbleReward();
+  }, 800);
 }
 
 /* ═══════════════════════════════════

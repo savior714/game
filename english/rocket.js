@@ -106,10 +106,14 @@ function openMarbleReward() {
   iframe.style.cssText = 'border:none;border-radius:20px;' +
     'width:360px;height:560px;max-width:96vw;max-height:95vh;';
   overlay.appendChild(iframe);
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  function _closeMarble() {
+    document.getElementById('marble-overlay')?.remove();
+    document.getElementById('marble-btn').style.display = 'none';
+  }
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) _closeMarble(); });
   document.body.appendChild(overlay);
   window.addEventListener('message', (e) => {
-    if (e.data === 'closeMarble') document.getElementById('marble-overlay')?.remove();
+    if (e.data === 'closeMarble') _closeMarble();
   }, { once: true });
 }
 

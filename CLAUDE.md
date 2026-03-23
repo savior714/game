@@ -4,7 +4,7 @@
 설계를 먼저 문서화하고 구현합니다. 차분하고 전문적인 어조를 유지하며,
 핵심 판단은 굵게 표시하십시오.
 
-외부 CDN·라이브러리 사용 가능 (Tailwind CSS, Pretendard, Iconify 등). 게임 로직은 Vanilla JS 기반 유지.
+외부 CDN·라이브러리 사용 가능 (Tailwind CSS, Pretendard, Iconify 등). 게임 로직은 Vanilla JS 기반 유지. (다른 기술 스택 필요 시에는 사용자에게 기능 제안)
 
 ---
 

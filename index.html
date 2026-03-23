@@ -4,233 +4,129 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>학습 게임 놀이터</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Pretendard', -apple-system, sans-serif; word-break: keep-all; }
 
-    body {
-      font-family: 'Arial Rounded MT Bold', 'Nanum Gothic', sans-serif;
-      background: linear-gradient(135deg, #ffecd2, #fcb69f);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 32px 20px;
-      gap: 32px;
-      overflow-x: hidden;
+    /* Spring hover */
+    .spring {
+      transition:
+        transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
+    .card-live:hover { transform: translateY(-6px) scale(1.015); }
+    .card-live:hover .shadow-card  { box-shadow: 0 20px 60px rgba(0,0,0,0.12); }
 
-    /* ── 헤더 ─────────────────────── */
-    header { text-align: center; }
+    /* Arrow circle nudge */
+    .arrow-nudge { transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .card-live:hover .arrow-nudge  { transform: translateX(5px); }
 
-    header h1 {
-      font-size: 2.8rem;
-      color: #e65c00;
-      text-shadow: 3px 3px 0 #fff;
-      margin-bottom: 8px;
+    /* Orb breathing */
+    @keyframes breathe {
+      0%,100% { transform: scale(1);   opacity: 0.55; }
+      50%      { transform: scale(1.12); opacity: 0.75; }
     }
-
-    header p {
-      font-size: 1.2rem;
-      color: #a04000;
-    }
-
-    /* ── 게임 카드 그리드 ──────────── */
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 20px;
-      width: 100%;
-      max-width: 560px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 28px;
-      padding: 32px 20px 28px;
-      text-align: center;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.13);
-      text-decoration: none;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      position: relative;
-      transition: transform 0.18s, box-shadow 0.18s;
-      cursor: pointer;
-    }
-
-    .card:not(.locked):hover {
-      transform: translateY(-6px) scale(1.03);
-      box-shadow: 0 16px 36px rgba(0,0,0,0.18);
-    }
-
-    .card.locked {
-      opacity: 0.62;
-      cursor: default;
-      filter: grayscale(0.3);
-    }
-
-    .card-emoji { font-size: 3.2rem; line-height: 1; }
-
-    .card-title {
-      font-size: 1.35rem;
-      font-weight: bold;
-      color: #333;
-    }
-
-    .card-desc {
-      font-size: 0.88rem;
-      color: #888;
-      line-height: 1.4;
-    }
-
-    /* 과목별 상단 컬러 바 */
-    .card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 6px;
-      border-radius: 28px 28px 0 0;
-      background: var(--accent);
-    }
-
-    .card-math    { --accent: linear-gradient(90deg, #ff9800, #ff5722); }
-    .card-english { --accent: linear-gradient(90deg, #42a5f5, #1565c0); }
-    .card-korean  { --accent: linear-gradient(90deg, #ab47bc, #6a1b9a); }
-    .card-science { --accent: linear-gradient(90deg, #26a69a, #00695c); }
-
-    /* SOON 배지 */
-    .badge-soon {
-      position: absolute;
-      top: 14px; right: 14px;
-      background: #ffb300;
-      color: white;
-      font-size: 0.7rem;
-      font-weight: bold;
-      padding: 3px 8px;
-      border-radius: 20px;
-      letter-spacing: 0.5px;
-    }
-
-    /* 플레이 버튼 */
-    .card-btn {
-      margin-top: 6px;
-      padding: 10px 28px;
-      border: none;
-      border-radius: 20px;
-      font-size: 1rem;
-      font-weight: bold;
-      color: white;
-      background: var(--accent);
-      cursor: pointer;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-      transition: opacity 0.15s;
-      pointer-events: none; /* card 전체가 링크 역할 */
-    }
-
-    .card:not(.locked) .card-btn { pointer-events: none; }
-    .card.locked .card-btn { background: #ccc; box-shadow: none; }
-
-    /* ── 별 배경 파티클 ───────────── */
-    .star-field {
-      position: fixed; inset: 0;
-      pointer-events: none; overflow: hidden; z-index: 0;
-    }
-
-    .sf-star {
-      position: absolute;
-      font-size: 1.1rem;
-      opacity: 0.25;
-      animation: sf-float linear infinite;
-    }
-
-    @keyframes sf-float {
-      0%   { transform: translateY(110vh) rotate(0deg);   opacity: 0; }
-      10%  { opacity: 0.22; }
-      90%  { opacity: 0.22; }
-      100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
-    }
-
-    body > * { position: relative; z-index: 1; }
-
-    /* ── 푸터 ─────────────────────── */
-    footer {
-      font-size: 0.8rem;
-      color: #c07040;
-      text-align: center;
-    }
-
-    /* ── 반응형 ───────────────────── */
-    @media (max-width: 400px) {
-      .grid { grid-template-columns: 1fr 1fr; gap: 14px; }
-      header h1 { font-size: 2rem; }
-      .card { padding: 24px 12px 20px; }
-      .card-emoji { font-size: 2.4rem; }
-      .card-title { font-size: 1.1rem; }
-    }
+    .orb   { animation: breathe 9s ease-in-out infinite; }
+    .orb-b { animation-delay: -4.5s; }
   </style>
 </head>
-<body>
+<body class="bg-[#F8F6F3] min-h-screen overflow-x-hidden">
 
-<div class="star-field" id="stars"></div>
-
-<header>
-  <h1>🎮 학습 게임 놀이터</h1>
-  <p>어떤 공부를 해볼까요?</p>
-</header>
-
-<div class="grid">
-
-  <a class="card card-math" href="math/index.html">
-    <div class="card-emoji">🔢</div>
-    <div class="card-title">수학 놀이</div>
-    <div class="card-desc">덧셈 · 뺄셈 · 곱셈<br>연속 정답 로켓 발사!</div>
-    <button class="card-btn">시작하기</button>
-  </a>
-
-  <a class="card card-english" href="english/index.html">
-    <div class="card-emoji">📚</div>
-    <div class="card-title">영어 놀이</div>
-    <div class="card-desc">단어 · 문장 퀴즈<br>영어 실력을 키워요!</div>
-    <button class="card-btn">시작하기</button>
-  </a>
-
-  <div class="card card-korean locked">
-    <span class="badge-soon">COMING SOON</span>
-    <div class="card-emoji">📖</div>
-    <div class="card-title">국어 놀이</div>
-    <div class="card-desc">받침 · 맞춤법 · 어휘<br>준비 중이에요!</div>
-    <button class="card-btn">준비 중</button>
+  <!-- Ambient orbs -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+    <div class="orb   absolute -top-40 -right-40 w-[480px] h-[480px] rounded-full bg-orange-300/20 blur-[80px]"></div>
+    <div class="orb orb-b absolute -bottom-40 -left-40 w-[360px] h-[360px] rounded-full bg-blue-300/15 blur-[80px]"></div>
   </div>
 
-  <div class="card card-science locked">
-    <span class="badge-soon">COMING SOON</span>
-    <div class="card-emoji">🔬</div>
-    <div class="card-title">과학 놀이</div>
-    <div class="card-desc">분류 · 개념 퀴즈<br>준비 중이에요!</div>
-    <button class="card-btn">준비 중</button>
+  <div class="relative z-10 max-w-[640px] mx-auto px-5 py-16 pb-20">
+
+    <!-- ── Header ─────────────────────────────── -->
+    <header class="mb-14">
+      <div class="inline-flex items-center gap-2 bg-white border border-black/[.07] rounded-full px-4 py-1.5 text-[11px] tracking-wide text-gray-400 font-semibold mb-7 shadow-sm">
+        <span class="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0"></span>
+        어린이 학습 게임
+      </div>
+
+      <h1 class="text-[clamp(2rem,9vw,3.2rem)] font-extrabold text-gray-900 leading-[1.12] tracking-[-0.035em] mb-4">
+        오늘은 어떤<br>
+        <span class="text-orange-500">공부</span>를 해볼까요?
+      </h1>
+      <p class="text-gray-500 text-[0.95rem] leading-relaxed">
+        게임처럼 재미있게, 실력은 확실하게
+      </p>
+    </header>
+
+    <!-- ── Bento Grid ──────────────────────────── -->
+    <!--
+      Mobile  : 2-col (수학 + 영어 top, 국어 + 과학 bottom)
+      Tablet+ : 4-col bento (수학 large left 2×2, 영어 right top 2-col, 국어·과학 right bottom 1-col each)
+    -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+
+      <!-- 수학 ─ large card, spans 2×2 on sm+ -->
+      <a href="math/index.html"
+         class="card-live spring col-span-1 sm:col-span-2 sm:row-span-2 block bg-white rounded-2xl p-[3px] border border-black/[.06] shadow-sm">
+        <div class="bg-orange-50 rounded-[17px] border border-orange-100/50 p-7 h-full flex flex-col min-h-[200px] sm:min-h-[260px]">
+          <span class="text-[10px] font-black tracking-[0.12em] uppercase text-orange-500 bg-white/80 rounded-full px-3 py-1 w-fit">수학</span>
+          <div class="text-[3rem] sm:text-[4rem] mt-5 mb-1 leading-none select-none">🔢</div>
+          <div class="text-[1.4rem] sm:text-[1.7rem] font-extrabold text-gray-900 tracking-tight">수학 놀이</div>
+          <div class="text-[0.82rem] text-gray-500 leading-relaxed mt-1">
+            덧셈 · 뺄셈 · 곱셈<br>
+            연속 정답으로 로켓 발사!
+          </div>
+          <div class="mt-auto pt-5 flex items-center gap-2.5 text-orange-500 font-bold text-sm">
+            <span class="arrow-nudge w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs flex-shrink-0">→</span>
+            시작하기
+          </div>
+        </div>
+      </a>
+
+      <!-- 영어 ─ spans 2 cols on sm+ -->
+      <a href="english/index.html"
+         class="card-live spring col-span-1 sm:col-span-2 block bg-white rounded-2xl p-[3px] border border-black/[.06] shadow-sm">
+        <div class="bg-blue-50 rounded-[17px] border border-blue-100/50 p-6 h-full flex flex-col">
+          <span class="text-[10px] font-black tracking-[0.12em] uppercase text-blue-600 bg-white/80 rounded-full px-3 py-1 w-fit">영어</span>
+          <div class="text-[2.4rem] mt-4 mb-1 leading-none select-none">📚</div>
+          <div class="text-[1.2rem] font-extrabold text-gray-900 tracking-tight">영어 놀이</div>
+          <div class="text-[0.8rem] text-gray-500 leading-relaxed mt-1">단어 · 문장 퀴즈로 영어 실력 UP!</div>
+          <div class="mt-auto pt-4 flex items-center gap-2 text-blue-600 font-bold text-sm">
+            <span class="arrow-nudge w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs flex-shrink-0">→</span>
+            시작하기
+          </div>
+        </div>
+      </a>
+
+      <!-- 국어 ─ locked -->
+      <div class="relative col-span-1 bg-white rounded-2xl p-[3px] border border-black/[.06] shadow-sm opacity-50 cursor-not-allowed">
+        <span class="absolute top-3 right-3 z-10 bg-gray-900 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full tracking-[0.1em] uppercase">Soon</span>
+        <div class="bg-purple-50 rounded-[17px] border border-purple-100/50 p-5 h-full flex flex-col">
+          <span class="text-[10px] font-black tracking-[0.12em] uppercase text-purple-600 bg-white/80 rounded-full px-3 py-1 w-fit">국어</span>
+          <div class="text-[2.2rem] mt-3 mb-1 leading-none select-none">📖</div>
+          <div class="text-[1.1rem] font-extrabold text-gray-900 tracking-tight">국어 놀이</div>
+          <div class="text-[0.78rem] text-gray-400 leading-relaxed mt-1">받침 · 맞춤법 · 어휘</div>
+        </div>
+      </div>
+
+      <!-- 과학 ─ locked -->
+      <div class="relative col-span-1 bg-white rounded-2xl p-[3px] border border-black/[.06] shadow-sm opacity-50 cursor-not-allowed">
+        <span class="absolute top-3 right-3 z-10 bg-gray-900 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full tracking-[0.1em] uppercase">Soon</span>
+        <div class="bg-emerald-50 rounded-[17px] border border-emerald-100/50 p-5 h-full flex flex-col">
+          <span class="text-[10px] font-black tracking-[0.12em] uppercase text-emerald-600 bg-white/80 rounded-full px-3 py-1 w-fit">과학</span>
+          <div class="text-[2.2rem] mt-3 mb-1 leading-none select-none">🔬</div>
+          <div class="text-[1.1rem] font-extrabold text-gray-900 tracking-tight">과학 놀이</div>
+          <div class="text-[0.78rem] text-gray-400 leading-relaxed mt-1">분류 · 개념 퀴즈</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Footer ─────────────────────────────── -->
+    <footer class="mt-14 text-center text-[11px] text-gray-300 font-medium tracking-wide">
+      매일 조금씩, 실력은 쑥쑥
+    </footer>
+
   </div>
-
-</div>
-
-<footer>🚀 열심히 공부하면 로켓이 날아가요!</footer>
-
-<script>
-  /* 떠다니는 별 파티클 */
-  const ITEMS = ['⭐','🌟','✨','💫','🎈','🎉','🎊'];
-  const field = document.getElementById('stars');
-  for (let i = 0; i < 18; i++) {
-    const el = document.createElement('div');
-    el.className = 'sf-star';
-    el.textContent = ITEMS[Math.floor(Math.random() * ITEMS.length)];
-    el.style.left              = Math.random() * 100 + 'vw';
-    el.style.animationDuration = (8 + Math.random() * 12) + 's';
-    el.style.animationDelay    = (-Math.random() * 20) + 's';
-    el.style.fontSize          = (0.8 + Math.random() * 0.8) + 'rem';
-    field.appendChild(el);
-  }
-</script>
 
 </body>
 </html>

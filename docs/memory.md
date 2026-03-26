@@ -23,3 +23,4 @@
     - Expanded Korean game dataset (Lv 0-2) for variety and domain coverage.
     - Fixed specific typo ("허륭해요" -> "훌륭해요") in math feedback logic.
     - SDD Alignment: Updated `CRITICAL_LOGIC.md` and `specs/korean.md` before execution.
+    - **Portal Update**: Activated "Korean Play" (국어 놀이) link in `index.html` by removing 'Soon' label.

@@ -63,3 +63,8 @@
   - Fixed typo in `math/ui.js` from **"허륭해요!"** to **"훌륭해요!"**.
   - Expanded `korean/engine.js` DB with additional Level 0-2 questions.
 - **Rationale**: Relaxing time limits encourages more thoughtful learning before speed-up phases. Data expansion prevents boredom and improves learning coverage.
+
+## 2026-03-26: Production Activation - Korean Game
+- **Problem**: Korean game was implemented and tested but main portal (`index.html`) still displayed it as "Soon" (locked).
+- **Solution**: Removed "Soon" badge, converted `div` to `a` tag in `index.html`, and added "Start" (시작하기) interactive element.
+- **Rationale**: Formally launching the feature to the end user.

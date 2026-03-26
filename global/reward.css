@@ -10,7 +10,7 @@
 
 /* 1. 인벤토리 바 (Inventory Bar) */
 #reward-inventory {
-  position: sticky;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;

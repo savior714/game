@@ -53,6 +53,11 @@
     - `engine.js`: `netStreak`, `hasNet`, `NET_STREAK=5` 상태 추가; `recordResult()`에 갱신 로직.
     - `rocket.js`: `crashRocket()`에 hasNet 분기; `netBounceRocket()` 추락→그물→재상승 시퀀스.
     - `rocket.css`: `.net-element`, `.net-falling`, `.net-bounce`, `.net-indicator`, `.net-banner` 스타일.
+- **Net Shield UX Refinement (2026-03-27)**:
+    - `math/rocket.css`: 하단 텍스트 배지를 제거하고, 로켓 바로 아래에 반원형 보호막(그물) 시각 요소를 배치.
+    - `math/rocket.js`: 그물 발동 시 `streak`를 즉시 0으로 초기화하지 않도록 수정하여 "추락→튕김→원위치 복귀" 흐름 보장.
+    - `math/rocket.js`: 그물 생성 높이를 고정 바닥값이 아닌 **현재 로켓 고도와 바닥의 중간 지점**으로 동적 계산.
+    - 정책: 그물 소모 후 다음 오답부터는 기존 규칙대로 `streak=0` 처리하여 바닥 복귀.
 
 - **Browser Verification Infrastructure (2026-03-26)**:
     - `serve_game.py`: Python HTTP 서버 (port 3000), 서브페이지 경로 인수 지원.

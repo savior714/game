@@ -11,6 +11,12 @@ function updateStreak(correct) {
     updateRocketUI();
   } else {
     const prevStreak = streak;
+    // 그물망이 있으면 연속 정답 상태를 유지한 채 추락만 방지한다.
+    if (prevStreak > 0 && hasNet) {
+      crashRocket();
+      return;
+    }
+
     streak = 0;
     if (prevStreak > 0) {
       crashRocket();
@@ -211,6 +217,10 @@ function netBounceRocket() {
 
   // 현재 로켓 위치 저장
   const savedBottom = rocket.style.bottom || '4px';
+  const savedBottomPx = parseInt(savedBottom, 10) || 4;
+  const groundBottomPx = 4;
+  // 그물은 현재 고도와 바닥 사이 중간 지점에 생성
+  const netBottomPx = Math.max(20, Math.round((savedBottomPx + groundBottomPx) / 2));
 
   flame.style.opacity = '0';
   flame.classList.remove('flickering', 'blasting', 'igniting');
@@ -223,7 +233,7 @@ function netBounceRocket() {
   // Phase 2: 로켓 추락 시작
   rocket.classList.add('net-falling');
   rocket.style.transition = 'bottom 0.9s cubic-bezier(0.55, 0, 1, 0.45)';
-  rocket.style.bottom = '34px'; // 그물 높이로 추락
+  rocket.style.bottom = `${netBottomPx + 4}px`; // 중간 높이의 그물 지점으로 추락
 
   // 추락 중 연기
   for (let i = 0; i < 4; i++) {
@@ -233,7 +243,7 @@ function netBounceRocket() {
   setTimeout(() => {
     // Phase 3: 그물 등장 + 튕김 효과
     rocket.classList.remove('net-falling');
-    spawnNetEffect(track);
+    spawnNetEffect(track, netBottomPx);
     flashScreenNet();
 
     // 튕김 애니메이션
@@ -277,9 +287,10 @@ function flashScreenNet() {
   setTimeout(() => flash.remove(), 700);
 }
 
-function spawnNetEffect(track) {
+function spawnNetEffect(track, netBottomPx) {
   const net = document.createElement('div');
   net.className = 'net-element';
+  net.style.bottom = `${netBottomPx}px`;
   net.innerHTML = `<svg width="64" height="30" viewBox="0 0 64 30" fill="none" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <pattern id="np${Date.now()}" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
@@ -318,14 +329,14 @@ function showNetIndicator(active) {
   if (!indicator) {
     indicator = document.createElement('div');
     indicator.id = 'net-indicator';
-    document.getElementById('rocket-panel').appendChild(indicator);
+    document.getElementById('rp-track').appendChild(indicator);
   }
   if (active) {
     indicator.className = 'net-indicator active';
-    indicator.textContent = '\uD83D\uDEE1\uFE0F \uADF8\uBB3C\uB9DD';
+    indicator.innerHTML = '<span class="net-arc"></span><span class="net-core"></span>';
   } else {
     indicator.className = 'net-indicator inactive';
-    indicator.textContent = '\uD83D\uDECD\uFE0F \uC0AC\uC6A9\uB428';
+    indicator.innerHTML = '<span class="net-arc"></span><span class="net-core"></span>';
     setTimeout(() => indicator?.remove(), 4000);
   }
 }

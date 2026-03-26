@@ -16,6 +16,7 @@ const RewardSystem = (() => {
   };
 
   let state = { ...initialState };
+  let resizeBound = false;
 
   // ──────────────────────────────────────────
   // 1. 상태 관리 (State Management)
@@ -129,6 +130,24 @@ const RewardSystem = (() => {
       </div>
     `;
     document.body.prepend(bar);
+    applyBodyTopOffset();
+
+    if (!resizeBound) {
+      window.addEventListener('resize', applyBodyTopOffset);
+      resizeBound = true;
+    }
+  }
+
+  function applyBodyTopOffset() {
+    const bar = document.getElementById('reward-inventory');
+    if (!bar || !document.body) return;
+
+    const currentPaddingTop = parseFloat(window.getComputedStyle(document.body).paddingTop) || 0;
+    const basePaddingTop = Number(document.body.dataset.basePaddingTop || currentPaddingTop);
+    document.body.dataset.basePaddingTop = String(basePaddingTop);
+
+    const barHeight = Math.ceil(bar.getBoundingClientRect().height);
+    document.body.style.paddingTop = `${basePaddingTop + barHeight}px`;
   }
 
   function updateUI() {

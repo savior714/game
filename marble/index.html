@@ -16,7 +16,9 @@
   </div>
   <canvas id="marble-canvas" width="320" height="480"
     onclick="onMbInput(event)"
-    ontouchstart="onMbInput(event)"></canvas>
+    onmousemove="onMbMove(event)"
+    ontouchstart="onMbInput(event)"
+    ontouchmove="onMbMove(event)"></canvas>
   <div id="marble-over">
     <h3>게임 종료!</h3>
     <p>점수: <strong id="mb-final">0</strong></p>

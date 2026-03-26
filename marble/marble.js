@@ -29,24 +29,25 @@ function playMerge(level) {
 
 /* ── 구슬 등급 ──────────────────── */
 const MB = [
-  { r: 18, color: '#FFB3BA' },
-  { r: 26, color: '#FFCE9A' },
-  { r: 35, color: '#FFF89A' },
-  { r: 46, color: '#BAFFC9' },
-  { r: 58, color: '#BAE1FF' },
-  { r: 71, color: '#D4BAFF' },
-  { r: 85, color: '#FFB3B3' },
+  { r: 20, color: '#FFB3BA' },
+  { r: 30, color: '#FFCE9A' },
+  { r: 40, color: '#FFF89A' },
+  { r: 52, color: '#BAFFC9' },
+  { r: 66, color: '#BAE1FF' },
+  { r: 80, color: '#D4BAFF' },
+  { r: 96, color: '#FFB3B3' },
 ];
 const MB_PTS = [10, 30, 60, 100, 150, 250, 600];
 
 /* ── 물리 파라미터 ──────────────── */
-const MB_G = 0.35, MB_D = 0.985, MB_R = 0.22, MB_W = 6;
-const CW = 320, CH = 480, DLINE = 65, OVR_MS = 3000;
+const MB_G = 0.45, MB_D = 0.97, MB_R = 0.15, MB_W = 6;
+const CW = 320, CH = 480, DLINE = 100, OVR_MS = 2200;
 
 /* ── 상태 ───────────────────────── */
-let _mbs = [], _mbScore = 0, _mbNext = 1;
+let _mbs = [], _mbScore = 0, _mbNext = 1, _mbStartTime = Date.now();
 let _mbCool = false, _mbOver = false, _mbDts = null, _mbRaf = null;
 let _mbCvs = null, _mbCtx = null;
+let _mbPreviewX = CW / 2, _mbTargetX = CW / 2;
 
 /* ── 닫기 (iframe postMessage or history) ── */
 function mbClose() {
@@ -60,28 +61,46 @@ function _mbInit() {
   _mbCvs  = document.getElementById('marble-canvas');
   _mbCtx  = _mbCvs.getContext('2d');
   _mbs    = []; _mbScore = 0; _mbOver = false; _mbDts = null; _mbCool = false;
+  _mbStartTime = Date.now();
   _mbNext = _mbPick();
   if (_mbRaf) cancelAnimationFrame(_mbRaf);
   document.getElementById('marble-over').style.display = 'none';
   _mbUpdateUI();
   _mbRaf = requestAnimationFrame(_mbTick);
 }
-function _mbPick() { const r = Math.random(); return r < 0.55 ? 1 : r < 0.85 ? 2 : 3; }
+function _mbPick() {
+  const elapsed = Date.now() - _mbStartTime;
+  // 3분(180초)에 걸쳐 난이도 최대로 증가 (0.0 ~ 1.0)
+  const diff = Math.min(1.0, elapsed / 180000);
+  const r = Math.random();
+
+  // Diff 0.0: Lv1(45%), Lv2(35%), Lv3(20%)
+  // Diff 1.0: Lv1(25%), Lv2(35%), Lv3(40%)
+  const p1 = 0.45 - (0.20 * diff);
+  const p2 = p1 + 0.35;
+
+  if (r < p1) return 1;
+  if (r < p2) return 2;
+  return 3;
+}
 
 /* ── 입력 ───────────────────────── */
 function onMbInput(e) {
-  if (_mbOver || _mbCool) return;
-  e.preventDefault();
-  const rect = _mbCvs.getBoundingClientRect();
-  const cx   = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-  let x = cx * (CW / rect.width);
+  if (_mbOver || _mbCool || _mbDts || _isBlocked()) return;
+  if (e && e.preventDefault) e.preventDefault();
   const t = MB[_mbNext - 1];
-  x = Math.max(t.r + MB_W, Math.min(CW - t.r - MB_W, x));
+  const x = Math.max(t.r + MB_W, Math.min(CW - t.r - MB_W, _mbPreviewX));
   _mbs.push({ x, y: t.r + 4, vx: 0, vy: 1, r: t.r, lv: _mbNext, color: t.color, gone: false });
   playDrop();
   _mbNext = _mbPick(); _mbCool = true;
   setTimeout(() => { _mbCool = false; }, 380);
   _mbUpdateUI();
+}
+function onMbMove(e) {
+  if (_mbOver) return;
+  const rect = _mbCvs.getBoundingClientRect();
+  const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  _mbTargetX = cx * (CW / rect.width);
 }
 
 /* ── 물리 스텝 ──────────────────── */
@@ -94,20 +113,29 @@ function _mbStep() {
     if (m.y + m.r > CH - MB_W) { m.y = CH - MB_W - m.r; m.vy = -Math.abs(m.vy) * MB_R; }
   }
   const merges = [];
-  for (let i = 0; i < _mbs.length; i++) {
-    for (let j = i + 1; j < _mbs.length; j++) {
-      const a = _mbs[i], b = _mbs[j];
-      if (a.gone || b.gone) continue;
-      const dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx*dx + dy*dy), mn = a.r + b.r;
-      if (d < mn && d > 0.01) {
-        const nx = dx/d, ny = dy/d, ov = (mn - d) * 0.5;
-        a.x -= nx*ov; a.y -= ny*ov; b.x += nx*ov; b.y += ny*ov;
-        const rv = (a.vx - b.vx)*nx + (a.vy - b.vy)*ny;
-        if (rv > 0) {
-          const imp = rv * (1 + MB_R) * 0.5;
-          a.vx -= imp*nx; a.vy -= imp*ny; b.vx += imp*nx; b.vy += imp*ny;
+  // Physics sub-stepping for overlap prevention
+  for (let it = 0; it < 4; it++) {
+    for (let i = 0; i < _mbs.length; i++) {
+      for (let j = i + 1; j < _mbs.length; j++) {
+        const a = _mbs[i], b = _mbs[j];
+        if (a.gone || b.gone) continue;
+        const dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx*dx + dy*dy), mn = a.r + b.r;
+        if (d < mn && d > 0.01) {
+          const nx = dx/d, ny = dy/d, ov = (mn - d) * 0.5;
+          a.x -= nx*ov; a.y -= ny*ov; b.x += nx*ov; b.y += ny*ov;
+          const rv = (a.vx - b.vx)*nx + (a.vy - b.vy)*ny;
+          if (rv > 0) {
+            const imp = rv * (1 + MB_R) * 0.5;
+            a.vx -= imp*nx; a.vy -= imp*ny; b.vx += imp*nx; b.vy += imp*ny;
+          }
+          if (a.lv === b.lv && it === 3) merges.push([i, j]);
+          // Symmetry breaker
+          if (Math.abs(dx) < 1.5) {
+            const nudge = 0.06;
+            if (a.x <= b.x) { a.vx -= nudge; b.vx += nudge; }
+            else { a.vx += nudge; b.vx -= nudge; }
+          }
         }
-        if (a.lv === b.lv) merges.push([i, j]);
       }
     }
   }
@@ -162,11 +190,19 @@ function _mbRender() {
     c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(m.lv, m.x, m.y);
     c.restore();
   }
-  if (!_mbOver) {
-    const t = MB[_mbNext - 1]; c.save(); c.globalAlpha = 0.45;
-    const g2 = c.createRadialGradient(CW/2 - t.r*.2, 28 - t.r*.2, t.r*.05, CW/2, 28, t.r*.6);
+  if (!_mbOver && !_mbDts && !_isBlocked()) { // Hide when in danger OR top blocked
+    const t = MB[_mbNext - 1];
+    // 가이드 라인 (Dashed Line)
+    c.save(); c.strokeStyle = 'rgba(255,255,255,0.15)';
+    c.setLineDash([8, 6]); c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(_mbPreviewX, 40); c.lineTo(_mbPreviewX, CH - MB_W); c.stroke();
+    c.restore();
+
+    // 미리보기 구슬
+    c.save(); c.globalAlpha = 0.5;
+    const g2 = c.createRadialGradient(_mbPreviewX - t.r*.2, 28 - t.r*.2, t.r*.05, _mbPreviewX, 28, t.r*.6);
     g2.addColorStop(0, '#fff'); g2.addColorStop(1, t.color);
-    c.fillStyle = g2; c.beginPath(); c.arc(CW/2, 28, t.r*.6, 0, Math.PI*2); c.fill();
+    c.fillStyle = g2; c.beginPath(); c.arc(_mbPreviewX, 28, t.r*.6, 0, Math.PI*2); c.fill();
     c.restore();
   }
 }
@@ -195,8 +231,13 @@ function _mbUpdateUI() {
   const el = document.getElementById('mb-score-val');
   if (el) el.textContent = _mbScore;
 }
+function _isBlocked() {
+  return _mbs.some(m => m.y - m.r < DLINE + 15);
+}
 function _mbTick() {
-  _mbStep(); _mbOverCheck(); _mbRender();
+  _mbStep(); _mbOverCheck();
+  _mbPreviewX += (_mbTargetX - _mbPreviewX) * 0.18;
+  _mbRender();
   if (!_mbOver) _mbRaf = requestAnimationFrame(_mbTick);
 }
 

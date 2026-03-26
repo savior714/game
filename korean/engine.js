@@ -57,7 +57,7 @@ const DB = {
     // Level 1: 기초 반대말
     ['"무겁다"의 반대말은?', '가볍다', ['가볍다', '부드럽다', '빠르다', '밝다'], 1, 'antonym_basic'],
     ['"빠르다"의 반대말은?', '느리다', ['느리다', '게으르다', '밝다', '무겁다'], 1, 'antonym_basic'],
-    ['"덥다"의 반대말은?', '춥다', ['춥다', '시원하다', '맑다', '밝다'], 1, 'antonym_basic'],
+    ['"덥다"의 반대말은?', '춥다', ['춥다', '느리다', '맑다', '밝다'], 1, 'antonym_basic'],
     ['"가볍다"의 반대말은?', '무겁다', ['무겁다', '딱딱하다', '부드럽다', '느리다'], 1, 'antonym_basic'],
     // Level 2: 중급 반대말
     ['"기쁘다"의 반대말은?', '슬프다', ['슬프다', '빠르다', '길다', '화나다'], 2, 'antonym_basic'],
@@ -69,7 +69,7 @@ const DB = {
     ['"희망"의 반대말은?', '절망', ['절망', '어둠', '공포', '실패'], 3, 'antonym_abstract'],
     ['"성실"의 반대말은?', '나태', ['나태', '거짓', '부지런', '정직'], 3, 'antonym_abstract'],
     // Level 4: 마스터 반대말
-    ['"승리"의 반대말은?', '패배', ['패배', '실패', '양보', '거절'], 4, 'antonym_abstract'],
+    ['"승리"의 반대말은?', '패배', ['패배', '협력', '양보', '거절'], 4, 'antonym_abstract'],
     ['"입구"의 반대말은?', '출구', ['출구', '통로', '창구', '계단'], 4, 'antonym_abstract'],
     ['"과거"의 반대말은?', '미래', ['미래', '현재', '어제', '내일'], 4, 'antonym_abstract'],
     // Level 5: 초월 반대말
@@ -79,8 +79,8 @@ const DB = {
     ['"절대"의 반대말은?', '상대', ['상대', '평범', '조건', '가치'], 5, 'antonym_abstract'],
     // Level 6: 전설 반대말
     ['"구체"의 반대말은?', '추상', ['추상', '이상', '개념', '상상'], 6, 'antonym_abstract'],
-    ['"희소"의 반대말은?', '풍부', ['풍부', '가득', '만연', '과장'], 6, 'antonym_abstract'],
-    ['"거시"의 반대말은?', '미시', ['미시', '미세', '확대', '부분'], 6, 'antonym_abstract'],
+    ['"희소"의 반대말은?', '풍부', ['풍부', '확장', '만연', '과장'], 6, 'antonym_abstract'],
+    ['"거시"의 반대말은?', '미시', ['미시', '축소', '확대', '부분'], 6, 'antonym_abstract'],
     ['"구축"의 반대말은?', '파괴', ['파괴', '소멸', '절망', '분해'], 6, 'antonym_abstract'],
   ],
   honorific: [
@@ -142,6 +142,9 @@ let streak        = 0;
 let globalBoost   = 0;
 let launching     = false;
 let crashing      = false;
+let netStreak     = 0;
+let hasNet        = false;
+const NET_STREAK  = 5;
 let wrongPatterns = [];
 let currentQData  = null; // { cat, level, tag, isWeakness }
 let recentHistory = []; // 최근 5문제 정답 여부
@@ -346,6 +349,14 @@ function recordResult(correct, elapsed) {
 
   saveStats();
   updateStreak(correct);
+  if (correct) {
+    netStreak++;
+    if (netStreak >= NET_STREAK && !hasNet) {
+      hasNet = true; netStreak = 0; showNetBanner();
+    }
+  } else {
+    netStreak = 0;
+  }
 
   if (!correct) {
     wrongPatterns.unshift({ cat: currentCat, level: currentQData.level });

@@ -2,6 +2,7 @@ const { execSync } = require('child_process');
 const path = require('path');
 
 const scripts = [
+    'verify_net_logic.js',
     'korean/verify_korean_engine.js',
     'science/verify_science_engine.js',
     'english/verify_english_engine.js',

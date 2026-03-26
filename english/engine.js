@@ -135,6 +135,9 @@ let streak         = 0;
 let globalBoost    = 0;
 let launching      = false;
 let crashing       = false;
+let netStreak      = 0;
+let hasNet         = false;
+const NET_STREAK   = 5;
 let wrongPatterns  = [];
 let recentHistory  = []; // 최근 5문제 정답 여부
 let recentQuestions = []; // 최근 10단어 (중복 방지용 키)
@@ -371,6 +374,14 @@ function recordResult(correct, elapsed) {
   }
 
   saveStats(); updateStreak(correct);
+  if (correct) {
+    netStreak++;
+    if (netStreak >= NET_STREAK && !hasNet) {
+      hasNet = true; netStreak = 0; showNetBanner();
+    }
+  } else {
+    netStreak = 0;
+  }
   if (!correct) {
     wrongPatterns.unshift({ cat: currentCat, level: currentWordData.level, en: currentWordData.en });
     if (wrongPatterns.length > MAX_WRONG_PATTERNS) wrongPatterns.pop();

@@ -93,3 +93,18 @@
     - **Anti-Slop Engine**: AI의 조잡한 코드 생성을 방지하고 시니어 아키텍트 수준의 품질을 강제하기 위한 글로벌 워크플로우 `/slop` 구축.
     - **SDD Alignment**: 인터페이스 선 정의(Interface-First) 및 매직 넘버/스트링 배제 원칙을 프로젝트 기술 표준(`CRITICAL_LOGIC.md`)에 공식화.
     - **Global Artifacts**: `global_workflows/slop.md` 및 `specs/slop_workflow_spec.md` 생성 완료.
+
+- **Net Shield Cross-Subject Sync & Auto Verification (2026-03-27)**:
+    - **원인**: 수학 과목만 `engine.js`의 그물 상태/획득 트리거(`hasNet`, `netStreak`)가 연결되어, 타 과목에서 그물 연출이 비활성 상태였음.
+    - **수정**:
+        - `english/science/korean/engine.js`에 `NET_STREAK=5`, `hasNet`, `netStreak`, `recordResult()` 갱신 로직 동기화.
+        - `english/science/korean/rocket.js`의 그물 분기/연출 함수가 수학과 동일 동작하도록 정렬.
+        - `english/science/korean/rocket.css`에 `.net-element`, `.net-indicator`, `.net-banner` 및 keyframes 반영.
+    - **검증 자동화**:
+        - 루트에 `verify_net_logic.js` 추가 (전 과목 `engine/rocket/rocket.css` 그물 연결 규칙 검사).
+        - `verify_all.js`에 `verify_net_logic.js`를 선행 검사로 통합.
+        - 결과: `node verify_all.js` 기준 전 과목 PASS.
+
+- **Terminal Security Pattern (2026-03-27)**:
+    - PowerShell profile 정책으로 `Add-Content` 호출이 차단되는 환경 존재 확인.
+    - 자동화 명령/스크립트 작성 시 `Add-Content` 의존을 피하고 대체 경로(파일 도구/직접 쓰기) 우선 적용.

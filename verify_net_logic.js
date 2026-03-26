@@ -12,16 +12,20 @@ const requiredEnginePatterns = [
 ];
 
 const requiredRocketPatterns = [
+  /RocketCore\.install\(\s*window\s*\)/,
+];
+
+const requiredRocketCorePatterns = [
   /function\s+showNetBanner\s*\(/,
   /function\s+showNetActivatedBanner\s*\(/,
-  /function\s+showNetIndicator\s*\(/,
   /function\s+netBounceRocket\s*\(/,
   /if\s*\(\s*hasNet\s*\)\s*\{/,
+  /hasNet\s*=\s*false\s*;/,
+  /spawnNetEffect\s*\(/,
 ];
 
 const requiredCssPatterns = [
   /\.net-element/,
-  /\.net-indicator/,
   /\.net-banner/,
   /@keyframes\s+net-appear/,
   /@keyframes\s+net-banner-pop/,
@@ -39,6 +43,11 @@ function verifyPatterns(text, patterns, label, errors) {
   }
 }
 
+function countMatches(text, pattern) {
+  const matches = text.match(pattern);
+  return matches ? matches.length : 0;
+}
+
 console.log('🚀 Starting Net Logic Verification...\n');
 
 const errors = [];
@@ -51,6 +60,21 @@ for (const subject of subjects) {
   verifyPatterns(engine, requiredEnginePatterns, `${subject}/engine.js`, errors);
   verifyPatterns(rocket, requiredRocketPatterns, `${subject}/rocket.js`, errors);
   verifyPatterns(css, requiredCssPatterns, `${subject}/rocket.css`, errors);
+}
+
+const rocketCore = read('common/rocket-core.js');
+verifyPatterns(rocketCore, requiredRocketCorePatterns, 'common/rocket-core.js', errors);
+
+// spawnNetEffect 호출 경로 단일성 확인(현 구현 기준)
+const spawnNetEffectCalls = countMatches(rocketCore, /spawnNetEffect\s*\(/g);
+if (spawnNetEffectCalls !== 2) {
+  // 1회는 함수 정의, 1회는 netBounceRocket 내 호출
+  errors.push(`[common/rocket-core.js] Expected 2 spawnNetEffect() tokens (definition + call), got ${spawnNetEffectCalls}`);
+}
+
+// hasNet false 전환 이후 발동 배너 경로의 존재 확인
+if (!/hasNet\s*=\s*false[\s\S]*?showNetActivatedBanner\s*\(/.test(rocketCore)) {
+  errors.push('[common/rocket-core.js] Missing flow from hasNet=false to showNetActivatedBanner()');
 }
 
 if (errors.length > 0) {

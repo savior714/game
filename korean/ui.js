@@ -1,44 +1,61 @@
+const timerCore = QuizUICore.createTimerCore({
+  getTimeLimit: () => TIME_LIMIT,
+  getTimeLeft: () => timeLeft,
+  setTimeLeft: (v) => { timeLeft = v; },
+  getTimerInterval: () => timerInterval,
+  setTimerInterval: (id) => { timerInterval = id; },
+  onTimeout: () => timeOut(),
+  useGameCardDanger: false
+});
+const statsModalCore = QuizUICore.createStatsModalCore({
+  renderStatsTable: () => renderStatsTable()
+});
+const answerFlowCore = QuizUICore.createAnswerFlowCore({
+  getAnswered: () => answered,
+  setAnswered: (v) => { answered = v; },
+  getTimeLimit: () => TIME_LIMIT,
+  getTimeLeft: () => timeLeft,
+  stopTimer: () => stopTimer(),
+  recordResult: (ok, elapsed) => recordResult(ok, elapsed),
+  getAnswer: () => answer,
+  markCorrectChoices: () => {
+    document.querySelectorAll('.answer-btn').forEach(b => {
+      if (b.textContent === answer) b.classList.add('correct');
+    });
+  },
+  onCorrect: () => {
+    score++;
+    document.getElementById('q-score').textContent = score;
+    const fb = document.getElementById('feedback');
+    const msgs = ['참 잘했어요! ✨', '정답이에요! 👏', '대단해요! 🌟', '최고예요! 👍'];
+    fb.textContent = msgs[Math.floor(Math.random() * msgs.length)];
+    fb.className = 'feedback-correct';
+    spawnConfetti();
+  },
+  onWrong: ({ button, answer: currentAnswer }) => {
+    button.classList.add('wrong');
+    const fb = document.getElementById('feedback');
+    fb.textContent = `정답은 "${currentAnswer}"예요! 다시 해봐요 😊`;
+    fb.className = 'feedback-wrong';
+  },
+  showNextButton: () => {
+    document.getElementById('next-btn').style.display = 'inline-block';
+  }
+});
+
 /* ═══════════════════════════════════
    타이머
 ═══════════════════════════════════ */
 function startTimer() {
-  stopTimer();
-  timeLeft = TIME_LIMIT;
-  updateTimerUI();
-  timerInterval = setInterval(() => {
-    timeLeft -= 0.25;
-    if (timeLeft <= 0) {
-      timeLeft = 0;
-      updateTimerUI();
-      stopTimer();
-      timeOut();
-    } else {
-      updateTimerUI();
-    }
-  }, 250);
+  timerCore.startTimer();
 }
 
 function stopTimer() {
-  clearInterval(timerInterval);
-  timerInterval = null;
-  document.getElementById('timer-bar').classList.remove('warn', 'danger');
-  document.getElementById('timer-label').classList.remove('danger');
+  timerCore.stopTimer();
 }
 
 function updateTimerUI() {
-  const pct   = timeLeft / TIME_LIMIT * 100;
-  const bar   = document.getElementById('timer-bar');
-  const label = document.getElementById('timer-label');
-  document.getElementById('timer-text').textContent = Math.ceil(timeLeft);
-  bar.style.width = pct + '%';
-  bar.classList.remove('warn', 'danger');
-  label.classList.remove('danger');
-  if (pct <= 25) {
-    bar.classList.add('danger');
-    label.classList.add('danger');
-  } else if (pct <= 50) {
-    bar.classList.add('warn');
-  }
+  timerCore.updateTimerUI();
 }
 
 function timeOut() {
@@ -61,31 +78,7 @@ function timeOut() {
    정답 확인
 ═══════════════════════════════════ */
 function checkAnswer(val, btn) {
-  if (answered) return;
-  answered      = true;
-  const elapsed = TIME_LIMIT - timeLeft;
-  stopTimer();
-
-  document.querySelectorAll('.answer-btn').forEach(b => {
-    if (b.textContent === answer) b.classList.add('correct');
-  });
-
-  const fb = document.getElementById('feedback');
-  if (val === answer) {
-    recordResult(true, elapsed);
-    score++;
-    document.getElementById('q-score').textContent = score;
-    const msgs = ['참 잘했어요! ✨', '정답이에요! 👏', '대단해요! 🌟', '최고예요! 👍'];
-    fb.textContent = msgs[Math.floor(Math.random() * msgs.length)];
-    fb.className   = 'feedback-correct';
-    spawnConfetti();
-  } else {
-    recordResult(false, elapsed);
-    btn.classList.add('wrong');
-    fb.textContent = `정답은 "${answer}"예요! 다시 해봐요 😊`;
-    fb.className   = 'feedback-wrong';
-  }
-  document.getElementById('next-btn').style.display = 'inline-block';
+  answerFlowCore.evaluateStandard(val, btn);
 }
 
 /* ═══════════════════════════════════
@@ -129,16 +122,15 @@ function startGame() {
    통계 모달
 ═══════════════════════════════════ */
 function openStats() {
-  renderStatsTable();
-  document.getElementById('stats-modal').style.display = 'flex';
+  statsModalCore.openStats();
 }
 
 function closeStats() {
-  document.getElementById('stats-modal').style.display = 'none';
+  statsModalCore.closeStats();
 }
 
 function onModalBackdrop(e) {
-  if (e.target === document.getElementById('stats-modal')) closeStats();
+  statsModalCore.onModalBackdrop(e);
 }
 
 function renderStatsTable() {

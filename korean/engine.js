@@ -129,6 +129,7 @@ const ROCKET_MAX_BOTTOM  = 330;
 
 const DIFF_LABELS = ['입문', '기초', '중급', '숙련', '마스터', '초월', '전설'];
 const DIFF_COLORS = ['#aed581', '#66bb6a', '#4fc3f7', '#29b6f6', '#ffca28', '#ab47bc', '#ef5350'];
+const DOMAIN_KEYS = ['spelling', 'antonym', 'honorific'];
 
 let currentQ      = 0;
 let score         = 0;
@@ -154,38 +155,17 @@ let recentQuestions = []; // 최근 10문제 (중복 방지용 키)
    통계 (localStorage)
 ═══════════════════════════════════ */
 function emptyStats() {
-  const base = {};
-  ['spelling', 'antonym', 'honorific'].forEach(cat => {
-    base[cat] = { levels: {}, weaknesses: {} };
-    for (let i = 0; i <= 6; i++) {
-      base[cat].levels[i] = { attempts: 0, correct: 0, totalTime: 0 };
-    }
-  });
-  return base;
+  return ProgressEngine.emptyStats(DOMAIN_KEYS);
 }
 
 let stats = loadStats();
 
 function loadStats() {
-  try {
-    const raw = localStorage.getItem(STATS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      const base = emptyStats();
-      for (const cat of Object.keys(base)) {
-        if (parsed[cat]) {
-          if (parsed[cat].levels) Object.assign(base[cat].levels, parsed[cat].levels);
-          if (parsed[cat].weaknesses) Object.assign(base[cat].weaknesses, parsed[cat].weaknesses);
-        }
-      }
-      return base;
-    }
-  } catch(e) {}
-  return emptyStats();
+  return ProgressEngine.loadStats(STATS_KEY, DOMAIN_KEYS);
 }
 
 function saveStats() {
-  localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+  ProgressEngine.saveStats(STATS_KEY, stats);
 }
 
 function resetStats() {
@@ -198,23 +178,11 @@ function resetStats() {
    난이도 및 문제 생성 로직
 ═══════════════════════════════════ */
 function getBaseDiffLevel(cat) {
-  const catStats = stats[cat];
-  let baseLevel = 0;
-  for (let i = 0; i < 6; i++) {
-    const lv     = catStats.levels[i];
-    const acc    = lv.attempts > 0 ? lv.correct / lv.attempts : 0;
-    if (lv.attempts >= MIN_DATA && acc >= 0.90) baseLevel = i + 1;
-    else break;
-  }
-  return baseLevel;
+  return ProgressEngine.getBaseDiffLevel(stats, cat, MIN_DATA);
 }
 
 function getDifficultyLevel(cat) {
-  const base = getBaseDiffLevel(cat) + globalBoost;
-  const wrongs = recentHistory.filter(r => r === false).length;
-  let penalty = 0;
-  if (wrongs >= 2) penalty = 1; 
-  return Math.max(0, Math.min(6, base - penalty));
+  return ProgressEngine.getDifficultyLevel(stats, cat, MIN_DATA, globalBoost, recentHistory);
 }
 
 function pickCategory() {

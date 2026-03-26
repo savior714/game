@@ -24,3 +24,11 @@
 - `docs/memory.md`: 프로젝트 현재 상태 및 작업 로그 (SSOT)
 - `docs/CRITICAL_LOGIC.md`: 시스템의 핵심 설계 정의 및 비즈니스 로직
 - `docs/specs/`: 과목별 세부 구현 스펙
+
+## 🧩 공용 코어 구조
+
+- `common/rocket-core.js`: 전 과목 로켓/그물망/발사 연출 공용 코어
+- `common/progress-engine.js`: 전 과목 통계 저장/난이도 계산 공용 코어
+- `common/quiz-ui-core.js`: 전 과목 UI 타이머/통계 모달 공용 코어
+
+과목별 `engine.js`, `rocket.js`, `ui.js`는 공용 코어를 재구현하지 않고 위임 방식으로 연결됩니다.

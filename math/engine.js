@@ -15,6 +15,7 @@ const DIFF_COLORS = ['#aed581', '#66bb6a', '#4fc3f7', '#29b6f6', '#ffca28', '#ab
 
 // 로켓이 이동할 수 있는 최대 bottom 픽셀
 const ROCKET_MAX_BOTTOM = 330;
+const DOMAIN_KEYS = ['+', '-', '×'];
 
 /* ═══════════════════════════════════
    게임 상태
@@ -48,38 +49,17 @@ let recentQuestions = []; // 최근 10문제 (중복 방지용 키)
    통계 (localStorage)
 ═══════════════════════════════════ */
 function emptyStats() {
-  const base = {};
-  ['+', '-', '×'].forEach(op => {
-    base[op] = { levels: {}, weaknesses: {} };
-    for (let i = 0; i <= 6; i++) {
-      base[op].levels[i] = { attempts: 0, correct: 0, totalTime: 0 };
-    }
-  });
-  return base;
+  return ProgressEngine.emptyStats(DOMAIN_KEYS);
 }
 
 let stats = loadStats();
 
 function loadStats() {
-  try {
-    const raw = localStorage.getItem(STATS_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      const base = emptyStats();
-      ['+', '-', '×'].forEach(op => {
-        if (parsed[op]) {
-          if (parsed[op].levels) Object.assign(base[op].levels, parsed[op].levels);
-          if (parsed[op].weaknesses) Object.assign(base[op].weaknesses, parsed[op].weaknesses);
-        }
-      });
-      return base;
-    }
-  } catch(e) {}
-  return emptyStats();
+  return ProgressEngine.loadStats(STATS_KEY, DOMAIN_KEYS);
 }
 
 function saveStats() {
-  localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+  ProgressEngine.saveStats(STATS_KEY, stats);
 }
 
 function resetStats() {
@@ -92,23 +72,11 @@ function resetStats() {
    난이도 계산
 ═══════════════════════════════════ */
 function getBaseDiffLevel(op) {
-  const opStats = stats[op];
-  let baseLevel = 0;
-  for (let i = 0; i < 6; i++) {
-    const lv     = opStats.levels[i];
-    const acc    = lv.attempts > 0 ? lv.correct / lv.attempts : 0;
-    if (lv.attempts >= MIN_DATA && acc >= 0.90) baseLevel = i + 1;
-    else break;
-  }
-  return baseLevel;
+  return ProgressEngine.getBaseDiffLevel(stats, op, MIN_DATA);
 }
 
 function getDifficultyLevel(op) {
-  const base = getBaseDiffLevel(op) + globalBoost;
-  const wrongs = recentHistory.filter(r => r === false).length;
-  let penalty = 0;
-  if (wrongs >= 2) penalty = 1;
-  return Math.max(0, Math.min(6, base - penalty));
+  return ProgressEngine.getDifficultyLevel(stats, op, MIN_DATA, globalBoost, recentHistory);
 }
 
 /* ═══════════════════════════════════

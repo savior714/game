@@ -79,3 +79,35 @@
         - 정답 `풍부` 문항에서는 오답으로 `가득` 금지
         - 정답 `미시` 문항에서는 오답으로 `미세` 금지
 - **운영**: 데이터(`korean/engine.js`)와 검증기(`korean/verify_korean_engine.js`)를 동시에 갱신해 런타임/검수 규칙을 일치시킨다.
+
+## 9. 공용 로직 분리 경계 결정 (2026-03-27)
+- **목적**: 과목별 페이지의 중복 로직으로 인한 동작 불일치/중복 수정 리스크를 구조적으로 제거한다.
+- **결정**:
+    - `rocket.js`는 전 과목 동일 구현으로 판단하고 `common/rocket-core.js`로 통합한다.
+    - `engine.js`는 공통 알고리즘(`stats`, `difficulty`, `reinforcement`)과 과목 데이터 어댑터를 분리한다.
+    - `ui.js`는 공통 수명주기(`timer`, `answer flow`, `result`, `stats modal`)를 코어로 추출하고 과목별 예외만 어댑터로 유지한다.
+- **우선순위**: `rocket-core` → `progress-engine` → `quiz-ui-core` 순으로 단계 적용한다.
+
+## 10. 공용 코어 적용 계약 (2026-03-27)
+- **적용 완료 코어**:
+    - `common/rocket-core.js`: 로켓/그물망/발사 연출 로직의 전 과목 공용 SSOT.
+    - `common/progress-engine.js`: 통계 저장 및 난이도 계산의 전 과목 공용 SSOT.
+    - `common/quiz-ui-core.js`: 타이머 및 통계 모달 핸들러의 전 과목 공용 SSOT.
+- **의존성 규칙**:
+    - 과목별 파일(`*/rocket.js`, `*/engine.js`, `*/ui.js`)은 공용 코어를 직접 재구현하지 않고 **위임 호출만 허용**한다.
+    - 공용 코어는 과목별 도메인 데이터(DB/WORDS)를 직접 소유하지 않고, 인자/콜백 기반으로만 연결한다.
+- **검증 규칙**:
+    - 구조 변경 시 `node verify_all.js`를 필수 실행한다.
+    - `verify_net_logic.js`는 과목별 위임 파일 + 공용 로켓 코어의 연결 상태를 동시에 검증한다.
+
+## 11. UI 정답 처리 위임 계약 (2026-03-27)
+- **목적**: 과목별 `checkAnswer`/`checkSeqAnswer` 재구현으로 인한 미세한 동작 편차를 제거하고 정답 처리 SSOT를 유지한다.
+- **코어 계약**:
+    - `common/quiz-ui-core.js`의 `createAnswerFlowCore().evaluateStandard()`를 전 과목 `checkAnswer`의 기본 경로로 사용한다.
+    - 영어 순차 빈칸의 종결 처리(성공/실패)는 `createSequentialAnswerCore().finalizeSuccess/finalizeFailure`로 위임한다.
+- **금지 규칙**:
+    - 과목별 `checkAnswer`/`checkSeqAnswer`에서 `recordResult`, `stopTimer`, `answered=true`를 직접 재구현하지 않는다.
+    - 과목별 파일은 단계 진행(예: 영어 `seqStep`)과 UI 메시지/이펙트 어댑터만 소유한다.
+- **검증 규칙**:
+    - `verify_shared_core_contract.js`에서 위임 호출 존재와 금지 패턴(직접 재구현) 부재를 정적 검증한다.
+    - 구조 변경 시 `node verify_shared_core_contract.js` + `node verify_all.js`를 함께 실행한다.

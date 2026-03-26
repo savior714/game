@@ -4,7 +4,8 @@
 - **Korean Game Implementation (2026-03-26)**:
     - 6-file modular architecture (index/base/rocket/engine/rocket/ui).
     - 3 categories (spelling, antonym, honorific) with Lv 0-2 difficulty.
-    - Integrated Rocket-Streak (20-streak launch) and Marble-Reward systems.
+    - Integrated Rocket-Streak (20-streak launch) and **Reward Roulette** (Marble / YouTube 15m / Snack).
+    - **Cloze Rule Fix**: Standardized honorific particle questions to avoid `'( )께서'`-style duplication; blanks are always plain `'( )'`.
 - **Game Difficulty Expansion (2026-03-26)**:
     - Expanded max difficulty from Master (Lv 2) to Transcendence (초월, Lv 3) and Divine (신, Lv 4) across `math`, `korean`, `english`.
     - `math`: Increased number ranges and multiplication factors up to 19x.
@@ -29,6 +30,10 @@
     - Fixed specific typo ("허륭해요" -> "훌륭해요") in math feedback logic.
     - SDD Alignment: Updated `CRITICAL_LOGIC.md` and `specs/korean.md` before execution.
     - **Portal Update**: Activated "Korean Play" (국어 놀이) link in `index.html` by removing 'Soon' label.
+
+- **Streak Reward Roulette (2026-03-26)**:
+    - On `LAUNCH_STREAK=20`, open an overlay roulette with 3 rewards: **Marble game (1 round)**, **YouTube (15 minutes timer)**, **Snack (pick one)**.
+    - On `LAUNCH_STREAK=20`, play a **center-rocket flight + explosion** entrance, then open the roulette **idle** (no auto-spin). Consuming the reward hides the button until the next streak.
 
 - **Net Shield System (2026-03-26)**:
     - 5연속 정답 시 그물망(hasNet) 획득 → 오답 1회 추락 차단 후 튕겨 재상승.

@@ -68,3 +68,23 @@
 - **Problem**: Korean game was implemented and tested but main portal (`index.html`) still displayed it as "Soon" (locked).
 - **Solution**: Removed "Soon" badge, converted `div` to `a` tag in `index.html`, and added "Start" (시작하기) interactive element.
 - **Rationale**: Formally launching the feature to the end user.
+
+## 2026-03-26: Korean Cloze Blank Rule (Honorific Particle Bug)
+- **Problem**: Some honorific questions were authored as `'( )께서'`, which can produce ungrammatical duplication (e.g. `께서께서`) when the correct choice is `께서`.
+- **Solution**: Standardized cloze text to use only `'( )'` with **no fixed post-blank particle**; choices contain the full particle string (e.g. `께서`).
+- **Rationale**: The UI renders `qText` verbatim (no morphological composition). Data-level standard prevents duplication and keeps sentences grammatically valid.
+
+## 2026-03-26: Streak Reward Roulette (20 Correct Answers)
+- **Problem**: On 20 consecutive correct answers, the Korean game always granted only one fixed reward (Marble game). This reduced novelty and motivational variety.
+- **Solution**: Replace the fixed reward with a **roulette-style reward chooser** containing three options: **Marble game (1 round)**, **YouTube (15 minutes)**, **Snack (pick one)**.
+- **Rationale**: A small, varied reward pool increases engagement while preserving the existing Rocket-Streak trigger and keeping implementation lightweight (overlay UI + simple random choice).
+
+## 2026-03-26: Reward Roulette Manual Start
+- **Problem**: Auto-opening the roulette immediately after the 20-streak could feel like the app is taking control away from the child.
+- **Solution**: On 20-streak, only **reveal** the top `🎁 보상 룰렛` button; roulette opens **only when the user clicks**.
+- **Rationale**: Improves agency and avoids interrupting the learning flow while keeping the reward accessible.
+
+## 2026-03-26: Center Rocket → Explosion → Roulette Entrance
+- **Problem**: Reward appearance felt detached from the rocket streak climax (boost banner), and lacked a strong celebratory cue.
+- **Solution**: After 20-streak boost, spawn a transient rocket that **flies to the screen center**, triggers a **"boom" particle effect**, then opens the roulette overlay in the center (roulette remains idle until spin).
+- **Rationale**: Makes the reward feel earned and visually connected to the streak moment while preserving user agency (no auto-spin).

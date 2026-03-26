@@ -254,3 +254,128 @@
   animation: crash-bounce 0.45s ease-out forwards;
   filter: drop-shadow(0 0 6px rgba(200, 100, 0, 0.8)) !important;
 }
+
+/* ═══════════════════════════════════
+   그물망 시스템
+═══════════════════════════════════ */
+
+/* 그물 SVG 요소 */
+.net-element {
+  position: absolute;
+  bottom: 30px;
+  left: 0;
+  width: 64px;
+  z-index: 5;
+  animation: net-appear 1.8s ease forwards;
+  filter: drop-shadow(0 0 6px rgba(0, 255, 130, 0.8));
+}
+
+@keyframes net-appear {
+  0%   { opacity: 0; transform: scaleX(0.3); }
+  15%  { opacity: 1; transform: scaleX(1.08) scaleY(1.1); }
+  30%  { transform: scaleX(0.95) scaleY(1.15); }
+  55%  { transform: scaleX(1.0) scaleY(0.7); }
+  70%  { transform: scaleX(1.0) scaleY(1.05); }
+  85%  { transform: scaleX(1.0) scaleY(0.95); }
+  100% { opacity: 0; transform: scaleX(1.0) scaleY(1); }
+}
+
+/* 그물로 추락 중인 로켓 */
+#rp-rocket.net-falling {
+  animation: net-fall-spin 0.9s ease-in forwards;
+  filter: drop-shadow(0 0 10px rgba(100, 180, 255, 0.7)) !important;
+}
+
+@keyframes net-fall-spin {
+  0%   { transform: translateX(-50%) rotate(0deg); }
+  40%  { transform: translateX(calc(-50% + 8px)) rotate(25deg); }
+  70%  { transform: translateX(calc(-50% - 5px)) rotate(-40deg); }
+  100% { transform: translateX(-50%) rotate(-55deg); }
+}
+
+/* 그물에 튕기는 애니메이션 */
+#rp-rocket.net-bounce {
+  animation: net-squash-bounce 0.35s ease-out forwards;
+  filter: drop-shadow(0 0 18px rgba(0, 255, 130, 1)) drop-shadow(0 0 8px rgba(0, 200, 100, 0.8)) !important;
+}
+
+@keyframes net-squash-bounce {
+  0%   { transform: translateX(-50%) rotate(-55deg) scaleX(1.5) scaleY(0.5); }
+  40%  { transform: translateX(-50%) rotate(-20deg) scaleX(0.8) scaleY(1.4); }
+  70%  { transform: translateX(-50%) rotate(8deg) scaleX(1.1) scaleY(0.9); }
+  100% { transform: translateX(-50%) rotate(0deg) scaleX(1) scaleY(1); }
+}
+
+/* 그물망 보유 인디케이터 (로켓 패널 하단) */
+.net-indicator {
+  font-size: 0.78rem;
+  font-weight: bold;
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+  transition: all 0.4s ease;
+}
+
+.net-indicator.active {
+  background: linear-gradient(135deg, #00c67a, #00e896);
+  color: white;
+  box-shadow: 0 0 12px rgba(0, 200, 120, 0.6), 0 2px 6px rgba(0,0,0,0.15);
+  animation: net-pulse 1.8s ease-in-out infinite;
+}
+
+.net-indicator.inactive {
+  background: #e8e8e8;
+  color: #999;
+  box-shadow: none;
+  animation: none;
+}
+
+@keyframes net-pulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(0, 200, 120, 0.5), 0 2px 6px rgba(0,0,0,0.12); }
+  50%       { box-shadow: 0 0 22px rgba(0, 230, 140, 0.85), 0 2px 8px rgba(0,0,0,0.15); }
+}
+
+/* 그물망 배너 (획득/발동 알림) */
+.net-banner {
+  position: fixed;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 22px;
+  border-radius: 18px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  text-align: center;
+  z-index: 600;
+  pointer-events: none;
+  animation: net-banner-pop 3s ease forwards;
+  white-space: nowrap;
+}
+
+.net-banner .sub {
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-top: 3px;
+  opacity: 0.85;
+}
+
+.net-banner.net-earned {
+  background: linear-gradient(135deg, #00c67a, #00e896);
+  color: white;
+  box-shadow: 0 6px 30px rgba(0, 200, 120, 0.45);
+}
+
+.net-banner.net-activated {
+  background: linear-gradient(135deg, #1e78ff, #00c6ff);
+  color: white;
+  box-shadow: 0 6px 30px rgba(30, 120, 255, 0.45);
+}
+
+@keyframes net-banner-pop {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(-12px) scale(0.88); }
+  12%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.04); }
+  20%  { transform: translateX(-50%) scale(1); }
+  78%  { opacity: 1; transform: translateX(-50%) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-8px) scale(0.95); }
+}
+

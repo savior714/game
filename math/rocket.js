@@ -169,6 +169,15 @@ function openMarbleReward() {
 ═══════════════════════════════════ */
 function crashRocket() {
   if (crashing || launching) return;
+
+  // 그물망 발동 체크
+  if (hasNet) {
+    hasNet = false;
+    netStreak = 0;
+    netBounceRocket();
+    return;
+  }
+
   crashing = true;
 
   const rocket = document.getElementById('rp-rocket');
@@ -210,6 +219,136 @@ function crashRocket() {
       }, 450);
     }, 1080);
   }, 500);
+}
+
+/* ═══════════════════════════════════
+   그물망 튕김 (추락 막기)
+═══════════════════════════════════ */
+function netBounceRocket() {
+  const rocket = document.getElementById('rp-rocket');
+  const flame  = document.getElementById('rp-flame');
+  const badge  = document.getElementById('streak-badge');
+  const track  = document.getElementById('rp-track');
+
+  // 현재 로켓 위치 저장
+  const savedBottom = rocket.style.bottom || '4px';
+
+  flame.style.opacity = '0';
+  flame.classList.remove('flickering', 'blasting', 'igniting');
+  rocket.classList.remove('pre-launch', 'blasting', 'igniting');
+  badge.classList.remove('pre-launch');
+
+  // Phase 1: 파랑빛 플래시 (추락 시작)
+  flashScreenBlue();
+
+  // Phase 2: 로켓 추락 시작
+  rocket.classList.add('net-falling');
+  rocket.style.transition = 'bottom 0.9s cubic-bezier(0.55, 0, 1, 0.45)';
+  rocket.style.bottom = '34px'; // 그물 높이로 추락
+
+  // 추락 중 연기
+  for (let i = 0; i < 4; i++) {
+    setTimeout(() => spawnSmoke(), i * 120);
+  }
+
+  setTimeout(() => {
+    // Phase 3: 그물 등장 + 튕김 효과
+    rocket.classList.remove('net-falling');
+    spawnNetEffect(track);
+    flashScreenNet();
+
+    // 튕김 애니메이션
+    rocket.classList.add('net-bounce');
+    rocket.style.transition = 'none';
+
+    setTimeout(() => {
+      rocket.classList.remove('net-bounce');
+      // Phase 4: 다시 위로 올라가기 (스프링 바운스)
+      const targetBottom = savedBottom;
+      rocket.style.transition = 'bottom 0.85s cubic-bezier(0.34, 1.56, 0.64, 1)';
+      flame.style.transition  = 'bottom 0.85s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s';
+      rocket.style.bottom = targetBottom;
+      const rocketPx = parseInt(targetBottom, 10) || 4;
+      flame.style.bottom = (rocketPx - 28) + 'px';
+      flame.style.opacity = streak > 0 ? '1' : '0';
+      if (streak > 0) flame.classList.add('flickering');
+
+      // 튕김 후 상태 복원 + 배너
+      setTimeout(() => {
+        updateRocketUI();
+        showNetActivatedBanner();
+      }, 900);
+    }, 350);
+  }, 950);
+}
+
+function flashScreenBlue() {
+  const flash = document.createElement('div');
+  flash.style.cssText = `position:fixed;inset:0;background:rgba(30,120,255,0.32);
+    pointer-events:none;z-index:300;animation:screen-flash 0.5s ease forwards;`;
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 600);
+}
+
+function flashScreenNet() {
+  const flash = document.createElement('div');
+  flash.style.cssText = `position:fixed;inset:0;background:rgba(0,210,120,0.28);
+    pointer-events:none;z-index:300;animation:screen-flash 0.6s ease forwards;`;
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 700);
+}
+
+function spawnNetEffect(track) {
+  const net = document.createElement('div');
+  net.className = 'net-element';
+  net.innerHTML = `<svg width="64" height="30" viewBox="0 0 64 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id="np${Date.now()}" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
+        <path d="M0 0 L8 0 L8 8 L0 8 Z" fill="none" stroke="rgba(0,220,130,0.9)" stroke-width="1.3"/>
+        <line x1="0" y1="0" x2="8" y2="8" stroke="rgba(0,220,130,0.55)" stroke-width="0.8"/>
+        <line x1="8" y1="0" x2="0" y2="8" stroke="rgba(0,220,130,0.55)" stroke-width="0.8"/>
+      </pattern>
+    </defs>
+    <rect width="64" height="30" rx="3" fill="url(#np${Date.now()})"/>
+    <rect width="64" height="30" rx="3" fill="none" stroke="rgba(0,255,150,0.95)" stroke-width="2.5"/>
+  </svg>`;
+  track.appendChild(net);
+  setTimeout(() => net.remove(), 1800);
+}
+
+function showNetBanner() {
+  const banner = document.createElement('div');
+  banner.className = 'net-banner net-earned';
+  banner.innerHTML = `\uD83D\uDEF8 \uADF8\uBB3C\uB9DD \uD68D\uB4DD!<div class="sub">5\uC5F0\uC18D \uC815\uB2F5! \uCD94\uB099 1\uD68C \uBCF4\uD638\uBC1B\uC73C\uC138\uC694 \uD83D\uDEE1\uFE0F</div>`;
+  document.body.appendChild(banner);
+  setTimeout(() => banner.remove(), 3000);
+  showNetIndicator(true);
+}
+
+function showNetActivatedBanner() {
+  const banner = document.createElement('div');
+  banner.className = 'net-banner net-activated';
+  banner.innerHTML = `\uD83D\uDECD\uFE0F \uADF8\uBB3C\uB9DD \uBC1C\uB3D9!<div class="sub">\uCD94\uB099\uC744 \uB9C9\uC558\uC5B4\uC694! \uB2E4\uC2DC 5\uC5F0\uC18D\uC73C\uB85C \uD68D\uB4DD\uD558\uC138\uC694</div>`;
+  document.body.appendChild(banner);
+  setTimeout(() => banner.remove(), 3000);
+  showNetIndicator(false);
+}
+
+function showNetIndicator(active) {
+  let indicator = document.getElementById('net-indicator');
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.id = 'net-indicator';
+    document.getElementById('rocket-panel').appendChild(indicator);
+  }
+  if (active) {
+    indicator.className = 'net-indicator active';
+    indicator.textContent = '\uD83D\uDEE1\uFE0F \uADF8\uBB3C\uB9DD';
+  } else {
+    indicator.className = 'net-indicator inactive';
+    indicator.textContent = '\uD83D\uDECD\uFE0F \uC0AC\uC6A9\uB428';
+    setTimeout(() => indicator?.remove(), 4000);
+  }
 }
 
 /* ═══════════════════════════════════

@@ -1,97 +1,34 @@
 /* 로켓 패널 */
-#rocket-panel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-#rp-space-label { font-size: 1.3rem; }
-
-#rp-track {
-  position: relative;
-  width: 64px;
-  height: 380px;
-  border-radius: 14px;
-  background: linear-gradient(
-    to top,
-    #3a5c1a 0%,
-    #5a8a28 6%,
-    #87ceeb 18%,
-    #4a90d9 42%,
-    #1a3a8a 65%,
-    #0d1540 80%,
-    #030818 100%
-  );
-  overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
-}
-
-/* 별 */
-.rp-star {
-  position: absolute;
-  background: white;
-  border-radius: 50%;
-  animation: twinkle 2s ease-in-out infinite;
-}
-
-@keyframes twinkle {
-  0%, 100% { opacity: 0.9; }
-  50%       { opacity: 0.2; }
-}
-
-/* 구름 */
-.rp-cloud {
-  position: absolute;
-  font-size: 1.1rem;
-  opacity: 0.7;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-/* 로켓 */
-#rp-rocket {
-  position: absolute;
-  bottom: 4px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 2rem;
-  filter: drop-shadow(0 0 8px rgba(255, 180, 0, 0.9));
-  transition: bottom 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  z-index: 2;
-}
-
-/* 발사 화염 */
-#rp-flame {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 1.4rem;
-  opacity: 0;
-  transition: bottom 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  z-index: 1;
-}
-
-#rp-rocket.has-flame ~ #rp-flame,
-#rp-flame.visible { opacity: 1; }
-
-#rp-ground-label { font-size: 1.3rem; }
-
-#streak-badge {
-  background: white;
-  border-radius: 14px;
-  padding: 5px 12px;
-  font-size: 0.95rem;
-  font-weight: bold;
-  color: #e65c00;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-  white-space: nowrap;
-}
-
-/* 발사 강화 애니메이션 */
-
-/* 준비 진동 (streak 15+) */
+#rocket-panel{--rp-accent:#3b67c5;--rp-track-width:72px;display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0}
+.rp-zone-label{font-size:.62rem;font-weight:800;letter-spacing:.14em;color:#8fa8dc}
+#rp-track{position:relative;width:var(--rp-track-width);height:380px;border-radius:18px;background:linear-gradient(to top,#5d7f1f 0%,#89b94d 7%,#9ec8ea 18%,#6ea2dc 36%,#3f5ea9 58%,#202f6f 76%,#0b1134 90%,#030718 100%);overflow:hidden;box-shadow:0 10px 28px rgba(8,15,38,.45),inset 0 0 0 1px rgba(255,255,255,.08)}
+#rp-nebula{position:absolute;inset:0;background:radial-gradient(circle at 26% 16%,rgba(122,93,238,.22),transparent 42%),radial-gradient(circle at 72% 26%,rgba(56,146,255,.2),transparent 45%);pointer-events:none}
+#rp-stars{position:absolute;inset:0;pointer-events:none}
+.rp-star{position:absolute;border-radius:999px;background:#f6f9ff;animation:twinkle 2s ease-in-out infinite}
+#rp-atmosphere-glow{position:absolute;left:-18%;right:-18%;bottom:56px;height:86px;background:radial-gradient(ellipse at 50% 100%,rgba(196,238,255,.62),rgba(196,238,255,.08) 60%,transparent 76%);pointer-events:none}
+#rp-ground{position:absolute;left:0;right:0;bottom:0;height:95px;background:radial-gradient(circle at 50% 140%,rgba(30,55,20,.45),transparent 56%),linear-gradient(to top,#557a20 0%,#7ca03e 58%,rgba(124,160,62,.15) 100%)}
+#rp-ground::before{content:"";position:absolute;left:-4%;right:-4%;top:-20px;height:28px;background:radial-gradient(ellipse at 50% 100%,rgba(164,214,104,.68),rgba(164,214,104,0))}
+#rp-goal-earth{position:absolute;left:50%;bottom:-16px;width:28px;height:28px;transform:translateX(-50%);border-radius:999px;background:radial-gradient(circle at 28% 30%,#75e2ff 0%,#5687dd 42%,#2f4ea8 100%);box-shadow:0 0 0 2px rgba(255,255,255,.76),0 6px 14px rgba(35,63,144,.28);opacity:.92;z-index:0;--goal-pulse-intensity:.7;--goal-pulse-speed:2.6s}
+#rp-goal-earth::before,#rp-goal-earth::after{content:"";position:absolute;border-radius:999px;background:rgba(126,221,123,.95)}
+#rp-goal-earth::before{width:14px;height:9px;left:5px;top:8px;transform:rotate(-18deg)}
+#rp-goal-earth::after{width:11px;height:7px;right:5px;bottom:9px;transform:rotate(24deg)}
+#rp-goal-earth.targeting{animation:goal-earth-float 2.4s ease-in-out infinite,goal-earth-pulse var(--goal-pulse-speed) ease-out infinite}
+#rp-goal-earth.targeting-high{animation-duration:1.05s,1.05s}
+#rp-goal-earth.targeting::before,#rp-goal-earth.targeting::after{filter:brightness(1.06)}
+@keyframes goal-earth-float{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-2px)}}
+@keyframes goal-earth-pulse{0%{box-shadow:0 0 0 2px rgba(255,255,255,.85),0 8px 20px rgba(35,63,144,.35),0 0 0 0 rgba(125,197,255,.45)}100%{box-shadow:0 0 0 2px rgba(255,255,255,.85),0 8px 20px rgba(35,63,144,.35),0 0 0 calc(16px + 16px * var(--goal-pulse-intensity)) rgba(125,197,255,0)}}
+.rp-cloud{position:absolute;left:50%;transform:translateX(-50%);opacity:.88;z-index:1}
+.rp-cloud span,.rp-cloud span::before,.rp-cloud span::after{position:absolute;display:block;content:"";border-radius:999px;background:linear-gradient(180deg,rgba(246,252,255,.96),rgba(214,231,255,.9))}
+.rp-cloud span{width:26px;height:11px}
+.rp-cloud span::before{width:14px;height:14px;left:3px;top:-6px}
+.rp-cloud span::after{width:16px;height:16px;right:2px;top:-7px}
+.rp-cloud--a{bottom:72px}
+.rp-cloud--b{bottom:108px;left:42%;opacity:.72;transform:translateX(-50%) scale(.78)}
+@keyframes twinkle{0%,100%{opacity:.95}50%{opacity:.25}}
+#rp-rocket{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:2rem;filter:drop-shadow(0 0 8px rgba(255,180,0,.9));transition:bottom .55s cubic-bezier(.25,.46,.45,.94);z-index:2}
+#rp-flame{position:absolute;left:50%;transform:translateX(-50%);font-size:1.4rem;opacity:0;transition:bottom .55s cubic-bezier(.25,.46,.45,.94);z-index:1}
+#rp-rocket.has-flame ~ #rp-flame,#rp-flame.visible{opacity:1}
+#streak-badge{background:#f8fbff;border:1px solid rgba(69,104,185,.16);border-radius:14px;padding:6px 12px;font-size:.95rem;font-weight:700;color:var(--rp-accent);box-shadow:0 6px 14px rgba(16,35,92,.14);white-space:nowrap}
 @keyframes pre-launch-shake {
   0%, 100% { transform: translateX(-50%) rotate(0deg); }
   33%  { transform: translateX(calc(-50% - 2px)) rotate(-3deg); }

@@ -28,7 +28,7 @@ function updateStreak(correct) {
 
 function updateRocketUI() {
   const progress  = Math.min(streak / LAUNCH_STREAK, 1);
-  const bottomPx  = Math.round(progress * ROCKET_MAX_BOTTOM);
+  const bottomPx  = 18 + Math.round(progress * ROCKET_MAX_BOTTOM);
   const rocket    = document.getElementById('rp-rocket');
   const flame     = document.getElementById('rp-flame');
   const badge     = document.getElementById('streak-badge');
@@ -51,14 +51,13 @@ function updateRocketUI() {
   }
 
   if (streak >= 18) {
-    badge.textContent = `\uD83D\uDE80 \uBC1C\uc0ac ${LAUNCH_STREAK - streak}\uCD08\uc804!`;
+    badge.textContent = `🚀 발사 ${LAUNCH_STREAK - streak}초전!`;
     badge.classList.add('pre-launch');
   } else {
-    badge.textContent = `\uD83D\uDD25 ${streak} / ${LAUNCH_STREAK}`;
+    badge.textContent = `🔥 ${streak} / ${LAUNCH_STREAK}`;
     badge.classList.remove('pre-launch');
   }
 }
-
 /* ═══════════════════════════════════
    로켓 발사 시퀀스
 ═══════════════════════════════════ */
@@ -108,7 +107,7 @@ function launchRocket() {
 
       rocket.style.transition = 'none';
       flame.style.transition  = 'none';
-      rocket.style.bottom = '4px';
+      rocket.style.bottom = '18px';
       flame.style.bottom  = '-24px';
       flame.style.opacity = '0';
 
@@ -184,7 +183,7 @@ function crashRocket() {
     rocket.classList.remove('exploding');
     rocket.classList.add('crashing');
     rocket.style.transition = 'bottom 1.05s cubic-bezier(0.55, 0, 1, 0.5)';
-    rocket.style.bottom = '4px';
+    rocket.style.bottom = '18px';
 
     for (let i = 0; i < 5; i++) {
       setTimeout(() => spawnSmoke(), i * 160);
@@ -216,11 +215,11 @@ function netBounceRocket() {
   const track  = document.getElementById('rp-track');
 
   // 현재 로켓 위치 저장
-  const savedBottom = rocket.style.bottom || '4px';
-  const savedBottomPx = parseInt(savedBottom, 10) || 4;
-  const groundBottomPx = 4;
-  // 그물은 현재 고도와 바닥 사이 중간 지점에 생성
-  const netBottomPx = Math.max(20, Math.round((savedBottomPx + groundBottomPx) / 2));
+  const savedBottom = rocket.style.bottom || '18px';
+  const savedBottomPx = parseInt(savedBottom, 10) || 18;
+  const trackHeightPx = track ? track.clientHeight : 380;
+  // 그물은 트랙 중간 높이(약 1/2 지점)에 고정 생성한다.
+  const netBottomPx = Math.round(trackHeightPx * 0.5);
 
   flame.style.opacity = '0';
   flame.classList.remove('flickering', 'blasting', 'igniting');
@@ -257,7 +256,7 @@ function netBounceRocket() {
       rocket.style.transition = 'bottom 0.85s cubic-bezier(0.34, 1.56, 0.64, 1)';
       flame.style.transition  = 'bottom 0.85s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s';
       rocket.style.bottom = targetBottom;
-      const rocketPx = parseInt(targetBottom, 10) || 4;
+      const rocketPx = parseInt(targetBottom, 10) || 18;
       flame.style.bottom = (rocketPx - 28) + 'px';
       flame.style.opacity = streak > 0 ? '1' : '0';
       if (streak > 0) flame.classList.add('flickering');
@@ -457,15 +456,30 @@ function spawnImpactDust() {
 ═══════════════════════════════════ */
 function initRocketPanel() {
   const container = document.getElementById('rp-stars');
-  for (let i = 0; i < 18; i++) {
-    const star = document.createElement('div');
-    star.className = 'rp-star';
-    star.style.left   = Math.random() * 90 + 5 + '%';
-    star.style.top    = Math.random() * 62 + '%';
-    star.style.width  = star.style.height = (Math.random() * 2 + 1) + 'px';
-    star.style.animationDelay    = (Math.random() * 3) + 's';
-    star.style.animationDuration = (1.5 + Math.random() * 2) + 's';
-    container.appendChild(star);
+  if (!container) return;
+
+  container.innerHTML = '';
+  const starLayers = [
+    { count: 9, minSize: 1.8, maxSize: 3.1, minOpacity: 0.6, maxOpacity: 0.95 },
+    { count: 11, minSize: 1.2, maxSize: 2.2, minOpacity: 0.45, maxOpacity: 0.8 },
+    { count: 12, minSize: 0.8, maxSize: 1.6, minOpacity: 0.3, maxOpacity: 0.6 }
+  ];
+
+  for (const layer of starLayers) {
+    for (let i = 0; i < layer.count; i++) {
+      const star = document.createElement('div');
+      star.className = 'rp-star';
+      star.style.left = Math.random() * 88 + 6 + '%';
+      star.style.top = Math.random() * 66 + '%';
+      const size = layer.minSize + Math.random() * (layer.maxSize - layer.minSize);
+      star.style.width = size + 'px';
+      star.style.height = size + 'px';
+      star.style.opacity = (layer.minOpacity + Math.random() * (layer.maxOpacity - layer.minOpacity)).toFixed(2);
+      star.style.animationDelay = (Math.random() * 3) + 's';
+      star.style.animationDuration = (1.6 + Math.random() * 2.6) + 's';
+      container.appendChild(star);
+    }
   }
+
   updateRocketUI();
 }

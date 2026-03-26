@@ -140,7 +140,7 @@ function onModalBackdrop(e) {
 }
 
 function renderStatsTable() {
-  const OP_LABELS = { '+': '\ub367\uc148 (+)', '-': '\ube7c\uc148 (-)', '\xD7': '\uacf1\uc148 (\xD7)' };
+  const OP_LABELS = { '+': '\ub367\uc148 (+)', '-': '\ubebc\uc148 (-)', '\xD7': '\uacf1\uc148 (\xD7)' };
   const tbody = document.getElementById('stats-tbody');
   tbody.innerHTML = '';
 

@@ -76,7 +76,7 @@ function checkAnswer(val, btn) {
     recordResult(true, elapsed);
     score++;
     document.getElementById('q-score').textContent = score;
-    fb.textContent = ['\uc798\ud588\uc5b4\uc694! \uD83C\uDF89', '\ub9de\uc558\uc5b4\uc694! \u2B50', '\uc644\ubcbd\ud574\uc694! \uD83C\uDF1F', '\ud5c8\ub96d\ud574\uc694! \uD83D\uDC4F'][Math.floor(Math.random()*4)];
+    fb.textContent = ['\uc798\ud588\uc5b4\uc694! \uD83C\uDF89', '\ub9de\uc558\uc5b4\uc694! \u2B50', '\uc644\ubcbd\ud574\uc694! \uD83C\uDF1F', '\ud6cc\ub96d\ud574\uc694! \uD83D\uDC4F'][Math.floor(Math.random()*4)];
     fb.className   = 'feedback-correct';
     playCorrect();
     spawnConfetti();

@@ -2,15 +2,15 @@
    상수
 ═══════════════════════════════════ */
 const TOTAL              = 10;
-const TIME_LIMIT         = 20;
+const TIME_LIMIT         = 60;
 const MIN_DATA           = 4;    // 난이도 조정 최소 시도 횟수
 const LAUNCH_STREAK      = 20;   // 연속 정답 → 로켓 발사
 const STATS_KEY          = 'mathGameStats';
 const MAX_WRONG_PATTERNS = 5;    // 기억할 최대 틀린 패턴 수
 const REINFORCE_PROB     = 0.45; // 틀린 패턴 재출제 확률
 
-const DIFF_LABELS = ['쉬움', '보통', '어려움'];
-const DIFF_COLORS = ['#66bb6a', '#ffa726', '#ef5350'];
+const DIFF_LABELS = ['기초', '중급', '마스터'];
+const DIFF_COLORS = ['#66bb6a', '#42a5f5', '#ffca28'];
 
 // 로켓이 이동할 수 있는 최대 bottom 픽셀 (트랙 높이 380 - 로켓 크기 ~40 - 여백)
 const ROCKET_MAX_BOTTOM = 330;

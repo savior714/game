@@ -1,8 +1,8 @@
 # 국어 게임 스펙
 
 **소속**: SDD — 어린이 학습 게임 플랫폼
-**상태**: 🔲 계획 중 | **대상**: 초등 저학년
-**최종 수정**: 2026-03-22
+**상태**: ✅ 완성 | **대상**: 초등 저학년
+**최종 수정**: 2026-03-26
 
 ---
 
@@ -13,33 +13,36 @@
 
 ---
 
-## 2. 문제 유형 (안)
+## 2. 문제 유형 및 카테고리
 
-| 유형 | 설명 | 예시 |
-|------|------|------|
-| 받침 완성 | 올바른 받침 선택 | `나무` vs `나뭇` |
-| 맞춤법 | 맞게 쓴 것 고르기 | `돼요` vs `되요` |
-| 반대말 | 반의어 선택 | `크다` → `작다` |
-| 높임말 | 문장 높임 변환 | `먹어` → `드세요` |
+| 카테고리 | 설명 | 예시 |
+|----------|------|------|
+| `spelling` | 받침 완성 및 맞춤법 | `나무` vs `나뭇`, `돼요` vs `되요` |
+| `antonym` | 반대말 선택 | `크다` → `작다`, `가볍다` → `무겁다` |
+| `honorific` | 높임말 변환 | `먹어` → `드세요`, `이/가` → `께서` |
 
 ---
 
-## 3. 통계 스키마 (안)
+## 3. 통계 스키마
 
 **Key**: `koreanGameStats`
 
-**카테고리 (안)**: `spelling`, `antonym`, `honorific`, `punctuation`
-
 ```json
 {
-  "spelling":    { "attempts": 0, "correct": 0, "totalTime": 0 },
-  "antonym":     { "attempts": 0, "correct": 0, "totalTime": 0 },
-  "honorific":   { "attempts": 0, "correct": 0, "totalTime": 0 },
-  "punctuation": { "attempts": 0, "correct": 0, "totalTime": 0 }
+  "spelling":  { "attempts": 0, "correct": 0, "totalTime": 0 },
+  "antonym":   { "attempts": 0, "correct": 0, "totalTime": 0 },
+  "honorific": { "attempts": 0, "correct": 0, "totalTime": 0 }
 }
 ```
+
+### 4. 데이터셋 확충 (2026-03-26)
+
+- **대상**: spelling, antonym, honorific 모든 카테고리
+- **범위**: 레벨 0(기초), 1(중급), 2(마스터) 각 5~10문항 이상으로 확장
+- **목표**: 문항 반복 노출 최소화 및 학습 도메인 확대 (사물, 행동, 기초 문법)
 
 ---
 
 > 구현 시작 전 이 파일을 먼저 완성하고 `SDD.md` 게임 현황 테이블을 갱신한다.
 > 개발 체크리스트는 [specs/platform.md](platform.md) §0.7 참조.
+

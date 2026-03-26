@@ -1,0 +1,77 @@
+/* ═══════════════════════════════════
+   보상 시스템: 아날로그(종이 질감) 스타일
+   - 따뜻한 색감, 거친 외곽선, 종이 텍스처
+═══════════════════════════════════ */
+
+:root {
+  --analog-bg: #fffbf5;
+  --analog-border: #5d4037;
+  --analog-accent: #8d6e63;
+  --analog-shadow: #d7ccc8;
+}
+
+#reward-inventory.theme-analog {
+  background: #fff;
+  border: 2px solid var(--analog-border);
+  border-radius: 4px 15px 4px 15px;
+  box-shadow: 4px 4px 0px var(--analog-shadow);
+  padding: 8px 16px;
+  top: 10px;
+}
+
+#reward-inventory.theme-analog::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: url('https://www.transparenttextures.com/patterns/handmade-paper.png');
+  opacity: 0.3; mix-blend-mode: multiply; border-radius: inherit;
+}
+
+#reward-inventory.theme-analog .inventory-item {
+  background: transparent;
+  border: none;
+  color: var(--analog-border);
+  font-weight: 800;
+  font-family: 'Comic Sans MS', cursive, 'Pretendard';
+}
+
+#reward-inventory.theme-analog .inventory-item .val {
+  border-bottom: 2px dashed #bcaaa4;
+}
+
+#reward-inventory.theme-analog .inventory-item.has-reward {
+  color: #d84315; /* 좀 더 진한 벽돌색 */
+}
+
+/* 아날로그 모달 스타일 */
+.theme-analog .reward-modal-content {
+  background-color: var(--analog-bg);
+  border: 3px solid var(--analog-border);
+  border-radius: 8px 24px 8px 24px;
+  box-shadow: 10px 10px 0px rgba(93, 64, 55, 0.1);
+  background-image: url('https://www.transparenttextures.com/patterns/handmade-paper.png');
+}
+
+.theme-analog .reward-modal-content h3 {
+  color: var(--analog-border);
+  font-family: 'Pretendard', sans-serif;
+  border-bottom: 2px solid var(--analog-border);
+  padding-bottom: 10px;
+}
+
+.theme-analog .btn-primary {
+  background: var(--analog-accent);
+  border: 2px solid var(--analog-border);
+  border-radius: 4px;
+  box-shadow: 3px 3px 0px var(--analog-border);
+  color: white;
+}
+
+.theme-analog .btn-primary:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px var(--analog-border);
+}
+
+.theme-analog .btn-close {
+  background: #efebe9;
+  border: 2px solid var(--analog-border);
+  color: var(--analog-border);
+}

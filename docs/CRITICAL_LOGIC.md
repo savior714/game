@@ -1,90 +1,57 @@
-# Critical Logic & Decisions
+# CRITICAL LOGIC: 적응형 난이도 및 컨디션 케어
 
-## 2026-03-26: Marble Drop Improvement
-- **Problem**: Marble preview was fixed at center (`CW/2`), making users feel it only drops from there. No visual feedback for drop position.
-- **Solution**: 
-  - Track mouse/touch X position.
-  - Render preview marble at the tracked X.
-  - Add a vertical guide line for precision.
-  - Use smooth lerping for preview animation.
-- **Rationale**: Standard UX for Suika-like games. Improved control and precision.
+## 1. 적응형 난이도 엔진 (Adaptive Engine)
+- **목적**: 아이의 실력 변화를 체감하지 못할 정도로 미세하게 추적하여 최적의 학습 곡선 제공.
+- **기준**: 7단계 (`입문`, `기초`, `중급`, `숙련`, `마스터`, `초월`, `전설`).
+- **상승 로직**: **이전 단계(Level n)**를 90% 이상의 정답률로 마스터했을 때만 다음 단계(Level n+1)로 한 칸 이동하는 **계단식 성장** 모델.
 
-## 2026-03-26: Game Difficulty Balancing
-- **Problem**: The game is too easy and takes too long to end, which doesn't fit the "short break before study" goal.
-- **Solution**: 
-  - Reduced playable space by lowering the danger line (`DLINE`: 65 -> 100).
-  - Increased marble radii by ~15% to fill the container faster.
-  - Adjusted drop probabilities to favor larger marbles (Lv2/Lv3).
-  - Shortened game-over timer (`OVR_MS`: 3000 -> 2200).
-- **Overlap Prevention**: 
-  - Hidden the preview marble and guide line during the danger state (`_mbDts` active).
-  - Disabled marble drop input during the danger state.
-- **Rationale**: Ensures a faster gameplay cycle (3-5 minutes) that encourages returning to study tasks, and prevents visual glitches/overlapping when the container is full.
+## 2. 컨디션 케어 (Confidence Recovery)
+- **목적**: 오답이 반복될 때 발생하는 아동의 정서적 좌절(울음 등)을 방지하고 자신감 회복.
+- **로직**:
+    - `recentHistory`: 최근 5문제의 정답 여부(큐) 저장.
+    - **Penalty 적용**:
+        - 최근 오답 2회: `penalty = 1` (난이도 1단계 하향)
+        - **현 단계 정답률 60% 미만 시**: 즉각 해당 단계 마스터 실패로 간주하고 하향 조정 가능성 설계 (추후 논의).
+    - **우선순위**: 누적 통계(`baseLevel`)보다 `penalty`가 우선 적용되어 실시간 난이도 결정.
 
-## 2026-03-26: Physics Stability & Dynamic Difficulty
-- **Problem**: Marbles overlapped when stacked/compressed. Static difficulty didn't provide enough progression.
-- **Solution**:
-  - **Physics Sub-stepping**: 4 iterations of collision resolution per frame.
-  - **Dynamic Pick Probability**: Lv.3 frequency increases from 20% to 40% over 3 minutes.
-- **Rationale**: Sub-stepping is a standard technique for multi-object collision stability. Time-based difficulty ensures a consistent progression and increasing challenge.
+## 4. 약점 강화 학습 (Weakness Reinforcement v2)
+- **목적**: 전 과목 공통으로 아이가 취약한 "특정 유형(Tag)"을 데이터 기반으로 분석하고 집중 훈련.
+- **로직**:
+    - **Tagging**: 모든 문제 데이터에 세분화된 태그 부착 (예: 수학-`carry_over`, 국어-`hon_particle`).
+    - **통계 누적**: `stats[cat].weaknesses[tag]`에 정답/오답 횟수 기록.
+    - **Weighted Selection**: `generateQuestion` 시 30% 확률로 **정답률 70% 미만**인 약점 태그 우선 출제.
+    - **Clearance**: 특정 약점 유형의 정답률이 80% 이상으로 회복되면 "약점 극복" 알림 및 비중 정상화.
 
-## 2026-03-26: Korean Game Implementation (SDD)
-- **Problem**: Need to implement a Korean language game for early elementary students within the shared platform architecture.
-- **Solution**:
-  - **Categorization**: Split into `spelling` (orthography), `antonym` (vocabulary), and `honorific` (grammar).
-  - **Adaptive DB**: Integrated a 28-item question database directly into `engine.js` to minimize file count while maintaining category-specific difficulty tiers (Lv 0-2).
-  - **Standardization**: Reused the Rocket-Streak (20 answers) and Marble-Reward systems from the English/Math games.
-- **Rationale**: Adheres to the "6-file modularity" and "500-line limit" rules. Provides a cohesive learning experience across subjects.
+## 5. 중복 방지 엔진 (Anti-Repetition Engine)
+- **목적**: 동일하거나 유사한 문제가 연속으로 출제되어 학습의 몰입도를 해치고 기계적인 정답 입력을 방지함.
+- **로직**:
+    - **Key-based Storage**: `recentQuestions` (큐)에 최근 10개의 문제 키 저장.
+    - **키 생성 규칙**: 
+        - **수학**: 연산자 + 정렬된 피연산자 (교환법칙 대응: `3+5` == `5+3`).
+        - **기타**: 전체 문장 또는 고유 ID.
+    - **유일 정답 보정 (Single Answer Principle)**: "밤하늘에 ( )이 떠 있어요"와 같이 중의적 해석이 가능한 문항에서 '달'과 같은 혼동 요소를 선택지에서 원천 배제하거나 명확한 오답(산, 물 등)을 배치하여 정답 무결성을 확보함. **모든 과목(수학, 영어, 과학)에 차별 없이 적용되는 기본 설계 원칙임.**
+    - **답지 구성 원칙 (Choice Constraint)**: 
+        - **과학**: Lv 0-1은 3지선다, 고난도는 4지선다.
+        - **수학**: 전 난이도 **최대 4개**의 답지로 한정하여 아동의 인지 부하 감소 및 UI 일관성 유지.
+    - **중복 정답 방지 (Anti-Ambiguity Distractor)**: 
+        1. **동의어 배제**: 반대말 퀴즈에서 '성실'의 오답으로 '부지런'과 같이 뜻이 비슷한 단어를 배치하여 난이도를 조절하되, '나태'와 '태만'처럼 정답이 여러 개로 해석될 수 있는 단어는 **반드시 하나만** 남기고 다른 범주의 오답(예: '거짓')으로 교체함.
+        2. **부분적 반대어 배제**: '빠르다'의 반대말로 '느리다'가 정답일 경우, 상황에 따라 반대 관계가 성립될 수 있는 '둔하다' 등을 오답 후보에서 배제하여 어린이의 인지 혼란을 원천 차단함.
+        3. **조사 보정**: 격조사(께서/께) 문제에서 '도', '만'뿐만 아니라, 문맥상 다른 격으로 오해될 수 있는 조사를 배제하고 '에', '에서' 등을 사용함.
+    - **Dynamic Limit**: 가용 문제 풀(Pool)이 10개 미만인 경우, 버퍼 크기를 `floor(N/2)`로 자동 축소하여 선택 가능한 문제 부족 현상 방지.
+    - **Retry Sequence**: 중복 감지 시 최대 20회 재추출 시도.
+    - **자동화 검증 (Automated Verification)**: 데이터 무결성을 유지하기 위해 각 과목 폴더 내에 검증 스크립트를 운용하며, 루트 폴더에서 통합 검사 가능.
+        - **통합 실행**: `node verify_all.js` (전 과목 일괄 검사)
+        - **과목별 실행**:
+            - 국어: `node korean/verify_korean_engine.js`
+            - 과학: `node science/verify_science_engine.js`
+            - 영어: `node english/verify_english_engine.js`
+            - 수학: `node math/verify_math_engine.js`
+        - **검수 항목**: 유일 정답성, 선택지 중복 여부, 형식 무결성, 인지적 모호성 블랙리스트 체킹, 알고리즘 시뮬레이션.
 
-## 2026-03-26: Agent Safety Instruction
-- **Problem**: Agent may get stuck or make wrong assumptions if a target local file cannot be opened.
-- **Solution**: Added a fatal constraint to stop work and ask the user for manual verification if file access fails repeatedly.
-- **Rationale**: Prevents hallucinations and potential file corruption or logic errors based on missing context.
-
-## 2026-03-26: Core Maintenance Standards
-- **Rule**: Single file limit is set to **500 lines**.
-- **Rule**: Documentation SSOT limits (`SDD.md` 100 lines, `docs/memory.md` 200 lines).
-- **Rationale**: Ensures the project remains manageable for AI models and humans alike, preventing context overflow and maintainability issues.
-## 2026-03-26: Statistics UI - Difficulty to Proficiency (Mastery)
-- **Problem**: Users performing well (Accuracy >= 75%, Time <= 7s) were labeled as "Difficulty: Hard" (어려움), which was confusing or demotivating as they felt the game was easy.
-- **Solution**: 
-  - Renamed "Difficulty" (난이도) header to **"Proficiency" (숙련도)** in the stats table.
-  - Replaced labels `['쉬움', '보통', '어려움']` with **`['기초', '중급', '마스터']`** (Basic, Intermediate, Master).
-  - Updated badge colors: Level 1 (Intermediate) to **Blue (`#42a5f5`)**, Level 2 (Master) to **Gold (`#ffca28`)**.
-- **Rationale**: Rewards high achievement with positive reinforcement ("Master") rather than describing the content's technical difficulty. Adheres to child-centric UX standards.
-
-## 2026-03-26: Global Time Limit & Typo Maintenance
-- **Problem**: 
-  - Current 20s time limit is too short for some learners. 
-  - "허륭해요!" typo in math game (Hallucination/Typo).
-  - Korean question data is too sparse (prevents repetition).
-- **Solution**: 
-  - Increased global `TIME_LIMIT` to **60s** across all games.
-  - Fixed typo in `math/ui.js` from **"허륭해요!"** to **"훌륭해요!"**.
-  - Expanded `korean/engine.js` DB with additional Level 0-2 questions.
-- **Rationale**: Relaxing time limits encourages more thoughtful learning before speed-up phases. Data expansion prevents boredom and improves learning coverage.
-
-## 2026-03-26: Production Activation - Korean Game
-- **Problem**: Korean game was implemented and tested but main portal (`index.html`) still displayed it as "Soon" (locked).
-- **Solution**: Removed "Soon" badge, converted `div` to `a` tag in `index.html`, and added "Start" (시작하기) interactive element.
-- **Rationale**: Formally launching the feature to the end user.
-
-## 2026-03-26: Korean Cloze Blank Rule (Honorific Particle Bug)
-- **Problem**: Some honorific questions were authored as `'( )께서'`, which can produce ungrammatical duplication (e.g. `께서께서`) when the correct choice is `께서`.
-- **Solution**: Standardized cloze text to use only `'( )'` with **no fixed post-blank particle**; choices contain the full particle string (e.g. `께서`).
-- **Rationale**: The UI renders `qText` verbatim (no morphological composition). Data-level standard prevents duplication and keeps sentences grammatically valid.
-
-## 2026-03-26: Streak Reward Roulette (20 Correct Answers)
-- **Problem**: On 20 consecutive correct answers, the Korean game always granted only one fixed reward (Marble game). This reduced novelty and motivational variety.
-- **Solution**: Replace the fixed reward with a **roulette-style reward chooser** containing three options: **Marble game (1 round)**, **YouTube (15 minutes)**, **Snack (pick one)**.
-- **Rationale**: A small, varied reward pool increases engagement while preserving the existing Rocket-Streak trigger and keeping implementation lightweight (overlay UI + simple random choice).
-
-## 2026-03-26: Reward Roulette Manual Start
-- **Problem**: Auto-opening the roulette immediately after the 20-streak could feel like the app is taking control away from the child.
-- **Solution**: On 20-streak, only **reveal** the top `🎁 보상 룰렛` button; roulette opens **only when the user clicks**.
-- **Rationale**: Improves agency and avoids interrupting the learning flow while keeping the reward accessible.
-
-## 2026-03-26: Center Rocket → Explosion → Roulette Entrance
-- **Problem**: Reward appearance felt detached from the rocket streak climax (boost banner), and lacked a strong celebratory cue.
-- **Solution**: After 20-streak boost, spawn a transient rocket that **flies to the screen center**, triggers a **"boom" particle effect**, then opens the roulette overlay in the center (roulette remains idle until spin).
-- **Rationale**: Makes the reward feel earned and visually connected to the streak moment while preserving user agency (no auto-spin).
+## 6. 개발 표준 및 코드 퀄리티 (Senior Architect Workflow)
+- **목적**: AI가 생성하는 코드의 조잡함(Anti-Slop)을 배제하고, 시니어 아키텍트 수준의 정제된 설계를 강제함.
+- **핵심 원칙 (/slop)**:
+    1. **Zero-Slop Design**: 매직 넘버 배제, 디자인 시스템(CSS 변수) 준수, 시맨틱 HTML 우선.
+    2. **SDD Architecture**: 인터페이스 선 정의, 로직과 프레젠테이션의 엄격한 분리, 매직 스트링 배제.
+    3. **Tool-First Execution**: 추측 대신 터미널 도구를 통한 실시간 상태 진단 및 환경 검증.
+    4. **Atomic Delivery**: 논리적이고 검토 가능한 단위로 코드 분할 및 제공.

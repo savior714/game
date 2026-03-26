@@ -57,11 +57,15 @@ function askQuestion() {
   seqStep   = 0;
   seqFilled = [];
   const q   = generateQuestion();
-  answer    = q.answer;
+  
+  // 상태 동기화 (engine.js에서 전달받은 메타데이터 사용)
+  currentCat = q._cat;
+  currentWordData = { cat: q._cat, level: q._level, en: q._wordEn, isWeakness: q.isWeakness };
+  answer = q.answer;
 
   document.getElementById('q-count').textContent     = currentQ + 1;
-  document.getElementById('feedback').textContent    = '';
-  document.getElementById('feedback').className      = '';
+  document.getElementById('feedback').textContent    = q.isWeakness ? '🔥 약점 단어 도전!' : '';
+  document.getElementById('feedback').className      = q.isWeakness ? 'weakness-highlight' : '';
   document.getElementById('next-btn').style.display = 'none';
 
   const qEl = document.getElementById('question');
@@ -93,15 +97,6 @@ function askQuestion() {
 /* ═══════════════════════════════════
    결과 기록
 ═══════════════════════════════════ */
-function recordResult(correct, elapsed) {
-  stats[currentCat].attempts++;
-  if (correct) stats[currentCat].correct++;
-  stats[currentCat].totalTime += elapsed;
-  saveStats();
-  updateStreak(correct);
-  if (!correct && currentWordData) addWrongPattern(currentWordData);
-  else if (correct && currentWordData) removeWrongPattern(currentWordData);
-}
 
 /* ═══════════════════════════════════
    타이머
@@ -288,16 +283,23 @@ function renderStatsTable() {
   const tbody = document.getElementById('stats-tbody');
   tbody.innerHTML = '';
   for (const [cat, data] of Object.entries(WORDS)) {
-    const s      = stats[cat];
-    const acc    = s.attempts > 0 ? Math.round(s.correct/s.attempts*100)+'%' : '-';
-    const avgT   = s.attempts > 0 ? (s.totalTime/s.attempts).toFixed(1)+'초' : '-';
-    const hasData = s.attempts >= MIN_DATA;
-    const level   = hasData ? getBaseDiffLevel(cat) : -1;
+    const s = stats[cat];
+    let totalAttempts = 0, totalCorrect = 0, totalTime = 0;
+    Object.values(s.levels).forEach(lv => {
+      totalAttempts += lv.attempts;
+      totalCorrect  += lv.correct;
+      totalTime     += lv.totalTime;
+    });
+
+    const acc     = totalAttempts > 0 ? Math.round(totalCorrect / totalAttempts * 100) + '%' : '-';
+    const avgT    = totalAttempts > 0 ? (totalTime / totalAttempts).toFixed(1) + '초' : '-';
+    const hasData = totalAttempts >= MIN_DATA;
+    const level   = getBaseDiffLevel(cat);
     const badge   = hasData
       ? `<span class="diff-badge" style="background:${DIFF_COLORS[level]}">${DIFF_LABELS[level]}</span>`
       : `<span class="diff-badge" style="background:#ccc">데이터 부족</span>`;
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${data.icon} ${data.label}</td><td>${s.attempts}</td><td>${acc}</td><td>${avgT}</td><td>${badge}</td>`;
+    tr.innerHTML = `<td>${data.icon} ${data.label}</td><td>${totalAttempts}</td><td>${acc}</td><td>${avgT}</td><td>${badge}</td>`;
     tbody.appendChild(tr);
   }
 }

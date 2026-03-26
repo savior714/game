@@ -1,0 +1,292 @@
+/* ═══════════════════════════════════
+   전역 보상 인벤토리 스타일 (Reward CSS)
+═══════════════════════════════════ */
+
+:root {
+  --reward-bg: rgba(255, 255, 255, 0.75);
+  --reward-border: rgba(0, 0, 0, 0.08);
+  --reward-accent: #f97316; /* Orange 500 */
+}
+
+/* 1. 인벤토리 바 (Inventory Bar) */
+#reward-inventory {
+  position: sticky;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  background: var(--reward-bg);
+  backdrop-filter: blur(12px) saturate(180%);
+  border-bottom: 1px solid var(--reward-border);
+  display: flex;
+  justify-content: center;
+  padding: 8px 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  font-family: 'Pretendard', sans-serif;
+  transition: transform 0.3s ease;
+}
+
+.inventory-content {
+  display: flex;
+  gap: 16px;
+  max-width: 600px;
+  width: 100%;
+  justify-content: space-around;
+}
+
+.inventory-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.03);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  user-select: none;
+  border: 1px solid transparent;
+}
+
+.inventory-item:hover {
+  background: rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+
+.inventory-item.has-reward {
+  background: white;
+  border-color: rgba(249, 115, 22, 0.2);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.1);
+}
+
+.inventory-item.has-reward .icon {
+  filter: drop-shadow(0 0 5px rgba(249, 115, 22, 0.3));
+}
+
+.inventory-item .val {
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: #1a1a1a;
+}
+
+.inventory-item .unit {
+  font-size: 0.75rem;
+  color: #888;
+  margin-left: 1px;
+}
+
+/* 2. 보상 선택 팝업 (Reward Choice) */
+.reward-choice-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(6px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.35s ease;
+}
+
+.reward-choice-modal {
+  background: white;
+  padding: 32px;
+  border-radius: 28px;
+  width: 320px;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  animation: slideUp 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.icon-bounce {
+  font-size: 3.5rem;
+  margin-bottom: 16px;
+  animation: bounce 2s infinite;
+}
+
+.reward-choice-modal h3 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+  color: #111;
+}
+
+.reward-choice-modal p {
+  font-size: 0.95rem;
+  color: #555;
+  line-height: 1.5;
+}
+
+.reward-choice-modal .sub {
+  font-size: 0.82rem;
+  color: #888;
+  margin-top: 4px;
+}
+
+.choice-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btn-now, .btn-later {
+  padding: 14px;
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-now {
+  background: var(--reward-accent);
+  color: white;
+}
+
+.btn-now:hover {
+  background: #ea580c;
+  transform: scale(1.02);
+}
+
+.btn-later {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.btn-later:hover {
+  background: #e5e7eb;
+}
+
+/* 3. 공통 모달 (Common Reward Modal) */
+.reward-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(10px);
+  z-index: 2500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.reward-modal-content {
+  background: white;
+  padding: 40px;
+  border-radius: 32px;
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+}
+
+.timer-display {
+  font-size: 4rem;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  margin: 20px 0;
+  color: var(--reward-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.btn-primary {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  background: var(--reward-accent);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+
+.btn-primary:disabled {
+  background: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* 마블 전용 */
+.reward-marble-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.btn-close-marble {
+  padding: 12px 24px;
+  background: rgba(255,255,255,0.15);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 99px;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+}
+
+/* 토스트 알림 */
+.reward-toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: #1f2937;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 99px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  z-index: 3000;
+  opacity: 0;
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.reward-toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* 4. 특수 효과 및 애니메이션 */
+.reward-center-rocket {
+  position: fixed;
+  z-index: 2000;
+  font-size: 2.5rem;
+  pointer-events: none;
+  filter: drop-shadow(0 0 15px rgba(255,100,0,0.8));
+}
+
+.roulette-modal {
+  max-width: 320px;
+}
+
+.roulette-item.active {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(251, 146, 60, 0.2);
+}
+
+.roulette-item.winner {
+  animation: winner-pulse 0.5s ease infinite alternate;
+  z-index: 10;
+}
+
+@keyframes winner-pulse {
+  from { transform: scale(1); border-color: #f97316; box-shadow: 0 0 0 rgba(249, 115, 22, 0); }
+  to { transform: scale(1.05); border-color: #fb923c; box-shadow: 0 0 15px rgba(249, 115, 22, 0.4); }
+}
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(40px) scale(0.95); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }

@@ -1,0 +1,150 @@
+/* ── 로켓 패널 ── */
+#rp-space-label { font-size: 1.3rem; }
+
+#rp-track {
+  position: relative; width: 64px; height: 380px;
+  border-radius: 14px;
+  background: linear-gradient(to top,
+    #3a5c1a 0%, #5a8a28 6%, #87ceeb 18%,
+    #4a90d9 42%, #1a3a8a 65%, #0d1540 80%, #030818 100%);
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+}
+
+.rp-star {
+  position: absolute; background: white; border-radius: 50%;
+  animation: twinkle 2s ease-in-out infinite;
+}
+@keyframes twinkle { 0%,100%{opacity:0.9} 50%{opacity:0.2} }
+
+.rp-cloud {
+  position: absolute; font-size: 1.1rem; opacity: 0.7;
+  left: 50%; transform: translateX(-50%);
+}
+
+#rp-rocket {
+  position: absolute; bottom: 4px; left: 50%;
+  transform: translateX(-50%); font-size: 2rem;
+  filter: drop-shadow(0 0 8px rgba(255,180,0,0.9));
+  transition: bottom 0.55s cubic-bezier(0.25,0.46,0.45,0.94);
+  z-index: 2;
+}
+
+#rp-flame {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  font-size: 1.4rem; opacity: 0;
+  transition: bottom 0.55s cubic-bezier(0.25,0.46,0.45,0.94);
+  z-index: 1;
+}
+#rp-flame.visible { opacity: 1; }
+
+#rp-ground-label { font-size: 1.3rem; }
+
+#streak-badge {
+  background: white; border-radius: 14px; padding: 5px 12px;
+  font-size: 0.95rem; font-weight: bold; color: #1565c0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15); white-space: nowrap;
+}
+
+/* ── 로켓 발사 애니메이션 ── */
+@keyframes pre-launch-shake {
+  0%,100%{transform:translateX(-50%) rotate(0deg)}
+  33%{transform:translateX(calc(-50% - 2px)) rotate(-3deg)}
+  66%{transform:translateX(calc(-50% + 2px)) rotate(3deg)}
+}
+@keyframes ignition-shake {
+  0%,100%{transform:translateX(-50%) rotate(0deg)}
+  25%{transform:translateX(calc(-50% - 4px)) rotate(-6deg)}
+  75%{transform:translateX(calc(-50% + 4px)) rotate(6deg)}
+}
+@keyframes blast-wobble {
+  0%,100%{transform:translateX(-50%) rotate(-2deg)}
+  50%{transform:translateX(-50%) rotate(2deg)}
+}
+@keyframes flame-flicker {
+  0%,100%{transform:translateX(-50%) scaleY(1) scaleX(1)}
+  50%{transform:translateX(-50%) scaleY(1.5) scaleX(0.7)}
+}
+@keyframes flame-ignite {
+  0%{transform:translateX(-50%) scale(1)}
+  100%{transform:translateX(-50%) scale(2.8)}
+}
+@keyframes screen-flash {
+  0%{opacity:0} 20%{opacity:0.75} 100%{opacity:0}
+}
+@keyframes star-warp {
+  from{transform:translateY(0) scaleY(1);opacity:1}
+  to{transform:translateY(500px) scaleY(3);opacity:0}
+}
+@keyframes exhaust-drift {
+  0%{transform:translateY(0) scale(1);opacity:1}
+  100%{transform:translateY(80px) scale(0.1);opacity:0}
+}
+@keyframes launchpad-shake {
+  0%,100%{transform:translateX(0) rotate(0deg)}
+  20%{transform:translateX(-4px) rotate(-1deg)}
+  40%{transform:translateX(4px) rotate(1deg)}
+  60%{transform:translateX(-3px) rotate(-0.5deg)}
+  80%{transform:translateX(2px) rotate(0.5deg)}
+}
+#rp-rocket.pre-launch { animation:pre-launch-shake 0.22s ease-in-out infinite; }
+#rp-rocket.igniting {
+  animation:ignition-shake 0.08s ease-in-out infinite;
+  filter:drop-shadow(0 0 18px rgba(255,80,0,1)) drop-shadow(0 0 8px rgba(255,255,0,0.9)) !important;
+}
+#rp-rocket.blasting {
+  animation:blast-wobble 0.12s ease-in-out infinite;
+  filter:drop-shadow(0 0 28px rgba(255,120,0,1)) drop-shadow(0 0 14px rgba(255,220,0,0.9)) !important;
+}
+#rp-flame.flickering { animation:flame-flicker 0.22s ease-in-out infinite; }
+#rp-flame.igniting   { opacity:1!important; animation:flame-ignite 0.6s ease forwards !important; }
+#rp-flame.blasting   { opacity:1!important; font-size:2.2rem; animation:flame-flicker 0.1s ease-in-out infinite !important; }
+#rp-track.warping .rp-star { animation:star-warp 0.4s linear forwards !important; }
+#rocket-panel.shaking { animation:launchpad-shake 0.1s ease-in-out infinite; }
+#streak-badge.pre-launch { animation:pulse-bar 0.4s ease-in-out infinite; background:#e3f2fd; color:#1565c0; }
+
+/* ── 추락 애니메이션 ── */
+@keyframes exploding-shake {
+  0%,100%{transform:translateX(-50%) rotate(0deg) scale(1)}
+  20%{transform:translateX(calc(-50% - 6px)) rotate(-10deg) scale(1.15)}
+  40%{transform:translateX(calc(-50% + 6px)) rotate(10deg) scale(1.2)}
+  60%{transform:translateX(calc(-50% - 4px)) rotate(-7deg) scale(1.1)}
+  80%{transform:translateX(calc(-50% + 4px)) rotate(7deg) scale(1.05)}
+}
+@keyframes crash-spin {
+  0%{transform:translateX(-50%) rotate(0deg)}
+  25%{transform:translateX(calc(-50% + 14px)) rotate(50deg)}
+  55%{transform:translateX(calc(-50% - 10px)) rotate(-100deg)}
+  80%{transform:translateX(calc(-50% + 6px)) rotate(-160deg)}
+  100%{transform:translateX(-50%) rotate(-200deg)}
+}
+@keyframes crash-bounce {
+  0%{transform:translateX(-50%) rotate(-200deg) scaleX(1.6) scaleY(0.6)}
+  35%{transform:translateX(-50%) rotate(-185deg) scaleX(0.85) scaleY(1.3)}
+  65%{transform:translateX(-50%) rotate(-190deg) scaleX(1.1) scaleY(0.9)}
+  100%{transform:translateX(-50%) rotate(0deg) scaleX(1) scaleY(1)}
+}
+@keyframes explosion-particle {
+  0%{opacity:1;transform:translate(0,0) scale(1.2)}
+  100%{opacity:0;transform:translate(var(--pdx),var(--pdy)) scale(0.1)}
+}
+@keyframes smoke-drift {
+  0%{transform:translateX(-50%) translateY(0) scale(1);opacity:0.9}
+  100%{transform:translateX(-50%) translateY(-50px) scale(1.8);opacity:0}
+}
+@keyframes impact-scatter {
+  0%{opacity:1;transform:translate(var(--sdx),0) scale(1)}
+  100%{opacity:0;transform:translate(var(--sdx),28px) scale(0.2)}
+}
+#rp-rocket.exploding {
+  animation:exploding-shake 0.09s ease-in-out infinite;
+  filter:drop-shadow(0 0 22px rgba(255,0,0,1)) drop-shadow(0 0 12px rgba(255,80,0,1)) !important;
+}
+#rp-rocket.crashing {
+  animation:crash-spin 1.05s ease-in forwards;
+  filter:drop-shadow(0 0 10px rgba(120,120,120,0.7)) !important;
+}
+#rp-rocket.crash-impact {
+  animation:crash-bounce 0.45s ease-out forwards;
+  filter:drop-shadow(0 0 6px rgba(200,100,0,0.8)) !important;
+}

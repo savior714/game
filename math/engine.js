@@ -8,11 +8,12 @@ const LAUNCH_STREAK      = 20;   // 연속 정답 → 로켓 발사
 const STATS_KEY          = 'mathGameStats';
 const MAX_WRONG_PATTERNS = 5;    // 기억할 최대 틀린 패턴 수
 const REINFORCE_PROB     = 0.45; // 틀린 패턴 재출제 확률
+const RECENT_LIMIT       = 10;    // 최근 출제 문제 기억 수
 
-const DIFF_LABELS = ['기초', '중급', '마스터', '초월', '신'];
-const DIFF_COLORS = ['#66bb6a', '#42a5f5', '#ffca28', '#ab47bc', '#ef5350'];
+const DIFF_LABELS = ['입문', '기초', '중급', '숙련', '마스터', '초월', '전설'];
+const DIFF_COLORS = ['#aed581', '#66bb6a', '#4fc3f7', '#29b6f6', '#ffca28', '#ab47bc', '#ef5350'];
 
-// 로켓이 이동할 수 있는 최대 bottom 픽셀 (트랙 높이 380 - 로켓 크기 ~40 - 여백)
+// 로켓이 이동할 수 있는 최대 bottom 픽셀
 const ROCKET_MAX_BOTTOM = 330;
 
 /* ═══════════════════════════════════
@@ -28,28 +29,33 @@ let currentOp     = '+';
 
 // 적응형 난이도
 let streak        = 0;
-let globalBoost   = 0;   // 로켓 발사 횟수 (전체 난이도 가산, 최대 2)
+let globalBoost   = 0;
 let launching     = false;
 let crashing      = false;
 
 // 그물망 시스템
-let netStreak     = 0;   // 연속 정답 카운터 (5개 목표)
-let hasNet        = false; // 그물망 보유 여부
-const NET_STREAK  = 5;   // 그물망 획득에 필요한 연속 정답 수
+let netStreak     = 0;
+let hasNet        = false;
+const NET_STREAK  = 5;
 
 // 강화학습: 틀린 패턴 기억
-let wrongPatterns = [];  // [{ op, level, a, b }, ...]
-let currentQData  = null;
+let wrongPatterns = [];
+let currentQData  = null; // { op, level, a, b, tag, isWeakness }
+let recentHistory = []; // 최근 5문제 정답 여부
+let recentQuestions = []; // 최근 10문제 (중복 방지용 키)
 
 /* ═══════════════════════════════════
    통계 (localStorage)
 ═══════════════════════════════════ */
 function emptyStats() {
-  return {
-    '+': { attempts: 0, correct: 0, totalTime: 0 },
-    '-': { attempts: 0, correct: 0, totalTime: 0 },
-    '×': { attempts: 0, correct: 0, totalTime: 0 },
-  };
+  const base = {};
+  ['+', '-', '×'].forEach(op => {
+    base[op] = { levels: {}, weaknesses: {} };
+    for (let i = 0; i <= 6; i++) {
+      base[op].levels[i] = { attempts: 0, correct: 0, totalTime: 0 };
+    }
+  });
+  return base;
 }
 
 let stats = loadStats();
@@ -60,9 +66,12 @@ function loadStats() {
     if (raw) {
       const parsed = JSON.parse(raw);
       const base = emptyStats();
-      for (const op of ['+', '-', '×']) {
-        if (parsed[op]) Object.assign(base[op], parsed[op]);
-      }
+      ['+', '-', '×'].forEach(op => {
+        if (parsed[op]) {
+          if (parsed[op].levels) Object.assign(base[op].levels, parsed[op].levels);
+          if (parsed[op].weaknesses) Object.assign(base[op].weaknesses, parsed[op].weaknesses);
+        }
+      });
       return base;
     }
   } catch(e) {}
@@ -83,35 +92,39 @@ function resetStats() {
    난이도 계산
 ═══════════════════════════════════ */
 function getBaseDiffLevel(op) {
-  const s = stats[op];
-  if (s.attempts < MIN_DATA) return 0;
-  const accuracy = s.correct / s.attempts;
-  const avgTime  = s.totalTime / s.attempts;
-  if (accuracy >= 0.90 && avgTime <= 3)  return 4;
-  if (accuracy >= 0.85 && avgTime <= 5)  return 3;
-  if (accuracy >= 0.75 && avgTime <= 7)  return 2;
-  if (accuracy >= 0.55 && avgTime <= 11) return 1;
-  return 0;
+  const opStats = stats[op];
+  let baseLevel = 0;
+  for (let i = 0; i < 6; i++) {
+    const lv     = opStats.levels[i];
+    const acc    = lv.attempts > 0 ? lv.correct / lv.attempts : 0;
+    if (lv.attempts >= MIN_DATA && acc >= 0.90) baseLevel = i + 1;
+    else break;
+  }
+  return baseLevel;
 }
 
 function getDifficultyLevel(op) {
-  return Math.min(4, getBaseDiffLevel(op) + globalBoost);
+  const base = getBaseDiffLevel(op) + globalBoost;
+  const wrongs = recentHistory.filter(r => r === false).length;
+  let penalty = 0;
+  if (wrongs >= 2) penalty = 1;
+  return Math.max(0, Math.min(6, base - penalty));
 }
 
 /* ═══════════════════════════════════
-   연산 선택 (약한 연산 가중치 ↑)
+   연산 선택
 ═══════════════════════════════════ */
 function pickOperation() {
-  const combined = stats['+'].attempts + stats['-'].attempts;
+  let addAtt = 0, subAtt = 0;
+  Object.values(stats['+'].levels).forEach(l => addAtt += l.attempts);
+  Object.values(stats['-'].levels).forEach(l => subAtt += l.attempts);
+  const combined = addAtt + subAtt;
   const w = { '+': 0.45, '-': 0.35, '×': combined >= 8 ? 0.20 : 0 };
-
   for (const op of ['+', '-', '×']) {
-    if (stats[op].attempts >= MIN_DATA) {
-      const acc = stats[op].correct / stats[op].attempts;
-      if (acc < 0.5) w[op] += 0.15;
-    }
+    let opAtt = 0, opCorr = 0;
+    Object.values(stats[op].levels).forEach(l => { opAtt += l.attempts; opCorr += l.correct; });
+    if (opAtt >= MIN_DATA && opCorr / opAtt < 0.5) w[op] += 0.15;
   }
-
   const total = Object.values(w).reduce((a, b) => a + b, 0);
   let r = Math.random() * total;
   for (const [op, wt] of Object.entries(w)) {
@@ -122,120 +135,128 @@ function pickOperation() {
 }
 
 /* ═══════════════════════════════════
-   문제 생성
+   문제 생성 및 동적 태깅
 ═══════════════════════════════════ */
 function generateByOpLevel(op, level) {
+  let a, b, result, tag;
   if (op === '+') {
-    const maxSums = [20, 35, 60, 100, 200];
-    const maxAs   = [10, 20, 40, 70, 150];
-    const maxBs   = [10, 15, 20, 40, 80];
-    const a = Math.floor(Math.random() * maxAs[level]) + 1;
-    const b = Math.floor(Math.random() * Math.min(maxSums[level] - a, maxBs[level])) + 1;
-    return { a, b, op: '+', result: a + b };
-
+    const maxSums = [10, 20, 40, 60, 100, 150, 200];
+    const maxAs   = [5, 10, 20, 35, 70, 100, 150];
+    const maxBs   = [5, 10, 15, 20, 40, 60, 80];
+    a = Math.floor(Math.random() * maxAs[level]) + 1;
+    b = Math.floor(Math.random() * Math.min(maxSums[level] - a, maxBs[level])) + 1;
+    result = a + b;
+    tag = (a % 10 + b % 10 >= 10) ? 'carry_over' : 'basic_add';
   } else if (op === '-') {
-    const minAs = [5, 10, 20, 40, 80];
-    const maxAs = [15, 30, 50, 100, 200];
-    const a = Math.floor(Math.random() * (maxAs[level] - minAs[level] + 1)) + minAs[level];
-    const b = Math.floor(Math.random() * (a - 1)) + 1;
-    return { a, b, op: '-', result: a - b };
-
+    const minAs = [3, 7, 15, 30, 60, 100, 150];
+    const maxAs = [8, 20, 40, 80, 120, 160, 200];
+    a = Math.floor(Math.random() * (maxAs[level] - minAs[level] + 1)) + minAs[level];
+    b = Math.floor(Math.random() * (a - 1)) + 1;
+    result = a - b;
+    tag = (a % 10 < b % 10) ? 'borrowing' : 'basic_sub';
   } else {
-    const baseSets = [
-      [2, 5],
-      [2, 3, 5],
-      [2, 3, 4, 5, 6, 7, 8, 9],
-      [11, 12, 13, 14, 15],
-      [15, 16, 17, 18, 19, 21, 23, 25]
-    ];
+    const baseSets = [[2,5,10], [2,3,5,10], [2,3,4,5,6,7,8,9], [11,12,13,14,15], [16,17,18,19], [21,23,25,30], [31,37,43,47]];
     const bases = baseSets[level];
-    const base  = bases[Math.floor(Math.random() * bases.length)];
+    a  = bases[Math.floor(Math.random() * bases.length)];
     const mult = level >= 3 ? Math.floor(Math.random() * 18) + 2 : Math.floor(Math.random() * 9) + 2;
-    return { a: base, b: mult, op: '×', result: base * mult };
+    b = mult;
+    result = a * b;
+    tag = level >= 3 ? 'mult_complex' : 'mult_table';
   }
-}
-
-/* ═══════════════════════════════════
-   강화학습: 틀린 패턴 기반 재출제
-═══════════════════════════════════ */
-function addWrongPattern(data) {
-  wrongPatterns.unshift(data);
-  if (wrongPatterns.length > MAX_WRONG_PATTERNS) wrongPatterns.pop();
-}
-
-function removeWrongPattern(op, a, b) {
-  const idx = wrongPatterns.findIndex(p => p.op === op && p.a === a && p.b === b);
-  if (idx !== -1) wrongPatterns.splice(idx, 1);
-}
-
-function generateSimilar({ op, level, a, b }) {
-  const rnd = (n, lo, hi) => Math.max(lo, Math.min(hi, n + Math.floor(Math.random() * 7) - 3));
-
-  if (op === '+') {
-    const maxSums = [20, 35, 60, 100, 200];
-    const maxAs   = [10, 20, 40, 70, 150];
-    const maxBs   = [10, 15, 20, 40, 80];
-    const newA = rnd(a, 1, maxAs[level]);
-    const newB = rnd(b, 1, Math.min(maxSums[level] - newA, maxBs[level]));
-    return { a: newA, b: newB, op: '+', result: newA + newB };
-
-  } else if (op === '-') {
-    const minAs = [5, 10, 20, 40, 80];
-    const maxAs = [15, 30, 50, 100, 200];
-    const newA  = rnd(a, minAs[level], maxAs[level]);
-    const newB  = rnd(b, 1, newA - 1);
-    return { a: newA, b: newB, op: '-', result: newA - newB };
-
-  } else {
-    const mult = level >= 3 ? Math.floor(Math.random() * 18) + 2 : Math.floor(Math.random() * 9) + 2;
-    return { a, b: mult, op: '×', result: a * mult };
-  }
+  return { a, b, op, result, tag };
 }
 
 function generateQuestion() {
-  if (wrongPatterns.length > 0 && Math.random() < REINFORCE_PROB) {
-    const pattern = wrongPatterns[Math.floor(Math.random() * wrongPatterns.length)];
-    return generateSimilar(pattern);
+  let q = null;
+  let tries = 0;
+
+  while (tries < 20) {
+    const candidate = _generateCandidate();
+    const key = [candidate.a, candidate.b].sort((a, b) => a - b).join(',') + candidate.op;
+    
+    // 만약 전체 가용 문제 수가 너무 적으면 (예: 10개 미만), RECENT_LIMIT을 유동적으로 조절
+    // 하지만 수학은 보통 조합이 많으므로 10개를 유지해도 무방함. 단, 아주 낮은 레벨은 예외.
+    if (!recentQuestions.includes(key)) {
+      q = candidate;
+      break;
+    }
+    tries++;
   }
-  const op    = pickOperation();
+  
+  // 20회 시도 후에도 못 찾으면 그냥 마지막 후보 사용
+  if (!q) q = _generateCandidate();
+  
+  return q;
+}
+
+function _generateCandidate() {
+  // 1. 약점 자가 치유 (30% 확률)
+  if (Math.random() < 0.3) {
+    let worstTag = null, minAcc = 2, tagOp = '+';
+    ['+', '-', '×'].forEach(op => {
+      for (const [tag, s] of Object.entries(stats[op].weaknesses)) {
+        const acc = s.attempts > 0 ? s.correct / s.attempts : 1;
+        if (s.attempts >= 2 && acc < 0.7 && acc < minAcc) {
+          minAcc = acc; worstTag = tag; tagOp = op;
+        }
+      }
+    });
+    if (worstTag) {
+      const level = getDifficultyLevel(tagOp);
+      let q = generateByOpLevel(tagOp, level);
+      let tries = 0;
+      while (q.tag !== worstTag && tries < 20) { q = generateByOpLevel(tagOp, level); tries++; }
+      return { ...q, isWeakness: true, level };
+    }
+  }
+
+  // 2. 기존 틀린 패턴
+  if (wrongPatterns.length > 0 && Math.random() < REINFORCE_PROB) {
+    const p = wrongPatterns[Math.floor(Math.random() * wrongPatterns.length)];
+    return { ...generateByOpLevel(p.op, p.level), level: p.level };
+  }
+
+  // 3. 일반 출제
+  const op = pickOperation();
   const level = getDifficultyLevel(op);
-  return generateByOpLevel(op, level);
+  return { ...generateByOpLevel(op, level), level };
 }
 
 /* ═══════════════════════════════════
-   보기 생성 (정답 근처 plausible 오답)
+   보기 생성 및 표시
 ═══════════════════════════════════ */
 function makeChoices(correct, op, level) {
-  const spread = op === '×' ? 18 + level * 10 : [8, 13, 20, 30, 50][level];
+  const spread = op === '×' ? 18 + level * 10 : [5, 8, 13, 20, 30, 40, 50][level];
   const set = new Set([correct]);
   let tries = 0;
-  while (set.size < 8 && tries < 300) {
+  while (set.size < 4 && tries < 300) {
     tries++;
     const v = correct + Math.floor(Math.random() * (spread * 2 + 1)) - spread;
     if (v !== correct && v >= 0) set.add(v);
   }
   let fb = 1;
-  while (set.size < 8) { if (fb !== correct) set.add(fb); fb++; }
+  while (set.size < 4) { if (fb !== correct) set.add(fb); fb++; }
   return [...set].sort(() => Math.random() - 0.5);
 }
 
-/* ═══════════════════════════════════
-   문제 표시
-═══════════════════════════════════ */
 function askQuestion() {
   answered  = false;
   const q   = generateQuestion();
   answer    = q.result;
   currentOp = q.op;
-  const level = getDifficultyLevel(q.op);
-  currentQData = { op: q.op, level, a: q.a, b: q.b };
+  currentQData = { op: q.op, level: q.level, a: q.a, b: q.b, tag: q.tag, isWeakness: q.isWeakness };
+
+  // 중복 방지 큐에 추가
+  const qKey = [q.a, q.b].sort((a, b) => a - b).join(',') + q.op;
+  recentQuestions.push(qKey);
+  if (recentQuestions.length > RECENT_LIMIT) recentQuestions.shift();
 
   document.getElementById('question').textContent = `${q.a}  ${q.op}  ${q.b}  =  ?`;
-  document.getElementById('feedback').textContent = '';
-  document.getElementById('feedback').className   = '';
+  document.getElementById('feedback').textContent = q.isWeakness ? '🔥 약점 연산 도전!' : '';
+  document.getElementById('feedback').className   = q.isWeakness ? 'weakness-highlight' : '';
   document.getElementById('next-btn').style.display = 'none';
 
-  const choices   = makeChoices(q.result, q.op, level);
+  const choices   = makeChoices(q.result, q.op, q.level);
   const container = document.getElementById('answer-buttons');
   container.innerHTML = '';
   choices.forEach(val => {
@@ -245,7 +266,6 @@ function askQuestion() {
     btn.onclick = () => checkAnswer(val, btn);
     container.appendChild(btn);
   });
-
   document.getElementById('q-count').textContent = currentQ + 1;
   startTimer();
 }
@@ -254,27 +274,48 @@ function askQuestion() {
    결과 기록
 ═══════════════════════════════════ */
 function recordResult(correct, elapsed) {
-  stats[currentOp].attempts++;
-  if (correct) stats[currentOp].correct++;
-  stats[currentOp].totalTime += elapsed;
+  const lvStats = stats[currentOp].levels[currentQData.level];
+  lvStats.attempts++;
+  if (correct) lvStats.correct++;
+  lvStats.totalTime += elapsed;
+
+  // 태그별 약점 통계
+  if (!stats[currentOp].weaknesses[currentQData.tag]) {
+    stats[currentOp].weaknesses[currentQData.tag] = { attempts: 0, correct: 0 };
+  }
+  const wStats = stats[currentOp].weaknesses[currentQData.tag];
+  wStats.attempts++;
+  if (correct) wStats.correct++;
+
+  if (correct && currentQData.isWeakness && wStats.attempts >= 3 && wStats.correct / wStats.attempts >= 0.8) {
+    showWeaknessClear();
+  }
+
   saveStats();
   updateStreak(correct);
 
-  // 그물망 스트릭 업데이트
   if (correct) {
     netStreak++;
     if (netStreak >= NET_STREAK && !hasNet) {
-      hasNet = true;
-      netStreak = 0;
-      showNetBanner();
+      hasNet = true; netStreak = 0; showNetBanner();
     }
   } else {
     netStreak = 0;
   }
 
-  if (!correct && currentQData) {
-    addWrongPattern(currentQData);
-  } else if (correct && currentQData) {
-    removeWrongPattern(currentQData.op, currentQData.a, currentQData.b);
+  if (!correct) {
+    wrongPatterns.unshift({ op: currentOp, level: currentQData.level, a: currentQData.a, b: currentQData.b });
+    if (wrongPatterns.length > MAX_WRONG_PATTERNS) wrongPatterns.pop();
+  } else {
+    const idx = wrongPatterns.findIndex(p => p.op === currentOp && p.a === currentQData.a && p.b === currentQData.b);
+    if (idx !== -1) wrongPatterns.splice(idx, 1);
   }
+  recentHistory.push(correct);
+  if (recentHistory.length > 5) recentHistory.shift();
+}
+
+function showWeaknessClear() {
+  const fb = document.getElementById('feedback');
+  fb.textContent = '✨ 약점 연산 정복! 정말 똑똑해요! ✨';
+  fb.className = 'weakness-clear-message';
 }

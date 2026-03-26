@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Reward UI Design Options</title>
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f1f5f9;
+        }
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0; padding: 40px;
+            display: flex; flex-direction: column; align-items: center; gap: 60px;
+        }
+        .container {
+            width: 100%; max-width: 800px;
+            padding: 40px; border-radius: 20px;
+            background: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+        h2 { text-align: center; margin-top: 0; color: #334155; }
+        .preview-box {
+            display: flex; flex-direction: column; gap: 20px;
+            padding: 20px; border: 1px dashed #cbd5e1; border-radius: 12px;
+            background: #f8fafc; overflow: hidden;
+        }
+
+        /* ── Option A: Modern (현재 스타일) ── */
+        .style-a-wrapper {
+            background-image: linear-gradient(135deg, #e0f2fe 0%, #ede9fe 100%);
+            padding: 60px 20px; border-radius: 12px; position: relative;
+        }
+        .inv-a {
+            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 15px; padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 40px; box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+        }
+        .item-a { font-size: 0.9rem; font-weight: 600; color: #1e293b; display: flex; align-items: center; gap: 4px; }
+        .item-a span.val { color: #2563eb; }
+
+        /* ── Option B: Analog (그림책/종이 스타일) ── */
+        .style-b-wrapper {
+            background-color: #fff9f0;
+            padding: 60px 20px; border-radius: 12px; position: relative;
+            box-shadow: inset 0 0 40px rgba(139, 69, 19, 0.05);
+        }
+        .style-b-wrapper::after {
+            content: ''; position: absolute; inset: 0; pointer-events: none;
+            background: url('https://www.transparenttextures.com/patterns/handmade-paper.png');
+            opacity: 0.4; mix-blend-mode: multiply;
+        }
+        .inv-b {
+            position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 20px; padding: 10px 24px;
+            background: #fff; border: 2px solid #5d4037;
+            border-radius: 4px 15px 4px 15px;
+            box-shadow: 5px 5px 0px #d7ccc8;
+        }
+        .item-b { 
+            font-size: 1rem; font-weight: 700; color: #5d4037; 
+            display: flex; align-items: center; gap: 6px; 
+            font-family: 'Comic Sans MS', cursive, 'Pretendard';
+        }
+        .item-b .icon { font-size: 1.3rem; filter: saturate(0.8) sepia(0.2); }
+        .item-b span.val { border-bottom: 2px dashed #bcaaa4; }
+
+        .btn-select {
+            display: block; width: 100%; margin-top: 20px; padding: 12px;
+            border: none; border-radius: 8px; cursor: pointer;
+            font-weight: bold; transition: opacity 0.2s;
+        }
+        .btn-select:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>디자인 시안 A: Modern (현재)</h2>
+        <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 20px;">글래스모피즘(Glassmorphism)과 미세한 그라데이션을 사용한 현대적이고 세련된 스타일입니다.</p>
+        <div class="style-a-wrapper">
+            <div class="inv-a">
+                <div class="item-a">📺 <span class="val">45</span>분</div>
+                <div class="item-a">🍪 <span class="val">2</span>개</div>
+                <div class="item-a">🎮 <span class="val">1</span>회</div>
+            </div>
+            <div style="text-align: center; color: #94a3b8; margin-top: 40px;">학습 페이지 미리보기</div>
+        </div>
+        <button class="btn-select" style="background: #3b82f6; color: #fff;" onclick="RewardSystem.setTheme('modern')">A 스타일 적용하고 홈으로</button>
+    </div>
+
+    <div class="container">
+        <h2>디자인 시안 B: Analog (종이 질감)</h2>
+        <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 20px;">종이 질감, 거친 외곽선, 따뜻한 색감을 사용하여 그림책 같은 편안하고 아날로그적인 스타일입니다.</p>
+        <div class="style-b-wrapper">
+            <div class="inv-b">
+                <div class="item-b"><span class="icon">📺</span> <span class="val">45</span>분</div>
+                <div class="item-b"><span class="icon">🍪</span> <span class="val">2</span>개</div>
+                <div class="item-b"><span class="icon">🎮</span> <span class="val">1</span>회</div>
+            </div>
+            <div style="text-align: center; color: #a1887f; margin-top: 40px; font-style: italic;">그림책 학습 페이지 미리보기</div>
+        </div>
+        <button class="btn-select" style="background: #8d6e63; color: #fff;" onclick="RewardSystem.setTheme('analog')">B 스타일 적용하고 홈으로</button>
+    </div>
+
+    <p style="color: #94a3b8; font-size: 0.8rem;">* 스타일 선택 시 모든 페이지에 해당 테마가 적용되며 홈으로 이동합니다.</p>
+
+    <script src="reward.js"></script>
+    <script>
+        // 프리뷰 페이지에서는 상단 바 중복 방지
+        const bar = document.getElementById('reward-inventory');
+        if (bar) bar.style.display = 'none';
+
+        // 테마 변경 시 홈으로 이동하도록 오버라이드
+        const originalSetTheme = RewardSystem.setTheme;
+        RewardSystem.setTheme = (theme) => {
+            const state = RewardSystem.getState();
+            state.theme = theme;
+            localStorage.setItem('study_rewards', JSON.stringify(state));
+            window.location.href = '../index.html';
+        };
+    </script>
+</body>
+</html>

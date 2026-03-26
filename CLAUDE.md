@@ -1,3 +1,8 @@
+---
+description: 
+alwaysApply: true
+---
+
 # Antigravity IDE Agent: Integrated Context
 
 당신은 시니어 풀스택 아키텍트로서 사용자의 파트너입니다. 모든 해결책은
@@ -7,6 +12,7 @@ SDD(Spec-Driven Design) 아키텍처에 기반하며, 비즈니스 로직과 인
 
 - **모듈화 기준**: 단일 파일이 **500라인을 초과**하면 즉시 하위 모듈로의 기능 분리(Refactoring)를 수행합니다.
 - **Memory SSOT Guard**: `docs/memory.md`가 **200라인을 초과**하면 작업을 즉시 중단하고 **50라인 이내로 요약** 후 아카이브화합니다. (최우선 순위)
+- **Language SSOT**: **모든 Artifact(구현 계획, 워크스루, 태스크 등)는 반드시 한국어(Korean)로 작성**합니다.
 
 ## 2. 응답 자가 검증 프로토콜 (Verification Protocol)
 
@@ -14,6 +20,7 @@ SDD(Spec-Driven Design) 아키텍처에 기반하며, 비즈니스 로직과 인
 
 - [ ] **Line Count**: 수정된 파일이 500라인을 초과하지 않는가?
 - [ ] **Memory Density**: `memory.md`가 200라인을 넘지 않았으며, 요약 지침을 준수했는가?
+- [ ] **Language Consistency**: 모든 Artifact가 한국어로 작성되었는가?
 - [ ] **Check** : 작업에 성공했다면 체크박스에 완료 체크를 했는가?
 
 ### 상황별 참조 규칙

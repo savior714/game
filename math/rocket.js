@@ -123,45 +123,24 @@ function badgeReset() {
 }
 
 function showBoostBanner() {
-  const boostNames = ['', '\ub808\ubca8 1', '\ub808\ubca8 2', '\ucd5c\uace0 \ub808\ubca8'];
+  const boostNames = ['', '레벨 1', '레벨 2', '최고 레벨'];
   const banner = document.createElement('div');
   banner.className = 'boost-banner';
   banner.innerHTML = `
-    \uD83D\uDE80 \uc6b0\uc8fc \ub3cc\ud30c!
-    <div class="sub">\uc804\uccb4 \ub09c\uc774\ub3c4 ${boostNames[globalBoost]} \uc0c1\uc2b9!</div>
+    🚀 우주 돌파!
+    <div class="sub">전체 난이도 ${boostNames[globalBoost]} 상승!</div>
   `;
   document.body.appendChild(banner);
   setTimeout(() => banner.remove(), 3000);
   spawnConfetti();
   spawnConfetti();
-  document.getElementById('marble-btn').style.display = 'inline-block';
-  setTimeout(() => {
-    if (!document.getElementById('marble-overlay')) openMarbleReward();
-  }, 800);
-}
 
-/* ═══════════════════════════════════
-   마블 머지 보상 게임 (iframe 오버레이)
-═══════════════════════════════════ */
-function openMarbleReward() {
-  const overlay = document.createElement('div');
-  overlay.id = 'marble-overlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);' +
-    'z-index:800;display:flex;align-items:center;justify-content:center;';
-  const iframe = document.createElement('iframe');
-  iframe.src = '../marble/';
-  iframe.style.cssText = 'border:none;border-radius:20px;' +
-    'width:360px;height:560px;max-width:96vw;max-height:95vh;';
-  overlay.appendChild(iframe);
-  function _closeMarble() {
-    document.getElementById('marble-overlay')?.remove();
-    document.getElementById('marble-btn').style.display = 'none';
-  }
-  overlay.addEventListener('click', (e) => { if (e.target === overlay) _closeMarble(); });
-  document.body.appendChild(overlay);
-  window.addEventListener('message', (e) => {
-    if (e.data === 'closeMarble') _closeMarble();
-  }, { once: true });
+  // 전역 보상 시스템의 룰렛 연출 호출
+  setTimeout(() => {
+    if (typeof RewardSystem !== 'undefined') {
+      RewardSystem.playEntranceAndOpenRoulette('rp-rocket');
+    }
+  }, 250);
 }
 
 /* ═══════════════════════════════════

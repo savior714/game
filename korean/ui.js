@@ -147,11 +147,18 @@ function renderStatsTable() {
   tbody.innerHTML = '';
 
   for (const cat of ['spelling', 'antonym', 'honorific']) {
-    const s       = stats[cat];
-    const acc     = s.attempts > 0 ? Math.round(s.correct / s.attempts * 100) + '%' : '-';
-    const avgT    = s.attempts > 0 ? (s.totalTime / s.attempts).toFixed(1) + '초' : '-';
-    const hasData = s.attempts >= MIN_DATA;
-    const level   = hasData ? getBaseDiffLevel(cat) : -1;
+    const s = stats[cat];
+    let totalAttempts = 0, totalCorrect = 0, totalTime = 0;
+    Object.values(s.levels).forEach(lv => {
+      totalAttempts += lv.attempts;
+      totalCorrect  += lv.correct;
+      totalTime     += lv.totalTime;
+    });
+
+    const acc     = totalAttempts > 0 ? Math.round(totalCorrect / totalAttempts * 100) + '%' : '-';
+    const avgT    = totalAttempts > 0 ? (totalTime / totalAttempts).toFixed(1) + '초' : '-';
+    const level   = getBaseDiffLevel(cat);
+    const hasData = totalAttempts >= MIN_DATA;
     const badge   = hasData
       ? `<span class="diff-badge" style="background:${DIFF_COLORS[level]}">${DIFF_LABELS[level]}</span>`
       : `<span class="diff-badge" style="background:#ccc">데이터 부족</span>`;
@@ -159,7 +166,7 @@ function renderStatsTable() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${CAT_LABELS[cat]}</td>
-      <td>${s.attempts}</td>
+      <td>${totalAttempts}</td>
       <td>${acc}</td>
       <td>${avgT}</td>
       <td>${badge}</td>

@@ -5,6 +5,11 @@
     - 6-file modular architecture (index/base/rocket/engine/rocket/ui).
     - 3 categories (spelling, antonym, honorific) with Lv 0-2 difficulty.
     - Integrated Rocket-Streak (20-streak launch) and Marble-Reward systems.
+- **Game Difficulty Expansion (2026-03-26)**:
+    - Expanded max difficulty from Master (Lv 2) to Transcendence (초월, Lv 3) and Divine (신, Lv 4) across `math`, `korean`, `english`.
+    - `math`: Increased number ranges and multiplication factors up to 19x.
+    - `korean`: Added strict spacing, typos, exact honorific exceptions, and abstract antonyms for Lv 3-4.
+    - `english`: Provided longer terminology (e.g., rhinoceros, esophagus) and increased spelling problem ratios.
 - Completed Marble Game improvements.
 - **Statistics Labeling Redesign (2026-03-26)**:
     - Renamed 'Difficulty' (난이도) to 'Proficiency' (숙련도) in the stats table.

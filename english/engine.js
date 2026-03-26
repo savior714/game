@@ -10,6 +10,8 @@ const WORDS = {
     ['giraffe','기린','🦒',2], ['dolphin','돌고래','🐬',2], ['penguin','펭귄','🐧',2],
     ['elephant','코끼리','🐘',2], ['kangaroo','캥거루','🦘',2],
     ['butterfly','나비','🦋',2], ['crocodile','악어','🐊',2],
+    ['rhinoceros', '코뿔소', '🦏', 3], ['hippopotamus', '하마', '🦛', 3], ['chameleon', '카멜레온', '🦎', 3],
+    ['orangutan', '오랑우탄', '🦧', 4], ['platypus', '오리너구리', '🦆', 4],
   ]},
   fruits:   { label:'과일',   icon:'🍎', words:[
     ['apple','사과','🍎',1], ['grape','포도','🍇',1], ['lemon','레몬','🍋',1],
@@ -17,30 +19,40 @@ const WORDS = {
     ['cherry','체리','🍒',2], ['orange','오렌지','🍊',2], ['banana','바나나','🍌',2],
     ['papaya','파파야','🍑',2], ['pineapple','파인애플','🍍',2],
     ['strawberry','딸기','🍓',2], ['watermelon','수박','🍉',2],
+    ['pomegranate', '석류', '🍎', 3], ['cranberry', '크랜베리', '🍒', 3],
+    ['persimmon', '감', '🍅', 4], ['mangosteen', '망고스틴', '🥭', 4],
   ]},
   colors:   { label:'색깔',   icon:'🎨', words:[
     ['green','초록색','🟢',1], ['white','흰색','⬜',1], ['black','검정색','⬛',1],
     ['brown','갈색','🟫',1], ['orange','주황색','🟠',1],
     ['purple','보라색','🟣',2], ['yellow','노란색','🟡',2], ['silver','은색','🪙',2],
     ['indigo','남색','💙',2], ['rainbow','무지개색','🌈',2],
+    ['turquoise', '청록색', '🩵', 3], ['magenta', '자홍색', '🩷', 3],
+    ['chartreuse', '연두색', '🟩', 4], ['vermilion', '주홍색', '🟥', 4],
   ]},
   numbers:  { label:'숫자',   icon:'🔢', words:[
     ['zero','영','0️⃣',1], ['four','사','4️⃣',1], ['five','오','5️⃣',1],
     ['nine','구','9️⃣',1], ['three','삼','3️⃣',1], ['seven','칠','7️⃣',1], ['eight','팔','8️⃣',1],
     ['eleven','십일','🔢',2], ['twelve','십이','🔢',2], ['twenty','이십','🔢',2],
     ['thirty','삼십','🔢',2], ['hundred','백','💯',2],
+    ['thousand', '천', '🔢', 3], ['million', '백만', '🔢', 3],
+    ['billion', '십억', '🔢', 4], ['trillion', '조', '🔢', 4],
   ]},
   body:     { label:'신체',   icon:'👤', words:[
     ['mouth','입','👄',1], ['cheek','뺨','😊',1], ['chest','가슴','🫀',1],
     ['elbow','팔꿈치','💪',1], ['tooth','이','🦷',1], ['knee','무릎','🦵',1],
     ['finger','손가락','🫵',2], ['stomach','위','🫀',2], ['shoulder','어깨','💆',2],
     ['forehead','이마','🧠',2], ['eyebrow','눈썹','🤨',2],
+    ['skeleton', '골격', '🦴', 3], ['intestine', '장', '🫀', 3],
+    ['esophagus', '식도', '🫀', 4], ['diaphragm', '횡격막', '🫀', 4],
   ]},
   space:    { label:'우주',   icon:'🌌', words:[
     ['Mars','화성','🔴',1], ['Earth','지구','🌍',1], ['Venus','금성','💫',1],
     ['comet','혜성','☄️',1], ['Pluto','명왕성','🔵',1],
     ['Saturn','토성','🪐',2], ['Jupiter','목성','🌕',2], ['Neptune','해왕성','🔵',2],
     ['Mercury','수성','⭐',2], ['asteroid','소행성','🪨',2],
+    ['galaxy', '은하', '🌌', 3], ['universe', '우주', '🌌', 3],
+    ['constellation', '별자리', '✨', 4], ['atmosphere', '대기', '☁️', 4],
   ]},
   jobs:     { label:'직업',   icon:'👷', words:[
     ['actor','배우','🎭',1], ['baker','제빵사','🥖',1], ['pilot','조종사','✈️',1],
@@ -48,24 +60,32 @@ const WORDS = {
     ['doctor','의사','👨‍⚕️',2], ['farmer','농부','👨‍🌾',2], ['dancer','무용수','💃',2],
     ['singer','가수','🎤',2], ['artist','예술가','🎨',2],
     ['teacher','선생님','👨‍🏫',2], ['soldier','군인','🪖',2],
+    ['astronaut', '우주비행사', '👨‍🚀', 3], ['scientist', '과학자', '👨‍🔬', 3],
+    ['veterinarian', '수의사', '👨‍⚕️', 4], ['psychiatrist', '정신과 의사', '👨‍⚕️', 4],
   ]},
   transport:{ label:'교통',   icon:'🚗', words:[
     ['train','기차','🚂',1], ['plane','비행기','✈️',1], ['truck','트럭','🚛',1],
     ['yacht','요트','⛵',1], ['ferry','여객선','⛴️',1],
     ['rocket','로켓','🚀',2], ['subway','지하철','🚇',2], ['bicycle','자전거','🚲',2],
     ['helicopter','헬리콥터','🚁',2], ['motorcycle','오토바이','🏍️',2],
+    ['submarine', '잠수함', '⛴️', 3], ['ambulance', '구급차', '🚑', 3],
+    ['hovercraft', '호버크라프트', '🛥️', 4], ['bulldozer', '불도저', '🚜', 4],
   ]},
   places:   { label:'장소',   icon:'🏠', words:[
     ['store','가게','🏪',1], ['hotel','호텔','🏨',1], ['beach','해변','🏖️',1],
     ['tower','탑','🗼',1], ['school','학교','🏫',1], ['church','교회','⛪',1],
     ['airport','공항','✈️',2], ['stadium','경기장','🏟️',2], ['museum','박물관','🏛️',2],
     ['hospital','병원','🏥',2], ['library','도서관','📚',2],
+    ['restaurant', '식당', '🍽️', 3], ['university', '대학교', '🎓', 3],
+    ['observatory', '천문대', '🔭', 4], ['laboratory', '연구실', '🔬', 4],
   ]},
   nature:   { label:'자연',   icon:'🌿', words:[
     ['cloud','구름','☁️',1], ['storm','폭풍','⛈️',1], ['river','강','🏞️',1],
     ['grass','풀','🌱',1], ['flame','불꽃','🔥',1], ['stone','돌','🪨',1],
     ['thunder','천둥','⛈️',2], ['rainbow','무지개','🌈',2], ['volcano','화산','🌋',2],
     ['mountain','산','🏔️',2], ['hurricane','허리케인','🌀',2],
+    ['avalanche', '눈사태', '🌨️', 3], ['waterfall', '폭포', '🌊', 3],
+    ['earthquake', '지진', '🌋', 4], ['stalactite', '종유석', '🪨', 4],
   ]},
 };
 
@@ -86,8 +106,8 @@ const STATS_KEY          = 'englishGameStats';
 const MAX_WRONG_PATTERNS = 5;
 const REINFORCE_PROB     = 0.45;
 const ROCKET_MAX_BOTTOM  = 330;
-const DIFF_LABELS        = ['기초', '중급', '마스터'];
-const DIFF_COLORS        = ['#66bb6a', '#42a5f5', '#ffca28'];
+const DIFF_LABELS        = ['기초', '중급', '마스터', '초월', '신'];
+const DIFF_COLORS        = ['#66bb6a', '#42a5f5', '#ffca28', '#ab47bc', '#ef5350'];
 
 /* ═══════════════════════════════════
    게임 상태
@@ -143,13 +163,14 @@ function getBaseDiffLevel(cat) {
   if (s.attempts < MIN_DATA) return 0;
   const accuracy = s.correct / s.attempts;
   const avgTime  = s.totalTime / s.attempts;
+  if (accuracy >= 0.90 && avgTime <= 4)  return 4;
+  if (accuracy >= 0.85 && avgTime <= 6)  return 3;
   if (accuracy >= 0.65 && avgTime <= 9)  return 2;
-  if (accuracy >= 0.45 && avgTime <= 13) return 1;
   return 1;
 }
 
 function getDifficultyLevel(cat) {
-  return Math.min(2, getBaseDiffLevel(cat) + globalBoost);
+  return Math.min(4, getBaseDiffLevel(cat) + globalBoost);
 }
 
 /* ═══════════════════════════════════
@@ -182,7 +203,7 @@ function pickWord(cat, level) {
    문제 유형 선택
 ═══════════════════════════════════ */
 function pickQuestionType(level) {
-  const weights = {1: [0.60, 0.40], 2: [0.45, 0.55]}[level] || [0.55, 0.45];
+  const weights = {1: [0.60, 0.40], 2: [0.45, 0.55], 3: [0.25, 0.75], 4: [0.10, 0.90]}[level] || [0.55, 0.45];
   const types   = ['kor2word', 'spelling'];
   let r = Math.random();
   for (let i = 0; i < types.length; i++) { r -= weights[i]; if (r <= 0) return types[i]; }

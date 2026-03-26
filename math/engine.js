@@ -9,8 +9,8 @@ const STATS_KEY          = 'mathGameStats';
 const MAX_WRONG_PATTERNS = 5;    // 기억할 최대 틀린 패턴 수
 const REINFORCE_PROB     = 0.45; // 틀린 패턴 재출제 확률
 
-const DIFF_LABELS = ['기초', '중급', '마스터'];
-const DIFF_COLORS = ['#66bb6a', '#42a5f5', '#ffca28'];
+const DIFF_LABELS = ['기초', '중급', '마스터', '초월', '신'];
+const DIFF_COLORS = ['#66bb6a', '#42a5f5', '#ffca28', '#ab47bc', '#ef5350'];
 
 // 로켓이 이동할 수 있는 최대 bottom 픽셀 (트랙 높이 380 - 로켓 크기 ~40 - 여백)
 const ROCKET_MAX_BOTTOM = 330;
@@ -87,13 +87,15 @@ function getBaseDiffLevel(op) {
   if (s.attempts < MIN_DATA) return 0;
   const accuracy = s.correct / s.attempts;
   const avgTime  = s.totalTime / s.attempts;
+  if (accuracy >= 0.90 && avgTime <= 3)  return 4;
+  if (accuracy >= 0.85 && avgTime <= 5)  return 3;
   if (accuracy >= 0.75 && avgTime <= 7)  return 2;
   if (accuracy >= 0.55 && avgTime <= 11) return 1;
   return 0;
 }
 
 function getDifficultyLevel(op) {
-  return Math.min(2, getBaseDiffLevel(op) + globalBoost);
+  return Math.min(4, getBaseDiffLevel(op) + globalBoost);
 }
 
 /* ═══════════════════════════════════
@@ -124,16 +126,16 @@ function pickOperation() {
 ═══════════════════════════════════ */
 function generateByOpLevel(op, level) {
   if (op === '+') {
-    const maxSums = [20, 35, 60];
-    const maxAs   = [10, 20, 40];
-    const maxBs   = [10, 15, 20];
+    const maxSums = [20, 35, 60, 100, 200];
+    const maxAs   = [10, 20, 40, 70, 150];
+    const maxBs   = [10, 15, 20, 40, 80];
     const a = Math.floor(Math.random() * maxAs[level]) + 1;
     const b = Math.floor(Math.random() * Math.min(maxSums[level] - a, maxBs[level])) + 1;
     return { a, b, op: '+', result: a + b };
 
   } else if (op === '-') {
-    const minAs = [5, 10, 20];
-    const maxAs = [15, 30, 50];
+    const minAs = [5, 10, 20, 40, 80];
+    const maxAs = [15, 30, 50, 100, 200];
     const a = Math.floor(Math.random() * (maxAs[level] - minAs[level] + 1)) + minAs[level];
     const b = Math.floor(Math.random() * (a - 1)) + 1;
     return { a, b, op: '-', result: a - b };
@@ -143,10 +145,12 @@ function generateByOpLevel(op, level) {
       [2, 5],
       [2, 3, 5],
       [2, 3, 4, 5, 6, 7, 8, 9],
+      [11, 12, 13, 14, 15],
+      [15, 16, 17, 18, 19, 21, 23, 25]
     ];
     const bases = baseSets[level];
     const base  = bases[Math.floor(Math.random() * bases.length)];
-    const mult  = Math.floor(Math.random() * 9) + 2;
+    const mult = level >= 3 ? Math.floor(Math.random() * 18) + 2 : Math.floor(Math.random() * 9) + 2;
     return { a: base, b: mult, op: '×', result: base * mult };
   }
 }
@@ -168,22 +172,22 @@ function generateSimilar({ op, level, a, b }) {
   const rnd = (n, lo, hi) => Math.max(lo, Math.min(hi, n + Math.floor(Math.random() * 7) - 3));
 
   if (op === '+') {
-    const maxSums = [20, 35, 60];
-    const maxAs   = [10, 20, 40];
-    const maxBs   = [10, 15, 20];
+    const maxSums = [20, 35, 60, 100, 200];
+    const maxAs   = [10, 20, 40, 70, 150];
+    const maxBs   = [10, 15, 20, 40, 80];
     const newA = rnd(a, 1, maxAs[level]);
     const newB = rnd(b, 1, Math.min(maxSums[level] - newA, maxBs[level]));
     return { a: newA, b: newB, op: '+', result: newA + newB };
 
   } else if (op === '-') {
-    const minAs = [5, 10, 20];
-    const maxAs = [15, 30, 50];
+    const minAs = [5, 10, 20, 40, 80];
+    const maxAs = [15, 30, 50, 100, 200];
     const newA  = rnd(a, minAs[level], maxAs[level]);
     const newB  = rnd(b, 1, newA - 1);
     return { a: newA, b: newB, op: '-', result: newA - newB };
 
   } else {
-    const mult = Math.floor(Math.random() * 9) + 2;
+    const mult = level >= 3 ? Math.floor(Math.random() * 18) + 2 : Math.floor(Math.random() * 9) + 2;
     return { a, b: mult, op: '×', result: a * mult };
   }
 }
@@ -202,7 +206,7 @@ function generateQuestion() {
    보기 생성 (정답 근처 plausible 오답)
 ═══════════════════════════════════ */
 function makeChoices(correct, op, level) {
-  const spread = op === '×' ? 18 : [8, 13, 20][level];
+  const spread = op === '×' ? 18 + level * 10 : [8, 13, 20, 30, 50][level];
   const set = new Set([correct]);
   let tries = 0;
   while (set.size < 8 && tries < 300) {

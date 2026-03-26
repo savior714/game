@@ -11,7 +11,7 @@
 |------|------|------|------|
 | `math/` | 수학 (덧셈·뺄셈·곱셈) | ✅ 완성 | [specs/math.md](specs/math.md) |
 | `english/` | 영어 (단어·문장) | ✅ 완성 | [specs/english.md](specs/english.md) |
-| `korean/` | 국어 (받침·맞춤법·어휘) | 🔲 계획 중 | [specs/korean.md](specs/korean.md) |
+| `korean/` | 국어 (받침·맞춤법·어휘) | ✅ 완성 | [specs/korean.md](specs/korean.md) |
 | `science/` | 과학 (분류·개념) | 🔲 계획 중 | [specs/science.md](specs/science.md) |
 
 ---
@@ -23,7 +23,7 @@
 | [specs/platform.md](specs/platform.md) | 공통 아키텍처, 공통 시스템, 공통 UI 컴포넌트 |
 | [specs/math.md](specs/math.md) | 수학 게임 — 개요, 상세 로직, 상수, 함수 목록 |
 | [specs/english.md](specs/english.md) | 영어 게임 — 문제 유형, 단어 DB, 보기 생성, 강화학습 |
-| [specs/korean.md](specs/korean.md) | 국어 게임 — 문제 유형 (안), 통계 스키마 (계획) |
+| [specs/korean.md](specs/korean.md) | 국어 게임 — 문제 유형 및 카테고리, 통계 스키마 |
 | [specs/science.md](specs/science.md) | 과학 게임 — 문제 유형 (안), 통계 스키마 (계획) |
 
 ---

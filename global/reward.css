@@ -74,6 +74,15 @@
   margin-left: 1px;
 }
 
+.gem-item.has-reward {
+  border-color: rgba(139, 92, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+}
+
+.gem-item .val {
+  color: #7c3aed;
+}
+
 /* 2. 보상 선택 팝업 (Reward Choice) */
 .reward-choice-overlay {
   position: fixed;
@@ -279,6 +288,22 @@
 .roulette-item.winner {
   animation: winner-pulse 0.5s ease infinite alternate;
   z-index: 10;
+}
+
+/* Shop Grid */
+.shop-modal {
+  max-width: 440px;
+}
+
+.shop-card:hover {
+  transform: translateY(-3px);
+  border-color: #8b5cf6 !important;
+  background-color: #f5f3ff;
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.1);
+}
+
+.shop-card:active {
+  transform: scale(0.98);
 }
 
 @keyframes winner-pulse {

@@ -142,8 +142,11 @@
   `;
       document.body.appendChild(banner);
       setTimeout(() => banner.remove(), 3000);
-      // Confetti는 reward.js 등에 있을 수 있으나 여기서는 명시적으로 호출 생략 혹은 전역 확인
-      // 기존 코드에 spawnConfetti 호출이 있었으나 정의가 안 보이면 무시하거나 reward에 위임
+
+      // 보석 획득 연출 호출 (RewardSystem.js 필요)
+      if (typeof RewardSystem !== "undefined" && typeof RewardSystem.playEntranceAndAddGem === "function") {
+        RewardSystem.playEntranceAndAddGem("rp-rocket");
+      }
     }
 
     /* ═══════════════════════════════════
@@ -290,7 +293,7 @@
     function showNetActivatedBanner() {
       const banner = document.createElement("div");
       banner.className = "net-banner net-activated";
-      banner.innerHTML = "🛍️ 그물망 발동!<div class=\"sub\">추락을 막았어요! 다시 5연속으로 획득하세요</div>";
+      banner.innerHTML = "🛍️ 그물망 발동!<div class=\"sub\">추락을 막았어요! 다시 5연속으로 정답을 맞혀 획득하세요</div>";
       document.body.appendChild(banner);
       setTimeout(() => banner.remove(), 3000);
     }

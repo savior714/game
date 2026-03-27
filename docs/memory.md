@@ -159,4 +159,11 @@
   - **Snow vs Eye**: '눈' 동음이의어로 인한 인지적 혼란을 방지하기 위해 '하늘에서 내리는 눈'(Earth)과 '사물을 보는 눈'(Biology)으로 문항 구체화 및 카테고리 분리.
   - **SDD 정렬**: `CRITICAL_LOGIC.md` 제13조에 과학 개념 중의성 차단 규칙 명문화.
   - **검증**: `verify_all.js` 및 `verify_science_engine.js` 통과(100% 정합성).
-
+- **그물망 발동 문구 개선 (2026-03-27)**:
+  - 그물망 발동 시 안내 문구를 "다시 5연속으로 정답을 맞혀 획득하세요"로 최종 확정하여 자연스러운 흐름을 확보함.
+  - **영어 단어 데이터셋 개편 (2026-03-27)**:
+    - **피드백 반영**: `chartreuse`, `pomegranate`(Lv 4) 등 지나치게 생소한 단어를 일상 빈도가 높은 단어로 교체하거나 난이도를 재배치.
+    - **공룡 테마 강화**: `dinosaur`, `Tyrannosaurus`(Lv 6) 등 아이들이 선호하는 공룡 키워드 추가.
+    - **신체 부위 정제**: `esophagus`는 유지하되, `capillary` 등을 `skeleton`, `backbone` 등 인지도 높은 단어로 교체.
+    - **데이터 정합성**: `verify_english_engine.js`를 통해 중복(shoulder, hurricane 등) 제거 및 176개 단어 무결성 검증 완료.
+    - **Spec 동기화**: `specs/english.md`의 Level 4~6 정의를 "일상 빈도가 높으나 철자가 복합적인 단어"로 현행화.

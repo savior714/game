@@ -10,18 +10,19 @@ const WORDS = {
     ['giraffe','기린','🦒',2], ['dolphin','돌고래','🐬',2], ['penguin','펭귄','🐧',2],
     ['elephant','코끼리','🐘',3], ['kangaroo','캥거루','🦘',3],
     ['butterfly','나비','🦋',3], ['crocodile','악어','🐊',3],
-    ['rhinoceros', '코뿔소', '🦏', 4], ['hippopotamus', '하마', '🦛', 4], ['chameleon', '카멜레온', '🦎', 4],
-    ['orangutan', '오랑우탄', '🦧', 5], ['platypus', '오리너구리', '🦦', 5],
-    ['brachiosaurus', '브라키오사우루스', '🦕', 6], ['stegosaurus', '스테고사우루스', '🦕', 6]
+    ['dinosaur', '공룡', '🦖', 3], ['Tyrannosaurus', '티라노사우루스', '🦖', 3], ['chimpanzee', '침팬지', '🐒', 3],
+    ['rhinoceros', '코뿔소', '🦏', 4], ['hippopotamus', '하마', '🦛', 4], ['grasshopper', '메뚜기', '🦗', 4],
+    ['caterpillar', '애벌레', '🐛', 5], ['dragonfly', '잠자리', '🚁', 5],
+    ['chameleon', '카멜레온', '🦎', 6], ['hummingbird', '벌새', '🐦', 6]
   ]},
   fruits:   { label:'과일',   icon:'🍎', words:[
     ['apple','사과','🍎',0], ['grape','포도','🍇',0], ['lemon','레몬','🍋',0],
     ['mango','망고','🥭',1], ['melon','멜론','🍈',1], ['peach','복숭아','🍑',1],
     ['cherry','체리','🍒',2], ['orange','오렌지','🍊',2], ['banana','바나나','🍌',2],
     ['papaya','파파야','🥭',3], ['pineapple','파인애플','🍍',3],
-    ['strawberry','딸기','🍓',3], ['watermelon','수박','🍉',3],
-    ['pomegranate', '석류', '🔴', 4], ['cranberry', '크랜베리', '🍒', 4],
-    ['persimmon', '감', '🟠', 5], ['mangosteen', '망고스틴', '🥭', 5],
+    ['watermelon','수박','🍉',3], ['blueberry', '블루베리', '🫐', 3],
+    ['grapefruit', '자몽', '🍊', 4], ['blackberry', '블랙베리', '🫐', 4],
+    ['pomegranate', '석류', '🔴', 5], ['avocado', '아보카도', '🥑', 5],
     ['dragonfruit', '용과', '🌵', 6], ['passionfruit', '백향과', '🟣', 6]
   ]},
   colors:   { label:'색깔',   icon:'🎨', words:[
@@ -29,8 +30,8 @@ const WORDS = {
     ['brown','갈색','🟫',1],
     ['purple','보라색','🟣',2], ['yellow','노란색','🟡',2], ['silver','은색','🪙',2],
     ['indigo','남색','💙',3],
-    ['turquoise', '청록색', '🩵', 4], ['magenta', '자홍색', '🩷', 4],
-    ['chartreuse', '연두색', '🟩', 5], ['vermilion', '주홍색', '🟥', 5],
+    ['turquoise', '청록색', '🩵', 4], ['navy blue', '남색', '💙', 4],
+    ['lime green', '연두색', '🟩', 5], ['crimson', '진홍색', '🟥', 5],
     ['fluorescent', '형광색', '✨', 6], ['monochrome', '단색', '🏁', 6]
   ]},
   numbers:  { label:'숫자',   icon:'🔢', words:[
@@ -48,8 +49,8 @@ const WORDS = {
     ['finger','손가락','🫵',2], ['stomach','위','🫀',2], ['shoulder','어깨','💆',3],
     ['forehead','이마','🧠',3], ['eyebrow','눈썹','🤨',3],
     ['skeleton', '골격', '🦴', 4], ['intestine', '장', '🫀', 4],
-    ['esophagus', '식도', '🫀', 5], ['diaphragm', '횡격막', '🫀', 5],
-    ['capillary', '모세혈관', '🩸', 6], ['cerebellum', '소뇌', '🧠', 6]
+    ['lungs', '폐', '🫀', 5], ['backbone', '등뼈', '🦴', 5],
+    ['esophagus', '식도', '🫀', 6], ['muscle', '근육', '💪', 6]
   ]},
   space:    { label:'우주',   icon:'🌌', words:[
     ['Mars','화성','🔴',0], ['Earth','지구','🌍',0], ['Venus','금성','💫',1],
@@ -67,8 +68,8 @@ const WORDS = {
     ['singer','가수','🎤',3], ['artist','예술가','🎨',3],
     ['teacher','선생님','👨‍🏫',3], ['soldier','군인','🪖',3],
     ['astronaut', '우주비행사', '👨‍🚀', 4], ['scientist', '과학자', '👨‍🔬', 4],
-    ['veterinarian', '수의사', '👨‍⚕️', 5], ['psychiatrist', '정신과 의사', '👨‍⚕️', 5],
-    ['archaeologist', '고고학자', '🏺', 6], ['meteorologist', '기상학자', '🌦️', 6]
+    ['programmer', '프로그래머', '💻', 5], ['detective', '탐정', '🔍', 5],
+    ['architect', '건축가', '🏗️', 6], ['journalist', '기자', '🎤', 6]
   ]},
   transport:{ label:'교통',   icon:'🚗', words:[
     ['train','기차','🚂',0], ['plane','비행기','✈️',0], ['truck','트럭','🚛',1],
@@ -93,9 +94,9 @@ const WORDS = {
     ['grass','풀','🌱',1], ['flame','불꽃','🔥',1], ['stone','돌','🪨',1],
     ['thunder','천둥','⛈️',2], ['rainbow','무지개','🌈',2], ['volcano','화산','🌋',3],
     ['mountain','산','🏔️',3], ['hurricane','허리케인','🌀',3],
-    ['avalanche', '눈사태', '🌨️', 4], ['waterfall', '폭포', '🌊', 4],
-    ['earthquake', '지진', '🌋', 5], ['stalactite', '종유석', '🪨', 5],
-    ['photosynthesis', '광합성', '☀️', 6], ['precipitation', '강수량', '🌧️', 6]
+    ['thunderstorm', '뇌우', '⛈️', 4], ['waterfall', '폭포', '🌊', 4],
+    ['blizzard', '눈보라', '🌨️', 5], ['earthquake', '지진', '🌋', 5],
+    ['environment', '환경', '🌍', 6], ['wildfire', '산불', '🔥', 6]
   ]},
 };
 

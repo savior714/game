@@ -46,7 +46,7 @@ WORDS = {
 **난이도 기준 (7단계)**:
 - **Level 0~1**: 기초 단어 (tiger, apple, 3-5자)
 - **Level 2~3**: 일상 단어 (giraffe, strawberry, 6-8자)
-- **Level 4~6**: 고급/전문 단어 (rhinoceros, photosynthesis, 9자+)
+- **Level 4~6**: 실생활 빈도가 높지만 철자가 길거나 복잡한 단어 (dinosaur, environment, 9자+)
 
 ---
 

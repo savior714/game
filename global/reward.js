@@ -148,6 +148,10 @@ const RewardSystem = (() => {
 
     const barHeight = Math.ceil(bar.getBoundingClientRect().height);
     document.body.style.paddingTop = `${basePaddingTop + barHeight}px`;
+
+    // 타 요소 위치 계산용 CSS 변수 노출
+    document.documentElement.style.setProperty('--reward-bar-height', `${barHeight}px`);
+    document.documentElement.style.setProperty('--base-padding-top', `${basePaddingTop}px`);
   }
 
   function updateUI() {

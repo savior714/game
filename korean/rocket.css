@@ -198,7 +198,7 @@
 @keyframes net-fall-spin{0%{transform:translateX(-50%) rotate(0deg)}40%{transform:translateX(calc(-50% + 8px)) rotate(25deg)}70%{transform:translateX(calc(-50% - 5px)) rotate(-40deg)}100%{transform:translateX(-50%) rotate(-55deg)}}
 #rp-rocket.net-bounce{animation:net-squash-bounce .35s ease-out forwards;filter:drop-shadow(0 0 18px rgba(0,255,130,1)) drop-shadow(0 0 8px rgba(0,200,100,.8)) !important}
 @keyframes net-squash-bounce{0%{transform:translateX(-50%) rotate(-55deg) scaleX(1.5) scaleY(.5)}40%{transform:translateX(-50%) rotate(-20deg) scaleX(.8) scaleY(1.4)}70%{transform:translateX(-50%) rotate(8deg) scaleX(1.1) scaleY(.9)}100%{transform:translateX(-50%) rotate(0deg) scaleX(1) scaleY(1)}}
-.net-banner{position:fixed;top:28px;left:50%;transform:translateX(-50%);padding:12px 22px;border-radius:18px;font-size:1.05rem;font-weight:800;text-align:center;z-index:600;pointer-events:none;animation:net-banner-pop 3s ease forwards;white-space:nowrap}
+.net-banner{position:fixed;top:calc(var(--reward-bar-height, 0px) + (var(--base-padding-top, 20px) / 2));left:50%;transform:translate(-50%, -50%);padding:12px 22px;border-radius:18px;font-size:1.05rem;font-weight:800;text-align:center;z-index:1100;pointer-events:none;animation:net-banner-pop 3s ease forwards;white-space:nowrap}
 .net-banner .sub{font-size:.75rem;font-weight:500;margin-top:3px;opacity:.85}
 .net-banner.net-earned{background:linear-gradient(135deg,#00c67a,#00e896);color:#fff;box-shadow:0 6px 30px rgba(0,200,120,.45)}
 .net-banner.net-activated{background:linear-gradient(135deg,#1e78ff,#00c6ff);color:#fff;box-shadow:0 6px 30px rgba(30,120,255,.45)}

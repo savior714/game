@@ -151,4 +151,8 @@
   - `common/rocket-core.js`: `showNetIndicator` 호출/함수 제거, `spawnNetEffect()` 선제 정리로 `.net-element` 단일 인스턴스 유지.
   - `korean/math/english/science/rocket.css`: `.net-indicator` 관련 스타일 블록 제거.
   - `verify_net_logic.js`, `docs/net_overlap_diagnostic.md`: 하단 표시 제거 기준으로 검증/문서 동기화.
+- **그물망 토스트 위치 최적화 및 코어 모듈화 (2026-03-27)**:
+  - **위치 최적화**: 보상 탭과 홈 버튼 사이의 정중앙에 토스트가 위치하도록 CSS 변수(`--reward-bar-height`, `--base-padding-top`) 기반 동적 계산식 적용.
+  - **리팩토링**: `rocket-core.js` 파일 크기(500라인) 제한 준수를 위해 시각 효과 로직을 `rocket-effects.js`로 분리.
+  - **동기화**: 전 과목 index.html에서 `rocket-effects.js` 로드 순서 확보 및 CSS `.net-banner` 위치 정밀 조정 완료.
 

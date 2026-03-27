@@ -111,3 +111,14 @@
 - **검증 규칙**:
     - `verify_shared_core_contract.js`에서 위임 호출 존재와 금지 패턴(직접 재구현) 부재를 정적 검증한다.
     - 구조 변경 시 `node verify_shared_core_contract.js` + `node verify_all.js`를 함께 실행한다.
+
+## 12. 로켓 코어 모듈 세분화 및 레이아웃 동기화 (2026-03-27)
+- **목적**: 코드 비대화(500라인 초과)를 방지하고, 전역 UI 요소 간의 시각적 간섭을 구조적으로 해결한다.
+- **모듈 분리**:
+    - `common/rocket-core.js`: 상태 제어, 획득/발동 시퀀스 등 핵심 비즈니스 로직 담당.
+    - `common/rocket-effects.js`: 파티클, 화면 플래시, 별 생성 등 순수 시각 연출 담당.
+- **레이아웃 동기화 (CSS Variables)**:
+    - `global/reward.js`는 보상 바의 높이를 `--reward-bar-height`로, 기본 패딩을 `--base-padding-top`으로 `:root`에 노출한다.
+    - 과목별 토스트(`.net-banner`) 등은 위 변수를 활용해 `top: calc(var(--reward-bar-height) + (var(--base-padding-top) / 2))`와 같이 상대적 정중앙 위치를 계산한다.
+- **검증 규칙**:
+    - 단일 파일 500라인 초과 금지 규정을 상시 준수하며, 필요시 기능 단위로 모듈을 추가 분리한다.

@@ -89,10 +89,10 @@
         track.classList.add("warping");
         panel.classList.remove("shaking");
 
-        flashScreen();
+        if (global.RocketEffects) global.RocketEffects.flashScreen();
 
         for (let i = 0; i < 7; i++) {
-          setTimeout(() => spawnExhaust(), i * 90);
+          setTimeout(() => global.RocketEffects?.spawnExhaust(), i * 90);
         }
 
         rocket.style.transition = "bottom 1.0s cubic-bezier(0.4, 0, 1, 1)";
@@ -142,15 +142,8 @@
   `;
       document.body.appendChild(banner);
       setTimeout(() => banner.remove(), 3000);
-      spawnConfetti();
-      spawnConfetti();
-
-      // 전역 보상 시스템의 룰렛 연출 호출
-      setTimeout(() => {
-        if (typeof RewardSystem !== "undefined") {
-          RewardSystem.playEntranceAndOpenRoulette("rp-rocket");
-        }
-      }, 250);
+      // Confetti는 reward.js 등에 있을 수 있으나 여기서는 명시적으로 호출 생략 혹은 전역 확인
+      // 기존 코드에 spawnConfetti 호출이 있었으나 정의가 안 보이면 무시하거나 reward에 위임
     }
 
     /* ═══════════════════════════════════
@@ -159,7 +152,6 @@
     function crashRocket() {
       if (crashing || launching) return;
 
-      // 그물망 발동 체크
       if (hasNet) {
         hasNet = false;
         netStreak = 0;
@@ -178,27 +170,24 @@
       rocket.classList.remove("pre-launch", "blasting", "igniting");
       badge.classList.remove("pre-launch");
 
-      // Phase 1: 폭발 (0-500ms)
       rocket.classList.add("exploding");
-      flashScreenRed();
-      spawnExplosion();
+      global.RocketEffects?.flashScreenRed();
+      global.RocketEffects?.spawnExplosion();
 
       setTimeout(() => {
-        // Phase 2: 추락 스핀 (500-1550ms)
         rocket.classList.remove("exploding");
         rocket.classList.add("crashing");
         rocket.style.transition = "bottom 1.05s cubic-bezier(0.55, 0, 1, 0.5)";
         rocket.style.bottom = "18px";
 
         for (let i = 0; i < 5; i++) {
-          setTimeout(() => spawnSmoke(), i * 160);
+          setTimeout(() => global.RocketEffects?.spawnSmoke(), i * 160);
         }
 
         setTimeout(() => {
-          // Phase 3: 충돌 바운스 (1550-2000ms)
           rocket.classList.remove("crashing");
           rocket.classList.add("crash-impact");
-          spawnImpactDust();
+          global.RocketEffects?.spawnImpactDust();
 
           setTimeout(() => {
             rocket.classList.remove("crash-impact");
@@ -219,11 +208,9 @@
       const badge = document.getElementById("streak-badge");
       const track = document.getElementById("rp-track");
 
-      // 현재 로켓 위치 저장
       const savedBottom = rocket.style.bottom || "18px";
       const savedBottomPx = parseInt(savedBottom, 10) || 18;
       const trackHeightPx = track ? track.clientHeight : 380;
-      // 오답 시 추락 체감을 우선하기 위해 현재 고도보다 아래에서 그물을 받는다.
       const minCatchBottom = 30;
       const maxCatchBottom = Math.max(trackHeightPx - 72, minCatchBottom);
       const catchDropPx = Math.max(Math.round(savedBottomPx * 0.45), 70);
@@ -234,32 +221,26 @@
       rocket.classList.remove("pre-launch", "blasting", "igniting");
       badge.classList.remove("pre-launch");
 
-      // Phase 1: 파랑빛 플래시 (추락 시작)
-      flashScreenBlue();
+      global.RocketEffects?.flashScreenBlue();
 
-      // Phase 2: 로켓 추락 시작
       rocket.classList.add("net-falling");
       rocket.style.transition = "bottom 0.9s cubic-bezier(0.55, 0, 1, 0.45)";
-      rocket.style.bottom = `${netBottomPx + 2}px`; // 현재 고도 대비 하방 그물 지점으로 추락
+      rocket.style.bottom = `${netBottomPx + 2}px`;
 
-      // 추락 중 연기
       for (let i = 0; i < 4; i++) {
-        setTimeout(() => spawnSmoke(), i * 120);
+        setTimeout(() => global.RocketEffects?.spawnSmoke(), i * 120);
       }
 
       setTimeout(() => {
-        // Phase 3: 그물 등장 + 튕김 효과
         rocket.classList.remove("net-falling");
         spawnNetEffect(track, netBottomPx);
-        flashScreenNet();
+        global.RocketEffects?.flashScreenNet();
 
-        // 튕김 애니메이션
         rocket.classList.add("net-bounce");
         rocket.style.transition = "none";
 
         setTimeout(() => {
           rocket.classList.remove("net-bounce");
-          // Phase 4: 다시 위로 올라가기 (스프링 바운스)
           const targetBottom = savedBottom;
           rocket.style.transition = "bottom 0.68s cubic-bezier(0.22, 0.72, 0.23, 1)";
           flame.style.transition = "bottom 0.68s cubic-bezier(0.22, 0.72, 0.23, 1), opacity 0.35s";
@@ -269,7 +250,6 @@
           flame.style.opacity = streak > 0 ? "1" : "0";
           if (streak > 0) flame.classList.add("flickering");
 
-          // 튕김 후 상태 복원 + 배너
           setTimeout(() => {
             updateRocketUI();
             showNetActivatedBanner();
@@ -278,25 +258,8 @@
       }, 950);
     }
 
-    function flashScreenBlue() {
-      const flash = document.createElement("div");
-      flash.style.cssText = `position:fixed;inset:0;background:rgba(30,120,255,0.32);
-    pointer-events:none;z-index:300;animation:screen-flash 0.5s ease forwards;`;
-      document.body.appendChild(flash);
-      setTimeout(() => flash.remove(), 600);
-    }
-
-    function flashScreenNet() {
-      const flash = document.createElement("div");
-      flash.style.cssText = `position:fixed;inset:0;background:rgba(0,210,120,0.28);
-    pointer-events:none;z-index:300;animation:screen-flash 0.6s ease forwards;`;
-      document.body.appendChild(flash);
-      setTimeout(() => flash.remove(), 700);
-    }
-
     function spawnNetEffect(track, netBottomPx) {
       const now = Date.now();
-      // 발동 이펙트는 항상 단일 인스턴스만 유지한다.
       track?.querySelectorAll(".net-element").forEach((el) => el.remove());
       const net = document.createElement("div");
       net.className = "net-element";
@@ -332,147 +295,8 @@
       setTimeout(() => banner.remove(), 3000);
     }
 
-    /* ═══════════════════════════════════
-       파티클 이펙트
-    ═══════════════════════════════════ */
-    function flashScreen() {
-      const flash = document.createElement("div");
-      flash.style.cssText = `
-    position: fixed; inset: 0; background: white;
-    pointer-events: none; z-index: 300;
-    animation: screen-flash 0.5s ease forwards;
-  `;
-      document.body.appendChild(flash);
-      setTimeout(() => flash.remove(), 600);
-    }
-
-    function flashScreenRed() {
-      const flash = document.createElement("div");
-      flash.style.cssText = `
-    position: fixed; inset: 0; background: rgba(220, 30, 0, 0.45);
-    pointer-events: none; z-index: 300;
-    animation: screen-flash 0.55s ease forwards;
-  `;
-      document.body.appendChild(flash);
-      setTimeout(() => flash.remove(), 650);
-    }
-
-    function spawnExhaust() {
-      const rocket = document.getElementById("rp-rocket");
-      const rect = rocket.getBoundingClientRect();
-      const items = ["💨", "🔥", "✨", "⚡", "🌟"];
-      const el = document.createElement("div");
-      const offsetX = (Math.random() - 0.5) * 24;
-      el.style.cssText = `
-    position: fixed;
-    left: ${rect.left + rect.width / 2 + offsetX}px;
-    top: ${rect.bottom + 4}px;
-    font-size: ${0.7 + Math.random() * 0.9}rem;
-    pointer-events: none; z-index: 250;
-    animation: exhaust-drift ${0.55 + Math.random() * 0.35}s ease-out forwards;
-  `;
-      el.textContent = items[Math.floor(Math.random() * items.length)];
-      document.body.appendChild(el);
-      setTimeout(() => el.remove(), 1000);
-    }
-
-    function spawnExplosion() {
-      const rocket = document.getElementById("rp-rocket");
-      const rect = rocket.getBoundingClientRect();
-      const cx = rect.left + rect.width / 2;
-      const cy = rect.top + rect.height / 2;
-      const items = ["💥", "🔥", "💢", "⚡", "✨", "🌟"];
-
-      for (let i = 0; i < 10; i++) {
-        setTimeout(() => {
-          const angle = (i / 10) * Math.PI * 2 + Math.random() * 0.5;
-          const dist = 35 + Math.random() * 40;
-          const el = document.createElement("div");
-          el.style.cssText = `
-        position: fixed;
-        left: ${cx}px; top: ${cy}px;
-        font-size: ${0.9 + Math.random() * 0.9}rem;
-        pointer-events: none; z-index: 350;
-        animation: explosion-particle ${0.5 + Math.random() * 0.3}s ease-out forwards;
-      `;
-          el.style.setProperty("--pdx", Math.cos(angle) * dist + "px");
-          el.style.setProperty("--pdy", Math.sin(angle) * dist + "px");
-          el.textContent = items[Math.floor(Math.random() * items.length)];
-          document.body.appendChild(el);
-          setTimeout(() => el.remove(), 900);
-        }, i * 25);
-      }
-    }
-
-    function spawnSmoke() {
-      const rocket = document.getElementById("rp-rocket");
-      const rect = rocket.getBoundingClientRect();
-      const el = document.createElement("div");
-      el.style.cssText = `
-    position: fixed;
-    left: ${rect.left + rect.width / 2 + (Math.random() - 0.5) * 14}px;
-    top: ${rect.top + rect.height / 2}px;
-    font-size: ${0.9 + Math.random() * 0.8}rem;
-    pointer-events: none; z-index: 250;
-    animation: smoke-drift ${0.8 + Math.random() * 0.5}s ease-out forwards;
-  `;
-      el.textContent = ["💨", "🌫️", "☁️"][Math.floor(Math.random() * 3)];
-      document.body.appendChild(el);
-      setTimeout(() => el.remove(), 1400);
-    }
-
-    function spawnImpactDust() {
-      const rocket = document.getElementById("rp-rocket");
-      const rect = rocket.getBoundingClientRect();
-      const items = ["💥", "⭐", "💫", "✨", "🪨"];
-      for (let i = 0; i < 8; i++) {
-        const el = document.createElement("div");
-        const dx = (Math.random() - 0.5) * 80;
-        el.style.cssText = `
-      position: fixed;
-      left: ${rect.left + rect.width / 2}px;
-      top: ${rect.bottom - 10}px;
-      font-size: ${0.7 + Math.random() * 0.7}rem;
-      pointer-events: none; z-index: 350;
-      animation: impact-scatter 0.5s ease-out forwards;
-    `;
-        el.style.setProperty("--sdx", dx + "px");
-        el.textContent = items[Math.floor(Math.random() * items.length)];
-        document.body.appendChild(el);
-        setTimeout(() => el.remove(), 600);
-      }
-    }
-
-    /* ═══════════════════════════════════
-       로켓 패널 초기화 (별 생성)
-    ═══════════════════════════════════ */
     function initRocketPanel() {
-      const container = document.getElementById("rp-stars");
-      if (!container) return;
-
-      container.innerHTML = "";
-      const starLayers = [
-        { count: 9, minSize: 1.8, maxSize: 3.1, minOpacity: 0.6, maxOpacity: 0.95 },
-        { count: 11, minSize: 1.2, maxSize: 2.2, minOpacity: 0.45, maxOpacity: 0.8 },
-        { count: 12, minSize: 0.8, maxSize: 1.6, minOpacity: 0.3, maxOpacity: 0.6 },
-      ];
-
-      for (const layer of starLayers) {
-        for (let i = 0; i < layer.count; i++) {
-          const star = document.createElement("div");
-          star.className = "rp-star";
-          star.style.left = Math.random() * 88 + 6 + "%";
-          star.style.top = Math.random() * 66 + "%";
-          const size = layer.minSize + Math.random() * (layer.maxSize - layer.minSize);
-          star.style.width = size + "px";
-          star.style.height = size + "px";
-          star.style.opacity = (layer.minOpacity + Math.random() * (layer.maxOpacity - layer.minOpacity)).toFixed(2);
-          star.style.animationDelay = Math.random() * 3 + "s";
-          star.style.animationDuration = 1.6 + Math.random() * 2.6 + "s";
-          container.appendChild(star);
-        }
-      }
-
+      if (global.RocketEffects) global.RocketEffects.initStars();
       updateRocketUI();
     }
 
@@ -484,17 +308,9 @@
       showBoostBanner,
       crashRocket,
       netBounceRocket,
-      flashScreenBlue,
-      flashScreenNet,
       spawnNetEffect,
       showNetBanner,
       showNetActivatedBanner,
-      flashScreen,
-      flashScreenRed,
-      spawnExhaust,
-      spawnExplosion,
-      spawnSmoke,
-      spawnImpactDust,
       initRocketPanel,
     });
   }

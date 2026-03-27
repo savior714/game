@@ -155,4 +155,8 @@
   - **위치 최적화**: 보상 탭과 홈 버튼 사이의 정중앙에 토스트가 위치하도록 CSS 변수(`--reward-bar-height`, `--base-padding-top`) 기반 동적 계산식 적용.
   - **리팩토링**: `rocket-core.js` 파일 크기(500라인) 제한 준수를 위해 시각 효과 로직을 `rocket-effects.js`로 분리.
   - **동기화**: 전 과목 index.html에서 `rocket-effects.js` 로드 순서 확보 및 CSS `.net-banner` 위치 정밀 조정 완료.
+- **과학 문제 중의성 해결 및 데이터 정합성 강화 (2026-03-27)**:
+  - **Snow vs Eye**: '눈' 동음이의어로 인한 인지적 혼란을 방지하기 위해 '하늘에서 내리는 눈'(Earth)과 '사물을 보는 눈'(Biology)으로 문항 구체화 및 카테고리 분리.
+  - **SDD 정렬**: `CRITICAL_LOGIC.md` 제13조에 과학 개념 중의성 차단 규칙 명문화.
+  - **검증**: `verify_all.js` 및 `verify_science_engine.js` 통과(100% 정합성).
 

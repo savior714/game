@@ -121,14 +121,16 @@ function _mbStep() {
         if (a.gone || b.gone) continue;
         const dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx*dx + dy*dy), mn = a.r + b.r;
         if (d < mn && d > 0.01) {
-          const nx = dx/d, ny = dy/d, ov = (mn - d) * 0.5;
+          const nx = dx/d, ny = dy/d, ov = (mn - d) * 0.51; // 미세하게 더 밀어냄
           a.x -= nx*ov; a.y -= ny*ov; b.x += nx*ov; b.y += ny*ov;
           const rv = (a.vx - b.vx)*nx + (a.vy - b.vy)*ny;
           if (rv > 0) {
-            const imp = rv * (1 + MB_R) * 0.5;
-            a.vx -= imp*nx; a.vy -= imp*ny; b.vx += imp*nx; b.vy += imp*ny;
+            const ma = a.r * a.r, mb = b.r * b.r;
+            const imp = rv * (1 + MB_R) / (1/ma + 1/mb);
+            a.vx -= (imp/ma)*nx; a.vy -= (imp/ma)*ny;
+            b.vx += (imp/mb)*nx; b.vy += (imp/mb)*ny;
           }
-          if (a.lv === b.lv && it === 3) merges.push([i, j]);
+          if (a.lv === b.lv && it === 3 && d < mn + 1.2) merges.push([i, j]);
           // Symmetry breaker
           if (Math.abs(dx) < 1.5) {
             const nudge = 0.06;
@@ -200,9 +202,16 @@ function _mbRender() {
 
     // 미리보기 구슬
     c.save(); c.globalAlpha = 0.5;
-    const g2 = c.createRadialGradient(_mbPreviewX - t.r*.2, 28 - t.r*.2, t.r*.05, _mbPreviewX, 28, t.r*.6);
+    const pr = t.r * 0.7; // 미리보기 크기 약간 키움
+    const g2 = c.createRadialGradient(_mbPreviewX - pr*.2, 28 - pr*.2, pr*.05, _mbPreviewX, 28, pr);
     g2.addColorStop(0, '#fff'); g2.addColorStop(1, t.color);
-    c.fillStyle = g2; c.beginPath(); c.arc(_mbPreviewX, 28, t.r*.6, 0, Math.PI*2); c.fill();
+    c.fillStyle = g2; c.beginPath(); c.arc(_mbPreviewX, 28, pr, 0, Math.PI*2); c.fill();
+    // 미리보기 숫자 추가
+    c.globalAlpha = 0.7;
+    c.fillStyle = 'rgba(0,0,0,0.6)';
+    c.font = `bold ${Math.round(pr * 0.6)}px sans-serif`;
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(_mbNext, _mbPreviewX, 28);
     c.restore();
   }
 }

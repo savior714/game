@@ -49,6 +49,13 @@
   display: flex;
   justify-content: center;
   min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.inventory-center::-webkit-scrollbar {
+  height: 4px;
 }
 
 .inventory-rail-right {
@@ -56,6 +63,7 @@
   justify-content: flex-end;
   align-items: center;
   min-width: 0;
+  flex-shrink: 0;
 }
 
 .inventory-left {
@@ -150,6 +158,21 @@
   font-size: 0.75rem;
   color: #888;
   margin-left: 1px;
+}
+
+.inventory-item.inventory-auth {
+  width: auto;
+  min-width: 4.75rem;
+  max-width: 8.5rem;
+  padding: 6px 10px;
+  flex-shrink: 0;
+}
+
+.inventory-item.inventory-auth .val {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .gem-item.has-reward {

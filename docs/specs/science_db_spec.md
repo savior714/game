@@ -1,5 +1,7 @@
 # 과학 문제 데이터베이스 설계 스펙 (Science DB Spec) v2
 
+**최종 수정**: 2026-03-29 — 실제 문항·카테고리는 `science/engine.js` 및 `node science/verify_science_engine.js`가 단일 출처에 가깝다.
+
 ## 1. 난이도 설계 원칙 (Kindergarten & Low-Grade Focus)
 
 - **Level 0 (킨더/초등 저학년 핵심)**: 5~7세 수준. 직관적인 감각, 울음소리, 색깔, 명확한 반대 개념.
@@ -21,4 +23,5 @@
     - 최근 10문제 내 중복 발생률 5% 미만.
 
 ## 4. 확장 문제 세트 수준별 요약
-... (기존 내용 유지 또는 갱신)
+
+세부 문항 목록은 코드베이스의 `science/engine.js` 데이터와 동기화한다. 스펙만 갱신하고 데이터를 갱신하지 않는 실수를 방지하기 위해, 변경 후 `node science/verify_science_engine.js`를 실행한다.

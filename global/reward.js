@@ -33,7 +33,9 @@ const RewardSystem = (() => {
     if (saved) {
       try {
         state = { ...initialState, ...JSON.parse(saved) };
-        if (!state.shop_items) state.shop_items = [...initialState.shop_items];
+        if (!state.shop_items || state.shop_items.length === 0) {
+          state.shop_items = [...initialState.shop_items];
+        }
         if (!state.custom_inventory) state.custom_inventory = {};
       } catch (e) {
         console.error('RewardSystem load failed:', e);
@@ -167,6 +169,16 @@ const RewardSystem = (() => {
   // ──────────────────────────────────────────
   // 2. 초기화 (Initialization)
   // ──────────────────────────────────────────
+  let cloudSyncListenerBound = false;
+
+  function refreshFromStorage() {
+    load();
+    if (typeof RewardSystemUI !== 'undefined') {
+      RewardSystemUI.updateUI(state);
+      RewardSystemUI.applyBodyTopOffset();
+    }
+  }
+
   function init() {
     load();
     if (typeof RewardSystemUI !== 'undefined') {
@@ -178,6 +190,10 @@ const RewardSystem = (() => {
         if (bar) bar.style.opacity = '1';
         RewardSystemUI.applyBodyTopOffset();
       });
+    }
+    if (!cloudSyncListenerBound) {
+      cloudSyncListenerBound = true;
+      window.addEventListener('cloud-sync-complete', refreshFromStorage);
     }
   }
 

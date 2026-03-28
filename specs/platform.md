@@ -1,11 +1,13 @@
 # 플랫폼 공통 아키텍처
 
-**소속**: SDD — 어린이 학습 게임 플랫폼
-**최종 수정**: 2026-03-22
+**소속**: SDD — 어린이 학습 게임 플랫폼  
+**최종 수정**: 2026-03-29
 
 ---
 
 ## 0. 플랫폼 공통 아키텍처
+
+과목별 퀴즈는 `*/` 폴더에 두고, 로켓·난이도·UI 흐름은 `common/`으로, 계정·보상·동기화는 `global/`로 분리한다. 상세 비즈니스 규칙은 `docs/CRITICAL_LOGIC.md`가 SSOT이다.
 
 ### 0.0 게임 현황
 
@@ -13,57 +15,60 @@
 |------|------|------|
 | `math/` | 수학 (덧셈·뺄셈·곱셈) | ✅ 완성 |
 | `english/` | 영어 (단어·문장) | ✅ 완성 |
-| `korean/` | 국어 (받침·맞춤법·어휘) | 🔲 계획 중 |
-| `science/` | 과학 (분류·개념) | 🔲 계획 중 |
+| `korean/` | 국어 (받침·맞춤법·어휘) | ✅ 완성 |
+| `science/` | 과학 (분류·개념) | ✅ 완성 |
+| `marble/` | 마블 머지 미니게임 (보상 소비) | ✅ 완성 |
+| `guardian/` | 보호자 맞춤 보상 상점 편집 | ✅ (구글 로그인 연동 시) |
+| `admin/` | 운영자용 가입 계정 조회 | ✅ (허용 이메일만) |
 
 ### 0.1 파일 구조
 
-각 게임 폴더는 아래 6개 파일로 구성한다.
+각 과목 게임 폴더는 아래 6개 파일로 구성한다.
 
 ```
 {subject}/
-  index.html    ← HTML 구조 + CSS/JS 링크
+  index.html    ← HTML 구조 + CSS/JS 링크 (common/global 스크립트 선로드)
   base.css      ← 공통 레이아웃·UI 스타일
   rocket.css    ← 로켓 패널 + 애니메이션 스타일
-  engine.js     ← 상수·통계·난이도·문제 생성 로직
-  rocket.js     ← 로켓 UI·발사·추락 이펙트
-  ui.js         ← 타이머·정답확인·게임흐름·통계모달
+  engine.js     ← 상수·통계·난이도·문제 생성 로직 (progress-engine 위임)
+  rocket.js     ← RocketCore 설치·위임 (rocket-core / rocket-effects)
+  ui.js         ← 타이머·정답확인·게임흐름·통계모달 (quiz-ui-core 위임)
 ```
 
-현재 구조:
+저장소 루트 개략:
 
 ```
 game/
-  CLAUDE.md            ← AI 협업 전역 규칙
-  SDD.md               ← 플랫폼 인덱스 (스펙 링크 목록)
-  specs/               ← 스펙 파일 디렉토리
-    platform.md        ← 이 파일 (공통 아키텍처)
-    math.md            ← 수학 게임 스펙
-    english.md         ← 영어 게임 스펙
-    korean.md          ← 국어 게임 스펙 (계획)
-    science.md         ← 과학 게임 스펙 (계획)
-  math/                ← 수학 게임 (완성, 6파일 분리)
-  english/             ← 영어 게임 (완성, 6파일 분리)
-  korean/              ← 국어 게임 (계획)
-  science/             ← 과학 게임 (계획)
+  index.html           ← 과목 허브 (Tailwind, global/reward 로드)
+  serve_game.py        ← 로컬 정적 서버 (포트 3000)
+  SDD.md                 ← 플랫폼 인덱스
+  specs/                 ← 과목·플랫폼 스펙 (이 파일 포함)
+  docs/                  ← memory, CRITICAL_LOGIC, docs/specs/* 보조 명세
+  common/                ← rocket-core, rocket-effects, progress-engine, quiz-ui-core
+  global/                ← reward.js, reward_ui.js, auth.js, sync-engine.js
+  supabase/              ← SQL·RLS (user_directory 등)
+  math/, english/, korean/, science/
+  marble/, guardian/, admin/
 ```
 
-> **설계 결정 (2026-03-22)**: 과목별 폴더 구조로 전환.
-> 기존 단일 파일(math-game.html 1385라인, english/index.html 1161라인) → 각 game/ 폴더 내 6개 파일로 분리.
-> CSS: base/rocket, JS: engine/rocket/ui (로드 순서 준수). 외부 의존성 없음.
->
-> **설계 결정 (2026-03-22)**: SDD.md를 인덱스로 경량화, 게임별 스펙을 `specs/` 디렉토리로 분리.
+> **설계 결정 (2026-03-22)**: 과목별 폴더 6파일 분리.  
+> **설계 결정 (2026-03-27~)**: 공용 코어(`common/`) 도입 및 `rocket-effects` 분리.  
+> **설계 결정 (2026-03-28~)**: 룰렛 제거, 보석 화폐 + 상점(`global/reward*`).  
+> **설계 결정 (2026-03-29)**: Supabase 구글 로그인 + `sync-engine` 오프라인 큐.
 
 ### 0.2 공통 시스템 (모든 게임 필수 구현)
 
-| 시스템 | 설명 | 핵심 상수 |
-|--------|------|-----------|
-| 로켓 스트릭 | 연속 정답 20개 → 발사 / 오답 → 폭발 추락 | `LAUNCH_STREAK=20` |
-| 적응형 숙련도 | 정답률+응답속도 기반 7단계 자동 조정 | `MIN_DATA=4` |
-| 강화학습 | 틀린 패턴 재출제 (최대 5개 기억) | `REINFORCE_PROB=0.45` |
-| 중복 방지 | 최근 10문제를 기억하여 연속 출제 차단 | `RECENT_LIMIT=10` |
-| 타이머 | 60초 제한, 진행바 색상 경고 | `TIME_LIMIT=60` |
-| 누적 통계 | localStorage, 모달 열람·초기화 | 게임별 고유 키 |
+| 시스템 | 설명 | 핵심 상수 / 위치 |
+|--------|------|------------------|
+| 로켓 스트릭 | 연속 정답 20개 → 발사 / 오답 → 폭발 추락(그물망 있으면 예외는 CRITICAL_LOGIC §7) | `LAUNCH_STREAK=20`, `common/rocket-core.js` |
+| 그물망 (Net Shield) | 연속 정답 5회마다 1회 보호막 획득 | `NET_STREAK=5` |
+| 적응형 숙련도 | 정답률+응답속도 기반 7단계 자동 조정 | `MIN_DATA=4`, `common/progress-engine.js` |
+| 강화학습 | 틀린 패턴 재출제 (최대 5개 기억) | `REINFORCE_PROB=0.45` (과목 `engine.js`) |
+| 중복 방지 | 최근 10문제 키 버퍼 | `RECENT_LIMIT=10` |
+| 타이머 | 과목별 `TIME_LIMIT`(수학·과학 등 60초, 영어 60초 등) — 각 `engine.js` / UI 코어 | 진행바 경고 |
+| 누적 통계 | `localStorage`, 모달 열람·초기화 | `{subject}GameStats` |
+| 전역 보상·보석 | 20연속 정답 시 💎 1개 지급 → 상점에서 유튜브·간식·마블 등으로 교환 | `study_rewards`, `global/reward.js` |
+| 동기화 (선택) | 로그인 시 Supabase와 `study_rewards` 등 병합 | `global/sync-engine.js`, `global/auth.js` |
 
 ### 0.3 공통 런타임 상태 변수
 
@@ -142,7 +147,8 @@ game/
 2. `SDD.md` §게임 현황 테이블 상태 최신화
 3. `{subject}/` 폴더 생성 후, `math/` 폴더의 파일 구조를 기반으로 6개 파일 작성
 4. 과목 고유 로직(문제 생성, 보기 생성, 정답 판정)만 새로 작성
-5. `localStorage` 키를 `{subject}GameStats` 형식으로 신규 정의
+5. `localStorage` 키를 `{subject}GameStats` 형식으로 신규 정의  
+6. 메인 허브 `index.html` 및 전역 보상 스크립트 로드 순서는 기존 과목 페이지를 참고한다.
 
 ---
 
@@ -220,5 +226,9 @@ body (flex column, center)
 - **에이전트 안전 수칙**: 특정 로컬 파일을 직접 열 수 없거나 해결이 불가능한 경우, 에이전트는 즉시 작업을 중단하고 사용자에게 수동 확인을 요청해야 한다.
 
 ### 4.4 기술 스택 및 라이브러리 정책
-- **외부 CDN·라이브러리**: Tailwind CSS, Pretendard(폰트), Iconify(아이콘) 등 외부 리소스 사용이 가능하나, 핵심 게임 로직은 **Vanilla JS** 기반을 유지한다. (신규 기술 스택 도입 시 사용자 제안 필요)
-- **공통 시스템 변경**: 공통 시스템(로켓, 통계 등) 수정 시 반드시 `specs/platform.md`를 먼저 갱신하고, 모든 개별 게임 파일(`math/`, `english/` 등)에 동일하게 반영하여 일관성을 유지한다.
+- **외부 CDN·라이브러리**: Tailwind CSS, Pretendard(폰트) 등 CDN 사용 가능. 핵심 게임 로직은 **Vanilla JS**. Supabase 클라이언트는 인증·동기화 경로에만 사용한다.
+- **공통 시스템 변경**: 로켓·통계·보상·동기화 규칙을 바꿀 때는 `specs/platform.md`, `docs/CRITICAL_LOGIC.md`, 필요 시 `docs/specs/reward_inventory_spec.md`를 먼저 갱신한 뒤 코드를 맞춘다.
+
+### 4.5 인증·백엔드 (선택 기능)
+- **구글 로그인**: `global/auth.js` 환경 변수(Supabase URL/키) 필요.
+- **관리자·디렉터리**: `supabase/user_directory.sql` RLS와 `ADMIN_EMAILS` 정책을 준수한다.

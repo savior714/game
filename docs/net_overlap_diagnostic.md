@@ -1,106 +1,102 @@
-# 그물 중첩 현상 점검 실행서
+# 그물망 DOM·타이밍 점검 실행서
 
-## 1) 전 과목 상태 전이표 (map-state-flow)
+**최초 작성**: 2026-03-27 · **최종 수정**: 2026-03-29  
 
-대상 파일
-- `korean/engine.js`
-- `math/engine.js`
-- `english/engine.js`
-- `science/engine.js`
-- `common/rocket-core.js`
+구현 SSOT: `common/rocket-core.js` (`netBounceRocket`, `spawnNetEffect`). 상태 규칙 SSOT: `docs/CRITICAL_LOGIC.md` §7.  
+플래시·연기 등은 `common/rocket-effects.js`에서 호출된다.
 
-공통 상태
-- `netStreak`: 연속 정답 카운트
-- `hasNet`: 그물 보유 여부(불리언)
-- `streak`: 로켓 연속 정답 카운트
+---
 
-상태 전이
-1. 정답 처리 (`recordResult(true, elapsed)`)
-   - `netStreak++`
-   - `netStreak >= NET_STREAK(5)` and `!hasNet`이면:
-     - `hasNet = true`
-     - `netStreak = 0`
-     - `showNetBanner()`
-2. 오답 처리 (`recordResult(false, elapsed)`)
-   - `netStreak = 0`
-   - 이후 `updateStreak(false)` 경로에서 `crashRocket()` 호출
-3. 그물 발동 (`crashRocket()`)
-   - `hasNet`이 `true`이면 즉시:
-     - `hasNet = false`
-     - `netStreak = 0`
-     - `netBounceRocket()` 실행
+## 1) 전 과목 상태 전이 (요약)
 
-판정
-- 논리 상태 기준으로는 동시 2개 그물 보유가 불가능합니다.
-- 현재 기준에서 체크 대상은 DOM 이펙트(`.net-element`) 단일성입니다.
+대상: `korean/math/english/science/engine.js`의 `recordResult` 및 `common/rocket-core.js`의 `updateStreak` → `crashRocket` 경로.
+
+공통 상태:
+
+- `netStreak`: 그물 **획득**용 연속 정답 카운트
+- `hasNet`: 그물 보유(불리언)
+- `streak`: 로켓 **발사**용 연속 정답 카운트
+
+상태 전이(요지):
+
+1. 정답 `recordResult(true, elapsed)` → `netStreak++` → `netStreak >= NET_STREAK(5)` 이고 `!hasNet`이면 `hasNet = true`, `netStreak = 0`, `showNetBanner()`.
+2. 오답 `recordResult(false, …)` → `netStreak = 0` → 이후 `crashRocket()`에서 그물 소모 또는 일반 추락.
+3. `crashRocket()`에서 `hasNet === true`이면 `hasNet = false`, `netBounceRocket()` (그물 발동).
+
+판정: 논리적으로 **동시에 그물 2중 보유는 없음**. 점검 초점은 **DOM `.net-element`가 한 번에 하나만 보이는지**와 애니메이션 타이밍이다.
+
+---
 
 ## 2) 수동 재현 매트릭스 (reproduce-matrix)
 
-시나리오 정의
-- A: 5연속 정답 -> 1회 오답으로 그물 발동 -> 즉시 추가 입력 반복
-- B: 그물 발동 애니메이션(복귀 전후) 중 추가 입력 시도
-- C: 과목 전환 후 동일 절차 반복
+시나리오:
 
-체크 항목
+- **A**: 5연속 정답 → 오답 1회로 그물 발동 → 즉시 추가 입력
+- **B**: 그물 발동 애니메이션 중 추가 입력
+- **C**: 과목 전환 후 동일 절차
+
+체크 항목:
+
 - 상태: `hasNet`, `netStreak`, `streak`
-- DOM: `.net-element` 동시 개수
-- 체감: 그물이 2개처럼 보이는 시점(발동 직후/복귀 직전/복귀 직후)
+- DOM: `#rp-track` 안 `.net-element` 동시 개수
+- 체감: 그물이 겹쳐 보이는지(발동 직후·복귀 전후)
 
-기록 템플릿
+기록 템플릿:
 
 | 과목 | 시나리오 | 재현 여부 | 상태 이상 | DOM 중첩 | 비고 |
-|---|---|---|---|---|---|
+|------|----------|-----------|-----------|----------|------|
 | korean | A/B/C | Y/N | Y/N | Y/N | |
 | math | A/B/C | Y/N | Y/N | Y/N | |
 | english | A/B/C | Y/N | Y/N | Y/N | |
 | science | A/B/C | Y/N | Y/N | Y/N | |
 
-## 3) DOM/타이밍 점검 포인트 (dom-timing-check)
+---
 
-핵심 타이밍
-- `netBounceRocket()` 내부:
-  - 약 `950ms` 후 `spawnNetEffect(track, netBottomPx)` 호출
-  - 이후 `350ms` 후 복귀 애니메이션 시작
-  - 복귀 시작 `900ms` 후 `showNetActivatedBanner()`
-- `spawnNetEffect()` 내부:
-  - `.net-element` 생성 후 `1800ms` 뒤 제거
+## 3) DOM/타이밍 (현행 구현 기준)
 
-중첩 가능 구간
-- 기존 `.net-element` 제거 전 새 발동이 트리거되는 경우가 핵심 관찰 포인트입니다.
+`netBounceRocket()` (`common/rocket-core.js`):
 
-브라우저 콘솔 관찰 스니펫
+- 약 **950ms** 후 `spawnNetEffect(track, netBottomPx)` 및 로켓 복귀 준비.
+- 그 안의 `setTimeout` 체인으로 복귀 애니메이션 후 약 **900ms** 뒤 `showNetActivatedBanner()`.
+
+`spawnNetEffect()`:
+
+- **선제 정리**: 새 그물을 붙이기 전에 `track.querySelectorAll(".net-element").forEach(el => el.remove())`로 기존 노드를 제거한다 → **동시에 2개 `.net-element`가 남는 경우를 구조적으로 억제**.
+- 생성된 요소는 약 **1800ms** 후 `remove()`.
+
+중첩 관찰이 필요한 구간: 위 선제 제거 이전에 예외 경로로 `spawnNetEffect`가 두 번 호출되는지(과거 이슈 후보). 회귀 시 DevTools에서 `.net-element` 개수를 본다.
+
+---
+
+## 4) 브라우저 콘솔 관찰 스니펫
+
 ```js
 (() => {
   const track = document.getElementById("rp-track");
   if (!track) return console.warn("rp-track not found");
   const sample = () => {
     const nets = track.querySelectorAll(".net-element").length;
-    console.log("[net-snapshot]", {
-      t: Date.now(),
-      nets,
-    });
+    console.log("[net-snapshot]", { t: Date.now(), nets });
   };
   window.__netWatch = setInterval(sample, 120);
   console.log("net watch started: clearInterval(window.__netWatch)");
 })();
 ```
 
-## 4) 원인 분류별 수정 우선순위와 회귀 기준 (define-fix-criteria)
+---
 
-우선순위
-1. 상태 불일치(치명)
-   - `hasNet`이 false인데 그물 발동 연출이 실행되거나, 반대로 true인데 미실행
-2. DOM 정리 지연(중간)
-   - `.net-element` 동시 2개 이상 생성/잔존
-3. 체감 중첩(경미)
-   - 논리 정상이나 `.net-element` 시각 연출 타이밍이 겹쳐 오해 유발
+## 5) 원인 분류·수정 우선순위·회귀 기준
 
-수정 기준
-- 상태 불일치: 즉시 수정, 공용 코어 우선
-- DOM 정리 지연: 이펙트 생성 시 기존 `.net-element` 선제 제거 또는 싱글톤화
-- 체감 중첩: `.net-element` 생명주기/선제 제거 타이밍 조정
+우선순위:
 
-회귀 테스트 기준(전 과목 공통)
-- 5연속 획득 후 오답 발동 시 상태 전이 동일
-- `.net-element` 최대 동시 개수 <= 1
-- A/B/C 시나리오에서 과목별 동작 편차 없음
+1. **상태 불일치(치명)**: `hasNet`과 연출 불일치.
+2. **DOM 정리 지연**: `.net-element` 동시 2개 이상(현재는 `spawnNetEffect` 선제 제거로 완화됨).
+3. **체감 중첩**: 논리는 정상이나 애니메이션·배너 타이밍이 겹쳐 보이는 경우.
+
+회귀 기준:
+
+- 5연속 획득 후 오답 시 상태 전이가 전 과목 동일.
+- `.net-element` 최대 동시 개수 ≤ 1(정상 경로).
+- A/B/C 시나리오에서 과목별 편차 없음.
+
+자동 검증: `node verify_net_logic.js`, `node verify_all.js`.

@@ -1,5 +1,42 @@
 window.SyncEngine = (() => {
   const QUEUE_KEY = 'sync_queue';
+
+  const DEFAULT_STUDY_SHOP_ITEMS = [
+    { id: 'youtube', icon: '📺', label: '유튜브 15분', desc: '좋아하는 영상 시청', price: 1 },
+    { id: 'snack', icon: '🍪', label: '간식 1개', desc: '맛있는 간식 시간', price: 1 },
+    { id: 'marble', icon: '🎮', label: '마블 게임', desc: '마블 한 판 더!', price: 1 }
+  ];
+
+  /** 로그인 직후 pull 시 서버 빈 값이 로컬 진행을 덮지 않도록 study_rewards만 병합 */
+  function mergeStudyRewardsPayload(local, remote) {
+    const L = local && typeof local === 'object' ? local : {};
+    const R = remote && typeof remote === 'object' ? remote : {};
+    const keySet = new Set([
+      ...Object.keys(L.custom_inventory || {}),
+      ...Object.keys(R.custom_inventory || {})
+    ]);
+    const custom_inventory = {};
+    keySet.forEach((k) => {
+      custom_inventory[k] = Math.max(L.custom_inventory?.[k] || 0, R.custom_inventory?.[k] || 0);
+    });
+
+    let shop_items;
+    if (Array.isArray(R.shop_items) && R.shop_items.length > 0) shop_items = R.shop_items;
+    else if (Array.isArray(L.shop_items) && L.shop_items.length > 0) shop_items = L.shop_items;
+    else shop_items = DEFAULT_STUDY_SHOP_ITEMS.slice();
+
+    return {
+      ...L,
+      ...R,
+      gems: Math.max(L.gems || 0, R.gems || 0),
+      youtube_minutes: Math.max(L.youtube_minutes || 0, R.youtube_minutes || 0),
+      snacks: Math.max(L.snacks || 0, R.snacks || 0),
+      marble_plays: Math.max(L.marble_plays || 0, R.marble_plays || 0),
+      custom_inventory,
+      shop_items,
+      _updated_at: Math.max(L._updated_at || 0, R._updated_at || 0)
+    };
+  }
   
   function getQueue() {
     try {
@@ -81,7 +118,19 @@ window.SyncEngine = (() => {
 
         // 최종 완료 기록을 우선시
         if (dbTime > localTime) {
-          localStorage.setItem(row.data_key, JSON.stringify(row.payload));
+          let toStore = row.payload;
+          if (row.data_key === 'study_rewards') {
+            let localParsed = {};
+            if (localRaw) {
+              try {
+                localParsed = JSON.parse(localRaw);
+              } catch (e) {
+                localParsed = {};
+              }
+            }
+            toStore = mergeStudyRewardsPayload(localParsed, row.payload);
+          }
+          localStorage.setItem(row.data_key, JSON.stringify(toStore));
           hasUpdates = true;
         } else if (localTime > dbTime && localRaw) {
           // 로컬이 더 최신이면 클라우드로 푸시 큐 등록

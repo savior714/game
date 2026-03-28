@@ -1,144 +1,95 @@
-# 공용 로직 분리 조사 결과 (2026-03-27)
+# 공용 로직 분리 조사 및 적용 현황
 
-## 1) `rocket.js` 동일/차이 분류
+**최초 조사**: 2026-03-27 · **최종 정리**: 2026-03-29  
 
-대상 파일:
-- `english/rocket.js`
-- `korean/rocket.js`
-- `math/rocket.js`
-- `science/rocket.js`
-
-판정:
-- **완전 동일 복제**
-
-근거:
-- 함수 세트가 4개 파일에서 동일하게 존재함.
-  - `updateStreak`, `updateRocketUI`, `launchRocket`, `crashRocket`
-  - `netBounceRocket`, `showNetBanner`, `showNetActivatedBanner`, `showNetIndicator`
-  - `flashScreen`, `flashScreenRed`, `spawnExhaust`, `spawnExplosion`, `spawnSmoke`, `spawnImpactDust`
-  - `initRocketPanel`
-- 전역 보상 호출도 동일함.
-  - `RewardSystem.playEntranceAndOpenRoulette('rp-rocket')`
-
-결론:
-- `rocket` 영역은 즉시 `common/rocket-core.js`로 추출 가능한 1순위 공용화 대상.
+본 문서는 당시 과목별 중복을 기록한 **조사 메모**이며, 이후 리팩터가 반영된 **현재 상태**를 같은 목차로 정리한다. 상세 계약은 `docs/specs/shared_core_refactor_spec.md`, `docs/CRITICAL_LOGIC.md`를 따른다.
 
 ---
 
-## 2) `engine.js` 공통 알고리즘 vs 과목 데이터 경계
+## 1) `rocket.js` — 과목별 래퍼 + 공용 코어
 
-### 공통 알고리즘 코어 (공용화 가능)
-- 통계 수명주기:
-  - `emptyStats`, `loadStats`, `saveStats`, `resetStats`
-- 난이도 계산:
-  - `getBaseDiffLevel`, `getDifficultyLevel`
-- 출제 강화:
-  - `generateQuestion`, `_generateCandidate`, `recordResult`, `showWeaknessClear`
-- 공통 상태:
-  - `recentHistory`, `wrongPatterns`, `recentQuestions`
-  - `globalBoost`, `NET_STREAK`, `hasNet`, `netStreak`
+### 조사 시점 (2026-03-27)
 
-### 과목 데이터/규칙 어댑터 (도메인 전용)
-- 영어/국어/과학:
-  - 카테고리 기반 (`pickCategory`)
-  - 단어/문장 DB 기반 보기 생성
-- 수학:
-  - 연산자 기반 (`pickOperation`)
-  - 수식 생성(`generateByOpLevel`)과 숫자 보기 생성
+- `english/korean/math/science/rocket.js`가 동일한 함수 묶음으로 **완전 복제**되어 있었음.
+- 보상 훅 예시: `RewardSystem.playEntranceAndOpenRoulette('rp-rocket')` (이후 폐기됨).
 
-### 권장 경계
-- 공통 코어:
-  - `createProgressEngine(config)`
-- 과목 어댑터:
-  - `selectDomain()`, `buildQuestionByLevel()`, `buildChoices()`, `toWeaknessKey()`
+### 현재 (2026-03-29)
 
-결론:
-- 알고리즘은 공통화하고, 과목별 규칙/DB 접근만 어댑터로 남기는 방식이 가장 안전함.
+- 과목별 `rocket.js`는 **`RocketCore.install(window)` 한 줄** 위주로 축소됨. 구현 SSOT는 `common/rocket-core.js`, 시각 이펙트는 `common/rocket-effects.js`.
+- 20연속 정답 보상 훅: `RewardSystem.playEntranceAndAddGem('rp-rocket')` (`global/reward.js` → `reward_ui.js`).
+- HTML 로드 순서: `rocket-effects.js` → `rocket-core.js` → 과목 `rocket.js` (프로젝트 표준 페이지와 동일하게 유지).
 
 ---
 
-## 3) `ui.js` 공통 게임 수명주기 통합안
+## 2) `engine.js` — `progress-engine` + 도메인 어댑터
 
-공통 수명주기:
-1. `startGame`
-2. `askQuestion`
-3. `startTimer` / `updateTimerUI` / `timeOut`
-4. `checkAnswer`
-5. `nextQuestion`
-6. `showResult`
-7. `openStats` / `renderStatsTable`
+### 조사 시점
 
-공통화 가능 영역:
-- 타이머 로직 (`startTimer`, `stopTimer`, `updateTimerUI`, `timeOut`)
-- 정답 처리 골격 (`checkAnswer`)
-- 진행/결과 전환 (`nextQuestion`, `showResult`, `startGame`)
-- 통계 모달 껍데기 (`openStats`, `closeStats`, `onModalBackdrop`)
-- 축하 효과 (`spawnConfetti`)
+- 통계·난이도·강화출제·`recentHistory` / `hasNet` 등이 과목 간 복제 후보였음.
 
-과목별 예외:
-- 영어:
-  - 순차 빈칸 로직 (`checkSeqAnswer`, `renderSeqWord`)
-- 수학:
-  - 숫자 비교를 위한 `parseInt` 처리
-  - 정오답 사운드 (`playCorrect`, `playWrong`, `playTimeout`)
-- 국어/과학:
-  - 카테고리 라벨/피드백 문구 차이
+### 현재
 
-결론:
-- `quiz-ui-core` + 과목별 `ui-adapter` 2계층으로 분리하면 중복과 예외를 동시에 관리 가능함.
+- `common/progress-engine.js`가 `emptyStats`, `loadStats`, `saveStats`, `getBaseDiffLevel`, `getDifficultyLevel` 등 공통 경로를 제공하고, 과목 `engine.js`는 연산/카테고리/문항 생성만 유지.
+- 동기화: `saveStats` 경로에서 `global/sync-engine.js`가 연결된 경우 원격 병합 푸시 가능(`docs/memory.md` 참고).
 
 ---
 
-## 4) 공용 모듈 구조 및 의존성 방향 (SDD)
+## 3) `ui.js` — `quiz-ui-core` + 과목 예외
 
-제안 디렉터리:
-- `common/rocket-core.js`
-- `common/progress-engine.js`
-- `common/quiz-ui-core.js`
-- `common/audio.js`
-- `common/stats-modal.js`
+### 조사 시점
 
-의존성 규칙:
-- 공용 코어는 도메인 데이터를 직접 참조하지 않음.
-- 과목 어댑터가 공용 코어에 설정/함수만 주입함.
-- `global/reward.js`는 인프라 서비스로 두고, `rocket-core`에서 훅 형태로 호출함.
+- 타이머·모달·정답 흐름 중복이 컸고, 영어 순차 빈칸·수학 사운드 등 예외가 있었음.
+
+### 현재
+
+- `common/quiz-ui-core.js`의 `createAnswerFlowCore`, 영어 순차용 `createSequentialAnswerCore` 등으로 **정답 처리 SSOT**가 정리됨(`docs/CRITICAL_LOGIC.md` §11).
+- 정적 검증: `node verify_shared_core_contract.js`, `node verify_all.js`.
+
+---
+
+## 4) 의존성 방향 (SDD, 현행)
 
 ```mermaid
 flowchart TD
-  subjectPage[SubjectPage]
-  subjectAdapter[SubjectAdapter]
-  quizUiCore[QuizUiCore]
-  progressEngine[ProgressEngine]
-  rocketCore[RocketCore]
-  rewardService[RewardService]
-  subjectData[SubjectData]
+  subjectPage[Subject index.html]
+  subjectAdapter[engine.js / ui.js / rocket.js]
+  quizUiCore[quiz-ui-core.js]
+  progressEngine[progress-engine.js]
+  rocketCore[rocket-core.js]
+  rocketEffects[rocket-effects.js]
+  rewardSvc[global/reward.js + reward_ui.js]
+  syncEngine[global/sync-engine.js]
+  subjectData[과목 DB / engine 데이터]
 
   subjectPage --> subjectAdapter
   subjectAdapter --> quizUiCore
   subjectAdapter --> progressEngine
   subjectAdapter --> rocketCore
+  rocketCore --> rocketEffects
   subjectAdapter --> subjectData
-  rocketCore --> rewardService
+  rocketCore --> rewardSvc
+  progressEngine -. 선택 .-> syncEngine
+  rewardSvc -. 선택 .-> syncEngine
 ```
+
+- 공용 코어는 도메인 데이터를 직접 들고 있지 않음.
+- `common/audio.js`, `common/stats-modal.js`는 **별도 파일로는 두지 않음** — 수학 사운드 등은 과목 모듈(`math/sound.js` 등)·기존 UI에 유지.
 
 ---
 
-## 5) 마이그레이션 우선순위 (저위험 -> 고효과)
+## 5) 마이그레이션 결과 및 회귀 체크
 
-1. `rocket-core` 추출
-   - 이유: 4개 파일 완전 복제, 회귀 영향 범위 명확
-2. `progress-engine` 공통화
-   - 이유: 알고리즘 동일, 데이터 어댑터만 분리하면 됨
-3. `quiz-ui-core` 추출
-   - 이유: 중복이 크지만 영어/수학 예외 처리 필요
-4. `stats-modal` 및 DOM 헬퍼 공통화
-   - 이유: UI 변경 시 확산 수정 감소
-5. `audio` 유틸 공통화
-   - 이유: 기능 리스크 낮고 유지보수 편익 있음
+| 우선순위(당시) | 결과 |
+|----------------|------|
+| rocket-core | 완료 + `rocket-effects` 분리 |
+| progress-engine | 완료 |
+| quiz-ui-core | 완료(정답 흐름·순차 종결) |
+| stats-modal / audio 단일 모듈 | 미도입(필요 시 과목 단위로 유지) |
 
-회귀 체크포인트:
-- 그물망(`hasNet`) 획득/소모 규칙
-- 로켓 발사 시 `RewardSystem` 호출 타이밍
-- 시간초과 시 정답 표시 및 `recordResult(false, TIME_LIMIT)` 일관성
-- 영어 순차 빈칸 단계 진행 정확성
-- 수학 숫자형 비교(`parseInt`) 안정성
+**회귀 시 반드시 확인할 항목** (변경 후):
+
+- 그물망 `hasNet` / `netStreak` / `NET_STREAK` (`docs/CRITICAL_LOGIC.md` §7).
+- 로켓 발사 시 `playEntranceAndAddGem` 호출.
+- 시간 초과 시 `recordResult(false, TIME_LIMIT)` 일관성.
+- 영어 순차 빈칸 종결·수학 `parseInt` 비교.
+- `node verify_all.js` · `node verify_net_logic.js` · `node verify_shared_core_contract.js` PASS.

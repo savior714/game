@@ -73,6 +73,7 @@ const RewardSystemUI = (() => {
     bar.style.opacity = '0';
     let html = `
       <div class="inventory-content">
+        <div class="inventory-left">
         <div class="inventory-item gem-item" data-type="gems" onclick="RewardSystem.openShopModal()" style="display:flex;">
           <span class="icon">💎</span> <span class="val" id="inv-gems">${state.gems}</span><span class="unit">개</span>
         </div>
@@ -91,8 +92,14 @@ const RewardSystemUI = (() => {
     });
 
     html += `
-        <div class="inventory-item" style="cursor:pointer; display:flex;" onclick="if(window.Auth?.getUser()) window.Auth.signOut(); else window.Auth?.signInGoogle();">
+        </div>
+        <div class="inventory-actions">
+        <div class="inventory-item inventory-auth" style="cursor:pointer; display:flex;" onclick="if(window.Auth?.getUser()) window.Auth.signOut(); else window.Auth?.signInGoogle();">
           <span class="icon">👤</span> <span class="val" id="inv-auth" style="font-size:0.8rem;">로그인</span>
+        </div>
+        <button type="button" class="inventory-bar-icon-btn" onclick="window.checkGuardian()" title="보호자 관리" aria-label="보호자 관리">
+          <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        </button>
         </div>
       </div>
     `;
@@ -412,5 +419,23 @@ const RewardSystemUI = (() => {
     injectCriticalStyles, injectStyles, injectInventoryBar, applyBodyTopOffset, updateUI,
     playEntranceAndAddGem, openShopModal, spawnExplosion, showToast, 
     openYoutubeModal, openSnackModal, openMarbleModal, openCustomModal
+  };
+})();
+
+(function registerGuardianNav() {
+  function pathPrefixToRoot() {
+    const currentPath = window.location.pathname;
+    const depth = (currentPath.match(/\//g) || []).length - 1;
+    return depth > 0 ? '../'.repeat(depth) : './';
+  }
+  window.checkGuardian = function checkGuardian() {
+    const a = Math.floor(Math.random() * 8) + 12;
+    const b = Math.floor(Math.random() * 8) + 12;
+    const ans = prompt(`보호자 확인을 위해 다음 문제를 풀어주세요.\n\n${a} × ${b} = ?`);
+    if (ans !== null && parseInt(ans.trim(), 10) === a * b) {
+      window.location.href = pathPrefixToRoot() + 'guardian/index.html';
+    } else if (ans !== null) {
+      alert('오답입니다. 보호자만 접근할 수 있습니다.');
+    }
   };
 })();

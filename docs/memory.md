@@ -24,4 +24,7 @@
 - **보상 상점 커스터마이징 (2026-03-28)**:
   - 보호자가 구글 로그인 연동 환경에서 커스텀 보상(아이콘, 문구, 가격)을 1보석 단위로 자유롭게 등록/삭제할 수 있는 동적 상점(`reward.js`, `reward_ui.js`) 및 관리 UI(`guardian/index.html`) 구축. 잔여 보상 회수 로직 추가 완료.
 
+- **문서 SSOT 정합성 (2026-03-29)**:
+  - `README.md`, `SDD.md`, `specs/*`, `docs/specs/*`(보상 인벤토리·공용 코어·과학 DB), `docs/shared_logic_separation_audit.md`, `docs/net_overlap_diagnostic.md`를 보석 경제·공용 코어·동기화·그물망 구현 기준으로 최신화.
+
 *이전 상세 기록은 `docs/archive/memory_20260328.md`를 참조하세요.*

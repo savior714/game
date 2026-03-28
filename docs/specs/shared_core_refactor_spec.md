@@ -1,4 +1,6 @@
-# 공용 코어 분리 스펙 (2026-03-27)
+# 공용 코어 분리 스펙
+
+**최종 수정**: 2026-03-29  
 
 ## 1. 목적
 
@@ -7,11 +9,11 @@
 
 ## 2. 범위
 
-### 2.1 `common/rocket-core.js`
-- 포함:
-  - 스트릭 갱신, 발사/추락/그물망 시퀀스, 로켓 UI, 파티클 연출
+### 2.1 `common/rocket-core.js` + `common/rocket-effects.js`
+- **`rocket-core.js`**: 스트릭 갱신, 발사/추락/그물망 시퀀스, 로켓 UI 상태.
+- **`rocket-effects.js`**: 화면 플래시, 파티클, 별 등 **시각 연출만** (로직 분리).
 - 연결 방식:
-  - 과목별 `rocket.js`는 `RocketCore.install(window)`만 수행
+  - 과목별 `rocket.js`는 `RocketCore.install(window)`만 수행 (HTML에서 effects가 선로드되도록 순서 유지)
 
 ### 2.2 `common/progress-engine.js`
 - 포함:

@@ -82,10 +82,12 @@ function renderChoiceBtns(choices) {
   container.innerHTML = '';
   choices.forEach(val => {
     const btn = document.createElement('button');
-    btn.className   = 'answer-btn';
+    btn.className   = 'answer-btn btn-hidden'; // 시작은 숨김 상태
     btn.textContent = val;
     btn.onclick     = () => checkAnswer(val, btn);
     container.appendChild(btn);
+    // 렌더링 루프 확보 후 페이드 인
+    setTimeout(() => btn.classList.remove('btn-hidden'), 10);
   });
 }
 
@@ -138,24 +140,28 @@ function askQuestion() {
   document.getElementById('next-btn').style.display = 'none';
 
   const qEl = document.getElementById('question');
+  const iconHtml = (q.ico.startsWith('./') || q.ico.endsWith('.png'))
+    ? `<img src="${q.ico}" class="q-img" alt="question-icon">`
+    : `<span class="q-emoji">${q.ico}</span>`;
+
   if (q.blanks) {
-    // 순차 2-빈칸 모드
+    // 순차 빈칸 모드
     seqBlanks = q;
     qEl.innerHTML =
-      `<span class="q-emoji">${q.ico}</span>` +
+      iconHtml +
       `<div class="q-hint">${q.hint}</div>` +
       `<div class="q-blanked" id="seq-word"></div>`;
     renderSeqWord();
     renderChoiceBtns(q.blanks[0].choices);
   } else if (q.hint) {
     qEl.innerHTML =
-      `<span class="q-emoji">${q.ico}</span>` +
+      iconHtml +
       `<div class="q-hint">${q.hint}</div>` +
       `<div class="q-blanked">${q.main}</div>`;
     renderChoiceBtns(q.choices);
   } else {
     qEl.innerHTML =
-      `<span class="q-emoji">${q.ico}</span>` +
+      iconHtml +
       `<div class="q-main">${q.main}</div>`;
     renderChoiceBtns(q.choices);
   }
@@ -218,10 +224,13 @@ function checkSeqAnswer(val, btn) {
       renderSeqWordComplete();
       sequentialAnswerCore.finalizeSuccess({ button: btn });
     } else {
-      // 다음 빈칸 보기 표시
+      // 다음 빈칸 보기 표시 — 짧은 지연 후 부드럽게 전환
       setTimeout(() => {
-        if (seqBlanks) renderChoiceBtns(seqBlanks.blanks[seqStep].choices);
-      }, 350);
+        document.querySelectorAll('.answer-btn').forEach(b => b.classList.add('btn-hidden'));
+        setTimeout(() => {
+          if (seqBlanks) renderChoiceBtns(seqBlanks.blanks[seqStep].choices);
+        }, 150);
+      }, 100);
     }
   } else {
     // 오답 — 문제 종료

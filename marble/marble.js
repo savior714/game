@@ -130,7 +130,7 @@ function _mbStep() {
             a.vx -= (imp/ma)*nx; a.vy -= (imp/ma)*ny;
             b.vx += (imp/mb)*nx; b.vy += (imp/mb)*ny;
           }
-          if (a.lv === b.lv && it === 3 && d < mn + 1.2) merges.push([i, j]);
+          if (a.lv === b.lv && it === 0 && d < mn + 1.5) merges.push([i, j]);
           // Symmetry breaker
           if (Math.abs(dx) < 1.5) {
             const nudge = 0.06;

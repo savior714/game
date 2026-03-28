@@ -15,4 +15,13 @@
 - **데이터 정합성 및 검증 로직**:
   - `verify_all.js`를 통한 전 과목 데이터 및 코어 계약 무결성 자동화 검증 체계 구축.
 
+- **구글 로그인 및 오프라인-온라인 동기화 (2026-03-29)**:
+  - Supabase 기반 구글 로그인 인증 스택(`global/auth.js`) 추가.
+  - 오프라인 큐 및 타임스탬프 비교(최종 완료 기록 우선 병합)를 제공하는 분산 데이터 동기화 엔진(`global/sync-engine.js`) 장착.
+  - 전역 스토리지 매니저(`progress-engine`, `reward`)에 클라우드 자동 델리게이트 훅 연결 완료.
+  - **관리자 전용**: `ADMIN_EMAILS` + `user_directory` 테이블·RLS(`supabase/user_directory.sql`)로 가입 구글 계정 목록을 `admin/index.html`에서만 조회.
+
+- **보상 상점 커스터마이징 (2026-03-28)**:
+  - 보호자가 구글 로그인 연동 환경에서 커스텀 보상(아이콘, 문구, 가격)을 1보석 단위로 자유롭게 등록/삭제할 수 있는 동적 상점(`reward.js`, `reward_ui.js`) 및 관리 UI(`guardian/index.html`) 구축. 잔여 보상 회수 로직 추가 완료.
+
 *이전 상세 기록은 `docs/archive/memory_20260328.md`를 참조하세요.*

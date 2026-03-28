@@ -1,12 +1,12 @@
 const fs = require('fs');
 const path = require('path');
 
-const enginePath = path.join(__dirname, 'engine.js');
-const content = fs.readFileSync(enginePath, 'utf8');
+const wordsPath = path.join(__dirname, 'words.js');
+const content = fs.readFileSync(wordsPath, 'utf8');
 
 const dbMatch = content.match(/const WORDS = (\{[\s\S]*?\});/);
 if (!dbMatch) {
-  console.error('❌ Error: WORDS object not found in engine.js');
+  console.error('❌ Error: WORDS object not found in words.js');
   process.exit(1);
 }
 

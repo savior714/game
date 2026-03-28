@@ -83,12 +83,16 @@ h1 {
 /* ── 문제 표시 ───────────────── */
 #question { margin-bottom: 24px; }
 .q-emoji  { font-size: 3.2rem; display: block; margin-bottom: 10px; }
+.q-img    { width: 120px; height: 120px; object-fit: contain; margin-bottom: 10px; border-radius: 12px; }
 .q-main   { font-size: 2rem; font-weight: 800; color: #2D7DD2; letter-spacing: -0.02em; }
 .q-hint   { font-size: 1rem; color: #9CA3AF; margin-bottom: 6px; }
-.q-blanked { font-size: 2rem; font-weight: 800; letter-spacing: 8px; color: #1A1A1A; }
+.q-blanked { 
+  font-size: 2rem; font-weight: 800; color: #1A1A1A;
+  display: flex; justify-content: center; align-items: center; gap: 12px;
+}
 
 /* ── 순차 빈칸 ───────────────── */
-.sl        { display: inline-block; text-align: center; vertical-align: baseline; }
+.sl        { display: flex; align-items: center; justify-content: center; text-align: center; min-width: 1.2em; height: 1.5em; }
 .sl-active {
   background: #DBEAFE; border: 2px solid #2D7DD2; border-radius: 8px;
   color: transparent; padding: 0 6px; min-width: 1.1em;
@@ -114,10 +118,11 @@ h1 {
   background: #EBF3FD; border: 1.5px solid rgba(45, 125, 210, 0.22);
   border-radius: 14px; font-size: 1.2rem; font-weight: 800;
   color: #2D7DD2; padding: 18px 8px; cursor: pointer;
-  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s;
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s, opacity 0.2s ease;
   word-break: break-all; font-family: 'Pretendard', sans-serif;
 }
 .answer-btn:hover { background: #DBEAFE; transform: scale(1.05) translateY(-2px); }
+.answer-btn.btn-hidden { opacity: 0; transform: scale(0.95); pointer-events: none; }
 
 .answer-btn.correct {
   background: #ECFDF5; border-color: rgba(16, 185, 129, 0.35); color: #059669;

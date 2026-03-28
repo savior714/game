@@ -13,6 +13,12 @@ const RewardSystem = (() => {
     youtube_minutes: 0,
     snacks: 0,
     marble_plays: 0,
+    shop_items: [
+      { id: 'youtube', icon: '📺', label: '유튜브 15분', desc: '좋아하는 영상 시청', price: 1 },
+      { id: 'snack', icon: '🍪', label: '간식 1개', desc: '맛있는 간식 시간', price: 1 },
+      { id: 'marble', icon: '🎮', label: '마블 게임', desc: '마블 한 판 더!', price: 1 }
+    ],
+    custom_inventory: {},
     theme: 'modern',
     last_updated: new Date().toISOString()
   };
@@ -27,6 +33,8 @@ const RewardSystem = (() => {
     if (saved) {
       try {
         state = { ...initialState, ...JSON.parse(saved) };
+        if (!state.shop_items) state.shop_items = [...initialState.shop_items];
+        if (!state.custom_inventory) state.custom_inventory = {};
       } catch (e) {
         console.error('RewardSystem load failed:', e);
       }
@@ -35,7 +43,11 @@ const RewardSystem = (() => {
 
   function save() {
     state.last_updated = new Date().toISOString();
+    state._updated_at = Date.now();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    if (window.SyncEngine) {
+      window.SyncEngine.pushStats(STORAGE_KEY, state);
+    }
     if (typeof RewardSystemUI !== 'undefined') {
       RewardSystemUI.updateUI(state);
     }
@@ -56,21 +68,33 @@ const RewardSystem = (() => {
       state.snacks += amount;
     } else if (type === 'marble') {
       state.marble_plays += amount;
+    } else {
+      if (!state.custom_inventory[type]) state.custom_inventory[type] = 0;
+      state.custom_inventory[type] += amount;
     }
     
     save();
-    const typeNames = { gems: '💎 보석', youtube: '📺 유튜브 시간', snack: '🍪 간식', marble: '🎮 마블 게임' };
+    let typeName = type;
+    if (type === 'gems') typeName = '💎 보석';
+    else if (type === 'youtube') typeName = '📺 유튜브 시간';
+    else if (type === 'snack') typeName = '🍪 간식';
+    else if (type === 'marble') typeName = '🎮 마블 게임';
+    else {
+       const item = state.shop_items.find(i => i.id === type);
+       if (item) typeName = `${item.icon} ${item.label}`;
+    }
+
     if (typeof RewardSystemUI !== 'undefined') {
-      RewardSystemUI.showToast(`${typeNames[type] || type} 획득!`);
+      RewardSystemUI.showToast(`${typeName} 획득!`);
     }
   }
 
   function has(type, amount = 1) {
     if (type === 'gems') return state.gems >= amount;
     if (type === 'youtube') return state.youtube_minutes >= 15;
-    if (type === 'snack') return state.snacks > 0;
-    if (type === 'marble') return state.marble_plays > 0;
-    return false;
+    if (type === 'snack') return state.snacks >= amount;
+    if (type === 'marble') return state.marble_plays >= amount;
+    return (state.custom_inventory[type] || 0) >= amount;
   }
 
   function consume(type) {
@@ -90,6 +114,9 @@ const RewardSystem = (() => {
       state.marble_plays -= 1;
       save();
       RewardSystemUI.openMarbleModal();
+    } else {
+      const item = state.shop_items.find(i => i.id === type) || { id: type, icon: '🎁', label: '알 수 없는 보상' };
+      RewardSystemUI.openCustomModal(item, state);
     }
   }
 
@@ -100,19 +127,33 @@ const RewardSystem = (() => {
       save();
       if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.showToast('15분 차감 완료');
       if (onSuccess) onSuccess(state);
+    } else if (type !== 'youtube' && state.custom_inventory[type] > 0) {
+      state.custom_inventory[type] -= 1;
+      save();
+      const item = state.shop_items.find(i => i.id === type);
+      const label = item ? item.label : '보상';
+      if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.showToast(`${label} 1개 사용 완료`);
+      if (onSuccess) onSuccess(state);
     }
   }
 
   function exchangeGem(targetType) {
-    if (state.gems < 1) {
-      alert('보석이 부족합니다!');
+    const item = state.shop_items.find(i => i.id === targetType);
+    const price = item && item.price ? item.price : 1;
+
+    if (state.gems < price) {
+      alert(`보석이 부족합니다! (필요: ${price}개)`);
       return;
     }
     
-    state.gems -= 1;
+    state.gems -= price;
     if (targetType === 'youtube') state.youtube_minutes += 15;
     else if (targetType === 'snack') state.snacks += 1;
     else if (targetType === 'marble') state.marble_plays += 1;
+    else {
+      if (!state.custom_inventory[targetType]) state.custom_inventory[targetType] = 0;
+      state.custom_inventory[targetType] += 1;
+    }
     
     save();
     if (typeof RewardSystemUI !== 'undefined') {

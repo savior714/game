@@ -2,103 +2,8 @@
    단어 데이터베이스  [en, ko, emoji, level]
    level: 0=쉬움(3~5자), 1=보통(5~7자), 2=어려움(7자+)
 ═══════════════════════════════════ */
-const WORDS = {
-  animals:  { label:'동물',   icon:'🐾', words:[
-    ['tiger','호랑이','🐯',0], ['horse','말','🐴',0], ['sheep','양','🐑',0], ['snake','뱀','🐍',0],
-    ['eagle','독수리','🦅',1], ['mouse','쥐','🐭',1], ['shark','상어','🦈',1],
-    ['whale','고래','🐳',1], ['panda','판다','🐼',1], ['koala','코알라','🐨',1],
-    ['giraffe','기린','🦒',2], ['dolphin','돌고래','🐬',2], ['penguin','펭귄','🐧',2],
-    ['elephant','코끼리','🐘',3], ['kangaroo','캥거루','🦘',3],
-    ['butterfly','나비','🦋',3], ['crocodile','악어','🐊',3],
-    ['dinosaur', '공룡', '🦖', 3], ['Tyrannosaurus', '티라노사우루스', '🦖', 3], ['chimpanzee', '침팬지', '🐒', 3],
-    ['rhinoceros', '코뿔소', '🦏', 4], ['hippopotamus', '하마', '🦛', 4], ['grasshopper', '메뚜기', '🦗', 4],
-    ['caterpillar', '애벌레', '🐛', 5], ['dragonfly', '잠자리', '🚁', 5],
-    ['chameleon', '카멜레온', '🦎', 6], ['hummingbird', '벌새', '🐦', 6]
-  ]},
-  fruits:   { label:'과일',   icon:'🍎', words:[
-    ['apple','사과','🍎',0], ['grape','포도','🍇',0], ['lemon','레몬','🍋',0],
-    ['mango','망고','🥭',1], ['melon','멜론','🍈',1], ['peach','복숭아','🍑',1],
-    ['cherry','체리','🍒',2], ['orange','오렌지','🍊',2], ['banana','바나나','🍌',2],
-    ['papaya','파파야','🥭',3], ['pineapple','파인애플','🍍',3],
-    ['watermelon','수박','🍉',3], ['blueberry', '블루베리', '🫐', 3],
-    ['grapefruit', '자몽', '🍊', 4], ['blackberry', '블랙베리', '🫐', 4],
-    ['pomegranate', '석류', '🔴', 5], ['avocado', '아보카도', '🥑', 5],
-    ['dragonfruit', '용과', '🌵', 6], ['passionfruit', '백향과', '🟣', 6]
-  ]},
-  colors:   { label:'색깔',   icon:'🎨', words:[
-    ['green','초록색','🟢',0], ['white','흰색','⬜',0], ['black','검정색','⬛',0],
-    ['brown','갈색','🟫',1],
-    ['purple','보라색','🟣',2], ['yellow','노란색','🟡',2], ['silver','은색','🪙',2],
-    ['indigo','남색','💙',3],
-    ['turquoise', '청록색', '🩵', 4], ['navy blue', '남색', '💙', 4],
-    ['lime green', '연두색', '🟩', 5], ['crimson', '진홍색', '🟥', 5],
-    ['fluorescent', '형광색', '✨', 6], ['monochrome', '단색', '🏁', 6]
-  ]},
-  numbers:  { label:'숫자',   icon:'🔢', words:[
-    ['zero','영','0️⃣',0], ['four','사','4️⃣',0], ['five','오','5️⃣',0],
-    ['nine','구','9️⃣',1], ['three','삼','3️⃣',1], ['seven','칠','7️⃣',1], ['eight','팔','8️⃣',1],
-    ['eleven','십일','🔢',2], ['twelve','십이','🔢',2], ['twenty','이십','🔢',2],
-    ['thirty','삼십','🔢',3], ['hundred','백','💯',3],
-    ['thousand', '천', '🔢', 4], ['million', '백만', '🔢', 4],
-    ['billion', '십억', '🔢', 5], ['trillion', '조', '🔢', 5],
-    ['quadrillion', '경', '🔢', 6], ['quintillion', '해', '🔢', 6]
-  ]},
-  body:     { label:'신체',   icon:'👤', words:[
-    ['mouth','입','👄',0], ['cheek','뺨','😊',0], ['chest','가슴','🫀',1],
-    ['elbow','팔꿈치','💪',1], ['tooth','이','🦷',1], ['knee','무릎','🦵',1],
-    ['finger','손가락','🫵',2], ['stomach','위','🫀',2], ['shoulder','어깨','💆',3],
-    ['forehead','이마','🧠',3], ['eyebrow','눈썹','🤨',3],
-    ['skeleton', '골격', '🦴', 4], ['intestine', '장', '🫀', 4],
-    ['lungs', '폐', '🫀', 5], ['backbone', '등뼈', '🦴', 5],
-    ['esophagus', '식도', '🫀', 6], ['muscle', '근육', '💪', 6]
-  ]},
-  space:    { label:'우주',   icon:'🌌', words:[
-    ['Mars','화성','🔴',0], ['Earth','지구','🌍',0], ['Venus','금성','💫',1],
-    ['comet','혜성','☄️',1], ['Pluto','명왕성','🔵',1],
-    ['Saturn','토성','🪐',2], ['Jupiter','목성','🌕',2], ['Neptune','해왕성','🔵',3],
-    ['Mercury','수성','⭐',3], ['asteroid','소행성','🪨',3],
-    ['galaxy', '은하', '🌌', 4], ['universe', '우주', '🌌', 4],
-    ['constellation', '별자리', '✨', 5], ['atmosphere', '대기', '☁️', 5],
-    ['nebula', '성운', '🌫️', 6], ['supernova', '초신성', '💥', 6]
-  ]},
-  jobs:     { label:'직업',   icon:'👷', words:[
-    ['actor','배우','🎭',0], ['baker','제빵사','🥖',0], ['pilot','조종사','✈️',1],
-    ['nurse','간호사','👩‍⚕️',1], ['judge','판사','⚖️',1],
-    ['doctor','의사','👨‍⚕️',2], ['farmer','농부','👨‍🌾',2], ['dancer','무용수','💃',3],
-    ['singer','가수','🎤',3], ['artist','예술가','🎨',3],
-    ['teacher','선생님','👨‍🏫',3], ['soldier','군인','🪖',3],
-    ['astronaut', '우주비행사', '👨‍🚀', 4], ['scientist', '과학자', '👨‍🔬', 4],
-    ['programmer', '프로그래머', '💻', 5], ['detective', '탐정', '🔍', 5],
-    ['architect', '건축가', '🏗️', 6], ['journalist', '기자', '🎤', 6]
-  ]},
-  transport:{ label:'교통',   icon:'🚗', words:[
-    ['train','기차','🚂',0], ['plane','비행기','✈️',0], ['truck','트럭','🚛',1],
-    ['yacht','요트','⛵',1], ['ferry','여객선','⛴️',1],
-    ['rocket','로켓','🚀',2], ['subway','지하철','🚇',2], ['bicycle','자전거','🚲',3],
-    ['helicopter','헬리콥터','🚁',3], ['motorcycle','오토바이','🏍️',3],
-    ['submarine', '잠수함', '⛴️', 4], ['ambulance', '구급차', '🚑', 4],
-    ['hovercraft', '호버크라프트', '🛥️', 5], ['bulldozer', '불도저', '🚜', 5],
-    ['snowmobile', '스노모빌', '❄️', 6], ['spaceship', '우주선', '🛸', 6]
-  ]},
-  places:   { label:'장소',   icon:'🏠', words:[
-    ['store','가게','🏪',0], ['hotel','호텔','🏨',0], ['beach','해변','🏖️',1],
-    ['tower','탑','🗼',1], ['school','학교','🏫',1], ['church','교회','⛪',1],
-    ['airport','공항','✈️',2], ['stadium','경기장','🏟️',2], ['museum','박물관','🏛️',3],
-    ['hospital','병원','🏥',3], ['library','도서관','📚',3],
-    ['restaurant', '식당', '🍽️', 4], ['university', '대학교', '🎓', 4],
-    ['observatory', '천문대', '🔭', 5], ['laboratory', '연구실', '🔬', 5],
-    ['auditorium', '강당', '🏛️', 6], ['penitentiary', '교도소', '⛓️', 6]
-  ]},
-  nature:   { label:'자연',   icon:'🌿', words:[
-    ['cloud','구름','☁️',0], ['storm','폭풍','⛈️',0], ['river','강','🏞️',1],
-    ['grass','풀','🌱',1], ['flame','불꽃','🔥',1], ['stone','돌','🪨',1],
-    ['thunder','천둥','⛈️',2], ['rainbow','무지개','🌈',2], ['volcano','화산','🌋',3],
-    ['mountain','산','🏔️',3], ['hurricane','허리케인','🌀',3],
-    ['thunderstorm', '뇌우', '⛈️', 4], ['waterfall', '폭포', '🌊', 4],
-    ['blizzard', '눈보라', '🌨️', 5], ['earthquake', '지진', '🌋', 5],
-    ['environment', '환경', '🌍', 6], ['wildfire', '산불', '🔥', 6]
-  ]},
-};
+// WORDS 데이터는 words.js에서 로드됩니다.
+
 
 // 단어 필드 접근자
 const wEn  = w => w[0];
@@ -209,18 +114,30 @@ function buildQuestion(type, word) {
   const ico = wIco(word);
   if (type === 'spelling') {
     const numBlanks = en.length >= 5 && Math.random() < 0.5 ? 2 : 1;
-    if (numBlanks === 2) {
-      const idx1 = Math.floor(Math.random() * en.length);
-      let idx2; do { idx2 = Math.floor(Math.random() * en.length); } while (idx2 === idx1);
-      const [i, j] = [idx1, idx2].sort((a, b) => a - b);
-      const correct = (en[i] + en[j]).toLowerCase();
-      return { type, ico, hint: ko, answer: correct, word: en, blankIndices: [i, j], 
-               blanks: [{char:en[i].toLowerCase(), choices:makeSpellingChoices(en[i].toLowerCase())}, {char:en[j].toLowerCase(), choices:makeSpellingChoices(en[j].toLowerCase())}] };
+    const validIndices = [];
+    for (let k = 0; k < en.length; k++) {
+      if (en[k] !== ' ') validIndices.push(k);
     }
-    const blankIdx = Math.floor(Math.random() * en.length);
-    const correct  = en[blankIdx].toLowerCase();
-    const display  = en.slice(0, blankIdx) + ' _ ' + en.slice(blankIdx + 1);
-    return { type, ico, main: display, hint: ko, answer: correct, choices: makeSpellingChoices(correct) };
+
+    const blankIndices = [];
+    const targetCount = Math.min(numBlanks, validIndices.length);
+    while (blankIndices.length < targetCount) {
+      const candidate = validIndices[Math.floor(Math.random() * validIndices.length)];
+      if (!blankIndices.includes(candidate)) blankIndices.push(candidate);
+    }
+    blankIndices.sort((a, b) => a - b);
+    
+    const blanks = blankIndices.map(idx => {
+      const char = en[idx].toLowerCase();
+      return { char, choices: makeSpellingChoices(char) };
+    });
+    
+    const correct = blanks.map(b => b.char).join('');
+    
+    return { 
+      type, ico, hint: ko, answer: correct, word: en, 
+      blankIndices, blanks 
+    };
   }
   return { type, ico, main: ko, hint: null, answer: en, choices: makeWordChoices(word, 'en') };
 }

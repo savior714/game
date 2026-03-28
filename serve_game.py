@@ -8,6 +8,7 @@ serve_game.py — 게임 로컬 개발 서버
   python serve_game.py math       → 수학 게임 (math/index.html)
   python serve_game.py english    → 영어 게임 (english/index.html)
   python serve_game.py korean     → 국어 게임 (korean/index.html)
+  python serve_game.py admin      → 관리자 대시보드 (admin/index.html)
 
 배경 실행 (터미널 비점령):
   python serve_game.py math --no-browser   → 브라우저 없이 서버만 구동
@@ -32,6 +33,7 @@ PATHS = {
     "english": "english/index.html",
     "korean":  "korean/index.html",
     "marble":  "marble/index.html",
+    "admin":   "admin/index.html",
 }
 
 # ── Handler ──────────────────────────────────────────────

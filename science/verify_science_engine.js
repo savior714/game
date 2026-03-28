@@ -56,6 +56,29 @@ let errors = [];
     if (!qText || !qAns || qChoices.some(c => !c)) {
       errors.push(`[${cat}][Index ${idx}] 빈 문자열 또는 null 값이 감지됨`);
     }
+
+    // 6. 아동 창의성 보호 및 중의성 체크 (CRITICAL_LOGIC 제14조)
+    if (qLv <= 1) {
+      // 저난이도: 시각적/개념적 중의성이 우려되는 보기는 배제
+      const visualAmbiguityKeywords = ['동그란', '동글', '모양', '색이에요'];
+      const problematicDistractors = ['구름', '해', '공', '파란', '보라'];
+      
+      if (visualAmbiguityKeywords.some(kw => qText.includes(kw))) {
+        const distractors = qChoices.filter(c => c !== qAns);
+        distractors.forEach(d => {
+          if (problematicDistractors.some(pd => d.includes(pd))) {
+            errors.push(`[${cat}][Lv ${qLv}][Q: ${qText}] 오답 보기 [${d}]가 아이에게 창의적 오해를 줄 수 있음 (무관한 보류로 교체 권고)`);
+          }
+        });
+      }
+    } else if (qLv >= 2) {
+      // 고난이도: 과학적 추론을 위한 변별력 단서 포함 여부 권고 (경고 피드백)
+      const logicKeywords = ['매일', '밝게', '우주', '스스로', '모양을 바꾸는', '변하며'];
+      if (!logicKeywords.some(kw => qText.includes(kw)) && qText.includes('모양')) {
+        // 모양 관련 문항인데 단서가 부족한 경우 (경고 수준으로 기록하거나 필요시 에러)
+        // console.warn(`[WARN][${cat}][Lv ${qLv}] 문항에 추론 단서 보강 권장: ${qText}`);
+      }
+    }
   });
 });
 

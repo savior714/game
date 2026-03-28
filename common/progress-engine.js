@@ -29,7 +29,11 @@
   }
 
   function saveStats(storageKey, stats) {
+    stats._updated_at = Date.now();
     localStorage.setItem(storageKey, JSON.stringify(stats));
+    if (window.SyncEngine) {
+      window.SyncEngine.pushStats(storageKey, stats);
+    }
   }
 
   function getBaseDiffLevel(stats, domainKey, minData) {

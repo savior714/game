@@ -33,13 +33,29 @@
 }
 
 .inventory-content {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 12px;
   max-width: min(640px, 100%);
   width: 100%;
+}
+
+.inventory-rail-left {
+  min-width: 0;
+}
+
+.inventory-center {
+  display: flex;
   justify-content: center;
+  min-width: 0;
+}
+
+.inventory-rail-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-width: 0;
 }
 
 .inventory-left {
@@ -48,15 +64,13 @@
   align-items: center;
   justify-content: center;
   gap: 12px;
-  flex: 1 1 auto;
   min-width: 0;
 }
 
 .inventory-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-left: auto;
+  gap: 12px;
   flex-shrink: 0;
 }
 
@@ -359,7 +373,14 @@
   max-width: 440px;
 }
 
+/* transform으로 위로 올릴 때 다음 행과 겹치면서 아래쪽 테두리가 가려지지 않도록 스택 순서 보장 */
+.shop-card {
+  position: relative;
+  z-index: 0;
+}
+
 .shop-card:hover {
+  z-index: 1;
   transform: translateY(-3px);
   border-color: #8b5cf6 !important;
   background-color: #f5f3ff;

@@ -61,7 +61,7 @@ const RewardSystemUI = (() => {
     bar.innerHTML = `
       <div class="inventory-content">
         <div class="inventory-item gem-item" data-type="gems" onclick="RewardSystem.openShopModal()">
-          <span class="icon">💎</span> <span class="val" id="inv-gems">0</span>
+          <span class="icon">💎</span> <span class="val" id="inv-gems">0</span><span class="unit">개</span>
         </div>
         <div class="inventory-item" data-type="youtube" onclick="RewardSystem.consume('youtube')">
           <span class="icon">📺</span> <span class="val" id="inv-yt">0</span><span class="unit">분</span>

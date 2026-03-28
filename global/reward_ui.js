@@ -464,11 +464,16 @@ const RewardSystemUI = (() => {
     return depth > 0 ? '../'.repeat(depth) : './';
   }
   window.checkGuardian = function checkGuardian() {
+    const url = pathPrefixToRoot() + 'guardian/index.html';
+    if (window.Auth?.getUser()) {
+      window.location.href = url;
+      return;
+    }
     const a = Math.floor(Math.random() * 8) + 12;
     const b = Math.floor(Math.random() * 8) + 12;
     const ans = prompt(`보호자 확인을 위해 다음 문제를 풀어주세요.\n\n${a} × ${b} = ?`);
     if (ans !== null && parseInt(ans.trim(), 10) === a * b) {
-      window.location.href = pathPrefixToRoot() + 'guardian/index.html';
+      window.location.href = url;
     } else if (ans !== null) {
       alert('오답입니다. 보호자만 접근할 수 있습니다.');
     }

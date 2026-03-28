@@ -28,6 +28,7 @@
   - 보호자가 구글 로그인 연동 환경에서 커스텀 보상(아이콘, 문구, 가격)을 1보석 단위로 자유롭게 등록/삭제할 수 있는 동적 상점(`reward.js`, `reward_ui.js`) 및 관리 UI(`guardian/index.html`) 구축. 잔여 보상 회수 로직 추가 완료.
   - **바·편집 (동일 일자 후속)**: `shop_items` 항목은 재고 0이어도 상단 바에 슬롯 노출(`empty-slot` 스타일); `syncInventoryBarWithState`로 상점 배열 변경 시 바 DOM 재구성. 보호자 목록에서 기본 프리셋 포함 **편집** 모달(아이콘·이름·설명·가격, 내부 id 고정).
   - **보호자 상점 UX (2026-03-29)**: 목록 이모지 클릭으로 편집 모달 진입, 빈 아이콘 저장 시 기본값(선물 이모지), 추가 폼 아이콘 필드 리셋. 아이콘 입력란에 Windows **Win + .** 이모지 패널 안내 문구(`guardian/index.html`, `guardian/guardian.js`).
+  - **보호자 설정 진입 (2026-03-29)**: 구글 로그인 세션이 있으면 인벤토리 바 `checkGuardian`이 곱셈 확인(`prompt`) 없이 `guardian/index.html`로 이동; 비로그인 시 기존 산술 게이트 유지(`global/reward_ui.js`).
 
 - **문서 SSOT 정합성 (2026-03-29)**:
   - `README.md`, `SDD.md`, `specs/*`, `docs/specs/*`(보상 인벤토리·공용 코어·과학 DB), `docs/shared_logic_separation_audit.md`, `docs/net_overlap_diagnostic.md`를 보석 경제·공용 코어·동기화·그물망 구현 기준으로 최신화.

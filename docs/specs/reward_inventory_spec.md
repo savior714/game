@@ -53,6 +53,8 @@ UI 갱신·모달·보상바 레이아웃 변수(`--reward-bar-height` 등)는 *
 ## 5. UI/UX (보상 바 · 상점)
 
 - **보상 바**: 상단 고정 영역; 항목별 **고정 너비·간격·단위(개/분/회)** 로 정렬(`docs/CRITICAL_LOGIC.md` §18).
+- **재고 0 표시**: `shop_items`에 등록된 비보석 항목은 **보유량이 0이어도** 바에 슬롯을 표시한다(시각적으로는 `empty-slot` 등으로 보석·보유량 있는 칸과 구분). 클릭 시 기존처럼 “보유 중인 보상이 없습니다” 흐름을 유지할 수 있다.
+- **바 DOM 동기화**: `study_rewards`의 `shop_items` 배열이 바뀌면(항목 추가·삭제·메타 변경) `RewardSystemUI.syncInventoryBarWithState`가 상단 바를 재구성하여 슬롯과 `shop_items`가 일치하도록 한다. `RewardSystem.save()`·`cloud-sync-complete` 후 갱신 경로에서 호출된다.
 - **상점**: 보석 클릭 또는 지정 진입점으로 모달 오픈 → `shop_items` 항목을 보석 가격에 구매 → 인벤토리 필드 증가.
 - **유튜브**: 누적 **분**만 표시; 별도 강제 타이머 없이 부모 확인용(§4 구버전 정책과 동일 취지).
 
@@ -60,6 +62,7 @@ UI 갱신·모달·보상바 레이아웃 변수(`--reward-bar-height` 등)는 *
 
 - **진입**: `guardian/index.html` (구글 로그인·연동 환경 전제).
 - 보호자가 등록한 보상은 `shop_items` 및 `custom_inventory`와 연동되며, 잔여 회수 로직은 구현체(`reward.js`)를 따른다.
+- **편집**: 기본 프리셋(`youtube` / `snack` / `marble`)을 포함한 각 행에서 **아이콘·이름·설명·가격**을 편집할 수 있다. 내부 **id는 변경하지 않는다**(인벤토리 필드와의 매핑 유지).
 
 ## 7. 디자인 원칙 (Anti-Slop)
 

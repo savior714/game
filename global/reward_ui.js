@@ -7,6 +7,7 @@
 
 const RewardSystemUI = (() => {
   let resizeBound = false;
+  let authListenerBound = false;
 
   function injectCriticalStyles() {
     if (document.getElementById('reward-critical-css')) return;
@@ -85,7 +86,7 @@ const RewardSystemUI = (() => {
       else if (item.id === 'marble') unit = '회';
       
       html += `
-        <div class="inventory-item" data-type="${item.id}" onclick="RewardSystem.consume('${item.id}')" style="display:none;">
+        <div class="inventory-item empty-slot" data-type="${item.id}" onclick="RewardSystem.consume('${item.id}')" style="display:flex;">
           <span class="icon">${item.icon}</span> <span class="val" id="inv-${item.id}">0</span><span class="unit">${unit}</span>
         </div>
       `;
@@ -104,15 +105,19 @@ const RewardSystemUI = (() => {
       </div>
     `;
     bar.innerHTML = html;
+    bar.dataset.shopItemsSig = JSON.stringify(state.shop_items || []);
     document.body.prepend(bar);
     applyBodyTopOffset();
 
-    window.addEventListener('auth-changed', (e) => {
-      const authLabel = document.getElementById('inv-auth');
-      if (authLabel) {
-        authLabel.textContent = e.detail.user ? '로그아웃' : '로그인';
-      }
-    });
+    if (!authListenerBound) {
+      authListenerBound = true;
+      window.addEventListener('auth-changed', (e) => {
+        const authLabel = document.getElementById('inv-auth');
+        if (authLabel) {
+          authLabel.textContent = e.detail.user ? '로그아웃' : '로그인';
+        }
+      });
+    }
 
     if (!resizeBound) {
       window.addEventListener('resize', applyBodyTopOffset);
@@ -141,7 +146,7 @@ const RewardSystemUI = (() => {
     const gems = document.getElementById('inv-gems');
     if (gems) gems.textContent = state.gems;
 
-    document.querySelectorAll('.inventory-item').forEach(el => {
+    document.querySelectorAll('#reward-inventory .inventory-item[data-type]').forEach(el => {
       const type = el.dataset.type;
       if (!type) return;
 
@@ -155,14 +160,39 @@ const RewardSystemUI = (() => {
       const valEl = document.getElementById('inv-' + type);
       if (valEl) valEl.textContent = count;
 
-      if (count > 0 || type === 'gems') {
+      if (type === 'gems') {
         el.classList.add('has-reward');
+        el.classList.remove('empty-slot');
         el.style.display = 'flex';
+        return;
+      }
+
+      el.style.display = 'flex';
+      if (count > 0) {
+        el.classList.add('has-reward');
+        el.classList.remove('empty-slot');
       } else {
         el.classList.remove('has-reward');
-        el.style.display = 'none';
+        el.classList.add('empty-slot');
       }
     });
+  }
+
+  /** shop_items 변경(항목 추가·삭제·아이콘 등) 시 바 DOM을 상태와 맞춤 */
+  function syncInventoryBarWithState(state) {
+    const sig = JSON.stringify(state.shop_items || []);
+    const bar = document.getElementById('reward-inventory');
+    if (bar && bar.dataset.shopItemsSig === sig) return;
+
+    if (bar) bar.remove();
+    injectInventoryBar(state);
+    const next = document.getElementById('reward-inventory');
+    if (next) {
+      next.dataset.shopItemsSig = sig;
+      next.style.opacity = '1';
+      next.classList.add('ready');
+      applyBodyTopOffset();
+    }
   }
 
   function playEntranceAndAddGem(sourceElId = 'rp-rocket') {
@@ -416,7 +446,7 @@ const RewardSystemUI = (() => {
   }
 
   return {
-    injectCriticalStyles, injectStyles, injectInventoryBar, applyBodyTopOffset, updateUI,
+    injectCriticalStyles, injectStyles, injectInventoryBar, syncInventoryBarWithState, applyBodyTopOffset, updateUI,
     playEntranceAndAddGem, openShopModal, spawnExplosion, showToast, 
     openYoutubeModal, openSnackModal, openMarbleModal, openCustomModal
   };

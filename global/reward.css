@@ -111,6 +111,21 @@
   filter: drop-shadow(0 0 5px rgba(249, 115, 22, 0.3));
 }
 
+.inventory-item.empty-slot {
+  opacity: 0.72;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.inventory-item.empty-slot .val {
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.inventory-item.empty-slot .icon {
+  filter: grayscale(0.25);
+  opacity: 0.85;
+}
+
 .inventory-item .val {
   font-weight: 800;
   font-size: 1.05rem;

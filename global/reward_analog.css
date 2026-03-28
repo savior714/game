@@ -41,6 +41,11 @@
   color: #d84315; /* 좀 더 진한 벽돌색 */
 }
 
+#reward-inventory.theme-analog .inventory-item.empty-slot {
+  opacity: 0.65;
+  color: #a1887f;
+}
+
 /* 아날로그 모달 스타일 */
 .theme-analog .reward-modal-content {
   background-color: var(--analog-bg);

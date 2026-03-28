@@ -51,6 +51,7 @@ const RewardSystem = (() => {
       window.SyncEngine.pushStats(STORAGE_KEY, state);
     }
     if (typeof RewardSystemUI !== 'undefined') {
+      RewardSystemUI.syncInventoryBarWithState(state);
       RewardSystemUI.updateUI(state);
     }
   }
@@ -174,6 +175,7 @@ const RewardSystem = (() => {
   function refreshFromStorage() {
     load();
     if (typeof RewardSystemUI !== 'undefined') {
+      RewardSystemUI.syncInventoryBarWithState(state);
       RewardSystemUI.updateUI(state);
       RewardSystemUI.applyBodyTopOffset();
     }

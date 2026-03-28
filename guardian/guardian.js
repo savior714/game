@@ -257,19 +257,41 @@ function renderRewardList() {
     else invCount = (rewardState.custom_inventory[item.id] || 0) + '개';
 
     const div = document.createElement('div');
-    div.className = 'flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100 shadow-sm';
-    div.innerHTML = `
-      <div class="flex items-center gap-3">
-        <div class="text-2xl">${item.icon}</div>
-        <div>
-          <div class="font-bold text-sm text-gray-800">${item.label}</div>
-          <div class="text-xs text-gray-500">가격: 💎 ${item.price || 1} | 아이 보유량: <span class="text-blue-600 font-bold">${invCount}</span></div>
-        </div>
-      </div>
-      <button onclick="deleteCustomReward('${item.id}')" class="text-gray-400 hover:text-red-500 transition px-2 py-1" title="삭제">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-      </button>
-    `;
+    div.className = 'flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100 shadow-sm gap-2';
+
+    const left = document.createElement('div');
+    left.className = 'flex items-center gap-3 min-w-0 flex-1';
+    const iconEl = document.createElement('div');
+    iconEl.className = 'text-2xl flex-shrink-0';
+    iconEl.textContent = item.icon || '🎁';
+    const textWrap = document.createElement('div');
+    textWrap.className = 'min-w-0';
+    const titleEl = document.createElement('div');
+    titleEl.className = 'font-bold text-sm text-gray-800 truncate';
+    titleEl.textContent = item.label || '';
+    const metaEl = document.createElement('div');
+    metaEl.className = 'text-xs text-gray-500';
+    metaEl.innerHTML = `가격: 💎 ${item.price || 1} | 아이 보유량: <span class="text-blue-600 font-bold">${invCount}</span>`;
+    textWrap.append(titleEl, metaEl);
+    left.append(iconEl, textWrap);
+
+    const actions = document.createElement('div');
+    actions.className = 'flex items-center gap-1 flex-shrink-0';
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.className = 'text-blue-600 hover:text-blue-800 transition px-2 py-1 text-sm font-bold';
+    editBtn.title = '편집';
+    editBtn.textContent = '편집';
+    editBtn.onclick = () => openEditReward(item.id);
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'text-gray-400 hover:text-red-500 transition px-2 py-1';
+    delBtn.title = '삭제';
+    delBtn.onclick = () => deleteCustomReward(item.id);
+    delBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>';
+    actions.append(editBtn, delBtn);
+
+    div.append(left, actions);
     container.appendChild(div);
   });
 }
@@ -278,6 +300,109 @@ function saveRewards() {
   rewardState._updated_at = Date.now();
   localStorage.setItem('study_rewards', JSON.stringify(rewardState));
   if (window.SyncEngine) window.SyncEngine.pushStats('study_rewards', rewardState);
+}
+
+function openEditReward(id) {
+  const item = rewardState.shop_items.find(i => i.id === id);
+  if (!item) return;
+
+  const existing = document.getElementById('cr-edit-overlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'cr-edit-overlay';
+  overlay.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40';
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.remove();
+  });
+
+  const panel = document.createElement('div');
+  panel.className = 'bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-3';
+  panel.addEventListener('click', (e) => e.stopPropagation());
+
+  const h = document.createElement('h4');
+  h.className = 'font-bold text-gray-900 text-base mb-1';
+  h.textContent = '보상 편집 (ID: ' + item.id + ')';
+
+  const hint = document.createElement('p');
+  hint.className = 'text-xs text-gray-500 mb-2';
+  hint.textContent = '기본 항목(youtube 등)도 이름·가격만 바꿀 수 있습니다. 내부 ID는 바꾸지 않습니다.';
+
+  function labeledInput(labelText, inputEl) {
+    const wrap = document.createElement('div');
+    const lb = document.createElement('label');
+    lb.className = 'block text-xs font-semibold text-gray-600 mb-1';
+    lb.textContent = labelText;
+    wrap.append(lb, inputEl);
+    return wrap;
+  }
+
+  const iconIn = document.createElement('input');
+  iconIn.type = 'text';
+  iconIn.className = 'w-full px-3 py-2 border border-gray-200 rounded-lg text-lg text-center';
+  iconIn.value = item.icon || '';
+
+  const labelIn = document.createElement('input');
+  labelIn.type = 'text';
+  labelIn.className = 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm';
+  labelIn.placeholder = '보상 이름';
+  labelIn.value = item.label || '';
+
+  const descIn = document.createElement('input');
+  descIn.type = 'text';
+  descIn.className = 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm';
+  descIn.placeholder = '상세 설명 (선택)';
+  descIn.value = item.desc || '';
+
+  const priceIn = document.createElement('input');
+  priceIn.type = 'number';
+  priceIn.min = '1';
+  priceIn.className = 'w-24 px-2 py-2 border border-gray-200 rounded-lg text-sm text-center';
+  priceIn.value = String(item.price || 1);
+
+  const btnRow = document.createElement('div');
+  btnRow.className = 'flex gap-2 justify-end pt-3';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
+  cancelBtn.className = 'px-4 py-2 rounded-lg border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50';
+  cancelBtn.textContent = '취소';
+  cancelBtn.onclick = () => overlay.remove();
+
+  const saveBtn = document.createElement('button');
+  saveBtn.type = 'button';
+  saveBtn.className = 'px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-bold hover:bg-blue-700';
+  saveBtn.textContent = '저장';
+  saveBtn.onclick = () => {
+    const icon = iconIn.value.trim();
+    const label = labelIn.value.trim();
+    const desc = descIn.value.trim();
+    const price = parseInt(priceIn.value, 10);
+    if (!icon || !label || isNaN(price) || price < 1) {
+      alert('아이콘, 이름, 유효한 가격을 입력해주세요.');
+      return;
+    }
+    item.icon = icon;
+    item.label = label;
+    item.desc = desc;
+    item.price = price;
+    saveRewards();
+    renderRewardList();
+    overlay.remove();
+  };
+
+  btnRow.append(cancelBtn, saveBtn);
+  panel.append(
+    h, hint,
+    labeledInput('아이콘', iconIn),
+    labeledInput('이름', labelIn),
+    labeledInput('설명', descIn),
+    labeledInput('가격 (보석)', priceIn),
+    btnRow
+  );
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+  labelIn.focus();
 }
 
 function addCustomReward() {

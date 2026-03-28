@@ -1,9 +1,10 @@
 /* ═══════════════════════════════════
-   전역 보상 인벤토리 시스템 (Reward System)
+   전역 보상 인벤토리 시스템 (Reward System Core)
    - localStorage 기반 상태 관리
-   - 모든 페이지 상단 인벤토리 UI 자동 주입
-   - "지금 하기 vs 나중에 하기" 선택 로직
-═══════════════════════════════════ */
+   - 핵심 비즈니스 로직 (보석 획득, 아이템 교환 등)
+   - UI 처리는 reward_ui.js에 위임
+   - 2026-03-28: 퇴장 가드 제거 및 UI 분산 리팩토링
+   ═══════════════════════════════════ */
 
 const RewardSystem = (() => {
   const STORAGE_KEY = 'study_rewards';
@@ -17,7 +18,6 @@ const RewardSystem = (() => {
   };
 
   let state = { ...initialState };
-  let resizeBound = false;
 
   // ──────────────────────────────────────────
   // 1. 상태 관리 (State Management)
@@ -36,7 +36,9 @@ const RewardSystem = (() => {
   function save() {
     state.last_updated = new Date().toISOString();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    updateUI();
+    if (typeof RewardSystemUI !== 'undefined') {
+      RewardSystemUI.updateUI(state);
+    }
   }
 
   function setTheme(themeName) {
@@ -58,7 +60,9 @@ const RewardSystem = (() => {
     
     save();
     const typeNames = { gems: '💎 보석', youtube: '📺 유튜브 시간', snack: '🍪 간식', marble: '🎮 마블 게임' };
-    showToast(`${typeNames[type] || type} 획득!`);
+    if (typeof RewardSystemUI !== 'undefined') {
+      RewardSystemUI.showToast(`${typeNames[type] || type} 획득!`);
+    }
   }
 
   function has(type, amount = 1) {
@@ -74,212 +78,29 @@ const RewardSystem = (() => {
       alert('보유 중인 보상이 없습니다.');
       return;
     }
+    if (typeof RewardSystemUI === 'undefined') return;
 
     if (type === 'youtube') {
-      openYoutubeModal();
+      RewardSystemUI.openYoutubeModal(state);
     } else if (type === 'snack') {
       state.snacks -= 1;
       save();
-      openSnackModal();
+      RewardSystemUI.openSnackModal();
     } else if (type === 'marble') {
       state.marble_plays -= 1;
       save();
-      openMarbleModal();
+      RewardSystemUI.openMarbleModal();
     }
   }
 
-  // ──────────────────────────────────────────
-  // 2. UI 주입 및 갱신 (UI Injection)
-  // ──────────────────────────────────────────
-  function init() {
-    load();
-    injectStyles();
-    injectInventoryBar();
-    updateUI();
-  }
-
-  function injectStyles() {
-    if (document.getElementById('reward-system-css')) return;
-    const currentPath = window.location.pathname;
-    const depth = (currentPath.match(/\//g) || []).length - 1;
-    const prefix = depth > 0 ? '../'.repeat(depth) : './';
-
-    const link = document.createElement('link');
-    link.id = 'reward-system-css';
-    link.rel = 'stylesheet';
-    link.href = prefix + 'global/reward.css';
-    document.head.appendChild(link);
-
-    if (state.theme === 'analog') {
-      const analogLink = document.createElement('link');
-      analogLink.id = 'reward-system-analog-css';
-      analogLink.rel = 'stylesheet';
-      analogLink.href = prefix + 'global/reward_analog.css';
-      document.head.appendChild(analogLink);
-      document.body.classList.add('theme-analog');
+  // reward_ui.js에서 호출하는 내부 데이터 수정 함수
+  function consumeInternal(type, onSuccess) {
+    if (type === 'youtube' && state.youtube_minutes >= 15) {
+      state.youtube_minutes -= 15;
+      save();
+      if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.showToast('15분 차감 완료');
+      if (onSuccess) onSuccess(state);
     }
-  }
-
-  function injectInventoryBar() {
-    if (document.getElementById('reward-inventory')) return;
-    const bar = document.createElement('div');
-    bar.id = 'reward-inventory';
-    if (state.theme === 'analog') bar.classList.add('theme-analog');
-    bar.innerHTML = `
-      <div class="inventory-content">
-        <div class="inventory-item gem-item" data-type="gems" onclick="RewardSystem.openShopModal()">
-          <span class="icon">💎</span> <span class="val" id="inv-gems">0</span>
-        </div>
-        <div class="inventory-item" data-type="youtube" onclick="RewardSystem.consume('youtube')">
-          <span class="icon">📺</span> <span class="val" id="inv-yt">0</span><span class="unit">분</span>
-        </div>
-        <div class="inventory-item" data-type="snack" onclick="RewardSystem.consume('snack')">
-          <span class="icon">🍪</span> <span class="val" id="inv-snack">0</span><span class="unit">개</span>
-        </div>
-        <div class="inventory-item" data-type="marble" onclick="RewardSystem.consume('marble')">
-          <span class="icon">🎮</span> <span class="val" id="inv-marble">0</span><span class="unit">회</span>
-        </div>
-      </div>
-    `;
-    document.body.prepend(bar);
-    applyBodyTopOffset();
-
-    if (!resizeBound) {
-      window.addEventListener('resize', applyBodyTopOffset);
-      resizeBound = true;
-    }
-  }
-
-  function applyBodyTopOffset() {
-    const bar = document.getElementById('reward-inventory');
-    if (!bar || !document.body) return;
-
-    const currentPaddingTop = parseFloat(window.getComputedStyle(document.body).paddingTop) || 0;
-    const basePaddingTop = Number(document.body.dataset.basePaddingTop || currentPaddingTop);
-    document.body.dataset.basePaddingTop = String(basePaddingTop);
-
-    const barHeight = Math.ceil(bar.getBoundingClientRect().height);
-    document.body.style.paddingTop = `${basePaddingTop + barHeight}px`;
-
-    // 타 요소 위치 계산용 CSS 변수 노출
-    document.documentElement.style.setProperty('--reward-bar-height', `${barHeight}px`);
-    document.documentElement.style.setProperty('--base-padding-top', `${basePaddingTop}px`);
-  }
-
-  function updateUI() {
-    const gems = document.getElementById('inv-gems');
-    const yt = document.getElementById('inv-yt');
-    const snack = document.getElementById('inv-snack');
-    const marble = document.getElementById('inv-marble');
-
-    if (gems) gems.textContent = state.gems;
-    if (yt) yt.textContent = state.youtube_minutes;
-    if (snack) snack.textContent = state.snacks;
-    if (marble) marble.textContent = state.marble_plays;
-    
-    document.querySelectorAll('.inventory-item').forEach(el => {
-      const type = el.dataset.type;
-      const count = (type === 'gems') ? state.gems :
-                    (type === 'youtube') ? state.youtube_minutes : 
-                    (type === 'snack') ? state.snacks : state.marble_plays;
-      if (count > 0) el.classList.add('has-reward');
-      else el.classList.remove('has-reward');
-    });
-  }
-
-  // ──────────────────────────────────────────
-  // 3. 룰렛 및 선택 팝업 (Roulette & Choice Workflow)
-  // ──────────────────────────────────────────
-  // ──────────────────────────────────────────
-  // 3. 보석 획득 및 상점 (Gem & Shop Workflow)
-  // ──────────────────────────────────────────
-  function playEntranceAndAddGem(sourceElId = 'rp-rocket') {
-    const src = document.getElementById(sourceElId);
-    const startX = src ? src.getBoundingClientRect().left + src.offsetWidth / 2 : window.innerWidth / 2;
-    const startY = src ? src.getBoundingClientRect().top + src.offsetHeight / 2 : window.innerHeight / 2;
-    const endX = window.innerWidth / 2;
-    const endY = window.innerHeight / 2;
-
-    const el = document.createElement('div');
-    el.className = 'reward-center-rocket';
-    el.textContent = '🚀';
-    el.style.cssText = `
-      position:fixed; left:0; top:0; z-index:2000; font-size:2.5rem; pointer-events:none;
-      filter: drop-shadow(0 0 15px rgba(255,100,0,0.8));
-      transition: transform 1s cubic-bezier(0.2, 0.9, 0.2, 1.05);
-      transform: translate(${startX}px, ${startY}px) scale(1);
-    `;
-    document.body.appendChild(el);
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        el.style.transform = `translate(${endX}px, ${endY}px) scale(1.6) rotate(25deg)`;
-      });
-    });
-
-    setTimeout(() => {
-      spawnExplosion(endX, endY);
-      el.remove();
-      showGemAwarded(endX, endY);
-    }, 1050);
-  }
-
-  function showGemAwarded(cx, cy) {
-    const overlay = document.createElement('div');
-    overlay.className = 'reward-choice-overlay';
-    overlay.innerHTML = `
-      <div class="reward-choice-modal">
-        <div class="icon-bounce" style="font-size:5rem;">💎</div>
-        <h3 style="font-size:1.8rem;">보석 획득!</h3>
-        <p>축하합니다! 보석 1개를 얻었습니다.</p>
-        <p class="sub">보석을 모아 원하는 선물로 바꾸세요!</p>
-        <div class="choice-actions">
-          <button class="btn-now" onclick="this.closest('.reward-choice-overlay').remove()">확인</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-    add('gems', 1);
-  }
-
-  function openShopModal() {
-    if (document.getElementById('reward-shop-overlay')) return;
-
-    const overlay = document.createElement('div');
-    overlay.id = 'reward-shop-overlay';
-    overlay.className = 'reward-modal-overlay';
-    
-    const shopItems = [
-      { id: 'youtube', icon: '📺', label: '유튜브 15분', desc: '좋아하는 영상 시청' },
-      { id: 'snack', icon: '🍪', label: '간식 1개', desc: '맛있는 간식 시간' },
-      { id: 'marble', icon: '🎮', label: '마블 게임', desc: '마블 한 판 더!' },
-    ];
-
-    overlay.innerHTML = `
-      <div class="reward-modal-content shop-modal">
-        <div class="reward-head">
-          <h3 style="margin:0; font-size:1.5rem;">💎 보석 상점</h3>
-          <p style="margin:5px 0 0; font-size:0.9rem; color:#666;">보석 1개로 선물을 골라보세요!</p>
-        </div>
-        <div class="shop-inventory-info" style="margin: 15px 0; padding: 10px; background: #f1f5f9; border-radius: 12px; font-weight: bold;">
-          보유 보석: <span style="color:#8b5cf6;">💎 ${state.gems}개</span>
-        </div>
-        <div class="shop-grid" style="display: grid; gap: 12px; margin: 20px 0;">
-          ${shopItems.map(item => `
-            <div class="shop-card" onclick="RewardSystem.exchangeGem('${item.id}')" style="cursor:pointer; padding:15px; border:2px solid #e2e8f0; border-radius:18px; display:flex; align-items:center; gap:15px; text-align:left; transition:all 0.2s;">
-              <div style="font-size:2rem;">${item.icon}</div>
-              <div style="flex:1;">
-                <div style="font-weight:bold; font-size:1.05rem;">${item.label}</div>
-                <div style="font-size:0.8rem; color:#666;">${item.desc}</div>
-              </div>
-              <div style="background:#8b5cf6; color:white; padding:4px 10px; border-radius:10px; font-size:0.85rem; font-weight:bold;">💎 1</div>
-            </div>
-          `).join('')}
-        </div>
-        <button class="btn-close" style="width:100%; padding:12px;" onclick="this.closest('.reward-modal-overlay').remove()">나중에 하기</button>
-      </div>
-    `;
-    document.body.appendChild(overlay);
   }
 
   function exchangeGem(targetType) {
@@ -294,166 +115,38 @@ const RewardSystem = (() => {
     else if (targetType === 'marble') state.marble_plays += 1;
     
     save();
-    showToast('교환 성공! 보관함을 확인하세요.');
-    
-    const shopModal = document.querySelector('.shop-modal');
-    if (shopModal) {
-      const info = shopModal.querySelector('.shop-inventory-info span');
+    if (typeof RewardSystemUI !== 'undefined') {
+      RewardSystemUI.showToast('교환 성공! 보관함을 확인하세요.');
+      const info = document.querySelector('.shop-inventory-info span');
       if (info) info.textContent = `💎 ${state.gems}개`;
-      updateUI();
-    }
-  }
-
-  function spawnExplosion(cx, cy) {
-    const items = ['✨','⚡','🌟','💥','🔥'];
-    for (let i = 0; i < 15; i++) {
-      setTimeout(() => {
-        const angle = i / 15 * Math.PI * 2 + Math.random() * 0.4;
-        const dist  = 45 + Math.random() * 70;
-        const p = document.createElement('div');
-        p.style.cssText = `
-          position:fixed; left:${cx}px; top:${cy}px; z-index:3000; pointer-events:none;
-          font-size: 1.5rem; transition: all 0.7s cubic-bezier(0.1, 0.5, 0.1, 1);
-        `;
-        p.textContent = items[Math.floor(Math.random() * items.length)];
-        document.body.appendChild(p);
-        
-        requestAnimationFrame(() => {
-          const dx = Math.cos(angle) * dist;
-          const dy = Math.sin(angle) * dist;
-          p.style.transform = `translate(${dx}px, ${dy}px) scale(0) rotate(${Math.random()*180}deg)`;
-          p.style.opacity = '0';
-        });
-        setTimeout(() => p.remove(), 800);
-      }, i * 20);
+      RewardSystemUI.updateUI(state);
     }
   }
 
   // ──────────────────────────────────────────
-  // 4. 모달 구현 (Modals)
+  // 2. 초기화 (Initialization)
   // ──────────────────────────────────────────
-  function openYoutubeModal() {
-    const overlay = createModalOverlay('reward-yt-modal');
-    overlay.innerHTML = `
-      <div class="reward-modal-content">
-        <div class="icon-bounce" style="font-size:3rem; margin-bottom:15px;">📺</div>
-        <h3>확보된 유튜브 시간</h3>
-        <div class="secured-time-display" style="font-size:2.5rem; font-weight:bold; color:#f43f5e; margin:15px 0;">
-          ${state.youtube_minutes}분
-        </div>
-        
-        <div id="yt-lock-area" style="margin: 20px 0;">
-          <button id="yt-unlock-trigger" style="background:none; border:none; font-size:4rem; cursor:pointer;" title="부모님용 잠금 해제">🔒</button>
-          <p class="sub" style="color:#666; font-size:0.8rem;">부모님께서 자물쇠를 눌러 승인해 주세요.</p>
-        </div>
-
-        <div id="yt-deduct-area" style="display:none; margin-top:10px;">
-          <button class="btn-primary" id="deduct-yt-btn" style="background:#f43f5e; border-color:#e11d48; width:100%;">15분 사용 기록하기</button>
-        </div>
-
-        <button class="btn-close" style="margin-top:15px;" onclick="this.closest('.reward-modal-overlay').remove()">닫기</button>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-
-    const lockTrigger = overlay.querySelector('#yt-unlock-trigger');
-    const deductArea = overlay.querySelector('#yt-deduct-area');
-    const lockArea   = overlay.querySelector('#yt-lock-area');
-    const deductBtn  = overlay.querySelector('#deduct-yt-btn');
-    const display    = overlay.querySelector('.secured-time-display');
-
-    lockTrigger.onclick = () => {
-      // 복잡한 계산 (두 자리 덧셈)
-      const n1 = Math.floor(Math.random() * 40) + 11; 
-      const n2 = Math.floor(Math.random() * 40) + 11;
-      const answer = prompt(`🔒 [부모님 잠금 해제]\n\n계산해 주세요: ${n1} + ${n2} = ?`);
-      
-      if (String(answer) === String(n1 + n2)) {
-        lockArea.style.display = 'none';
-        deductArea.style.display = 'block';
-      } else if (answer !== null) {
-        alert('정답이 아닙니다.');
-      }
-    };
-
-    deductBtn.onclick = () => {
-      if (state.youtube_minutes < 15) {
-        alert('시간이 부족합니다.');
-        overlay.remove();
-        return;
-      }
-      state.youtube_minutes -= 15;
-      save();
-      display.textContent = `${state.youtube_minutes}분`;
-      showToast('15분 차감 완료');
-      if (state.youtube_minutes < 15) {
-        setTimeout(() => overlay.remove(), 400);
-      } else {
-        // 계속 사용할 수 있도록 버튼 유지
-        lockArea.style.display = 'block';
-        deductArea.style.display = 'none';
-      }
-    };
+  function init() {
+    load();
+    if (typeof RewardSystemUI !== 'undefined') {
+      RewardSystemUI.injectCriticalStyles();
+      RewardSystemUI.injectInventoryBar(state);
+      RewardSystemUI.injectStyles(state, () => {
+        RewardSystemUI.updateUI(state);
+        const bar = document.getElementById('reward-inventory');
+        if (bar) bar.style.opacity = '1';
+        RewardSystemUI.applyBodyTopOffset();
+      });
+    }
   }
 
-  function openSnackModal() {
-    const overlay = createModalOverlay('reward-snack-modal');
-    overlay.innerHTML = `
-      <div class="reward-modal-content">
-        <h3>🍪 간식 한 개 고르기</h3>
-        <p>과일, 요거트, 또는 좋아하는 과자 하나를 골라 드세요!</p>
-        <div class="snack-icons">🍎 🍌 🥛 🥨 🍫</div>
-        <button class="btn-primary" onclick="this.closest('.reward-modal-overlay').remove()">맛있게 먹을게요!</button>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-  }
-
-  function openMarbleModal() {
-    const currentPath = window.location.pathname;
-    const depth = (currentPath.match(/\//g) || []).length - 1;
-    const prefix = depth > 0 ? '../'.repeat(depth) : './';
-    const marbleUrl = prefix + 'marble/';
-
-    const overlay = createModalOverlay('reward-marble-modal');
-    overlay.style.backgroundColor = 'rgba(0,0,0,0.92)';
-    overlay.innerHTML = `
-      <div class="reward-marble-content">
-         <iframe src="${marbleUrl}" style="width:360px; height:560px; border:none; border-radius:20px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);"></iframe>
-         <button class="btn-close-marble" onclick="this.closest('.reward-modal-overlay').remove()">학습으로 돌아가기</button>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-    
-    window.addEventListener('message', (e) => {
-      if (e.data === 'closeMarble') {
-        overlay.remove();
-      }
-    }, { once: true });
-  }
-
-  function createModalOverlay(id) {
-    const el = document.createElement('div');
-    el.className = 'reward-modal-overlay ' + id;
-    el.onclick = (e) => { if (e.target === el) el.remove(); };
-    return el;
-  }
-
-  function showToast(msg) {
-    const toast = document.createElement('div');
-    toast.className = 'reward-toast';
-    toast.textContent = msg;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-      toast.classList.add('show');
-      setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 500);
-      }, 2000);
-    }, 50);
-  }
-
-  return { init, add, consume, getState: () => state, setTheme, openShopModal, playEntranceAndAddGem, exchangeGem };
+  return { 
+    init, add, consume, consumeInternal, exchangeGem,
+    getState: () => state, 
+    setTheme, 
+    openShopModal: () => RewardSystemUI.openShopModal(state),
+    playEntranceAndAddGem: (id) => RewardSystemUI.playEntranceAndAddGem(id)
+  };
 })();
 
 if (document.readyState === 'loading') {

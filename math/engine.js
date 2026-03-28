@@ -103,8 +103,31 @@ function pickOperation() {
 }
 
 /* ═══════════════════════════════════
-   문제 생성 및 동적 태깅
+   문제 생성 및 패턴 분석
 ═══════════════════════════════════ */
+function extractPatternTag(a, b, op) {
+  if (op === '+') {
+    const d1 = a % 10;
+    const d2 = b % 10;
+    const [min, max] = [Math.min(d1, d2), Math.max(d1, d2)];
+    return `add_unit_${min}_${max}`;
+  }
+  if (op === '-') {
+    return `sub_unit_${a % 10}_${b % 10}`;
+  }
+  return 'basic';
+}
+
+function generateByPattern(op, level, tag) {
+  let a, b, tries = 0;
+  while (tries < 100) {
+    const q = generateByOpLevel(op, level);
+    if (q.tag === tag) return q;
+    tries++;
+  }
+  return generateByOpLevel(op, level); // 실패 시 일반 생성 위임
+}
+
 function generateByOpLevel(op, level) {
   let a, b, result, tag;
   if (op === '+') {
@@ -114,14 +137,14 @@ function generateByOpLevel(op, level) {
     a = Math.floor(Math.random() * maxAs[level]) + 1;
     b = Math.floor(Math.random() * Math.min(maxSums[level] - a, maxBs[level])) + 1;
     result = a + b;
-    tag = (a % 10 + b % 10 >= 10) ? 'carry_over' : 'basic_add';
+    tag = extractPatternTag(a, b, op);
   } else if (op === '-') {
     const minAs = [3, 7, 15, 30, 60, 100, 150];
     const maxAs = [8, 20, 40, 80, 120, 160, 200];
     a = Math.floor(Math.random() * (maxAs[level] - minAs[level] + 1)) + minAs[level];
     b = Math.floor(Math.random() * (a - 1)) + 1;
     result = a - b;
-    tag = (a % 10 < b % 10) ? 'borrowing' : 'basic_sub';
+    tag = extractPatternTag(a, b, op);
   } else {
     const baseSets = [[2,5,10], [2,3,5,10], [2,3,4,5,6,7,8,9], [11,12,13,14,15], [16,17,18,19], [21,23,25,30], [31,37,43,47]];
     const bases = baseSets[level];
@@ -158,22 +181,23 @@ function generateQuestion() {
 }
 
 function _generateCandidate() {
-  // 1. 약점 자가 치유 (30% 확률)
+  // 1. 상세 패턴 약점 자가 치유 (30% 확률)
   if (Math.random() < 0.3) {
     let worstTag = null, minAcc = 2, tagOp = '+';
-    ['+', '-', '×'].forEach(op => {
+    ['+', '-'].forEach(op => {
       for (const [tag, s] of Object.entries(stats[op].weaknesses)) {
+        // 상세 패턴(add_unit 등)에 대해서만 우선 처리
+        if (!tag.includes('_unit_')) continue;
         const acc = s.attempts > 0 ? s.correct / s.attempts : 1;
-        if (s.attempts >= 2 && acc < 0.7 && acc < minAcc) {
+        if (s.attempts >= 2 && acc < 0.75 && acc < minAcc) {
           minAcc = acc; worstTag = tag; tagOp = op;
         }
       }
     });
+
     if (worstTag) {
       const level = getDifficultyLevel(tagOp);
-      let q = generateByOpLevel(tagOp, level);
-      let tries = 0;
-      while (q.tag !== worstTag && tries < 20) { q = generateByOpLevel(tagOp, level); tries++; }
+      const q = generateByPattern(tagOp, level, worstTag);
       return { ...q, isWeakness: true, level };
     }
   }

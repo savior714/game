@@ -25,6 +25,9 @@
   - `korean`: Added strict spacing, typos, exact honorific exceptions, and abstract antonyms for Lv 3-4.
   - `english`: Provided longer terminology (e.g., rhinoceros, esophagus) and increased spelling problem ratios.
 - Completed Marble Game improvements.
+- **Marble Merge Logic Fix (2026-03-28)**:
+  - **Issue**: Sub-stepping (4 iterations) resolved overlaps in the 1st step, making merge detection (previously in the 4th step) unreachable.
+  - **Fix**: Moved merge detection to the 1st iteration (`it === 0`) and increased detection threshold to 1.5px to ensure reliable merging upon collision.
 - **Statistics Labeling Redesign (2026-03-26)**:
   - Renamed 'Difficulty' (난이도) to 'Proficiency' (숙련도) in the stats table.
   - Rebranded 'Hard' (어려움) to 'Master' (마스터) for achievement-oriented UX.
@@ -167,6 +170,11 @@
     - **신체 부위 정제**: `esophagus`는 유지하되, `capillary` 등을 `skeleton`, `backbone` 등 인지도 높은 단어로 교체.
     - **데이터 정합성**: `verify_english_engine.js`를 통해 중복(shoulder, hurricane 등) 제거 및 176개 단어 무결성 검증 완료.
     - **Spec 동기화**: `specs/english.md`의 Level 4~6 정의를 "일상 빈도가 높으나 철자가 복합적인 단어"로 현행화.
+- **상세 패턴 분석 및 강화 학습 (2026-03-28)**:
+  - **Digit Pattern Tagging**: 수학 덧셈/뺄셈 시 일의 자리 숫자 조합을 분석하여 `add_unit_x_y`, `sub_unit_a_b` 태그 생성. (7+8, 8+7 동일 처리)
+  - **Reinforcement**: 정답률 75% 미만인 상세 패턴을 30% 확률로 집중 출제.
+  - **Generator**: 특정 태그를 만족하는 숫자를 동적으로 생성하는 `generateByPattern` 구현.
+  - **Validation**: `verify_math_engine.js` 시뮬레이션을 통해 1,050회 검증 완료.
 - **로켓 발사 보상 개편 (2026-03-27)**:
   - **룰렛 제거**: 기존의 룰렛 시스템 및 관련 UI/로직 완전 삭제.
   - **보석(Gems) 도입**: `initialState`에 `gems` 추가 및 인벤토리 바에 💎 표시 구역 신설.

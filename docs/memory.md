@@ -30,7 +30,9 @@
   - **보호자 상점 UX (2026-03-29)**: 목록 이모지 클릭으로 편집 모달 진입, 빈 아이콘 저장 시 기본값(선물 이모지), 추가 폼 아이콘 필드 리셋. 아이콘 입력란에 Windows **Win + .** 이모지 패널 안내 문구(`guardian/index.html`, `guardian/guardian.js`).
   - **보호자 설정 진입 (2026-03-29)**: 구글 로그인 세션이 있으면 인벤토리 바 `checkGuardian`이 곱셈 확인(`prompt`) 없이 `guardian/index.html`로 이동; 비로그인 시 기존 산술 게이트 유지(`global/reward_ui.js`).
 
-- **문서 SSOT 정합성 (2026-03-29)**:
-  - `README.md`, `SDD.md`, `specs/*`, `docs/specs/*`(보상 인벤토리·공용 코어·과학 DB), `docs/shared_logic_separation_audit.md`, `docs/net_overlap_diagnostic.md`를 보석 경제·공용 코어·동기화·그물망 구현 기준으로 최신화.
+- **데이터 동기화 및 난이도 안정성 보강 (2026-03-29)**:
+  - `global/sync-engine.js`: 서버 데이터를 덮어쓰지 않고 로컬과 합산하는 `mergeGameStatsPayload` (딥 머지) 도입하여 계정 간 진행도 유실 방지.
+  - `common/progress-engine.js`: 승급(90%)과 하강(80%) 임계치를 분리한 히스테리시스(Hysteresis) 설계로 '난이도 널뛰기' 현상 해결.
+  - `docs/CRITICAL_LOGIC.md`: 분산 데이터 병합 규칙(섹션 20) 및 난이도 보정 상세 수치 업데이트.
 
 *이전 상세 기록은 `docs/archive/memory_20260328.md`를 참조하세요.*

@@ -37,6 +37,46 @@ window.SyncEngine = (() => {
       _updated_at: Math.max(L._updated_at || 0, R._updated_at || 0)
     };
   }
+
+  /** 과목별 게임 통계(attempts, correct 등)를 합산하여 머지 (데이터 손실 방지) */
+  function mergeGameStatsPayload(local, remote) {
+    const L = local && typeof local === 'object' ? local : {};
+    const R = remote && typeof remote === 'object' ? remote : {};
+    const merged = {};
+
+    const domainKeys = new Set([...Object.keys(L), ...Object.keys(R)].filter(k => k !== '_updated_at'));
+    domainKeys.forEach(dk => {
+      const lDom = L[dk] || { levels: {}, weaknesses: {} };
+      const rDom = R[dk] || { levels: {}, weaknesses: {} };
+      merged[dk] = { levels: {}, weaknesses: {} };
+
+      // Levels 0-6 합산
+      const allLevels = new Set([...Object.keys(lDom.levels || {}), ...Object.keys(rDom.levels || {})]);
+      allLevels.forEach(lvIdx => {
+        const lvsL = lDom.levels?.[lvIdx] || { attempts: 0, correct: 0, totalTime: 0 };
+        const lvsR = rDom.levels?.[lvIdx] || { attempts: 0, correct: 0, totalTime: 0 };
+        merged[dk].levels[lvIdx] = {
+          attempts: (lvsL.attempts || 0) + (lvsR.attempts || 0),
+          correct: (lvsL.correct || 0) + (lvsR.correct || 0),
+          totalTime: (lvsL.totalTime || 0) + (lvsR.totalTime || 0)
+        };
+      });
+
+      // Weaknesses 합산
+      const wKeys = new Set([...Object.keys(lDom.weaknesses || {}), ...Object.keys(rDom.weaknesses || {})]);
+      wKeys.forEach(wk => {
+        const wl = lDom.weaknesses?.[wk] || { attempts: 0, correct: 0 };
+        const wr = rDom.weaknesses?.[wk] || { attempts: 0, correct: 0 };
+        merged[dk].weaknesses[wk] = {
+          attempts: (wl.attempts || 0) + (wr.attempts || 0),
+          correct: (wl.correct || 0) + (wr.correct || 0)
+        };
+      });
+    });
+
+    merged._updated_at = Math.max(L._updated_at || 0, R._updated_at || 0);
+    return merged;
+  }
   
   function getQueue() {
     try {
@@ -116,19 +156,22 @@ window.SyncEngine = (() => {
 
         const dbTime = row.payload._updated_at || new Date(row.updated_at).getTime();
 
-        // 최종 완료 기록을 우선시
+        // 최종 완료 기록을 우선시하되, 주요 통계는 병합 처리
         if (dbTime > localTime) {
           let toStore = row.payload;
-          if (row.data_key === 'study_rewards') {
-            let localParsed = {};
-            if (localRaw) {
-              try {
-                localParsed = JSON.parse(localRaw);
-              } catch (e) {
-                localParsed = {};
-              }
+          let localParsed = {};
+          if (localRaw) {
+            try {
+              localParsed = JSON.parse(localRaw);
+            } catch (e) {
+              localParsed = {};
             }
+          }
+
+          if (row.data_key === 'study_rewards') {
             toStore = mergeStudyRewardsPayload(localParsed, row.payload);
+          } else if (row.data_key.endsWith('GameStats')) {
+            toStore = mergeGameStatsPayload(localParsed, row.payload);
           }
           localStorage.setItem(row.data_key, JSON.stringify(toStore));
           hasUpdates = true;

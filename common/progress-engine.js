@@ -39,11 +39,23 @@
   function getBaseDiffLevel(stats, domainKey, minData) {
     const domainStats = stats[domainKey];
     let baseLevel = 0;
+    const UP_THRESHOLD = 0.9;
+    const DOWN_THRESHOLD = 0.8;
+
     for (let i = 0; i < 6; i++) {
       const lv = domainStats.levels[i];
       const acc = lv.attempts > 0 ? lv.correct / lv.attempts : 0;
-      if (lv.attempts >= minData && acc >= 0.9) baseLevel = i + 1;
-      else break;
+      
+      // 히스테리시스: 다음 레벨 시도 기록이 있으면 '이미 도달'로 간주하여 80% 기준 적용, 
+      // 기록이 없으면 첫 승급이므로 90% 기준 적용.
+      const hasReachedNext = domainStats.levels[i + 1] && domainStats.levels[i + 1].attempts > 0;
+      const threshold = hasReachedNext ? DOWN_THRESHOLD : UP_THRESHOLD;
+
+      if (lv.attempts >= minData && acc >= threshold) {
+        baseLevel = i + 1;
+      } else {
+        break;
+      }
     }
     return baseLevel;
   }

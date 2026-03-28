@@ -9,6 +9,7 @@
   - **상단 보상바 UI 개선**: 고정 너비(92px), 고정 간격(12px), 단위 통일(개/분/회)을 통해 시각적 정합성 및 리듬감 확보.
   - **보상바·상점 UI (후속)**: 인벤토리 바를 그리드 3열(좌 레일·중앙 슬롯·우 로그인/설정)으로 재구성; 보석 상점 카드 호버 시 하단 테두리가 잘리던 현상을 호버 레이어 `z-index`로 수정.
   - **보상바 겹침 (CSS)**: 인벤토리 바를 Grid 대신 Flex 한 행으로 두고 `inventory-center`에 `flex: 1 1 0`·`min-width: 0`·가로 스크롤, 우측은 `flex: 0 0 auto`, 빈 좌측 레일 폭 0, `inventory-auth` 가변 너비·말줄임(`global/reward.css`).
+  - **보상바 세로 스크롤 (CSS)**: `inventory-center`에 `overflow-y: hidden` — 호버 `translateY` 시 세로 스크롤바 깜빡임 방지(`global/reward.css`).
 - **공용 코어 아키텍처 (2026-03-27)**:
   - `rocket-core`, `rocket-effects`, `progress-engine`, `quiz-ui-core`로 중복 로직 통합 및 분리.
   - 전 과목 `index.html`, `engine.js`, `ui.js`가 코어 인터페이스를 위임 호출하도록 개편.

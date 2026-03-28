@@ -132,9 +132,12 @@
         <p class="text-xs text-gray-500 mb-4">유튜브·간식·마블은 기본 예시입니다. 이름·가격·아이콘은 각 행에서 <strong class="text-gray-700">편집</strong>할 수 있고, 완전히 새 보상은 아래 양식에서 <strong class="text-gray-700">추가하기</strong>로 넣을 수 있습니다.</p>
         
         <div class="flex flex-col gap-3 bg-gray-50 p-4 rounded-xl mb-6">
-          <div class="flex gap-2">
-            <input type="text" id="cr-icon" placeholder="아이콘(이모지 등)" class="w-20 px-3 py-2 border border-gray-200 rounded-lg text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="🎁">
-            <input type="text" id="cr-label" placeholder="보상 이름 (예: 게임 30분)" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <div>
+            <div class="flex gap-2">
+              <input type="text" id="cr-icon" placeholder="아이콘(이모지 등)" class="w-20 px-3 py-2 border border-gray-200 rounded-lg text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="🎁" aria-describedby="cr-icon-hint">
+              <input type="text" id="cr-label" placeholder="보상 이름 (예: 게임 30분)" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <p id="cr-icon-hint" class="text-xs text-gray-500 mt-1.5">Windows: <kbd class="px-1 py-0.5 rounded bg-gray-200 text-gray-800 font-sans text-[0.7rem]">Win</kbd> + <kbd class="px-1 py-0.5 rounded bg-gray-200 text-gray-800 font-sans text-[0.7rem]">.</kbd> 를 누르면 이모지 패널이 열립니다.</p>
           </div>
           <input type="text" id="cr-desc" placeholder="상세 설명 (선택)" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
           <div class="flex gap-2 items-center justify-between">

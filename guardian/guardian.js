@@ -261,9 +261,13 @@ function renderRewardList() {
 
     const left = document.createElement('div');
     left.className = 'flex items-center gap-3 min-w-0 flex-1';
-    const iconEl = document.createElement('div');
-    iconEl.className = 'text-2xl flex-shrink-0';
+    const iconEl = document.createElement('button');
+    iconEl.type = 'button';
+    iconEl.className = 'text-2xl flex-shrink-0 cursor-pointer hover:opacity-80 rounded leading-none p-0 border-0 bg-transparent';
+    iconEl.title = '아이콘·이름 등 편집';
+    iconEl.setAttribute('aria-label', '보상 편집');
     iconEl.textContent = item.icon || '🎁';
+    iconEl.onclick = () => openEditReward(item.id);
     const textWrap = document.createElement('div');
     textWrap.className = 'min-w-0';
     const titleEl = document.createElement('div');
@@ -326,7 +330,7 @@ function openEditReward(id) {
 
   const hint = document.createElement('p');
   hint.className = 'text-xs text-gray-500 mb-2';
-  hint.textContent = '기본 항목(youtube 등)도 이름·가격만 바꿀 수 있습니다. 내부 ID는 바꾸지 않습니다.';
+  hint.textContent = '아이콘·이름·설명·가격을 바꿀 수 있습니다. 비워 둔 아이콘은 저장 시 🎁으로 됩니다. 내부 ID는 바꾸지 않습니다.';
 
   function labeledInput(labelText, inputEl) {
     const wrap = document.createElement('div');
@@ -340,7 +344,20 @@ function openEditReward(id) {
   const iconIn = document.createElement('input');
   iconIn.type = 'text';
   iconIn.className = 'w-full px-3 py-2 border border-gray-200 rounded-lg text-lg text-center';
+  iconIn.placeholder = '이모지 입력 (비우면 🎁)';
   iconIn.value = item.icon || '';
+  iconIn.setAttribute('aria-describedby', 'cr-edit-icon-hint');
+
+  const iconHint = document.createElement('p');
+  iconHint.id = 'cr-edit-icon-hint';
+  iconHint.className = 'text-xs text-gray-400 mt-1';
+  const kbdWin = document.createElement('kbd');
+  kbdWin.className = 'px-1 py-0.5 rounded bg-gray-200 text-gray-800 font-sans text-[0.7rem]';
+  kbdWin.textContent = 'Win';
+  const kbdDot = document.createElement('kbd');
+  kbdDot.className = 'px-1 py-0.5 rounded bg-gray-200 text-gray-800 font-sans text-[0.7rem]';
+  kbdDot.textContent = '.';
+  iconHint.append('Windows: ', kbdWin, ' + ', kbdDot, ' 를 누르면 이모지 패널이 열립니다.');
 
   const labelIn = document.createElement('input');
   labelIn.type = 'text';
@@ -374,12 +391,13 @@ function openEditReward(id) {
   saveBtn.className = 'px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-bold hover:bg-blue-700';
   saveBtn.textContent = '저장';
   saveBtn.onclick = () => {
-    const icon = iconIn.value.trim();
+    let icon = iconIn.value.trim();
+    if (!icon) icon = '🎁';
     const label = labelIn.value.trim();
     const desc = descIn.value.trim();
     const price = parseInt(priceIn.value, 10);
-    if (!icon || !label || isNaN(price) || price < 1) {
-      alert('아이콘, 이름, 유효한 가격을 입력해주세요.');
+    if (!label || isNaN(price) || price < 1) {
+      alert('이름과 유효한 가격을 입력해주세요.');
       return;
     }
     item.icon = icon;
@@ -392,9 +410,11 @@ function openEditReward(id) {
   };
 
   btnRow.append(cancelBtn, saveBtn);
+  const iconField = labeledInput('아이콘', iconIn);
+  iconField.appendChild(iconHint);
   panel.append(
     h, hint,
-    labeledInput('아이콘', iconIn),
+    iconField,
     labeledInput('이름', labelIn),
     labeledInput('설명', descIn),
     labeledInput('가격 (보석)', priceIn),
@@ -402,17 +422,18 @@ function openEditReward(id) {
   );
   overlay.appendChild(panel);
   document.body.appendChild(overlay);
-  labelIn.focus();
+  iconIn.focus();
 }
 
 function addCustomReward() {
-  const icon = document.getElementById('cr-icon').value.trim();
+  const iconRaw = document.getElementById('cr-icon').value.trim();
+  const icon = iconRaw || '🎁';
   const label = document.getElementById('cr-label').value.trim();
   const desc = document.getElementById('cr-desc').value.trim();
   const price = parseInt(document.getElementById('cr-price').value, 10);
   
-  if (!icon || !label || isNaN(price) || price < 1) {
-    alert('아이콘, 이름, 유효한 가격을 입력해주세요.');
+  if (!label || isNaN(price) || price < 1) {
+    alert('이름과 유효한 가격을 입력해주세요.');
     return;
   }
   
@@ -421,6 +442,7 @@ function addCustomReward() {
   saveRewards();
   renderRewardList();
   
+  document.getElementById('cr-icon').value = '🎁';
   document.getElementById('cr-label').value = '';
   document.getElementById('cr-desc').value = '';
 }

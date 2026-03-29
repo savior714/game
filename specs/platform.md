@@ -65,7 +65,7 @@ game/
 | 적응형 숙련도 | 정답률+응답속도 기반 7단계 자동 조정 | `MIN_DATA=4`, `common/progress-engine.js` |
 | 강화학습 | 틀린 패턴 재출제 (최대 5개 기억) | `REINFORCE_PROB=0.45` (과목 `engine.js`) |
 | 중복 방지 | 최근 10문제 키 버퍼 | `RECENT_LIMIT=10` |
-| 타이머 | 과목별 `TIME_LIMIT`(수학·과학 등 60초, 영어 60초 등) — 각 `engine.js` / UI 코어 | 진행바 경고 |
+| 타이머 | 과목별 `TIME_LIMIT`(수학·과학 등 120초, 영어 120초 등) — 각 `engine.js` / UI 코어 | 진행바 경고 |
 | 누적 통계 | `localStorage`, 모달 열람·초기화 | `{subject}GameStats` |
 | 전역 보상·보석 | 20연속 정답 시 💎 1개 지급 → 상점에서 유튜브·간식·마블 등으로 교환 | `study_rewards`, `global/reward.js` |
 | 동기화 (선택) | 로그인 시 Supabase와 `study_rewards` 등 병합 | `global/sync-engine.js`, `global/auth.js` |

@@ -35,4 +35,8 @@
   - `common/progress-engine.js`: 승급(90%)과 하강(80%) 임계치를 분리한 히스테리시스(Hysteresis) 설계로 '난이도 널뛰기' 현상 해결.
   - `docs/CRITICAL_LOGIC.md`: 분산 데이터 병합 규칙(섹션 20) 및 난이도 보정 상세 수치 업데이트.
 
+- **전 과목 시간 제한 상향 (2026-03-29)**:
+  - 모든 게임(수학, 과학, 영어, 국어)의 `TIME_LIMIT`을 60초에서 120초로 일괄 상향하여 학습자(어린이)의 심리적 압박 감소 및 풀이 여유 확보.
+  - `specs/platform.md`, `math.md`, `english.md` 및 각 과목 `engine.js` 내 상수 동기화 완료.
+
 *이전 상세 기록은 `docs/archive/memory_20260328.md`를 참조하세요.*

@@ -67,7 +67,7 @@ const DB = {
    상수 및 상태
 ═══════════════════════════════════ */
 const TOTAL              = 10;
-const TIME_LIMIT         = 60;
+const TIME_LIMIT         = 120;
 const MIN_DATA           = 4;
 const LAUNCH_STREAK      = 20;
 const STATS_KEY          = 'scienceGameStats';

@@ -15,7 +15,7 @@ const wLv  = w => w[3];
    상수
 ═══════════════════════════════════ */
 const TOTAL              = 10;
-const TIME_LIMIT         = 60;
+const TIME_LIMIT         = 120;
 const MIN_DATA           = 3;
 const LAUNCH_STREAK      = 20;
 const STATS_KEY          = 'englishGameStats';

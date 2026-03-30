@@ -123,6 +123,35 @@
       </div>
     </div>
 
+    <!-- Weekly Test Words Section (English Only) -->
+    <div id="weekly-words-section" class="border-t border-gray-200 pt-8 mb-8" style="display: none;">
+      <h3 class="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <span>📝</span> 영어 주간 시험 단어 (집중 학습)
+      </h3>
+      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <p class="text-xs text-gray-500 mb-4">입력한 단어가 게임 중 <strong class="text-blue-600 font-bold">60% 이상의 확률</strong>로 자주 등장합니다. (영유/학원 주간 숙제용)</p>
+        
+        <div class="flex flex-col gap-3 bg-blue-50 p-4 rounded-xl mb-6 border border-blue-100">
+          <div class="flex gap-2">
+            <input type="text" id="ww-en" placeholder="영단어 (예: apple)" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="text" id="ww-ko" placeholder="뜻 (예: 사과)" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+          <div class="flex gap-2 items-center justify-between">
+            <div class="flex gap-2 min-w-0">
+               <input type="text" id="ww-icon" placeholder="아이콘" class="w-16 px-1 py-2 border border-blue-200 rounded-lg text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="🎁">
+               <button onclick="addWeeklyWord()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-blue-700 transition shrink-0">단어 추가</button>
+            </div>
+            <p class="text-[10px] text-gray-400">아이콘 미입력 시 🎁</p>
+          </div>
+        </div>
+
+        <div id="ww-list" class="space-y-2">
+          <!-- Weekly words will be rendered here -->
+          <div class="text-center py-4 text-xs text-gray-400 italic">추가된 단어가 없습니다.</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Reward Customization Panel -->
     <div class="border-t border-gray-200 pt-8" id="reward-custom-section">
       <h3 class="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">

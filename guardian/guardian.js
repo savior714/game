@@ -60,6 +60,11 @@ window.addEventListener('DOMContentLoaded', () => {
 function setSubject(sub) {
   currentSubject = sub;
   
+  // 주간 단어 섹션 노출 제어 (영어만)
+  const wwSection = document.getElementById('weekly-words-section');
+  if (wwSection) wwSection.style.display = (sub === 'english') ? 'block' : 'none';
+  if (sub === 'english') loadWeeklyWords();
+
   // 탭 라벨 스타일 변환
   document.querySelectorAll('.tab-btn').forEach(b => {
     b.classList.remove('active-tab');
@@ -473,4 +478,53 @@ function deleteCustomReward(id) {
   rewardState.shop_items = rewardState.shop_items.filter(i => i.id !== id);
   saveRewards();
   renderRewardList();
+}
+// ──────────────────────────────────────────
+// 영어 주간 시험 단어 관리 (Weekly Words)
+// ──────────────────────────────────────────
+let weeklyWords = [];
+function loadWeeklyWords() {
+  const saved = localStorage.getItem('englishWeeklyWords');
+  weeklyWords = saved ? JSON.parse(saved) : [];
+  renderWeeklyWords();
+}
+function saveWeeklyWords() {
+  localStorage.setItem('englishWeeklyWords', JSON.stringify(weeklyWords));
+  if (window.SyncEngine) window.SyncEngine.pushStats('englishWeeklyWords', weeklyWords);
+}
+function renderWeeklyWords() {
+  const container = document.getElementById('ww-list');
+  if (!container) return;
+  if (weeklyWords.length === 0) {
+    container.innerHTML = '<div class="text-center py-4 text-xs text-gray-400 italic">추가된 단어가 없습니다.</div>';
+    return;
+  }
+  container.innerHTML = weeklyWords.map((w, idx) => `
+    <div class="flex items-center justify-between bg-blue-50/50 p-2.5 rounded-xl border border-blue-100/50">
+      <div class="flex items-center gap-3 min-w-0">
+        <span class="text-lg">${w.icon || '🎁'}</span>
+        <div class="min-w-0">
+          <div class="font-bold text-sm text-blue-900 truncate">${w.en}</div>
+          <div class="text-[10px] text-blue-600 truncate">${w.ko}</div>
+        </div>
+      </div>
+      <button onclick="deleteWeeklyWord(${idx})" class="text-gray-400 hover:text-red-500 transition p-1">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+      </button>
+    </div>
+  `).join('');
+}
+function addWeeklyWord() {
+  const en = document.getElementById('ww-en').value.trim();
+  const ko = document.getElementById('ww-ko').value.trim();
+  const icon = document.getElementById('ww-icon').value.trim() || '🎁';
+  if (!en || !ko) { alert('영단어와 뜻을 모두 입력해주세요.'); return; }
+  weeklyWords.push({ en, ko, icon });
+  saveWeeklyWords(); renderWeeklyWords();
+  document.getElementById('ww-en').value = ''; document.getElementById('ww-ko').value = '';
+}
+function deleteWeeklyWord(idx) {
+  if (confirm('이 단어를 주간 시험 목록에서 삭제할까요?')) {
+    weeklyWords.splice(idx, 1); saveWeeklyWords(); renderWeeklyWords();
+  }
 }

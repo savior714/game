@@ -502,7 +502,7 @@ function renderWeeklyWords() {
   container.innerHTML = weeklyWords.map((w, idx) => `
     <div class="flex items-center justify-between bg-blue-50/50 p-2.5 rounded-xl border border-blue-100/50">
       <div class="flex items-center gap-3 min-w-0">
-        <span class="text-lg">${w.icon || '🎁'}</span>
+        ${w.icon ? `<span class="text-lg shrink-0">${w.icon}</span>` : ''}
         <div class="min-w-0">
           <div class="font-bold text-sm text-blue-900 truncate">${w.en}</div>
           <div class="text-[10px] text-blue-600 truncate">${w.ko}</div>
@@ -517,7 +517,7 @@ function renderWeeklyWords() {
 function addWeeklyWord() {
   const en = document.getElementById('ww-en').value.trim();
   const ko = document.getElementById('ww-ko').value.trim();
-  const icon = document.getElementById('ww-icon').value.trim() || '🎁';
+  const icon = document.getElementById('ww-icon').value.trim();
   if (!en || !ko) { alert('영단어와 뜻을 모두 입력해주세요.'); return; }
   weeklyWords.push({ en, ko, icon });
   saveWeeklyWords(); renderWeeklyWords();

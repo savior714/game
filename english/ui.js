@@ -140,9 +140,9 @@ function askQuestion() {
   document.getElementById('next-btn').style.display = 'none';
 
   const qEl = document.getElementById('question');
-  const iconHtml = (q.ico.startsWith('./') || q.ico.endsWith('.png'))
+  const iconHtml = (q.ico && (q.ico.startsWith('./') || q.ico.endsWith('.png')))
     ? `<img src="${q.ico}" class="q-img" alt="question-icon">`
-    : `<span class="q-emoji">${q.ico}</span>`;
+    : (q.ico ? `<span class="q-emoji">${q.ico}</span>` : '');
 
   if (q.blanks) {
     // 순차 빈칸 모드

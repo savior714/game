@@ -156,15 +156,22 @@ function generateQuestion() {
   while (tries < 20) {
     const candidate = _generateCandidate();
     const wordKey = candidate._wordEn; // 단어 자체가 키
-
+    
     // 가용 단어 수에 따른 버퍼 크기 조절
     const catWords = WORDS[candidate._cat].words.filter(w => wLv(w) === candidate._level);
     const limit = Math.min(RECENT_LIMIT, Math.floor(catWords.length / 2));
     
-    const slice = recentQuestions.slice(-limit);
-    if (!slice.includes(wordKey) || catWords.length <= 1) {
-      q = candidate;
-      break;
+    // 주간 단어면 바로 통과 (최근 10문제 중복만 체크)
+    if (candidate.isWeekly) {
+      if (!recentQuestions.slice(-RECENT_LIMIT).includes(wordKey)) {
+        q = candidate; break;
+      }
+    } else {
+      const slice = recentQuestions.slice(-limit);
+      if (!slice.includes(wordKey) || catWords.length <= 1) {
+        q = candidate;
+        break;
+      }
     }
     tries++;
   }
@@ -187,11 +194,11 @@ function _generateCandidate() {
       ? weeklyWords.find(ww => ww.en === wrongWeekly.en)
       : weeklyWords[Math.floor(Math.random() * weeklyWords.length)];
     
-    const wordData = [w.en, w.ko, w.icon || '🎁', getDifficultyLevel(currentCat)];
+    const wordData = [w.en, w.ko, w.icon || "", getDifficultyLevel(currentCat)];
     const type = pickQuestionType(wordData[3]);
     const res = buildQuestion(type, wordData);
     return { ...res, _cat: currentCat, _level: wordData[3], _wordEn: w.en, isWeekly: true };
-  }
+}
 
   // 1. 약점 단어 강화 (30% 확률)
   if (Math.random() < 0.3) {
@@ -217,7 +224,7 @@ function _generateCandidate() {
     let word = null;
     if (p.isWeekly) {
       const ww = weeklyWords.find(w => w.en === p.en);
-      if (ww) word = [ww.en, ww.ko, ww.icon || '🎁', p.level];
+      if (ww) word = [ww.en, ww.ko, ww.icon || "", p.level];
     }
     if (!word) word = WORDS[p.cat].words.find(w => wEn(w) === p.en) || pickWord(p.cat, p.level);
     

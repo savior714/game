@@ -144,25 +144,28 @@ function askQuestion() {
     ? `<img src="${q.ico}" class="q-img" alt="question-icon">`
     : (q.ico ? `<span class="q-emoji">${q.ico}</span>` : '');
 
+  const isLong = (q.word && q.word.length > 10) || (q.main && q.main.length > 10);
+  const longClass = isLong ? ' q-long' : '';
+
   if (q.blanks) {
     // 순차 빈칸 모드
     seqBlanks = q;
     qEl.innerHTML =
       iconHtml +
       `<div class="q-hint">${q.hint}</div>` +
-      `<div class="q-blanked" id="seq-word"></div>`;
+      `<div class="q-blanked${longClass}" id="seq-word"></div>`;
     renderSeqWord();
     renderChoiceBtns(q.blanks[0].choices);
   } else if (q.hint) {
     qEl.innerHTML =
       iconHtml +
       `<div class="q-hint">${q.hint}</div>` +
-      `<div class="q-blanked">${q.main}</div>`;
+      `<div class="q-blanked${longClass}">${q.main}</div>`;
     renderChoiceBtns(q.choices);
   } else {
     qEl.innerHTML =
       iconHtml +
-      `<div class="q-main">${q.main}</div>`;
+      `<div class="q-main${longClass}">${q.main}</div>`;
     renderChoiceBtns(q.choices);
   }
 

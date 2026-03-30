@@ -88,20 +88,21 @@ h1 {
 .q-hint   { font-size: 1rem; color: #9CA3AF; margin-bottom: 6px; }
 .q-blanked { 
   font-size: 2rem; font-weight: 800; color: #1A1A1A;
-  display: flex; flex-wrap: wrap; justify-content: center; align-items: center; 
-  gap: 8px 12px; margin: 0 auto 12px; max-width: 100%;
+  display: flex; flex-wrap: nowrap; justify-content: center; align-items: center; 
+  gap: 4px; margin: 0 auto 12px; max-width: 100%;
 }
+.q-blanked.q-long { font-size: 1.6rem; }
 
 /* ── 순차 빈칸 ───────────────── */
-.sl        { display: flex; align-items: center; justify-content: center; text-align: center; min-width: 1.1em; height: 1.5em; margin: 2px 0; }
+.sl        { display: flex; align-items: center; justify-content: center; text-align: center; min-width: 0.9em; height: 1.5em; margin: 0; }
 .sl-active {
   background: #DBEAFE; border: 2px solid #2D7DD2; border-radius: 8px;
-  color: transparent; padding: 0 6px; min-width: 1.1em;
+  color: transparent; padding: 0 6px; min-width: 0.9em;
   animation: blank-pulse 0.8s ease-in-out infinite;
 }
 .sl-dim {
   background: #F3F4F6; border: 2px dashed #D1D5DB; border-radius: 8px;
-  color: transparent; padding: 0 6px; min-width: 1.1em;
+  color: transparent; padding: 0 6px; min-width: 0.9em;
 }
 .sl-filled { color: #059669; }
 @keyframes blank-pulse {

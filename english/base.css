@@ -88,11 +88,12 @@ h1 {
 .q-hint   { font-size: 1rem; color: #9CA3AF; margin-bottom: 6px; }
 .q-blanked { 
   font-size: 2rem; font-weight: 800; color: #1A1A1A;
-  display: flex; justify-content: center; align-items: center; gap: 12px;
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: center; 
+  gap: 8px 12px; margin: 0 auto 12px; max-width: 100%;
 }
 
 /* ── 순차 빈칸 ───────────────── */
-.sl        { display: flex; align-items: center; justify-content: center; text-align: center; min-width: 1.2em; height: 1.5em; }
+.sl        { display: flex; align-items: center; justify-content: center; text-align: center; min-width: 1.1em; height: 1.5em; margin: 2px 0; }
 .sl-active {
   background: #DBEAFE; border: 2px solid #2D7DD2; border-radius: 8px;
   color: transparent; padding: 0 6px; min-width: 1.1em;

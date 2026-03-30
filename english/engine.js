@@ -49,6 +49,7 @@ let wrongPatterns  = [];
 let recentHistory  = []; // 최근 5문제 정답 여부
 let recentQuestions = []; // 최근 10단어 (중복 방지용 키)
 let weeklyWords = []; // 보호자가 등록한 주간 시험 단어
+let weeklyTypeHistory = {}; // 단어별 출제 유형 기록 {'apple': 'spelling'}
 
 function loadWeeklyWords() {
   const saved = localStorage.getItem('englishWeeklyWords');
@@ -161,9 +162,10 @@ function generateQuestion() {
     const catWords = WORDS[candidate._cat].words.filter(w => wLv(w) === candidate._level);
     const limit = Math.min(RECENT_LIMIT, Math.floor(catWords.length / 2));
     
-    // 주간 단어면 바로 통과 (최근 10문제 중복만 체크)
+    // 주간 단어면 바로 통과 (최근 단어 체크를 단어 수에 맞춰 완화)
     if (candidate.isWeekly) {
-      if (!recentQuestions.slice(-RECENT_LIMIT).includes(wordKey)) {
+      const weeklyLimit = Math.max(1, Math.min(RECENT_LIMIT, Math.floor(weeklyWords.length / 2)));
+      if (!recentQuestions.slice(-weeklyLimit).includes(wordKey) || weeklyWords.length <= 1) {
         q = candidate; break;
       }
     } else {
@@ -188,17 +190,26 @@ function generateQuestion() {
 function _generateCandidate() {
   // 0. 주간 시험 단어 우선 출제 (60% 확률)
   if (weeklyWords.length > 0 && Math.random() < 0.6) {
+    loadWeeklyWords(); // 실시간 데이터 반영 (나갔다 들어올 때 등)
     // 오답 기록이 있는 주간 단어 우선 순위 부여
     const wrongWeekly = wrongPatterns.find(p => p.isWeekly && weeklyWords.some(w => w.en === p.en));
     const w = wrongWeekly 
       ? weeklyWords.find(ww => ww.en === wrongWeekly.en)
       : weeklyWords[Math.floor(Math.random() * weeklyWords.length)];
     
-    const wordData = [w.en, w.ko, w.icon || "", getDifficultyLevel(currentCat)];
-    const type = pickQuestionType(wordData[3]);
+    const diff = getDifficultyLevel(currentCat);
+    const wordData = [w.en, w.ko, w.icon || "", diff];
+    
+    // 유형 교차 출제 (객관식 ↔ 스펠링)
+    let type = pickQuestionType(diff);
+    if (weeklyTypeHistory[w.en]) {
+      type = (weeklyTypeHistory[w.en] === 'spelling') ? 'kor2word' : 'spelling';
+    }
+    weeklyTypeHistory[w.en] = type;
+
     const res = buildQuestion(type, wordData);
-    return { ...res, _cat: currentCat, _level: wordData[3], _wordEn: w.en, isWeekly: true };
-}
+    return { ...res, _cat: currentCat, _level: diff, _wordEn: w.en, isWeekly: true };
+  }
 
   // 1. 약점 단어 강화 (30% 확률)
   if (Math.random() < 0.3) {

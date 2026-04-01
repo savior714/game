@@ -4,6 +4,8 @@
 let seqBlanks = null;  // { word, blankIndices, blanks, ico, hint }
 let seqStep   = 0;     // 현재 빈칸 인덱스 (0 or 1)
 let seqFilled = [];    // 채워진 글자 배열
+/** 'mc' | 'typing' — 객관식 vs 직접 입력 */
+let uiQuestionKind = 'mc';
 const timerCore = QuizUICore.createTimerCore({
   getTimeLimit: () => TIME_LIMIT,
   getTimeLeft: () => timeLeft,
@@ -77,8 +79,17 @@ const sequentialAnswerCore = QuizUICore.createSequentialAnswerCore({
 /* ═══════════════════════════════════
    공통 보기 버튼 렌더
 ═══════════════════════════════════ */
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 function renderChoiceBtns(choices) {
   const container = document.getElementById('answer-buttons');
+  container.className = 'answer-buttons';
   container.innerHTML = '';
   choices.forEach(val => {
     const btn = document.createElement('button');
@@ -124,6 +135,7 @@ function renderSeqWordComplete() {
 ═══════════════════════════════════ */
 function askQuestion() {
   answered  = false;
+  uiQuestionKind = 'mc';
   seqBlanks = null;
   seqStep   = 0;
   seqFilled = [];
@@ -147,6 +159,8 @@ function askQuestion() {
   const isLong = (q.word && q.word.length > 10) || (q.main && q.main.length > 10);
   const longClass = isLong ? ' q-long' : '';
 
+  const answerBtns = document.getElementById('answer-buttons');
+
   if (q.blanks) {
     // 순차 빈칸 모드
     seqBlanks = q;
@@ -156,6 +170,36 @@ function askQuestion() {
       `<div class="q-blanked${longClass}" id="seq-word"></div>`;
     renderSeqWord();
     renderChoiceBtns(q.blanks[0].choices);
+  } else if (q.type === 'typing') {
+    uiQuestionKind = 'typing';
+    qEl.innerHTML =
+      iconHtml +
+      `<div class="q-main${longClass}">${q.main}</div>` +
+      `<div class="q-typing-hint">${q.sub || ''}</div>`;
+    answerBtns.className = 'answer-buttons answer-buttons--typing';
+    answerBtns.innerHTML =
+      `<input type="text" class="typing-input" id="typing-input" autocomplete="off" spellcheck="false" placeholder="영어로 입력" aria-label="영어 답 입력">` +
+      `<button type="button" class="typing-submit" id="typing-submit">확인</button>`;
+    const inp = document.getElementById('typing-input');
+    const submit = () => checkTypingAnswer(inp.value);
+    document.getElementById('typing-submit').onclick = submit;
+    inp.onkeydown = (e) => {
+      if (e.key === 'Enter') submit();
+    };
+    setTimeout(() => inp.focus(), 50);
+  } else if (q.type === 'sentence') {
+    const parts = q.sentenceLine.split('_____');
+    const sentHtml =
+      escapeHtml(parts[0]) +
+      '<span class="q-blank-slot">_____</span>' +
+      escapeHtml(parts[1] || '');
+    const sLong = (q.sentenceLine && q.sentenceLine.length > 36) ? ' q-long' : '';
+    qEl.innerHTML =
+      iconHtml +
+      `<div class="q-hint">${escapeHtml(q.koHint)}</div>` +
+      `<div class="q-sentence${sLong}">${sentHtml}</div>` +
+      `<div class="q-mini">${escapeHtml(q.label)}</div>`;
+    renderChoiceBtns(q.choices);
   } else if (q.hint) {
     qEl.innerHTML =
       iconHtml +
@@ -170,6 +214,33 @@ function askQuestion() {
   }
 
   startTimer();
+}
+
+function checkTypingAnswer(raw) {
+  if (answered || uiQuestionKind !== 'typing') return;
+  answered = true;
+  const elapsed = TIME_LIMIT - timeLeft;
+  stopTimer();
+  const inp = document.getElementById('typing-input');
+  const ok = EnglishAdvancedQuestions.normalizeEquals(raw, answer);
+  if (inp) inp.disabled = true;
+  if (ok) {
+    if (inp) inp.classList.add('correct');
+    recordResult(true, elapsed);
+    score++;
+    document.getElementById('q-score').textContent = score;
+    const fb = document.getElementById('feedback');
+    fb.textContent = ['잘했어요! 🎉', '맞았어요! ⭐', '완벽해요! 🌟', '훌륭해요! 👏'][Math.floor(Math.random() * 4)];
+    fb.className = 'feedback-correct';
+    spawnConfetti();
+  } else {
+    if (inp) inp.classList.add('wrong');
+    recordResult(false, elapsed);
+    const fb = document.getElementById('feedback');
+    fb.textContent = `정답은 "${answer}"이에요! 😊`;
+    fb.className = 'feedback-wrong';
+  }
+  document.getElementById('next-btn').style.display = 'inline-block';
 }
 
 /* ═══════════════════════════════════
@@ -201,6 +272,12 @@ function timeOut() {
       if (b.textContent === blank.char) b.classList.add('correct');
     });
     seqBlanks = null;
+  } else if (uiQuestionKind === 'typing') {
+    const inp = document.getElementById('typing-input');
+    if (inp) {
+      inp.classList.add('wrong');
+      inp.disabled = true;
+    }
   } else {
     document.querySelectorAll('.answer-btn').forEach(b => {
       if (b.textContent === answer) b.classList.add('correct');
@@ -250,6 +327,7 @@ function checkSeqAnswer(val, btn) {
 function checkAnswer(val, btn) {
   if (answered) return;
   if (seqBlanks) { checkSeqAnswer(val, btn); return; }
+  if (uiQuestionKind === 'typing') return;
   answerFlowCore.evaluateStandard(val, btn);
 }
 

@@ -201,7 +201,17 @@
 - **출제 로직 (Weekly Prioritization)**:
     - **60% 확률**: `generateQuestion` 시 60% 확률로 주간 단어 목록에서 문제를 생성함. 
     - **동적 중복 방지 (Dynamic Limit)**: 주간 단어 수가 적을 경우 `RECENT_LIMIT`을 `floor(N/2)`로 자동 축소하여 노출을 보장함. 단어 수가 1개인 경우 제한 없이 매회 출제 가능.
-    - **문제 유형 교차 (Type Alternation)**: 동일한 주간 단어가 반복 출제될 때, 이전과 다른 유형(뜻 풀기 ↔ 스펠링)을 우선 선택하여 학습 피로도를 낮추고 다각도 학습 유도.
+    - **문제 유형 순환 (Type Cycling)**: 동일한 주간 단어가 반복 출제될 때, `kor2word` → `spelling` → `minimal_pair` → `sentence` → `typing` → … 순으로 **다음** 유형을 강제하여 다각도 학습을 유도함 (§22).
     - **오답 가중치**: 주간 단어가 `wrongPatterns`에 존재할 경우, 주간 단어 풀 내에서도 해당 단어를 최우선적으로 선택함.
 - **실시간 데이터 로드**: 문제 생성 시마다 `loadWeeklyWords`를 호출하여 보호자 설정 변경사항을 게임 세션 중 즉시 반영함.
 - **동기화**: `SyncEngine`에 의한 `localStorage` 딥 머지 대상에 포함함.
+
+## 22. 영어 고급 문제 유형 및 출제 비율 (2026-04-01)
+- **목적**: 객관식·철자만으로는 구분이 어려운 학습자에게 혼동 철자·문맥·생산(recall) 난이도를 단계적으로 제공함.
+- **구현 위치**: `english/advanced-questions.js`(혼동 페어 후보, 문장 템플릿, 입력 정규화), `english/engine.js`의 `pickQuestionType`·`buildQuestion`, `english/ui.js`의 문장·입력 UI.
+- **유형**:
+    - **`minimal_pair`**: 전체 단어 풀에서 정답과 레벤슈타인 거리 1~3인 영단어를 오답 후보로 우선 채우고, 부족 시 기존 `makeWordChoices` 및 전체 풀에서 보충함.
+    - **`sentence`**: 카테고리별 짧은 영문장에 `_____`를 두고, 보기는 `makeWordChoices`와 동일한 4지선다.
+    - **`typing`**: 한글 뜻만 제시하고 영어를 직접 입력; 비교는 trim·소문자·연속 공백 정규화 후 일치 여부.
+- **난이도 가중치**: 5유형 `[kor2word, spelling, minimal_pair, sentence, typing]`에 대해 레벨 0~1은 신규 3유형 비중을 낮추고, 레벨 5~6은 `typing`·`sentence`·`minimal_pair` 비중을 높임 (`engine.js` 내 행렬).
+- **명세 SSOT**: `specs/english.md` §2·§7.

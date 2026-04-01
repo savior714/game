@@ -108,18 +108,52 @@ function pickCategory() {
 /* ═══════════════════════════════════
    문제 생성 및 유형
 ═══════════════════════════════════ */
+const Q_TYPE_ORDER = ['kor2word', 'spelling', 'minimal_pair', 'sentence', 'typing'];
+
 function pickQuestionType(level) {
-  const weights = {0:[1,0], 1:[0.8,0.2], 2:[0.6,0.4], 3:[0.4,0.6], 4:[0.2,0.8], 5:[0.1,0.9], 6:[0,1]}[level] || [0.55, 0.45];
-  const types   = ['kor2word', 'spelling'];
+  const rows = {
+    0: [0.55, 0.45, 0, 0, 0],
+    1: [0.40, 0.33, 0.12, 0.08, 0.07],
+    2: [0.30, 0.26, 0.15, 0.15, 0.14],
+    3: [0.22, 0.20, 0.18, 0.20, 0.20],
+    4: [0.14, 0.16, 0.22, 0.24, 0.24],
+    5: [0.08, 0.12, 0.24, 0.28, 0.28],
+    6: [0, 0.10, 0.28, 0.31, 0.31],
+  };
+  const weights = rows[level] || rows[3];
   let r = Math.random();
-  for (let i = 0; i < types.length; i++) { r -= weights[i]; if (r <= 0) return types[i]; }
+  for (let i = 0; i < Q_TYPE_ORDER.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return Q_TYPE_ORDER[i];
+  }
   return 'kor2word';
 }
 
-function buildQuestion(type, word) {
+function buildQuestion(type, word, meta) {
+  const cat = (meta && meta.cat) || 'animals';
   const en  = wEn(word);
   const ko  = wKo(word);
   const ico = wIco(word);
+  if (type === 'minimal_pair') {
+    const choices = EnglishAdvancedQuestions.makeMinimalPairChoices(word, WORDS, wEn, () => makeWordChoices(word, 'en'));
+    return {
+      type, ico, main: ko, hint: '비슷한 철자에 주목하세요!',
+      answer: en, choices, word: en,
+    };
+  }
+  if (type === 'sentence') {
+    const sq = EnglishAdvancedQuestions.buildSentenceQuestion(word, cat, wEn, wKo, wIco);
+    return {
+      type,
+      ...sq,
+      answer: en,
+      choices: makeWordChoices(word, 'en'),
+      word: en,
+    };
+  }
+  if (type === 'typing') {
+    return { type, ico, main: ko, sub: '영어 철자를 직접 입력하세요.', answer: en, word: en };
+  }
   if (type === 'spelling') {
     const numBlanks = en.length >= 5 && Math.random() < 0.5 ? 2 : 1;
     const validIndices = [];
@@ -200,14 +234,16 @@ function _generateCandidate() {
     const diff = getDifficultyLevel(currentCat);
     const wordData = [w.en, w.ko, w.icon || "", diff];
     
-    // 유형 교차 출제 (객관식 ↔ 스펠링)
+    // 유형 순환 (주간 단어는 유형 다각도 노출)
     let type = pickQuestionType(diff);
-    if (weeklyTypeHistory[w.en]) {
-      type = (weeklyTypeHistory[w.en] === 'spelling') ? 'kor2word' : 'spelling';
+    if (weeklyTypeHistory[w.en] !== undefined) {
+      const idx = Q_TYPE_ORDER.indexOf(weeklyTypeHistory[w.en]);
+      const next = Q_TYPE_ORDER[(idx + 1 + Q_TYPE_ORDER.length) % Q_TYPE_ORDER.length];
+      type = next;
     }
     weeklyTypeHistory[w.en] = type;
 
-    const res = buildQuestion(type, wordData);
+    const res = buildQuestion(type, wordData, { cat: currentCat });
     return { ...res, _cat: currentCat, _level: diff, _wordEn: w.en, isWeekly: true };
   }
 
@@ -224,7 +260,7 @@ function _generateCandidate() {
     if (worstCat) {
       const level = getDifficultyLevel(worstCat);
       const word = pickWord(worstCat, level);
-      const res = buildQuestion(pickQuestionType(level), word);
+      const res = buildQuestion(pickQuestionType(level), word, { cat: worstCat });
       return { ...res, _cat: worstCat, _level: level, _wordEn: wEn(word), isWeakness: true };
     }
   }
@@ -239,14 +275,14 @@ function _generateCandidate() {
     }
     if (!word) word = WORDS[p.cat].words.find(w => wEn(w) === p.en) || pickWord(p.cat, p.level);
     
-    const res = buildQuestion(pickQuestionType(p.level), word);
+    const res = buildQuestion(pickQuestionType(p.level), word, { cat: p.cat });
     return { ...res, _cat: p.cat, _level: p.level, _wordEn: wEn(word), isWeekly: p.isWeekly };
   }
 
   const cat  = pickCategory();
   const level = getDifficultyLevel(cat);
   const word = pickWord(cat, level);
-  const res = buildQuestion(pickQuestionType(level), word);
+  const res = buildQuestion(pickQuestionType(level), word, { cat });
   return { ...res, _cat: cat, _level: level, _wordEn: wEn(word) };
 }
 

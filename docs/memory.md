@@ -47,4 +47,8 @@
 - **영어 고급 문제 유형 (2026-04-01)**:
   - `minimal_pair`(레벤슈타인 1~3 우선 오답), `sentence`(카테고리별 영문장 `_____` + 4지선다), `typing`(직접 입력·정규화 채점) 추가. `english/advanced-questions.js` 분리, 난이도 레벨별 5유형 가중치·주간 단어 5유형 순환은 `specs/english.md`·`docs/CRITICAL_LOGIC.md` §22 참조.
 
+- **보석 지급 안정성 보강 (2026-04-01)**:
+  - **20연속 보상 지급은 UI 연출 성공 여부와 무관하게 코어에서 보장**하도록 `global/reward.js`의 `playEntranceAndAddGem`에 fallback(`add('gems', 1)`) 적용.
+  - `RewardSystemUI` 미로딩/런타임 예외 시에도 보석 누락이 발생하지 않도록 방어 로직 추가.
+
 *이전 상세 기록은 `docs/archive/memory_20260328.md`를 참조하세요.*

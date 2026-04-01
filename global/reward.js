@@ -203,8 +203,23 @@ const RewardSystem = (() => {
     init, add, consume, consumeInternal, exchangeGem,
     getState: () => state, 
     setTheme, 
-    openShopModal: () => RewardSystemUI.openShopModal(state),
-    playEntranceAndAddGem: (id) => RewardSystemUI.playEntranceAndAddGem(id)
+    openShopModal: () => {
+      if (typeof RewardSystemUI !== 'undefined' && typeof RewardSystemUI.openShopModal === 'function') {
+        RewardSystemUI.openShopModal(state);
+      }
+    },
+    playEntranceAndAddGem: (id) => {
+      // UI 연출 실패 여부와 무관하게 보석 지급은 코어에서 보장한다.
+      try {
+        if (typeof RewardSystemUI !== 'undefined' && typeof RewardSystemUI.playEntranceAndAddGem === 'function') {
+          RewardSystemUI.playEntranceAndAddGem(id);
+          return;
+        }
+      } catch (e) {
+        console.error('RewardSystem animation failed, fallback to direct gem grant:', e);
+      }
+      add('gems', 1);
+    }
   };
 })();
 

@@ -33,9 +33,11 @@
 
 ## 📁 문서 체계 (SDD)
 
-- `docs/memory.md`: 프로젝트 현재 상태 요약 (SSOT)
-- `docs/CRITICAL_LOGIC.md`: 핵심 설계·비즈니스 로직
-- `docs/specs/`, `specs/`: 과목·플랫폼 세부 스펙
+- `PROJECT_RULES.md`: 프로젝트 규칙/운영 SSOT
+- `docs/CRITICAL_LOGIC.md`: 핵심 설계·불변 정책 SSOT
+- `docs/specs/`, `specs/`: 과목·플랫폼 요구사항/계약 SSOT
+- `docs/memory/MEMORY.md`: 세션 지식 인덱스 SSOT
+- `docs/memory.md`: 레거시 포인터(하위 호환용)
 
 ## 🧩 디렉터리 개요
 

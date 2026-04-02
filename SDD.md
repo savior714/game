@@ -1,7 +1,7 @@
 # SDD: 어린이 학습 게임 플랫폼
 
-**버전**: 1.4  
-**작성일**: 2026-03-21 / **최종 수정**: 2026-03-29
+**버전**: 1.5  
+**작성일**: 2026-03-21 / **최종 수정**: 2026-04-02
 
 ---
 
@@ -30,6 +30,18 @@
 | [docs/specs/shared_core_refactor_spec.md](docs/specs/shared_core_refactor_spec.md) | `common/*` 코어 위임 계약 |
 | [docs/specs/reward_inventory_spec.md](docs/specs/reward_inventory_spec.md) | 전역 보석·인벤토리·상점 데이터 명세 |
 | [docs/CRITICAL_LOGIC.md](docs/CRITICAL_LOGIC.md) | 난이도·그물망·보석·관리자 등 운영 규칙 SSOT |
+
+---
+
+## 문서 SSOT 경계
+
+| 문서 | 역할 |
+|------|------|
+| `PROJECT_RULES.md` | 프로젝트 규칙/운영 SSOT |
+| `docs/CRITICAL_LOGIC.md` | 핵심 결정/불변 정책 SSOT |
+| `docs/specs/`, `specs/` | 요구사항/계약 SSOT |
+| `docs/memory/MEMORY.md` | 세션 지식 인덱스 SSOT |
+| `docs/memory.md` | 레거시 포인터(하위 호환) |
 
 ---
 

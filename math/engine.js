@@ -31,14 +31,14 @@ let timeLeft      = TIME_LIMIT;
 let currentOp     = '+';
 
 // 적응형 난이도
-let streak        = 0;
-let globalBoost   = 0;
-let launching     = false;
-let crashing      = false;
+var streak        = 0;
+var globalBoost   = 0;
+var launching     = false;
+var crashing      = false;
 
 // 그물망 시스템
-let netStreak     = 0;
-let hasNet        = false;
+var netStreak     = 0;
+var hasNet        = false;
 const NET_STREAK  = 5;
 
 // 강화학습: 틀린 패턴 기억

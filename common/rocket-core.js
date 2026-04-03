@@ -214,10 +214,7 @@
       const savedBottom = rocket.style.bottom || "18px";
       const savedBottomPx = parseInt(savedBottom, 10) || 18;
       const trackHeightPx = track ? track.clientHeight : 380;
-      const minCatchBottom = 30;
-      const maxCatchBottom = Math.max(trackHeightPx - 72, minCatchBottom);
-      const catchDropPx = Math.max(Math.round(savedBottomPx * 0.45), 70);
-      const netBottomPx = Math.min(Math.max(savedBottomPx - catchDropPx, minCatchBottom), maxCatchBottom);
+      const netBottomPx = Math.round((savedBottomPx + 18) / 2);
 
       flame.style.opacity = "0";
       flame.classList.remove("flickering", "blasting", "igniting");

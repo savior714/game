@@ -14,6 +14,7 @@
 - 메모리 체계를 `docs/memory/` 타입 분리 방식으로 정렬 시작
 - 전 과목(수학/영어/국어/과학) 적응형 난이도 기준을 `MIN_DATA=3`, `up/down=0.85/0.75`로 통일 적용
 - 공통 숙련도 기준 변경을 `specs/platform.md`와 `specs/math.md`에 반영 완료
+- 전 과목 로켓 그물망(Net Shield) 보호 로직 정합성 확보: `var` 선언으로 스크립트 간 상태 공유 해결 및 중간값 낙하 공식 적용 완료 (`docs/CRITICAL_LOGIC.md` §7 반영)
 
 ## 진행 제약
 

@@ -3,8 +3,8 @@ const path = require('path');
 
 const subjects = ['math', 'english', 'science', 'korean'];
 const requiredEnginePatterns = [
-  /let\s+netStreak\s*=\s*0\s*;/,
-  /let\s+hasNet\s*=\s*false\s*;/,
+  /(let|var)\s+netStreak\s*=\s*0\s*;/,
+  /(let|var)\s+hasNet\s*=\s*false\s*;/,
   /const\s+NET_STREAK\s*=\s*5\s*;/,
   /netStreak\+\+/,
   /if\s*\(\s*netStreak\s*>=\s*NET_STREAK\s*&&\s*!hasNet\s*\)/,

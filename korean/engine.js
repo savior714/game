@@ -119,7 +119,8 @@ DB.honorific[DB.honorific.length - 1] = ['고객님, 주문하신 커피 ( ).', 
 ═══════════════════════════════════ */
 const TOTAL              = 10;
 const TIME_LIMIT         = 120;
-const MIN_DATA           = 4;
+const MIN_DATA           = 3;
+const SUBJECT_DIFF_OPTS  = { upThreshold: 0.85, downThreshold: 0.75 };
 const LAUNCH_STREAK      = 20;
 const STATS_KEY          = 'koreanGameStats';
 const MAX_WRONG_PATTERNS = 5;
@@ -178,11 +179,11 @@ function resetStats() {
    난이도 및 문제 생성 로직
 ═══════════════════════════════════ */
 function getBaseDiffLevel(cat) {
-  return ProgressEngine.getBaseDiffLevel(stats, cat, MIN_DATA);
+  return ProgressEngine.getBaseDiffLevel(stats, cat, MIN_DATA, SUBJECT_DIFF_OPTS);
 }
 
 function getDifficultyLevel(cat) {
-  return ProgressEngine.getDifficultyLevel(stats, cat, MIN_DATA, globalBoost, recentHistory);
+  return ProgressEngine.getDifficultyLevel(stats, cat, MIN_DATA, globalBoost, recentHistory, SUBJECT_DIFF_OPTS);
 }
 
 function pickCategory() {

@@ -3,7 +3,9 @@
 ═══════════════════════════════════ */
 const TOTAL              = 10;
 const TIME_LIMIT         = 120;
-const MIN_DATA           = 4;    // 난이도 조정 최소 시도 횟수
+const MIN_DATA           = 3;    // 난이도 조정 최소 시도 횟수(레벨별 판정용)
+/** ProgressEngine 승급 임계값 — 수학만 다소 완화(빠른 승급) */
+const MATH_DIFF_OPTS     = { upThreshold: 0.85, downThreshold: 0.75 };
 const LAUNCH_STREAK      = 20;   // 연속 정답 → 로켓 발사
 const STATS_KEY          = 'mathGameStats';
 const MAX_WRONG_PATTERNS = 5;    // 기억할 최대 틀린 패턴 수
@@ -72,11 +74,11 @@ function resetStats() {
    난이도 계산
 ═══════════════════════════════════ */
 function getBaseDiffLevel(op) {
-  return ProgressEngine.getBaseDiffLevel(stats, op, MIN_DATA);
+  return ProgressEngine.getBaseDiffLevel(stats, op, MIN_DATA, MATH_DIFF_OPTS);
 }
 
 function getDifficultyLevel(op) {
-  return ProgressEngine.getDifficultyLevel(stats, op, MIN_DATA, globalBoost, recentHistory);
+  return ProgressEngine.getDifficultyLevel(stats, op, MIN_DATA, globalBoost, recentHistory, MATH_DIFF_OPTS);
 }
 
 /* ═══════════════════════════════════

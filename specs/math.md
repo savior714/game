@@ -249,7 +249,8 @@ generateQuestion():
 |------|----|------|
 | `TOTAL` | 10 | 세션당 문제 수 |
 | `TIME_LIMIT` | 120 | 문제당 제한 시간(초) |
-| `MIN_DATA` | 4 | 난이도 조정 활성화 최소 시도 횟수 |
+| `MIN_DATA` | 3 | 난이도 조정 활성화 최소 시도 횟수(레벨별) |
+| `MATH_DIFF_OPTS` | `{ upThreshold: 0.85, downThreshold: 0.75 }` | 승급·히스테리시스 임계값(공통 ProgressEngine 기본 0.9/0.8보다 완화) |
 | `LAUNCH_STREAK` | 20 | 로켓 발사 트리거 연속 정답 수 |
 | `MAX_WRONG_PATTERNS` | 5 | 기억할 틀린 패턴 최대 개수 |
 | `REINFORCE_PROB` | 0.45 | 틀린 패턴 재출제 확률 |

@@ -36,18 +36,20 @@
     }
   }
 
-  function getBaseDiffLevel(stats, domainKey, minData) {
+  function getBaseDiffLevel(stats, domainKey, minData, opts) {
+    opts = opts || {};
+    const UP_THRESHOLD = opts.upThreshold !== undefined ? opts.upThreshold : 0.9;
+    const DOWN_THRESHOLD = opts.downThreshold !== undefined ? opts.downThreshold : 0.8;
+
     const domainStats = stats[domainKey];
     let baseLevel = 0;
-    const UP_THRESHOLD = 0.9;
-    const DOWN_THRESHOLD = 0.8;
 
     for (let i = 0; i < 6; i++) {
       const lv = domainStats.levels[i];
       const acc = lv.attempts > 0 ? lv.correct / lv.attempts : 0;
       
-      // 히스테리시스: 다음 레벨 시도 기록이 있으면 '이미 도달'로 간주하여 80% 기준 적용, 
-      // 기록이 없으면 첫 승급이므로 90% 기준 적용.
+      // 히스테리시스: 다음 레벨 시도 기록이 있으면 '이미 도달'로 간주하여 완화 기준 적용, 
+      // 기록이 없으면 첫 승급이므로 상향 기준 적용.
       const hasReachedNext = domainStats.levels[i + 1] && domainStats.levels[i + 1].attempts > 0;
       const threshold = hasReachedNext ? DOWN_THRESHOLD : UP_THRESHOLD;
 
@@ -60,8 +62,8 @@
     return baseLevel;
   }
 
-  function getDifficultyLevel(stats, domainKey, minData, globalBoost, recentHistory) {
-    const base = getBaseDiffLevel(stats, domainKey, minData) + globalBoost;
+  function getDifficultyLevel(stats, domainKey, minData, globalBoost, recentHistory, opts) {
+    const base = getBaseDiffLevel(stats, domainKey, minData, opts) + globalBoost;
     const wrongs = recentHistory.filter((r) => r === false).length;
     const penalty = wrongs >= 2 ? 1 : 0;
     return Math.max(0, Math.min(6, base - penalty));

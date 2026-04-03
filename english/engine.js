@@ -17,6 +17,7 @@ const wLv  = w => w[3];
 const TOTAL              = 10;
 const TIME_LIMIT         = 120;
 const MIN_DATA           = 3;
+const SUBJECT_DIFF_OPTS  = { upThreshold: 0.85, downThreshold: 0.75 };
 const LAUNCH_STREAK      = 20;
 const STATS_KEY          = 'englishGameStats';
 const MAX_WRONG_PATTERNS = 5;
@@ -77,11 +78,11 @@ function resetStats() { stats = emptyStats(); saveStats(); renderStatsTable(); }
    난이도 계산
 ═══════════════════════════════════ */
 function getBaseDiffLevel(cat) {
-  return ProgressEngine.getBaseDiffLevel(stats, cat, MIN_DATA);
+  return ProgressEngine.getBaseDiffLevel(stats, cat, MIN_DATA, SUBJECT_DIFF_OPTS);
 }
 
 function getDifficultyLevel(cat) {
-  return ProgressEngine.getDifficultyLevel(stats, cat, MIN_DATA, globalBoost, recentHistory);
+  return ProgressEngine.getDifficultyLevel(stats, cat, MIN_DATA, globalBoost, recentHistory, SUBJECT_DIFF_OPTS);
 }
 
 /* ═══════════════════════════════════

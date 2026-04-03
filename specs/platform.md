@@ -62,7 +62,7 @@ game/
 |--------|------|------------------|
 | 로켓 스트릭 | 연속 정답 20개 → 발사 / 오답 → 폭발 추락(그물망 있으면 예외는 CRITICAL_LOGIC §7) | `LAUNCH_STREAK=20`, `common/rocket-core.js` |
 | 그물망 (Net Shield) | 연속 정답 5회마다 1회 보호막 획득 | `NET_STREAK=5` |
-| 적응형 숙련도 | 정답률+응답속도 기반 7단계 자동 조정 | `MIN_DATA=4`, `common/progress-engine.js` |
+| 적응형 숙련도 | 정답률+응답속도 기반 7단계 자동 조정 | `MIN_DATA=3`, `SUBJECT_DIFF_OPTS={up:0.85,down:0.75}`, `common/progress-engine.js` |
 | 강화학습 | 틀린 패턴 재출제 (최대 5개 기억) | `REINFORCE_PROB=0.45` (과목 `engine.js`) |
 | 중복 방지 | 최근 10문제 키 버퍼 | `RECENT_LIMIT=10` |
 | 타이머 | 과목별 `TIME_LIMIT`(수학·과학 등 120초, 영어 120초 등) — 각 `engine.js` / UI 코어 | 진행바 경고 |

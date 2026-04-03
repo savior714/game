@@ -367,17 +367,62 @@ const RewardSystemUI = (() => {
     };
   }
 
-  function openSnackModal() {
+  function openSnackModal(state) {
     const overlay = createModalOverlay('reward-snack-modal');
+    const initialCount = state && typeof state.snacks === 'number' ? state.snacks : 0;
     overlay.innerHTML = `
       <div class="reward-modal-content">
-        <h3>🍪 간식 한 개 고르기</h3>
-        <p>과일, 요거트, 또는 좋아하는 과자 하나를 골라 드세요!</p>
-        <div class="snack-icons">🍎 🍌 🥛 🥨 🍫</div>
-        <button class="btn-primary" onclick="this.closest('.reward-modal-overlay').remove()">맛있게 먹을게요!</button>
+        <div class="icon-bounce" style="font-size:3rem; margin-bottom:15px;">🍪</div>
+        <h3>확보된 간식</h3>
+        <div class="secured-snack-display" style="font-size:2.5rem; font-weight:bold; color:#8b5cf6; margin:15px 0;">
+          ${initialCount}개
+        </div>
+        <p class="sub" style="color:#666; font-size:0.9rem;">과일, 요거트, 또는 좋아하는 과자를 골라 드신 뒤 부모님께서 사용을 기록해 주세요.</p>
+
+        <div id="snack-lock-area" style="margin: 20px 0;">
+          <button id="snack-unlock-trigger" style="background:none; border:none; font-size:4rem; cursor:pointer;" title="부모님용 잠금 해제">🔒</button>
+          <p class="sub" style="color:#666; font-size:0.8rem;">부모님께서 자물쇠를 눌러 승인해 주세요.</p>
+        </div>
+
+        <div id="snack-deduct-area" style="display:none; margin-top:10px;">
+          <button class="btn-primary" id="deduct-snack-btn" style="background:#8b5cf6; border-color:#7c3aed; width:100%;">간식 1개 사용 기록하기</button>
+        </div>
+
+        <button class="btn-close" style="margin-top:15px;" onclick="this.closest('.reward-modal-overlay').remove()">닫기</button>
       </div>
     `;
     document.body.appendChild(overlay);
+
+    const lockTrigger = overlay.querySelector('#snack-unlock-trigger');
+    const deductArea = overlay.querySelector('#snack-deduct-area');
+    const lockArea = overlay.querySelector('#snack-lock-area');
+    const deductBtn = overlay.querySelector('#deduct-snack-btn');
+    const display = overlay.querySelector('.secured-snack-display');
+
+    lockTrigger.onclick = () => {
+      const n1 = Math.floor(Math.random() * 40) + 11;
+      const n2 = Math.floor(Math.random() * 40) + 11;
+      const answer = prompt(`🔒 [부모님 잠금 해제]\n\n계산해 주세요: ${n1} + ${n2} = ?`);
+
+      if (String(answer) === String(n1 + n2)) {
+        lockArea.style.display = 'none';
+        deductArea.style.display = 'block';
+      } else if (answer !== null) {
+        alert('정답이 아닙니다.');
+      }
+    };
+
+    deductBtn.onclick = () => {
+      RewardSystem.consumeInternal('snack', (newState) => {
+        display.textContent = `${newState.snacks}개`;
+        if (newState.snacks < 1) {
+          setTimeout(() => overlay.remove(), 400);
+        } else {
+          lockArea.style.display = 'block';
+          deductArea.style.display = 'none';
+        }
+      });
+    };
   }
 
   function openMarbleModal() {

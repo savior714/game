@@ -110,9 +110,8 @@ const RewardSystem = (() => {
     if (type === 'youtube') {
       RewardSystemUI.openYoutubeModal(state);
     } else if (type === 'snack') {
-      state.snacks -= 1;
-      save();
-      RewardSystemUI.openSnackModal();
+      // 유튜브와 동일: 모달에서 부모 잠금 후 '사용 기록' 시 consumeInternal로 차감
+      RewardSystemUI.openSnackModal(state);
     } else if (type === 'marble') {
       state.marble_plays -= 1;
       save();
@@ -129,6 +128,15 @@ const RewardSystem = (() => {
       state.youtube_minutes -= 15;
       save();
       if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.showToast('15분 차감 완료');
+      if (onSuccess) onSuccess(state);
+    } else if (type === 'snack') {
+      if (state.snacks <= 0) {
+        if (typeof RewardSystemUI !== 'undefined') alert('보유 중인 간식이 없습니다.');
+        return;
+      }
+      state.snacks -= 1;
+      save();
+      if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.showToast('🍪 간식 1개 사용 완료');
       if (onSuccess) onSuccess(state);
     } else if (type !== 'youtube' && state.custom_inventory[type] > 0) {
       state.custom_inventory[type] -= 1;

@@ -63,10 +63,20 @@
   }
 
   function getDifficultyLevel(stats, domainKey, minData, globalBoost, recentHistory, opts) {
-    const base = getBaseDiffLevel(stats, domainKey, minData, opts) + globalBoost;
+    const flowBoost = getRecentFlowBoost(recentHistory);
+    const base = getBaseDiffLevel(stats, domainKey, minData, opts) + globalBoost + flowBoost;
     const wrongs = recentHistory.filter((r) => r === false).length;
     const penalty = wrongs >= 2 ? 1 : 0;
     return Math.max(0, Math.min(6, base - penalty));
+  }
+
+  function getRecentFlowBoost(recentHistory) {
+    if (!Array.isArray(recentHistory) || recentHistory.length === 0) return 0;
+    const recent = recentHistory.slice(-5);
+    const corrects = recent.filter((r) => r === true).length;
+    if (corrects >= 5) return 2;
+    if (corrects >= 3) return 1;
+    return 0;
   }
 
   global.ProgressEngine = {

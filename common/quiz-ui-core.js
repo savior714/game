@@ -1,4 +1,35 @@
+/**
+ * QuizUICore - 퀴즈 UI 공통 모듈
+ * @module QuizUICore
+ */
+
+/**
+ * 타이머 코어 옵션
+ * @typedef {Object} TimerCoreOptions
+ * @property {function(): number} getTimeLimit
+ * @property {function(): number} getTimeLeft
+ * @property {function(number): void} setTimeLeft
+ * @property {function(): ?number} getTimerInterval
+ * @property {function(?number): void} setTimerInterval
+ * @property {function(): void} onTimeout
+ * @property {boolean} [useGameCardDanger]
+ */
+
+/**
+ * 답변 컨텍스트
+ * @typedef {Object} AnswerContext
+ * @property {string} [value]
+ * @property {string|string[]} [answer]
+ * @property {number} elapsed
+ * @property {HTMLElement} [button]
+ */
+
 (function (global) {
+  /**
+   * 타이머 코어 생성
+   * @param {TimerCoreOptions} options
+   * @returns {{startTimer: function(): void, stopTimer: function(): void, updateTimerUI: function(): void}}
+   */
   function createTimerCore(options) {
     const {
       getTimeLimit,
@@ -159,10 +190,41 @@
     return { finalizeSuccess, finalizeFailure };
   }
 
+  /**
+   * 문제 생성 에러 처리 함수
+   * - 에러 발생 시 안내 모달 표시
+   * - 과목별 ui.js에서 try/catch 블록 내에서 호출
+   * @param {Error} [err] - 발생한 에러 객체 (선택)
+   * @returns {void}
+   */
+  function handleQuestionError(err) {
+    console.error('[QuizUICore] 문제 생성 에러:', err);
+    const qEl = document.getElementById('question');
+    const answerBtns = document.getElementById('answer-buttons');
+    if (qEl) {
+      qEl.innerHTML = '<div class="error-message">⚠️ 문제를 불러오지 못했어요.<br>다시 시도해주세요!</div>';
+    }
+    if (answerBtns) {
+      answerBtns.innerHTML = '<button class="answer-btn" onclick="location.reload()">다시 시작 🔄</button>';
+    }
+  }
+
+  /**
+   * QuizUICore 전역 객체
+   * @typedef {Object} QuizUICore
+   * @property {typeof createTimerCore} createTimerCore
+   * @property {typeof createStatsModalCore} createStatsModalCore
+   * @property {typeof createAnswerFlowCore} createAnswerFlowCore
+   * @property {typeof createSequentialAnswerCore} createSequentialAnswerCore
+   * @property {typeof handleQuestionError} handleQuestionError
+   */
+
+  /** @type {QuizUICore} */
   global.QuizUICore = {
     createTimerCore,
     createStatsModalCore,
     createAnswerFlowCore,
     createSequentialAnswerCore,
+    handleQuestionError,
   };
 })(window);

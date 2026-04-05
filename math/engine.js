@@ -1,3 +1,8 @@
+/**
+ * @fileoverview 수학 과목 엔진 - 문제 출제, 정답 평가, 진행률 관리
+ * @module math/engine
+ */
+
 /* ═══════════════════════════════════
    상수
 ═══════════════════════════════════ */
@@ -7,7 +12,7 @@ const MIN_DATA           = 3;    // 난이도 조정 최소 시도 횟수(레벨
 /** ProgressEngine 승급 임계값 — 수학만 다소 완화(빠른 승급) */
 const MATH_DIFF_OPTS     = { upThreshold: 0.85, downThreshold: 0.75 };
 const LAUNCH_STREAK      = 20;   // 연속 정답 → 로켓 발사
-const STATS_KEY          = 'mathGameStats';
+const STATS_KEY          = ProgressEngine.createStatsKey('math');
 const MAX_WRONG_PATTERNS = 5;    // 기억할 최대 틀린 패턴 수
 const REINFORCE_PROB     = 0.45; // 틀린 패턴 재출제 확률
 const RECENT_LIMIT       = 10;    // 최근 출제 문제 기억 수
@@ -234,53 +239,57 @@ function makeChoices(correct, op, level) {
 }
 
 function askQuestion() {
-  answered  = false;
-  const q   = generateQuestion();
-  answer    = q.result;
-  currentOp = q.op;
-  currentQData = { op: q.op, level: q.level, a: q.a, b: q.b, tag: q.tag, isWeakness: q.isWeakness };
+  try {
+    answered  = false;
+    const q   = generateQuestion();
+    answer    = q.result;
+    currentOp = q.op;
+    currentQData = { op: q.op, level: q.level, a: q.a, b: q.b, tag: q.tag, isWeakness: q.isWeakness };
 
-  // 중복 방지 큐에 추가
-  const qKey = [q.a, q.b].sort((a, b) => a - b).join(',') + q.op;
-  recentQuestions.push(qKey);
-  if (recentQuestions.length > RECENT_LIMIT) recentQuestions.shift();
+    // 중복 방지 큐에 추가
+    const qKey = [q.a, q.b].sort((a, b) => a - b).join(',') + q.op;
+    recentQuestions.push(qKey);
+    if (recentQuestions.length > RECENT_LIMIT) recentQuestions.shift();
 
-  document.getElementById('question').textContent = `${q.a}  ${q.op}  ${q.b}  =  ?`;
-  document.getElementById('feedback').textContent = q.isWeakness ? '🔥 약점 연산 도전!' : '';
-  document.getElementById('feedback').className   = q.isWeakness ? 'weakness-highlight' : '';
-  document.getElementById('next-btn').style.display = 'none';
+    document.getElementById('question').textContent = `${q.a}  ${q.op}  ${q.b}  =  ?`;
+    document.getElementById('feedback').textContent = q.isWeakness ? '🔥 약점 연산 도전!' : '';
+    document.getElementById('feedback').className   = q.isWeakness ? 'weakness-highlight' : '';
+    document.getElementById('next-btn').style.display = 'none';
 
-  const choices   = makeChoices(q.result, q.op, q.level);
-  const container = document.getElementById('answer-buttons');
-  container.innerHTML = '';
-  choices.forEach(val => {
-    const btn = document.createElement('button');
-    btn.className   = 'answer-btn';
-    btn.textContent = val;
-    btn.onclick = () => checkAnswer(val, btn);
-    container.appendChild(btn);
-  });
-  document.getElementById('q-count').textContent = currentQ + 1;
-  startTimer();
+    const choices   = makeChoices(q.result, q.op, q.level);
+    const container = document.getElementById('answer-buttons');
+    container.innerHTML = '';
+    choices.forEach(val => {
+      const btn = document.createElement('button');
+      btn.className   = 'answer-btn';
+      btn.textContent = val;
+      btn.onclick = () => checkAnswer(val, btn);
+      container.appendChild(btn);
+    });
+    document.getElementById('q-count').textContent = currentQ + 1;
+    startTimer();
+  } catch (err) {
+    if (typeof QuizUICore !== 'undefined' && QuizUICore.handleQuestionError) {
+      QuizUICore.handleQuestionError(err);
+    } else {
+      console.error('[Math] Question error:', err);
+    }
+  }
 }
 
 /* ═══════════════════════════════════
    결과 기록
 ═══════════════════════════════════ */
 function recordResult(correct, elapsed) {
-  const lvStats = stats[currentOp].levels[currentQData.level];
-  lvStats.attempts++;
-  if (correct) lvStats.correct++;
-  lvStats.totalTime += elapsed;
+  // 공통 결과 기록
+  ProgressEngine.recordResultCore({
+    stats, domainKey: currentOp, level: currentQData.level,
+    tag: currentQData.tag, correct, elapsed,
+    weaknessesKey: currentQData.tag,
+  });
 
-  // 태그별 약점 통계
-  if (!stats[currentOp].weaknesses[currentQData.tag]) {
-    stats[currentOp].weaknesses[currentQData.tag] = { attempts: 0, correct: 0 };
-  }
+  // 과목별 고유 로직: 약점 극복 피드백
   const wStats = stats[currentOp].weaknesses[currentQData.tag];
-  wStats.attempts++;
-  if (correct) wStats.correct++;
-
   if (correct && currentQData.isWeakness && wStats.attempts >= 3 && wStats.correct / wStats.attempts >= 0.8) {
     showWeaknessClear();
   }
@@ -288,6 +297,7 @@ function recordResult(correct, elapsed) {
   saveStats();
   updateStreak(correct);
 
+  // 그물망 시스템
   if (correct) {
     netStreak++;
     if (netStreak >= NET_STREAK && !hasNet) {
@@ -297,6 +307,7 @@ function recordResult(correct, elapsed) {
     netStreak = 0;
   }
 
+  // 틀린 패턴 기록
   if (!correct) {
     wrongPatterns.unshift({ op: currentOp, level: currentQData.level, a: currentQData.a, b: currentQData.b });
     if (wrongPatterns.length > MAX_WRONG_PATTERNS) wrongPatterns.pop();

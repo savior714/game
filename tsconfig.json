@@ -7,8 +7,9 @@
     "checkJs": false,
     "noEmit": true,
     "strict": false,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "lib": ["ES2020", "DOM"]
   },
-  "include": ["**/*.js"],
-  "exclude": ["node_modules", "docs", "archive"]
+  "include": ["common/**/*.js", "english/**/*.js", "korean/**/*.js", "math/**/*.js", "science/**/*.js", "global/**/*.js"],
+  "exclude": ["node_modules", "docs", "archive", "**/verify_*.js", "**/test_*.js", "korean/ui.js"]
 }

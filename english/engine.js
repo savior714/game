@@ -1,3 +1,17 @@
+/**
+ * @fileoverview 영어 과목 엔진 - 문제 출제, 정답 평가, 진행률 관리
+ * @module english/engine
+ */
+
+/**
+ * 영어 단어 데이터
+ * @typedef {Array} WordEntry
+ * @property {string} 0 - 영어 단어 (en)
+ * @property {string} 1 - 한국어 뜻 (ko)
+ * @property {string} 2 - 이모지 (emoji)
+ * @property {number} 3 - 난이도 레벨 (0-6)
+ */
+
 /* ═══════════════════════════════════
    단어 데이터베이스  [en, ko, emoji, level]
    level: 0=쉬움(3~5자), 1=보통(5~7자), 2=어려움(7자+)
@@ -19,14 +33,14 @@ const TIME_LIMIT         = 120;
 const MIN_DATA           = 3;
 const SUBJECT_DIFF_OPTS  = { upThreshold: 0.85, downThreshold: 0.75 };
 const LAUNCH_STREAK      = 20;
-const STATS_KEY          = 'englishGameStats';
+const STATS_KEY          = ProgressEngine.createStatsKey('english');
 const MAX_WRONG_PATTERNS = 5;
 const REINFORCE_PROB     = 0.45;
 const RECENT_LIMIT       = 10;
 const ROCKET_MAX_BOTTOM  = 330;
 const DIFF_LABELS        = ['입문', '기초', '중급', '숙련', '마스터', '초월', '전설'];
 const DIFF_COLORS        = ['#aed581', '#66bb6a', '#4fc3f7', '#29b6f6', '#ffca28', '#ab47bc', '#ef5350'];
-const DOMAIN_KEYS        = Object.keys(WORDS);
+let DOMAIN_KEYS = []; // words-loaded 이벤트 후 초기화
 
 /* ═══════════════════════════════════
    게임 상태
@@ -327,21 +341,22 @@ function makeSpellingChoices(correct) {
 }
 
 function recordResult(correct, elapsed) {
-  const lvStats = stats[currentCat].levels[currentWordData.level];
-  lvStats.attempts++;
-  if (correct) lvStats.correct++;
-  lvStats.totalTime += elapsed;
+  // 공통 결과 기록
+  ProgressEngine.recordResultCore({
+    stats, domainKey: currentCat, level: currentWordData.level,
+    tag: 'overall', correct, elapsed,
+    weaknessesKey: 'overall',
+  });
 
-  // 태그(카테고리)별 약점 업데이트
-  if (!stats[currentCat].weaknesses['overall']) stats[currentCat].weaknesses['overall'] = { attempts: 0, correct: 0 };
+  // 과목별 고유 로직: 약점 극복 피드백
   const wStats = stats[currentCat].weaknesses['overall'];
-  wStats.attempts++; if (correct) wStats.correct++;
-
   if (correct && currentWordData.isWeakness && wStats.attempts >= 5 && wStats.correct / wStats.attempts >= 0.8) {
     showWeaknessClear();
   }
 
   saveStats(); updateStreak(correct);
+
+  // 그물망 시스템
   if (correct) {
     netStreak++;
     if (netStreak >= NET_STREAK && !hasNet) {
@@ -350,6 +365,8 @@ function recordResult(correct, elapsed) {
   } else {
     netStreak = 0;
   }
+
+  // 틀린 패턴 기록
   if (!correct) {
     wrongPatterns.unshift({ cat: currentCat, level: currentWordData.level, en: currentWordData.en, isWeekly: currentWordData.isWeekly });
     if (wrongPatterns.length > MAX_WRONG_PATTERNS) wrongPatterns.pop();

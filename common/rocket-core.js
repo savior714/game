@@ -1,25 +1,63 @@
+/**
+ * RocketCore - 로켓 애니메이션 및 스트릭 관리 모듈
+ * @module RocketCore
+ */
+
+/**
+ * 로켓 상태 객체
+ * @typedef {Object} RocketState
+ * @property {number} streak - 연속 정답 횟수
+ * @property {number} globalBoost - 전역 부스트 레벨 (0-2)
+ * @property {boolean} launching - 발사 중 여부
+ * @property {boolean} crashing - 추락 중 여부
+ * @property {number} netStreak - 그물망 연속 횟수
+ * @property {boolean} hasNet - 그물망 보유 여부
+ * @property {number} LAUNCH_STREAK - 발사 필요 연속 횟수
+ * @property {number} ROCKET_MAX_BOTTOM - 로켓 최대 높이 (px)
+ */
+
 (function (global) {
+  /**
+   * 로켓 코어를 대상 객체에 설치
+   * @param {RocketState} target - 로켓 상태 변수가 선언된 객체
+   * @returns {void}
+   */
   function install(target) {
+    /* ═══════════════════════════════════
+       상태 초기화 — target에 바인딩
+       과목별 engine.js의 var 선언과 호환 유지
+    ═══════════════════════════════════ */
+    // target에 상태가 없으면 초기화 (검증 스크립트 호환: engine.js에서 var 선언 유지)
+    if (target.streak === undefined) target.streak = 0;
+    if (target.globalBoost === undefined) target.globalBoost = 0;
+    if (target.launching === undefined) target.launching = false;
+    if (target.crashing === undefined) target.crashing = false;
+    if (target.netStreak === undefined) target.netStreak = 0;
+    if (target.hasNet === undefined) target.hasNet = false;
+
+    // 상태 접근 헬퍼 (target 객체 참조)
+    const state = target;
+
     /* ═══════════════════════════════════
        연속 정답 & 로켓 스트릭
     ═══════════════════════════════════ */
     function updateStreak(correct) {
       if (correct) {
-        streak++;
-        if (streak >= LAUNCH_STREAK) {
+        state.streak++;
+        if (state.streak >= state.LAUNCH_STREAK) {
           launchRocket();
           return;
         }
         updateRocketUI();
       } else {
-        const prevStreak = streak;
+        const prevStreak = state.streak;
         // 그물망이 있으면 연속 정답 상태를 유지한 채 추락만 방지한다.
-        if (prevStreak > 0 && hasNet) {
+        if (prevStreak > 0 && state.hasNet) {
           crashRocket();
           return;
         }
 
-        streak = 0;
+        state.streak = 0;
         if (prevStreak > 0) {
           crashRocket();
           return;
@@ -29,8 +67,8 @@
     }
 
     function updateRocketUI() {
-      const progress = Math.min(streak / LAUNCH_STREAK, 1);
-      const bottomPx = 18 + Math.round(progress * ROCKET_MAX_BOTTOM);
+      const progress = Math.min(state.streak / state.LAUNCH_STREAK, 1);
+      const bottomPx = 18 + Math.round(progress * state.ROCKET_MAX_BOTTOM);
       const rocket = document.getElementById("rp-rocket");
       const flame = document.getElementById("rp-flame");
       const badge = document.getElementById("streak-badge");
@@ -38,7 +76,7 @@
       rocket.style.bottom = bottomPx + "px";
       flame.style.bottom = bottomPx - 28 + "px";
 
-      if (streak > 0) {
+      if (state.streak > 0) {
         flame.style.opacity = "1";
         flame.classList.add("flickering");
       } else {
@@ -46,17 +84,17 @@
         flame.classList.remove("flickering");
       }
 
-      if (streak >= 15 && !launching) {
+      if (state.streak >= 15 && !state.launching) {
         rocket.classList.add("pre-launch");
       } else {
         rocket.classList.remove("pre-launch");
       }
 
-      if (streak >= 18) {
-        badge.textContent = `🚀 발사 ${LAUNCH_STREAK - streak}초전!`;
+      if (state.streak >= 18) {
+        badge.textContent = `🚀 발사 ${state.LAUNCH_STREAK - state.streak}초전!`;
         badge.classList.add("pre-launch");
       } else {
-        badge.textContent = `🔥 ${streak} / ${LAUNCH_STREAK}`;
+        badge.textContent = `🔥 ${state.streak} / ${state.LAUNCH_STREAK}`;
         badge.classList.remove("pre-launch");
       }
     }
@@ -65,8 +103,8 @@
        로켓 발사 시퀀스
     ═══════════════════════════════════ */
     function launchRocket() {
-      if (launching) return;
-      launching = true;
+      if (state.launching) return;
+      state.launching = true;
 
       const rocket = document.getElementById("rp-rocket");
       const flame = document.getElementById("rp-flame");
@@ -101,8 +139,8 @@
         flame.style.bottom = "412px";
 
         setTimeout(() => {
-          globalBoost = Math.min(globalBoost + 1, 2);
-          streak = 0;
+          state.globalBoost = Math.min(state.globalBoost + 1, 2);
+          state.streak = 0;
 
           rocket.classList.remove("blasting");
           flame.classList.remove("blasting");
@@ -119,7 +157,7 @@
               rocket.style.transition = "bottom 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
               flame.style.transition = "bottom 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s";
               updateRocketUI();
-              launching = false;
+              state.launching = false;
             }),
           );
 
@@ -138,7 +176,7 @@
       banner.className = "boost-banner";
       banner.innerHTML = `
     🚀 우주 돌파!
-    <div class="sub">전체 난이도 ${boostNames[globalBoost]} 상승!</div>
+    <div class="sub">전체 난이도 ${boostNames[state.globalBoost]} 상승!</div>
   `;
       document.body.appendChild(banner);
       setTimeout(() => banner.remove(), 3000);
@@ -153,16 +191,16 @@
        추락 시퀀스
     ═══════════════════════════════════ */
     function crashRocket() {
-      if (crashing || launching) return;
+      if (state.crashing || state.launching) return;
 
-      if (hasNet) {
-        hasNet = false;
-        netStreak = 0;
+      if (state.hasNet) {
+        state.hasNet = false;
+        state.netStreak = 0;
         netBounceRocket();
         return;
       }
 
-      crashing = true;
+      state.crashing = true;
 
       const rocket = document.getElementById("rp-rocket");
       const flame = document.getElementById("rp-flame");
@@ -195,7 +233,7 @@
           setTimeout(() => {
             rocket.classList.remove("crash-impact");
             rocket.style.transition = "bottom 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
-            crashing = false;
+            state.crashing = false;
             updateRocketUI();
           }, 450);
         }, 1080);
@@ -247,8 +285,8 @@
           rocket.style.bottom = targetBottom;
           const rocketPx = parseInt(targetBottom, 10) || 18;
           flame.style.bottom = rocketPx - 28 + "px";
-          flame.style.opacity = streak > 0 ? "1" : "0";
-          if (streak > 0) flame.classList.add("flickering");
+          flame.style.opacity = state.streak > 0 ? "1" : "0";
+          if (state.streak > 0) flame.classList.add("flickering");
 
           setTimeout(() => {
             updateRocketUI();
@@ -315,5 +353,12 @@
     });
   }
 
+  /**
+   * RocketCore 전역 객체
+   * @typedef {Object} RocketCore
+   * @property {typeof install} install - 로켓 코어 설치
+   */
+
+  /** @type {RocketCore} */
   global.RocketCore = { install };
 })(window);

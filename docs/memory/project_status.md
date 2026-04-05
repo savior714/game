@@ -16,6 +16,22 @@
 - 공통 숙련도 기준 변경을 `specs/platform.md`와 `specs/math.md`에 반영 완료
 - 전 과목 로켓 그물망(Net Shield) 보호 로직 정합성 확보: `var` 선언으로 스크립트 간 상태 공유 해결 및 중간값 낙하 공식 적용 완료 (`docs/CRITICAL_LOGIC.md` §7 반영)
 
+## Phase 4 완료 (리팩토링)
+
+- 타 과목 단어 DB 외부 분리 (`korean/data/words.json`, `science/data/questions.json`)
+- 동적 로더 패턴 (`words.js`, `getDB()`) 적용
+- 전 과목 `askQuestion()`에 try/catch 에러 바운더리 적용
+- `common/base.css` 통합 + 과목별 `base.css`를 CSS 변수 래퍼로 축소
+- `ProgressEngine.createStatsKey()` 헬퍼로 localStorage 키 네임스페이스 통일
+
+## Phase 5.1 완료 (TypeScript 타입 정의)
+
+- `tsconfig.json` 최적화 (`lib: ["ES2020", "DOM"]`, 검증/테스트 파일 제외)
+- 공통 모듈 JSDoc 타입 정의: `progress-engine.js`, `rocket-core.js`, `quiz-ui-core.js`
+- 과목별 engine.js JSDoc 타입 정의: `english`, `korean`, `math`, `science`
+- `npm run typecheck` (`tsc --noEmit`) 파이프라인 구축
+- `/git` 워크플로우 생성 (`.agents/workflows/git-commit-push.md`)
+
 ## 진행 제약
 
 - 규칙 문서와 결정 문서의 SSOT 경계를 중복 없이 유지해야 한다.

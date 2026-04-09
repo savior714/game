@@ -7,6 +7,8 @@
 - 과목(국어/수학/영어/과학) + 보상 소비형 마블 게임이 구현되어 있다.
 - 공용 코어(`common/*`)와 전역 로직(`global/*`) 분리 구조를 유지한다.
 - Supabase 기반 인증/동기화, 보호자/관리자 화면이 포함되어 있다.
+- (2026-04) `common/rocket-core.js`: 엔진 `const`만 있을 때 `window.LAUNCH_STREAK`가 비어 연속 정답 UI·발사가 깨지던 문제를 `install` 기본값과 `getStreakConfig()` 정규화로 수정했다.
+- (2026-04) 에이전트 Git 워크플로우는 `.agents/workflows/git.md`를 SSOT로 사용한다(구 `git-commit-push.md` 대체).
 
 ## 최근 문서 정비
 
@@ -30,7 +32,7 @@
 - 공통 모듈 JSDoc 타입 정의: `progress-engine.js`, `rocket-core.js`, `quiz-ui-core.js`
 - 과목별 engine.js JSDoc 타입 정의: `english`, `korean`, `math`, `science`
 - `npm run typecheck` (`tsc --noEmit`) 파이프라인 구축
-- `/git` 워크플로우 생성 (`.agents/workflows/git-commit-push.md`)
+- `/git` 워크플로우: `.agents/workflows/git.md` (구 `git-commit-push.md`)
 
 ## 진행 제약
 

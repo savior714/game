@@ -193,7 +193,20 @@ function spawnConfetti() {
 /* ═══════════════════════════════════
    초기화 및 시작
 ═══════════════════════════════════ */
-window.onload = () => {
+async function loadWordsData() {
+  const res = await fetch('data/words.json');
+  if (!res.ok) throw new Error(`words.json HTTP ${res.status}`);
+  window.WORDS = await res.json();
+  window.dispatchEvent(new Event('words-loaded'));
+}
+
+window.onload = async () => {
+  try {
+    await loadWordsData();
+  } catch (e) {
+    console.error(e);
+    window.WORDS = {};
+  }
   initRocketPanel();
   startGame();
 };

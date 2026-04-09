@@ -3,22 +3,29 @@ const path = require('path');
 
 // 국어 엔진 파일 읽기
 const enginePath = path.join(__dirname, 'engine.js');
-const content = fs.readFileSync(enginePath, 'utf8');
+const jsonPath = path.join(__dirname, 'data', 'words.json');
 
-// DB 객체 추출
-const dbMatch = content.match(/const DB = (\{[\s\S]*?\});/);
-if (!dbMatch) {
-  console.error('❌ Error: DB object not found in engine.js');
-  process.exit(1);
-}
-
-// eval()을 통한 정적 데이터 파싱
 let DB;
-try {
-  DB = eval(`(${dbMatch[1]})`);
-} catch (e) {
-  console.error('❌ Error: Failed to parse DB object:', e.message);
-  process.exit(1);
+if (fs.existsSync(jsonPath)) {
+  try {
+    DB = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+  } catch (e) {
+    console.error('❌ Error: Failed to parse data/words.json:', e.message);
+    process.exit(1);
+  }
+} else {
+  const content = fs.readFileSync(enginePath, 'utf8');
+  const dbMatch = content.match(/const DB = (\{[\s\S]*?\});/);
+  if (!dbMatch) {
+    console.error('❌ Error: DB object not found in engine.js and data/words.json is missing');
+    process.exit(1);
+  }
+  try {
+    DB = eval(`(${dbMatch[1]})`);
+  } catch (e) {
+    console.error('❌ Error: Failed to parse DB object:', e.message);
+    process.exit(1);
+  }
 }
 
 console.log('🚀 Starting Korean Engine Data Integrity Check...\n');

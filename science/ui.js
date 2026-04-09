@@ -159,7 +159,20 @@ function spawnConfetti() {
   }, i*100);
 }
 
-window.onload = () => {
+async function loadQuestionData() {
+  const res = await fetch('data/questions.json');
+  if (!res.ok) throw new Error(`questions.json HTTP ${res.status}`);
+  window.WORDS = await res.json();
+  window.dispatchEvent(new Event('words-loaded'));
+}
+
+window.onload = async () => {
+  try {
+    await loadQuestionData();
+  } catch (e) {
+    console.error(e);
+    window.WORDS = {};
+  }
   initRocketPanel();
   startGame();
 };

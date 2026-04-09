@@ -34,9 +34,25 @@
     if (target.crashing === undefined) target.crashing = false;
     if (target.netStreak === undefined) target.netStreak = 0;
     if (target.hasNet === undefined) target.hasNet = false;
+    // engine.js의 const LAUNCH_STREAK / ROCKET_MAX_BOTTOM은 window 프로퍼티가 아니므로,
+    // 미설치 시 비교·연산이 전부 실패(20 >= undefined → false)한다. 과목 엔진이
+    // window에 명시 할당하지 않아도 동작하도록 기본값을 둔다.
+    if (target.LAUNCH_STREAK === undefined) target.LAUNCH_STREAK = 20;
+    if (target.ROCKET_MAX_BOTTOM === undefined) target.ROCKET_MAX_BOTTOM = 330;
 
     // 상태 접근 헬퍼 (target 객체 참조)
     const state = target;
+
+    /** LAUNCH_STREAK / ROCKET_MAX_BOTTOM이 비정상(NaN 등)이어도 UI·발사 판정이 깨지지 않게 정규화 */
+    function getStreakConfig() {
+      let ls = Number(state.LAUNCH_STREAK);
+      let mx = Number(state.ROCKET_MAX_BOTTOM);
+      if (!Number.isFinite(ls) || ls <= 0) ls = 20;
+      if (!Number.isFinite(mx) || mx <= 0) mx = 330;
+      state.LAUNCH_STREAK = ls;
+      state.ROCKET_MAX_BOTTOM = mx;
+      return { launchStreak: ls, maxBottom: mx };
+    }
 
     /* ═══════════════════════════════════
        연속 정답 & 로켓 스트릭
@@ -44,7 +60,8 @@
     function updateStreak(correct) {
       if (correct) {
         state.streak++;
-        if (state.streak >= state.LAUNCH_STREAK) {
+        const { launchStreak } = getStreakConfig();
+        if (state.streak >= launchStreak) {
           launchRocket();
           return;
         }
@@ -67,11 +84,13 @@
     }
 
     function updateRocketUI() {
-      const progress = Math.min(state.streak / state.LAUNCH_STREAK, 1);
-      const bottomPx = 18 + Math.round(progress * state.ROCKET_MAX_BOTTOM);
+      const { launchStreak, maxBottom } = getStreakConfig();
+      const progress = Math.min(state.streak / launchStreak, 1);
+      const bottomPx = 18 + Math.round(progress * maxBottom);
       const rocket = document.getElementById("rp-rocket");
       const flame = document.getElementById("rp-flame");
       const badge = document.getElementById("streak-badge");
+      if (!rocket || !flame || !badge) return;
 
       rocket.style.bottom = bottomPx + "px";
       flame.style.bottom = bottomPx - 28 + "px";
@@ -91,10 +110,10 @@
       }
 
       if (state.streak >= 18) {
-        badge.textContent = `🚀 발사 ${state.LAUNCH_STREAK - state.streak}초전!`;
+        badge.textContent = `🚀 발사 ${launchStreak - state.streak}초전!`;
         badge.classList.add("pre-launch");
       } else {
-        badge.textContent = `🔥 ${state.streak} / ${state.LAUNCH_STREAK}`;
+        badge.textContent = `🔥 ${state.streak} / ${launchStreak}`;
         badge.classList.remove("pre-launch");
       }
     }
@@ -193,7 +212,8 @@
     function crashRocket() {
       if (state.crashing || state.launching) return;
 
-      if (state.hasNet) {
+      const hasNet = state.hasNet;
+      if (hasNet) {
         state.hasNet = false;
         state.netStreak = 0;
         netBounceRocket();

@@ -13,9 +13,10 @@ alwaysApply: true
 
 - **모듈화 기준**: 단일 파일이 **500라인을 초과**하면 즉시 하위 모듈로 기능을 분리(Refactoring)한다.
 - **Memory SSOT Guard**: `docs/memory/MEMORY.md`가 **200라인(또는 25KB)을 초과**하면 작업을 즉시 중단하고 **50라인 이내 요약**으로 재작성한다. 세부 컨텍스트는 `docs/memory/` 하위 모듈(`user`, `feedback`, `project`, `reference`)로 **분리/아카이브**한다. (**최우선**)
+- **MEMORY Anti-Drift**: `MEMORY.md`에 **장문 요약·Task 서술·기술 메모·긴 괄호 설명**을 넣지 않는다. 형식은 **§2.1.1**을 따른다. (**최우선**)
 - **Language SSOT**: **모든 Artifact(구현 계획, 워크스루, 태스크, 의사결정 기록, 검증 리포트 등)는 반드시 한국어로 작성**한다.
 - **File-First Protocol**: 모든 파일 수정 전, 파일 존재 여부를 먼저 확인한다. **존재하지 않는 파일에 대한 수정 시도는 금지**하며, 신규 파일은 생성 후 작업한다.
-- **Latest Doc Protocol**: 신규 기능 구현 또는 주요 라이브러리 사용 전, 반드시 해당 기술 스택의 **최신 공식 문서**를 확인해 최신 API/Best Practice를 준수한다. 필요 시 웹 검색을 수행한다.
+- **Latest Doc Protocol**: 신규 기능 구현 또는 주요 라이브러리 사용 전, 반드시 **(1) 프로젝트 내부의 관련 `docs/specs/` 명세** 및 **(2) 해당 기술 스택의 최신 공식 문서**를 먼저 확인하여 최신 API/Best Practice 및 프로젝트 정책을 준수한다. 필요 시 웹 검색을 수행한다.
 
 ---
 
@@ -28,6 +29,22 @@ alwaysApply: true
 - **Index(요약/링크) 파일**: `docs/memory/MEMORY.md`
   - **최대 200라인 / 25KB**
   - 각 항목은 **타입별 세부 파일로의 링크(또는 참조)**만 유지
+
+#### 2.1.1 MEMORY Anti-Drift (인덱스 오염 방지)
+
+`MEMORY.md`는 **목차·링크 허브**이며, 여기에 두면 **라인 한도 전에 SSOT가 깨지는** 전형적 패턴이 있다. 아래는 **금지**이며, 내용은 **한 곳(SSOT)**에만 둔다.
+
+| 금지(인덱스에 쓰면 드리프트) | 넣을 위치(예시) |
+|------------------------------|-----------------|
+| `Recent Summary` 형태의 **다중 Task/다중 스펙 ID 나열** | `project_changelog_*.md`, `project_status.md`, 해당 `docs/plans/*.md` |
+| 링크 뒤 **긴 괄호**(`완료-날짜 — Task … — 기술 설명`) | 동일 |
+| **Em dash(—) 뒤 기술 메모**(쿠키/API/라이브러리 명) | `project_changelog_*.md`, `docs/CRITICAL_LOGIC.md`, 플랜/리포트 |
+| 플랜 파일 정리·삭제 같은 **서술형 공지 단락** | `project_changelog_*.md` |
+| 동일 URL을 **항목 여러 줄로 중복** | 한 줄로 통합 링크 |
+
+**허용**: 섹션 제목, **한 줄짜리** 메타(Last Verified + 변경 로그·상태 링크), 링크 한 줄에 **제목만**(상태는 파일명·플랜 본문에 둠), 명세 허브·세션 타입·빠른 링크의 **순수 링크 목록**.
+
+**세션 종료·`/go` 시**: `MEMORY.md`를 갱신할 때는 **새 불릿 추가 여부**만 검토하고, 설명을 쓰려는 충동이 있으면 **changelog 또는 `project_*.md`에 기록**한 뒤 인덱스에는 **링크 1줄**만 추가한다.
 - **세부 타입 파일**: `docs/memory/` 아래에 다음 타입으로 분리 저장
   - `user_*.md` 또는 `user_role.md` 등 (type: user)
   - `feedback_*.md` (type: feedback)
@@ -79,11 +96,13 @@ alwaysApply: true
 
 모든 작업 완료 및 사용자 응답 직전, 아래 체크리스트를 내부적으로 확인한다.
 
+- [ ] **통합 검증(`./verify.sh`)**: 저장소 루트에서 `./verify.sh`를 실행했는가? **보고 전 필수.** 검증 결과를 끌어올 때는 **터미널/전체 로그를 채팅에 넣지 말고**, **Read 도구로 `verify-last-result.json` → (실패 시) `verify-pytest-failures.txt`** 순으로만 읽는다. JSON의 `agentHint`는 **영문**이며, 한글 절차 설명은 **`PROJECT_RULES.md` 4.0절**에만 있다.
+- [ ] **Verify Report**: `통합 검증` 항목에 exitCode·실패 단계·후속 조치(실패 시)를 포함했는가? (`PROJECT_RULES.md` §4.4)
 - [ ] **Line Count**: 수정된 파일이 500라인을 초과하지 않는가?
-- [ ] **Memory Density**: `docs/memory/MEMORY.md`가 200라인/25KB 이내인가? 초과 시 50라인 이내로 요약 + 타입 파일로 분리했는가?
+- [ ] **Memory Density / Anti-Drift**: `docs/memory/MEMORY.md`가 200라인/25KB 이내이며, **§2.1.1 금지 항목**(장문 요약·긴 괄호·기술 메모)이 없는가? 초과 시 50라인 이내로 요약 + 타입 파일·changelog로 분리했는가?
 - [ ] **Language Consistency**: 모든 Artifact가 한국어로 작성되었는가?
 - [ ] **State Sync**: 수정 대상 파일의 존재를 사전에 확인했고, 신규/수정 작업을 올바른 방식으로 수행했는가?
-- [ ] **Latest Sync**: 신규 기술/중요 로직 변경 시 최신 공식 문서를 참조했는가?
+- [ ] **Latest Sync**: 신규 기술/중요 로직 변경 시 프로젝트 내부 `docs/specs/` 및 최신 공식 문서를 참조했는가?
 - [ ] **Check**: 작업에 성공했다면 체크박스에 완료 체크를 했는가?
 
 ### 상황별 참조 규칙
@@ -126,6 +145,39 @@ alwaysApply: true
 
 - **SDD 우선**: 구현 전에 스펙(`docs/specs/`) 정합성을 먼저 맞춘다.
 - **Memory SSOT 준수**: “세션 지식”은 `docs/memory/`, “기술 표준/아키텍처”는 `PROJECT_RULES.md`, “결정 기록”은 `docs/CRITICAL_LOGIC.md`로 분리한다.
-- **보고 형식**: 완료 시 **Verify Report(변경 파일/정적 검증/테스트/스모크/리스크)**를 한국어로 포함한다.
+- **보고 형식**: 완료 시 **Verify Report(통합 검증·변경 파일/정적 검증/테스트/스모크/리스크·후속)**를 한국어로 포함한다. 통합 검증은 **Read로 읽은 `verify-last-result.json`(및 필요 시 `verify-pytest-failures.txt`)**를 근거로 쓰고, 실패 시 **원인·대상 테스트·다음 액션**을 한 블록으로 제시한다.
+
+---
+
+## 6. 자기 최적화 및 워크플로우 제안(Self-Optimization)
+
+- **패턴 분석**: `docs/CRITICAL_LOGIC.md` 및 `docs/memory/` 파일에서 동일한 문제 해결 패턴 혹은 수동 작업이 **3회 이상** 반복 발견될 경우, 이를 표준 코어 기능 또는 워크플로우로 승격할 지를 검토한다.
+- **적극적 제안**: 탐지된 패턴을 자동화/표준화할 수 있는 **신규 Workflow(.md)** 생성을 `.agents/workflows/` 디렉토리에 제안한다.
+- **SSOT 자산화**: 단순 반복 피드백을 넘어, 프로젝트의 지식 자산(Knowledge/Workflow)으로 변환하여 휴먼-에이전트 협업 효율을 극대화한다.
+
+---
+
+## 7. 프로젝트 워크플로우 자동 인식
+
+세션 시작 시, 또는 사용자가 `/`를 입력한 듯한 맥락에서 에이전트는 아래 워크플로우 목록을 **자동으로 인지하고 안내**합니다. Hermes의 `/` slash command 메뉴에는 뜨지 않으므로, 에이전트가 직접 고지하는 방식으로 대체합니다.
+
+### 7.1 워크플로우 목록
+
+| 워크플로우 | 설명 | 파일 |
+|-----------|------|------|
+| `plan` | 전략적 설계 — 요구사항을 Task 단위로 분해하고 Blueprint 작성 | `.agents/workflows/plan.md` |
+| `go` | 세션 이관 — 산출물 문서 동기화 및 다음 세션 이관 프롬프트 생성 | `.agents/workflows/go.md` |
+| `git` | Git Commit & Push — SSOT 반영 및 Git 커밋·푸시 | `.agents/workflows/git.md` |
+| `refactor` | 자동 리팩토링 — UI 컴포넌트 추출 및 파일 분할 | `.agents/workflows/refactor.md` |
+| `audit` | EMR 심사 평가 — 아키텍처/문서화/인증 지표 준수도 종합 평가 | `.agents/workflows/audit.md` |
+| `evidence` | 인증 지표 증적 — Axxx/Bxxx/Cxxx 지표별 증적 자동 생성 | `.agents/workflows/evidence.md` |
+
+### 7.2 에이전트 행동 규칙
+
+- 사용자가 신규 기능/복잡한 작업을 요청하면 **`plan` 워크플로우를 먼저 제안**한다.
+- 사용자가 완료 인사를 하거나 세션 종료가 임박하면 **`git` 또는 `go` 워크플로우를 제안**한다.
+- 파일이 500라인을 초과하면 **`refactor`를 자동으로 실행**한다.
+- 심사진단/인증 준비 요청 시 **`audit → evidence` 순서로 제안**한다.
+- 워크플로우 실행 시 `read_file`로 해당 `.agents/workflows/*.md`를 읽어 절차에 따른다.
 
 ---

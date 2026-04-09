@@ -2,20 +2,29 @@ const fs = require('fs');
 const path = require('path');
 
 const enginePath = path.join(__dirname, 'engine.js');
-const content = fs.readFileSync(enginePath, 'utf8');
-
-const dbMatch = content.match(/const DB = (\{[\s\S]*?\});/);
-if (!dbMatch) {
-  console.error('❌ Error: DB object not found in engine.js');
-  process.exit(1);
-}
+const jsonPath = path.join(__dirname, 'data', 'questions.json');
 
 let DB;
-try {
-  DB = eval(`(${dbMatch[1]})`);
-} catch (e) {
-  console.error('❌ Error: Failed to parse DB object:', e.message);
-  process.exit(1);
+if (fs.existsSync(jsonPath)) {
+  try {
+    DB = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+  } catch (e) {
+    console.error('❌ Error: Failed to parse data/questions.json:', e.message);
+    process.exit(1);
+  }
+} else {
+  const content = fs.readFileSync(enginePath, 'utf8');
+  const dbMatch = content.match(/const DB = (\{[\s\S]*?\});/);
+  if (!dbMatch) {
+    console.error('❌ Error: DB object not found in engine.js and data/questions.json is missing');
+    process.exit(1);
+  }
+  try {
+    DB = eval(`(${dbMatch[1]})`);
+  } catch (e) {
+    console.error('❌ Error: Failed to parse DB object:', e.message);
+    process.exit(1);
+  }
 }
 
 console.log('🚀 Starting Science Engine Data Integrity Check...\n');

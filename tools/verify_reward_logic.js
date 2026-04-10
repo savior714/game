@@ -39,13 +39,14 @@ global.window = {
   innerHeight: 800,
   getComputedStyle: () => ({ paddingTop: '0px' })
 };
+global.alert = () => {};
 global.requestAnimationFrame = (callback) => callback();
 global.performance = { now: () => Date.now() };
 
 // 3. Load RewardSystem (Using eval to load the file as a string to avoid module issues in simple script)
 const fs = require('fs');
 const path = require('path');
-const rewardJsContent = fs.readFileSync(path.join(__dirname, 'global', 'reward.js'), 'utf8');
+const rewardJsContent = fs.readFileSync(path.join(__dirname, '..', 'global', 'reward.js'), 'utf8');
 
 // reward.js가 IIFE이므로 전역 RewardSystem을 획득해야 함
 // 파일 내용에서 'const RewardSystem =' 부분을 제거하여 eval 결과를 바로 받거나, 

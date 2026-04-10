@@ -37,6 +37,11 @@ const RewardSystem = (() => {
           state.shop_items = [...initialState.shop_items];
         }
         if (!state.custom_inventory) state.custom_inventory = {};
+        // 로컬/클라우드 병합 과정에서 숫자 필드가 문자열·NaN으로 들어와도 누적이 깨지지 않게 정규화
+        state.gems = Number.isFinite(Number(state.gems)) ? Number(state.gems) : 0;
+        state.youtube_minutes = Number.isFinite(Number(state.youtube_minutes)) ? Number(state.youtube_minutes) : 0;
+        state.snacks = Number.isFinite(Number(state.snacks)) ? Number(state.snacks) : 0;
+        state.marble_plays = Number.isFinite(Number(state.marble_plays)) ? Number(state.marble_plays) : 0;
       } catch (e) {
         console.error('RewardSystem load failed:', e);
       }
@@ -63,17 +68,20 @@ const RewardSystem = (() => {
   }
 
   function add(type, amount = 1) {
+    const safeAmount = Number.isFinite(Number(amount)) ? Number(amount) : 0;
+    if (safeAmount <= 0) return;
+
     if (type === 'gems') {
-      state.gems += amount;
+      state.gems = (Number(state.gems) || 0) + safeAmount;
     } else if (type === 'youtube') {
-      state.youtube_minutes += (amount * 15);
+      state.youtube_minutes = (Number(state.youtube_minutes) || 0) + (safeAmount * 15);
     } else if (type === 'snack') {
-      state.snacks += amount;
+      state.snacks = (Number(state.snacks) || 0) + safeAmount;
     } else if (type === 'marble') {
-      state.marble_plays += amount;
+      state.marble_plays = (Number(state.marble_plays) || 0) + safeAmount;
     } else {
       if (!state.custom_inventory[type]) state.custom_inventory[type] = 0;
-      state.custom_inventory[type] += amount;
+      state.custom_inventory[type] = (Number(state.custom_inventory[type]) || 0) + safeAmount;
     }
     
     save();

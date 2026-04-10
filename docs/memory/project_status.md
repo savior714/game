@@ -9,6 +9,8 @@
 - Supabase 기반 인증/동기화, 보호자/관리자 화면이 포함되어 있다.
 - (2026-04) `common/rocket-core.js`: 엔진 `const`만 있을 때 `window.LAUNCH_STREAK`가 비어 연속 정답 UI·발사가 깨지던 문제를 `install` 기본값과 `getStreakConfig()` 정규화로 수정했다.
 - (2026-04) 에이전트 Git 워크플로우는 `.agents/workflows/git.md`를 SSOT로 사용한다(구 `git-commit-push.md` 대체).
+- (2026-04) `global/reward.js`에서 보상 숫자 필드(`gems`/`youtube_minutes`/`snacks`/`marble_plays`)를 로드 시 정규화하고 `add()` 누적을 안전 수치 연산으로 고정해 보석 누적 불안정 이슈를 완화했다.
+- (2026-04) `tools/verify_reward_logic.js` 경로 해석을 루트 기준으로 수정하고 Node 환경 `alert` mock을 추가해 보상 검증 스크립트가 통합 검증에 포함 가능하도록 복구했다.
 
 ## 최근 문서 정비
 

@@ -28,3 +28,4 @@ build/
 # Local snapshots
 .git-snapshots/
 .vercel
+.playwright-mcp/

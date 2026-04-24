@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATES = ROOT / "templates"
+TEMPLATES = ROOT
 
 
 def test_controls_have_stable_action_selectors() -> None:

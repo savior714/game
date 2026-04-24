@@ -6,6 +6,7 @@
   <title>학습 게임 놀이터</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
   <style>
     body { font-family: 'Pretendard', -apple-system, sans-serif; word-break: keep-all; }
 
@@ -27,6 +28,16 @@
   </style>
 </head>
 <body class="bg-[#F8F6F3] min-h-screen overflow-x-hidden">
+  <header class="site-header relative z-20 max-w-[980px] mx-auto px-5 pt-4">
+    <h1 class="brand text-gray-900">학습 게임 놀이터</h1>
+    <nav id="main-top-nav" aria-label="Main navigation">
+      <ul class="nav-list">
+        <li><a href="./index.html" aria-current="page">홈</a></li>
+        <li><a href="./space-explorer.html">우주 탐험</a></li>
+      </ul>
+    </nav>
+  </header>
+
   <div class="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
     <div class="orb absolute -top-40 -right-40 w-[480px] h-[480px] rounded-full bg-orange-300/20 blur-[80px]"></div>
     <div class="orb orb-b absolute -bottom-40 -left-40 w-[360px] h-[360px] rounded-full bg-blue-300/15 blur-[80px]"></div>

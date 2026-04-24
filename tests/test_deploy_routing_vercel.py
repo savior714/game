@@ -12,8 +12,16 @@ def test_vercel_rewrites_include_space_explorer_route() -> None:
     config = json.loads(config_path.read_text(encoding="utf-8"))
     rewrites = config.get("rewrites", [])
 
-    assert any(
-        item.get("source") == "/space-explorer.html"
-        and item.get("destination") == "/templates/space-explorer.html"
+    assert not any(
+        item.get("destination", "").startswith("/templates/")
         for item in rewrites
     )
+
+
+def test_vercel_rewrites_do_not_override_root_route() -> None:
+    config_path = ROOT / "vercel.json"
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    rewrites = config.get("rewrites", [])
+
+    assert not any(item.get("source") == "/" for item in rewrites)
+    assert not any(item.get("source") == "/(.*)" for item in rewrites)

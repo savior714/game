@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATES = ROOT / "templates"
+TEMPLATES = ROOT
 
 
 def test_render_mode_controls_and_accessibility_markup_exist() -> None:

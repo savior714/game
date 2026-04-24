@@ -1,16 +1,3 @@
 {
-  "rewrites": [
-    {
-      "source": "/",
-      "destination": "/templates/index.html"
-    },
-    {
-      "source": "/space-explorer.html",
-      "destination": "/templates/space-explorer.html"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/templates/$1"
-    }
-  ]
+  "rewrites": []
 }

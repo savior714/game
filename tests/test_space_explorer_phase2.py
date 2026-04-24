@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATES = ROOT / "templates"
+TEMPLATES = ROOT
 
 
 def test_space_explorer_script_is_connected() -> None:

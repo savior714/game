@@ -78,3 +78,102 @@
 - 리스크 식별 완료
 - `verify.sh` 통과
 - 실행 가능한 해답 확보
+
+---
+
+## 8. MCP Argument Mapping Protocol (Mandatory)
+
+자연어 사용자 프롬프트를 MCP 도구 호출 시 그대로 전달하지 않는다.
+모든 MCP 호출은 도구 스키마를 기준으로 `arguments` 객체를 구성한 뒤 실행한다.
+
+### 8.1 Required Flow
+
+1. 도구 스키마 확인: `mcps/<server>/tools/<tool>.json`
+2. `required` 필드 식별
+3. 사용자 자연어를 스키마 필드로 매핑
+4. 타입 정규화 (string/boolean/integer/number)
+5. `CallMcpTool(server, toolName, arguments)` 형태로 호출
+6. 검증 실패 시 1회 자동 보정 후 재호출
+
+### 8.2 Never Call Without Arguments
+
+아래 상황을 금지한다:
+- `arguments` 없이 MCP 도구 호출
+- 스키마의 필수 필드 누락 상태로 호출
+- camelCase 필드명을 임의 변경 (`nextThoughtNeeded` 등)
+
+### 8.3 Fallback Rules (Validation Error)
+
+`-32602` 또는 input validation error 발생 시 즉시 다음 순서로 처리한다:
+
+1. 스키마 재확인 (`required`, `properties`)
+2. 누락 필드 자동 채움
+3. 필드명 오탈자 보정 (대소문자/철자)
+4. 타입 보정 (`"1"` -> `1`, `"false"` -> `false`)
+5. 재호출 후 실패 원인 보고
+
+### 8.4 SequentialThinking Canonical Template
+
+`sequentialthinking` 호출 시 기본 템플릿:
+
+```json
+{
+  "server": "user-sequentialthinking",
+  "toolName": "sequentialthinking",
+  "arguments": {
+    "thought": "<현재 분석 문장>",
+    "nextThoughtNeeded": true,
+    "thoughtNumber": 1,
+    "totalThoughts": 3
+  }
+}
+```
+
+### 8.5 Responsibility Boundary
+
+- `AGENTS.md`는 정책(What/How)을 정의한다.
+- 실제 강제 실행은 호출 레이어(래퍼/훅/스크립트)가 담당한다.
+- 정책만으로 보장이 안 되는 경우, 코드 기반 변환기를 우선 도입한다.
+
+---
+
+## 9. Wrapper Pipeline (Operational)
+
+아래 파이프라인을 표준 호출 경로로 사용한다.
+
+1. `tools/mcp_call_wrapper.py`로 스키마 매핑/검증
+2. 출력 JSON을 CallMcpTool 입력으로 사용
+3. 실패 시 8.3 Fallback Rules 적용
+
+### 9.1 SequentialThinking One-Liner
+
+```bash
+python tools/mcp_call_wrapper.py \
+  --server user-sequentialthinking \
+  --tool sequentialthinking \
+  --prompt "현재 문제를 단계적으로 분석" \
+  --pretty
+```
+
+### 9.2 Save-Then-Call Flow
+
+```bash
+python tools/mcp_call_wrapper.py \
+  --server user-sequentialthinking \
+  --tool sequentialthinking \
+  --prompt "원인 분석 1단계" \
+  --pretty \
+  --output-file .mcp_call.json
+```
+
+### 9.3 Non-SequentialThinking Rule
+
+`sequentialthinking` 이외 도구는 반드시 `--arguments-json`을 사용한다.
+
+```bash
+python tools/mcp_call_wrapper.py \
+  --server user-searxng \
+  --tool searxng_search \
+  --arguments-json '{"query":"cursor mcp"}' \
+  --pretty
+```

@@ -92,11 +92,11 @@
 - 현재 저장소는 웹 런타임 앱이 아닌 부트스트랩/템플릿 패키지 구조로 확인됨
   - 웹 엔트리 파일(`index.html`, `src/main.*`, `app router`) 미존재
   - 라우팅/네비게이션 구현 코드 미존재
-- `우주 탐험` 기능은 본 저장소의 `templates/` 대상에 구현하는 방식으로 진행 필요
+- `우주 탐험` 기능은 본 저장소의 루트 런타임 구조 기준으로 구현 필요
 - Phase 1 착수 기준 경로를 아래처럼 확정
-  - 페이지 템플릿: `templates/src/pages/space-explorer.*` (프레임워크 확정 후 확장자 결정)
-  - 메뉴 삽입 지점: `templates/src/components/nav.*` 또는 `templates/src/app/layout.*`
-  - 엔트리/라우터: `templates/src/main.*` 또는 `templates/src/app/router.*`
+  - 페이지 템플릿: `src/pages/space-explorer.*` (프레임워크 확정 후 확장자 결정)
+  - 메뉴 삽입 지점: `src/components/nav.*` 또는 `src/app/layout.*`
+  - 엔트리/라우터: `src/main.*` 또는 `src/app/router.*`
 
 완료 판정:
 
@@ -116,11 +116,11 @@
 
 산출물 (구현 반영):
 
-- `templates/index.html`에 `우주 탐험` 메뉴 추가
-- `templates/space-explorer.html` 신규 생성
+- `index.html`에 `우주 탐험` 메뉴 추가
+- `space-explorer.html` 신규 생성
   - 캔버스(`solar-system-canvas`) 배치
   - 컨트롤 UI(재생/일시정지/초기화, 속도 선택, 라벨 토글) 배치
-- `templates/styles.css`로 공통 네비게이션/레이아웃 스타일 적용
+- `styles.css`로 공통 네비게이션/레이아웃 스타일 적용
 
 완료 판정:
 
@@ -142,12 +142,14 @@
 
 산출물 (구현 반영):
 
-- `templates/space-explorer.js` 신규 생성
+- `space-explorer/main.js`
+  - `requestAnimationFrame` 루프(`tick`) 구성 및 앱 부트스트랩
+- `space-explorer/renderer.js`
   - 태양 + 8행성 렌더링 (`planets` 배열 기반)
-  - 시간 경과 기반 공전 각도 업데이트
-  - `requestAnimationFrame` 루프(`tick`) 구성
   - `resizeCanvas()` 기반 반응형 캔버스 리사이즈 적용
-- `templates/space-explorer.html`에 스크립트 연결
+- `space-explorer/state.js`
+  - 행성 데이터 및 시뮬레이션 상태 정의
+- `space-explorer.html`에 모듈 엔트리 연결
 
 완료 판정:
 
@@ -169,10 +171,10 @@
 
 산출물 (구현 반영):
 
-- `templates/space-explorer.html`
+- `space-explorer.html`
   - 컨트롤 버튼에 `data-action` 식별자 부여 (`play`, `pause`, `reset`)
   - 상태 배지(`simulation-status`) 추가
-- `templates/space-explorer.js`
+- `space-explorer/controls.js`
   - `setPlaying()`으로 재생/일시정지 상태 전환 일원화
   - `updateStatusText()`로 재생 상태/배속 UI 즉시 반영
   - `applyResetState()`로 초기화 시 시간/배속/라벨/행성 각도 초기 상태 복원
@@ -199,15 +201,17 @@
 
 산출물 (구현 반영):
 
-- `templates/space-explorer.html`
+- `space-explorer.html`
   - 캔버스에 `aria-describedby="simulation-status"` 연결
   - 렌더 모드 선택 UI(`render-quality`: 2D/3D) 추가
-- `templates/space-explorer.js`
+- `space-explorer/controls.js`
   - `setRenderMode()` 도입으로 2D/3D 렌더 단계 제어
+- `space-explorer/renderer.js`
   - 2D 모드에서 일부 궤도선/텍스트 렌더 경량화
+- `space-explorer/main.js`
   - 리사이즈 이벤트를 `requestAnimationFrame`으로 스로틀링
   - `visibilitychange` 처리로 백그라운드 전환 후 시간차 급증 방지
-- `templates/styles.css`
+- `styles.css`
   - 상태 배지/활성 버튼 스타일로 조작 피드백 강화
 
 완료 판정:
@@ -226,15 +230,15 @@
 
 산출물 (구현 반영):
 
-- `templates/space-explorer/main.js`
+- `space-explorer/main.js`
   - 앱 부트스트랩, 애니메이션 루프, resize/visibility 이벤트 관리
-- `templates/space-explorer/state.js`
+- `space-explorer/state.js`
   - 시뮬레이션 상태 및 행성 데이터 정의
-- `templates/space-explorer/renderer.js`
+- `space-explorer/renderer.js`
   - 캔버스 렌더/리사이즈 책임 분리
-- `templates/space-explorer/controls.js`
+- `space-explorer/controls.js`
   - 컨트롤 이벤트 및 상태 동기화 로직 분리
-- `templates/space-explorer.html`
+- `space-explorer.html`
   - `<script type="module" src="./space-explorer/main.js"></script>`로 전환
 
 완료 판정:
@@ -252,15 +256,15 @@
 
 산출물 (구현 반영):
 
-- `templates/space-explorer/interactions.js`
+- `space-explorer/interactions.js`
   - 핀치 거리 변화량 기반 `targetZoom` 업데이트
   - 두 터치 각도 변화량 기반 `targetRotation` 업데이트
   - 터치 종료 시 제스처 상태 정리
-- `templates/space-explorer/state.js`
+- `space-explorer/state.js`
   - `zoom`, `targetZoom`, `viewRotation`, `targetRotation` 상태 추가
-- `templates/space-explorer/renderer.js`
+- `space-explorer/renderer.js`
   - 줌 배율/시야 회전을 행성 궤도 계산에 반영
-- `templates/styles.css`
+- `styles.css`
   - 캔버스 `touch-action: none` 적용으로 기본 브라우저 제스처 비활성화
 
 완료 판정:
@@ -279,14 +283,14 @@
 
 산출물 (구현 반영):
 
-- `templates/space-explorer/main.js`
+- `space-explorer/main.js`
   - `getContext("2d", { alpha: false, desynchronized: true })` 우선 사용
-- `templates/space-explorer/renderer.js`
+- `space-explorer/renderer.js`
   - `devicePixelRatio` 기반 캔버스 해상도 스케일링
   - 별 배경 오프스크린 캔버스 캐시 및 `drawImage` 재사용
-- `templates/space-explorer/interactions.js`
+- `space-explorer/interactions.js`
   - `pointerdown`/`pointermove`/`pointerup` 중심 제스처 처리
-- `templates/space-explorer.html`
+- `space-explorer.html`
   - 제스처 안내 텍스트 보강
 
 완료 판정:
@@ -303,9 +307,9 @@
 
 산출물 (구현 반영):
 
-- `templates/styles.css`
+- `styles.css`
   - 우주 탐험 페이지 전용 컨테이너 폭 확장
-- `templates/space-explorer/renderer.js`
+- `space-explorer/renderer.js`
   - 최소 캔버스 크기(가로/세로) 상향
 
 완료 판정:
@@ -321,9 +325,9 @@
 
 산출물 (구현 반영):
 
-- `templates/styles.css`
+- `styles.css`
   - 우주 탐험 레이아웃 최대 폭 상향(`1480px`)
-- `templates/space-explorer/renderer.js`
+- `space-explorer/renderer.js`
   - `sceneScale` 계산값 도입
   - 궤도 반경/행성 반경 계산에 `sceneScale` 적용
   - 최소 캔버스 크기 추가 상향
@@ -335,15 +339,14 @@
 
 ### Phase 10 - 배포 라우팅 안정화
 
-- 정적 배포 환경에서 `templates/` 기반 파일 경로를 rewrite로 일관 매핑
+- 정적 배포 환경에서 루트 기반 파일 경로를 일관 매핑
 - 실험 페이지 직접 진입 경로(`/space-explorer.html`)를 명시적으로 보장
 
 산출물 (구현 반영):
 
 - `vercel.json`
-  - `/` -> `/templates/index.html`
-  - `/space-explorer.html` -> `/templates/space-explorer.html`
-  - 기타 경로 `/(.*)` -> `/templates/$1`
+  - 기존 루트 라우팅은 유지하고 우주 실험 페이지만 선택적 rewrite 적용
+  - `/space-explorer.html` -> `/space-explorer.html`
 
 완료 판정:
 
@@ -379,7 +382,7 @@
 
 ## 10) 다음 실행 항목
 
-1. 현재 프로젝트의 웹 엔트리 파일(또는 앱 라우터) 위치를 확정한다.
-2. `우주 탐험` 메뉴와 페이지 스캐폴딩을 구현한다.
-3. Canvas 기반 태양계 시뮬레이션 MVP를 연결한다.
-4. 체크리스트 기준으로 1차 검증한다.
+1. 배포 환경에서 `/space-explorer.html` rewrite 동작을 주기적으로 스모크 검증한다.
+2. 모바일/태블릿 실기기에서 제스처 감도(`zoom/rotation`)를 캘리브레이션한다.
+3. 우주 탐험 페이지의 상태 저장(예: 마지막 렌더 모드/배율) 정책을 확정한다.
+4. WebGL(Three.js) 전환 시점의 성능 기준(FPS/메모리)을 수치로 정의한다.

@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATES = ROOT / "templates"
+TEMPLATES = ROOT
 SPACE_EXPLORER_DIR = TEMPLATES / "space-explorer"
 
 

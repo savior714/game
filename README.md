@@ -1,47 +1,47 @@
-# Agentic Development System Bootstrap
+# 🎮 어린이 학습 게임 놀이터 (AidenGame)
 
-이 디렉토리는 현재 프로젝트의 핵심 개발 시스템(정책, 실행 루틴, TDD 게이트 등)을 다른 프로젝트로 이식하기 위한 '설치 패키지'입니다.
+아이들의 성취감과 자기주도 학습을 최우선으로 하는 적응형 학습 게임 플랫폼입니다.  
+현재 런타임은 `templates/` 기반 정적 HTML/JS 구조로 운영됩니다.
 
-## 🔄 동기화 워크플로우 (`/bootstrap`)
+## 🚀 핵심 기능
 
-현재 프로젝트(EMR)의 지침이 변경되었을 때, 이를 템플릿에 반영하려면 에이전트에게 다음 명령을 내리십시오.
+- **4대 과목**: 국어, 수학, 영어, 과학 학습 게임 제공
+- **적응형 난이도**: 실력 변화에 따라 문제 난이도 자동 조정
+- **보상 루프**: 연속 정답 기반 로켓/보석 보상과 보호자 상점 연동
+- **공용 코어**: 과목별 엔진이 공통 로직(`templates/common/`)을 재사용
+- **우주 탐험 실험실**: `2D/3D` 렌더 모드, 태블릿 제스처(핀치/회전), 고해상도 렌더링 적용
 
-> "현재 시스템의 변경사항을 부트스트랩에 반영해줘 (/bootstrap)"
+## 🧭 현재 엔트리/라우팅 (SSOT)
 
-이 워크플로우는 현재의 `AGENTS.md`, `PROJECT_RULES.md`, TDD 게이트 로직 등을 자동으로 일반화하여 `templates/` 폴더를 최신 상태로 유지합니다.
+- 메인 허브: `templates/index.html`
+- 우주 탐험: `templates/space-explorer.html`
+- 우주 탐험 모듈 엔트리: `templates/space-explorer/main.js`
+- 배포 라우팅 설정: `vercel.json`
+  - `/space-explorer.html` -> `/templates/space-explorer.html`
 
-## 📦 구성 요소
+## 🛠️ 로컬 개발
 
-
-1. **`bootstrap.sh`**: 대상 프로젝트에 시스템을 주입하는 메인 설치 스크립트.
-2. **`templates/`**: 이식될 핵심 파일들의 템플릿.
-   - `AGENTS.md`: 에이전트의 행동 지침 (TDD 강제).
-   - `PROJECT_RULES.md`: 프로젝트 정책 및 기술 스택 SSOT.
-   - `verify.sh`: TDD 게이트 및 로컬 검증 스크립트.
-   - `tools/tdd_gate_plugin.py`: pytest용 TDD 게이트 플러그인.
-   - `tests/`: 초기 실패 테스트 및 설정 파일.
-
-## 🚀 사용 방법
-
-새로운 프로젝트 디렉토리에서 아래 명령어를 실행하십시오.
+- 메인 런타임은 정적 템플릿 파일을 기준으로 동작합니다.
+- 프로젝트 검증은 루트 `verify.sh`를 사용합니다.
 
 ```bash
-# 1. 이 bootstrap 디렉토리를 새 프로젝트로 복사하거나, 경로를 지정하여 실행
-./bootstrap.sh
+bash ./verify.sh
 ```
 
-또는 에이전트에게 다음과 같이 지시하십시오.
+## ✅ 검증 체계
 
-> "현재 프로젝트에 상위 디렉토리 `../bootstrap`에 있는 개발 시스템을 부트스트랩하라."
+- 테스트: `tests/`
+- 통합 검증: `verify.sh`
+- 문서/설계 기준:
+  - `PROJECT_RULES.md`
+  - `docs/SPACE_EXPLORER_PLAN.md`
+  - `templates/docs/specs/technical/DESIGN.md`
 
-## ⚙️ 작동 원리
+## 📁 주요 디렉토리
 
-1. **환경 감지**: `pyproject.toml` 등을 통해 언어(Python 등)를 감지합니다.
-2. **구조 생성**: `docs/`, `tests/`, `tools/` 등 필수 디렉토리를 생성합니다.
-3. **시스템 주입**: TDD 게이트 로직이 포함된 `verify.sh`와 정책 문서들을 복사합니다.
-4. **TDD 활성화**: 의도적으로 실패하는 첫 번째 테스트를 생성하여 TDD 사이클을 시작하게 합니다.
-
-## ⚠️ 주의 사항
-
-- 기존 파일이 존재할 경우 덮어쓰지 않고 경고를 표시합니다.
-- `verify.sh` 내부의 경로 설정(`src`, `app` 등)은 프로젝트의 실제 구조에 맞게 수정이 필요할 수 있습니다.
+- `templates/`: 사용자 런타임 HTML/CSS/JS 템플릿
+- `templates/common/`: 과목 공용 코어 로직
+- `templates/global/`: 인증/보상/동기화 전역 로직
+- `templates/{math,english,korean,science}/`: 과목별 게임 화면
+- `templates/space-explorer/`: 우주 탐험 렌더/상호작용 모듈
+- `docs/`: 실행 계획, 스펙, 설계 SSOT

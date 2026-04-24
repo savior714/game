@@ -42,6 +42,11 @@ const DIFF_LABELS        = ['입문', '기초', '중급', '숙련', '마스터',
 const DIFF_COLORS        = ['#aed581', '#66bb6a', '#4fc3f7', '#29b6f6', '#ffca28', '#ab47bc', '#ef5350'];
 let DOMAIN_KEYS = []; // words-loaded 이벤트 후 초기화
 
+function initDomainKeys() {
+  DOMAIN_KEYS = Object.keys(WORDS);
+}
+initDomainKeys();
+
 /* ═══════════════════════════════════
    게임 상태
 ═══════════════════════════════════ */
@@ -82,6 +87,7 @@ function emptyStats() {
 let stats = loadStats();
 
 function loadStats() {
+  if (!DOMAIN_KEYS.length) initDomainKeys();
   return ProgressEngine.loadStats(STATS_KEY, DOMAIN_KEYS);
 }
 

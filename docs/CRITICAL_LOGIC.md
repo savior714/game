@@ -1,232 +1,193 @@
-# CRITICAL LOGIC: 적응형 난이도 및 컨디션 케어
+# CRITICAL_LOGIC.md — Bootstrap DevEnv 규칙 SSOT
 
-## 1. 적응형 난이도 엔진 (Adaptive Engine)
-- **목적**: 아이의 실력 변화를 체감하지 못할 정도로 미세하게 추적하여 최적의 학습 곡선 제공.
-- **기준**: 7단계 (`입문`, `기초`, `중급`, `숙련`, `마스터`, `초월`, `전설`).
-- **상승 로직**: **이전 단계(Level n)**를 90% 이상의 정답률로 마스터했을 때만 다음 단계(Level n+1)로 한 칸 이동하는 **계단식 성장** 모델.
-- **하강 및 유지 기준 (Hysteresis)**:
-    - **승급 비활성 시**: 다음 레벨 도달 전까지는 90% 정답률이 필요.
-    - **레벨 유지**: 이미 다음 레벨에 도달했던 기록이 있는 단계는 정답률 **80%** 이상이면 레벨을 유지함 (급격한 강등 방지).
+> 이 파일은 bootstrap_repo의 모든 설계 결정과 규칙의 유일한 기준(Single Source of Truth)입니다.
 
-## 2. 컨디션 케어 (Confidence Recovery)
-- **목적**: 오답이 반복될 때 발생하는 아동의 정서적 좌절(울음 등)을 방지하고 자신감 회복.
-- **로직**:
-    - `recentHistory`: 최근 5문제의 정답 여부(큐) 저장.
-    - **Penalty 적용**:
-        - 최근 오답 2회: `penalty = 1` (난이도 1단계 하향)
-        - **현 단계 정답률 60% 미만 시**: 즉각 해당 단계 마스터 실패로 간주하고 하향 조정 가능성 설계 (추후 논의).
-    - **우선순위**: 누적 통계(`baseLevel`)보다 `penalty`가 우선 적용되어 실시간 난이도 결정.
+---
 
-## 3. 즉시 정답형 문제 노출 완화 (2026-04-03)
-- **목적**: 아이가 "바로 맞춰버리는" 저난이도 문제가 연속 노출되는 빈도를 낮춰, 몰입감과 도전감을 유지한다.
-- **결정**:
-    - `common/progress-engine.js`의 `getDifficultyLevel()`에 **최근 정답 흐름 보너스(`flowBoost`)**를 추가한다.
-    - 최근 5문제 기준 정답 3~4개면 `+1`, 5개면 `+2` 난이도 보정.
-    - 기존 컨디션 케어 패널티(최근 오답 2회 시 `-1`)는 유지하여 과도한 난이도 급상승을 방지한다.
-- **근거**:
-    - 기존 로직은 오답 기반 하향은 즉시 반영하지만, 고정밀 정답 흐름의 상향 가속은 제한적이었다.
-    - 동일/유사 저난이도 체감 문제의 잔존 빈도를 줄이려면 누적 통계(`baseLevel`) 외에 단기 퍼포먼스 반영이 필요하다.
+## 1. 실행 환경 표준
 
-## 4. 약점 강화 학습 (Weakness Reinforcement v3 - Pattern Analysis)
-- **목적**: 전 과목 공통으로 아이가 취약한 "특정 연산 패턴(예: 일의 자리가 8, 8인 경우)"을 상세 분석하고 집중 훈련.
-- **로직**:
-    - **Digit Pattern Tagging**: 
-        - 덧셈: 일의 자리 숫자를 추출하여 정렬 후 `add_unit_{min}_{max}` 태그 생성 (예: 7+8, 8+7 동일 처리).
-        - 뺄셈: 피감수/감수의 일의 자리를 추출하여 `sub_unit_{a}_{b}` 태그 생성.
-    - **통계 누적**: `stats[cat].weaknesses[tag]`에 상세 패턴별 정답/오답 횟수 기록.
-    - **Reinforcement Problem Generation**: `stats.weaknesses` 중 가장 낮은 정답률을 보이는 특정 패턴을 타겟팅하여 해당 패턴을 만족하는 피연산자(`a, b`)를 동적 생성.
-    - **Weighted Selection**: `generateQuestion` 시 30% 확률로 약점 패턴 중 하나를 선택하여 강제 출제.
-    - **Clearance**: 특정 약점 유형의 정답률이 80% 이상으로 회복되면 "약점 극복" 알림 및 비중 정상화.
+| 항목       | 결정                                              | 이유                                                                        |
+| ---------- | ------------------------------------------------- | --------------------------------------------------------------------------- |
+| 런처       | `bootstrap.bat` 우클릭 → **관리자 권한으로 실행** | 스크립트 내 admin self-elevation 시 원본 창이 닫히는 현상 방지              |
+| PS1 인코딩 | **UTF-8 no BOM**                                  | Windows PowerShell 5.1 및 7.x 간의 교차 호환성 및 현대적 파싱 도구와의 정렬 |
+| bat 인코딩 | **ANSI (CP949)**                                  | Windows cmd 호환성 유지                                                     |
 
-## 5. 중복 방지 엔진 (Anti-Repetition Engine)
-- **목적**: 동일하거나 유사한 문제가 연속으로 출제되어 학습의 몰입도를 해치고 기계적인 정답 입력을 방지함.
-- **로직**:
-    - **Key-based Storage**: `recentQuestions` (큐)에 최근 10개의 문제 키 저장.
-    - **키 생성 규칙**: 
-        - **수학**: 연산자 + 정렬된 피연산자 (교환법칙 대응: `3+5` == `5+3`).
-        - **기타**: 전체 문장 또는 고유 ID.
-    - **유일 정답 보정 (Single Answer Principle)**: "밤하늘에 ( )이 떠 있어요"와 같이 중의적 해석이 가능한 문항에서 '달'과 같은 혼동 요소를 선택지에서 원천 배제하거나 명확한 오답(산, 물 등)을 배치하여 정답 무결성을 확보함. **모든 과목(수학, 영어, 과학)에 차별 없이 적용되는 기본 설계 원칙임.**
-    - **답지 구성 원칙 (Choice Constraint)**: 
-        - **과학**: Lv 0-1은 3지선다, 고난도는 4지선다.
-        - **수학**: 전 난이도 **최대 4개**의 답지로 한정하여 아동의 인지 부하 감소 및 UI 일관성 유지.
-    - **중복 정답 방지 (Anti-Ambiguity Distractor)**: 
-        1. **동의어 배제**: 반대말 퀴즈에서 '성실'의 오답으로 '부지런'과 같이 뜻이 비슷한 단어를 배치하여 난이도를 조절하되, '나태'와 '태만'처럼 정답이 여러 개로 해석될 수 있는 단어는 **반드시 하나만** 남기고 다른 범주의 오답(예: '거짓')으로 교체함.
-        2. **부분적 반대어 배제**: '빠르다'의 반대말로 '느리다'가 정답일 경우, 상황에 따라 반대 관계가 성립될 수 있는 '둔하다' 등을 오답 후보에서 배제하여 어린이의 인지 혼란을 원천 차단함.
-        3. **조사 보정**: 격조사(께서/께) 문제에서 '도', '만'뿐만 아니라, 문맥상 다른 격으로 오해될 수 있는 조사를 배제하고 '에', '에서' 등을 사용함.
-    - **Dynamic Limit**: 가용 문제 풀(Pool)이 10개 미만인 경우, 버퍼 크기를 `floor(N/2)`로 자동 축소하여 선택 가능한 문제 부족 현상 방지.
-    - **Retry Sequence**: 중복 감지 시 최대 20회 재추출 시도.
-    - **자동화 검증 (Automated Verification)**: 데이터 무결성을 유지하기 위해 각 과목 폴더 내에 검증 스크립트를 운용하며, 루트 폴더에서 통합 검사 가능.
-        - **통합 실행**: `node verify_all.js` (전 과목 일괄 검사)
-        - **과목별 실행**:
-            - 국어: `node korean/verify_korean_engine.js`
-            - 과학: `node science/verify_science_engine.js`
-            - 영어: `node english/verify_english_engine.js`
-            - 수학: `node math/verify_math_engine.js`
-        - **검수 항목**: 유일 정답성, 선택지 중복 여부, 형식 무결성, 인지적 모호성 블랙리스트 체킹, 알고리즘 시뮬레이션.
+---
 
-## 6. 개발 표준 및 코드 퀄리티 (Senior Architect Workflow)
-- **목적**: AI가 생성하는 코드의 조잡함(Anti-Slop)을 배제하고, 시니어 아키텍트 수준의 정제된 설계를 강제함.
-- **핵심 원칙 (/slop)**:
-    1. **Zero-Slop Design**: 매직 넘버 배제, 디자인 시스템(CSS 변수) 준수, 시맨틱 HTML 우선.
-    2. **SDD Architecture**: 인터페이스 선 정의, 로직과 프레젠테이션의 엄격한 분리, 매직 스트링 배제.
-    3. **Tool-First Execution**: 추측 대신 터미널 도구를 통한 실시간 상태 진단 및 환경 검증.
-    4. **Atomic Delivery**: 논리적이고 검토 가능한 단위로 코드 분할 및 제공.
+## 2. 패키지 그룹 구성 (현행)
 
-## 7. 전과목 그물망 보호 규칙 (Net Shield Contract)
-- **적용 범위**: `math`, `english`, `science`, `korean` 전 과목 공통.
-- **획득 조건**: `NET_STREAK=5` 연속 정답 시 1회성 보호막(`hasNet=true`)을 획득한다.
-- **발동 시 동작**:
-    - 오답이 발생해도 즉시 `streak=0`으로 초기화하지 않는다.
-    - 로켓은 하강 후 그물에 튕겨 **발동 직전 고도**로 복귀한다.
-    - **그물 생성 위치**: 바닥(18px)과 현재 로켓 고도의 **중간값**으로 계산하여 "공중에 떠 있는 효과"를 극대화한다 (기존 70px 고정 낙하 방식은 낮은 고도에서 바닥과 밀착되어 방어 체감이 낮았던 문제 해결).
-- **소모 이후**: 보호막 소모 후 다음 오답부터는 기존 규칙(`streak=0`, 바닥 복귀)을 적용한다.
-- **상태 계약**: 
-    - `engine.js`는 `netStreak`, `hasNet`, `NET_STREAK=5` 및 `recordResult()`를 포함한다.
-    - **기반 변수(hasNet, streak 등)**는 `common/rocket-core.js`와의 스크립트 간 상태 공유(Cross-script scoping)를 위해 반드시 `var`로 선언하거나 글로벌 객체에 바인딩한다 (`let` 사용 시 외부 스크립트에서 `window.prop`으로 접근이 불가해 정합성 깨짐 방지).
-- **자동 검증**:
-    - `node verify_net_logic.js`: 전 과목 그물망 연결 상태 정적 검증 (이제 `var` 선언도 허용).
-    - `node verify_all.js`: 과목별 데이터 검증 + 그물망 검증 통합 실행.
+| #   | 항목                                                    | 기본 선택 |
+| --- | ------------------------------------------------------- | :-------: |
+| 1   | Core — Git, Python 3.14, Node.js LTS, Rust (rustup), uv |    ✅     |
+| 2   | VS Build Tools 2022 (MSVC + Windows SDK 26100)          |    ✅     |
+| 3   | Windows Terminal                                        |    ✅     |
+| 4   | Go                                                      |    ⬜     |
+| 5   | Java (Temurin JDK 17 LTS)                               |    ⬜     |
+| 6   | Android Studio                                          |    ⬜     |
+| 7   | Docker Desktop                                          |    ⬜     |
 
-## 8. 국어 반대말 모호성 차단 규칙 (2026-03-27)
-- **목적**: 반대말 문제에서 아이가 정답 후보를 2개 이상으로 인지하는 상황을 제거한다.
-- **규칙**:
-    - 정답과 의미적으로 유사하거나 문맥상 반대말로 오해될 수 있는 보기는 금지한다.
-    - 현재 블랙리스트 확정 항목:
-        - 정답 `춥다` 문항에서는 오답으로 `시원하다` 금지
-        - 정답 `패배` 문항에서는 오답으로 `실패` 금지
-        - 정답 `풍부` 문항에서는 오답으로 `가득` 금지
-        - 정답 `미시` 문항에서는 오답으로 `미세` 금지
-- **운영**: 데이터(`korean/engine.js`)와 검증기(`korean/verify_korean_engine.js`)를 동시에 갱신해 런타임/검수 규칙을 일치시킨다.
+**제거된 항목:**
 
-## 9. 공용 로직 분리 경계 결정 (2026-03-27)
-- **목적**: 과목별 페이지의 중복 로직으로 인한 동작 불일치/중복 수정 리스크를 구조적으로 제거한다.
-- **결정**:
-    - `rocket.js`는 전 과목 동일 구현으로 판단하고 `common/rocket-core.js`로 통합한다.
-    - `engine.js`는 공통 알고리즘(`stats`, `difficulty`, `reinforcement`)과 과목 데이터 어댑터를 분리한다.
-    - `ui.js`는 공통 수명주기(`timer`, `answer flow`, `result`, `stats modal`)를 코어로 추출하고 과목별 예외만 어댑터로 유지한다.
-- **우선순위**: `rocket-core` → `progress-engine` → `quiz-ui-core` 순으로 단계 적용한다.
 
-## 10. 공용 코어 적용 계약 (2026-03-27)
-- **적용 완료 코어**:
-    - `common/rocket-core.js`: 로켓/그물망/발사 연출 로직의 전 과목 공용 SSOT.
-    - `common/progress-engine.js`: 통계 저장 및 난이도 계산의 전 과목 공용 SSOT.
-    - `common/quiz-ui-core.js`: 타이머 및 통계 모달 핸들러의 전 과목 공용 SSOT.
-- **의존성 규칙**:
-    - 과목별 파일(`*/rocket.js`, `*/engine.js`, `*/ui.js`)은 공용 코어를 직접 재구현하지 않고 **위임 호출만 허용**한다.
-    - 공용 코어는 과목별 도메인 데이터(DB/WORDS)를 직접 소유하지 않고, 인자/콜백 기반으로만 연결한다.
-- **검증 규칙**:
-    - 구조 변경 시 `node verify_all.js`를 필수 실행한다.
-    - `verify_net_logic.js`는 과목별 위임 파일 + 공용 로켓 코어의 연결 상태를 동시에 검증한다.
+- ~~PowerShell 7 (pwsh)~~ — PS7 미사용 환경이므로 제거 (그룹 #2였음)
 
-## 11. UI 정답 처리 위임 계약 (2026-03-27)
-- **목적**: 과목별 `checkAnswer`/`checkSeqAnswer` 재구현으로 인한 미세한 동작 편차를 제거하고 정답 처리 SSOT를 유지한다.
-- **코어 계약**:
-    - `common/quiz-ui-core.js`의 `createAnswerFlowCore().evaluateStandard()`를 전 과목 `checkAnswer`의 기본 경로로 사용한다.
-    - 영어 순차 빈칸의 종결 처리(성공/실패)는 `createSequentialAnswerCore().finalizeSuccess/finalizeFailure`로 위임한다.
-- **금지 규칙**:
-    - 과목별 `checkAnswer`/`checkSeqAnswer`에서 `recordResult`, `stopTimer`, `answered=true`를 직접 재구현하지 않는다.
-    - 과목별 파일은 단계 진행(예: 영어 `seqStep`)과 UI 메시지/이펙트 어댑터만 소유한다.
-- **검증 규칙**:
-    - `verify_shared_core_contract.js`에서 위임 호출 존재와 금지 패턴(직접 재구현) 부재를 정적 검증한다.
-    - 구조 변경 시 `node verify_shared_core_contract.js` + `node verify_all.js`를 함께 실행한다.
+---
 
-## 12. 로켓 코어 모듈 세분화 및 레이아웃 동기화 (2026-03-27)
-- **목적**: 코드 비대화(500라인 초과)를 방지하고, 전역 UI 요소 간의 시각적 간섭을 구조적으로 해결한다.
-- **모듈 분리**:
-    - `common/rocket-core.js`: 상태 제어, 획득/발동 시퀀스 등 핵심 비즈니스 로직 담당.
-    - `common/rocket-effects.js`: 파티클, 화면 플래시, 별 생성 등 순수 시각 연출 담당.
-- **레이아웃 동기화 (CSS Variables)**:
-    - `global/reward.js`는 보상 바의 높이를 `--reward-bar-height`로, 기본 패딩을 `--base-padding-top`으로 `:root`에 노출한다.
-    - 과목별 토스트(`.net-banner`) 등은 위 변수를 활용해 `top: calc(var(--reward-bar-height) + (var(--base-padding-top) / 2))`와 같이 상대적 정중앙 위치를 계산한다.
-- **검증 규칙**:
-    - 단일 파일 500라인 초과 금지 규정을 상시 준수하며, 필요시 기능 단위로 모듈을 추가 분리한다.
+## 3. 설계 결정 사항
 
-## 13. 과학 개념 중의성 차단 규칙 (2026-03-27)
-- **목적**: 동음이의어(예: 눈)로 인해 발생하는 아동의 인지적 혼란을 원천 차단하고 정답 무결성을 확보한다.
-- **규칙**:
-    - **기상 현상**: '눈' 단독 사용을 금지하고, '하늘에서 내리는 눈' 또는 '겨울에 내리는 눈'으로 구체화한다.
-    - **신체 부위**: '눈'을 신체 부위로 사용할 경우, '우리 몸에서 사물을 보는 곳' 등 기능을 함께 명시하여 기상 현상과 분리한다.
-- **운영**: `science/engine.js`에 위 규칙을 적용하고 `verify_science_engine.js`를 통해 정기적으로 데이터 품질을 검수한다.
+### Admin 자동 승격 구조
 
-## 14. 아동 창의성 보호 및 중의성 배제 (2026-03-27)
-- **목적**: 아이들의 자유로운 상상력(예: 동그란 구름)이 오답 처리되어 창의성이 저해되는 것을 방지하고, 성장에 따른 과학적 추론 능력을 단계별로 배양한다.
-- **전략**:
-    - **입문/기초(Lv 0-1)**: 질문의 묘사(모양, 색깔 등)가 오답 보기에도 적용될 가능성이 있다면, 해당 오답을 질문과 전혀 무관한 개체(예: 자동차, 포크)로 교체하여 시각적/개념적 충돌을 원천 차단한다.
-    - **중급 이상(Lv 2+)**: 보기가 서로 관련이 있더라도(예: 달, 인공위성, 행성), 질문에 "모양이 변하는", "우주에 있는" 등 고유한 과학적 속성을 단서로 추가하여 논리적 추론을 유도한다.
-- **운영**: 데이터 설계 시 아동의 심리적 수용성을 최우선으로 고려하며, `verify_science_engine.js`에 난이도별 보기 구성 정합성 검사를 강화한다.
+- `Bootstrap-DevEnv.ps1` 실행 시 admin 아닐 경우 `Start-Process powershell -Verb RunAs`로 재실행 후 `exit 0`
+- 이로 인해 **원본 bat 창이 닫히고 UAC 창 + 새 창이 열리는 것은 정상 동작**
+- 해결책: bat 파일을 처음부터 관리자 권한으로 실행
 
-## 15. 마블 머지 게임 물리 및 판정 최적화 (2026-03-27)
-- **질량 기반 충돌 (Mass-based Physics)**:
-    - 구슬의 반지름($r$)에 비례하는 질량($m = r^2$) 개념을 도입하여 충격량($impulse$) 분배 시 반영함.
-    - 결과적으로 큰 구슬(고레벨)은 무거운 관성을 가지며, 작은 구슬에 부딪혀도 위치를 묵직하게 유지함.
-- **머지 판정 및 위치 보정 (Merge & Position Correction)**:
-    - **버그 수정 (2026-03-28)**: 서브 스테핑(4회) 루프의 첫 번째 단계(`it === 0`)에서 병합을 판정하도록 수정. (이후 단계에서는 충돌 해소로 인해 구슬이 이미 떨어져 머지가 불가능해지는 문제 해결)
-    - 판정 범위를 실제 반지름 합보다 1.5px 넓게 설정($d < mn + 1.5$)하여 감도를 개선함.
-    - 겹침 해결 시 밀어내는 계수를 0.5에서 0.51로 미세 조정하여 구슬 간 정적인 고착 현상을 방지함.
-- **미리보기 시각화 개선 (Preview UX)**:
-    - 상단 미리보기 구슬에 현재 레벨 숫자를 표시하고, 크기를 기존 대비 약 17%($0.6r \rightarrow 0.7r$) 확대하여 가시성 확보.
+### 메뉴 UI
 
-## 16. 보석 화폐 시스템 및 보상 상점 (Gem Economy)
-- **목적**: 불확실한 룰렛 대신 고정 화폐(보석)를 도입하여 아이의 노력이 가치 있는 결과로 연결되는 "경제적 보상 경험" 제공.
-- **획득 규칙**: 20연속 정답(로켓 발사) 시 **보석 💎 1개**를 확정 지급한다. (LAUNCH_STREAK=20)
-- **지급 보장 규칙 (2026-04-01)**:
-    - `RewardSystem.playEntranceAndAddGem()`은 UI 연출 함수 호출 실패(미로딩/예외) 여부와 무관하게 최종적으로 `add('gems', 1)`이 수행되도록 설계한다.
-    - 보상 연출(`reward_ui.js`)은 가시화 계층이며, **보석 수량 갱신의 SSOT는 `reward.js` 코어 로직**으로 고정한다.
-- **교환 비율 (Fixed 1:1)**:
-    - **보석 1개** ➔ 📺 유튜브 시청 시간 (15분)
-    - **보석 1개** ➔ 🍪 간식 1개 교환권
-    - **보석 1개** ➔ 🎮 마블 게임 1회권
-- **UI/UX**:
-    - 인벤토리 바의 보석 구역은 클릭 시 상점 모달을 연다.
-    - 보석 획득 시 로켓 중앙 폭발 후 보석이 솟아오르는 특수 연출(`playEntranceAndAddGem`)을 실행한다.
-    - **SSOT**: 모든 보상 상태는 `localStorage`(`study_rewards`)를 통해 전 과목에서 공유한다.
+- `$Host.UI.RawUI.ReadKey` 기반 인터랙티브 메뉴
+- 숫자 키로 토글, `A`/`N`으로 전체 선택/해제, `Enter`로 설치 시작
+- 그룹별 설명(Desc) 라인은 불필요하여 제거됨
 
-## 17. 용어 일관성 및 퇴장 가드 정책 (Terminology & Exit Policy)
-- **목적**: 인게임 점수와 보상 화폐(보석) 사이의 용어 혼동을 배제하고, 사용자의 자유로운 탐색을 방해하는 인위적 제약을 제거한다.
-- **인게임 점수**: 각 과목별 퀴즈 정답 시 올라가는 수치는 반드시 **'점수'** 또는 **'점'**으로 표기한다. (예: `10점`, `획득한 점수`)
-- **퇴장 가드 제거 (2026-03-28)**:
-    - 학습 중 페이지 이탈 시 더 이상 확인 팝업이나 학부모 승인을 요구하지 않는다.
-    - 리스크: 인게임 점수는 보관되지 않고 휘발되나, 보상 시스템의 데이터(보석 등)는 즉시 저장되므로 시스템 전체 정합성에 문제가 없다.
+### Post-install 자동화
 
-## 18. 보상바 디자인 시스템 및 시각적 리듬 (2026-03-28)
-- **문제**: 가변 너비 버튼(`space-around`) 사용 시, 텍스트 길이에 따라 버튼 간 중심 거리가 불규칙해져 시각적 '착시' 및 불균형 발생.
-- **결정**: 
-    - 모든 항목에 **고정 너비**(`width: 92px`)와 **중앙 정렬**(`justify-content: center`) 적용.
-    - 항목 사이의 간격(`gap: 12px`)을 고정하여 일정한 시각적 리듬 유지.
-    - 모든 항목에 **단위(개, 분, 회)**를 명시하여 데이터 구조의 시각적 대칭성 확보.
-- **이유**: 단순한 여백 일치보다 '버튼 중심(Center)'의 정렬이 어린이 사용자에게 더 높은 인지적 안정감과 완성도 높은 프리미엄 디자인 경험을 제공함.
-- **보상 슬롯 가시성 (2026-03-28)**: `shop_items`에 올라간 비보석 항목은 **재고가 0이어도** 상단 바에 슬롯을 노출한다(재고 없음은 `empty-slot` 스타일로 구분). 동기화/저장 후 `shop_items` 내용이 바뀌면 상단 바 DOM을 `syncInventoryBarWithState`로 재맞춘다. 상세: `docs/specs/reward_inventory_spec.md` §5.
+`Add-ToUserPath` 헬퍼 함수: 경로 존재 확인 후 User PATH 중복 없이 등록, 현재 세션 즉시 반영
 
-## 20. 분산 데이터 딥 머지 (Deep Merge Synchronization, 2026-03-29)
-- **목적**: 다른 기기에서 플레이한 기록이 충돌하거나 덮어씌워져 진행도가 소실되는 문제를 방지하고, 모든 성과를 누적 관리함.
-- **머지 대상**: `MathGameStats`, `EnglishGameStats`, `KoreanGameStats`, `ScienceGameStats`.
-- **병합 규칙**:
-    - **수치 데이터**: `attempts`, `correct`, `totalTime` 등 누적 시도 및 성공 횟수를 산술적으로 합산함.
-    - **약점 데이터**: `weaknesses` 내의 개별 패턴별 통계도 모두 합산하여 약점 분석의 정확도 유지.
-    - **병합 트리거**: 서버의 `dbTime`이 로컬의 `localTime`보다 최신일 때, 무조건 덮어씌우는 대신 `mergeGameStatsPayload`를 호출하여 로컬 기록과 서버 기록을 안전하게 병합함.
+| 항목        | 자동화 내용                                                                                                                                                                         |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Rust**    | rustup stable toolchain 설치 및 default 설정                                                                                                                                        |
+| **Java**    | `JAVA_HOME` 설정 (`$Script:JAVA_INSTALL_BASE\$Script:JAVA_VERSION_GLOB`) + `\bin` PATH 자동 추가. 경로 상수는 `config/paths.ps1` 참조. `JAVA_INSTALL_BASE` 환경 변수로 재정의 가능. |
+| **Android** | `ANDROID_HOME` 설정 (`$Script:ANDROID_SDK_BASE`) + `platform-tools`, `emulator` PATH 자동 추가. 경로 상수는 `config/paths.ps1` 참조.                                                |
 
-## 19. 관리자 대시보드 및 가입 계정 목록 (2026-03-29)
-- **목적**: 운영자 본인만 Supabase에 구글 로그인으로 가입된 계정 이메일·가입 시각을 확인한다.
-- **클라이언트**: `global/auth.js`의 `ADMIN_EMAILS`에 허용할 구글 이메일(소문자 비교)을 넣고, `admin/index.html`은 북마크 접속만 전제(메인에 링크 없음).
-- **서버(Supabase)**: `public.user_directory`에 `auth.users`와 동기화되는 행을 두고, RLS로 (1) 본인 `id` 행 조회 (2) 지정 관리자 이메일만 `SELECT` 전체 허용. 신규 가입은 트리거로 밀어 넣고, 기존 사용자는 SQL 백필로 채운다. 상세: `supabase/user_directory.sql`.
+---
 
-## 21. 영어 주간 시험 단어 집중 학습 (2026-03-30)
-- **목적**: 영어 유치원 시험 등 인위적인 고밀도 반복 학습이 필요한 경우를 위해 보호자가 실시간으로 단어 출제 비중을 개입함.
-- **제어**: 보호자 페이지(`guardian`)에서 주간 단어 리스트(`englishWeeklyWords`)를 관리함.
-- **출제 로직 (Weekly Prioritization)**:
-    - **60% 확률**: `generateQuestion` 시 60% 확률로 주간 단어 목록에서 문제를 생성함. 
-    - **동적 중복 방지 (Dynamic Limit)**: 주간 단어 수가 적을 경우 `RECENT_LIMIT`을 `floor(N/2)`로 자동 축소하여 노출을 보장함. 단어 수가 1개인 경우 제한 없이 매회 출제 가능.
-    - **문제 유형 순환 (Type Cycling)**: 동일한 주간 단어가 반복 출제될 때, `kor2word` → `spelling` → `minimal_pair` → `sentence` → `typing` → … 순으로 **다음** 유형을 강제하여 다각도 학습을 유도함 (§22).
-    - **오답 가중치**: 주간 단어가 `wrongPatterns`에 존재할 경우, 주간 단어 풀 내에서도 해당 단어를 최우선적으로 선택함.
-- **실시간 데이터 로드**: 문제 생성 시마다 `loadWeeklyWords`를 호출하여 보호자 설정 변경사항을 게임 세션 중 즉시 반영함.
-- **동기화**: `SyncEngine`에 의한 `localStorage` 딥 머지 대상에 포함함.
+## 5. 환경 무결성 검증 엔진 (Integrity Engine)
 
-## 22. 영어 고급 문제 유형 및 출제 비율 (2026-04-01)
-- **목적**: 객관식·철자만으로는 구분이 어려운 학습자에게 혼동 철자·문맥·생산(recall) 난이도를 단계적으로 제공함.
-- **구현 위치**: `english/advanced-questions.js`(혼동 페어 후보, 문장 템플릿, 입력 정규화), `english/engine.js`의 `pickQuestionType`·`buildQuestion`, `english/ui.js`의 문장·입력 UI.
-- **유형**:
-    - **`minimal_pair`**: 전체 단어 풀에서 정답과 레벤슈타인 거리 1~3인 영단어를 오답 후보로 우선 채우고, 부족 시 기존 `makeWordChoices` 및 전체 풀에서 보충함.
-    - **`sentence`**: 카테고리별 짧은 영문장에 `_____`를 두고, 보기는 `makeWordChoices`와 동일한 4지선다.
-    - **`typing`**: 한글 뜻만 제시하고 영어를 직접 입력; 비교는 trim·소문자·연속 공백 정규화 후 일치 여부.
-- **난이도 가중치**: 5유형 `[kor2word, spelling, minimal_pair, sentence, typing]`에 대해 레벨 0~1은 신규 3유형 비중을 낮추고, 레벨 5~6은 `typing`·`sentence`·`minimal_pair` 비중을 높임 (`engine.js` 내 행렬).
-- **명세 SSOT**: `specs/english.md` §2·§7.
+개발 환경의 일관성을 유지하고 "Ghost Bug"를 방지하기 위한 검증 시스템입니다.
+
+| 항목            | 상세 내용                                                                                      |
+| --------------- | ---------------------------------------------------------------------------------------------- |
+| **아키텍처**    | `scripts/check-env.ps1` (Main) + `scripts/lib/env-core.ps1` (Lib) 구조로 분리 (300L Rule 준수) |
+| **Core CLI**    | Node.js, Git, npm, pnpm, yarn의 설치 및 가용성 확인                                            |
+| **Config**      | `.npmrc` (Registry), `.gitconfig` (User Info, autocrlf) 무결성 확인                            |
+| **File System** | 주요 파일의 인코딩(UTF-8 no BOM/with BOM, ANSI)을 `Test-FileEncoding` 함수로 정밀 검증         |
+| **Hash Sync**   | `AI_GUIDELINES.md`와 `templates` 간 **MD5 Hash 비교**를 통해 내용의 비동기화 차단              |
+| **IDE Sync**    | VSCode `settings.json`의 필수 항목(encoding, tabSize) 일관성 확인                              |
+| **Tech Stack**  | `tsc`, `eslint`, `prettier` 바이너리 가용성 및 버전 조회를 통한 런타임 환경 검증               |
+| **Shared Lint** | `shared_lint_rules.json`과 `eslint.config.js` 간의 정책 일치 여부 강제                         |
+
+### 검증 결과 보고
+
+- `scripts/check-env.ps1` 실행 시 `env_report.json` 생성
+- IDE와의 연동을 위해 표준 JSON 스키마를 따름
+- 위반 사항 발견 시 구체적인 복구 제안 제공
+
+---
+
+## 6. 전역 규칙 관리 표준 (AI & Quality)
+
+프로젝트 간 개발 경험을 통일하고 동일한 에러의 재발을 방지하기 위한 전역 관리 시스템입니다.
+
+### 행동 및 품질 규칙 구성
+
+1. **AI 행동 지침 (Behavioral)**: `./AI_GUIDELINES.md` (Master), `templates/AI_GUIDELINES.md` (Deploy)
+   - **Senior Architect Deep-Dive Version** (v2.0) 수립. AI가 코드를 작성하거나 디버깅할 때 반드시 준수해야 하는 행동 원칙.
+   - **TPG Protocol v2.0**, **Stale Context Invalidation**, **SQL Idempotency**, **Surgical Edits** 등 고도화된 프로토콜 포함.
+2. **사용자 제약 규칙 (Runtime Constraints)**: `./.antigravityrules`
+   - 에이전트의 물리적 활동 범위를 제한하는 런타임 제약 조건 파일.
+   - 행동 지침은 `AI_GUIDELINES.md`를 SSOT로 참조하며, 이 파일은 오직 물리적 차단 경로와 원자적 실행 수칙만을 정의함.
+
+3. **기술 린트 정책 (Technical)**: `shared_lint_rules.json`
+   - ESLint 등 도구가 프로젝트 소스 코드를 기계적으로 검증하는 규칙 모음.
+   - 플랫폼 호환성 및 인코딩 사고 방지를 위한 엄격한 규칙 적용.
+
+### 타 프로젝트 이식 및 참조 프로세스 (Portability)
+
+- **온보딩**: 신규 프로젝트 이식 시 AI는 `AI_GUIDELINES.md` Section 11의 **Onboarding Checklist**를 즉시 실행하여 환경을 자발적으로 파악합니다.
+- **배포**: `bootstrap.bat` 또는 동기화 도구에서 `templates/AI_GUIDELINES.md`를 타겟 프로젝트 루트로 복사합니다.
+- **검증**: `scripts/check-env.ps1`의 Hash 비교 로직을 통해 로컬 지침이 마스터와 일치하는지 상시 확인합니다.
+- **동기화**: 마스터 규범 업데이트 시 `templates/` 하위 파일도 동기화하며, 불일치 시 `check-env.ps1`이 자동으로 `Copy-Item` 기반의 Self-Healing을 제안합니다.
+
+---
+
+## 7. 별도 설치 도구 (스크립트 외)
+
+- Antigravity IDE
+- VS Code / Cursor AI
+- Supabase CLI (Manual: `npm install -g supabase`)
+
+---
+
+## 8. Terminal Interaction Protocol
+
+Antigravity 에이전트와 터미널 간의 안정적인 상호작용을 위한 프로토콜입니다.
+
+| 항목                       | 내용                                                                                                               |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **세션 초기화 (SSOT)**     | `scripts/init-terminal.ps1`을 통한 UTF-8 인코딩 고정, `$ProgressPreference` 억제, 텔레메트리 차단 및 NO_COLOR 강제 |
+| **NoProfile Mode**         | 모든 에이전트 내부 PowerShell 호출 시 `-NoProfile` 스위치를 사용하여 로컬 프로필 간섭 배제                         |
+| **Loop Prevention**        | `.antigravityrules`를 통해 `node_modules`, `.git`, `dist` 등 대용량 경로에 대한 물리적 스캔을 원천 차단              |
+| **Atomic Execution**       | 1 Task = 1 Tool Call 원칙을 고수하며, 각 작업 후 사용자 승인을 대기하여 실행 경로의 투명성 확보                    |
+| **Shell Integration 차단** | 터미널 시퀀스(`\e]633;...`) 노이즈가 파싱을 방해하는 경우 환경 변수나 초기화 코드로 이를 명시적으로 억제           |
+| **Syntax Check**           | `.ps1` 파일 수정 후 실행 전 `[System.Management.Automation.Language.Parser]::ParseInput()`을 이용한 정밀 구문 검증 |
+| **Safe Execution**         | 100자 이상의 복잡한 명령이나 중첩 따옴표 포함 시 반드시 `.ps1` 임시 파일로 변환하여 실행                           |
+| **Traffic Zero**           | 모든 CLI 도구에 `--quiet` 플래그를 강제하고, `Select-Object` 등을 통해 터미널 출력량을 물리적으로 제한             |
+| **Get-Command Check**      | 외부 도구(`npm`, `git` 등) 호출 전 `Get-Command`로 가용성을 사전 확인하여 런타임 예외 방지                 |
+| **Chaining Prohibition**  | 입출력 버퍼 오염 방지를 위해 한 번의 Tool Call에서 `;`, `&&` 등 명령어 체이닝 금지                            |
+| **Strict Type Guarding**  | `unknown`, `any` 타입 변수 비교 전 `typeof`로 타입을 확정하여 **TS2365** 에러 사전 방지                      |
+| **Pure Presenter**        | 비즈니스 로직과 UI/출력 렌더링을 엄격히 분리하여 로직 코드의 재사용성 및 무결성 확보                          |
+| **Self-Verification**     | 주요 변경 전후로 `tsc --noEmit` 또는 `check-env.ps1`을 통한 시스템 무결성 자가 검증 수행                   |
+| **Terminal Recovery**      | 파싱 불가 시 `TERMINAL_RECOVERY_MARKER` 구분자를 사용해 데이터 추출을 시도하며, 필요시 복구 SOP 가동      |
+| **Native Command Guard**  | `$LASTEXITCODE` 기반의 실행 결과 신뢰 및 `NativeCommandError` 예외 처리 로직 준수                      |
+| **Path Resilience**       | `Test-Path` 실패 시 `Get-ChildItem -Recurse` 자동 전환 및 `-LiteralPath` 사용으로 경로 해석 오류 방지  |
+| **Atomic Provisioning**   | `New-Item` 등 자원 생성 시 `-Force` 플래그를 필수 사용하여 덮어쓰기 및 중복 생성 부작용 차단           |
+| **SQL Idempotency**      | 모든 DB DDL/DML에 `IF NOT EXISTS` 및 `DO` 블록 사용을 강제하여 실행 안전성 확보                    |
+| **Error RCA Protocol**   | 에러 발생 시 현상-원인-해결 3단계 분석 및 검증 커맨드 실행 의무화                                  |
+| **Standardized Schema**  | 에러 응답 시 `Code`, `Message`, `Path` 필드를 포함한 표준 객체 응답 준수                           |
+
+### 기술적 사양 (Technical Specification)
+
+- **Encoding**: `[Console]::OutputEncoding = [System.Text.Encoding]::UTF8`
+- **Session Init**: `$env:TERM = 'dumb'`, `$env:NO_COLOR = '1'`, `$env:POWERSHELL_TELEMETRY_OPTOUT = '1'`
+- **AST Parser Logic**: 
+  ```powershell
+  $Errors = $null; [System.Management.Automation.Language.Parser]::ParseInput((Get-Content "file.ps1" -Raw), [ref]$null, [ref]$Errors)
+  ```
+- **Performance**: `$ProgressPreference = 'SilentlyContinue'`를 통해 진행 바 출력을 억제하여 파싱 렉 방지
+- **NoProfile**: 모든 에이전트 명령은 `powershell -NoProfile -Command "..."` 형식을 SSOT 표준으로 함
+
+---
+
+## 9. Zero-Config Automation
+
+사용자의 수동 개입 없이 `bootstrap.bat` 실행만으로 모든 환경을 전역 최적화하는 매커니즘입니다.
+
+| 항목                     | 구현 내용                                                                                                  |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| **전역 경로 등록**      | `ANTIGRAVITY_BOOTSTRAP_PATH` 시스템 환경 변수를 현재 레포지토리 경로로 등록                                |
+| **터미널 영구 안정화**  | 사용자 `$PROFILE`에 `init-terminal.ps1` 호출 코드를 자동 주입하여 모든 터미널 세션의 인코딩을 UTF-8로 고정 |
+| **전역 도구 표준화**    | `git config --global core.autocrlf false`, `init.defaultBranch main` 등의 설정을 강제 적용                 |
+| **Git 식별자 설정**     | `user.name`, `user.email`을 설치 후 단계에서 **대화형(Interactive)**으로 입력 및 확인                     |
+| **무설정 에이전트 지침** | 에이전트가 `ANTIGRAVITY_BOOTSTRAP_PATH`를 감지하면 자동으로 해당 경로의 전역 지침을 로드하도록 설계        |
+
+---
+
+## 10. Encoding Standard & File Rules
+
+범용적인 호환성과 인코딩 충돌을 방지하기 위한 소스 코드 및 설정 파일 관리 표준입니다.
+
+| 규칙                  | 상세 내용                                                                                                                |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **Standard Encoding** | 모든 소스 코드(`.ps1`, `.js`, `.json`, `.md`)는 **UTF-8 no BOM**으로 통일함                                              |
+| **No BOM Guarantee**  | PowerShell `Out-File` 또는 `Set-Content` 대신 `[System.IO.File]::WriteAllText()`를 사용하여 BOM 없는 UTF-8 저장을 보장함 |
+| **Exception**         | `.bat` 파일은 `ANSI (CP949)`를 유지하여 CMD 호환성을 확보함                                                              |
+| **IDE Enforcement**   | VSCode `settings.json`에 `files.encoding: "utf8"`, `files.autoGuessEncoding: false`를 강제하여 사용자 실수 방지          |
+| **Integrity Check**   | `check-env.ps1`에서 `Test-FileEncoding` 함수를 통해 전수 조사를 수행하며, 위반 시 린트 에러로 간주함                     |
+| **Boolean Syntax**    | PowerShell 조건문/할당 시 `$true`, `$false` 필수 사용 (프리픽스 없는 `True` 사용 엄금)                             |
+| **Safe Raw IO**       | .NET IO 메소드 사용 시 `Test-Path` 선행 및 배열 인덱싱 전 Null 체크 필수 (`Null Safety`)                          |
+
+### 파일 쓰기 권장 패턴 (PowerShell)
+
+```powershell
+# BOM 없는 UTF-8 파일 쓰기 표준 로직
+$utf8NoBomEncoding = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText($targetPath, $content, $utf8NoBomEncoding)
+```

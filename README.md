@@ -1,48 +1,47 @@
-# 🎮 어린이 학습 게임 놀이터 (Learning Playground)
+# Agentic Development System Bootstrap
 
-아이들의 성취감을 최우선으로 하는 지능형 적응형 학습 플랫폼입니다. 정적 HTML/JS로 구성되며, 로컬 개발 시 `serve_game.py`로 동일 출처에서 서빙합니다.
+이 디렉토리는 현재 프로젝트의 핵심 개발 시스템(정책, 실행 루틴, TDD 게이트 등)을 다른 프로젝트로 이식하기 위한 '설치 패키지'입니다.
 
-## 🚀 주요 기능
+## 🔄 동기화 워크플로우 (`/bootstrap`)
 
-- **4대 과목**: 국어·수학·영어·과학 놀이(메인 허브 `index.html`에서 진입).
-- **7단계 정밀 난이도**: 입문부터 전설까지 실력에 맞춰 조정.
-- **단계별 마스터**: 현재 단계를 충분히 익혀야 다음 단계로 진행(과목별 세부 비율은 스펙 참고).
-- **컨디션 케어 (Confidence Recovery)**: 연속 오답 시 난이도를 한 단계 내려 자신감 회복을 돕습니다.
-- **중복 방지 (Anti-Repetition)**: 최근 출제 버퍼로 같은 유형이 연속으로 나오지 않도록 제한합니다.
-- **그물망 보호 (Net Shield)**: 연속 정답으로 그물망을 쌓고, 실수 시 한 번 튕겨 복귀하는 보호 로직이 전 과목에 맞춰져 있습니다.
-- **로켓 & 보석 경제**: 20연속 정답 시 로켓 발사 연출과 함께 💎 보석이 지급되며, 보석으로 유튜브·간식·마블 등 보상을 상점에서 선택합니다(기존 룰렛 방식은 보석/상점 모델로 대체됨).
-- **보호자 맞춤 상점**: 구글 로그인 연동 환경에서 보호자가 보상 아이콘·문구·가격(보석)을 등록·삭제하고, 기본 예시 항목(유튜브 등)도 편집할 수 있습니다(`guardian/index.html`).
-- **계정·동기화**: Supabase 기반 구글 로그인(`global/auth.js`)과 오프라인 큐·타임스탬프 병합(`global/sync-engine.js`)으로 기기 간 진행·보상 상태를 맞출 수 있습니다.
-- **관리자(선택)**: 허용된 구글 계정만 `admin/index.html`에서 사용자 디렉터리 등을 조회할 수 있도록 구성되어 있습니다(`supabase/user_directory.sql`, RLS).
+현재 프로젝트(EMR)의 지침이 변경되었을 때, 이를 템플릿에 반영하려면 에이전트에게 다음 명령을 내리십시오.
 
-## 🛠️ 실행 방법
+> "현재 시스템의 변경사항을 부트스트랩에 반영해줘 (/bootstrap)"
 
-1. Python이 있는 환경에서 프로젝트 루트에서 서버를 띄웁니다.
+이 워크플로우는 현재의 `AGENTS.md`, `PROJECT_RULES.md`, TDD 게이트 로직 등을 자동으로 일반화하여 `templates/` 폴더를 최신 상태로 유지합니다.
 
-   ```bash
-   python serve_game.py
-   ```
+## 📦 구성 요소
 
-2. 브라우저에서 `http://localhost:3000` — 메인 허브(과목 선택).
 
-3. 바로 특정 화면을 열려면 인자를 넘깁니다(예: `python serve_game.py math`, `english`, `korean`, `marble`, `admin`). 브라우저만 끄고 서버만 유지하려면 `--no-browser`를 붙입니다.
+1. **`bootstrap.sh`**: 대상 프로젝트에 시스템을 주입하는 메인 설치 스크립트.
+2. **`templates/`**: 이식될 핵심 파일들의 템플릿.
+   - `AGENTS.md`: 에이전트의 행동 지침 (TDD 강제).
+   - `PROJECT_RULES.md`: 프로젝트 정책 및 기술 스택 SSOT.
+   - `verify.sh`: TDD 게이트 및 로컬 검증 스크립트.
+   - `tools/tdd_gate_plugin.py`: pytest용 TDD 게이트 플러그인.
+   - `tests/`: 초기 실패 테스트 및 설정 파일.
 
-4. 과학·보호자 화면 등은 허브 링크 또는 URL로 엽니다(예: `http://localhost:3000/science/index.html`, `http://localhost:3000/guardian/index.html`).
+## 🚀 사용 방법
 
-> Supabase URL/키·OAuth 설정은 배포·로컬 테스트 시 환경에 맞게 구성해야 합니다. 자세한 스키마는 `supabase/` 및 문서를 참고하세요.
+새로운 프로젝트 디렉토리에서 아래 명령어를 실행하십시오.
 
-## 📁 문서 체계 (SDD)
+```bash
+# 1. 이 bootstrap 디렉토리를 새 프로젝트로 복사하거나, 경로를 지정하여 실행
+./bootstrap.sh
+```
 
-- `PROJECT_RULES.md`: 프로젝트 규칙/운영 SSOT
-- `docs/CRITICAL_LOGIC.md`: 핵심 설계·불변 정책 SSOT
-- `docs/specs/`, `specs/`: 과목·플랫폼 요구사항/계약 SSOT
-- `docs/memory/MEMORY.md`: 세션 지식 인덱스 SSOT
-- `docs/memory.md`: 레거시 포인터(하위 호환용)
+또는 에이전트에게 다음과 같이 지시하십시오.
 
-## 🧩 디렉터리 개요
+> "현재 프로젝트에 상위 디렉토리 `../bootstrap`에 있는 개발 시스템을 부트스트랩하라."
 
-- `common/`: 전 과목 공용 — `rocket-core.js`, `rocket-effects.js`, `progress-engine.js`, `quiz-ui-core.js`
-- `global/`: 전역 보상·인증·동기화 — `reward.js`, `reward_ui.js`, `reward.css`, `auth.js`, `sync-engine.js`
-- 과목별 `engine.js` / `ui.js` 등은 공용 코어를 재구현하지 않고 위임 호출하는 방식을 유지합니다.
+## ⚙️ 작동 원리
 
-전 과목 데이터·코어 계약 검증은 `verify_all.js`(및 관련 스크립트)로 자동 점검할 수 있습니다.
+1. **환경 감지**: `pyproject.toml` 등을 통해 언어(Python 등)를 감지합니다.
+2. **구조 생성**: `docs/`, `tests/`, `tools/` 등 필수 디렉토리를 생성합니다.
+3. **시스템 주입**: TDD 게이트 로직이 포함된 `verify.sh`와 정책 문서들을 복사합니다.
+4. **TDD 활성화**: 의도적으로 실패하는 첫 번째 테스트를 생성하여 TDD 사이클을 시작하게 합니다.
+
+## ⚠️ 주의 사항
+
+- 기존 파일이 존재할 경우 덮어쓰지 않고 경고를 표시합니다.
+- `verify.sh` 내부의 경로 설정(`src`, `app` 등)은 프로젝트의 실제 구조에 맞게 수정이 필요할 수 있습니다.

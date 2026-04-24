@@ -1,5 +1,8 @@
 import { BASE_ORBIT, ORBIT_STEP, TWO_PI } from "./state.js";
 
+const ORBIT_TILT = Math.PI / 6;
+const ORBIT_FLATTEN = 0.55;
+
 export function createRenderer(canvas, ctx, state, planets) {
   let viewportWidth = 0;
   let viewportHeight = 0;
@@ -66,18 +69,30 @@ export function createRenderer(canvas, ctx, state, planets) {
   }
 
   function drawOrbit(cx, cy, orbitRadius) {
-    if (!is3DMode() && orbitRadius > BASE_ORBIT + ORBIT_STEP * 5) {
-      return;
-    }
     ctx.beginPath();
     if (is3DMode()) {
-      ctx.ellipse(cx, cy, orbitRadius, orbitRadius * 0.55, Math.PI / 6, 0, TWO_PI);
+      ctx.ellipse(cx, cy, orbitRadius, orbitRadius * ORBIT_FLATTEN, ORBIT_TILT, 0, TWO_PI);
     } else {
       ctx.arc(cx, cy, orbitRadius, 0, TWO_PI);
     }
-    ctx.strokeStyle = is3DMode() ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.12)";
+    ctx.strokeStyle = is3DMode() ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.18)";
     ctx.lineWidth = 1;
     ctx.stroke();
+  }
+
+  function projectOrbitPosition(cx, cy, orbitRadius, angle) {
+    if (!is3DMode()) {
+      return {
+        x: cx + Math.cos(angle) * orbitRadius,
+        y: cy + Math.sin(angle) * orbitRadius,
+      };
+    }
+
+    const ellipseX = Math.cos(angle) * orbitRadius;
+    const ellipseY = Math.sin(angle) * orbitRadius * ORBIT_FLATTEN;
+    const x = cx + Math.cos(ORBIT_TILT) * ellipseX - Math.sin(ORBIT_TILT) * ellipseY;
+    const y = cy + Math.sin(ORBIT_TILT) * ellipseX + Math.cos(ORBIT_TILT) * ellipseY;
+    return { x, y };
   }
 
   function drawBody(x, y, radius, color, phase = 0) {
@@ -134,10 +149,9 @@ export function createRenderer(canvas, ctx, state, planets) {
       const orbitRadius = (BASE_ORBIT + planet.orbitIndex * ORBIT_STEP) * zoom * sceneScale;
       drawOrbit(cx, cy, orbitRadius);
       const planetAngle = planet.angle + viewRotation;
-      const px = cx + Math.cos(planetAngle) * orbitRadius;
-      const py = is3DMode()
-        ? cy + Math.sin(planetAngle) * orbitRadius * 0.55
-        : cy + Math.sin(planetAngle) * orbitRadius;
+      const orbitPoint = projectOrbitPosition(cx, cy, orbitRadius, planetAngle);
+      const px = orbitPoint.x;
+      const py = orbitPoint.y;
       drawBody(
         px,
         py,

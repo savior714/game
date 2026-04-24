@@ -28,6 +28,7 @@ export function attachTouchInteractions(options) {
   const { canvas, state, render } = options;
   if (!canvas) return;
   const activePointers = new Map();
+  let rafScheduled = false;
 
   let gestureStartDistance = null;
   let gestureStartAngle = null;
@@ -39,6 +40,15 @@ export function attachTouchInteractions(options) {
     gestureStartAngle = null;
     zoomAtGestureStart = state.targetZoom;
     rotationAtGestureStart = state.targetRotation;
+  }
+
+  function scheduleRender() {
+    if (rafScheduled) return;
+    rafScheduled = true;
+    requestAnimationFrame(() => {
+      rafScheduled = false;
+      render();
+    });
   }
 
   function onTouchStart(event) {
@@ -63,7 +73,7 @@ export function attachTouchInteractions(options) {
 
     state.targetZoom = clamp(zoomAtGestureStart * scaleFactor * ZOOM_SENSITIVITY, MIN_ZOOM, MAX_ZOOM);
     state.targetRotation = rotationAtGestureStart + (currentAngle - gestureStartAngle);
-    render();
+    scheduleRender();
     event.preventDefault();
   }
 
@@ -109,7 +119,7 @@ export function attachTouchInteractions(options) {
     const scaleFactor = currentDistance / gestureStartDistance;
     state.targetZoom = clamp(zoomAtGestureStart * scaleFactor * ZOOM_SENSITIVITY, MIN_ZOOM, MAX_ZOOM);
     state.targetRotation = rotationAtGestureStart + (currentAngle - gestureStartAngle);
-    render();
+    scheduleRender();
     event.preventDefault();
   }
 
@@ -127,6 +137,14 @@ export function attachTouchInteractions(options) {
     resetGesture();
   }
 
+  function onWheel(event) {
+    const wheelDelta = -event.deltaY;
+    const zoomStep = wheelDelta * 0.0015;
+    state.targetZoom = clamp(state.targetZoom + zoomStep, MIN_ZOOM, MAX_ZOOM);
+    scheduleRender();
+    event.preventDefault();
+  }
+
   canvas.addEventListener("touchstart", onTouchStart, { passive: false });
   canvas.addEventListener("touchmove", onTouchMove, { passive: false });
   canvas.addEventListener("touchend", onTouchEnd);
@@ -135,4 +153,5 @@ export function attachTouchInteractions(options) {
   canvas.addEventListener("pointermove", onPointerMove, { passive: false });
   canvas.addEventListener("pointerup", onPointerUp);
   canvas.addEventListener("pointercancel", onPointerUp);
+  canvas.addEventListener("wheel", onWheel, { passive: false });
 }

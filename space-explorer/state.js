@@ -17,7 +17,7 @@ export const initialAngles = planets.map((planet) => planet.angle);
 
 export const state = {
   isPlaying: true,
-  timeScale: 1,
+  timeScale: 0.5,
   showLabels: true,
   renderMode: "2d",
   zoom: 1,

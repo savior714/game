@@ -21,7 +21,7 @@ export function attachControls(options) {
     if (!status) return;
     const mode = state.isPlaying ? "재생 중" : "일시정지";
     const renderModeText = state.renderMode === "3d" ? "3D" : "2D";
-    status.textContent = `${mode} · ${state.timeScale}x · ${renderModeText}`;
+    status.textContent = `${mode} · ${Math.round(state.timeScale * 200)}% · ${renderModeText}`;
   }
 
   function renderPlayPauseButtons() {
@@ -54,7 +54,7 @@ export function attachControls(options) {
   function applyResetState() {
     state.elapsedTime = 0;
     state.lastTs = 0;
-    state.timeScale = 1;
+    state.timeScale = 0.5;
     state.showLabels = true;
     state.renderMode = "2d";
     planets.forEach((planet, index) => {
@@ -64,7 +64,7 @@ export function attachControls(options) {
   }
 
   function syncControlDefaults() {
-    if (speed) speed.value = `${state.timeScale}x`;
+    if (speed) speed.value = String(state.timeScale);
     if (quality) quality.value = state.renderMode;
     if (labelToggle) labelToggle.checked = state.showLabels;
     renderPlayPauseButtons();
@@ -86,7 +86,7 @@ export function attachControls(options) {
   }
   if (speed) {
     speed.addEventListener("change", (event) => {
-      const raw = event.target.value.replace("x", "");
+      const raw = event.target.value;
       const parsed = Number(raw);
       if (!Number.isNaN(parsed)) {
         state.timeScale = parsed;

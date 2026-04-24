@@ -25,7 +25,7 @@
 
     <aside class="card controls-panel" aria-label="시뮬레이션 컨트롤">
       <h2>컨트롤</h2>
-      <p id="simulation-status" class="status-badge" aria-live="polite">재생 중 · 1x</p>
+      <p id="simulation-status" class="status-badge" aria-live="polite">재생 중 · 1x · 2D</p>
       <div class="control-group">
         <button type="button" data-action="play">재생</button>
         <button type="button" data-action="pause">일시정지</button>
@@ -41,10 +41,10 @@
         </select>
       </div>
       <div class="control-group">
-        <label for="render-quality">디테일</label>
+        <label for="render-quality">렌더 모드</label>
         <select id="render-quality" name="render-quality">
-          <option value="high" selected>높음</option>
-          <option value="low">낮음</option>
+          <option value="2d" selected>2D</option>
+          <option value="3d">3D</option>
         </select>
       </div>
       <div class="control-group">
@@ -53,6 +53,7 @@
           행성 라벨 표시
         </label>
       </div>
+      <p class="gesture-hint">핀치로 확대/축소, 두 손가락 회전으로 시야를 조절할 수 있어요.</p>
     </aside>
   </main>
   <script type="module" src="./space-explorer/main.js"></script>

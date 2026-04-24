@@ -1,15 +1,19 @@
 import { initialAngles, planets, state } from "./state.js";
 import { createRenderer } from "./renderer.js";
 import { attachControls } from "./controls.js";
+import { attachTouchInteractions } from "./interactions.js";
 
 const canvas = document.getElementById("solar-system-canvas");
-const ctx = canvas ? canvas.getContext("2d") : null;
+const ctx = canvas
+  ? (canvas.getContext("2d", { alpha: false, desynchronized: true }) || canvas.getContext("2d"))
+  : null;
 
 function init() {
   if (!canvas || !ctx) return;
 
   const { resizeCanvas, render } = createRenderer(canvas, ctx, state, planets);
   attachControls({ state, planets, initialAngles, render });
+  attachTouchInteractions({ canvas, state, render });
 
   function tick(ts) {
     if (!state.lastTs) {
@@ -24,6 +28,10 @@ function init() {
         planet.angle += dt * planet.orbitSpeed * state.timeScale;
       }
     }
+
+    // Smooth target gesture values to reduce touch jitter.
+    state.zoom += (state.targetZoom - state.zoom) * 0.18;
+    state.viewRotation += (state.targetRotation - state.viewRotation) * 0.18;
 
     render();
     state.rafId = requestAnimationFrame(tick);

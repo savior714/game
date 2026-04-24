@@ -189,7 +189,7 @@
 ### Phase 4 - 품질 개선
 
 - 렌더 루프 최적화(불필요 계산 최소화)
-- 저사양 대응(디테일 단계 조절)
+- 렌더 모드 선택(2D/3D) 기반 시각 경험 구분
 - 기본 접근성 점검(버튼 라벨, 키보드 포커스)
 
 산출물:
@@ -201,10 +201,10 @@
 
 - `templates/space-explorer.html`
   - 캔버스에 `aria-describedby="simulation-status"` 연결
-  - 디테일 선택 UI(`render-quality`: 높음/낮음) 추가
+  - 렌더 모드 선택 UI(`render-quality`: 2D/3D) 추가
 - `templates/space-explorer.js`
-  - `setQualityLevel()` 도입으로 고품질/저품질 렌더 단계 제어
-  - 저품질 모드에서 일부 궤도선/텍스트 렌더 경량화
+  - `setRenderMode()` 도입으로 2D/3D 렌더 단계 제어
+  - 2D 모드에서 일부 궤도선/텍스트 렌더 경량화
   - 리사이즈 이벤트를 `requestAnimationFrame`으로 스로틀링
   - `visibilitychange` 처리로 백그라운드 전환 후 시간차 급증 방지
 - `templates/styles.css`
@@ -213,7 +213,7 @@
 완료 판정:
 
 - [x] 렌더 루프 최적화(불필요 계산 최소화)
-- [x] 저사양 대응(디테일 단계 조절)
+- [x] 렌더 모드 선택(2D/3D)
 - [x] 기본 접근성 점검(버튼 라벨, 키보드 포커스)
 - [x] 체감 성능 안정
 - [x] 기본 UX 완성도 확보
@@ -243,6 +243,96 @@
 - [x] 모듈 엔트리포인트 전환
 - [x] 기존 상호작용/품질 기능 회귀 없음
 
+### Phase 6 - 태블릿 제스처 상호작용
+
+- 멀티터치 기반 확대/축소(핀치) 지원
+- 두 손가락 회전 제스처로 시야 회전 지원
+- 제스처 입력과 렌더 상태(줌/회전) 분리로 부드러운 반영
+- 모바일/태블릿 브라우저 기본 제스처와 충돌 방지
+
+산출물 (구현 반영):
+
+- `templates/space-explorer/interactions.js`
+  - 핀치 거리 변화량 기반 `targetZoom` 업데이트
+  - 두 터치 각도 변화량 기반 `targetRotation` 업데이트
+  - 터치 종료 시 제스처 상태 정리
+- `templates/space-explorer/state.js`
+  - `zoom`, `targetZoom`, `viewRotation`, `targetRotation` 상태 추가
+- `templates/space-explorer/renderer.js`
+  - 줌 배율/시야 회전을 행성 궤도 계산에 반영
+- `templates/styles.css`
+  - 캔버스 `touch-action: none` 적용으로 기본 브라우저 제스처 비활성화
+
+완료 판정:
+
+- [ ] 태블릿에서 핀치 확대/축소가 자연스럽게 동작
+- [ ] 두 손가락 회전이 시야에 반영
+- [ ] 기존 재생/속도/라벨/2D·3D 기능 회귀 없음
+
+### Phase 7 - 베스트 프랙티스 기반 최적화/고급 연출
+
+- HiDPI 디스플레이 선명도 보장을 위한 DPR 스케일링 적용
+- 반복 배경(별 필드) 오프스크린 캐시로 프레임당 연산 절감
+- 캔버스 컨텍스트 최적화(`alpha: false`) 및 입력 지연 완화 옵션 점검
+- 포인터 이벤트 기반 멀티터치 처리로 태블릿 제스처 일관성 강화
+- 우주 배경 레이어(네뷸라/글로우)로 시각 완성도 향상
+
+산출물 (구현 반영):
+
+- `templates/space-explorer/main.js`
+  - `getContext("2d", { alpha: false, desynchronized: true })` 우선 사용
+- `templates/space-explorer/renderer.js`
+  - `devicePixelRatio` 기반 캔버스 해상도 스케일링
+  - 별 배경 오프스크린 캔버스 캐시 및 `drawImage` 재사용
+- `templates/space-explorer/interactions.js`
+  - `pointerdown`/`pointermove`/`pointerup` 중심 제스처 처리
+- `templates/space-explorer.html`
+  - 제스처 안내 텍스트 보강
+
+완료 판정:
+
+- [ ] Retina/태블릿에서 캔버스가 흐리지 않음
+- [ ] 제스처 입력 시 프레임 드랍/끊김이 줄어듦
+- [ ] 배경 시각 품질 향상(깊이감, 별/네뷸라 레이어)
+
+### Phase 8 - 캔버스 가시 영역 확대
+
+- 데스크톱/태블릿에서 우주 캔버스의 체감 표시 면적 확대
+- 우주 탐험 페이지 레이아웃의 최대 폭 상향으로 캔버스 영역 확보
+- 최소 캔버스 높이를 상향해 "작게 보임" 문제 완화
+
+산출물 (구현 반영):
+
+- `templates/styles.css`
+  - 우주 탐험 페이지 전용 컨테이너 폭 확장
+- `templates/space-explorer/renderer.js`
+  - 최소 캔버스 크기(가로/세로) 상향
+
+완료 판정:
+
+- [ ] 우주 탐험 화면이 이전 대비 크게 보인다
+- [ ] 반응형(900px 이하) 레이아웃 회귀 없음
+
+### Phase 9 - 장면 스케일 자동 확대
+
+- 캔버스 크기에 비례해 태양계 장면 자체를 자동 스케일링
+- 큰 화면에서 궤도 반경/행성 반경을 함께 확대해 "작게 보임" 해소
+- 우주 탐험 전용 레이아웃 최대 폭 추가 상향
+
+산출물 (구현 반영):
+
+- `templates/styles.css`
+  - 우주 탐험 레이아웃 최대 폭 상향(`1480px`)
+- `templates/space-explorer/renderer.js`
+  - `sceneScale` 계산값 도입
+  - 궤도 반경/행성 반경 계산에 `sceneScale` 적용
+  - 최소 캔버스 크기 추가 상향
+
+완료 판정:
+
+- [ ] 태양계 객체(태양/행성/궤도)가 이전보다 체감상 크게 보인다
+- [ ] 큰 화면에서 중앙에 작게 떠 보이는 현상이 완화된다
+
 ## 7) 검증 체크리스트
 
 - [x] 메인 메뉴에 `우주 탐험`이 표시된다.
@@ -260,7 +350,7 @@
 - 라우팅 구조 부재 또는 미정
   - 대응: 최소 단일 HTML 엔트리 + 메뉴 앵커 방식으로 MVP 선진입
 - 브라우저/디바이스 성능 편차
-  - 대응: 렌더 디테일 옵션과 기본값 보수적 설정
+  - 대응: 2D/3D 렌더 모드 옵션 제공 및 기본값 보수적 설정
 - 사실성 요구 증가
   - 대응: 데이터 계층 분리(렌더와 물리 상수 분리)로 단계적 고도화
 

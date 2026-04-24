@@ -20,8 +20,8 @@ export function attachControls(options) {
     const status = document.getElementById("simulation-status");
     if (!status) return;
     const mode = state.isPlaying ? "재생 중" : "일시정지";
-    const qualityText = state.quality === "high" ? "고품질" : "저품질";
-    status.textContent = `${mode} · ${state.timeScale}x · ${qualityText}`;
+    const renderModeText = state.renderMode === "3d" ? "3D" : "2D";
+    status.textContent = `${mode} · ${state.timeScale}x · ${renderModeText}`;
   }
 
   function renderPlayPauseButtons() {
@@ -39,8 +39,14 @@ export function attachControls(options) {
     updateStatusText();
   }
 
-  function setQualityLevel(nextQuality) {
-    state.quality = nextQuality === "low" ? "low" : "high";
+  function setRenderMode(nextMode) {
+    if (nextMode === "high") {
+      state.renderMode = "3d";
+    } else if (nextMode === "low") {
+      state.renderMode = "2d";
+    } else {
+      state.renderMode = nextMode === "3d" ? "3d" : "2d";
+    }
     updateStatusText();
     render();
   }
@@ -50,7 +56,7 @@ export function attachControls(options) {
     state.lastTs = 0;
     state.timeScale = 1;
     state.showLabels = true;
-    state.quality = "high";
+    state.renderMode = "2d";
     planets.forEach((planet, index) => {
       planet.angle = initialAngles[index];
     });
@@ -59,7 +65,7 @@ export function attachControls(options) {
 
   function syncControlDefaults() {
     if (speed) speed.value = `${state.timeScale}x`;
-    if (quality) quality.value = state.quality;
+    if (quality) quality.value = state.renderMode;
     if (labelToggle) labelToggle.checked = state.showLabels;
     renderPlayPauseButtons();
     updateStatusText();
@@ -90,7 +96,7 @@ export function attachControls(options) {
   }
   if (quality) {
     quality.addEventListener("change", (event) => {
-      setQualityLevel(event.target.value);
+      setRenderMode(event.target.value);
     });
   }
   if (labelToggle) {
@@ -105,7 +111,7 @@ export function attachControls(options) {
 
   return {
     setPlaying,
-    setQualityLevel,
+    setRenderMode,
     applyResetState,
     updateStatusText,
     syncControlDefaults,

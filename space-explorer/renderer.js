@@ -2,6 +2,9 @@ import { BASE_ORBIT, ORBIT_STEP, TWO_PI } from "./state.js";
 
 const ORBIT_TILT = Math.PI / 6;
 const ORBIT_FLATTEN = 0.55;
+const PERF_MARK_START = "spaceExplorer:render:start";
+const PERF_MARK_END = "spaceExplorer:render:end";
+const PERF_MEASURE_NAME = "spaceExplorer:render:duration";
 
 export function createRenderer(canvas, ctx, state, planets) {
   let viewportWidth = 0;
@@ -126,6 +129,9 @@ export function createRenderer(canvas, ctx, state, planets) {
   function render() {
     if (!canvas || !ctx) return;
     if (!viewportWidth || !viewportHeight) return;
+    if (typeof performance !== "undefined" && typeof performance.mark === "function") {
+      performance.mark(PERF_MARK_START);
+    }
     if (!starLayer || starLayerMode !== state.renderMode) {
       starLayer = buildStarLayer(viewportWidth, viewportHeight, state.renderMode);
       starLayerMode = state.renderMode;
@@ -165,6 +171,12 @@ export function createRenderer(canvas, ctx, state, planets) {
         ctx.font = is3DMode() ? "12px sans-serif" : "10px sans-serif";
         ctx.fillText(planet.name, px + planet.radius + 4, py - planet.radius - 2);
       }
+    }
+    if (typeof performance !== "undefined" && typeof performance.mark === "function") {
+      performance.mark(PERF_MARK_END);
+    }
+    if (typeof performance !== "undefined" && typeof performance.measure === "function") {
+      performance.measure(PERF_MEASURE_NAME, PERF_MARK_START, PERF_MARK_END);
     }
   }
 

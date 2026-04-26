@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>공전·자전과 일식/월식 | Space Explorer</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    .lesson-layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1rem;
+    }
+
+    .lesson-layout.container {
+      max-width: 1280px;
+    }
+
+    .lesson-canvas {
+      width: 100%;
+      max-width: 100%;
+      border-radius: 14px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: radial-gradient(circle at 20% 20%, #12224f, #060b21 60%);
+    }
+
+    #lesson-explanation {
+      margin: 0;
+      line-height: 1.5;
+      color: #4b5563;
+      font-size: 0.92rem;
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 0.7rem 0.8rem;
+    }
+
+    .mini-note {
+      margin: 0;
+      font-size: 0.82rem;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 960px) {
+      .lesson-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <h1 class="brand">Space Explorer</h1>
+    <nav aria-label="Main navigation">
+      <ul class="nav-list">
+        <li><a href="./index.html">홈</a></li>
+        <li><a href="./space-explorer.html">태양계 탐험</a></li>
+        <li><a href="./orbit-eclipse.html" aria-current="page">공전·자전과 일식/월식</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container lesson-layout">
+    <section class="card" aria-label="공전과 일식 월식 장면">
+      <h2>태양-지구-달 움직임</h2>
+      <canvas
+        id="orbit-eclipse-canvas"
+        class="lesson-canvas"
+        width="960"
+        height="540"
+        role="img"
+        aria-label="태양 지구 달의 움직임과 일식 월식 설명 캔버스"
+        aria-describedby="lesson-explanation"
+      ></canvas>
+    </section>
+
+    <aside class="card controls-panel" aria-label="학습 모드 선택">
+      <h2>학습 모드</h2>
+      <div class="control-group">
+        <label for="lesson-mode">주제 선택</label>
+        <select id="lesson-mode" name="lesson-mode">
+          <option value="rotation-revolution" selected>자전과 공전</option>
+          <option value="solar-eclipse">일식</option>
+          <option value="lunar-eclipse">월식</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="lesson-speed">애니메이션 속도</label>
+        <select id="lesson-speed" name="lesson-speed">
+          <option value="0.7">느리게</option>
+          <option value="1" selected>보통</option>
+          <option value="1.4">빠르게</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label for="lesson-render-mode">보기 모드</label>
+        <select id="lesson-render-mode" name="lesson-render-mode">
+          <option value="2d" selected>2D</option>
+          <option value="3d">3D</option>
+        </select>
+      </div>
+      <p id="lesson-explanation" aria-live="polite"></p>
+      <p class="mini-note">태양은 가운데에 고정되어 있고, 지구는 태양 둘레를 공전하며 스스로 자전해요. 달은 지구 둘레를 공전해요.</p>
+    </aside>
+  </main>
+
+  <script src="./space-explorer/orbit-eclipse.js"></script>
+</body>
+</html>

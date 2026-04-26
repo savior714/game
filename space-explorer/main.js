@@ -7,6 +7,7 @@ const canvas = document.getElementById("solar-system-canvas");
 const ctx = canvas
   ? (canvas.getContext("2d", { alpha: false, desynchronized: true }) || canvas.getContext("2d"))
   : null;
+const SMOOTHING_EPSILON = 0.0008;
 
 function init() {
   if (!canvas || !ctx) return;
@@ -22,6 +23,7 @@ function init() {
     const dt = (ts - state.lastTs) / 1000;
     state.lastTs = ts;
 
+    let shouldRenderFrame = state.isPlaying;
     if (state.isPlaying) {
       state.elapsedTime += dt * state.timeScale;
       for (const planet of planets) {
@@ -30,10 +32,20 @@ function init() {
     }
 
     // Smooth target gesture values to reduce touch jitter.
-    state.zoom += (state.targetZoom - state.zoom) * 0.18;
-    state.viewRotation += (state.targetRotation - state.viewRotation) * 0.18;
+    const zoomDelta = state.targetZoom - state.zoom;
+    const rotationDelta = state.targetRotation - state.viewRotation;
+    if (Math.abs(zoomDelta) > SMOOTHING_EPSILON || Math.abs(rotationDelta) > SMOOTHING_EPSILON) {
+      state.zoom += zoomDelta * 0.18;
+      state.viewRotation += rotationDelta * 0.18;
+      shouldRenderFrame = true;
+    } else {
+      state.zoom = state.targetZoom;
+      state.viewRotation = state.targetRotation;
+    }
 
-    render();
+    if (shouldRenderFrame) {
+      render();
+    }
     state.rafId = requestAnimationFrame(tick);
   }
 

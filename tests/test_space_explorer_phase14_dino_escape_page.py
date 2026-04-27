@@ -29,7 +29,7 @@ def test_dino_escape_page_has_canvas_hud_and_controls() -> None:
     assert 'id="dino-debug-multiplier"' in html
     assert 'id="dino-debug-enemy-speed"' in html
     assert 'id="dino-restart-button"' in html
-    assert "WASD Move | Click Throw | Shift Sprint" in html
+    assert "WASD Move | Auto Throw | Shift Sprint" in html
     assert 'script type="module" src="./space-explorer/dino-escape.js"' in html
 
 
@@ -45,6 +45,9 @@ def test_dino_escape_script_supports_core_game_loop_and_unlocks() -> None:
     assert "function updatePlayerMovement(" in js
     assert "function updateEnemyChase(" in js
     assert "function getDifficultyMultiplier(" in js
+    assert "const ENEMY_START_SPEED_RATIO = 0.7;" in js
+    assert "const AUTO_FIRE_RANGE = 22;" in js
+    assert "function getAutoFireDirection(" in js
     assert "function tryFireProjectile(" in js
     assert "function updateProjectiles(" in js
     assert "function resolveHitsAndScoring(" in js
@@ -55,6 +58,9 @@ def test_dino_escape_script_supports_core_game_loop_and_unlocks() -> None:
     assert "function applyCameraShake(" in js
     assert "function playHitSound(" in js
     assert "function updateUnlockToast(" in js
+    assert "new THREE.CapsuleGeometry(" in js
+    assert "new THREE.DodecahedronGeometry(" in js
+    assert "new THREE.ConeGeometry(" in js
     assert "let hitStopFrames = 0;" in js
     assert "if (hitStopFrames > 0)" in js
     assert "renderer.setAnimationLoop(" in js

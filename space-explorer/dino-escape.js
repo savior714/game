@@ -20,11 +20,13 @@ const PLAYER_BASE_SPEED = 8;
 const PLAYER_SPRINT_MULTIPLIER = 1.6;
 const ENEMY_BASE_SPEED = 3.4;
 const ENEMY_SPEED_SCALE_WITH_SCORE = 0.012;
+const ENEMY_START_SPEED_RATIO = 0.7;
 const ENEMY_HIT_RADIUS = 1.25;
 const ENEMY_CATCH_RADIUS = 1.8;
 const ENEMY_MAX_HEALTH = 28;
 const PROJECTILE_LIFETIME = 2.6;
 const PROJECTILE_SPAWN_OFFSET = 1.25;
+const AUTO_FIRE_RANGE = 22;
 
 const canvas = document.getElementById("dino-escape-canvas");
 const scoreEl = document.getElementById("dino-score");
@@ -150,7 +152,6 @@ const inputState = {
   moveX: 0,
   moveZ: 0,
   sprint: false,
-  fireQueued: false,
 };
 
 const keyState = new Set();
@@ -160,16 +161,28 @@ window.addEventListener("keydown", (event) => {
 window.addEventListener("keyup", (event) => {
   keyState.delete(event.code);
 });
-canvas.addEventListener("click", () => {
-  inputState.fireQueued = true;
-});
-
 function readInput() {
   const x = (keyState.has("KeyD") ? 1 : 0) - (keyState.has("KeyA") ? 1 : 0);
   const z = (keyState.has("KeyS") ? 1 : 0) - (keyState.has("KeyW") ? 1 : 0);
   inputState.moveX = x;
   inputState.moveZ = z;
   inputState.sprint = keyState.has("ShiftLeft") || keyState.has("ShiftRight");
+}
+
+function getAutoFireDirection(gameState) {
+  const toEnemy = vec3(
+    gameState.enemy.position.x - gameState.player.position.x,
+    0,
+    gameState.enemy.position.z - gameState.player.position.z
+  );
+  const enemyDistance = length2d(toEnemy);
+  if (enemyDistance > AUTO_FIRE_RANGE) {
+    return null;
+  }
+  if (enemyDistance < 0.001) {
+    return cloneVec3(gameState.player.facing);
+  }
+  return normalize2d(toEnemy);
 }
 
 function updatePlayerMovement(gameState, delta) {
@@ -198,7 +211,10 @@ function updateEnemyChase(gameState, delta) {
   );
   const dir = normalize2d(toPlayer);
   const difficultyMultiplier = getDifficultyMultiplier(gameState.score);
-  gameState.enemy.speed = (ENEMY_BASE_SPEED + gameState.score * ENEMY_SPEED_SCALE_WITH_SCORE) * difficultyMultiplier;
+  const enemyTargetSpeed = (ENEMY_BASE_SPEED + gameState.score * ENEMY_SPEED_SCALE_WITH_SCORE) * difficultyMultiplier;
+  const startRamp = Math.min(1, gameState.score / 120);
+  const startRatio = ENEMY_START_SPEED_RATIO + (1 - ENEMY_START_SPEED_RATIO) * startRamp;
+  gameState.enemy.speed = enemyTargetSpeed * startRatio;
   gameState.enemy.velocity = vec3(dir.x * gameState.enemy.speed, 0, dir.z * gameState.enemy.speed);
   gameState.enemy.position = clampToArena(vec3(
     gameState.enemy.position.x + gameState.enemy.velocity.x * delta,
@@ -210,14 +226,15 @@ function updateEnemyChase(gameState, delta) {
 
 function tryFireProjectile(gameState, time) {
   const weapon = getCurrentWeapon(gameState.score);
-  if (!inputState.fireQueued) {
+  const fireDirection = getAutoFireDirection(gameState);
+  if (!fireDirection) {
     return;
   }
-  inputState.fireQueued = false;
-
   if (time - gameState.player.lastFireTime < weapon.cooldownMs) {
     return;
   }
+
+  gameState.player.facing = cloneVec3(fireDirection);
 
   const projectile = {
     id: `p-${Math.random().toString(36).slice(2, 9)}`,
@@ -445,18 +462,74 @@ const ground = new THREE.Mesh(
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
 
-const playerMesh = new THREE.Mesh(
-  new THREE.BoxGeometry(0.9, 1.2, 0.9),
-  new THREE.MeshStandardMaterial({ color: 0x60a5fa })
-);
-playerMesh.position.y = 0.6;
+function createPlayerMesh() {
+  const group = new THREE.Group();
+  const material = new THREE.MeshStandardMaterial({ color: 0x3b82f6 });
+  const skin = new THREE.MeshStandardMaterial({ color: 0xf3d4b2 });
+
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.95, 0.45), material);
+  torso.position.y = 1.15;
+  group.add(torso);
+
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.48, 0.48), skin);
+  head.position.y = 1.9;
+  group.add(head);
+
+  const armGeometry = new THREE.BoxGeometry(0.2, 0.75, 0.2);
+  const leftArm = new THREE.Mesh(armGeometry, material);
+  leftArm.position.set(-0.55, 1.2, 0);
+  group.add(leftArm);
+  const rightArm = new THREE.Mesh(armGeometry, material);
+  rightArm.position.set(0.55, 1.2, 0);
+  group.add(rightArm);
+
+  const legGeometry = new THREE.BoxGeometry(0.24, 0.8, 0.24);
+  const leftLeg = new THREE.Mesh(legGeometry, new THREE.MeshStandardMaterial({ color: 0x1d4ed8 }));
+  leftLeg.position.set(-0.2, 0.4, 0);
+  group.add(leftLeg);
+  const rightLeg = new THREE.Mesh(legGeometry, new THREE.MeshStandardMaterial({ color: 0x1d4ed8 }));
+  rightLeg.position.set(0.2, 0.4, 0);
+  group.add(rightLeg);
+  return group;
+}
+
+const playerMesh = createPlayerMesh();
 scene.add(playerMesh);
 
-const enemyMesh = new THREE.Mesh(
-  new THREE.BoxGeometry(1.2, 1.2, 1.6),
-  new THREE.MeshStandardMaterial({ color: 0xef4444 })
-);
-enemyMesh.position.y = 0.6;
+function createDinoMesh() {
+  const group = new THREE.Group();
+  const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.7 });
+  const darkBody = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.75 });
+
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.55, 1.35, 6, 10), bodyMaterial);
+  body.rotation.z = Math.PI / 2;
+  body.position.set(0, 1.1, 0);
+  group.add(body);
+
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.55, 0.6), bodyMaterial);
+  head.position.set(0, 1.5, 0.95);
+  group.add(head);
+
+  const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.2, 0.45), darkBody);
+  jaw.position.set(0, 1.28, 1.02);
+  group.add(jaw);
+
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.35, 1.5, 8), darkBody);
+  tail.rotation.x = -Math.PI / 2;
+  tail.position.set(0, 1.05, -1.3);
+  group.add(tail);
+
+  const legGeometry = new THREE.CylinderGeometry(0.14, 0.18, 0.7, 8);
+  const leftLeg = new THREE.Mesh(legGeometry, darkBody);
+  leftLeg.position.set(-0.28, 0.35, -0.1);
+  group.add(leftLeg);
+  const rightLeg = new THREE.Mesh(legGeometry, darkBody);
+  rightLeg.position.set(0.28, 0.35, -0.1);
+  group.add(rightLeg);
+  return group;
+}
+
+const enemyMesh = createDinoMesh();
 scene.add(enemyMesh);
 
 const projectileMeshes = new Map();
@@ -474,10 +547,16 @@ function syncRenderObjectsFromState() {
     let mesh = projectileMeshes.get(projectile.id);
     if (!mesh) {
       const tier = WEAPON_TIERS.find((item) => item.id === projectile.weaponId) ?? WEAPON_TIERS[0];
-      mesh = new THREE.Mesh(
-        new THREE.SphereGeometry(tier.projectileSize, 12, 12),
-        new THREE.MeshStandardMaterial({ color: 0xfbbf24 })
-      );
+      let geometry = new THREE.SphereGeometry(tier.projectileSize, 12, 12);
+      let material = new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness: 0.4 });
+      if (tier.id === "stone") {
+        geometry = new THREE.DodecahedronGeometry(tier.projectileSize);
+        material = new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 1 });
+      } else if (tier.id === "spear") {
+        geometry = new THREE.ConeGeometry(tier.projectileSize * 0.9, tier.projectileSize * 2.8, 8);
+        material = new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.8 });
+      }
+      mesh = new THREE.Mesh(geometry, material);
       projectileMeshes.set(projectile.id, mesh);
       scene.add(mesh);
     }
@@ -495,13 +574,15 @@ function syncRenderObjectsFromState() {
 function updateCameraFollow(delta) {
   const desired = new THREE.Vector3(
     gameState.player.position.x - gameState.player.facing.x * 7,
-    7.5,
+    8.8,
     gameState.player.position.z - gameState.player.facing.z * 7
   );
-  camera.position.lerp(desired, Math.min(1, delta * 3.2));
+  camera.position.lerp(desired, Math.min(1, delta * 2.4));
   cameraShakeStrength = Math.max(0, cameraShakeStrength - delta * 1.65);
   applyCameraShake();
-  camera.lookAt(gameState.player.position.x, 0.8, gameState.player.position.z);
+  const focusX = gameState.player.position.x * 0.62 + gameState.enemy.position.x * 0.38;
+  const focusZ = gameState.player.position.z * 0.62 + gameState.enemy.position.z * 0.38;
+  camera.lookAt(focusX, 1.2, focusZ);
 }
 
 let previousMs = performance.now();

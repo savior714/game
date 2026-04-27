@@ -48,6 +48,98 @@
       box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
     }
 
+    .beaker {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+      border-radius: 12px;
+      border: 2px solid rgba(17, 24, 39, 0.28);
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04));
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+    }
+
+    .liquid-layer {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 74%;
+      background: rgba(243, 244, 246, 0.92);
+      transition: background 0.3s ease;
+    }
+
+    .drop-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .paint-drop {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+      transform: translate(-50%, -50%);
+      animation: paint-drop-fall 0.58s ease-in forwards;
+    }
+
+    .drop-ripple {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      border: 2px solid currentColor;
+      transform: translate(-50%, -50%);
+      opacity: 0.55;
+      animation: drop-ripple-expand 0.55s ease-out forwards;
+    }
+
+    .pipette {
+      position: absolute;
+      right: 22%;
+      top: 12px;
+      z-index: 4;
+      width: 16px;
+      height: 48px;
+      border-radius: 9px;
+      background: linear-gradient(180deg, #e5e7eb 0%, #94a3b8 100%);
+      box-shadow: 0 3px 10px rgba(15, 23, 42, 0.2);
+      transform: rotate(20deg);
+      transform-origin: 50% 12%;
+      transition: transform 0.22s ease;
+      pointer-events: none;
+    }
+
+    .pipette.is-dropping {
+      transform: rotate(20deg) translateY(4px);
+    }
+
+    @keyframes paint-drop-fall {
+      from {
+        top: 26px;
+        opacity: 1;
+      }
+      to {
+        top: 164px;
+        opacity: 0.92;
+      }
+    }
+
+    @keyframes drop-ripple-expand {
+      from {
+        transform: translate(-50%, -50%) scale(0.8);
+        opacity: 0.5;
+      }
+      to {
+        transform: translate(-50%, -50%) scale(2.9);
+        opacity: 0;
+      }
+    }
+
     .result-swatch-wrap {
       position: relative;
       width: 100%;
@@ -86,7 +178,7 @@
   <main class="container mix-layout">
     <section class="card" aria-label="색상 선택 영역">
       <h2>물감 선택</h2>
-      <p class="gesture-hint">원하는 색을 눌러 조합해 보세요. 여러 색을 함께 선택할 수 있어요.</p>
+      <p class="gesture-hint">원하는 색을 누를수록 한 방울씩 더 들어가며 색이 점점 짙어져요.</p>
       <div class="palette" role="group" aria-label="색상 팔레트">
         <button type="button" class="color-chip" data-color="yellow">노랑</button>
         <button type="button" class="color-chip" data-color="blue">파랑</button>
@@ -109,6 +201,11 @@
       <div class="result-swatch-wrap">
         <div id="paint-mixing-three-layer" class="three-layer" aria-hidden="true"></div>
         <div id="paint-result-swatch" class="result-swatch" role="img" aria-label="섞은 물감 결과 색"></div>
+        <div id="paint-beaker" class="beaker" aria-hidden="true">
+          <div id="paint-liquid-layer" class="liquid-layer"></div>
+          <div id="paint-drop-layer" class="drop-layer"></div>
+        </div>
+        <div id="paint-pipette" class="pipette" aria-hidden="true"></div>
       </div>
       <p id="paint-mix-status" class="status-badge" aria-live="polite" style="margin-top: 0.7rem;">색을 선택하면 결과가 여기에 보여요.</p>
     </aside>

@@ -7,8 +7,21 @@ const statusText = document.getElementById("paint-mix-status");
 const resetButton = document.getElementById("paint-reset-button");
 const brightnessInput = document.getElementById("paint-brightness");
 const brightnessStatus = document.getElementById("paint-brightness-status");
+const liquidLayer = document.getElementById("paint-liquid-layer");
+const dropLayer = document.getElementById("paint-drop-layer");
+const pipette = document.getElementById("paint-pipette");
 
-if (!resultSwatch || !statusText || !resetButton || !brightnessInput || !brightnessStatus || colorButtons.length === 0) {
+if (
+  !resultSwatch ||
+  !statusText ||
+  !resetButton ||
+  !brightnessInput ||
+  !brightnessStatus ||
+  !liquidLayer ||
+  !dropLayer ||
+  !pipette ||
+  colorButtons.length === 0
+) {
   throw new Error("paint-mixing page is missing required elements.");
 }
 
@@ -32,8 +45,9 @@ const SPECIAL_MIX_NAMES = {
   "yellow+blue+red": "갈색",
 };
 
-const selectedColors = new Set();
+const colorIntensity = new Map();
 let brightness = Number(brightnessInput.value) / 100;
+let lastDropX = 52;
 
 function toCssRgb(rgb) {
   return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
@@ -68,26 +82,41 @@ function buildPaintTexture(rgb) {
   ].join(", ");
 }
 
-function mixSelectedColors(colorKeys) {
-  if (colorKeys.length === 0) {
+function getColorIntensity(colorKey) {
+  return colorIntensity.get(colorKey) ?? 0;
+}
+
+function increaseColorIntensity(colorKey) {
+  const next = getColorIntensity(colorKey) + 1;
+  colorIntensity.set(colorKey, next);
+  return next;
+}
+
+function mixSelectedColors(activeEntries) {
+  if (activeEntries.length === 0) {
     return [243, 244, 246];
   }
 
-  const linearRgb = colorKeys.map((key) => {
-    const color = COLOR_LIBRARY[key];
-    return color.rgb.map((channel) => channel / 255);
-  });
+  const intensitySum = activeEntries.reduce((acc, entry) => acc + entry.intensity, 0);
+  const weightedLinear = [0, 1, 2].map((index) =>
+    activeEntries.reduce((acc, entry) => {
+      const base = COLOR_LIBRARY[entry.key].rgb[index] / 255;
+      const weighted = base * (entry.intensity / intensitySum);
+      return acc + weighted;
+    }, 0)
+  );
 
-  const subtracted = [0, 1, 2].map((index) => {
-    const keepLight = linearRgb.reduce((acc, rgb) => acc * rgb[index], 1);
-    return clampChannel(keepLight * 255);
-  });
+  const density = Math.min(0.34 + intensitySum * 0.08, 0.9);
+  const darkerMix = weightedLinear.map((channel) => channel * (1 - density));
+  const mixed = [0, 1, 2].map((index) =>
+    clampChannel((weightedLinear[index] + darkerMix[index]) * 0.5 * 255)
+  );
 
-  return applyBrightness(subtracted, brightness);
+  return applyBrightness(mixed, brightness);
 }
 
-function getMixName(colorKeys) {
-  if (colorKeys.length === 0) {
+function getMixName(colorKeys, totalDrops) {
+  if (colorKeys.length === 0 || totalDrops === 0) {
     return "아직 색을 고르지 않았어요";
   }
 
@@ -103,29 +132,69 @@ function getMixName(colorKeys) {
   return "새로운 혼합색";
 }
 
+function spawnDropRipple(hexColor, xPercent) {
+  const ripple = document.createElement("span");
+  ripple.className = "drop-ripple";
+  ripple.style.left = `${xPercent}%`;
+  ripple.style.top = "74%";
+  ripple.style.color = hexColor;
+  dropLayer.append(ripple);
+  window.setTimeout(() => ripple.remove(), 560);
+}
+
+function animatePipetteDrop(rgb, xPercent) {
+  pipette.classList.add("is-dropping");
+
+  const drop = document.createElement("span");
+  drop.className = "paint-drop";
+  drop.style.left = `${xPercent}%`;
+  drop.style.top = "22px";
+  drop.style.background = toCssRgb(rgb);
+  dropLayer.append(drop);
+
+  window.setTimeout(() => {
+    drop.remove();
+    spawnDropRipple(toCssRgb(rgb), xPercent);
+    pipette.classList.remove("is-dropping");
+  }, 560);
+}
+
+function getActiveEntries() {
+  return Array.from(colorIntensity.entries())
+    .filter(([, intensity]) => intensity > 0)
+    .map(([key, intensity]) => ({ key, intensity }))
+    .sort((a, b) => a.key.localeCompare(b.key));
+}
+
 function renderSelection() {
-  const sorted = Array.from(selectedColors).sort();
-  const mixed = mixSelectedColors(sorted);
-  const mixedName = getMixName(sorted);
-  const chosenLabels = sorted.map((key) => COLOR_LIBRARY[key].label).join(" + ");
+  const activeEntries = getActiveEntries();
+  const sorted = activeEntries.map((entry) => entry.key);
+  const totalDrops = activeEntries.reduce((acc, entry) => acc + entry.intensity, 0);
+  const mixed = mixSelectedColors(activeEntries);
+  const mixedName = getMixName(sorted, totalDrops);
+  const chosenLabels = activeEntries
+    .map((entry) => `${COLOR_LIBRARY[entry.key].label} x${entry.intensity}`)
+    .join(" + ");
 
   resultSwatch.style.background = buildPaintTexture(mixed);
+  liquidLayer.style.background = buildPaintTexture(mixed);
 
-  if (sorted.length === 0) {
+  if (activeEntries.length === 0) {
     statusText.textContent = "색을 선택하면 결과가 여기에 보여요.";
   } else {
-    statusText.textContent = `${chosenLabels} -> ${mixedName}`;
+    statusText.textContent = `${chosenLabels} -> ${mixedName} (${totalDrops}방울)`;
   }
 
   colorButtons.forEach((button) => {
     const key = button.dataset.color;
-    button.classList.toggle("is-selected", !!key && selectedColors.has(key));
+    button.classList.toggle("is-selected", !!key && getColorIntensity(key) > 0);
   });
 }
 
 function resetSelection() {
-  selectedColors.clear();
+  colorIntensity.clear();
   brightness = 1;
+  dropLayer.innerHTML = "";
   brightnessInput.value = "100";
   brightnessStatus.textContent = "밝기 100%";
   renderSelection();
@@ -139,11 +208,9 @@ function attachHandlers() {
         return;
       }
 
-      if (selectedColors.has(colorKey)) {
-        selectedColors.delete(colorKey);
-      } else {
-        selectedColors.add(colorKey);
-      }
+      increaseColorIntensity(colorKey);
+      lastDropX = lastDropX > 62 ? 38 : lastDropX + 6;
+      animatePipetteDrop(COLOR_LIBRARY[colorKey].rgb, lastDropX);
 
       renderSelection();
     });

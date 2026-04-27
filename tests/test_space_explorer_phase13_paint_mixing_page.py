@@ -22,6 +22,10 @@ def test_paint_mixing_page_has_palette_controls_and_reset_button() -> None:
     assert 'id="paint-reset-button"' in html
     assert 'id="paint-brightness"' in html
     assert 'id="paint-brightness-status"' in html
+    assert 'id="paint-beaker"' in html
+    assert 'id="paint-liquid-layer"' in html
+    assert 'id="paint-drop-layer"' in html
+    assert 'id="paint-pipette"' in html
     assert 'data-color="yellow"' in html
     assert 'data-color="blue"' in html
     assert 'data-color="red"' in html
@@ -34,9 +38,14 @@ def test_paint_mixing_script_supports_mix_and_reset() -> None:
 
     assert "const COLOR_LIBRARY = {" in js
     assert "function mixSelectedColors(" in js
+    assert "const colorIntensity = new Map();" in js
+    assert "function getColorIntensity(" in js
+    assert "function increaseColorIntensity(" in js
     assert "function resetSelection(" in js
     assert "function applyBrightness(" in js
     assert "function buildPaintTexture(" in js
+    assert "function animatePipetteDrop(" in js
+    assert "function spawnDropRipple(" in js
     assert "yellow+blue" in js
     assert "red+blue" in js
     assert "red+yellow" in js
@@ -44,6 +53,9 @@ def test_paint_mixing_script_supports_mix_and_reset() -> None:
     assert "paint-result-swatch" in js
     assert "paint-brightness" in js
     assert "paint-brightness-status" in js
+    assert "paint-liquid-layer" in js
+    assert "paint-drop-layer" in js
+    assert "paint-pipette" in js
     assert "radial-gradient(" in js
     assert 'import { initializePaintLights } from "./three-backdrop.js";' in js
     assert (

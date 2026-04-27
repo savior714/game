@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>공룡 추격 탈출 게임 | Space Explorer</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    .dino-layout {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1rem;
+    }
+
+    .dino-layout.container {
+      max-width: 1280px;
+    }
+
+    .dino-canvas {
+      width: 100%;
+      border-radius: 14px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      background: radial-gradient(circle at 20% 20%, #1f2937, #111827 68%);
+    }
+
+    .hud-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.5rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .hud-item {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 0.55rem 0.6rem;
+      background: #f8fafc;
+      font-size: 0.8rem;
+      color: #4b5563;
+    }
+
+    .hud-item strong {
+      display: block;
+      font-size: 1.05rem;
+      color: #111827;
+      margin-top: 0.15rem;
+    }
+
+    #dino-status {
+      margin: 0.5rem 0 0;
+      line-height: 1.5;
+      color: #4b5563;
+      font-size: 0.9rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 0.6rem;
+      background: #f8fafc;
+    }
+
+    .progress-track {
+      position: relative;
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      background: #f3f4f6;
+      overflow: hidden;
+      margin-top: 0.35rem;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #f59e0b, #f97316);
+      transition: width 0.2s ease;
+    }
+
+    #dino-hit-flash {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at center, rgba(251, 191, 36, 0.34), rgba(239, 68, 68, 0.12) 45%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.12s ease;
+      z-index: 30;
+    }
+
+    #dino-unlock-toast {
+      position: fixed;
+      top: 78px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-8px);
+      background: rgba(17, 24, 39, 0.9);
+      color: #f9fafb;
+      border: 1px solid rgba(251, 191, 36, 0.5);
+      border-radius: 999px;
+      padding: 0.45rem 0.9rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.16s ease, transform 0.16s ease;
+      z-index: 35;
+    }
+
+    #dino-restart-button {
+      margin-top: 0.7rem;
+      width: 100%;
+    }
+
+    .mini-note {
+      margin: 0.5rem 0 0;
+      font-size: 0.82rem;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+
+    .debug-note {
+      margin: 0.5rem 0 0;
+      padding: 0.5rem 0.6rem;
+      border-radius: 10px;
+      border: 1px dashed #cbd5e1;
+      background: #f8fafc;
+      font-size: 0.76rem;
+      color: #475569;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 960px) {
+      .dino-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .hud-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <h1 class="brand">Space Explorer</h1>
+    <nav aria-label="Main navigation">
+      <ul class="nav-list">
+        <li><a href="./index.html">홈</a></li>
+        <li><a href="./space-explorer.html">태양계 탐험</a></li>
+        <li><a href="./dino-escape.html" aria-current="page">공룡 추격 탈출 게임</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container dino-layout">
+    <section class="card" aria-label="공룡 추격 게임 화면">
+      <h2>Dino Escape</h2>
+      <div class="hud-grid">
+        <div class="hud-item">SCORE<strong id="dino-score">0</strong></div>
+        <div class="hud-item">CURRENT<strong id="dino-current-weapon">STONE</strong></div>
+        <div class="hud-item">NEXT<strong id="dino-next-unlock">SPEAR at 50</strong></div>
+      </div>
+      <div id="dino-next-progress-track" class="progress-track" aria-hidden="true">
+        <div id="dino-next-progress-fill" class="progress-fill"></div>
+      </div>
+      <div id="dino-hit-flash" aria-hidden="true"></div>
+      <div id="dino-unlock-toast" aria-live="polite"></div>
+      <canvas
+        id="dino-escape-canvas"
+        class="dino-canvas"
+        width="960"
+        height="540"
+        role="img"
+        aria-label="공룡 추격 탈출 게임 캔버스"
+      ></canvas>
+    </section>
+
+    <aside class="card controls-panel" aria-label="공룡 게임 상태 및 조작 안내">
+      <h2>조작과 상태</h2>
+      <p id="dino-status" aria-live="polite">공룡이 따라오고 있어요. 멀리 도망치며 던져 보세요!</p>
+      <button id="dino-restart-button" type="button">재시작</button>
+      <p class="mini-note">WASD Move | Click Throw | Shift Sprint</p>
+      <p class="mini-note">점수 50: 창 해금, 점수 150: 총 해금</p>
+      <div class="debug-note">
+        <div id="dino-debug-multiplier">Difficulty x1.00</div>
+        <div id="dino-debug-enemy-speed">Enemy Speed 0.00</div>
+      </div>
+    </aside>
+  </main>
+
+  <script type="module" src="./space-explorer/dino-escape.js"></script>
+</body>
+</html>

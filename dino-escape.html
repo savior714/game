@@ -126,6 +126,42 @@
       line-height: 1.45;
     }
 
+    #dino-touch-controls {
+      display: none;
+      margin-top: 0.75rem;
+      gap: 0.5rem;
+    }
+
+    .touch-row {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .touch-btn {
+      width: 52px;
+      height: 52px;
+      border-radius: 12px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #0f172a;
+      font-size: 1rem;
+      font-weight: 800;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .touch-btn:active,
+    .touch-btn.pressed {
+      background: #e2e8f0;
+    }
+
+    .touch-sprint {
+      width: 112px;
+      background: #fef3c7;
+      border-color: #f59e0b;
+    }
+
     @media (max-width: 960px) {
       .dino-layout {
         grid-template-columns: 1fr;
@@ -133,6 +169,10 @@
 
       .hud-grid {
         grid-template-columns: 1fr;
+      }
+
+      #dino-touch-controls {
+        display: grid;
       }
     }
   </style>
@@ -160,6 +200,10 @@
       <div id="dino-next-progress-track" class="progress-track" aria-hidden="true">
         <div id="dino-next-progress-fill" class="progress-fill"></div>
       </div>
+      <div class="mini-note" id="dino-enemy-health-label">Dino Health 50 / 50</div>
+      <div id="dino-enemy-health-track" class="progress-track" aria-hidden="true">
+        <div id="dino-enemy-health-fill" class="progress-fill"></div>
+      </div>
       <div id="dino-hit-flash" aria-hidden="true"></div>
       <div id="dino-unlock-toast" aria-live="polite"></div>
       <canvas
@@ -177,6 +221,19 @@
       <p id="dino-status" aria-live="polite">공룡이 따라오고 있어요. 멀리 도망치며 던져 보세요!</p>
       <button id="dino-restart-button" type="button">재시작</button>
       <p class="mini-note">WASD Move | Auto Throw | Shift Sprint</p>
+      <div id="dino-touch-controls" aria-label="태블릿 터치 조작">
+        <div class="touch-row">
+          <button id="dino-touch-up" class="touch-btn" type="button" aria-label="위로 이동">▲</button>
+        </div>
+        <div class="touch-row">
+          <button id="dino-touch-left" class="touch-btn" type="button" aria-label="왼쪽 이동">◀</button>
+          <button id="dino-touch-down" class="touch-btn" type="button" aria-label="아래로 이동">▼</button>
+          <button id="dino-touch-right" class="touch-btn" type="button" aria-label="오른쪽 이동">▶</button>
+        </div>
+        <div class="touch-row">
+          <button id="dino-touch-sprint" class="touch-btn touch-sprint" type="button" aria-label="질주">SPRINT</button>
+        </div>
+      </div>
       <p class="mini-note">점수 50: 창 해금, 점수 150: 총 해금</p>
       <div class="debug-note">
         <div id="dino-debug-multiplier">Difficulty x1.00</div>
@@ -185,6 +242,6 @@
     </aside>
   </main>
 
-  <script type="module" src="./space-explorer/dino-escape.js"></script>
+  <script src="./space-explorer/dino-escape.js"></script>
 </body>
 </html>

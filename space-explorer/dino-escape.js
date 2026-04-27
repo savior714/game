@@ -1,9 +1,9 @@
 const THREE_MODULE_URL = "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const WEAPON_TIERS = [
-  { id: "stone", unlockScore: 0, damage: 1, cooldownMs: 700, projectileSpeed: 18, projectileSize: 0.2, label: "STONE" },
-  { id: "spear", unlockScore: 50, damage: 3, cooldownMs: 500, projectileSpeed: 25, projectileSize: 0.16, label: "SPEAR" },
-  { id: "gun", unlockScore: 150, damage: 8, cooldownMs: 150, projectileSpeed: 45, projectileSize: 0.12, label: "GUN" },
+  { id: "stone", unlockScore: 0, damage: 1, cooldownMs: 700, projectileSpeed: 18, projectileSize: 0.28, label: "STONE" },
+  { id: "spear", unlockScore: 50, damage: 1, cooldownMs: 500, projectileSpeed: 25, projectileSize: 0.16, label: "SPEAR" },
+  { id: "gun", unlockScore: 150, damage: 1, cooldownMs: 150, projectileSpeed: 45, projectileSize: 0.12, label: "GUN" },
 ];
 
 const DIFFICULTY_WAVE_TABLE = [
@@ -18,12 +18,12 @@ const DIFFICULTY_WAVE_TABLE = [
 const ARENA_LIMIT = 24;
 const PLAYER_BASE_SPEED = 8;
 const PLAYER_SPRINT_MULTIPLIER = 1.6;
-const ENEMY_BASE_SPEED = 3.4;
-const ENEMY_SPEED_SCALE_WITH_SCORE = 0.012;
-const ENEMY_START_SPEED_RATIO = 0.7;
+const ENEMY_BASE_SPEED = 0.45;
+const ENEMY_SPEED_SCALE_WITH_SCORE = 0.001;
+const ENEMY_START_SPEED_RATIO = 0.33;
 const ENEMY_HIT_RADIUS = 1.25;
-const ENEMY_CATCH_RADIUS = 1.8;
-const ENEMY_MAX_HEALTH = 28;
+const ENEMY_CATCH_RADIUS = 1.4;
+const ENEMY_MAX_HEALTH = 50;
 const PROJECTILE_LIFETIME = 2.6;
 const PROJECTILE_SPAWN_OFFSET = 1.25;
 const AUTO_FIRE_RANGE = 22;
@@ -33,12 +33,19 @@ const scoreEl = document.getElementById("dino-score");
 const currentWeaponEl = document.getElementById("dino-current-weapon");
 const nextUnlockEl = document.getElementById("dino-next-unlock");
 const nextProgressFillEl = document.getElementById("dino-next-progress-fill");
+const enemyHealthFillEl = document.getElementById("dino-enemy-health-fill");
+const enemyHealthLabelEl = document.getElementById("dino-enemy-health-label");
 const statusEl = document.getElementById("dino-status");
 const restartButton = document.getElementById("dino-restart-button");
 const hitFlashEl = document.getElementById("dino-hit-flash");
 const unlockToastEl = document.getElementById("dino-unlock-toast");
 const debugMultiplierEl = document.getElementById("dino-debug-multiplier");
 const debugEnemySpeedEl = document.getElementById("dino-debug-enemy-speed");
+const touchUpButton = document.getElementById("dino-touch-up");
+const touchLeftButton = document.getElementById("dino-touch-left");
+const touchDownButton = document.getElementById("dino-touch-down");
+const touchRightButton = document.getElementById("dino-touch-right");
+const touchSprintButton = document.getElementById("dino-touch-sprint");
 
 if (
   !canvas ||
@@ -46,12 +53,19 @@ if (
   !currentWeaponEl ||
   !nextUnlockEl ||
   !nextProgressFillEl ||
+  !enemyHealthFillEl ||
+  !enemyHealthLabelEl ||
   !statusEl ||
   !restartButton ||
   !hitFlashEl ||
   !unlockToastEl ||
   !debugMultiplierEl ||
-  !debugEnemySpeedEl
+  !debugEnemySpeedEl ||
+  !touchUpButton ||
+  !touchLeftButton ||
+  !touchDownButton ||
+  !touchRightButton ||
+  !touchSprintButton
 ) {
   throw new Error("dino-escape page is missing required elements.");
 }
@@ -98,7 +112,7 @@ function createInitialGameState() {
       lastFireTime: -9999,
     },
     enemy: {
-      position: vec3(-10, 0, -10),
+      position: vec3(-16, 0, -16),
       velocity: vec3(0, 0, 0),
       speed: ENEMY_BASE_SPEED,
       health: ENEMY_MAX_HEALTH,
@@ -155,6 +169,40 @@ const inputState = {
 };
 
 const keyState = new Set();
+const touchState = {
+  up: false,
+  left: false,
+  down: false,
+  right: false,
+  sprint: false,
+};
+
+function bindTouchMoveButton(button, key) {
+  const setPressed = (pressed) => {
+    touchState[key] = pressed;
+    button.classList.toggle("pressed", pressed);
+  };
+  button.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    setPressed(true);
+  });
+  button.addEventListener("pointerup", () => {
+    setPressed(false);
+  });
+  button.addEventListener("pointercancel", () => {
+    setPressed(false);
+  });
+  button.addEventListener("pointerleave", () => {
+    setPressed(false);
+  });
+}
+
+bindTouchMoveButton(touchUpButton, "up");
+bindTouchMoveButton(touchLeftButton, "left");
+bindTouchMoveButton(touchDownButton, "down");
+bindTouchMoveButton(touchRightButton, "right");
+bindTouchMoveButton(touchSprintButton, "sprint");
+
 window.addEventListener("keydown", (event) => {
   keyState.add(event.code);
 });
@@ -162,11 +210,11 @@ window.addEventListener("keyup", (event) => {
   keyState.delete(event.code);
 });
 function readInput() {
-  const x = (keyState.has("KeyD") ? 1 : 0) - (keyState.has("KeyA") ? 1 : 0);
-  const z = (keyState.has("KeyS") ? 1 : 0) - (keyState.has("KeyW") ? 1 : 0);
+  const x = (keyState.has("KeyD") || touchState.right ? 1 : 0) - (keyState.has("KeyA") || touchState.left ? 1 : 0);
+  const z = (keyState.has("KeyS") || touchState.down ? 1 : 0) - (keyState.has("KeyW") || touchState.up ? 1 : 0);
   inputState.moveX = x;
   inputState.moveZ = z;
-  inputState.sprint = keyState.has("ShiftLeft") || keyState.has("ShiftRight");
+  inputState.sprint = keyState.has("ShiftLeft") || keyState.has("ShiftRight") || touchState.sprint;
 }
 
 function getAutoFireDirection(gameState) {
@@ -349,6 +397,9 @@ function updateHud(gameState) {
     nextUnlockEl.textContent = "ALL UNLOCKED";
     nextProgressFillEl.style.width = "100%";
   }
+  const healthRatio = Math.max(0, Math.min(1, gameState.enemy.health / ENEMY_MAX_HEALTH));
+  enemyHealthFillEl.style.width = `${Math.round(healthRatio * 100)}%`;
+  enemyHealthLabelEl.textContent = `Dino Health ${Math.max(0, Math.ceil(gameState.enemy.health))} / ${ENEMY_MAX_HEALTH}`;
 }
 
 function updateDebugHud(gameState) {
@@ -407,7 +458,7 @@ function updateUnlockToast(delta) {
   unlockToastTimer = Math.max(0, unlockToastTimer - delta);
 }
 
-function applyCameraShake() {
+function applyCameraShake(camera) {
   if (cameraShakeStrength <= 0.0001) {
     return;
   }
@@ -430,6 +481,7 @@ restartButton.addEventListener("click", () => {
   statusEl.textContent = "새 게임 시작! 공룡에게 잡히지 않게 도망치세요.";
 });
 
+async function startDinoEscapeGame() {
 const THREE = await import(THREE_MODULE_URL);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x101826);
@@ -500,6 +552,7 @@ function createDinoMesh() {
   const group = new THREE.Group();
   const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.7 });
   const darkBody = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.75 });
+  const clawMaterial = new THREE.MeshStandardMaterial({ color: 0xb6d7a8, roughness: 0.9 });
 
   const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.55, 1.35, 6, 10), bodyMaterial);
   body.rotation.z = Math.PI / 2;
@@ -519,6 +572,41 @@ function createDinoMesh() {
   tail.position.set(0, 1.05, -1.3);
   group.add(tail);
 
+  const backSpikeGeometry = new THREE.ConeGeometry(0.16, 0.52, 7);
+  for (let i = 0; i < 4; i += 1) {
+    const spike = new THREE.Mesh(backSpikeGeometry, darkBody);
+    spike.rotation.x = -Math.PI / 2;
+    spike.position.set(0, 1.56, 0.5 - i * 0.5);
+    group.add(spike);
+  }
+
+  const armGeometry = new THREE.CylinderGeometry(0.07, 0.09, 0.42, 7);
+  const leftArm = new THREE.Mesh(armGeometry, darkBody);
+  leftArm.position.set(-0.46, 1.1, 0.56);
+  leftArm.rotation.z = Math.PI / 6;
+  group.add(leftArm);
+  const rightArm = new THREE.Mesh(armGeometry, darkBody);
+  rightArm.position.set(0.46, 1.1, 0.56);
+  rightArm.rotation.z = -Math.PI / 6;
+  group.add(rightArm);
+
+  const eyeGeometry = new THREE.SphereGeometry(0.08, 8, 8);
+  const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0xf8fafc, emissive: 0x172554, emissiveIntensity: 0.24 });
+  const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+  leftEye.position.set(-0.19, 1.6, 1.26);
+  group.add(leftEye);
+  const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+  rightEye.position.set(0.19, 1.6, 1.26);
+  group.add(rightEye);
+
+  const toothGeometry = new THREE.ConeGeometry(0.03, 0.16, 6);
+  for (let i = -2; i <= 2; i += 1) {
+    const tooth = new THREE.Mesh(toothGeometry, clawMaterial);
+    tooth.rotation.x = Math.PI;
+    tooth.position.set(i * 0.1, 1.2, 1.2);
+    group.add(tooth);
+  }
+
   const legGeometry = new THREE.CylinderGeometry(0.14, 0.18, 0.7, 8);
   const leftLeg = new THREE.Mesh(legGeometry, darkBody);
   leftLeg.position.set(-0.28, 0.35, -0.1);
@@ -533,6 +621,8 @@ const enemyMesh = createDinoMesh();
 scene.add(enemyMesh);
 
 const projectileMeshes = new Map();
+const baseStoneGeometry = new THREE.DodecahedronGeometry(WEAPON_TIERS[0].projectileSize);
+const baseStoneMaterial = new THREE.MeshStandardMaterial({ color: 0x6b7280, roughness: 0.98, metalness: 0.02, flatShading: true });
 
 function syncRenderObjectsFromState() {
   playerMesh.position.set(gameState.player.position.x, 0.6, gameState.player.position.z);
@@ -546,16 +636,10 @@ function syncRenderObjectsFromState() {
   for (const projectile of gameState.projectiles) {
     let mesh = projectileMeshes.get(projectile.id);
     if (!mesh) {
-      const tier = WEAPON_TIERS.find((item) => item.id === projectile.weaponId) ?? WEAPON_TIERS[0];
-      let geometry = new THREE.SphereGeometry(tier.projectileSize, 12, 12);
-      let material = new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness: 0.4 });
-      if (tier.id === "stone") {
-        geometry = new THREE.DodecahedronGeometry(tier.projectileSize);
-        material = new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 1 });
-      } else if (tier.id === "spear") {
-        geometry = new THREE.ConeGeometry(tier.projectileSize * 0.9, tier.projectileSize * 2.8, 8);
-        material = new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.8 });
-      }
+      const geometry = baseStoneGeometry.clone();
+      const stoneScale = 1 + Math.random() * 0.45;
+      geometry.scale(stoneScale, 1 + Math.random() * 0.2, stoneScale);
+      const material = baseStoneMaterial.clone();
       mesh = new THREE.Mesh(geometry, material);
       projectileMeshes.set(projectile.id, mesh);
       scene.add(mesh);
@@ -577,9 +661,9 @@ function updateCameraFollow(delta) {
     8.8,
     gameState.player.position.z - gameState.player.facing.z * 7
   );
-  camera.position.lerp(desired, Math.min(1, delta * 2.4));
+  camera.position.lerp(desired, Math.min(1, delta * 0.8));
   cameraShakeStrength = Math.max(0, cameraShakeStrength - delta * 1.65);
-  applyCameraShake();
+  applyCameraShake(camera);
   const focusX = gameState.player.position.x * 0.62 + gameState.enemy.position.x * 0.38;
   const focusZ = gameState.player.position.z * 0.62 + gameState.enemy.position.z * 0.38;
   camera.lookAt(focusX, 1.2, focusZ);
@@ -618,4 +702,11 @@ renderer.setAnimationLoop((timeMs) => {
   syncRenderObjectsFromState();
   updateCameraFollow(delta);
   renderer.render(scene, camera);
+});
+}
+
+startDinoEscapeGame().catch((error) => {
+  statusEl.textContent = "초기화 실패: 로컬 파일 대신 로컬 서버(http://)로 실행해 주세요.";
+  // Keep detailed cause in console for debugging.
+  console.error("Failed to start Dino Escape game:", error);
 });

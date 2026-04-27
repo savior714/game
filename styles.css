@@ -249,12 +249,28 @@ body {
 }
 
 .canvas-panel canvas {
+  position: relative;
+  z-index: 2;
   width: 100%;
   max-width: 100%;
   background: #0b1134;
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 14px;
   touch-action: none;
+}
+
+.scene-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.three-layer {
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .controls-panel {

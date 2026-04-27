@@ -1,4 +1,7 @@
+import { initializeSpaceBackdrop } from "./three-backdrop.js";
+
 const canvas = document.getElementById("orbit-eclipse-canvas");
+const threeLayer = document.getElementById("orbit-eclipse-three-layer");
 const lessonModeSelect = document.getElementById("lesson-mode");
 const lessonSpeedSelect = document.getElementById("lesson-speed");
 const lessonRenderModeSelect = document.getElementById("lesson-render-mode");
@@ -341,5 +344,6 @@ function attachHandlers() {
 resizeCanvas();
 updateLessonText();
 renderScene(0);
+initializeSpaceBackdrop(threeLayer, { intensity: 1.05 });
 attachHandlers();
 requestAnimationFrame(animate);

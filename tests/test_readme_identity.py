@@ -9,7 +9,9 @@ def test_readme_describes_aidengame_product_identity() -> None:
 
     assert "어린이 학습 게임 놀이터" in readme
     assert "Agentic Development System Bootstrap" not in readme
-    assert "국어" in readme and "수학" in readme and "영어" in readme and "과학" in readme
+    assert (
+        "국어" in readme and "수학" in readme and "영어" in readme and "과학" in readme
+    )
 
 
 def test_readme_tracks_current_runtime_and_verification_paths() -> None:

@@ -14,7 +14,10 @@ def test_speed_presets_are_rebased_to_half_speed_default() -> None:
     assert '<option value="0.75">150%</option>' in html
     assert '<option value="1">200%</option>' in html
     assert "timeScale: 0.5" in state_js
-    assert 'status.textContent = `${mode} · ${Math.round(state.timeScale * 200)}% · ${renderModeText}`;' in controls_js
+    assert (
+        "status.textContent = `${mode} · ${Math.round(state.timeScale * 200)}% · ${renderModeText}`;"
+        in controls_js
+    )
 
 
 def test_3d_planet_position_uses_same_rotated_ellipse_as_orbit_line() -> None:
@@ -22,7 +25,16 @@ def test_3d_planet_position_uses_same_rotated_ellipse_as_orbit_line() -> None:
 
     assert "const ORBIT_TILT = Math.PI / 6;" in renderer_js
     assert "function projectOrbitPosition(cx, cy, orbitRadius, angle)" in renderer_js
-    assert "const x = cx + Math.cos(ORBIT_TILT) * ellipseX - Math.sin(ORBIT_TILT) * ellipseY;" in renderer_js
-    assert "const y = cy + Math.sin(ORBIT_TILT) * ellipseX + Math.cos(ORBIT_TILT) * ellipseY;" in renderer_js
-    assert "const orbitPoint = projectOrbitPosition(cx, cy, orbitRadius, planetAngle);" in renderer_js
+    assert (
+        "const x = cx + Math.cos(ORBIT_TILT) * ellipseX - Math.sin(ORBIT_TILT) * ellipseY;"
+        in renderer_js
+    )
+    assert (
+        "const y = cy + Math.sin(ORBIT_TILT) * ellipseX + Math.cos(ORBIT_TILT) * ellipseY;"
+        in renderer_js
+    )
+    assert (
+        "const orbitPoint = projectOrbitPosition(cx, cy, orbitRadius, planetAngle);"
+        in renderer_js
+    )
     assert "if (is3DMode()) {" in renderer_js

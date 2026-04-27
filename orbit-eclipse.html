@@ -17,11 +17,27 @@
     }
 
     .lesson-canvas {
+      position: relative;
+      z-index: 2;
       width: 100%;
       max-width: 100%;
       border-radius: 14px;
       border: 1px solid rgba(0, 0, 0, 0.08);
       background: radial-gradient(circle at 20% 20%, #12224f, #060b21 60%);
+    }
+
+    .lesson-scene-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    .three-layer {
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 1;
     }
 
     #lesson-explanation {
@@ -64,15 +80,18 @@
   <main class="container lesson-layout">
     <section class="card" aria-label="공전과 일식 월식 장면">
       <h2>태양-지구-달 움직임</h2>
-      <canvas
-        id="orbit-eclipse-canvas"
-        class="lesson-canvas"
-        width="960"
-        height="540"
-        role="img"
-        aria-label="태양 지구 달의 움직임과 일식 월식 설명 캔버스"
-        aria-describedby="lesson-explanation"
-      ></canvas>
+      <div class="lesson-scene-wrap">
+        <div id="orbit-eclipse-three-layer" class="three-layer" aria-hidden="true"></div>
+        <canvas
+          id="orbit-eclipse-canvas"
+          class="lesson-canvas"
+          width="960"
+          height="540"
+          role="img"
+          aria-label="태양 지구 달의 움직임과 일식 월식 설명 캔버스"
+          aria-describedby="lesson-explanation"
+        ></canvas>
+      </div>
     </section>
 
     <aside class="card controls-panel" aria-label="학습 모드 선택">
@@ -105,6 +124,6 @@
     </aside>
   </main>
 
-  <script src="./space-explorer/orbit-eclipse.js"></script>
+  <script type="module" src="./space-explorer/orbit-eclipse.js"></script>
 </body>
 </html>

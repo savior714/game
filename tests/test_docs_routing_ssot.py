@@ -16,9 +16,9 @@ def test_space_explorer_plan_tracks_current_module_paths() -> None:
 
 
 def test_design_doc_declares_runtime_entry_and_deploy_routing() -> None:
-    design = (ROOT / "templates" / "docs" / "specs" / "technical" / "DESIGN.md").read_text(
-        encoding="utf-8"
-    )
+    design = (
+        ROOT / "templates" / "docs" / "specs" / "technical" / "DESIGN.md"
+    ).read_text(encoding="utf-8")
 
     assert "Runtime Entry and Routing SSOT" in design
     assert "`index.html`" in design

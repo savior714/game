@@ -1,4 +1,7 @@
+import { initializePaintLights } from "./three-backdrop.js";
+
 const colorButtons = Array.from(document.querySelectorAll("[data-color]"));
+const threeLayer = document.getElementById("paint-mixing-three-layer");
 const resultSwatch = document.getElementById("paint-result-swatch");
 const statusText = document.getElementById("paint-mix-status");
 const resetButton = document.getElementById("paint-reset-button");
@@ -157,4 +160,5 @@ function attachHandlers() {
 }
 
 renderSelection();
+initializePaintLights(threeLayer);
 attachHandlers();

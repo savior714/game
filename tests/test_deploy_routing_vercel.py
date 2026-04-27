@@ -13,8 +13,7 @@ def test_vercel_rewrites_include_space_explorer_route() -> None:
     rewrites = config.get("rewrites", [])
 
     assert not any(
-        item.get("destination", "").startswith("/templates/")
-        for item in rewrites
+        item.get("destination", "").startswith("/templates/") for item in rewrites
     )
 
 

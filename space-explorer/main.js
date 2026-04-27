@@ -2,8 +2,10 @@ import { initialAngles, planets, state } from "./state.js";
 import { createRenderer } from "./renderer.js";
 import { attachControls } from "./controls.js";
 import { attachTouchInteractions } from "./interactions.js";
+import { initializeSpaceBackdrop } from "./three-backdrop.js";
 
 const canvas = document.getElementById("solar-system-canvas");
+const threeLayer = document.getElementById("space-explorer-three-layer");
 const ctx = canvas
   ? (canvas.getContext("2d", { alpha: false, desynchronized: true }) || canvas.getContext("2d"))
   : null;
@@ -51,6 +53,7 @@ function init() {
 
   resizeCanvas();
   render();
+  initializeSpaceBackdrop(threeLayer, { intensity: 1.2 });
   state.rafId = requestAnimationFrame(tick);
 
   let resizeQueued = false;

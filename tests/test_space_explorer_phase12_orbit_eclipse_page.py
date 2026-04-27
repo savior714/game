@@ -25,7 +25,8 @@ def test_orbit_eclipse_page_has_scene_and_lesson_controls() -> None:
     assert 'value="solar-eclipse"' in html
     assert 'value="lunar-eclipse"' in html
     assert 'id="lesson-explanation"' in html
-    assert 'script src="./space-explorer/orbit-eclipse.js"' in html
+    assert 'id="orbit-eclipse-three-layer"' in html
+    assert 'script type="module" src="./space-explorer/orbit-eclipse.js"' in html
 
 
 def test_orbit_eclipse_script_defines_lesson_states_and_render_loop() -> None:
@@ -37,9 +38,9 @@ def test_orbit_eclipse_script_defines_lesson_states_and_render_loop() -> None:
     assert "lunar-eclipse" in js
     assert "function updateLessonText()" in js
     assert "function renderScene(" in js
-    assert "renderMode: \"2d\"" in js
+    assert 'renderMode: "2d"' in js
     assert "function projectOrbitPosition(" in js
-    assert "if (state.renderMode === \"3d\")" in js
+    assert 'if (state.renderMode === "3d")' in js
     assert "function drawLitSphere(" in js
     assert "function drawEclipseShadow(" in js
     assert "function drawShadowCone(" in js
@@ -50,3 +51,8 @@ def test_orbit_eclipse_script_defines_lesson_states_and_render_loop() -> None:
     assert "ctx.setTransform(dpr, 0, 0, dpr, 0, 0);" in js
     assert "renderScene(0);" in js
     assert "requestAnimationFrame(animate);" in js
+    assert 'import { initializeSpaceBackdrop } from "./three-backdrop.js";' in js
+    assert (
+        'const threeLayer = document.getElementById("orbit-eclipse-three-layer");' in js
+    )
+    assert "initializeSpaceBackdrop(threeLayer, { intensity: 1.05 });" in js

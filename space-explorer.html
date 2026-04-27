@@ -20,7 +20,10 @@
   <main class="container explorer-layout">
     <section class="card canvas-panel" aria-label="태양계 캔버스 영역">
       <h2>태양계 시뮬레이션 (MVP)</h2>
-      <canvas id="solar-system-canvas" width="960" height="540" role="img" aria-label="태양과 행성 시뮬레이션 캔버스" aria-describedby="simulation-status"></canvas>
+      <div class="scene-wrap">
+        <div id="space-explorer-three-layer" class="three-layer" aria-hidden="true"></div>
+        <canvas id="solar-system-canvas" width="960" height="540" role="img" aria-label="태양과 행성 시뮬레이션 캔버스" aria-describedby="simulation-status"></canvas>
+      </div>
     </section>
 
     <aside class="card controls-panel" aria-label="시뮬레이션 컨트롤">

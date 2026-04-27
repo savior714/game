@@ -12,8 +12,9 @@ SPACE_EXPLORER_DIR = TEMPLATES / "space-explorer"
 def test_renderer_applies_hidpi_transform_and_draws_cached_layer() -> None:
     renderer_url = (SPACE_EXPLORER_DIR / "renderer.js").as_uri()
     state_url = (SPACE_EXPLORER_DIR / "state.js").as_uri()
-    node_script = textwrap.dedent(
-        """
+    node_script = (
+        textwrap.dedent(
+            """
         import { createRenderer } from "__RENDERER_URL__";
         import { state, planets } from "__STATE_URL__";
 
@@ -62,7 +63,10 @@ def test_renderer_applies_hidpi_transform_and_draws_cached_layer() -> None:
           drawImageCount,
         }));
         """
-    ).replace("__RENDERER_URL__", renderer_url).replace("__STATE_URL__", state_url)
+        )
+        .replace("__RENDERER_URL__", renderer_url)
+        .replace("__STATE_URL__", state_url)
+    )
     completed = subprocess.run(
         ["node", "--input-type=module", "--eval", node_script],
         check=True,
@@ -77,12 +81,14 @@ def test_renderer_applies_hidpi_transform_and_draws_cached_layer() -> None:
 
 def test_cached_starfield_and_pointer_events_exist() -> None:
     renderer_js = (SPACE_EXPLORER_DIR / "renderer.js").read_text(encoding="utf-8")
-    interactions_js = (SPACE_EXPLORER_DIR / "interactions.js").read_text(encoding="utf-8")
+    interactions_js = (SPACE_EXPLORER_DIR / "interactions.js").read_text(
+        encoding="utf-8"
+    )
     html = (TEMPLATES / "space-explorer.html").read_text(encoding="utf-8")
 
-    assert "document.createElement(\"canvas\")" in renderer_js
+    assert 'document.createElement("canvas")' in renderer_js
     assert "ctx.drawImage(" in renderer_js
-    assert "canvas.addEventListener(\"pointerdown\"" in interactions_js
-    assert "canvas.addEventListener(\"pointermove\"" in interactions_js
-    assert "canvas.addEventListener(\"pointerup\"" in interactions_js
+    assert 'canvas.addEventListener("pointerdown"' in interactions_js
+    assert 'canvas.addEventListener("pointermove"' in interactions_js
+    assert 'canvas.addEventListener("pointerup"' in interactions_js
     assert "핀치로 확대/축소" in html

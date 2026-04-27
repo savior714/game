@@ -11,13 +11,41 @@ TEMPLATES = ROOT
 def test_space_explorer_script_is_connected() -> None:
     html = (TEMPLATES / "space-explorer.html").read_text(encoding="utf-8")
     assert 'script type="module" src="./space-explorer/main.js"' in html
+    assert 'id="space-explorer-three-layer"' in html
+
+
+def test_main_script_initializes_three_backdrop_layer() -> None:
+    js = (TEMPLATES / "space-explorer" / "main.js").read_text(encoding="utf-8")
+    assert 'import { initializeSpaceBackdrop } from "./three-backdrop.js";' in js
+    assert (
+        'const threeLayer = document.getElementById("space-explorer-three-layer");'
+        in js
+    )
+    assert "initializeSpaceBackdrop(threeLayer, { intensity: 1.2 });" in js
+
+
+def test_three_backdrop_has_nebula_and_pointer_parallax() -> None:
+    js = (TEMPLATES / "space-explorer" / "three-backdrop.js").read_text(
+        encoding="utf-8"
+    )
+    assert "const nebulaGeo = new THREE.PlaneGeometry(26, 16, 1, 1);" in js
+    assert "const nebulaMat = new THREE.MeshBasicMaterial({" in js
+    assert "blending: THREE.AdditiveBlending," in js
+    assert "const pointerTarget = new THREE.Vector2(0, 0);" in js
+    assert 'target.addEventListener("pointermove", (event) => {' in js
+    assert "pointerTarget.x = (px - 0.5) * 2;" in js
+    assert "pointerCurrent.lerp(pointerTarget, 0.045);" in js
+    assert (
+        "points.rotation.y += (0.00045 + pointerCurrent.x * 0.0002) * intensity;" in js
+    )
 
 
 def test_space_explorer_renderer_contract_is_executable() -> None:
     renderer_url = (TEMPLATES / "space-explorer" / "renderer.js").as_uri()
     state_url = (TEMPLATES / "space-explorer" / "state.js").as_uri()
-    node_script = textwrap.dedent(
-        """
+    node_script = (
+        textwrap.dedent(
+            """
         import { createRenderer } from "__RENDERER_URL__";
         import { state, planets } from "__STATE_URL__";
 
@@ -62,7 +90,10 @@ def test_space_explorer_renderer_contract_is_executable() -> None:
           planetCount: planets.length,
         }));
         """
-    ).replace("__RENDERER_URL__", renderer_url).replace("__STATE_URL__", state_url)
+        )
+        .replace("__RENDERER_URL__", renderer_url)
+        .replace("__STATE_URL__", state_url)
+    )
     completed = subprocess.run(
         ["node", "--input-type=module", "--eval", node_script],
         check=True,

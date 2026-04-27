@@ -16,7 +16,9 @@ def _run(cmd: list[str]) -> str:
 
 def _changed_files(base_ref: str) -> set[str]:
     diff_unstaged = _run(["git", "diff", "--name-only", base_ref]).splitlines()
-    diff_staged = _run(["git", "diff", "--name-only", "--cached", base_ref]).splitlines()
+    diff_staged = _run(
+        ["git", "diff", "--name-only", "--cached", base_ref]
+    ).splitlines()
     return {line.strip() for line in [*diff_unstaged, *diff_staged] if line.strip()}
 
 
@@ -36,7 +38,9 @@ def _has_assertion(path: Path) -> bool:
         content = path.read_text(encoding="utf-8")
     except OSError:
         return False
-    return any(token in content for token in ("assert ", "pytest.raises", "self.assert"))
+    return any(
+        token in content for token in ("assert ", "pytest.raises", "self.assert")
+    )
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:

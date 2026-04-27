@@ -8,13 +8,15 @@ SPACE_EXPLORER_DIR = TEMPLATES / "space-explorer"
 
 def test_tablet_gesture_module_is_wired() -> None:
     main_js = (SPACE_EXPLORER_DIR / "main.js").read_text(encoding="utf-8")
-    interactions_js = (SPACE_EXPLORER_DIR / "interactions.js").read_text(encoding="utf-8")
+    interactions_js = (SPACE_EXPLORER_DIR / "interactions.js").read_text(
+        encoding="utf-8"
+    )
 
-    assert "import { attachTouchInteractions } from \"./interactions.js\";" in main_js
+    assert 'import { attachTouchInteractions } from "./interactions.js";' in main_js
     assert "attachTouchInteractions({ canvas, state, render });" in main_js
-    assert "canvas.addEventListener(\"touchstart\"" in interactions_js
-    assert "canvas.addEventListener(\"touchmove\"" in interactions_js
-    assert "canvas.addEventListener(\"touchend\"" in interactions_js
+    assert 'canvas.addEventListener("touchstart"' in interactions_js
+    assert 'canvas.addEventListener("touchmove"' in interactions_js
+    assert 'canvas.addEventListener("touchend"' in interactions_js
 
 
 def test_tablet_zoom_and_rotation_state_exist() -> None:

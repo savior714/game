@@ -25,7 +25,8 @@ def test_paint_mixing_page_has_palette_controls_and_reset_button() -> None:
     assert 'data-color="yellow"' in html
     assert 'data-color="blue"' in html
     assert 'data-color="red"' in html
-    assert 'script src="./space-explorer/paint-mixing.js"' in html
+    assert 'id="paint-mixing-three-layer"' in html
+    assert 'script type="module" src="./space-explorer/paint-mixing.js"' in html
 
 
 def test_paint_mixing_script_supports_mix_and_reset() -> None:
@@ -44,3 +45,8 @@ def test_paint_mixing_script_supports_mix_and_reset() -> None:
     assert "paint-brightness" in js
     assert "paint-brightness-status" in js
     assert "radial-gradient(" in js
+    assert 'import { initializePaintLights } from "./three-backdrop.js";' in js
+    assert (
+        'const threeLayer = document.getElementById("paint-mixing-three-layer");' in js
+    )
+    assert "initializePaintLights(threeLayer);" in js

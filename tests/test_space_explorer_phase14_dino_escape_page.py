@@ -54,6 +54,19 @@ def test_dino_escape_script_supports_core_game_loop_and_unlocks() -> None:
     assert "function updatePlayerMovement(" in js
     assert 'const touchControls = document.getElementById("dino-touch-controls");' in js
     assert "function updateTouchDirectionFromPointer(" in js
+    assert "const touchDragState = {" in js
+    assert "const touchMoveVector = {" in js
+    assert "touchDragState.startX = event.clientX;" in js
+    assert "const dx = clientX - touchDragState.startX;" in js
+    assert "const magnitude = Math.hypot(dx, dy);" in js
+    assert "const clampedMagnitude = Math.min(magnitude, touchRadius);" in js
+    assert "const normalizedMagnitude = clampedMagnitude / touchRadius;" in js
+    assert (
+        "const scaledStrength = (normalizedMagnitude - deadZoneRatio) / (1 - deadZoneRatio);"
+        in js
+    )
+    assert "touchMoveVector.x = (dx / safeMagnitude) * scaledStrength;" in js
+    assert "touchMoveVector.z = (dy / safeMagnitude) * scaledStrength;" in js
     assert 'canvas.addEventListener("pointerdown"' in js
     assert 'canvas.addEventListener("pointermove"' in js
     assert 'canvas.addEventListener("pointerup"' in js
@@ -61,8 +74,10 @@ def test_dino_escape_script_supports_core_game_loop_and_unlocks() -> None:
         'const touchSprintButton = document.getElementById("dino-touch-sprint");' in js
     )
     assert "clearTouchDirection()" in js
+    assert "touchMoveVector.x = 0;" in js
     assert "touchState.up" in js
     assert "function updateEnemyChase(" in js
+    assert "function getPlayerMoveSpeedLimit(" in js
     assert "function getDifficultyMultiplier(" in js
     assert "const DEFAULT_ENEMY_BASE_SPEED = 2.4;" in js
     assert "const DEFAULT_ENEMY_SPEED_SCALE_WITH_SCORE = 0.001;" in js
@@ -77,6 +92,10 @@ def test_dino_escape_script_supports_core_game_loop_and_unlocks() -> None:
     )
     assert "const ENEMY_START_SPEED_RATIO = 0.72;" in js
     assert "const ENEMY_CATCH_RADIUS = 1.4;" in js
+    assert (
+        "gameState.enemy.speed = Math.min(enemyTargetSpeed * startRatio, getPlayerMoveSpeedLimit(gameState));"
+        in js
+    )
     assert "const ENEMY_MAX_HEALTH = 50;" in js
     assert "const AUTO_FIRE_RANGE = 22;" in js
     assert "function getAutoFireDirection(" in js
@@ -149,7 +168,9 @@ def test_dino_escape_script_has_initial_camera_zoom_guard() -> None:
         "const speedBonusMultiplier = Math.max(1, gameState.player.speedBonusMultiplier || 1);"
         in js
     )
+    assert "function getPlayerMoveSpeedLimit(gameState)" in js
+    assert "const speed = getPlayerMoveSpeedLimit(gameState);" in js
     assert (
-        "const speed = PLAYER_BASE_SPEED * speedBonusMultiplier * (inputState.sprint ? PLAYER_SPRINT_MULTIPLIER : 1);"
+        'const x = (keyState.has("KeyD") ? 1 : 0) - (keyState.has("KeyA") ? 1 : 0) + touchMoveVector.x;'
         in js
     )

@@ -215,27 +215,46 @@ const touchState = {
   right: false,
   sprint: false,
 };
+const touchDragState = {
+  startX: 0,
+  startY: 0,
+};
+const touchMoveVector = {
+  x: 0,
+  z: 0,
+};
 
 function clearTouchDirection() {
   touchState.up = false;
   touchState.left = false;
   touchState.down = false;
   touchState.right = false;
+  touchMoveVector.x = 0;
+  touchMoveVector.z = 0;
 }
 
 function updateTouchDirectionFromPointer(clientX, clientY) {
+  const dx = clientX - touchDragState.startX;
+  const dy = clientY - touchDragState.startY;
   const bounds = canvas.getBoundingClientRect();
-  const centerX = bounds.left + bounds.width / 2;
-  const centerY = bounds.top + bounds.height / 2;
-  const dx = clientX - centerX;
-  const dy = clientY - centerY;
   const deadZone = Math.max(12, Math.min(bounds.width, bounds.height) * 0.06);
+  const touchRadius = Math.max(24, Math.min(bounds.width, bounds.height) * 0.22);
+  const deadZoneRatio = deadZone / touchRadius;
+  const magnitude = Math.hypot(dx, dy);
+  const clampedMagnitude = Math.min(magnitude, touchRadius);
+  const normalizedMagnitude = clampedMagnitude / touchRadius;
+  const safeMagnitude = Math.max(0.0001, magnitude);
 
   clearTouchDirection();
 
-  if (Math.abs(dx) < deadZone && Math.abs(dy) < deadZone) {
+  if (normalizedMagnitude <= deadZoneRatio) {
     return;
   }
+
+  // Scaled radial dead zone: smooth ramp after dead zone.
+  const scaledStrength = (normalizedMagnitude - deadZoneRatio) / (1 - deadZoneRatio);
+  touchMoveVector.x = (dx / safeMagnitude) * scaledStrength;
+  touchMoveVector.z = (dy / safeMagnitude) * scaledStrength;
 
   if (Math.abs(dx) >= Math.abs(dy)) {
     touchState.right = dx > 0;
@@ -253,6 +272,8 @@ canvas.addEventListener("pointerdown", (event) => {
     return;
   }
   activeMovePointerId = event.pointerId;
+  touchDragState.startX = event.clientX;
+  touchDragState.startY = event.clientY;
   updateTouchDirectionFromPointer(event.clientX, event.clientY);
   event.preventDefault();
 });
@@ -268,6 +289,8 @@ canvas.addEventListener("pointerup", (event) => {
     return;
   }
   activeMovePointerId = null;
+  touchDragState.startX = 0;
+  touchDragState.startY = 0;
   clearTouchDirection();
 });
 canvas.addEventListener("pointercancel", (event) => {
@@ -275,6 +298,8 @@ canvas.addEventListener("pointercancel", (event) => {
     return;
   }
   activeMovePointerId = null;
+  touchDragState.startX = 0;
+  touchDragState.startY = 0;
   clearTouchDirection();
 });
 
@@ -303,10 +328,10 @@ window.addEventListener("keyup", (event) => {
   keyState.delete(event.code);
 });
 function readInput() {
-  const x = (keyState.has("KeyD") || touchState.right ? 1 : 0) - (keyState.has("KeyA") || touchState.left ? 1 : 0);
-  const z = (keyState.has("KeyS") || touchState.down ? 1 : 0) - (keyState.has("KeyW") || touchState.up ? 1 : 0);
-  inputState.moveX = x;
-  inputState.moveZ = z;
+  const x = (keyState.has("KeyD") ? 1 : 0) - (keyState.has("KeyA") ? 1 : 0) + touchMoveVector.x;
+  const z = (keyState.has("KeyS") ? 1 : 0) - (keyState.has("KeyW") ? 1 : 0) + touchMoveVector.z;
+  inputState.moveX = clampNumber(x, -1, 1);
+  inputState.moveZ = clampNumber(z, -1, 1);
   inputState.sprint = keyState.has("ShiftLeft") || keyState.has("ShiftRight") || touchState.sprint;
 }
 
@@ -330,8 +355,7 @@ function updatePlayerMovement(gameState, delta) {
   const raw = vec3(inputState.moveX, 0, inputState.moveZ);
   const hasMoveInput = length2d(raw) > 0;
   const dir = hasMoveInput ? normalize2d(raw) : gameState.player.facing;
-  const speedBonusMultiplier = Math.max(1, gameState.player.speedBonusMultiplier || 1);
-  const speed = PLAYER_BASE_SPEED * speedBonusMultiplier * (inputState.sprint ? PLAYER_SPRINT_MULTIPLIER : 1);
+  const speed = getPlayerMoveSpeedLimit(gameState);
 
   gameState.player.velocity = vec3(dir.x * speed, 0, dir.z * speed);
   gameState.player.position = clampToArena(vec3(
@@ -343,6 +367,11 @@ function updatePlayerMovement(gameState, delta) {
   if (hasMoveInput) {
     gameState.player.facing = dir;
   }
+}
+
+function getPlayerMoveSpeedLimit(gameState) {
+  const speedBonusMultiplier = Math.max(1, gameState.player.speedBonusMultiplier || 1);
+  return PLAYER_BASE_SPEED * speedBonusMultiplier * (inputState.sprint ? PLAYER_SPRINT_MULTIPLIER : 1);
 }
 
 function updateEnemyChase(gameState, delta) {
@@ -358,7 +387,7 @@ function updateEnemyChase(gameState, delta) {
   ) * difficultyMultiplier;
   const startRamp = Math.min(1, gameState.score / 120);
   const startRatio = ENEMY_START_SPEED_RATIO + (1 - ENEMY_START_SPEED_RATIO) * startRamp;
-  gameState.enemy.speed = enemyTargetSpeed * startRatio;
+  gameState.enemy.speed = Math.min(enemyTargetSpeed * startRatio, getPlayerMoveSpeedLimit(gameState));
   gameState.enemy.velocity = vec3(dir.x * gameState.enemy.speed, 0, dir.z * gameState.enemy.speed);
   gameState.enemy.position = clampToArena(vec3(
     gameState.enemy.position.x + gameState.enemy.velocity.x * delta,

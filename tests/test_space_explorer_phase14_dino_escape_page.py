@@ -101,3 +101,46 @@ def test_dino_escape_script_supports_core_game_loop_and_unlocks() -> None:
     assert "if (hitStopFrames > 0)" in js
     assert "camera.position.lerp(desired, Math.min(1, delta * 0.8));" in js
     assert "renderer.setAnimationLoop(" in js
+
+
+def test_dino_escape_script_has_initial_camera_zoom_guard() -> None:
+    js = (TEMPLATES / "space-explorer" / "dino-escape.js").read_text(encoding="utf-8")
+
+    assert "const CAMERA_MIN_FOCUS_DISTANCE = 9.5;" in js
+    assert "const CAMERA_FOLLOW_DISTANCE_NEAR = 8.8;" in js
+    assert "const CAMERA_FOLLOW_DISTANCE_FAR = 12.8;" in js
+    assert "const CAMERA_HEIGHT_NEAR = 8.6;" in js
+    assert "const CAMERA_HEIGHT_FAR = 10.4;" in js
+    assert "const CAMERA_DYNAMIC_ZOOM_DISTANCE = 26;" in js
+    assert "function ensureMinimumFocusDistance(" in js
+    assert "if (distance >= CAMERA_MIN_FOCUS_DISTANCE)" in js
+    assert "return cameraPosition.clone().add(toFocus.multiplyScalar(scale));" in js
+    assert (
+        "const enemyDistance = distance2d(gameState.player.position, gameState.enemy.position);"
+        in js
+    )
+    assert (
+        "const zoomRatio = Math.max(0, Math.min(1, enemyDistance / CAMERA_DYNAMIC_ZOOM_DISTANCE));"
+        in js
+    )
+    assert (
+        "const followDistance = CAMERA_FOLLOW_DISTANCE_NEAR + (CAMERA_FOLLOW_DISTANCE_FAR - CAMERA_FOLLOW_DISTANCE_NEAR) * zoomRatio;"
+        in js
+    )
+    assert (
+        "const cameraHeight = CAMERA_HEIGHT_NEAR + (CAMERA_HEIGHT_FAR - CAMERA_HEIGHT_NEAR) * zoomRatio;"
+        in js
+    )
+    assert (
+        "const focusX = gameState.player.position.x * 0.82 + gameState.enemy.position.x * 0.18;"
+        in js
+    )
+    assert "speedBonusMultiplier: 1" in js
+    assert (
+        "const speedBonusMultiplier = Math.max(1, gameState.player.speedBonusMultiplier || 1);"
+        in js
+    )
+    assert (
+        "const speed = PLAYER_BASE_SPEED * speedBonusMultiplier * (inputState.sprint ? PLAYER_SPRINT_MULTIPLIER : 1);"
+        in js
+    )

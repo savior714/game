@@ -27,6 +27,12 @@ const ENEMY_MAX_HEALTH = 50;
 const PROJECTILE_LIFETIME = 2.6;
 const PROJECTILE_SPAWN_OFFSET = 1.25;
 const AUTO_FIRE_RANGE = 22;
+const CAMERA_FOLLOW_DISTANCE_NEAR = 8.8;
+const CAMERA_FOLLOW_DISTANCE_FAR = 12.8;
+const CAMERA_HEIGHT_NEAR = 8.6;
+const CAMERA_HEIGHT_FAR = 10.4;
+const CAMERA_DYNAMIC_ZOOM_DISTANCE = 26;
+const CAMERA_MIN_FOCUS_DISTANCE = 9.5;
 
 const canvas = document.getElementById("dino-escape-canvas");
 const scoreEl = document.getElementById("dino-score");
@@ -108,6 +114,7 @@ function createInitialGameState() {
       position: vec3(0, 0, 0),
       velocity: vec3(0, 0, 0),
       facing: vec3(0, 0, 1),
+      speedBonusMultiplier: 1,
       currentWeapon: "stone",
       lastFireTime: -9999,
     },
@@ -237,7 +244,8 @@ function updatePlayerMovement(gameState, delta) {
   const raw = vec3(inputState.moveX, 0, inputState.moveZ);
   const hasMoveInput = length2d(raw) > 0;
   const dir = hasMoveInput ? normalize2d(raw) : gameState.player.facing;
-  const speed = PLAYER_BASE_SPEED * (inputState.sprint ? PLAYER_SPRINT_MULTIPLIER : 1);
+  const speedBonusMultiplier = Math.max(1, gameState.player.speedBonusMultiplier || 1);
+  const speed = PLAYER_BASE_SPEED * speedBonusMultiplier * (inputState.sprint ? PLAYER_SPRINT_MULTIPLIER : 1);
 
   gameState.player.velocity = vec3(dir.x * speed, 0, dir.z * speed);
   gameState.player.position = clampToArena(vec3(
@@ -656,17 +664,33 @@ function syncRenderObjectsFromState() {
 }
 
 function updateCameraFollow(delta) {
+  const enemyDistance = distance2d(gameState.player.position, gameState.enemy.position);
+  const zoomRatio = Math.max(0, Math.min(1, enemyDistance / CAMERA_DYNAMIC_ZOOM_DISTANCE));
+  const followDistance = CAMERA_FOLLOW_DISTANCE_NEAR + (CAMERA_FOLLOW_DISTANCE_FAR - CAMERA_FOLLOW_DISTANCE_NEAR) * zoomRatio;
+  const cameraHeight = CAMERA_HEIGHT_NEAR + (CAMERA_HEIGHT_FAR - CAMERA_HEIGHT_NEAR) * zoomRatio;
   const desired = new THREE.Vector3(
-    gameState.player.position.x - gameState.player.facing.x * 7,
-    8.8,
-    gameState.player.position.z - gameState.player.facing.z * 7
+    gameState.player.position.x - gameState.player.facing.x * followDistance,
+    cameraHeight,
+    gameState.player.position.z - gameState.player.facing.z * followDistance
   );
   camera.position.lerp(desired, Math.min(1, delta * 0.8));
   cameraShakeStrength = Math.max(0, cameraShakeStrength - delta * 1.65);
   applyCameraShake(camera);
-  const focusX = gameState.player.position.x * 0.62 + gameState.enemy.position.x * 0.38;
-  const focusZ = gameState.player.position.z * 0.62 + gameState.enemy.position.z * 0.38;
-  camera.lookAt(focusX, 1.2, focusZ);
+  const focusX = gameState.player.position.x * 0.82 + gameState.enemy.position.x * 0.18;
+  const focusZ = gameState.player.position.z * 0.82 + gameState.enemy.position.z * 0.18;
+  const rawFocus = new THREE.Vector3(focusX, 1.2, focusZ);
+  const safeFocus = ensureMinimumFocusDistance(camera.position, rawFocus);
+  camera.lookAt(safeFocus);
+}
+
+function ensureMinimumFocusDistance(cameraPosition, focusPoint) {
+  const toFocus = focusPoint.clone().sub(cameraPosition);
+  const distance = toFocus.length();
+  if (distance >= CAMERA_MIN_FOCUS_DISTANCE) {
+    return focusPoint;
+  }
+  const scale = CAMERA_MIN_FOCUS_DISTANCE / Math.max(0.0001, distance);
+  return cameraPosition.clone().add(toFocus.multiplyScalar(scale));
 }
 
 let previousMs = performance.now();

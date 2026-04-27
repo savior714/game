@@ -18,9 +18,11 @@ const DIFFICULTY_WAVE_TABLE = [
 const ARENA_LIMIT = 24;
 const PLAYER_BASE_SPEED = 8;
 const PLAYER_SPRINT_MULTIPLIER = 1.6;
-const ENEMY_BASE_SPEED = 0.45;
-const ENEMY_SPEED_SCALE_WITH_SCORE = 0.001;
-const ENEMY_START_SPEED_RATIO = 0.33;
+const DEFAULT_ENEMY_BASE_SPEED = 2.4;
+const DEFAULT_ENEMY_SPEED_SCALE_WITH_SCORE = 0.001;
+const ENEMY_BASE_SPEED = DEFAULT_ENEMY_BASE_SPEED;
+const ENEMY_SPEED_SCALE_WITH_SCORE = DEFAULT_ENEMY_SPEED_SCALE_WITH_SCORE;
+const ENEMY_START_SPEED_RATIO = 0.72;
 const ENEMY_HIT_RADIUS = 1.25;
 const ENEMY_CATCH_RADIUS = 1.4;
 const ENEMY_MAX_HEALTH = 50;
@@ -47,11 +49,10 @@ const hitFlashEl = document.getElementById("dino-hit-flash");
 const unlockToastEl = document.getElementById("dino-unlock-toast");
 const debugMultiplierEl = document.getElementById("dino-debug-multiplier");
 const debugEnemySpeedEl = document.getElementById("dino-debug-enemy-speed");
-const touchUpButton = document.getElementById("dino-touch-up");
-const touchLeftButton = document.getElementById("dino-touch-left");
-const touchDownButton = document.getElementById("dino-touch-down");
-const touchRightButton = document.getElementById("dino-touch-right");
+const touchControls = document.getElementById("dino-touch-controls");
 const touchSprintButton = document.getElementById("dino-touch-sprint");
+const enemyBaseSpeedInput = document.getElementById("dino-enemy-base-speed-input");
+const enemyAccelInput = document.getElementById("dino-enemy-accel-input");
 
 if (
   !canvas ||
@@ -67,14 +68,45 @@ if (
   !unlockToastEl ||
   !debugMultiplierEl ||
   !debugEnemySpeedEl ||
-  !touchUpButton ||
-  !touchLeftButton ||
-  !touchDownButton ||
-  !touchRightButton ||
-  !touchSprintButton
+  !touchControls ||
+  !touchSprintButton ||
+  !enemyBaseSpeedInput ||
+  !enemyAccelInput
 ) {
   throw new Error("dino-escape page is missing required elements.");
 }
+
+const chaseSettings = {
+  baseSpeed: ENEMY_BASE_SPEED,
+  speedScaleWithScore: ENEMY_SPEED_SCALE_WITH_SCORE,
+};
+
+function clampNumber(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function syncChaseSettingsFromControls() {
+  const parsedBase = Number.parseFloat(enemyBaseSpeedInput.value);
+  const parsedAccel = Number.parseFloat(enemyAccelInput.value);
+  chaseSettings.baseSpeed = clampNumber(
+    Number.isFinite(parsedBase) ? parsedBase : ENEMY_BASE_SPEED,
+    0.8,
+    5
+  );
+  chaseSettings.speedScaleWithScore = clampNumber(
+    Number.isFinite(parsedAccel) ? parsedAccel : ENEMY_SPEED_SCALE_WITH_SCORE,
+    0,
+    0.01
+  );
+}
+
+enemyBaseSpeedInput.addEventListener("input", () => {
+  syncChaseSettingsFromControls();
+});
+enemyAccelInput.addEventListener("input", () => {
+  syncChaseSettingsFromControls();
+});
+syncChaseSettingsFromControls();
 
 function vec3(x = 0, y = 0, z = 0) {
   return { x, y, z };
@@ -184,31 +216,85 @@ const touchState = {
   sprint: false,
 };
 
-function bindTouchMoveButton(button, key) {
-  const setPressed = (pressed) => {
-    touchState[key] = pressed;
-    button.classList.toggle("pressed", pressed);
-  };
-  button.addEventListener("pointerdown", (event) => {
-    event.preventDefault();
-    setPressed(true);
-  });
-  button.addEventListener("pointerup", () => {
-    setPressed(false);
-  });
-  button.addEventListener("pointercancel", () => {
-    setPressed(false);
-  });
-  button.addEventListener("pointerleave", () => {
-    setPressed(false);
-  });
+function clearTouchDirection() {
+  touchState.up = false;
+  touchState.left = false;
+  touchState.down = false;
+  touchState.right = false;
 }
 
-bindTouchMoveButton(touchUpButton, "up");
-bindTouchMoveButton(touchLeftButton, "left");
-bindTouchMoveButton(touchDownButton, "down");
-bindTouchMoveButton(touchRightButton, "right");
-bindTouchMoveButton(touchSprintButton, "sprint");
+function updateTouchDirectionFromPointer(clientX, clientY) {
+  const bounds = canvas.getBoundingClientRect();
+  const centerX = bounds.left + bounds.width / 2;
+  const centerY = bounds.top + bounds.height / 2;
+  const dx = clientX - centerX;
+  const dy = clientY - centerY;
+  const deadZone = Math.max(12, Math.min(bounds.width, bounds.height) * 0.06);
+
+  clearTouchDirection();
+
+  if (Math.abs(dx) < deadZone && Math.abs(dy) < deadZone) {
+    return;
+  }
+
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    touchState.right = dx > 0;
+    touchState.left = dx < 0;
+    return;
+  }
+  touchState.down = dy > 0;
+  touchState.up = dy < 0;
+}
+
+let activeMovePointerId = null;
+canvas.style.touchAction = "none";
+canvas.addEventListener("pointerdown", (event) => {
+  if (event.pointerType === "mouse") {
+    return;
+  }
+  activeMovePointerId = event.pointerId;
+  updateTouchDirectionFromPointer(event.clientX, event.clientY);
+  event.preventDefault();
+});
+canvas.addEventListener("pointermove", (event) => {
+  if (event.pointerId !== activeMovePointerId) {
+    return;
+  }
+  updateTouchDirectionFromPointer(event.clientX, event.clientY);
+  event.preventDefault();
+});
+canvas.addEventListener("pointerup", (event) => {
+  if (event.pointerId !== activeMovePointerId) {
+    return;
+  }
+  activeMovePointerId = null;
+  clearTouchDirection();
+});
+canvas.addEventListener("pointercancel", (event) => {
+  if (event.pointerId !== activeMovePointerId) {
+    return;
+  }
+  activeMovePointerId = null;
+  clearTouchDirection();
+});
+
+const setSprintPressed = (pressed) => {
+  touchState.sprint = pressed;
+  touchSprintButton.classList.toggle("pressed", pressed);
+};
+touchSprintButton.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  setSprintPressed(true);
+});
+touchSprintButton.addEventListener("pointerup", () => {
+  setSprintPressed(false);
+});
+touchSprintButton.addEventListener("pointercancel", () => {
+  setSprintPressed(false);
+});
+touchSprintButton.addEventListener("pointerleave", () => {
+  setSprintPressed(false);
+});
 
 window.addEventListener("keydown", (event) => {
   keyState.add(event.code);
@@ -267,7 +353,9 @@ function updateEnemyChase(gameState, delta) {
   );
   const dir = normalize2d(toPlayer);
   const difficultyMultiplier = getDifficultyMultiplier(gameState.score);
-  const enemyTargetSpeed = (ENEMY_BASE_SPEED + gameState.score * ENEMY_SPEED_SCALE_WITH_SCORE) * difficultyMultiplier;
+  const enemyTargetSpeed = (
+    chaseSettings.baseSpeed + gameState.score * chaseSettings.speedScaleWithScore
+  ) * difficultyMultiplier;
   const startRamp = Math.min(1, gameState.score / 120);
   const startRatio = ENEMY_START_SPEED_RATIO + (1 - ENEMY_START_SPEED_RATIO) * startRamp;
   gameState.enemy.speed = enemyTargetSpeed * startRatio;

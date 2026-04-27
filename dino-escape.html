@@ -132,12 +132,6 @@
       gap: 0.5rem;
     }
 
-    .touch-row {
-      display: flex;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-
     .touch-btn {
       width: 52px;
       height: 52px;
@@ -162,6 +156,29 @@
       border-color: #f59e0b;
     }
 
+    .chase-settings {
+      margin: 1rem auto 0;
+      max-width: 1280px;
+    }
+
+    .chase-settings-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.8rem;
+    }
+
+    .setting-field label {
+      display: block;
+      font-size: 0.82rem;
+      color: #475569;
+      margin-bottom: 0.3rem;
+      font-weight: 700;
+    }
+
+    .setting-field input {
+      width: 100%;
+    }
+
     @media (max-width: 960px) {
       .dino-layout {
         grid-template-columns: 1fr;
@@ -173,6 +190,10 @@
 
       #dino-touch-controls {
         display: grid;
+      }
+
+      .chase-settings-grid {
+        grid-template-columns: 1fr;
       }
     }
   </style>
@@ -222,17 +243,8 @@
       <button id="dino-restart-button" type="button">재시작</button>
       <p class="mini-note">WASD Move | Auto Throw | Shift Sprint</p>
       <div id="dino-touch-controls" aria-label="태블릿 터치 조작">
-        <div class="touch-row">
-          <button id="dino-touch-up" class="touch-btn" type="button" aria-label="위로 이동">▲</button>
-        </div>
-        <div class="touch-row">
-          <button id="dino-touch-left" class="touch-btn" type="button" aria-label="왼쪽 이동">◀</button>
-          <button id="dino-touch-down" class="touch-btn" type="button" aria-label="아래로 이동">▼</button>
-          <button id="dino-touch-right" class="touch-btn" type="button" aria-label="오른쪽 이동">▶</button>
-        </div>
-        <div class="touch-row">
-          <button id="dino-touch-sprint" class="touch-btn touch-sprint" type="button" aria-label="질주">SPRINT</button>
-        </div>
+        <p class="mini-note">캔버스 터치 방향 이동</p>
+        <button id="dino-touch-sprint" class="touch-btn touch-sprint" type="button" aria-label="질주">SPRINT</button>
       </div>
       <p class="mini-note">점수 50: 창 해금, 점수 150: 총 해금</p>
       <div class="debug-note">
@@ -241,6 +253,19 @@
       </div>
     </aside>
   </main>
+  <section id="dino-chase-settings" class="container chase-settings card" aria-label="공룡 추격 설정">
+    <h2>추격 난이도 설정 (외부)</h2>
+    <div class="chase-settings-grid">
+      <div class="setting-field">
+        <label for="dino-enemy-base-speed-input">공룡 시작 속도</label>
+        <input id="dino-enemy-base-speed-input" type="range" min="0.8" max="5" step="0.1" value="2.4" />
+      </div>
+      <div class="setting-field">
+        <label for="dino-enemy-accel-input">추격 가속도(점수당)</label>
+        <input id="dino-enemy-accel-input" type="range" min="0" max="0.01" step="0.0001" value="0.001" />
+      </div>
+    </div>
+  </section>
 
   <script src="./space-explorer/dino-escape.js"></script>
 </body>

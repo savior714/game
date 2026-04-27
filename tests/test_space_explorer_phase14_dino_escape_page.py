@@ -33,11 +33,11 @@ def test_dino_escape_page_has_canvas_hud_and_controls() -> None:
     assert 'id="dino-debug-enemy-speed"' in html
     assert 'id="dino-restart-button"' in html
     assert 'id="dino-touch-controls"' in html
-    assert 'id="dino-touch-up"' in html
-    assert 'id="dino-touch-left"' in html
-    assert 'id="dino-touch-down"' in html
-    assert 'id="dino-touch-right"' in html
+    assert "캔버스 터치 방향 이동" in html
     assert 'id="dino-touch-sprint"' in html
+    assert 'id="dino-chase-settings"' in html
+    assert 'id="dino-enemy-base-speed-input"' in html
+    assert 'id="dino-enemy-accel-input"' in html
     assert "WASD Move | Auto Throw | Shift Sprint" in html
     assert 'script src="./space-explorer/dino-escape.js"' in html
 
@@ -52,21 +52,30 @@ def test_dino_escape_script_supports_core_game_loop_and_unlocks() -> None:
     assert "const DIFFICULTY_WAVE_TABLE = [" in js
     assert "function createInitialGameState(" in js
     assert "function updatePlayerMovement(" in js
-    assert 'const touchUpButton = document.getElementById("dino-touch-up");' in js
-    assert 'const touchLeftButton = document.getElementById("dino-touch-left");' in js
-    assert 'const touchDownButton = document.getElementById("dino-touch-down");' in js
-    assert 'const touchRightButton = document.getElementById("dino-touch-right");' in js
+    assert 'const touchControls = document.getElementById("dino-touch-controls");' in js
+    assert "function updateTouchDirectionFromPointer(" in js
+    assert 'canvas.addEventListener("pointerdown"' in js
+    assert 'canvas.addEventListener("pointermove"' in js
+    assert 'canvas.addEventListener("pointerup"' in js
     assert (
         'const touchSprintButton = document.getElementById("dino-touch-sprint");' in js
     )
-    assert 'button.addEventListener("pointerdown"' in js
-    assert 'button.addEventListener("pointerup"' in js
+    assert "clearTouchDirection()" in js
     assert "touchState.up" in js
     assert "function updateEnemyChase(" in js
     assert "function getDifficultyMultiplier(" in js
-    assert "const ENEMY_BASE_SPEED = 0.45;" in js
-    assert "const ENEMY_SPEED_SCALE_WITH_SCORE = 0.001;" in js
-    assert "const ENEMY_START_SPEED_RATIO = 0.33;" in js
+    assert "const DEFAULT_ENEMY_BASE_SPEED = 2.4;" in js
+    assert "const DEFAULT_ENEMY_SPEED_SCALE_WITH_SCORE = 0.001;" in js
+    assert "const chaseSettings = {" in js
+    assert "function syncChaseSettingsFromControls()" in js
+    assert 'enemyBaseSpeedInput.addEventListener("input"' in js
+    assert 'enemyAccelInput.addEventListener("input"' in js
+    assert "const ENEMY_BASE_SPEED = DEFAULT_ENEMY_BASE_SPEED;" in js
+    assert (
+        "const ENEMY_SPEED_SCALE_WITH_SCORE = DEFAULT_ENEMY_SPEED_SCALE_WITH_SCORE;"
+        in js
+    )
+    assert "const ENEMY_START_SPEED_RATIO = 0.72;" in js
     assert "const ENEMY_CATCH_RADIUS = 1.4;" in js
     assert "const ENEMY_MAX_HEALTH = 50;" in js
     assert "const AUTO_FIRE_RANGE = 22;" in js

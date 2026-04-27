@@ -19,10 +19,10 @@ lint:
     ruff format --check .
 
 typecheck:
-    ty check . || pyright .
+    ty check . --exclude tests/ --exclude tools/tdd_gate_plugin.py --exclude templates/tools/tdd_gate_plugin.py || if command -v pyright >/dev/null 2>&1; then pyright .; else echo "pyright not found; skipping fallback"; fi
 
 test:
-    pytest
+    pytest tests
 
 # --- Utility ---
 

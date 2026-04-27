@@ -20,3 +20,17 @@ def test_verify_korean_text_script_exists_at_expected_path() -> None:
     script_text = script_path.read_text(encoding="utf-8")
     assert "def main()" in script_text
     assert "--dir" in script_text
+
+
+def test_justfile_typecheck_has_resilient_fallback_and_exclusions() -> None:
+    justfile = (ROOT / "Justfile").read_text(encoding="utf-8")
+
+    assert "ty check ." in justfile
+    assert "--exclude tests/" in justfile
+    assert "--exclude tools/tdd_gate_plugin.py" in justfile
+    assert "command -v pyright" in justfile
+
+
+def test_justfile_test_recipe_scopes_to_root_tests_only() -> None:
+    justfile = (ROOT / "Justfile").read_text(encoding="utf-8")
+    assert "pytest tests" in justfile

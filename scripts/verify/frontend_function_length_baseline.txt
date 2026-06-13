@@ -1,0 +1,5 @@
+# Incremental gate baseline — fail only on NEW entries.
+# Remove a line when fixed. Regenerate: gate script --update-baseline
+apps/renderer/src/features/consultation/hooks/useExaminationQueue.ts:29:useExaminationQueue:107
+apps/renderer/src/features/consultation/hooks/useLayoutManagement.ts:62:useLayoutManagement:119
+apps/renderer/src/features/consultation/hooks/usePadSignatureFlow.ts:39:usePadSignatureFlow:124

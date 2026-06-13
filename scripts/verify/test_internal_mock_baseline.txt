@@ -1,0 +1,22 @@
+# Incremental gate baseline — fail only on NEW entries.
+# Remove a line when fixed. Regenerate: gate script --update-baseline
+apps/renderer/src/app/dashboard/components/__tests__/AiIntelligenceSection.test.tsx:8:@/src/contexts/DashboardDataContext
+apps/renderer/src/features/patient/components/PatientRegistrationSidebar.insurance.test.tsx:19:@/src/features/patient/adapters/patientIdentityAdapter
+apps/renderer/src/features/patient/components/PatientRegistrationSidebar.insurance.test.tsx:34:@/src/hooks/use-toast
+apps/renderer/src/features/reception/layouts/ReceptionDashboardSidePanel.test.tsx:7:../components/WaitingList
+apps/renderer/tests/unit/app/dashboard/admin/AdminResourceHealthDots.test.tsx:11:@/src/features/admin/adapters/adminAdapter
+apps/renderer/tests/unit/app/dashboard/admin/useAdminResourceHealth.test.ts:13:@/src/features/admin/adapters/adminAdapter
+apps/renderer/tests/unit/app/dashboard/admin/useAdminUsersLoadGate.test.tsx:14:@/src/features/admin/adapters/adminAdapter
+apps/renderer/tests/unit/app/dashboard/admin/useAdminUsersLoadGate.test.tsx:21:@/app/dashboard/admin/components/user/UserForm
+apps/renderer/tests/unit/app/dashboard/admin/useAdminUsersLoadGate.test.tsx:24:@/app/dashboard/admin/components/user/SecuritySummary
+apps/renderer/tests/unit/app/dashboard/admin/useAdminUsersLoadGate.test.tsx:27:@/app/dashboard/admin/components/user/UserTable
+apps/renderer/tests/unit/app/dashboard/admin/useAdminUsersLoadGate.test.tsx:30:@/app/dashboard/admin/components/user/UserLogs
+apps/renderer/tests/unit/features/consultation/useExaminationQueue.kind.test.ts:18:@/src/features/consultation/hooks/usePatientUrlSync
+apps/renderer/tests/unit/features/consultation/useExaminationQueue.kind.test.ts:22:@/src/features/consultation/hooks/useExaminationQueueHandlers
+apps/renderer/tests/unit/features/consultation/useExaminationQueue.kind.test.ts:40:@/stores/consultationAtoms
+apps/renderer/tests/unit/features/reception/ReceptionEncounterModal.test.tsx:16:@/src/features/patient/adapters/patientIdentityAdapter
+apps/renderer/tests/unit/features/reception/ReceptionEncounterModal.test.tsx:23:@/src/hooks/use-toast
+apps/renderer/tests/unit/features/reception/ReceptionPatientSearchModal.test.tsx:14:@/src/features/patient/components/PatientSearchCard
+apps/renderer/tests/unit/features/reception/receptionLeftEncounterHandlers.revisit.test.ts:12:@/src/hooks/use-toast
+apps/renderer/tests/unit/features/reception/useReceptionLeftWorkflowState.revisit.test.ts:18:@/src/features/reception/store/receptionDeskStore
+apps/renderer/tests/unit/features/reception/useReceptionLeftWorkflowState.revisit.test.ts:5:@/src/features/reception/hooks/useReceptionHandoff

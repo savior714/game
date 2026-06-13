@@ -1,0 +1,2 @@
+# Known DDD boundary violations (incremental gate — fail only on NEW lines).
+# Remove a line when the violation is fixed. Do not add without fixing or explicit review.

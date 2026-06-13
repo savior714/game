@@ -1,0 +1,4 @@
+# Incremental gate baseline — fail only on NEW entries.
+# Remove a line when fixed. Regenerate: gate script --update-baseline
+src/application/services/medication_request_bundle_service.py:58:create_prescription_from_bundle:104
+src/infrastructure/persistence/medical/encounter_repository_queue.py:80:get_today_queue:102

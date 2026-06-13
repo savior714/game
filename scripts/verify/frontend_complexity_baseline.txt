@@ -1,0 +1,2 @@
+# Incremental gate baseline — fail only on NEW entries.
+# Remove a line when fixed. Regenerate: gate script --update-baseline

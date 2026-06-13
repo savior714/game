@@ -1,0 +1,5 @@
+# Incremental gate baseline — fail only on NEW entries.
+# Remove a line when fixed. Regenerate: gate script --update-baseline
+application_services=113
+infra_services=0
+ports_non_shim=0

@@ -1,0 +1,16 @@
+# Bootstrap kernel — merge into your project Justfile.
+# Placeholders: replace AidenGame, paths, and ports after install.
+
+default:
+    @just --list
+
+verify:
+    @bash verify.sh
+
+ci:
+    @echo "Running AidenGame CI (bootstrap kernel)..."
+    @just verify
+
+lint-turn-end:
+    @echo "Turn-end gate (bootstrap kernel — extend per project)"
+    @just verify

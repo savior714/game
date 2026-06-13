@@ -1,0 +1,13 @@
+{
+  "plan": "/Users/seungjulee/Desktop/Dev/game/docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md",
+  "status": "pass",
+  "issues": [],
+  "verify_results": [
+    {
+      "cwd": "cwd",
+      "command": "just plan-lint docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md",
+      "exit_code": 0,
+      "script_not_found": false
+    }
+  ]
+}

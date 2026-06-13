@@ -1,0 +1,454 @@
+patterns:
+- id: '1.1'
+  name: read_file → write_file 직행
+  category: 파일 편집 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 5
+- id: '1.2'
+  name: patch old_string uniqueness 검증 안 함
+  category: 파일 편집 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 3
+- id: '1.3'
+  name: patch 실패 후 같은 old_string으로 재시도
+  category: 파일 편집 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 4
+- id: '1.4'
+  name: JSX/TSX patch 누적으로 구조 망가짐
+  category: 파일 편집 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 2
+- id: '1.5'
+  name: MCP serena replace_content regex mode newline corruption
+  category: 파일 편집 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 1
+- id: '1.6'
+  name: old_string missing SchemaError (create vs patch confusion)
+  category: 파일 편집 실수
+  last_seen: '2026-06-07'
+  occurrence_count: 1
+- id: '1.7'
+  name: edit 도구 No changes to apply 무한 재시도
+  category: 파일 편집 실수
+  last_seen: '2026-06-09'
+  occurrence_count: 1
+- id: '1.8'
+  name: Antigravity 전용 편집 도구 (replace_file_content / multi_replace_file_content) 오류
+  category: 파일 편집 실수
+  last_seen: '2026-06-10'
+  occurrence_count: 1
+  detail: 'replace_file_content 또는 multi_replace_file_content 호출 시 범위 불일치, 고유성 미달, 혹은 병렬 호출 수정 유실 오류.
+
+    대응:
+
+    1. 비인접 다중 편집은 단일 multi_replace_file_content 호출로 묶어서 실행.
+
+    2. 범위(StartLine/EndLine)를 TargetContent가 정확히 1개만 포함되도록 좁혀서 지정.
+
+    '
+- id: '1.9'
+  name: OpenCode(local LLM) 부분 수정(edit) replaceAll 오용 및 경로 오류
+  category: 파일 편집 실수
+  last_seen: '2026-06-11'
+  occurrence_count: 1
+  detail: 'edit 도구 호출 시 replaceAll을 true로 설정하여 파일 내 중복 패턴이 모두 원치 않게 바뀌거나, filePath에 절대 경로가 아닌 상대 경로를 전달하여 리소스 탐색 오류가 발생하는 케이스.
+
+    대응:
+
+    1. 특정 구간만 단일 치환할 때는 반드시 replaceAll을 false로 지정.
+
+    2. filePath 인자에는 프로젝트의 전체 절대 경로를 기입.
+
+    '
+- id: '1.10'
+  name: Cursor 부분 수정(StrReplace) 상대 경로 및 old_string 고유성 오류
+  category: 파일 편집 실수
+  last_seen: '2026-06-11'
+  occurrence_count: 1
+  detail: 'StrReplace 호출 시 path에 절대 경로를 제공하여 실패하거나, old_string이 파일 내에서 고유하지 않아 여러 매치가 검출(Found N matches)되어 실패하는 오류.
+
+    대응:
+
+    1. path 인자에는 프로젝트 루트를 기준으로 한 상대 경로를 입력.
+
+    2. old_string이 파일 본문에서 유일하게 매치되도록 충분한 코드 블록 컨텍스트를 제공하여 고유성 확보.
+
+    '
+- id: '2.1'
+  name: Vitest mock 누락
+  category: 테스트 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 3
+- id: '2.2'
+  name: Vitest localStorage persistent state
+  category: 테스트 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 4
+- id: '2.3'
+  name: Duplicate testId → getAllByTestId
+  category: 테스트 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 2
+- id: '2.4'
+  name: React destructuring default 값 누락
+  category: 테스트 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 1
+- id: '2.5'
+  name: Vitest split 파일 네이밍 패턴 불일치 (.1/.2/.3)
+  category: 테스트 실수
+  last_seen: '2026-06-03'
+  occurrence_count: 1
+- id: '2.6'
+  name: vi.mock() 별도 파일 분리 시 hoisting 실패
+  category: 테스트 실수
+  last_seen: '2026-06-03'
+  occurrence_count: 1
+- id: '2.7'
+  name: beforeEach/cleanup 누락 → 테스트 간 상태 오염
+  category: 테스트 실수
+  last_seen: '2026-06-10'
+  occurrence_count: 1
+- id: '2.8'
+  name: vi.mock() 동적 import vs 정적 hoisting
+  category: 테스트 실수
+  last_seen: '2026-06-10'
+  occurrence_count: 1
+- id: '2.9'
+  name: getByText() 중복 매칭 오류 (메시지 전역 고유성)
+  category: 테스트 실수
+  last_seen: '2026-06-10'
+  occurrence_count: 1
+  detail: '화면상에 동일한 텍스트가 여러 개 존재하여, 단일 요소를 기대하는 getByText()가 에러를 발생시키는 오류.
+
+    대응:
+
+    1. 고유 식별 메시지를 사용하거나, getAllByText로 배열 반환받아 검증.
+
+    2. data-testid를 지정해 고유하게 식별하거나, within을 사용하여 검색 범위를 부모 컨테이너로 제한.
+
+    '
+- id: '2.10'
+  name: 비동기 업데이트 누락 및 act(...) 경고
+  category: 테스트 실수
+  last_seen: '2026-06-10'
+  occurrence_count: 1
+  detail: '비동기 로직으로 인해 컴포넌트 상태가 변경되는데, 렌더링 사이클이 완료되기를 기다리지 않고 동기식으로 검증하여 에러가 뜨는 오류.
+
+    대응:
+
+    1. findBy* (내부적으로 waitFor가 내장됨)를 활용해 비동기 상태 변경을 대기.
+
+    2. waitFor를 이용하여 다중 단언식 처리.
+
+    '
+- id: '3.1'
+  name: useEffect 내 setTimeout/debounce unmount 누락
+  category: React 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 2
+- id: '3.2'
+  name: Fast Refresh full reload after session expiry
+  category: React 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 1
+- id: '4.1'
+  name: write_file 부패 (os.getenv corruption)
+  category: 도구 사용 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 2
+- id: '4.2'
+  name: Biome auto-fix (--auto-fix)로 import 이름 변경
+  category: 도구 사용 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 1
+- id: '4.3'
+  name: read_file 라인 번호 patch old_string 오사용
+  category: 도구 사용 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 1
+- id: '4.4'
+  name: MCP 도구명 underscore/hyphen 불일치 (desktop_commander_ → desktop-commander_)
+  category: 도구 사용 실수
+  last_seen: '2026-06-03'
+  occurrence_count: 1
+  detail: '모델이 `desktop_commander_read_text_file` (underscore + _text_ variant) 을 호출하지만,
+
+    실제 MCP 서버는 `desktop-commander_read_file` (hyphen) 만 노출.
+
+    대응: .agents/reference/mcp_tools.md 의 SSOT 도구명 참조.
+
+    검증: `just mcp-tools-validate` (lint-turn-end 자동 실행).
+
+    '
+- id: '4.5'
+  name: read_file 별칭 호출 + edit oldString 누락
+  category: 도구 사용 실수
+  last_seen: '2026-06-05'
+  occurrence_count: 1
+  detail: '모델이 `read_file`이라는 별칭을 호출하지만, 현재 세션에 등록된 도구 중에는
+
+    `read_file`이 없음.     올바른 도구명: `desktop-commander_read_file`, 또는 내장 `Read`.
+
+    또한 `edit` 도구 호출 시 필수 파라미터 `oldString`을 누락하여
+
+    `SchemaError(Missing key at ["oldString"])` 발생.
+
+    대응:
+
+    1. 파일 읽기 → `desktop-commander_read_file(path="절대경로")` 또는 내장 `Read`
+
+    2. edit 호출 → `{ filePath, oldString: "정확히일치", newString: "바꿀내용" }`
+
+    3. `edit` → `desktop-commander_edit_block` 자동 전환 금지 (서로 다른 도구/스키마)
+
+    4. 도구명 불확실 시 `.agents/reference/mcp_tools.md` SSOT 참조
+
+    '
+- id: '5.1'
+  name: plan-lint 통과 전 구현 착수
+  category: 계획서 (Blueprint) 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 3
+- id: '5.2'
+  name: Task 상태 역방향 리셋 (done → todo)
+  category: 계획서 (Blueprint) 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 2
+- id: '5.3'
+  name: Verify에 grep/echo 단독 사용
+  category: 계획서 (Blueprint) 실수
+  last_seen: '2026-06-02'
+  occurrence_count: 1
+- id: '5.4'
+  name: plan-preread 누락으로 Task-level Pre-read FAIL
+  category: 계획서 (Blueprint) 실수
+  last_seen: '2026-06-02'
+  occurrence_count: 1
+- id: '5.5'
+  name: todo/running Conclusion에 임의 문구 사용
+  category: 계획서 (Blueprint) 실수
+  last_seen: '2026-06-02'
+  occurrence_count: 1
+- id: '5.6'
+  name: plan-lint WARN을 통과로 오인하고 Blueprint 미수정
+  category: 계획서 (Blueprint) 실수
+  last_seen: '2026-06-04'
+  occurrence_count: 1
+  detail: 'plan-lint가 exit 0을 반환해도 stdout에 [WARN] 이 포함되면 계약 위반이다.
+
+    issues 없이 warnings만 있으면 plan-lint는 exit 1을 반환한다 — exit code만으로도 경고 게이트 실패를 감지한다.
+
+    atomicity 위반(whole-feature scope, forbidden conjunction 등)은 구현 전 반드시 수정해야 한다.
+
+    대응:
+
+    1. plan-lint stdout 전체 스캔 — [WARN] 또는 [FAIL] 감지 시 즉시 중단
+
+    2. exit code가 0이어도 WARN 존재 시 수정 후 재검증
+
+    3. Blueprint Task 분할: Goal에 "및"/"와"/"과"/"그리고"/"또한"/"동시에" 있으면 atomic 단위로 분할
+
+    4. Conclusion 25자 미만 → 파일명 + 구체적 액션 포함
+
+    5. Verify 미인식 runner(pnpm exec vitest 등) → just recipe 또는 인식된 runner로 교체
+
+    6. Status: done 상태와 무관하게 plan-lint 결과를 최종 판단 기준으로 삼는다
+
+    '
+- id: '5.7'
+  name: Task Status/Conclusion 에디터 직접 수정
+  category: 계획서 (Blueprint) 실수
+  last_seen: '2026-06-09'
+  occurrence_count: 1
+  detail: 'plan-task-close CLI 대신 에디터(StrReplace/edit)로 Task의 Status·Conclusion을 직접 수정.
+
+    plan_task_close.py는 정규식으로 Status/Conclusion 패턴을 매칭하므로, 에디터 수정 시
+
+    공백·인덴트·마커 형식이 다르면 갱신이 안 되거나 인접 Task Conclusion이 덮어씌워짐.
+
+    대응:
+
+    1. Blueprint Task Status/Conclusion 수정은 always just plan-task-close CLI만 사용
+
+    2. Conclusion은 최소 25자 이상, 구체적 검증 결과 포함
+
+    3. [완료 시 기입] 등 placeholder 사용 금지
+
+    '
+- id: '5.8'
+  name: DoD에 just plan-close 포함 (재귀 타임아웃)
+  category: 계획서 (Blueprint) 실수
+  last_seen: '2026-06-09'
+  occurrence_count: 1
+  detail: 'DoD(Definition of Done) 섹션에 just plan-close를 백틱 명령어로 포함하면,
+
+    plan_close_gate.py의 extract_dod_verify_specs()가 이를 verify 명령어로 추출해 실행.
+
+    즉 plan-close가 자기 자신을 호출하는 재귀가 발생 → 120초 타임아웃.
+
+    대응:
+
+    1. DoD 섹션에 just plan-close를 verify 명령어로 포함하지 않음
+
+    2. plan-close는 Closeout Task의 Verify에서 별도 실행
+
+    3. DoD는 실제 검증 명령어(pytest, just plan-lint 등)만 포함
+
+    '
+- id: '5.9'
+  name: Verify에 pytest 전체 파일 실행 (구체성 부족)
+  category: 계획서 (Blueprint) 실수
+  last_seen: '2026-06-09'
+  occurrence_count: 7
+  detail: 'plan-lint가 Verify에 pytest -k <selector> 또는 ::test_name 없이 전체 파일을 실행하면
+
+    "Task#N Verify must prove one automated outcome — split tasks" 오류.
+
+    Atomic Task는 단일 테스트로 검증해야 한다.
+
+    대응:
+
+    1. Verify에 pytest -k <selector> 또는 ::test_name 반드시 포함
+
+    2. 여러 테스트 검증 필요 시 Task 분할
+
+    3. 예: pytest tests/.../test_file.py::test_specific_name -q
+
+    '
+- id: '5.10'
+  name: just plan-close 실행 전 linear-sync 누락
+  category: 계획서 (Blueprint) 실수
+  last_seen: '2026-06-10'
+  occurrence_count: 1
+  detail: 'just plan-close 실행 시 linear-sync가 선행되지 않으면 "Linear synchronization required" 오류 발생.
+
+    대응:
+
+    1. plan-close 실행 전에 반드시 just linear-sync(또는 just linear-sync-plan)를 성공적으로 완료할 것.
+
+    2. CI/CD 또는 Closeout 태스크 시 이 두 과정의 순서와 종속성을 꼭 확인.
+
+    '
+- id: '6.1'
+  name: mermaid/긴 표/로드맵 금지 (discuss 워크플로)
+  category: 기타 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 5
+- id: '6.2'
+  name: AskQuestion 없이 close 종료
+  category: 기타 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 4
+- id: '6.3'
+  name: MEMORY.md에 임시 정보 저장
+  category: 기타 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 6
+- id: '6.4'
+  name: converge plan 선택 후 Blueprint handoff 이중 질문
+  category: 기타 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 1
+- id: '6.5'
+  name: direction 턴에서 Blueprint·메뉴 A 조기 권장
+  category: 기타 실수
+  last_seen: '2026-06-04'
+  occurrence_count: 3
+- id: '6.6'
+  name: Workaround(우회책) 사용 후 근본 원인 및 대안 보고 누락
+  category: 기타 실수
+  last_seen: '2026-06-04'
+  occurrence_count: 1
+- id: '6.7'
+  name: AskQuestion 스킵 후 텍스트 답 무시·무한 재질문
+  category: 기타 실수
+  last_seen: '2026-06-05'
+  occurrence_count: 1
+- id: '7.1'
+  name: write_file로 justfile 등 추적되지 않은 파일 덮어쓰기
+  category: 파일 편집 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 1
+- id: '7.2'
+  name: git checkout으로 추적되지 않은 파일 복구 시도
+  category: 기타 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 1
+- id: '7.3'
+  name: archive_plans.py DISCUSS 종속 아카이브 시 plans-index broken reference
+  category: 계획서 (Blueprint) 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 1
+- id: '8.1'
+  name: dependency-injector DeclarativeContainer mixin 상속 실패
+  category: Python 의존성 실수
+  last_seen: '2026-06-01'
+  occurrence_count: 1
+- id: '9.1'
+  name: Path.parents[N] repo root 오계산
+  category: 스크립트 경로 오류
+  last_seen: '2026-06-01'
+  occurrence_count: 1
+- id: '10.1'
+  name: plan-lint Status 파싱 충돌 (Conclusion 덮어씀)
+  category: 계획서 파싱 오류
+  last_seen: '2026-06-01'
+  occurrence_count: 1
+- id: '11.1'
+  name: plan-task-close Conclusion shell 해석 오류
+  category: 스크립트 사용 오류
+  last_seen: '2026-06-01'
+  occurrence_count: 1
+- id: '12.1'
+  name: DISCUSS 파일 dual --- yaml.safe_load 실패
+  category: YAML 파싱 오류
+  last_seen: '2026-06-01'
+  occurrence_count: 1
+- id: '13.1'
+  name: docs-discuss-lifecycle 아카이브 기존 실패 오인
+  category: 검증 오인
+  last_seen: '2026-06-01'
+  occurrence_count: 1
+- id: '14.1'
+  name: macOS 시스템 Python 3.9 PATH 우선 — 프로젝트 스크립트 ImportError
+  category: 환경/도구 오인
+  last_seen: '2026-06-01'
+  occurrence_count: 1
+- id: '15.1'
+  name: MEMORY.md patch 수정 → memory tool 캐시 불일치
+  category: 메모리 도구 오인
+  last_seen: '2026-06-01'
+  occurrence_count: 1
+- id: '16.1'
+  name: 워크플로 실행 요청 시 파일 Read 누락 → 동일 도구 무한 반복
+  category: 프롬프트 라우팅 실패
+  last_seen: '2026-06-03'
+  occurrence_count: 1
+  detail: '사용자가 "~ workflow 돌려줘" 요청 시 에이전트가 .agents/workflows/<name>.md 를
+
+    먼저 Read 하지 않고, 추측으로 도구 호출 → 실패 → 동일 도구 + 동일 인자 반복.
+
+    AGENTS.md §2.3 "실패 후 동일 입력 금지" 및 워크플로 Read 누락 (TOP 7) 위반.
+
+    대응: Read 도구로 .agents/workflows/<name>.md 또는 .agents/skills/<name>/SKILL.md
+
+    1회 읽기 → 핵심 단계 추출 → 단계별 실행. frontmatter trigger: 는 색인 메타일
+
+    뿐 자동 실행되지 않음. 동일 도구 3회 반복 시 즉시 중단 + 전략 전환.
+
+    '
+- id: '16.2'
+  name: TOOL_REQUEST 태그 형식 오용 → 시스템 파싱 실패
+  category: 프롬프트 라우팅 실패
+  last_seen: '2026-06-05'
+  occurrence_count: 1
+  detail: '모델이 `TOOL_REQUEST` / `END_TOOL_REQUEST`·`<tool_call>`·pseudo JSON 등 텍스트로
+
+    도구 호출을 출력했으나, 호스트 native structured tool API가 이를 실행하지 않음.
+
+    대응: 호스트가 노출한 native tool call만 사용. content·reasoning에 tool syntax
+
+    텍스트 출력 금지. SSOT: principles §1.1 · 06-workflow §16.2.'

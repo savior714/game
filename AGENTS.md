@@ -1,179 +1,133 @@
-# AGENTS.md — Execution Protocol (Adaptive)
+# AGENTS.md — Unified Execution Constitution
 
-## 0. Purpose
-이 문서는 에이전트의 실행 방식(How)을 정의한다.
-이 프로젝트는 **TDD(Test-Driven Development)**를 최우선 원칙으로 하며, 시스템적으로 이를 강제한다.
+에이전트 **헌법 요약**입니다. 우선순위·게이트·레지스트리 진입점만 둡니다. 표·긴 스킬 목록은 레지스트리 파일로 위임합니다.
 
 ---
 
-## 1. Core Execution Flow (Always-On)
+## 0. Priority / Rule Precedence
 
-모든 작업은 아래 순서를 따른다:
+우선순위는 아래와 같습니다.
 
-1. **Context Sync**: `PROJECT_RULES.md` 및 기존 설계 문서를 확인한다.
-2. **TDD 확인**: `tests/` 선검토 및 관련 테스트 존재 여부를 확인한다.
-3. **정정 우선**: 코드 수정 전 문서(docs/)나 테스트(tests/) SSOT를 먼저 수정한다.
-4. **Red Step (Fail First)**: 실패하는 테스트를 먼저 작성한다. (Assertion 필수)
-5. **Green Step (Implement)**: 테스트를 통과할 만큼의 코드만 작성한다.
-6. **Verification**: `verify.sh`를 실행하여 전체 시스템 무결성을 검증한다.
+1. `PROJECT_RULES.md`
+2. 본 문서 (`AGENTS.md`)
+3. `.agents/core/*.md`
+4. `.agents/domains/**/*.md`
+5. 기타 명세 및 가이드라인
 
----
-
-## 2. Recommended Tools (Allowlist)
-
-이 프로젝트는 효율적인 개발을 위해 다음 도구들의 사용을 권장하며 우선적으로 활용한다:
-
-- **uv**: Python 패키지 매니저 및 환경 관리
-- **ty / pyx**: 타입 체크 및 pytest 실행 최적화 도구
-- **ruff**: 초고속 Python Linter & Formatter
-- **nu**: Nushell 기반의 현대적 스크립팅
-- **just**: 명령 실행기 (Justfile)
-- **nix**: 선언적 개발 환경 구성 (flake.nix)
+충돌 시 위 순서를 따르며, 불명확하면 질문합니다.
 
 ---
 
-## 3. SSOT Principles
+## 1. Core Operating Principles
 
-역할 기반 단일 출처:
-- 정책/스택: `PROJECT_RULES.md`
-- 설계 결정: `docs/specs/`
-- 요구사항 계약: `tests/`
-- 세션 맥락: `docs/memory/`
+normative SSOT: [.agents/core/principles.md](.agents/core/principles.md)
 
----
-
-## 4. Verification (Tiered)
-
-- **L1 (Local)**: `pytest`, `lint` (ruff/biome)
-- **L2 (Integration)**: `verify.sh`
-- **L3 (CI)**: GitHub Actions / CI Pipeline
-
----
-
-## 5. TDD Gate (Fatal Constraint)
-
-코드 생성 전 반드시 아래 조건을 만족해야 한다:
-
-1. 관련 `tests/` 파일 존재
-2. 최소 1개의 실패 테스트 존재 (red-first)
-3. 테스트는 명확한 assertion 포함
-
-위 조건 미충족 시 **코드 작성이 금지**되며, `verify.sh` 및 `pytest` 플러그인에 의해 차단된다.
+- **Policy**: [PROJECT_RULES.md §3](PROJECT_RULES.md)
+- **Think Before Coding · Quick Pick**: [principles.md §1.1](.agents/core/principles.md#11-think-before-coding)
+- **Simplicity · Surgical · Goal-Driven**: [principles.md §1.2–§1.4](.agents/core/principles.md#12-simplicity-first)
+- **Bug Fixes**: [/diagnose](.agents/workflows/diagnose.md) · [/investigate](.agents/workflows/investigate.md)
+- **Merge & Review**: [/review](.agents/skills/review/SKILL.md)
+- **Execution Rules**: [execution.md §2](.agents/core/execution.md)
+- **Commit Gate Failure**: [error_patterns.md §10](.agents/core/error_patterns.md#10-커밋-게이트-실패시--no-verify-금지) — `--no-verify` 우회 절대 금지, 반드시 오류 수정 후 재시도
+- **Edit Tool Schema**: [routing.md §1.1](.agents/core/routing.md#11-file-edit-tool-schema-편집-도구-ssot) (Cursor) · Tri-Runtime: [runtime_edit_tools.md](.agents/core/runtime_edit_tools.md) (Cursor · OpenCode · Antigravity)
+- **Workaround Accountability**: [principles.md §1.6](.agents/core/principles.md#16-workaround-accountability--close-turn-reflection)
+- **Code Quality Lifecycle** (설계→구현→리뷰→테스트): [code_quality_lifecycle.md](.agents/core/code_quality_lifecycle.md)
 
 ---
 
-## 6. Execution Rules
+## 2. Execution Gates (pointer)
 
-- TDD 우선 (`tests/` 먼저 확인)
-- Dirty-Write 금지 (수정 후 즉시 lint)
-- 파일 500라인 초과 금지
-- 경로 추측 금지 (실제 확인)
-- SSOT 문서 먼저 수정 후 코드 반영
+**메타 금지 11** normative SSOT: [error_patterns.md#메타-금지-11](.agents/core/error_patterns.md#메타-금지-11) (`always_apply`).
 
----
+### 2.1 Editing / Routing
 
-## 7. Stop Condition
+**규범 SSOT**: [routing.md](.agents/core/routing.md) §1 · §2. **WRONG/CORRECT 예시**: [error_patterns §1](.agents/core/error_patterns.md#1-파일-편집-실수) lazy-load.
 
-- 요구사항 명확
-- 리스크 식별 완료
-- `verify.sh` 통과
-- 실행 가능한 해답 확보
+**부분 수정 호출 전 (always-on, tri-runtime)**: 호스트 **읽기 도구**로 디스크 최신본 확보 → 대상 문자열이 파일에 **정확히 1번**인지 확인 → **old ≠ new** (같으면 호출 금지). `"No changes to apply"` 수신 시 동일 쌍 재호출 금지 → 재읽기 → 목표 내용 있으면 완료, 없으면 old/범위/new 변경 후 1회만 재시도. **도구 이름·키**: [runtime_edit_tools.md §1](.agents/core/runtime_edit_tools.md) (Cursor `StrReplace`/`old_string` · OpenCode `edit`/`oldString` · Antigravity `replace_file_content`/`TargetContent`). Terminal Response: [routing.md](.agents/core/routing.md) (Cursor) · [opencode_tools.md §edit](.agents/core/opencode_tools.md) (OpenCode).
 
----
+### 2.2 Plan / Blueprint
 
-## 8. MCP Argument Mapping Protocol (Mandatory)
-
-자연어 사용자 프롬프트를 MCP 도구 호출 시 그대로 전달하지 않는다.
-모든 MCP 호출은 도구 스키마를 기준으로 `arguments` 객체를 구성한 뒤 실행한다.
-
-### 8.1 Required Flow
-
-1. 도구 스키마 확인: `mcps/<server>/tools/<tool>.json`
-2. `required` 필드 식별
-3. 사용자 자연어를 스키마 필드로 매핑
-4. 타입 정규화 (string/boolean/integer/number)
-5. `CallMcpTool(server, toolName, arguments)` 형태로 호출
-6. 검증 실패 시 1회 자동 보정 후 재호출
-
-### 8.2 Never Call Without Arguments
-
-아래 상황을 금지한다:
-- `arguments` 없이 MCP 도구 호출
-- 스키마의 필수 필드 누락 상태로 호출
-- camelCase 필드명을 임의 변경 (`nextThoughtNeeded` 등)
-
-### 8.3 Fallback Rules (Validation Error)
-
-`-32602` 또는 input validation error 발생 시 즉시 다음 순서로 처리한다:
-
-1. 스키마 재확인 (`required`, `properties`)
-2. 누락 필드 자동 채움
-3. 필드명 오탈자 보정 (대소문자/철자)
-4. 타입 보정 (`"1"` -> `1`, `"false"` -> `false`)
-5. 재호출 후 실패 원인 보고
-
-### 8.4 SequentialThinking Canonical Template
-
-`sequentialthinking` 호출 시 기본 템플릿:
-
-```json
-{
-  "server": "user-sequentialthinking",
-  "toolName": "sequentialthinking",
-  "arguments": {
-    "thought": "<현재 분석 문장>",
-    "nextThoughtNeeded": true,
-    "thoughtNumber": 1,
-    "totalThoughts": 3
-  }
-}
-```
-
-### 8.5 Responsibility Boundary
-
-- `AGENTS.md`는 정책(What/How)을 정의한다.
-- 실제 강제 실행은 호출 레이어(래퍼/훅/스크립트)가 담당한다.
-- 정책만으로 보장이 안 되는 경우, 코드 기반 변환기를 우선 도입한다.
+- **Plan First**: 복합 작업은 `just plan-lint` PASS 전 구현 착수 금지 — [PROJECT_RULES.md §3](PROJECT_RULES.md) · [planning.md](.agents/core/planning.md).
+- **Task closeout**: Blueprint Task `Status`/`Conclusion`은 **`just plan-task-close` CLI만** — 에디터 직접 수정 **절대 금지** — [plan.md §1.10](.agents/workflows/plan.md) · [error_patterns/detail/blueprint.md §5.6](.agents/core/error_patterns/detail/blueprint.md#56-task-statusconclusion-%EC%97%90%EB%94%94%ED%84%B0-%EC%A7%81%EC%A0%9D-%EC%88%98%EC%A0%95).
+- **DoD 재귀 금지**: DoD 섹션에 `just plan-close`를 verify 명령어로 포함하지 않음 — `plan_close_gate.py`가 이를 추출해 자기 자신을 호출하는 재귀 타임아웃을 유발함 — [error_patterns/detail/blueprint.md §5.7](.agents/core/error_patterns/detail/blueprint.md#57-dod%EC%97%90-just-plan-close-%ED%8F%B0%EB%A6%AC%EB%A7%8C-%ED%8F%B0%EB%A6%AC%EB%A7%88%EC%9D%B4%EC%8A%A4%ED%86%B5).
+- **Archive**: `docs/plans/` 파일 이동 시 **반드시** [`.agents/workflows/archive.md`](.agents/workflows/archive.md) 먼저 Read → `scripts/archive_plans.py` 실행 — 수동 복사/삭제 **절대 금지** — [archive.md §실행 절차](.agents/workflows/archive.md#%EC%8B%A4%ED%96%89-%EC%A0%80%EC%B2%9C).
+- 상세: [planning.md](.agents/core/planning.md) · [workflows/plan.md](.agents/workflows/plan.md) · [archive.md](.agents/workflows/archive.md).
 
 ---
 
-## 9. Wrapper Pipeline (Operational)
+## 3. Dynamic Rules & Loading
 
-아래 파이프라인을 표준 호출 경로로 사용한다.
+**세션 시작**: `PROJECT_RULES.md` + [MEMORY.md](docs/agent-context/memory/MEMORY.md) 인덱스. **lazy** (편집·route 직전): [LOAD_ORDER.md](.agents/registry/LOAD_ORDER.md) Phase 2 · [CONTEXT_ROUTING.md](.agents/registry/CONTEXT_ROUTING.md) · `ROADMAP.md` (plan·roadmap·discuss).
 
-1. `tools/mcp_call_wrapper.py`로 스키마 매핑/검증
-2. 출력 JSON을 CallMcpTool 입력으로 사용
-3. 실패 시 8.3 Fallback Rules 적용
+편집 직전: `just route <paths> --json --write-manifest` → `must_read` Read → `just route-read` → `just route-gate-check`.
 
-### 9.1 SequentialThinking One-Liner
+---
+
+## 4. Verification
+
+검증 수준·게이트: [verification.md](.agents/core/verification.md) — 세션 종료 `just lint-turn-end`. 시점별 품질 체크: [code_quality_lifecycle.md](.agents/core/code_quality_lifecycle.md).
+
+### 4.1 Partial Edit Tool — 한글 콘텐츠 제한 (tri-runtime)
+
+호스트 **부분 수정 도구**(Cursor `StrReplace`, OpenCode `edit`, Antigravity `replace_file_content` 등 — [runtime_edit_tools.md §1](.agents/core/runtime_edit_tools.md))는 ASCII-only JSON 파싱에 최적화됨. 한글/특수문자 본문을 그대로 넣으면 **실패**할 수 있음 (`JSON parsing failed: Property name must be a string literal`).
+
+**규칙**:
+- 영문/코드 변경 → 세션에 노출된 **부분 수정 도구** 사용 (런타임별 이름·키는 [runtime_edit_tools.md §1](.agents/core/runtime_edit_tools.md))
+- 한글/특수문자 대량 → [runtime_edit_tools.md §4](.agents/core/runtime_edit_tools.md) 터미널 우회
+- 한글 포함 대량 콘텐츠 → `bash`/`Shell` + `cat > file << 'EOF'` (또는 OpenCode `bash`, Antigravity `run_command`)
+- `sed -i ''` (macOS)는 한글과 함께 사용하면 이스케이프 오류 발생 → `python3 -c` 또는 `cat << 'EOF'`로 대체
+- MCP `repo_patch` 노출 시: [SPEC_TECH_repo_mcp_tools.md](docs/specs/technical/SPEC_TECH_repo_mcp_tools.md) (`old_text`/`new_text` snake_case) — 선택, tri-runtime 네이티브와 병행
+
+### 4.2 Test — 메시지 전역 고유성
+
+정적 HTML/JS 페이지에서 `document.querySelector()` / `getByText()`는 **단일 요소만** 찾음. 중복 텍스트가 있으면 오류.
+
+**규칙**:
+- 테스트 message는 고유 식별자 포함 (`"적정"` X → `"상병 S50.000 codeset 1 일치"` O)
+- 중복 텍스트가 있으면 `querySelectorAll()` + 인덱스 또는 `data-testid` 사용 고려
+
+### 4.3 Plan — closeout 실행 순서
+
+`just plan-close`는 다음 순서를 **반드시** 따름.
 
 ```bash
-python tools/mcp_call_wrapper.py \
-  --server user-sequentialthinking \
-  --tool sequentialthinking \
-  --prompt "현재 문제를 단계적으로 분석" \
-  --pretty
+just verify               # 1. 검증 스크립트 실행
+just plan-close           # 2. plan close gate (실제 justfile 레시피만 사용)
 ```
 
-### 9.2 Save-Then-Call Flow
+**규칙**:
+- DoD에 명시된 `just <recipe>`는 실제 justfile에 존재하는지 사전 확인 (`just --list`로 검증)
+- 존재하지 않으면 stub 또는 실제 검증 스크립트로 교체
 
-```bash
-python tools/mcp_call_wrapper.py \
-  --server user-sequentialthinking \
-  --tool sequentialthinking \
-  --prompt "원인 분석 1단계" \
-  --pretty \
-  --output-file .mcp_call.json
-```
+### 4.4 Plan — Conclusion 플레이스홀더 금지
 
-### 9.3 Non-SequentialThinking Rule
+`just plan-lint`는 각 Task의 `Conclusion` 필드를 검증.
 
-`sequentialthinking` 이외 도구는 반드시 `--arguments-json`을 사용한다.
+**규칙**:
+- Conclusion은 최소 **25자 이상**
+- 실제 검증 결과 포함 (파일명, 테스트 수, 명령어 결과)
+- 플레이스홀더 문자열 절대 남기지 않음:
+  - `[판정 — 비개발자용 요약. 검증 결과]` X
+  - `[완료 시 기입]` X
+  - `Task 9.9에서 선행 Task 결과를 근거로 작성한다.` X
+- 예시: `SPEC_ui_billing.md에 청구 준비 점검 패널 요구사항 추가 완료. just docs-ssot-headers PASS.`
 
-```bash
-python tools/mcp_call_wrapper.py \
-  --server user-searxng \
-  --tool searxng_search \
-  --arguments-json '{"query":"cursor mcp"}' \
-  --pretty
-```
+### 4.5 Justfile — DoD 레시피 실존 검증
+
+PLAN 파일의 DoD에 명시된 `just <recipe>`는 실제 justfile에 존재해야 함.
+
+**규칙**:
+- PLAN 작성 시 `just --list`로 레시피 실존 확인
+- 검증 스크립트가 `--check` 플래그를 지원하지 않으면 stub 또는 별도 검증 로직 사용
+
+---
+
+## 5. Reference Index
+
+- **Policy / Core**: `PROJECT_RULES.md`, `.agents/core/`
+- **Registry**: `.agents/registry/RULE_INDEX.md`
+- **Specs**: `docs/specs/technical/`
+
+에이전트 규칙 SSOT는 `PROJECT_RULES.md`, `.agents/core/` 및 `AGENTS.md`입니다.
+
+중복 방지: `.cursor/rules/` 미사용. **`.cursor/commands/*.md`는 workflow pointer만** (본문 SSOT: `.agents/workflows/`). 슬래시·키워드 카탈로그: [WORKFLOW_AND_SKILL_INDEX.md](.agents/registry/WORKFLOW_AND_SKILL_INDEX.md).

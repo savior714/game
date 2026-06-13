@@ -18,13 +18,12 @@
             uv
             ruff
             just
-            nushell
             nodejs
           ];
 
           shellHook = ''
             echo "🚀 Agentic Dev Env Loaded!"
-            echo "Standard tools: uv, ruff, just, nu, nix"
+            echo "Standard tools: uv, ruff, just, nix"
           '';
         };
       });

@@ -78,7 +78,7 @@ tsc 에러: {에러 코드} — {에러 메시지}
 {types-extractor.ts 출력값}
 
 에러 컨텍스트 (±5줄):
-{type-check-slice.ps1 출력값}
+{tsc error-only 출력 — TS_TYPE_VALIDATION.md §5}
 
 요청: 구현 로직 수정 금지.
 타입 호환성만 해결하는 Interface 확장 또는 Type Guard를 제안하라.
@@ -114,5 +114,4 @@ type Result<T> = T extends string ? StringResult
 
 ---
 
-> **참조**: [TS_TYPE_VALIDATION.md](TS_TYPE_VALIDATION.md) | [VIBE_CODING_PROTOCOL.md](VIBE_CODING_PROTOCOL.md)
-> **스크립트**: `scripts/types-extractor.ts` | `scripts/type-check-slice.ps1`
+> **참조**: [TS_TYPE_VALIDATION.md](TS_TYPE_VALIDATION.md) · [AGENTS.md](../AGENTS.md)

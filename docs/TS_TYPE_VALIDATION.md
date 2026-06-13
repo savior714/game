@@ -1,7 +1,7 @@
-# TypeScript Type Validation Protocol — 3-IDE Unified Strategy
+# TypeScript Type Validation Protocol
 
-> **SSOT**: 이 문서는 Antigravity / VSCode / Cursor AI 세 환경에서 동일하게 적용되는
-> TypeScript 타입 검증 비용 최적화 전략의 단일 기준(Single Source of Truth)입니다.
+> **SSOT**: macOS + Cursor/VSCode 환경에서 TypeScript 타입 검증 비용을 줄이는 전략.
+> 터미널·편집 도구 규칙은 [.agents/core/runtime_edit_tools.md](../.agents/core/runtime_edit_tools.md)를 따릅니다.
 >
 > **핵심 원칙**: LLM은 "검증(Validation)"이 아닌 "수정(Fix)"에만 집중시킨다.
 > 컴파일러(`tsc`)가 할 수 있는 일을 LLM 토큰으로 대체하지 않는다.
@@ -140,19 +140,10 @@ export type User = z.infer<typeof UserSchema>;
 
 ## 3. Application: 환경별 구성
 
-### 3-1. Antigravity IDE
+### 3-1. Cursor / 에이전트 (macOS)
 
-`.antigravityrules`에 추가할 내용 → Section 6 참조 (이 문서 하단).
-
-**에이전트 실행 패턴:**
-
-```json
-// ✅ 타입 에러만 추출하는 Antigravity run_command
-{
-  "CommandLine": "powershell -NoProfile -Command \"npx -p typescript tsc --noEmit 2>&1 | Select-String 'error TS' | Select-Object -First 20\"",
-  "Cwd": "c:\\your-project"
-}
-```
+- 타입 검증은 **쉘에서 `tsc` 실행** 후 에러 라인만 컨텍스트에 포함 (§1 Error-Only).
+- 파일 탐색·읽기는 IDE 전용 도구 사용 — [runtime_edit_tools.md](../.agents/core/runtime_edit_tools.md).
 
 ### 3-2. VSCode
 
@@ -173,7 +164,7 @@ export type User = z.infer<typeof UserSchema>;
     {
       "label": "TypeScript: Errors Only (for LLM)",
       "type": "shell",
-      "command": "npx -p typescript tsc --noEmit 2>&1 | findstr /R \"error TS\"",
+      "command": "npx -p typescript tsc --noEmit 2>&1 | grep -E 'error TS[0-9]+' | head -30",
       "group": "build",
       "presentation": { "reveal": "always", "panel": "dedicated" }
     }
@@ -243,49 +234,14 @@ export type User = z.infer<typeof UserSchema>;
 
 ---
 
-## 5. 자동화 스크립트: Error-Slice Extractor
+## 5. Error-Slice (macOS bash)
 
-```powershell
-# scripts/type-check-slice.ps1
-# tsc 에러를 LLM 최소 컨텍스트로 슬라이싱하는 스크립트
-
-param(
-  [string]$ProjectPath = ".",
-  [int]$ContextLines = 5
-)
-
-$errors = powershell -NoProfile -Command "cd '$ProjectPath'; npx -p typescript tsc --noEmit 2>&1"
-$errorLines = $errors | Select-String "error TS\d+"
-
-if ($errorLines.Count -eq 0) {
-  Write-Host "✅ No type errors found." -ForegroundColor Green
-  exit 0
-}
-
-Write-Host "🔴 Type Errors ($($errorLines.Count) found) — Minimal LLM Context:" -ForegroundColor Red
-$errorLines | ForEach-Object { Write-Host $_.Line -ForegroundColor Yellow }
+```bash
+# tsc 에러만 추출 — LLM 컨텍스트용
+npx -p typescript tsc --noEmit 2>&1 | grep -E 'error TS[0-9]+' | head -30
 ```
 
 ---
 
-## 6. `.antigravityrules` 추가 섹션 (복사용)
-
-```
-# 6. TypeScript Type Validation Protocol (Token Optimization)
-# [MANDATORY] LLM MUST NOT perform type checking. tsc is the type checker.
-# - ALWAYS run `npm run type-check` before asking LLM to fix types.
-# - ONLY send: tsc error lines + ±5 surrounding code lines to LLM context.
-# - FORBIDDEN: sending entire .ts files for type analysis.
-# - FORBIDDEN: using `any`, `@ts-ignore`, or type assertions to bypass errors.
-# - Schema-First: Zod schema MUST precede TypeScript interface definitions.
-# - Minimum Context: error code + failing line + direct type import chain (1 level).
-# - Verification: after LLM fix, re-run `npm run type-check` to confirm 0 errors.
-```
-
----
-
-> **참조 문서**: [AI_GUIDELINES.md](../AI_GUIDELINES.md) | [AI_COMMAND_PROTOCOL.md](AI_COMMAND_PROTOCOL.md)
-> **고급 패턴**: [TS_ADVANCED_PATTERNS.md](TS_ADVANCED_PATTERNS.md) — DDD 타입 분리, Symbol Reference, Type Flatten
-> **바이브 코딩**: [VIBE_CODING_PROTOCOL.md](VIBE_CODING_PROTOCOL.md) — Validate-and-Prune, L1/L2/L3, Agent-to-Agent Protocol
-> **관련 스크립트**: `scripts/type-check-slice.ps1` | `scripts/types-extractor.ts`
-> **관련 설정**: `.antigravityrules` §6~§7 | `.cursorrules` §2~§3 | `.vscode/tasks.json`
+> **참조**: [TS_ADVANCED_PATTERNS.md](TS_ADVANCED_PATTERNS.md) · [AGENTS.md](../AGENTS.md) · [.agents/core/runtime_edit_tools.md](../.agents/core/runtime_edit_tools.md)
+> **관련 설정**: `.cursorrules` · `.vscode/tasks.json` (선택)

@@ -51,11 +51,12 @@ commit-gate-hard:
     @git diff --cached --quiet || uv run python scripts/verify/staged_secret_gate.py || { echo "❌ 민감 파일 스테이징 감지"; exit 1; }
     @echo "✅ Hard gate 통과."
 
-# soft 게이트: lint만 (ty pre-existing 99개 제외 — 별도 백로그)
+# soft 게이트: lint + ty (ty.toml에서 EMR 레거시/누락 모듈 제외, --ignore로 json.loads 타입 추론 무시)
 commit-gate-soft:
-    @echo "🔍 Soft commit gate (lint)..."
+    @echo "🔍 Soft commit gate (lint/ty)..."
     @ruff check --fix tests scripts/verify_korean_text.py tools/mcp_call_wrapper.py || { echo "❌ ruff check 실패"; exit 1; }
     @ruff format tests scripts/verify_korean_text.py tools/mcp_call_wrapper.py || { echo "❌ ruff format 실패"; exit 1; }
+    @ty check . --ignore invalid-argument-type --ignore not-subscriptable --ignore unresolved-reference --ignore invalid-return-type --ignore unsupported-operator --ignore no-matching-overload --ignore invalid-assignment --ignore not-iterable --ignore unresolved-attribute || { echo "❌ ty 체크 실패"; exit 1; }
     @echo "✅ Soft gate 통과."
 
 # --- Utility ---

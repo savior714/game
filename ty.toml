@@ -1,0 +1,29 @@
+# ty.toml — ty type checker configuration
+
+[environment]
+# Python 3.12+ API(datetime.UTC)를 지원하기 위해 버전 명시
+python-version = "3.12"
+
+[analysis]
+# EMR 레거시 모듈 — 프로젝트 전환으로 불필요하지만 import는 남겨둠
+# scripts 내부 누락 모듈 — 파일이 존재하지 않음
+allowed-unresolved-imports = [
+    # EMR 레거시
+    "sqlalchemy",
+    "sqlalchemy.ext.asyncio",
+    "psycopg",
+    "fastapi.testclient",
+    "src.infrastructure.config.settings",
+    "src.infrastructure.persistence.schema",
+    "src.shared.fhir_compatibility",
+    "src.shared.fhir_validator",
+    "src.api.app",
+    "scripts.observability.api_errors",
+
+    # scripts 내부 누락 모듈
+    "yaml",
+    "scripts.plan_lifecycle.roadmap_product_allowlist",
+    "scripts.docs.plan_yaml_frontmatter",
+    "normalize_archive_tool_names",
+    "requests",
+]

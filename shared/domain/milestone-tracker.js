@@ -7,23 +7,23 @@ const MilestoneTracker = (() => {
   const STORAGE_KEY = 'aiden_milestones';
 
   const STREAK_MILESTONES = [
-    { key: 'streak_3', threshold: 3, message: '3연속! 대단해! \uD83D\uDD25', gems: 0 },
-    { key: 'streak_5', threshold: 5, message: '5연속! \uBBC0\uC9D1 \uD655\uC81C \uC6CC\uAE30! \uD83D\uDEE1\uD83C\uDFFB', gems: 0 },
-    { key: 'streak_10', threshold: 10, message: '10연속! \ubb34\uC11C\uC6B0! \uD83D\uDE31\uD83C\uDFFB', gems: 0 },
-    { key: 'streak_15', threshold: 15, message: '15연속! \ub85C\uCF2B \ubc30\uC0AC \uC784\uAE35! \uD83D\uDE80', gems: 0 },
+    { key: 'streak_3', threshold: 3, message: '3연속! 대단해! 🔥', gems: 0 },
+    { key: 'streak_5', threshold: 5, message: '5연속! 넉줄 확인 무기! 🛡️', gems: 0 },
+    { key: 'streak_10', threshold: 10, message: '10연속! 무서워! 😱', gems: 0 },
+    { key: 'streak_15', threshold: 15, message: '15연속! 로켓 발사 임무! 🚀', gems: 0 },
   ];
 
   const SESSION_MILESTONES = [
-    { key: 'session_3', threshold: 3, message: '\uc624\ub298 3\ubb38\ubb38 \ub9de\uD588\uc5B4! \uD4BC\uD130', gems: 0 },
-    { key: 'session_5', threshold: 5, message: '\uC138\uC158 \UBC30\uBD80 \uC774\uC0C1! 5\ubb38\ubb38! \uD83C\uDF1F', gems: 1 },
-    { key: 'session_10', threshold: 10, message: '\uc644\ubcbd \uC138\uC158! 10\ubb38\ubb38 \uC804\uBD80\uC815\uB2F9! \uD83D\uDCAF', gems: 1 },
-    { key: 'session_20', threshold: 20, message: '20\ubb38\ubb38?!\uc9c4\uc9c0 \uce74\uC784\uCC98! \uD83C\uDFC6', gems: 1 },
+    { key: 'session_3', threshold: 3, message: '오늘 3문제 맞혔어! 미션', gems: 0 },
+    { key: 'session_5', threshold: 5, message: '세션 부분 이상! 5문제! 🌟', gems: 1 },
+    { key: 'session_10', threshold: 10, message: '완벽 세션! 10문제 전부 정답! 💯', gems: 1 },
+    { key: 'session_20', threshold: 20, message: '20문제?! 진지한 게임처! 🏆', gems: 1 },
   ];
 
   const FIRST_MILESTONES = [
-    { key: 'first_answer', message: '\ucc98\ubb38 \uC815\uB2F9! \uD64D\uCE20\uD558! \uD83C\uDF89', gems: 0 },
-    { key: 'first_subject_complete', message: '\ucc98\ubb38 \uACFC\ubb38 \uc644\ub8CC! \uD83C\uDF8A', gems: 0 },
-    { key: 'first_rocket', message: '\ucc98\ubb38 \ub85C\uCF2B \ubc30\uC0AC! \uD83D\uDE80\u2728', gems: 0 },
+    { key: 'first_answer', message: '처음 정답! 흥나하! 🎉', gems: 0 },
+    { key: 'first_subject_complete', message: '처음 과제 완료! 🎊', gems: 0 },
+    { key: 'first_rocket', message: '처음 로켓 발사! 🚀✨', gems: 0 },
   ];
 
   let state;

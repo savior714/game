@@ -134,7 +134,6 @@ class TestPlanLintCliWarnings(unittest.TestCase):
                     "python",
                     str(script),
                     str(plan_path),
-                    "--skip-linear-ensure",
                 ],
                 cwd=str(repo_root),
                 capture_output=True,

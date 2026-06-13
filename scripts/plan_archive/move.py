@@ -52,7 +52,6 @@ def cmd_archive(
     names: list[str],
     dry_run: bool,
     skip_unified_sync: bool,
-    skip_linear_sync: bool = False,
 ) -> int:
     ARCHIVE.mkdir(parents=True, exist_ok=True)
     path_map: dict[str, str] = {}

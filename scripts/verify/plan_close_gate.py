@@ -65,8 +65,6 @@ def is_conclusion_placeholder(value: str) -> bool:
 PLACEHOLDER = "[완료 시 기입]"
 KOREAN_PLACEHOLDER = "[해결 건수/잔여 건수 요약]"
 
-LINEAR_SYNC_ENGINE = "scripts/linear_sync/sync_engine.py"
-
 
 @dataclass
 class VerifyResult:
@@ -324,101 +322,6 @@ def run_verify_commands(repo_root: Path, specs: list[tuple[str, str]]) -> list[V
     return results
 
 
-def check_linear_sync_status(repo_root: Path, plan_path: Path) -> list[str]:
-    """Check if the plan's status is synchronized with Linear.
-    Uses sync_engine.py --dry-run to detect pending changes.
-    """
-    sync_script = repo_root / LINEAR_SYNC_ENGINE
-    if not sync_script.exists():
-        return []  # Sync engine not found, skip
-
-    # Run dry-run sync for the specific plan
-    try:
-        proc = subprocess.run(
-            ["python3", str(sync_script), "--plan", str(plan_path), "--dry-run"],
-            cwd=str(repo_root),
-            text=True,
-            capture_output=True,
-            check=False,
-        )
-    except Exception as e:
-        return [f"Linear sync check failed to execute: {e}"]
-
-    output = proc.stdout + proc.stderr
-    issues: list[str] = []
-
-    # Only block on actual state mismatches, not on informational comment updates.
-    # "Would update comment" or "Would add comment" means conclusions just need syncing — normal workflow.
-    # We only care about status/state drift (e.g., task marked done locally but Linear shows todo).
-    has_state_mismatch = False
-    for line in output.splitlines():
-        stripped = line.strip()
-        if "[Dry-Run] Would update comment" in stripped or "Would add comment" in stripped:
-            continue  # Informational — conclusions just need syncing, not a blocker
-        if "[Dry-Run] Would update" in stripped and "comment" not in stripped:
-            # Parse the fields being updated to distinguish stale from real state drift.
-            # Priority/labelIds-only updates are likely caused by Linear API eventual consistency
-            # (mutation → immediate read returns cached/stale values). Real blockers involve
-            # status/state changes that indicate actual local-Linear mismatch.
-            match = re.search(r"\[Dry-Run\] Would update \S+: ({.+})", stripped)
-            if match:
-                fields_str = match.group(1)
-                try:
-                    import json as _json
-                    fields = _json.loads(fields_str.replace("'", '"'))
-                    allowed_stale_fields = {"priority", "labelIds"}
-                    if set(fields.keys()).issubset(allowed_stale_fields):
-                        continue  # Treat as stale — not a real state mismatch
-                except (ValueError, TypeError):
-                    pass  # Parse failure → conservative: treat as mismatch
-            has_state_mismatch = True
-
-    if has_state_mismatch:
-        issues.append("Linear synchronization required: local changes are not yet pushed to Linear.")
-
-    if proc.returncode != 0 and "LINEAR_API_KEY missing" not in output:
-        # If it failed for reasons other than missing key, report it
-        issues.append(f"Linear sync check exited with error ({proc.returncode})")
-
-    return issues
-
-
-def check_linear_references(repo_root: Path, plan_path: Path | None = None) -> list[str]:
-    """: Blueprint 의 Linear-Issue 참조가 실제 Linear 에 존재하는지 검증.
-
-    plan-close 전에 linear-validate 를 실행하고, 실패하면 gate 를 차단한다.
-    plan_path 가 제공되면 해당 plan만 검증 (전체 스캔 방지).
-    """
-    cmd = [
-        sys.executable,
-        str(repo_root / "scripts" / "verify" / "linear_validate.py"),
-    ]
-    if plan_path:
-        cmd.extend(["--plan", str(plan_path)])
-    try:
-        proc = subprocess.run(
-            cmd,
-            cwd=str(repo_root),
-            capture_output=True,
-            text=True,
-            timeout=60,
-        )
-    except subprocess.TimeoutExpired:
-        return ["Linear reference validation timed out (>60s)"]
-    except FileNotFoundError:
-        return ["linear_validate.py not found — skipping  check"]
-
-    if proc.returncode != 0:
-        # linear-validate 가 문제를 발견하면 plan-close 차단
-        output = (proc.stdout + proc.stderr).strip()
-        # "❌ N 개 문제 발견" 라인에서 숫자 추출
-        m = re.search(r"❌\s*(\d+) 개 문제 발견", output)
-        count = int(m.group(1)) if m else 0
-        return [f": {count} Linear-Issue 참조가 Linear 에 없음 — plan-close 차단"]
-
-    return []
-
-
 def write_report(path: Path, *, plan: str, issues: list[str], verify_results: list[VerifyResult]) -> None:
     payload = {
         "plan": plan,
@@ -452,11 +355,6 @@ def main() -> int:
         help="Output report path (default: artifacts/verify/verify-last-result.json)",
     )
     parser.add_argument(
-        "--skip-linear",
-        action="store_true",
-        help="Skip Linear synchronization check",
-    )
-    parser.add_argument(
         "--skip-tech-goal-check",
         action="store_true",
         help="Skip plan technical goal implementation check",
@@ -485,11 +383,6 @@ def main() -> int:
     # : Plan 의 기술적 목표와 실제 코드 구현 불일치 검증
     if not args.skip_tech_goal_check:
         issues.extend(check_plan_technical_goals_implementation(repo_root, plan_path))
-
-    if not args.skip_linear:
-        issues.extend(check_linear_sync_status(repo_root, plan_path))
-        # : Linear-Issue 참조 유효성 검증 (plan-close 차단 게이트)
-        issues.extend(check_linear_references(repo_root, plan_path))
 
     verify_results: list[VerifyResult] = []
     verify_arg = args.verify
@@ -523,8 +416,7 @@ def main() -> int:
         print(
             "hint: (1) 각 Task 의 Verify 직후 `- **Conclusion**:` 기입, "
             "(2) `[완료 시 기입]` 및 `(Roll-up: … 기입.)` placeholder 제거, "
-            "(3) Closeout Task 전 `## 🔁 Conclusion & Summary` Roll-up 1문단 작성, "
-            "(4) `just linear-sync`를 실행하여 리니어와 상태를 동기화한 뒤 다시 시도하세요."
+            "(3) Closeout Task 전 `## 🔁 Conclusion & Summary` Roll-up 1문단 작성."
         )
         return 1
 

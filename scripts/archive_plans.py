@@ -9,7 +9,6 @@ Usage:
   python3 scripts/archive_plans.py archive --dry-run PLAN.md
 
   python3 scripts/archive_plans.py archive --skip-unified-sync PLAN.md
-  python3 scripts/archive_plans.py archive --skip-linear-sync PLAN.md
   python3 scripts/archive_plans.py unarchive PLAN.md   # archive -> plans root
   python3 scripts/archive_plans.py sweep [--dry-run]   # archive 루트에 남은 *.md 재분류
   python3 scripts/archive_plans.py repair [--dry-run] # 끊긴 docs/plans/*.md 참조를 SSOT 경로로 일괄 치환

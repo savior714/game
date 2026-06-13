@@ -55,7 +55,7 @@ const GrowthVisualizer = (() => {
     if (newLevel > oldLevel && !state.levelUpShown) {
       const oldLabel = DIFF_LABELS[oldLevel] || `Lv.${oldLevel}`;
       const newLabel = DIFF_LABELS[newLevel] || `Lv.${newLevel}`;
-      const message = `${subject} ${oldLabel} \u2192 ${newLabel} \uc624\ub798! \uD83C\uDF89`;
+      const message = `${subject} ${oldLabel} → ${newLabel} 올라! 🎉`;
       showToast(message);
       state.levelUpShown = true;
       state.lastLevelUpSubject = subject;
@@ -118,7 +118,7 @@ const GrowthVisualizer = (() => {
 
     const label = document.createElement('span');
     label.className = 'proficiency-label';
-    label.textContent = `\uD83C\uDFAF ${proficiency}%`;
+    label.textContent = `🎯 ${proficiency}%`;
     label.style.cssText = 'position:absolute;right:8px;top:-2px;font-size:0.75rem;font-weight:bold;color:#64748b;';
     container.style.position = 'relative';
     container.appendChild(label);

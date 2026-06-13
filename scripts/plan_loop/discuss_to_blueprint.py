@@ -120,20 +120,18 @@ def generate_blueprint_skeleton(note: DiscussNote) -> str:
     # staff_변화, 확인할_것는 골격에서 고정 텍스트로 사용됨
 
     # Blueprint 문서 메타
-    linear_issue = "TEM-279"
     template_ref = "TEMPLATE_blueprint.md"
     anti_pattern_ref = "ANTI_PATTERN_FORMAT.md"
 
     skeleton = f"""<!-- Language: ko -->
 
-# 🗺️ Project Blueprint: {note.title} ({linear_issue})
+# 🗺️ Project Blueprint: {note.title}
 
 ## 문서 메타
 - **Last Verified**: {today} | **Tested Version**: N/A
 - **Reference**: [DISCUSS_{note.slug}.md](../discussions/DISCUSS_{note.slug}.md)
 - **SSOT Check**: {template_ref} + REQUIRED_SECTIONS
 - **Project Status Link**: [ROADMAP.md](../../ROADMAP.md) §트랙3
-- **Linear-Issue**: {linear_issue}
 - **Priority**: 1
 - **Labels**: tooling
 - **Architectural Goal**: DISCUSS → Blueprint 골격 자동 생성
@@ -243,7 +241,7 @@ def main():
 ### Phase 0 — 핵심 로직
 
 #### Task 0.1: DISCUSS 파서와 Blueprint 골격 생성 함수 구현 [Unit: Atomic]
-- Task-ID: [DTB-001] | Linear-Issue: {linear_issue} | Status: todo | Priority: 1 | Labels: tooling | RetryPolicy: none
+- Task-ID: [DTB-001] | Status: todo | Priority: 1 | Labels: tooling | RetryPolicy: none
 - **Pre-read**: 이 Task만 — `write`/`patch` 전 **전부** Read
   1. `[rule]` `.agents/domains/infra/seeding.md`
   2. `[script]` `scripts/plan_loop/discuss_to_blueprint.py`

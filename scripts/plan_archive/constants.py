@@ -25,7 +25,6 @@ CHECK_SKIP_PATH_PARTS = (
     ".agents/workflows/archive.md",
     ".agents/workflows/go.md",
     ".agents/workflows/sync.md",
-    "scripts/linear_sync/",
     "scripts/agent/auto_load_preread.py",
 )
 

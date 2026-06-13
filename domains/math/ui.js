@@ -27,7 +27,7 @@ const answerFlowCore = QuizUICore.createAnswerFlowCore({
     score++;
     document.getElementById('q-score').textContent = score;
     const fb = document.getElementById('feedback');
-    fb.textContent = ['\uc798\ud588\uc5b4\uc694! \uD83C\uDF89', '\ub9de\uc558\uc5b4\uc694! \u2B50', '\uc644\ubcbd\ud574\uc694! \uD83C\uDF1F', '\ud6cc\ub96d\ud574\uc694! \uD83D\uDC4F'][Math.floor(Math.random()*4)];
+    fb.textContent = ['잘했어요! 🎉', '맞았어요! ⭐', '완벽해요! 🌟', '훌륭해요! 👏'][Math.floor(Math.random()*4)];
     fb.className   = 'feedback-correct';
     playCorrect();
     spawnConfetti();
@@ -35,7 +35,7 @@ const answerFlowCore = QuizUICore.createAnswerFlowCore({
   onWrong: ({ button, answer: currentAnswer }) => {
     button.classList.add('wrong');
     const fb = document.getElementById('feedback');
-    fb.textContent = `\uc815\ub2f5\uc740 ${currentAnswer}\uc774\uc5d0\uc694! \ub2e4\uc2dc \ud574\ubd10\uc694 \uD83D\uDE0A`;
+    fb.textContent = `정답은 ${currentAnswer}이에요! 다시 해봐요 😊`;
     fb.className   = 'feedback-wrong';
     playWrong();
   },
@@ -68,7 +68,7 @@ function timeOut() {
     if (parseInt(b.textContent) === answer) b.classList.add('correct');
   });
   const fb = document.getElementById('feedback');
-  fb.textContent = `\u23F0 \uc2dc\uac04 \ucd08\uacfc! \uc815\ub2f5\uc740 ${answer}\uc774\uc5d0\uc694!`;
+  fb.textContent = `⏰ 시간 초과! 정답은 ${answer}이에요!`;
   fb.className   = 'feedback-wrong';
   document.getElementById('next-btn').style.display = 'inline-block';
 }
@@ -104,9 +104,9 @@ function showResult() {
 
   const pct = score / TOTAL;
   let stars, title, msg;
-  if (pct === 1)       { stars = '\u2B50\u2B50\u2B50'; title = '\uc644\ubcbd\ud574\uc694!';        msg = `10\ubb38\ubb38 \ubaa8\ub450 \ub9de\ucccb\uc5b4\uc694! \uc815\ub9d0 \ub300\ub2e8\ud574\uc694! \uD83C\uDF8A`; }
-  else if (pct >= 0.7) { stars = '\u2B50\u2B50';  title = '\uc798\ud588\uc5b4\uc694!';        msg = `10\ubb38\ubb38 \uc911 ${score}\uac1c \ub9de\ucccb\uc5b4\uc694! \ucd5c\uace0\uc608\uc694! \uD83D\uDE04`; }
-  else                 { stars = '\u2B50';    title = '\uc870\uae08 \ub354 \uc5f0\uc2b5\ud574\uc694!'; msg = `10\ubb38\ubb38 \uc911 ${score}\uac1c \ub9de\ucccb\uc5b4\uc694. \ub2e4\uc2dc \ud574\ubd10\uc694! \uD83D\uDCAA`; }
+  if (pct === 1)       { stars = '⭐⭐⭐'; title = '완벽해요!';        msg = `10문제 모두 맞혔어요! 정말 대단해요! 🎊`; }
+  else if (pct >= 0.7) { stars = '⭐⭐';  title = '잘했어요!';        msg = `10문제 중 ${score}개 맞혔어요! 최고예요! 😄`; }
+  else                 { stars = '⭐';    title = '조금 더 연습해요!'; msg = `10문제 중 ${score}개 맞혔어요. 다시 해봐요! 💪`; }
   document.getElementById('stars').textContent        = stars;
   document.getElementById('result-title').textContent = title;
   document.getElementById('result-msg').textContent   = msg;
@@ -149,7 +149,7 @@ function onModalBackdrop(e) {
 }
 
 function renderStatsTable() {
-  const OP_LABELS = { '+': '\ub367\uc148 (+)', '-': '\ubebc\uc148 (-)', '\xD7': '\uacf1\uc148 (\xD7)' };
+  const OP_LABELS = { '+': '덧셈 (+)', '-': '뺼셈 (-)', '\xD7': '곱셈 (\xD7)' };
   const tbody = document.getElementById('stats-tbody');
   tbody.innerHTML = '';
 
@@ -163,12 +163,12 @@ function renderStatsTable() {
     });
 
     const acc     = totalAttempts > 0 ? Math.round(totalCorrect / totalAttempts * 100) + '%' : '-';
-    const avgT    = totalAttempts > 0 ? (totalTime / totalAttempts).toFixed(1) + '\ucd08' : '-';
+    const avgT    = totalAttempts > 0 ? (totalTime / totalAttempts).toFixed(1) + '초' : '-';
     const hasData = totalAttempts >= MIN_DATA;
     const level   = getBaseDiffLevel(op);
     const badge   = hasData
       ? `<span class="diff-badge" style="background:${DIFF_COLORS[level]}">${DIFF_LABELS[level]}</span>`
-      : `<span class="diff-badge" style="background:#ccc">\ub370\uc774\ud130 \ubd80\uc871</span>`;
+      : `<span class="diff-badge" style="background:#ccc">데이터 부족</span>`;
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -183,14 +183,14 @@ function renderStatsTable() {
 }
 
 function confirmResetStats() {
-  if (confirm('\ub204\uc801 \uae30\ub85d\uc744 \ubaa8\ub450 \uc9c0\uc6b8\uae4c\uc694?')) resetStats();
+  if (confirm('누적 기록을 모두 지울까요?')) resetStats();
 }
 
 /* ═══════════════════════════════════
    색종이
 ═══════════════════════════════════ */
 function spawnConfetti() {
-  const items = ['\uD83C\uDF89','\uD83C\uDF1F','\u2728','\uD83C\uDF8A','\u2B50','\uD83C\uDF6C','\uD83C\uDF88'];
+  const items = ['🎉','🌟','✨','🎊','⭐','🍬','🎈'];
   for (let i = 0; i < 8; i++) {
     setTimeout(() => {
       const el = document.createElement('div');

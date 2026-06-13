@@ -33,13 +33,7 @@ def build_footer(
         "2. `just sync --check` — code lock + spec alignment",
     ]
     step_no = 3
-    plan_touched = any(
-        p.replace("\\", "/").startswith("docs/plans/PLAN_") for p in (medium_paths or [])
-    )
-    if plan_touched:
-        steps.append(f"{step_no}. `just linear-dedup` — Blueprint↔Linear 중복 이슈 점검")
-        step_no += 1
-        
+    
     product_plan_touched = False
     for p in (medium_paths or []):
         p_norm = p.replace("\\", "/")

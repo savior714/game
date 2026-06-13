@@ -39,11 +39,6 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="아카이브 후 just sync --check(코드 락·스펙 정합) 생략. 기본은 이동·참조 갱신 후 반드시 실행.",
     )
-    p_ar.add_argument(
-        "--skip-linear-sync",
-        action="store_true",
-        help="이동 전 sync_engine --strict 생략(오프라인·Linear 이슈 미존재 시).",
-    )
 
     p_un = sub.add_parser("unarchive", help="archive -> plans 루트 복귀 + 참조 역갱신")
     p_un.add_argument("names", nargs="+", help="플랜 파일명")
@@ -85,7 +80,6 @@ def dispatch(args: argparse.Namespace) -> int:
             args.names,
             dry_run=args.dry_run,
             skip_unified_sync=args.skip_unified_sync,
-            skip_linear_sync=args.skip_linear_sync,
         )
     if args.cmd == "unarchive":
         return cmd_unarchive(args.names, dry_run=args.dry_run)

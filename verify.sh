@@ -96,8 +96,20 @@ run_tests() {
     fi
 }
 
+run_korean_check() {
+    echo -e "\n\033[0;36m=== Korean Text Check (Quantization Artifacts) ===\033[0m"
+    if command -v uv >/dev/null 2>&1; then
+        uv run python scripts/verify_korean_js.py --all
+    elif command -v python3 >/dev/null 2>&1; then
+        PYTHONPATH=. python3 scripts/verify_korean_js.py --all
+    else
+        echo -e "\033[0;33m[WARN] python/uv not found; skipping Korean check\033[0m"
+    fi
+}
+
 tdd_gate_check
 run_lint
+run_korean_check
 run_tests
 
 echo -e "\n\033[0;32m✅ AidenGame verification complete.\033[0m"

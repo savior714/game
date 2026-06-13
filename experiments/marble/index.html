@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>마블 머지!</title>
+  <link rel="stylesheet" href="marble.css">
+</head>
+<body>
+
+<div id="app">
+  <div id="mb-header">
+    <span>🔮 마블 머지!</span>
+    <span>점수: <strong id="mb-score-val">0</strong></span>
+    <button id="mb-close-btn" onclick="mbClose()">✕</button>
+  </div>
+  <canvas id="marble-canvas" width="320" height="480"
+    onclick="onMbInput(event)"
+    onmousemove="onMbMove(event)"
+    ontouchstart="onMbInput(event)"
+    ontouchmove="onMbMove(event)"></canvas>
+  <div id="marble-over">
+    <h3>게임 종료!</h3>
+    <p>점수: <strong id="mb-final">0</strong></p>
+    <button class="mb-btn mb-btn-primary" onclick="mbClose()">닫기</button>
+  </div>
+</div>
+
+<script src="marble.js"></script>
+</body>
+</html>

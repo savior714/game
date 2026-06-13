@@ -1,0 +1,853 @@
+const THREE_MODULE_URL = "https://unpkg.com/three@0.165.0/build/three.module.js";
+
+const WEAPON_TIERS = [
+  { id: "stone", unlockScore: 0, damage: 1, cooldownMs: 700, projectileSpeed: 18, projectileSize: 0.28, label: "STONE" },
+  { id: "spear", unlockScore: 50, damage: 1, cooldownMs: 500, projectileSpeed: 25, projectileSize: 0.16, label: "SPEAR" },
+  { id: "gun", unlockScore: 150, damage: 1, cooldownMs: 150, projectileSpeed: 45, projectileSize: 0.12, label: "GUN" },
+];
+
+const DIFFICULTY_WAVE_TABLE = [
+  { score: 0, multiplier: 0.82 },    // early relief
+  { score: 30, multiplier: 1.0 },    // normal baseline
+  { score: 90, multiplier: 1.22 },   // tension rise
+  { score: 150, multiplier: 0.97 },  // gun unlock recovery
+  { score: 240, multiplier: 1.28 },  // late pressure
+  { score: 360, multiplier: 1.45 },  // endgame squeeze
+];
+
+const ARENA_LIMIT = 24;
+const PLAYER_BASE_SPEED = 8;
+const PLAYER_SPRINT_MULTIPLIER = 1.6;
+const DEFAULT_ENEMY_BASE_SPEED = 2.4;
+const DEFAULT_ENEMY_SPEED_SCALE_WITH_SCORE = 0.001;
+const ENEMY_BASE_SPEED = DEFAULT_ENEMY_BASE_SPEED;
+const ENEMY_SPEED_SCALE_WITH_SCORE = DEFAULT_ENEMY_SPEED_SCALE_WITH_SCORE;
+const ENEMY_START_SPEED_RATIO = 0.72;
+const ENEMY_HIT_RADIUS = 1.25;
+const ENEMY_CATCH_RADIUS = 1.4;
+const ENEMY_MAX_HEALTH = 50;
+const PROJECTILE_LIFETIME = 2.6;
+const PROJECTILE_SPAWN_OFFSET = 1.25;
+const AUTO_FIRE_RANGE = 22;
+const CAMERA_FOLLOW_DISTANCE_NEAR = 8.8;
+const CAMERA_FOLLOW_DISTANCE_FAR = 12.8;
+const CAMERA_HEIGHT_NEAR = 8.6;
+const CAMERA_HEIGHT_FAR = 10.4;
+const CAMERA_DYNAMIC_ZOOM_DISTANCE = 26;
+const CAMERA_MIN_FOCUS_DISTANCE = 9.5;
+
+const canvas = document.getElementById("dino-escape-canvas");
+const scoreEl = document.getElementById("dino-score");
+const currentWeaponEl = document.getElementById("dino-current-weapon");
+const nextUnlockEl = document.getElementById("dino-next-unlock");
+const nextProgressFillEl = document.getElementById("dino-next-progress-fill");
+const enemyHealthFillEl = document.getElementById("dino-enemy-health-fill");
+const enemyHealthLabelEl = document.getElementById("dino-enemy-health-label");
+const statusEl = document.getElementById("dino-status");
+const restartButton = document.getElementById("dino-restart-button");
+const hitFlashEl = document.getElementById("dino-hit-flash");
+const unlockToastEl = document.getElementById("dino-unlock-toast");
+const debugMultiplierEl = document.getElementById("dino-debug-multiplier");
+const debugEnemySpeedEl = document.getElementById("dino-debug-enemy-speed");
+const touchControls = document.getElementById("dino-touch-controls");
+const touchSprintButton = document.getElementById("dino-touch-sprint");
+const enemyBaseSpeedInput = document.getElementById("dino-enemy-base-speed-input");
+const enemyAccelInput = document.getElementById("dino-enemy-accel-input");
+
+if (
+  !canvas ||
+  !scoreEl ||
+  !currentWeaponEl ||
+  !nextUnlockEl ||
+  !nextProgressFillEl ||
+  !enemyHealthFillEl ||
+  !enemyHealthLabelEl ||
+  !statusEl ||
+  !restartButton ||
+  !hitFlashEl ||
+  !unlockToastEl ||
+  !debugMultiplierEl ||
+  !debugEnemySpeedEl ||
+  !touchControls ||
+  !touchSprintButton ||
+  !enemyBaseSpeedInput ||
+  !enemyAccelInput
+) {
+  throw new Error("dino-escape page is missing required elements.");
+}
+
+const chaseSettings = {
+  baseSpeed: ENEMY_BASE_SPEED,
+  speedScaleWithScore: ENEMY_SPEED_SCALE_WITH_SCORE,
+};
+
+function clampNumber(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function syncChaseSettingsFromControls() {
+  const parsedBase = Number.parseFloat(enemyBaseSpeedInput.value);
+  const parsedAccel = Number.parseFloat(enemyAccelInput.value);
+  chaseSettings.baseSpeed = clampNumber(
+    Number.isFinite(parsedBase) ? parsedBase : ENEMY_BASE_SPEED,
+    0.8,
+    5
+  );
+  chaseSettings.speedScaleWithScore = clampNumber(
+    Number.isFinite(parsedAccel) ? parsedAccel : ENEMY_SPEED_SCALE_WITH_SCORE,
+    0,
+    0.01
+  );
+}
+
+enemyBaseSpeedInput.addEventListener("input", () => {
+  syncChaseSettingsFromControls();
+});
+enemyAccelInput.addEventListener("input", () => {
+  syncChaseSettingsFromControls();
+});
+syncChaseSettingsFromControls();
+
+function vec3(x = 0, y = 0, z = 0) {
+  return { x, y, z };
+}
+
+function length2d(vector) {
+  return Math.hypot(vector.x, vector.z);
+}
+
+function normalize2d(vector) {
+  const len = Math.max(0.0001, length2d(vector));
+  return vec3(vector.x / len, 0, vector.z / len);
+}
+
+function distance2d(a, b) {
+  return Math.hypot(a.x - b.x, a.z - b.z);
+}
+
+function clampToArena(position) {
+  return vec3(
+    Math.max(-ARENA_LIMIT, Math.min(ARENA_LIMIT, position.x)),
+    0,
+    Math.max(-ARENA_LIMIT, Math.min(ARENA_LIMIT, position.z))
+  );
+}
+
+function cloneVec3(value) {
+  return vec3(value.x, value.y, value.z);
+}
+
+function createInitialGameState() {
+  return {
+    running: true,
+    score: 0,
+    level: 1,
+    player: {
+      position: vec3(0, 0, 0),
+      velocity: vec3(0, 0, 0),
+      facing: vec3(0, 0, 1),
+      speedBonusMultiplier: 1,
+      currentWeapon: "stone",
+      lastFireTime: -9999,
+    },
+    enemy: {
+      position: vec3(-16, 0, -16),
+      velocity: vec3(0, 0, 0),
+      speed: ENEMY_BASE_SPEED,
+      health: ENEMY_MAX_HEALTH,
+      aggression: 0,
+    },
+    projectiles: [],
+  };
+}
+
+function getCurrentWeapon(score) {
+  let selected = WEAPON_TIERS[0];
+  for (const tier of WEAPON_TIERS) {
+    if (score >= tier.unlockScore) {
+      selected = tier;
+    }
+  }
+  return selected;
+}
+
+function getNextWeapon(score) {
+  return WEAPON_TIERS.find((tier) => score < tier.unlockScore) ?? null;
+}
+
+function getDifficultyMultiplier(score) {
+  const normalizedScore = Math.max(0, score);
+  let lower = DIFFICULTY_WAVE_TABLE[0];
+  let upper = DIFFICULTY_WAVE_TABLE[DIFFICULTY_WAVE_TABLE.length - 1];
+
+  for (let i = 0; i < DIFFICULTY_WAVE_TABLE.length - 1; i += 1) {
+    const current = DIFFICULTY_WAVE_TABLE[i];
+    const next = DIFFICULTY_WAVE_TABLE[i + 1];
+    if (normalizedScore >= current.score && normalizedScore <= next.score) {
+      lower = current;
+      upper = next;
+      break;
+    }
+  }
+
+  if (normalizedScore <= lower.score) {
+    return lower.multiplier;
+  }
+  if (normalizedScore >= upper.score) {
+    return upper.multiplier;
+  }
+
+  const t = (normalizedScore - lower.score) / Math.max(1, upper.score - lower.score);
+  return lower.multiplier + (upper.multiplier - lower.multiplier) * t;
+}
+
+const inputState = {
+  moveX: 0,
+  moveZ: 0,
+  sprint: false,
+};
+
+const keyState = new Set();
+const touchState = {
+  up: false,
+  left: false,
+  down: false,
+  right: false,
+  sprint: false,
+};
+const touchDragState = {
+  startX: 0,
+  startY: 0,
+};
+const touchMoveVector = {
+  x: 0,
+  z: 0,
+};
+
+function clearTouchDirection() {
+  touchState.up = false;
+  touchState.left = false;
+  touchState.down = false;
+  touchState.right = false;
+  touchMoveVector.x = 0;
+  touchMoveVector.z = 0;
+}
+
+function updateTouchDirectionFromPointer(clientX, clientY) {
+  const dx = clientX - touchDragState.startX;
+  const dy = clientY - touchDragState.startY;
+  const bounds = canvas.getBoundingClientRect();
+  const deadZone = Math.max(12, Math.min(bounds.width, bounds.height) * 0.06);
+  const touchRadius = Math.max(24, Math.min(bounds.width, bounds.height) * 0.22);
+  const deadZoneRatio = deadZone / touchRadius;
+  const magnitude = Math.hypot(dx, dy);
+  const clampedMagnitude = Math.min(magnitude, touchRadius);
+  const normalizedMagnitude = clampedMagnitude / touchRadius;
+  const safeMagnitude = Math.max(0.0001, magnitude);
+
+  clearTouchDirection();
+
+  if (normalizedMagnitude <= deadZoneRatio) {
+    return;
+  }
+
+  // Scaled radial dead zone: smooth ramp after dead zone.
+  const scaledStrength = (normalizedMagnitude - deadZoneRatio) / (1 - deadZoneRatio);
+  touchMoveVector.x = (dx / safeMagnitude) * scaledStrength;
+  touchMoveVector.z = (dy / safeMagnitude) * scaledStrength;
+
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    touchState.right = dx > 0;
+    touchState.left = dx < 0;
+    return;
+  }
+  touchState.down = dy > 0;
+  touchState.up = dy < 0;
+}
+
+let activeMovePointerId = null;
+canvas.style.touchAction = "none";
+canvas.addEventListener("pointerdown", (event) => {
+  if (event.pointerType === "mouse") {
+    return;
+  }
+  activeMovePointerId = event.pointerId;
+  touchDragState.startX = event.clientX;
+  touchDragState.startY = event.clientY;
+  updateTouchDirectionFromPointer(event.clientX, event.clientY);
+  event.preventDefault();
+});
+canvas.addEventListener("pointermove", (event) => {
+  if (event.pointerId !== activeMovePointerId) {
+    return;
+  }
+  updateTouchDirectionFromPointer(event.clientX, event.clientY);
+  event.preventDefault();
+});
+canvas.addEventListener("pointerup", (event) => {
+  if (event.pointerId !== activeMovePointerId) {
+    return;
+  }
+  activeMovePointerId = null;
+  touchDragState.startX = 0;
+  touchDragState.startY = 0;
+  clearTouchDirection();
+});
+canvas.addEventListener("pointercancel", (event) => {
+  if (event.pointerId !== activeMovePointerId) {
+    return;
+  }
+  activeMovePointerId = null;
+  touchDragState.startX = 0;
+  touchDragState.startY = 0;
+  clearTouchDirection();
+});
+
+const setSprintPressed = (pressed) => {
+  touchState.sprint = pressed;
+  touchSprintButton.classList.toggle("pressed", pressed);
+};
+touchSprintButton.addEventListener("pointerdown", (event) => {
+  event.preventDefault();
+  setSprintPressed(true);
+});
+touchSprintButton.addEventListener("pointerup", () => {
+  setSprintPressed(false);
+});
+touchSprintButton.addEventListener("pointercancel", () => {
+  setSprintPressed(false);
+});
+touchSprintButton.addEventListener("pointerleave", () => {
+  setSprintPressed(false);
+});
+
+window.addEventListener("keydown", (event) => {
+  keyState.add(event.code);
+});
+window.addEventListener("keyup", (event) => {
+  keyState.delete(event.code);
+});
+function readInput() {
+  const x = (keyState.has("KeyD") ? 1 : 0) - (keyState.has("KeyA") ? 1 : 0) + touchMoveVector.x;
+  const z = (keyState.has("KeyS") ? 1 : 0) - (keyState.has("KeyW") ? 1 : 0) + touchMoveVector.z;
+  inputState.moveX = clampNumber(x, -1, 1);
+  inputState.moveZ = clampNumber(z, -1, 1);
+  inputState.sprint = keyState.has("ShiftLeft") || keyState.has("ShiftRight") || touchState.sprint;
+}
+
+function getAutoFireDirection(gameState) {
+  const toEnemy = vec3(
+    gameState.enemy.position.x - gameState.player.position.x,
+    0,
+    gameState.enemy.position.z - gameState.player.position.z
+  );
+  const enemyDistance = length2d(toEnemy);
+  if (enemyDistance > AUTO_FIRE_RANGE) {
+    return null;
+  }
+  if (enemyDistance < 0.001) {
+    return cloneVec3(gameState.player.facing);
+  }
+  return normalize2d(toEnemy);
+}
+
+function updatePlayerMovement(gameState, delta) {
+  const raw = vec3(inputState.moveX, 0, inputState.moveZ);
+  const hasMoveInput = length2d(raw) > 0;
+  const dir = hasMoveInput ? normalize2d(raw) : gameState.player.facing;
+  const speed = getPlayerMoveSpeedLimit(gameState);
+
+  gameState.player.velocity = vec3(dir.x * speed, 0, dir.z * speed);
+  gameState.player.position = clampToArena(vec3(
+    gameState.player.position.x + gameState.player.velocity.x * delta,
+    0,
+    gameState.player.position.z + gameState.player.velocity.z * delta
+  ));
+
+  if (hasMoveInput) {
+    gameState.player.facing = dir;
+  }
+}
+
+function getPlayerMoveSpeedLimit(gameState) {
+  const speedBonusMultiplier = Math.max(1, gameState.player.speedBonusMultiplier || 1);
+  return PLAYER_BASE_SPEED * speedBonusMultiplier * (inputState.sprint ? PLAYER_SPRINT_MULTIPLIER : 1);
+}
+
+function updateEnemyChase(gameState, delta) {
+  const toPlayer = vec3(
+    gameState.player.position.x - gameState.enemy.position.x,
+    0,
+    gameState.player.position.z - gameState.enemy.position.z
+  );
+  const dir = normalize2d(toPlayer);
+  const difficultyMultiplier = getDifficultyMultiplier(gameState.score);
+  const enemyTargetSpeed = (
+    chaseSettings.baseSpeed + gameState.score * chaseSettings.speedScaleWithScore
+  ) * difficultyMultiplier;
+  const startRamp = Math.min(1, gameState.score / 120);
+  const startRatio = ENEMY_START_SPEED_RATIO + (1 - ENEMY_START_SPEED_RATIO) * startRamp;
+  gameState.enemy.speed = Math.min(enemyTargetSpeed * startRatio, getPlayerMoveSpeedLimit(gameState));
+  gameState.enemy.velocity = vec3(dir.x * gameState.enemy.speed, 0, dir.z * gameState.enemy.speed);
+  gameState.enemy.position = clampToArena(vec3(
+    gameState.enemy.position.x + gameState.enemy.velocity.x * delta,
+    0,
+    gameState.enemy.position.z + gameState.enemy.velocity.z * delta
+  ));
+  gameState.enemy.aggression = Math.min(1, Math.max(0, 1 - distance2d(gameState.player.position, gameState.enemy.position) / 18));
+}
+
+function tryFireProjectile(gameState, time) {
+  const weapon = getCurrentWeapon(gameState.score);
+  const fireDirection = getAutoFireDirection(gameState);
+  if (!fireDirection) {
+    return;
+  }
+  if (time - gameState.player.lastFireTime < weapon.cooldownMs) {
+    return;
+  }
+
+  gameState.player.facing = cloneVec3(fireDirection);
+
+  const projectile = {
+    id: `p-${Math.random().toString(36).slice(2, 9)}`,
+    weaponId: weapon.id,
+    position: vec3(
+      gameState.player.position.x + gameState.player.facing.x * PROJECTILE_SPAWN_OFFSET,
+      0.6,
+      gameState.player.position.z + gameState.player.facing.z * PROJECTILE_SPAWN_OFFSET
+    ),
+    velocity: vec3(
+      gameState.player.facing.x * weapon.projectileSpeed,
+      0,
+      gameState.player.facing.z * weapon.projectileSpeed
+    ),
+    damage: weapon.damage,
+    alive: true,
+    lifeTime: PROJECTILE_LIFETIME,
+  };
+
+  gameState.projectiles.push(projectile);
+  gameState.player.lastFireTime = time;
+}
+
+function updateProjectiles(gameState, delta) {
+  for (const projectile of gameState.projectiles) {
+    if (!projectile.alive) {
+      continue;
+    }
+    projectile.position = vec3(
+      projectile.position.x + projectile.velocity.x * delta,
+      projectile.position.y,
+      projectile.position.z + projectile.velocity.z * delta
+    );
+    projectile.lifeTime -= delta;
+    if (
+      projectile.lifeTime <= 0 ||
+      Math.abs(projectile.position.x) > ARENA_LIMIT + 4 ||
+      Math.abs(projectile.position.z) > ARENA_LIMIT + 4
+    ) {
+      projectile.alive = false;
+    }
+  }
+  gameState.projectiles = gameState.projectiles.filter((projectile) => projectile.alive);
+}
+
+function respawnEnemy(gameState) {
+  const side = Math.random() > 0.5 ? 1 : -1;
+  gameState.enemy.position = vec3(ARENA_LIMIT * side, 0, (Math.random() * 2 - 1) * ARENA_LIMIT * 0.8);
+  gameState.enemy.health = ENEMY_MAX_HEALTH;
+}
+
+function resolveHitsAndScoring(gameState) {
+  for (const projectile of gameState.projectiles) {
+    if (!projectile.alive) {
+      continue;
+    }
+    const hitDistance = distance2d(projectile.position, gameState.enemy.position);
+    if (hitDistance < ENEMY_HIT_RADIUS) {
+      projectile.alive = false;
+      gameState.enemy.health -= projectile.damage;
+      gameState.score += projectile.damage * 10;
+      statusEl.textContent = `명중! +${projectile.damage * 10}점`;
+      hitFlashStrength = Math.min(0.55, hitFlashStrength + 0.2);
+      cameraShakeStrength = Math.min(0.4, cameraShakeStrength + 0.09);
+      hitStopFrames = Math.max(hitStopFrames, 2);
+      playHitSound(320 + projectile.damage * 35, 0.065);
+    }
+  }
+
+  if (gameState.enemy.health <= 0) {
+    gameState.score += 20;
+    statusEl.textContent = "공룡을 잠시 밀어냈어요! +20 보너스";
+    hitFlashStrength = Math.min(0.55, hitFlashStrength + 0.26);
+    cameraShakeStrength = Math.min(0.45, cameraShakeStrength + 0.12);
+    hitStopFrames = Math.max(hitStopFrames, 4);
+    playHitSound(210, 0.12);
+    respawnEnemy(gameState);
+  }
+}
+
+function updateWeaponUnlock(gameState) {
+  const unlocked = getCurrentWeapon(gameState.score);
+  if (unlocked.id !== gameState.player.currentWeapon) {
+    gameState.player.currentWeapon = unlocked.id;
+    statusEl.textContent = `${unlocked.label} 해금! 더 빠르게 생존해 보세요.`;
+    showUnlockToast(`${unlocked.label} UNLOCKED`);
+    playHitSound(520, 0.08);
+  }
+}
+
+function checkGameOver(gameState) {
+  const catchDistance = distance2d(gameState.player.position, gameState.enemy.position);
+  if (catchDistance < ENEMY_CATCH_RADIUS) {
+    gameState.running = false;
+    statusEl.textContent = `게임 오버! 최종 점수 ${gameState.score}`;
+  }
+}
+
+function updateHud(gameState) {
+  scoreEl.textContent = String(gameState.score);
+  const activeWeapon = getCurrentWeapon(gameState.score);
+  currentWeaponEl.textContent = activeWeapon.label;
+  const next = getNextWeapon(gameState.score);
+  if (next) {
+    const previousUnlockScore = activeWeapon.unlockScore;
+    const neededRange = Math.max(1, next.unlockScore - previousUnlockScore);
+    const gained = Math.max(0, gameState.score - previousUnlockScore);
+    const ratio = Math.max(0, Math.min(1, gained / neededRange));
+    nextUnlockEl.textContent = `${next.label} at ${next.unlockScore}`;
+    nextProgressFillEl.style.width = `${Math.round(ratio * 100)}%`;
+  } else {
+    nextUnlockEl.textContent = "ALL UNLOCKED";
+    nextProgressFillEl.style.width = "100%";
+  }
+  const healthRatio = Math.max(0, Math.min(1, gameState.enemy.health / ENEMY_MAX_HEALTH));
+  enemyHealthFillEl.style.width = `${Math.round(healthRatio * 100)}%`;
+  enemyHealthLabelEl.textContent = `Dino Health ${Math.max(0, Math.ceil(gameState.enemy.health))} / ${ENEMY_MAX_HEALTH}`;
+}
+
+function updateDebugHud(gameState) {
+  const difficultyMultiplier = getDifficultyMultiplier(gameState.score);
+  debugMultiplierEl.textContent = `Difficulty x${difficultyMultiplier.toFixed(2)}`;
+  debugEnemySpeedEl.textContent = `Enemy Speed ${gameState.enemy.speed.toFixed(2)}`;
+}
+
+let gameState = createInitialGameState();
+let hitFlashStrength = 0;
+let cameraShakeStrength = 0;
+let unlockToastTimer = 0;
+let hitStopFrames = 0;
+let audioContext = null;
+
+function updateHitFlash(delta) {
+  hitFlashStrength = Math.max(0, hitFlashStrength - delta * 3.2);
+  hitFlashEl.style.opacity = String(Math.min(0.55, hitFlashStrength));
+}
+
+function playHitSound(frequency = 320, duration = 0.06) {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) {
+    return;
+  }
+  if (!audioContext) {
+    audioContext = new AudioContextClass();
+  }
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+  oscillator.type = "triangle";
+  oscillator.frequency.value = frequency;
+  gainNode.gain.value = 0.0001;
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  const now = audioContext.currentTime;
+  gainNode.gain.exponentialRampToValueAtTime(0.14, now + 0.01);
+  gainNode.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+  oscillator.start(now);
+  oscillator.stop(now + duration + 0.01);
+}
+
+function showUnlockToast(message) {
+  unlockToastEl.textContent = message;
+  unlockToastTimer = 1.5;
+  unlockToastEl.style.opacity = "1";
+  unlockToastEl.style.transform = "translateX(-50%) translateY(0)";
+}
+
+function updateUnlockToast(delta) {
+  if (unlockToastTimer <= 0) {
+    unlockToastEl.style.opacity = "0";
+    unlockToastEl.style.transform = "translateX(-50%) translateY(-8px)";
+    return;
+  }
+  unlockToastTimer = Math.max(0, unlockToastTimer - delta);
+}
+
+function applyCameraShake(camera) {
+  if (cameraShakeStrength <= 0.0001) {
+    return;
+  }
+  const jitterX = (Math.random() * 2 - 1) * cameraShakeStrength;
+  const jitterY = (Math.random() * 2 - 1) * cameraShakeStrength * 0.5;
+  const jitterZ = (Math.random() * 2 - 1) * cameraShakeStrength;
+  camera.position.x += jitterX;
+  camera.position.y += jitterY;
+  camera.position.z += jitterZ;
+}
+
+restartButton.addEventListener("click", () => {
+  gameState = createInitialGameState();
+  hitFlashStrength = 0;
+  cameraShakeStrength = 0;
+  unlockToastTimer = 0;
+  hitStopFrames = 0;
+  hitFlashEl.style.opacity = "0";
+  unlockToastEl.style.opacity = "0";
+  statusEl.textContent = "새 게임 시작! 공룡에게 잡히지 않게 도망치세요.";
+});
+
+async function startDinoEscapeGame() {
+const THREE = await import(THREE_MODULE_URL);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x101826);
+
+const camera = new THREE.PerspectiveCamera(58, 16 / 9, 0.1, 200);
+camera.position.set(0, 10, 14);
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+
+function onResize() {
+  const width = Math.max(1, canvas.clientWidth || canvas.width);
+  const height = Math.max(1, canvas.clientHeight || canvas.height);
+  renderer.setSize(width, height, false);
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+}
+onResize();
+window.addEventListener("resize", onResize, { passive: true });
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const keyLight = new THREE.DirectionalLight(0xffffff, 1.1);
+keyLight.position.set(5, 8, 3);
+scene.add(keyLight);
+
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(62, 62),
+  new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.95 })
+);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
+function createPlayerMesh() {
+  const group = new THREE.Group();
+  const material = new THREE.MeshStandardMaterial({ color: 0x3b82f6 });
+  const skin = new THREE.MeshStandardMaterial({ color: 0xf3d4b2 });
+
+  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.95, 0.45), material);
+  torso.position.y = 1.15;
+  group.add(torso);
+
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.48, 0.48), skin);
+  head.position.y = 1.9;
+  group.add(head);
+
+  const armGeometry = new THREE.BoxGeometry(0.2, 0.75, 0.2);
+  const leftArm = new THREE.Mesh(armGeometry, material);
+  leftArm.position.set(-0.55, 1.2, 0);
+  group.add(leftArm);
+  const rightArm = new THREE.Mesh(armGeometry, material);
+  rightArm.position.set(0.55, 1.2, 0);
+  group.add(rightArm);
+
+  const legGeometry = new THREE.BoxGeometry(0.24, 0.8, 0.24);
+  const leftLeg = new THREE.Mesh(legGeometry, new THREE.MeshStandardMaterial({ color: 0x1d4ed8 }));
+  leftLeg.position.set(-0.2, 0.4, 0);
+  group.add(leftLeg);
+  const rightLeg = new THREE.Mesh(legGeometry, new THREE.MeshStandardMaterial({ color: 0x1d4ed8 }));
+  rightLeg.position.set(0.2, 0.4, 0);
+  group.add(rightLeg);
+  return group;
+}
+
+const playerMesh = createPlayerMesh();
+scene.add(playerMesh);
+
+function createDinoMesh() {
+  const group = new THREE.Group();
+  const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.7 });
+  const darkBody = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.75 });
+  const clawMaterial = new THREE.MeshStandardMaterial({ color: 0xb6d7a8, roughness: 0.9 });
+
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.55, 1.35, 6, 10), bodyMaterial);
+  body.rotation.z = Math.PI / 2;
+  body.position.set(0, 1.1, 0);
+  group.add(body);
+
+  const head = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.55, 0.6), bodyMaterial);
+  head.position.set(0, 1.5, 0.95);
+  group.add(head);
+
+  const jaw = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.2, 0.45), darkBody);
+  jaw.position.set(0, 1.28, 1.02);
+  group.add(jaw);
+
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.35, 1.5, 8), darkBody);
+  tail.rotation.x = -Math.PI / 2;
+  tail.position.set(0, 1.05, -1.3);
+  group.add(tail);
+
+  const backSpikeGeometry = new THREE.ConeGeometry(0.16, 0.52, 7);
+  for (let i = 0; i < 4; i += 1) {
+    const spike = new THREE.Mesh(backSpikeGeometry, darkBody);
+    spike.rotation.x = -Math.PI / 2;
+    spike.position.set(0, 1.56, 0.5 - i * 0.5);
+    group.add(spike);
+  }
+
+  const armGeometry = new THREE.CylinderGeometry(0.07, 0.09, 0.42, 7);
+  const leftArm = new THREE.Mesh(armGeometry, darkBody);
+  leftArm.position.set(-0.46, 1.1, 0.56);
+  leftArm.rotation.z = Math.PI / 6;
+  group.add(leftArm);
+  const rightArm = new THREE.Mesh(armGeometry, darkBody);
+  rightArm.position.set(0.46, 1.1, 0.56);
+  rightArm.rotation.z = -Math.PI / 6;
+  group.add(rightArm);
+
+  const eyeGeometry = new THREE.SphereGeometry(0.08, 8, 8);
+  const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0xf8fafc, emissive: 0x172554, emissiveIntensity: 0.24 });
+  const leftEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+  leftEye.position.set(-0.19, 1.6, 1.26);
+  group.add(leftEye);
+  const rightEye = new THREE.Mesh(eyeGeometry, eyeMaterial);
+  rightEye.position.set(0.19, 1.6, 1.26);
+  group.add(rightEye);
+
+  const toothGeometry = new THREE.ConeGeometry(0.03, 0.16, 6);
+  for (let i = -2; i <= 2; i += 1) {
+    const tooth = new THREE.Mesh(toothGeometry, clawMaterial);
+    tooth.rotation.x = Math.PI;
+    tooth.position.set(i * 0.1, 1.2, 1.2);
+    group.add(tooth);
+  }
+
+  const legGeometry = new THREE.CylinderGeometry(0.14, 0.18, 0.7, 8);
+  const leftLeg = new THREE.Mesh(legGeometry, darkBody);
+  leftLeg.position.set(-0.28, 0.35, -0.1);
+  group.add(leftLeg);
+  const rightLeg = new THREE.Mesh(legGeometry, darkBody);
+  rightLeg.position.set(0.28, 0.35, -0.1);
+  group.add(rightLeg);
+  return group;
+}
+
+const enemyMesh = createDinoMesh();
+scene.add(enemyMesh);
+
+const projectileMeshes = new Map();
+const baseStoneGeometry = new THREE.DodecahedronGeometry(WEAPON_TIERS[0].projectileSize);
+const baseStoneMaterial = new THREE.MeshStandardMaterial({ color: 0x6b7280, roughness: 0.98, metalness: 0.02, flatShading: true });
+
+function syncRenderObjectsFromState() {
+  playerMesh.position.set(gameState.player.position.x, 0.6, gameState.player.position.z);
+  playerMesh.rotation.y = Math.atan2(gameState.player.facing.x, gameState.player.facing.z);
+
+  enemyMesh.position.set(gameState.enemy.position.x, 0.6, gameState.enemy.position.z);
+  enemyMesh.rotation.y = Math.atan2(gameState.player.position.x - gameState.enemy.position.x, gameState.player.position.z - gameState.enemy.position.z);
+
+  const activeIds = new Set(gameState.projectiles.map((projectile) => projectile.id));
+
+  for (const projectile of gameState.projectiles) {
+    let mesh = projectileMeshes.get(projectile.id);
+    if (!mesh) {
+      const geometry = baseStoneGeometry.clone();
+      const stoneScale = 1 + Math.random() * 0.45;
+      geometry.scale(stoneScale, 1 + Math.random() * 0.2, stoneScale);
+      const material = baseStoneMaterial.clone();
+      mesh = new THREE.Mesh(geometry, material);
+      projectileMeshes.set(projectile.id, mesh);
+      scene.add(mesh);
+    }
+    mesh.position.set(projectile.position.x, projectile.position.y, projectile.position.z);
+  }
+
+  for (const [id, mesh] of projectileMeshes.entries()) {
+    if (!activeIds.has(id)) {
+      scene.remove(mesh);
+      projectileMeshes.delete(id);
+    }
+  }
+}
+
+function updateCameraFollow(delta) {
+  const enemyDistance = distance2d(gameState.player.position, gameState.enemy.position);
+  const zoomRatio = Math.max(0, Math.min(1, enemyDistance / CAMERA_DYNAMIC_ZOOM_DISTANCE));
+  const followDistance = CAMERA_FOLLOW_DISTANCE_NEAR + (CAMERA_FOLLOW_DISTANCE_FAR - CAMERA_FOLLOW_DISTANCE_NEAR) * zoomRatio;
+  const cameraHeight = CAMERA_HEIGHT_NEAR + (CAMERA_HEIGHT_FAR - CAMERA_HEIGHT_NEAR) * zoomRatio;
+  const desired = new THREE.Vector3(
+    gameState.player.position.x - gameState.player.facing.x * followDistance,
+    cameraHeight,
+    gameState.player.position.z - gameState.player.facing.z * followDistance
+  );
+  camera.position.lerp(desired, Math.min(1, delta * 0.8));
+  cameraShakeStrength = Math.max(0, cameraShakeStrength - delta * 1.65);
+  applyCameraShake(camera);
+  const focusX = gameState.player.position.x * 0.82 + gameState.enemy.position.x * 0.18;
+  const focusZ = gameState.player.position.z * 0.82 + gameState.enemy.position.z * 0.18;
+  const rawFocus = new THREE.Vector3(focusX, 1.2, focusZ);
+  const safeFocus = ensureMinimumFocusDistance(camera.position, rawFocus);
+  camera.lookAt(safeFocus);
+}
+
+function ensureMinimumFocusDistance(cameraPosition, focusPoint) {
+  const toFocus = focusPoint.clone().sub(cameraPosition);
+  const distance = toFocus.length();
+  if (distance >= CAMERA_MIN_FOCUS_DISTANCE) {
+    return focusPoint;
+  }
+  const scale = CAMERA_MIN_FOCUS_DISTANCE / Math.max(0.0001, distance);
+  return cameraPosition.clone().add(toFocus.multiplyScalar(scale));
+}
+
+let previousMs = performance.now();
+renderer.setAnimationLoop((timeMs) => {
+  const delta = Math.min(0.05, (timeMs - previousMs) / 1000);
+  previousMs = timeMs;
+
+  if (hitStopFrames > 0) {
+    hitStopFrames -= 1;
+    updateHitFlash(delta);
+    updateUnlockToast(delta);
+    syncRenderObjectsFromState();
+    updateCameraFollow(delta);
+    renderer.render(scene, camera);
+    return;
+  }
+
+  if (gameState.running) {
+    readInput();
+    updatePlayerMovement(gameState, delta);
+    updateEnemyChase(gameState, delta);
+    updateWeaponUnlock(gameState);
+    tryFireProjectile(gameState, timeMs);
+    updateProjectiles(gameState, delta);
+    resolveHitsAndScoring(gameState);
+    checkGameOver(gameState);
+  }
+
+  updateHud(gameState);
+  updateDebugHud(gameState);
+  updateHitFlash(delta);
+  updateUnlockToast(delta);
+  syncRenderObjectsFromState();
+  updateCameraFollow(delta);
+  renderer.render(scene, camera);
+});
+}
+
+startDinoEscapeGame().catch((error) => {
+  statusEl.textContent = "초기화 실패: 로컬 파일 대신 로컬 서버(http://)로 실행해 주세요.";
+  // Keep detailed cause in console for debugging.
+  console.error("Failed to start Dino Escape game:", error);
+});

@@ -45,29 +45,6 @@ const RewardSystemUI = (() => {
       #reward-inventory.ready { opacity: 1; pointer-events: auto; }
       body.reward-loading { overflow: hidden; }
 
-      /* 성장 토스트 스타일 */
-      .growth-toast {
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%) translateY(100px);
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 12px 24px;
-        border-radius: 16px;
-        font-size: 1.1rem;
-        font-weight: bold;
-        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
-        z-index: 5000;
-        opacity: 0;
-        transition: all 0.4s cubic-bezier(0.2, 0.9, 0.2, 1);
-        white-space: nowrap;
-      }
-      .growth-toast.show {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-      }
-
       /* 숙련도 바 스타일 */
       .proficiency-bar-container {
         width: 100%;
@@ -516,6 +493,8 @@ const RewardSystemUI = (() => {
   }
 
   function showToast(msg) {
+    document.querySelectorAll('.reward-toast').forEach(t => t.remove());
+
     const toast = document.createElement('div');
     toast.className = 'reward-toast';
     toast.textContent = msg;

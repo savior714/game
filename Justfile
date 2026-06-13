@@ -38,6 +38,26 @@ typecheck:
 test:
     uv run pytest tests
 
+# --- Commit Gate (git.md §5.0~§5.2) ---
+
+# hard 게이트: 보안 선제 검증 (env-lint + staged_secret_gate) — --no-verify 금지
+commit-gate-hard:
+    @echo "🔒 Hard commit gate (security)..."
+    @if [ -f .env.example ] || [ -f .env ]; then \
+        uv run python scripts/verify/lint_dotenv.py || { echo "❌ dotenv lint 실패"; exit 1; }; \
+    else \
+        echo "[skip] .env.example/.env 없음 — dotenv lint 건너뜀."; \
+    fi
+    @git diff --cached --quiet || uv run python scripts/verify/staged_secret_gate.py || { echo "❌ 민감 파일 스테이징 감지"; exit 1; }
+    @echo "✅ Hard gate 통과."
+
+# soft 게이트: lint만 (ty pre-existing 99개 제외 — 별도 백로그)
+commit-gate-soft:
+    @echo "🔍 Soft commit gate (lint)..."
+    @ruff check --fix tests scripts/verify_korean_text.py tools/mcp_call_wrapper.py || { echo "❌ ruff check 실패"; exit 1; }
+    @ruff format tests scripts/verify_korean_text.py tools/mcp_call_wrapper.py || { echo "❌ ruff format 실패"; exit 1; }
+    @echo "✅ Soft gate 통과."
+
 # --- Utility ---
 
 # Clean temporary files

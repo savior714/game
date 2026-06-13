@@ -93,11 +93,11 @@ def lint_plan_text(text: str, file_path: Optional[Path] = None, is_archive_ready
     # Korean-first body check
     issues.extend(_check_korean_first(text))
 
-    if is_archive_ready:
-        if not re.search(r"관련 명세|docs/specs/", text, re.IGNORECASE):
-            issues.append(
-                "[Archive-Ready] Blueprint must contain a reference to related specs."
-            )
+    if is_blueprint_doc and not re.search(r"관련 명세|docs/specs/", text, re.IGNORECASE):
+        issues.append(
+            "Blueprint에 [관련 명세] 섹션 또는 docs/specs/ 경로 참조가 필요합니다. "
+            "구현 대상 specs를 명시하지 않으면 구조 위반입니다."
+        )
 
     task_blocks = _split_task_blocks(text)
     if not task_blocks:

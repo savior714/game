@@ -427,7 +427,7 @@ const RewardSystemUI = (() => {
           deductArea.style.display = 'none';
         }
       });
-    };
+    });
   }
 
   function openSnackModal(state) {
@@ -485,7 +485,7 @@ const RewardSystemUI = (() => {
           deductArea.style.display = 'none';
         }
       });
-    };
+    });
   }
 
   function openMarbleModal() {
@@ -573,7 +573,7 @@ const RewardSystemUI = (() => {
       RewardSystem.consumeInternal(item.id, () => {
         overlay.remove();
       });
-    };
+    });
   }
 
   // ── Event Delegation: data-action → handler mapping ──

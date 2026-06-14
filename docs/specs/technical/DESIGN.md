@@ -106,11 +106,12 @@ tokens:
 현재 템플릿 기반 런타임의 진입점과 라우팅 기준은 아래를 단일 출처로 본다.
 
 - 메인 엔트리: `index.html`
-- 우주 탐험 엔트리: `experiments/space-explorer.html`
+- 우주 탐험 엔트리: `space-explorer.html` (현재: `experiments/space-explorer/index.html`)
 - 우주 탐험 모듈 엔트리: `experiments/space-explorer/main.js`
 - 배포 rewrite 정책: `vercel.json`
-  - `/space-explorer.html` -> `/space-explorer.html`
+  - `/space-explorer.html` -> `/experiments/space-explorer/index.html`
   - 루트(`/`) 및 광역 catch-all rewrite는 사용하지 않음 (메인 라우트 덮어쓰기 방지)
+- `vercel.json` 설정: `"rewrites": []` (빈 배열 — 현재 라우팅 규칙 없음)
 
 ---
 **Last Verified**: 2026-04-24 by Antigravity

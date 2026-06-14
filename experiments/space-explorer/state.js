@@ -1,7 +1,7 @@
 export const TWO_PI = Math.PI * 2;
 
 // 실제 천문학적 데이터 기반
-// 공전속도 비율은 실제 공전주기(지구년)에서 유도: speed = 2π / period
+// 공전속도: speed = 2π / (orbitalPeriodInDays) — 1년 = 365.25일 기준
 // 거리 비율은 sqrt(AU) 스케일로 압축 — 외행성 가시성 확보
 
 export const planets = [
@@ -12,7 +12,7 @@ export const planets = [
     gradientStops: ["#d4d4d4", "#8a8a8a", "#5a5a5a"],
     radius: 3.5,
     orbitRadius: 48,
-    orbitSpeed: 4.15,
+    orbitSpeed: 2 * Math.PI / (88 / 365.25),
     angle: 0.8,
     trail: [],
     maxTrail: 120,
@@ -31,7 +31,7 @@ export const planets = [
     gradientStops: ["#f5e6b8", "#d4a84c", "#a07830"],
     radius: 5.5,
     orbitRadius: 68,
-    orbitSpeed: 1.62,
+    orbitSpeed: 2 * Math.PI / (225 / 365.25),
     angle: 2.1,
     trail: [],
     maxTrail: 140,
@@ -50,7 +50,7 @@ export const planets = [
     gradientStops: ["#7ec8f0", "#4a90d9", "#2a5a8a"],
     radius: 6,
     orbitRadius: 90,
-    orbitSpeed: 1.0,
+    orbitSpeed: 2 * Math.PI / (365.25 / 365.25),
     angle: 4.0,
     trail: [],
     maxTrail: 160,
@@ -69,7 +69,7 @@ export const planets = [
     gradientStops: ["#e89070", "#c85a3c", "#8a3020"],
     radius: 4.5,
     orbitRadius: 114,
-    orbitSpeed: 0.53,
+    orbitSpeed: 2 * Math.PI / (687 / 365.25),
     angle: 5.5,
     trail: [],
     maxTrail: 140,
@@ -88,7 +88,7 @@ export const planets = [
     gradientStops: ["#f0d8a8", "#d4a868", "#a07840"],
     radius: 13,
     orbitRadius: 165,
-    orbitSpeed: 0.084,
+    orbitSpeed: 2 * Math.PI / (11.9 * 365.25 / 365.25),
     angle: 1.2,
     trail: [],
     maxTrail: 180,
@@ -107,7 +107,7 @@ export const planets = [
     gradientStops: ["#f8ecd0", "#e0d0a0", "#b0a070"],
     radius: 11,
     orbitRadius: 210,
-    orbitSpeed: 0.034,
+    orbitSpeed: 2 * Math.PI / (29.5 * 365.25 / 365.25),
     angle: 3.8,
     trail: [],
     maxTrail: 180,
@@ -129,7 +129,7 @@ export const planets = [
     gradientStops: ["#c0f0f8", "#8ed8e8", "#5aa8b8"],
     radius: 9,
     orbitRadius: 250,
-    orbitSpeed: 0.012,
+    orbitSpeed: 2 * Math.PI / (84.0 * 365.25 / 365.25),
     angle: 0.5,
     trail: [],
     maxTrail: 180,
@@ -148,7 +148,7 @@ export const planets = [
     gradientStops: ["#7090f0", "#4a68e8", "#2a3a9a"],
     radius: 8.5,
     orbitRadius: 285,
-    orbitSpeed: 0.006,
+    orbitSpeed: 2 * Math.PI / (165 * 365.25 / 365.25),
     angle: 2.7,
     trail: [],
     maxTrail: 180,

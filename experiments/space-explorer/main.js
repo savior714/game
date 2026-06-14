@@ -11,10 +11,13 @@ const ctx = canvas
   : null;
 const SMOOTHING_EPSILON = 0.0008;
 
-function formatElapsedTime(seconds) {
-  const earthYears = seconds;
-  if (earthYears < 1) {
-    return `${Math.round(seconds * 10) / 10}일`;
+function formatElapsedTime(earthYears) {
+  if (earthYears < 1 / 365.25) {
+    const days = earthYears * 365.25;
+    return `${Math.max(1, Math.round(days * 24))}시간`;
+  } else if (earthYears < 1) {
+    const days = earthYears * 365.25;
+    return `${Math.round(days)}일`;
   } else if (earthYears < 10) {
     return `${earthYears.toFixed(1)}년`;
   } else if (earthYears < 100) {

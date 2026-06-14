@@ -647,6 +647,10 @@
     grid-template-columns: 1fr;
   }
 
+  .container.explorer-layout {
+    grid-template-columns: 1fr;
+  }
+
   .se-page .controls-panel {
     order: -1;
   }

@@ -68,7 +68,7 @@ export function attachControls(options) {
   }
 
   function syncControlDefaults() {
-    if (speedSlider) speedSlider.value = String(state.timeScale);
+    if (speedSlider) speedSlider.value = String(state.timeScale / 5);
     if (speedValue) speedValue.textContent = `${Math.round(state.timeScale * 100)}%`;
     if (quality) quality.value = state.renderMode;
     if (labelToggle) labelToggle.checked = state.showLabels;
@@ -94,8 +94,8 @@ export function attachControls(options) {
       const raw = event.target.value;
       const parsed = Number(raw);
       if (!Number.isNaN(parsed)) {
-        state.timeScale = parsed;
-        if (speedValue) speedValue.textContent = `${Math.round(parsed * 100)}%`;
+        state.timeScale = parsed * 5;
+        if (speedValue) speedValue.textContent = `${Math.round(parsed * 500)}%`;
         updateStatusText();
       }
     });

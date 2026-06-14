@@ -304,13 +304,8 @@ function checkSeqAnswer(val, btn) {
       renderSeqWordComplete();
       sequentialAnswerCore.finalizeSuccess({ button: btn });
     } else {
-      // 다음 빈칸 보기 표시 — 짧은 지연 후 부드럽게 전환
-      setTimeout(() => {
-        document.querySelectorAll('.answer-btn').forEach(b => b.classList.add('btn-hidden'));
-        setTimeout(() => {
-          if (seqBlanks) renderChoiceBtns(seqBlanks.blanks[seqStep].choices);
-        }, 150);
-      }, 100);
+      // 다음 빈칸 보기 표시 — 즉시 교체
+      if (seqBlanks) renderChoiceBtns(seqBlanks.blanks[seqStep].choices);
     }
   } else {
     // 오답 — 문제 종료

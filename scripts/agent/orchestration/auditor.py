@@ -66,34 +66,40 @@ def check_query_selector_uniqueness(diff_result: DiffResult) -> list[AuditFindin
     if diff_result.status != TaskStatus.DONE:
         return findings
 
-    for file_path in diff_result.files_modified:
-        if not file_path.endswith((".html", ".js")):
-            continue
+    html_js_files = [f for f in diff_result.files_modified if f.endswith((".html", ".js"))]
+    if not html_js_files:
+        return findings
 
-        # Look for short text strings that might be duplicated
-        short_text_pattern = re.compile(r'"([^"]{2,15})"')
-        text_counts: dict[str, int] = {}
+    # Look for short text strings that might be duplicated
+    short_text_pattern = re.compile(r'"([^"]{2,15})"')
+    text_counts: dict[str, int] = {}
 
-        for line in diff_result.diff_summary.splitlines():
-            if file_path not in line and f"/{file_path}" not in line:
-                continue
-            for match in short_text_pattern.finditer(line):
-                text = match.group(1)
-                if text not in ('', ' ', 'class', 'id', 'data-'):
-                    text_counts[text] = text_counts.get(text, 0) + 1
+    for line in diff_result.diff_summary.splitlines():
+        # Check if this line belongs to any of the modified HTML/JS files
+        # Either the file path appears in the line, or we scan all lines
+        # when no clear file-path-per-line format is used
+        belongs = any(fp in line for fp in html_js_files)
+        if not belongs:
+            # If no file path found in line, still check for quoted text
+            # (diff summaries often have filename on first line only)
+            pass
+        for match in short_text_pattern.finditer(line):
+            text = match.group(1)
+            if text not in ('', ' ', 'class', 'id', 'data-'):
+                text_counts[text] = text_counts.get(text, 0) + 1
 
-        for text, count in text_counts.items():
-            if count > 2:
-                findings.append(
-                    AuditFinding(
-                        category=AuditCategory.QUERY_SELECTOR_UNIQUENESS,
-                        severity=AuditSeverity.HIGH if count > 5 else AuditSeverity.MEDIUM,
-                        file_path=file_path,
-                        description=f"Text '{text}' appears {count} times — may break querySelector",
-                        evidence=f"Found {count} occurrences in {file_path}",
-                        suggested_fix="Add unique identifiers (e.g., subject+grade+lesson) to make each message unique",
-                    )
+    for text, count in text_counts.items():
+        if count > 2:
+            findings.append(
+                AuditFinding(
+                    category=AuditCategory.QUERY_SELECTOR_UNIQUENESS,
+                    severity=AuditSeverity.HIGH if count > 5 else AuditSeverity.MEDIUM,
+                    file_path=html_js_files[0],
+                    description=f"Text '{text}' appears {count} times — may break querySelector",
+                    evidence=f"Found {count} occurrences across modified files",
+                    suggested_fix="Add unique identifiers (e.g., subject+grade+lesson) to make each message unique",
                 )
+            )
     return findings
 
 

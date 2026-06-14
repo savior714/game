@@ -3,14 +3,16 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATES = ROOT
-SPACE_EXPLORER_DIR = TEMPLATES / "space-explorer"
+SPACE_EXPLORER_DIR = TEMPLATES / "experiments" / "space-explorer"
 
 
 def test_space_explorer_layout_is_wider_than_default_container() -> None:
-    css = (TEMPLATES / "styles.css").read_text(encoding="utf-8")
+    css = (
+        TEMPLATES / "experiments" / "space-explorer" / "space-explorer.css"
+    ).read_text(encoding="utf-8")
 
-    assert ".explorer-layout.container" in css
-    assert "max-width: 1480px;" in css
+    assert ".explorer-layout" in css
+    assert "max-width: 1320px" in css
 
 
 def test_renderer_uses_larger_minimum_canvas_size() -> None:

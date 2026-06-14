@@ -3,7 +3,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATES = ROOT
-SPACE_EXPLORER_DIR = TEMPLATES / "space-explorer"
+SPACE_EXPLORER_DIR = TEMPLATES / "experiments" / "space-explorer"
 
 
 def test_tablet_gesture_module_is_wired() -> None:

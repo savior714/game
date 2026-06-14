@@ -17,5 +17,5 @@ def test_templates_index_is_aidengame_hub_page() -> None:
     assert "태양계 탐험 (실험)" in html
     assert "<nav" in html
     assert "Main navigation" in html
-    assert "space-explorer.html" in html
+    assert "experiments/space-explorer/index.html" in html
     assert 'id="main-top-nav"' in html

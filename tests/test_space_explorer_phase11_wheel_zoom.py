@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SPACE_EXPLORER_DIR = ROOT / "space-explorer"
+SPACE_EXPLORER_DIR = ROOT / "experiments" / "space-explorer"
 
 
 def test_wheel_zoom_is_supported_on_canvas() -> None:

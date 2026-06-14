@@ -6,7 +6,9 @@ TEMPLATES = ROOT
 
 
 def test_controls_have_stable_action_selectors() -> None:
-    html = (TEMPLATES / "space-explorer.html").read_text(encoding="utf-8")
+    html = (TEMPLATES / "experiments" / "space-explorer" / "index.html").read_text(
+        encoding="utf-8"
+    )
     assert 'data-action="play"' in html
     assert 'data-action="pause"' in html
     assert 'data-action="reset"' in html
@@ -14,7 +16,9 @@ def test_controls_have_stable_action_selectors() -> None:
 
 
 def test_interaction_helpers_exist_in_script() -> None:
-    js = (TEMPLATES / "space-explorer" / "controls.js").read_text(encoding="utf-8")
+    js = (TEMPLATES / "experiments" / "space-explorer" / "controls.js").read_text(
+        encoding="utf-8"
+    )
     assert "function setPlaying(" in js
     assert "function updateStatusText(" in js
     assert "function applyResetState(" in js

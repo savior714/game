@@ -18,7 +18,7 @@ def test_readme_tracks_current_runtime_and_verification_paths() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
 
     assert "`index.html`" in readme
-    assert "`space-explorer.html`" in readme
+    assert "`experiments/space-explorer.html`" in readme
     assert "`vercel.json`" in readme
     assert "`verify.sh`" in readme
 

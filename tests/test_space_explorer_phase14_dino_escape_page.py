@@ -15,7 +15,9 @@ def test_home_has_dino_escape_card_below_paint_mixing_card() -> None:
 
 
 def test_dino_escape_page_has_canvas_hud_and_controls() -> None:
-    html = (TEMPLATES / "dino-escape.html").read_text(encoding="utf-8")
+    html = (
+        TEMPLATES / "experiments" / "space-explorer" / "dino-escape.html"
+    ).read_text(encoding="utf-8")
 
     assert 'id="dino-escape-canvas"' in html
     assert 'id="dino-score"' in html
@@ -39,11 +41,13 @@ def test_dino_escape_page_has_canvas_hud_and_controls() -> None:
     assert 'id="dino-enemy-base-speed-input"' in html
     assert 'id="dino-enemy-accel-input"' in html
     assert "WASD Move | Auto Throw | Shift Sprint" in html
-    assert 'script src="./space-explorer/dino-escape.js"' in html
+    assert 'script src="./dino-escape.js"' in html
 
 
 def test_dino_escape_script_supports_core_game_loop_and_unlocks() -> None:
-    js = (TEMPLATES / "space-explorer" / "dino-escape.js").read_text(encoding="utf-8")
+    js = (TEMPLATES / "experiments" / "space-explorer" / "dino-escape.js").read_text(
+        encoding="utf-8"
+    )
 
     assert "const WEAPON_TIERS = [" in js
     assert 'id: "stone"' in js
@@ -132,7 +136,9 @@ def test_dino_escape_script_supports_core_game_loop_and_unlocks() -> None:
 
 
 def test_dino_escape_script_has_initial_camera_zoom_guard() -> None:
-    js = (TEMPLATES / "space-explorer" / "dino-escape.js").read_text(encoding="utf-8")
+    js = (TEMPLATES / "experiments" / "space-explorer" / "dino-escape.js").read_text(
+        encoding="utf-8"
+    )
 
     assert "const CAMERA_MIN_FOCUS_DISTANCE = 9.5;" in js
     assert "const CAMERA_FOLLOW_DISTANCE_NEAR = 8.8;" in js

@@ -60,9 +60,8 @@ class TestAnalyze:
         assert "other domain" in tasks[0].scope.lower()
 
     def test_empty_file_groups_raises(self):
-        ws = WorkSpec(description="test", file_groups=[])
-        with pytest.raises(ValueError, match="zero file groups"):
-            analyze(ws)
+        with pytest.raises(ValueError, match="file_groups must not be empty"):
+            WorkSpec(description="test", file_groups=[])
 
     def test_tasks_have_no_circular_dependencies(self):
         ws = WorkSpec(
@@ -88,28 +87,26 @@ class TestAnalyze:
 
 class TestEstimateParallelism:
     def test_empty_tasks_defaults_to_cap(self):
-        # Edge case: 0 files → defaults to max cap
+        # Edge case: 0 files → defaults to min cap (min(max(0,2),3) = 2)
         n = estimate_parallelism([])
-        assert n == 3
+        assert n == 2
 
     def test_five_files_or_less(self):
-        TaskMock = type("T", (), {"target_paths": None})
         tasks = [
-            TaskMock(target_paths=["a", "b"]),
-            TaskMock(target_paths=["c", "d"]),
-            TaskMock(target_paths=["e"]),
+            type("T", (), {"target_paths": ["a", "b"]})(),
+            type("T", (), {"target_paths": ["c", "d"]})(),
+            type("T", (), {"target_paths": ["e"]})(),
         ]
-        # 5 files total, 3 tasks → N=2~3
+        # 5 files total, 3 tasks → min(max(3,2),3) = 3
         n = estimate_parallelism(tasks)
         assert 2 <= n <= 3
 
     def test_more_than_five_files(self):
-        TaskMock = type("T", (), {"target_paths": None})
         tasks = [
-            TaskMock(target_paths=["a", "b", "c"]),
-            TaskMock(target_paths=["d", "e", "f"]),
-            TaskMock(target_paths=["g", "h"]),
+            type("T", (), {"target_paths": ["a", "b", "c"]})(),
+            type("T", (), {"target_paths": ["d", "e", "f"]})(),
+            type("T", (), {"target_paths": ["g", "h"]})(),
         ]
-        # 8 files total → N=4~5, capped by task count (3)
+        # 8 files total, 3 tasks → min(max(3,4),5) = 4
         n = estimate_parallelism(tasks)
         assert 3 <= n <= 5

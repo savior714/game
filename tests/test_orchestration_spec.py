@@ -93,8 +93,8 @@ class TestTaskSpec:
         assert "T1" in prompt
         assert "domains/math/index.html" in prompt
         assert "Refactor math UI" in prompt
-        assert "AGENTS.md §4.1" in prompt
-        assert "routing.md §2" in prompt
+        assert "AGENTS.md section 4.1" in prompt
+        assert "routing.md section 2" in prompt
 
     def test_empty_target_paths_allowed_at_creation(self):
         # Target paths validated at runtime, not construction

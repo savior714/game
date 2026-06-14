@@ -6,12 +6,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 TEMPLATES = ROOT
-SPACE_EXPLORER_DIR = TEMPLATES / "space-explorer"
+SPACE_EXPLORER_DIR = TEMPLATES / "experiments" / "space-explorer"
 
 
 def test_space_explorer_uses_module_entrypoint() -> None:
-    html = (TEMPLATES / "space-explorer.html").read_text(encoding="utf-8")
-    assert 'script type="module" src="./space-explorer/main.js"' in html
+    html = (TEMPLATES / "experiments" / "space-explorer" / "index.html").read_text(
+        encoding="utf-8"
+    )
+    assert 'script type="module" src="./main.js"' in html
 
 
 def test_attach_controls_syncs_default_ui_state() -> None:

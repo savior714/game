@@ -14,7 +14,9 @@ def test_home_has_orbit_and_eclipse_learning_card() -> None:
 
 
 def test_orbit_eclipse_page_has_scene_and_lesson_controls() -> None:
-    html = (TEMPLATES / "orbit-eclipse.html").read_text(encoding="utf-8")
+    html = (
+        TEMPLATES / "experiments" / "space-explorer" / "orbit-eclipse.html"
+    ).read_text(encoding="utf-8")
 
     assert 'id="orbit-eclipse-canvas"' in html
     assert 'id="lesson-mode"' in html
@@ -26,11 +28,13 @@ def test_orbit_eclipse_page_has_scene_and_lesson_controls() -> None:
     assert 'value="lunar-eclipse"' in html
     assert 'id="lesson-explanation"' in html
     assert 'id="orbit-eclipse-three-layer"' in html
-    assert 'script type="module" src="./space-explorer/orbit-eclipse.js"' in html
+    assert 'script type="module" src="./orbit-eclipse.js"' in html
 
 
 def test_orbit_eclipse_script_defines_lesson_states_and_render_loop() -> None:
-    js = (TEMPLATES / "space-explorer" / "orbit-eclipse.js").read_text(encoding="utf-8")
+    js = (TEMPLATES / "experiments" / "space-explorer" / "orbit-eclipse.js").read_text(
+        encoding="utf-8"
+    )
 
     assert "const LESSONS = {" in js
     assert "rotation-revolution" in js

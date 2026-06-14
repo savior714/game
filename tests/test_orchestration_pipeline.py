@@ -225,12 +225,12 @@ class TestPipelineOrchestrator:
             return [
                 {
                     "task_id": "T1",
-                    "output": "domains/math/index.html\nUpdated layout",
+                    "output": "domains/math/index.html\nRan just route-gate-check before editing. Updated layout",
                     "error": False,
                 },
                 {
                     "task_id": "T2",
-                    "output": "domains/english/index.html\nUpdated styles",
+                    "output": "domains/english/index.html\nRan just route-gate-check before editing. Updated styles",
                     "error": False,
                 },
             ]

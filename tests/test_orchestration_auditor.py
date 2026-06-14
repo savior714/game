@@ -60,11 +60,10 @@ class TestCheckQuerySelectorUniqueness:
         dr = DiffResult(
             task_id="T1",
             status=TaskStatus.DONE,
-            diff_summary="""domains/math/index.html
-"적정"
-"적정"
-"적정"
-"정답"
+            diff_summary="""domains/math/index.html - "적정"
+  "적정"
+  "적정"
+  "정답"
 """,
             files_modified=["domains/math/index.html"],
         )
@@ -194,17 +193,6 @@ class TestAudit:
 
 class TestAuditHelpers:
     def test_has_blocking_issues_true(self):
-        reports = [
-            type(
-                "R",
-                {
-                    "task_id": "T1",
-                    "findings": [
-                        type("F", {"severity": AuditSeverity.HIGH, "key": "k1"})()
-                    ],
-                },
-            )()
-        ]
         # Use actual AuditReport
         from scripts.agent.orchestration.spec import AuditReport, AuditFinding
 

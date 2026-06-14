@@ -15,7 +15,9 @@ def test_home_has_paint_mixing_card_below_orbit_card() -> None:
 
 
 def test_paint_mixing_page_has_palette_controls_and_reset_button() -> None:
-    html = (TEMPLATES / "paint-mixing.html").read_text(encoding="utf-8")
+    html = (
+        TEMPLATES / "experiments" / "space-explorer" / "paint-mixing.html"
+    ).read_text(encoding="utf-8")
 
     assert 'id="paint-result-swatch"' in html
     assert 'id="paint-mix-status"' in html
@@ -30,11 +32,13 @@ def test_paint_mixing_page_has_palette_controls_and_reset_button() -> None:
     assert 'data-color="blue"' in html
     assert 'data-color="red"' in html
     assert 'id="paint-mixing-three-layer"' in html
-    assert 'script type="module" src="./space-explorer/paint-mixing.js"' in html
+    assert 'script type="module" src="./paint-mixing.js"' in html
 
 
 def test_paint_mixing_script_supports_mix_and_reset() -> None:
-    js = (TEMPLATES / "space-explorer" / "paint-mixing.js").read_text(encoding="utf-8")
+    js = (TEMPLATES / "experiments" / "space-explorer" / "paint-mixing.js").read_text(
+        encoding="utf-8"
+    )
 
     assert "const COLOR_LIBRARY = {" in js
     assert "function mixSelectedColors(" in js

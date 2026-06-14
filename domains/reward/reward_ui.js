@@ -60,6 +60,29 @@ const RewardSystemUI = (() => {
         border-radius: 4px;
         transition: width 0.5s ease;
       }
+
+      /* 성장 토스트 스타일 (Blueprint §7.2) */
+      .growth-toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 12px 24px;
+        border-radius: 16px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+        z-index: 5000;
+        opacity: 0;
+        transition: all 0.4s cubic-bezier(0.2, 0.9, 0.2, 1);
+        pointer-events: none;
+      }
+      .growth-toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
     `;
     document.head.appendChild(style);
   }
@@ -508,6 +531,25 @@ const RewardSystemUI = (() => {
     }, 50);
   }
 
+  /** 성장 토스트 표시 (Blueprint §7.1) — GrowthVisualizer에서 호출 */
+  function showGrowthToast(message) {
+    document.querySelectorAll('.growth-toast').forEach(t => t.remove());
+
+    const toast = document.createElement('div');
+    toast.className = 'growth-toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => {
+      toast.classList.add('show');
+    });
+
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 500);
+    }, 3000);
+  }
+
   function openCustomModal(item, state) {
     const overlay = createModalOverlay('reward-custom-modal');
     overlay.innerHTML = `
@@ -536,7 +578,7 @@ const RewardSystemUI = (() => {
 
   return {
     injectCriticalStyles, injectStyles, injectInventoryBar, syncInventoryBarWithState, applyBodyTopOffset, updateUI,
-    playEntranceAndAddGem, openShopModal, spawnExplosion, showToast, 
+    playEntranceAndAddGem, openShopModal, spawnExplosion, showToast, showGrowthToast,
     openYoutubeModal, openSnackModal, openMarbleModal, openCustomModal
   };
 })();

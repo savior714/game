@@ -126,7 +126,7 @@ Blueprint·아키텍처 결정 **전** 확인합니다. 상세: [planning.md](pl
 | **T-2** | **Mock은 외부 경계에서만** | HTTP·DB·clock·파일 I/O·외부 SDK만 stub/spy. **내부 모듈·private helper mocking 금지** — SUT 인터페이스로 검증. FastAPI `dependency_overrides`는 **앱 경계** DI 교체로 허용 |
 | **T-3** | **엣지케이스를 테스트로 고정** | 빈 입력·null·경계값·실패·타임아웃 경로를 named test case로 유지 — 회귀 방지 |
 | **T-4** | **테스트 맞춤 production 방어 코드 금지** | Green을 위해 SUT에 null guard·silent fallback 추가하지 않음 — 테스트 전제 수정 또는 SUT 버그 수정 |
-| **T-5** | **테스트 메시지 전역 고유성 확보** | `@testing-library/react` 등에서 중복 텍스트 매칭 오류(Found multiple elements) 방지를 위해 고유 식별자(예: "적정" X → "상병 S50.000 일치" O)를 포함하거나 `getAllByText` / `data-testid` 등을 명시적으로 사용 — [AGENTS.md §4.2](../../AGENTS.md#42-test--메시지-전역-고유성) |
+| **T-5** | **테스트 메시지 전역 고유성 확보** | 정적 HTML/JS에서 `document.querySelector()` / `getByText()`는 단일 요소만 찾음. 중복 텍스트 매칭 오류 방지를 위해 고유 식별자(예: "적정" X → "수학 3학년 1단원 정답" O)를 포함하거나 `querySelectorAll()` / `data-testid` 등을 명시적으로 사용 — [AGENTS.md §4.2](../../AGENTS.md#42-test--메시지-전역-고유성) |
 
 ### Mock vs DB Mock (구분)
 

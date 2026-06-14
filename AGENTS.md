@@ -83,7 +83,7 @@ normative SSOT: [.agents/core/principles.md](.agents/core/principles.md)
 정적 HTML/JS 페이지에서 `document.querySelector()` / `getByText()`는 **단일 요소만** 찾음. 중복 텍스트가 있으면 오류.
 
 **규칙**:
-- 테스트 message는 고유 식별자 포함 (`"적정"` X → `"상병 S50.000 codeset 1 일치"` O)
+- 테스트 message는 고유 식별자 포함 (`"적정"` X → `"수학 3학년 1단원 정답"` O)
 - 중복 텍스트가 있으면 `querySelectorAll()` + 인덱스 또는 `data-testid` 사용 고려
 
 ### 4.3 Plan — closeout 실행 순서
@@ -124,9 +124,15 @@ PLAN 파일의 DoD에 명시된 `just <recipe>`는 실제 justfile에 존재해�
 
 ## 5. Reference Index
 
-- **Policy / Core**: `PROJECT_RULES.md`, `.agents/core/`
-- **Registry**: `.agents/registry/RULE_INDEX.md`
-- **Specs**: `docs/specs/technical/`
+| Purpose | SSOT |
+|---|---|
+| Project overview | `README.md` |
+| Execution protocol | `AGENTS.md` |
+| Project policy | `PROJECT_RULES.md` |
+| Requirements contract | `tests/` |
+| Session memory | `docs/agent-context/memory/MEMORY.md` |
+| Rule registry | `.agents/registry/RULE_INDEX.md` |
+| Space Explorer spec | `docs/SPACE_EXPLORER_PLAN.md` |
 
 에이전트 규칙 SSOT는 `PROJECT_RULES.md`, `.agents/core/` 및 `AGENTS.md`입니다.
 

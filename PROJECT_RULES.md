@@ -10,14 +10,19 @@
   - 메인 허브: `index.html`
   - 과목: `domains/math/`, `domains/english/`, `domains/korean/`, `domains/science/`
   - 실험: `experiments/space-explorer/`, `experiments/marble/` 등
-  - 공용 로직: `shared/domain/`, `shared/ui/`
+  - 공용 로직: `shared/domain/`, `shared/ui/`, `shared/event-bus.js`
   - 지원 도메인: `domains/reward/`, `domains/auth/`, `domains/sync/`
-- **배포**: `vercel.json` 기준 정적 호스팅. 로컬 미리보기는 정적 서버(예: `python3 -m http.server 8080`).
+  - 에이전트 도구: `tools/` (`mcp_call_wrapper.py`, `tdd_gate_plugin.py`)
+  - 검증 아티팩트: `artifacts/`
+  - 빈 디렉토리: `src/` (미사용 — 현재는 루트 정적 구조)
+- **기타 루트 파일**: `styles.css` (공용 스타일), `verify.sh` (통합 검증), `bootstrap.sh` (deprecated wrapper)
+- **배포**: `vercel.json` 기준 정적 호스팅 (`"rewrites": []` 빈 배열 — 현재 라우팅 규칙 없음). 로컬 미리보기는 정적 서버(예: `python3 -m http.server 8080`).
 
 ---
 # 2. Stack & Runtime Policy
 - **Language**: HTML/CSS/JavaScript (브라우저 런타임), Python (검증·테스트)
-- **Package / env**: `uv`, `nix` (선택), `just`, `ruff`, `pytest`, `ty`/`pyright`
+- **Package / env**: `uv`, `nix` (선택), `just`, `ruff`, `pytest`, `ty`/`pyright`, `ty.toml` (타입 체크 설정)
+- **Pre-commit**: `.pre-commit-config.yaml` — `ruff`, `ruff-format`, `typecheck`, `verify.sh` 훅
 - **에이전트 거버넌스**: bootstrap kernel — `AGENTS.md`, `.agents/core/`, `.agents/registry/`
 
 ## 2.1 Client & Distribution MUST

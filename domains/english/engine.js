@@ -130,17 +130,17 @@ function pickCategory() {
 /* ═══════════════════════════════════
    문제 생성 및 유형
 ═══════════════════════════════════ */
-const Q_TYPE_ORDER = ['kor2word', 'spelling', 'minimal_pair', 'sentence', 'typing'];
+const Q_TYPE_ORDER = ['kor2word', 'spelling', 'minimal_pair', 'sentence', 'shopping_dialogue', 'typing'];
 
 function pickQuestionType(level) {
   const rows = {
-    0: [0.55, 0.45, 0, 0, 0],
-    1: [0.40, 0.33, 0.12, 0.08, 0.07],
-    2: [0.30, 0.26, 0.15, 0.15, 0.14],
-    3: [0.22, 0.20, 0.18, 0.20, 0.20],
-    4: [0.14, 0.16, 0.22, 0.24, 0.24],
-    5: [0.08, 0.12, 0.24, 0.28, 0.28],
-    6: [0, 0.10, 0.28, 0.31, 0.31],
+    0: [0.55, 0.45, 0, 0, 0, 0],
+    1: [0.40, 0.33, 0.12, 0.08, 0.07, 0],
+    2: [0.30, 0.26, 0.15, 0.15, 0.14, 0],
+    3: [0.22, 0.20, 0.18, 0.15, 0.10, 0.15],
+    4: [0.14, 0.16, 0.22, 0.17, 0.16, 0.15],
+    5: [0.08, 0.12, 0.24, 0.21, 0.20, 0.15],
+    6: [0, 0.10, 0.28, 0.27, 0.30, 0.15],
   };
   const weights = rows[level] || rows[3];
   let r = Math.random();
@@ -170,6 +170,28 @@ function buildQuestion(type, word, meta) {
       ...sq,
       answer: en,
       choices: makeWordChoices(word, 'en'),
+      word: en,
+    };
+  }
+  if (type === 'shopping_dialogue') {
+    const dialogues = EnglishAdvancedQuestions.SHOP_DIALOGUES;
+    if (!dialogues || dialogues.length === 0) {
+      return buildQuestion('sentence', word, meta);
+    }
+    const dialogue = dialogues[Math.floor(Math.random() * dialogues.length)];
+    const blankLine = dialogue.line;
+    const correctAnswer = dialogue.answer[0];
+    const choices = [correctAnswer, ...dialogue.answer.slice(1), ...makeWordChoices(word, 'en').slice(0, 4 - dialogue.answer.length)].sort(() => Math.random() - 0.5);
+    return {
+      type,
+      id: dialogue.id,
+      speaker: dialogue.speaker,
+      ico: wIco(word),
+      koHint: wKo(word),
+      line: blankLine,
+      blank: true,
+      answer: correctAnswer,
+      choices: choices.slice(0, 4),
       word: en,
     };
   }
@@ -266,7 +288,7 @@ function _generateCandidate() {
     weeklyTypeHistory[w.en] = type;
 
     const res = buildQuestion(type, wordData, { cat: currentCat });
-    return { ...res, _cat: currentCat, _level: diff, _wordEn: w.en, isWeekly: true };
+    return { ...res, _cat: currentCat, _level: diff, _wordEn: res.type === 'shopping_dialogue' ? wEn(wordData) + '_' + (res.id || '') : w.en, isWeekly: true };
   }
 
   // 1. 약점 단어 강화 (30% 확률)
@@ -283,7 +305,7 @@ function _generateCandidate() {
       const level = getDifficultyLevel(worstCat);
       const word = pickWord(worstCat, level);
       const res = buildQuestion(pickQuestionType(level), word, { cat: worstCat });
-      return { ...res, _cat: worstCat, _level: level, _wordEn: wEn(word), isWeakness: true };
+      return { ...res, _cat: worstCat, _level: level, _wordEn: res.type === 'shopping_dialogue' ? wEn(word) + '_' + (res.id || '') : wEn(word), isWeakness: true };
     }
   }
 
@@ -298,14 +320,14 @@ function _generateCandidate() {
     if (!word) word = WORDS[p.cat].words.find(w => wEn(w) === p.en) || pickWord(p.cat, p.level);
     
     const res = buildQuestion(pickQuestionType(p.level), word, { cat: p.cat });
-    return { ...res, _cat: p.cat, _level: p.level, _wordEn: wEn(word), isWeekly: p.isWeekly };
+    return { ...res, _cat: p.cat, _level: p.level, _wordEn: res.type === 'shopping_dialogue' ? wEn(word) + '_' + (res.id || '') : wEn(word), isWeekly: p.isWeekly };
   }
 
   const cat  = pickCategory();
   const level = getDifficultyLevel(cat);
   const word = pickWord(cat, level);
   const res = buildQuestion(pickQuestionType(level), word, { cat });
-  return { ...res, _cat: cat, _level: level, _wordEn: wEn(word) };
+  return { ...res, _cat: cat, _level: level, _wordEn: res.type === 'shopping_dialogue' ? en + '_' + (res.id || '') : wEn(word) };
 }
 
 function pickWord(cat, level) {

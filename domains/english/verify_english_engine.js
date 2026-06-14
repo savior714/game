@@ -70,3 +70,57 @@ if (errors.length === 0) {
   process.exit(1);
 }
 console.log('----------------------------------------\n');
+
+// SHOP_DIALOGUES 검증 섹션
+const advancedPath = path.join(__dirname, 'advanced-questions.js');
+const advContent = fs.readFileSync(advancedPath, 'utf8');
+
+const shopMatch = advContent.match(/const SHOP_DIALOGUES = (\[[\s\S]*?\]);/);
+if (!shopMatch) {
+  console.error('❌ SHOP_DIALOGUES not found in advanced-questions.js');
+  process.exit(1);
+}
+
+let SHOP_DIALOGUES;
+try {
+  SHOP_DIALOGUES = eval(`(${shopMatch[1]})`);
+} catch (e) {
+  console.error('❌ Failed to parse SHOP_DIALOGUES:', e.message);
+  process.exit(1);
+}
+
+console.log('🛍️ Starting SHOP_DIALOGUES Structure Validation...\n');
+
+let shopErrors = [];
+const shopIds = new Set();
+
+if (!Array.isArray(SHOP_DIALOGUES)) {
+  console.error('❌ SHOP_DIALOGUES is not an array');
+  process.exit(1);
+}
+
+if (SHOP_DIALOGUES.length !== 20) {
+  shopErrors.push(`템플릿 수가 20개가 아님: ${SHOP_DIALOGUES.length}개`);
+}
+
+SHOP_DIALOGUES.forEach((d, idx) => {
+  if (!d.id) shopErrors.push(`[${idx}] id 필드 누락`);
+  else if (shopIds.has(d.id)) shopErrors.push(`[${idx}] 중복된 id: ${d.id}`);
+  else shopIds.add(d.id);
+
+  if (!d.speaker) shopErrors.push(`[${idx || d.id}] speaker 필드 누락`);
+  if (!d.line) shopErrors.push(`[${idx || d.id}] line 필드 누락`);
+  if (d.blank !== true) shopErrors.push(`[${idx || d.id}] blank이 true 아님`);
+  if (!Array.isArray(d.answer) || d.answer.length === 0) shopErrors.push(`[${idx || d.id}] answer 배열이 비어있음`);
+  if (!d.category) shopErrors.push(`[${idx || d.id}] category 필드 누락`);
+});
+
+if (shopErrors.length === 0) {
+  console.log('✅ SHOP_DIALOGUES Validation PASSED: 20 templates, all fields valid');
+} else {
+  console.error(`❌ SHOP_DIALOGUES Validation FAILED: ${shopErrors.length} error(s)`);
+  shopErrors.forEach(err => console.error(`  - ${err}`));
+  process.exit(1);
+}
+
+console.log('----------------------------------------\n');

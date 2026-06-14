@@ -141,10 +141,34 @@ const EnglishAdvancedQuestions = (function () {
     return a === b;
   }
 
+  const SHOP_DIALOGUES = [
+    { id: 'shirt_buy', speaker: 'customer', line: "I'd like to buy this _____, please.", blank: true, answer: ['shirt'], category: 'clothing' },
+    { id: 'shirt_size', speaker: 'customer', line: "Do you have this shirt in a _____ size?", blank: true, answer: ['small', 'medium', 'large'], category: 'clothing' },
+    { id: 'shirt_color', speaker: 'customer', line: "What _____ color do you have?", blank: true, answer: ['blue', 'red', 'white', 'black'], category: 'clothing' },
+    { id: 'shirt_price', speaker: 'customer', line: "How much does this _____ cost?", blank: true, answer: ['shirt'], category: 'clothing' },
+    { id: 'jacket_buy', speaker: 'customer', line: "I'd like to try on this _____, please.", blank: true, answer: ['jacket'], category: 'clothing' },
+    { id: 'jacket_size', speaker: 'customer', line: "Do you have this jacket in a larger _____?", blank: true, answer: ['size', 'medium', 'large'], category: 'clothing' },
+    { id: 'jacket_color', speaker: 'customer', line: "Is this jacket _____ or black?", blank: true, answer: ['blue', 'red', 'green'], category: 'clothing' },
+    { id: 'jacket_price', speaker: 'customer', line: "What's the price of this _____?", blank: true, answer: ['jacket'], category: 'clothing' },
+    { id: 'pants_buy', speaker: 'customer', line: "Can I try on these _____?", blank: true, answer: ['pants'], category: 'clothing' },
+    { id: 'pants_size', speaker: 'customer', line: "These _____ are too _____.", blank: true, answer: ['long', 'short', 'tight', 'loose'], category: 'clothing' },
+    { id: 'pants_color', speaker: 'customer', line: "Do you have these _____ in _____?", blank: true, answer: ['black', 'blue', 'gray'], category: 'clothing' },
+    { id: 'pants_price', speaker: 'customer', line: "How much are these _____?", blank: true, answer: ['pants'], category: 'clothing' },
+    { id: 'shoes_buy', speaker: 'customer', line: "I'm looking for a pair of _____.", blank: true, answer: ['shoes'], category: 'clothing' },
+    { id: 'shoes_size', speaker: 'customer', line: "What _____ size do you wear?", blank: true, answer: ['size', '7', '8', '9', '10'], category: 'clothing' },
+    { id: 'shoes_color', speaker: 'customer', line: "Do you have these _____ in white?", blank: true, answer: ['shoes'], category: 'clothing' },
+    { id: 'shoes_price', speaker: 'customer', line: "How much are these _____?", blank: true, answer: ['shoes'], category: 'clothing' },
+    { id: 'hat_buy', speaker: 'customer', line: "I'd like to buy this _____.", blank: true, answer: ['hat'], category: 'clothing' },
+    { id: 'hat_color', speaker: 'customer', line: "What _____ color is this hat?", blank: true, answer: ['red', 'blue', 'black', 'white'], category: 'clothing' },
+    { id: 'hat_price', speaker: 'customer', line: "How much is this _____?", blank: true, answer: ['hat'], category: 'clothing' },
+    { id: 'hat_size', speaker: 'customer', line: "This _____ is too _____ for me.", blank: true, answer: ['big', 'small', 'large'], category: 'clothing' }
+  ];
+
   return {
     levenshtein,
     makeMinimalPairChoices,
     buildSentenceQuestion,
     normalizeEquals,
+    SHOP_DIALOGUES,
   };
 })();

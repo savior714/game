@@ -20,6 +20,7 @@ def _read() -> str:
 
 # ── 세션 로그 스키마 검증 ──────────────────────────────────
 
+
 def test_session_log_storage_key() -> None:
     """aiden_session_log 키를 사용해야 함."""
     code = _read()
@@ -31,27 +32,21 @@ def test_session_log_storage_key() -> None:
 def test_record_session_end_exists() -> None:
     """recordSessionEnd 함수가 존재해야 함."""
     code = _read()
-    assert "function recordSessionEnd" in code, (
-        "recordSessionEnd 함수가 없습니다."
-    )
+    assert "function recordSessionEnd" in code, "recordSessionEnd 함수가 없습니다."
 
 
 def test_session_log_has_time_field() -> None:
     """세션 로그 항목에 time 필드가 ISO 형식으로 저장되어야 함."""
     code = _read()
     fn = _extract_function(code, "function recordSessionEnd")
-    assert "toISOString" in fn, (
-        "세션 로그에 ISO 시간 형식(toISOString)이 없습니다."
-    )
+    assert "toISOString" in fn, "세션 로그에 ISO 시간 형식(toISOString)이 없습니다."
 
 
 def test_session_log_has_subject_field() -> None:
     """세션 로그 항목에 subject 필드가 포함되어야 함."""
     code = _read()
     fn = _extract_function(code, "function recordSessionEnd")
-    assert "subject" in fn, (
-        "세션 로그 항목에 subject 필드가 없습니다."
-    )
+    assert "subject" in fn, "세션 로그 항목에 subject 필드가 없습니다."
 
 
 def test_session_log_has_correct_and_total() -> None:
@@ -65,13 +60,12 @@ def test_session_log_has_correct_and_total() -> None:
 
 # ── 90일 자동 삭제 검증 ───────────────────────────────────
 
+
 def test_90_day_cleanup_exists() -> None:
     """recordSessionEnd에서 90일 초과 날짜를 자동 삭제해야 함."""
     code = _read()
     fn = _extract_function(code, "function recordSessionEnd")
-    assert "90" in fn, (
-        "90일 자동 삭제 로직이 없습니다."
-    )
+    assert "90" in fn, "90일 자동 삭제 로직이 없습니다."
 
 
 def test_90_day_cleanup_logic() -> None:
@@ -94,12 +88,11 @@ def test_cutoff_date_calculation() -> None:
 
 # ── 주간 요약 검증 ─────────────────────────────────────────
 
+
 def test_get_weekly_summary_exists() -> None:
     """getWeeklySummary 함수가 존재해야 함."""
     code = _read()
-    assert "function getWeeklySummary" in code, (
-        "getWeeklySummary 함수가 없습니다."
-    )
+    assert "function getWeeklySummary" in code, "getWeeklySummary 함수가 없습니다."
 
 
 def test_weekly_summary_includes_subjects() -> None:
@@ -132,12 +125,11 @@ def test_weekly_summary_avg_accuracy() -> None:
 
 # ── 숙련도 바 검증 ─────────────────────────────────────────
 
+
 def test_show_proficiency_bar_exists() -> None:
     """showProficiencyBar 함수가 존재해야 함."""
     code = _read()
-    assert "function showProficiencyBar" in code, (
-        "showProficiencyBar 함수가 없습니다."
-    )
+    assert "function showProficiencyBar" in code, "showProficiencyBar 함수가 없습니다."
 
 
 def test_calculate_proficiency_exists() -> None:
@@ -152,28 +144,23 @@ def test_proficiency_calculated_as_percentage() -> None:
     """숙련도는 correct/attempts * 100으로 계산되어야 함."""
     code = _read()
     fn = _extract_function(code, "function calculateProficiency")
-    assert "* 100" in fn or "*100" in fn, (
-        "숙련도 계산에 퍼센트 변환(* 100)이 없습니다."
-    )
+    assert "* 100" in fn or "*100" in fn, "숙련도 계산에 퍼센트 변환(* 100)이 없습니다."
 
 
 # ── 난이도 상승 토스트 검증 ───────────────────────────────
 
+
 def test_check_level_up_exists() -> None:
     """checkLevelUp 함수가 존재해야 함."""
     code = _read()
-    assert "function checkLevelUp" in code, (
-        "checkLevelUp 함수가 없습니다."
-    )
+    assert "function checkLevelUp" in code, "checkLevelUp 함수가 없습니다."
 
 
 def test_level_up_message_format() -> None:
     """난이도 상승 토스트 메시지에 old→new 레벨 정보가 포함되어야 함."""
     code = _read()
     fn = _extract_function(code, "function checkLevelUp")
-    assert "→" in fn or "->" in fn, (
-        "난이도 상승 메시지에 레벨 변화 표시(→)가 없습니다."
-    )
+    assert "→" in fn or "->" in fn, "난이도 상승 메시지에 레벨 변화 표시(→)가 없습니다."
 
 
 def test_level_up_duplicate_prevention() -> None:
@@ -185,6 +172,7 @@ def test_level_up_duplicate_prevention() -> None:
 
 
 # ── 헬퍼 ───────────────────────────────────────────────────
+
 
 def _extract_function(code: str, fn_name: str) -> str:
     idx = code.index(fn_name)

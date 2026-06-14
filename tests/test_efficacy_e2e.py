@@ -267,6 +267,7 @@ def test_playwright_not_installed_note() -> None:
     """Playwright가 설치되지 않았음을 기록 (실제 E2E는 수동 실행 필요)."""
     try:
         import importlib
+
         importlib.import_module("playwright")  # type: ignore[import-untyped]
     except ImportError:
         # Playwright 미설치 — 구조 검증만 수행

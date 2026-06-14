@@ -22,6 +22,7 @@ def _read() -> str:
 
 # ── 보석 계산 로직 검증 ────────────────────────────────────
 
+
 def test_calculate_streak_gems_exists() -> None:
     """calculateStreakGems 함수가 존재해야 함."""
     code = _read()
@@ -39,9 +40,7 @@ def test_streak_1_gives_1_gem() -> None:
         "streak 0일 때 0 보석을 반환해야 합니다."
     )
     # 기본 gems = 1
-    assert "gems = 1" in fn or "gems=1" in fn, (
-        "기본 보석 수가 1이 아닙니다."
-    )
+    assert "gems = 1" in fn or "gems=1" in fn, "기본 보석 수가 1이 아닙니다."
 
 
 def test_streak_3_gives_2_gems() -> None:
@@ -49,9 +48,7 @@ def test_streak_3_gives_2_gems() -> None:
     code = _read()
     fn = _extract_function(code, "function calculateStreakGems")
     # 3일 이상 보너스
-    assert "streak >= 3" in fn or "streak>=3" in fn, (
-        "3일 연속 보너스 조건이 없습니다."
-    )
+    assert "streak >= 3" in fn or "streak>=3" in fn, "3일 연속 보너스 조건이 없습니다."
 
 
 def test_streak_7_gives_2_gems_not_3() -> None:
@@ -87,9 +84,7 @@ def test_daily_gem_cap_one_per_day() -> None:
     """하루에 한 번만 보석 지급 (todayRecorded / gemAwarded 체크)."""
     code = _read()
     record_fn = _extract_function(code, "function recordAnswer")
-    has_dup_check = (
-        "todayRecorded" in record_fn or "gemAwarded" in record_fn
-    )
+    has_dup_check = "todayRecorded" in record_fn or "gemAwarded" in record_fn
     assert has_dup_check, (
         "하루 중복 보석 지급 방지 로직이 없습니다. "
         "todayRecorded 또는 gemAwarded 체크가 필요합니다."
@@ -109,7 +104,7 @@ def test_history_tracking() -> None:
     """history 객체에 날짜별 활동 기록이 저장되어야 함."""
     code = _read()
     record_fn = _extract_function(code, "function recordAnswer")
-    assert "history[" in record_fn or 'history[' in record_fn, (
+    assert "history[" in record_fn or "history[" in record_fn, (
         "history 객체에 날짜별 기록이 저장되지 않습니다."
     )
 
@@ -117,20 +112,17 @@ def test_history_tracking() -> None:
 def test_get_current_streak_exists() -> None:
     """getCurrentStreak() 함수가 존재해야 함."""
     code = _read()
-    assert "function getCurrentStreak" in code, (
-        "getCurrentStreak 함수가 없습니다."
-    )
+    assert "function getCurrentStreak" in code, "getCurrentStreak 함수가 없습니다."
 
 
 def test_is_today_active_exists() -> None:
     """isTodayActive() 함수가 존재해야 함."""
     code = _read()
-    assert "function isTodayActive" in code, (
-        "isTodayActive 함수가 없습니다."
-    )
+    assert "function isTodayActive" in code, "isTodayActive 함수가 없습니다."
 
 
 # ── 헬퍼 ───────────────────────────────────────────────────
+
 
 def _extract_function(code: str, fn_name: str) -> str:
     idx = code.index(fn_name)

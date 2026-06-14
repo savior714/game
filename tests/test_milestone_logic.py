@@ -20,6 +20,7 @@ def _read() -> str:
 
 # ── 구조 검증 ──────────────────────────────────────────────
 
+
 def test_has_both_streak_counters() -> None:
     """session 객체에 rocketStreak와 milestoneStreak가 모두 정의되어 있어야 함."""
     code = _read()
@@ -48,9 +49,9 @@ def test_only_milestone_streak_resets_on_wrong() -> None:
     assert "milestoneStreak = 0" in else_block or "milestoneStreak=0" in else_block, (
         "오답 시 milestoneStreak가 0으로 리셋되지 않습니다."
     )
-    assert "rocketStreak = 0" not in else_block and "rocketStreak=0" not in else_block, (
-        "오답 시 rocketStreak가 리셋됩니다. rocketStreak는 오답 시 유지되어야 합니다."
-    )
+    assert (
+        "rocketStreak = 0" not in else_block and "rocketStreak=0" not in else_block
+    ), "오답 시 rocketStreak가 리셋됩니다. rocketStreak는 오답 시 유지되어야 합니다."
 
 
 def test_rocket_launch_resets_only_rocket_streak() -> None:
@@ -61,24 +62,26 @@ def test_rocket_launch_resets_only_rocket_streak() -> None:
         "로켓 발사 시 rocketStreak가 0으로 리셋되지 않습니다."
     )
     # milestoneStreak 리셋이 없어야 함
-    assert "milestoneStreak = 0" not in rocket_fn and "milestoneStreak=0" not in rocket_fn, (
-        "로켓 발사 시 milestoneStreak도 리셋됩니다. milestoneStreak는 유지되어야 합니다."
-    )
+    assert (
+        "milestoneStreak = 0" not in rocket_fn and "milestoneStreak=0" not in rocket_fn
+    ), "로켓 발사 시 milestoneStreak도 리셋됩니다. milestoneStreak는 유지되어야 합니다."
 
 
 def test_session_milestones_have_gems() -> None:
     """session_5/10/20 마일스톤이 보석(gems)을 지급해야 함."""
     code = _read()
     # SESSION_MILESTONES 배열에서 gems > 0인 항목이 있어야 함
-    session_match = re.search(
-        r"SESSION_MILESTONES\s*=\s*\[([\s\S]*?)\]", code
-    )
+    session_match = re.search(r"SESSION_MILESTONES\s*=\s*\[([\s\S]*?)\]", code)
     assert session_match, "SESSION_MILESTONES 배열이 없습니다."
     session_block = session_match.group(1)
-    gems_count = session_block.count('"gems":') + session_block.count("'gems':") + session_block.count("gems:")
+    gems_count = (
+        session_block.count('"gems":')
+        + session_block.count("'gems':")
+        + session_block.count("gems:")
+    )
     assert gems_count >= 3, "SESSION_MILESTONES에 gems 필드가 없습니다."
     # session_5/10/20이 gems > 0을 가져야 함
-    assert 'gems: 1' in session_block, (
+    assert "gems: 1" in session_block, (
         "session_5/10/20 마일스톤이 보석을 지급해야 합니다 (gems: 1)."
     )
 
@@ -87,9 +90,17 @@ def test_achieved_tracking_for_all_milestones() -> None:
     """모든 마일스톤 키가 achieved 객체에 정의되어 있어야 함."""
     code = _read()
     expected_keys = [
-        "streak_3", "streak_5", "streak_10", "streak_15",
-        "session_3", "session_5", "session_10", "session_20",
-        "first_answer", "first_subject_complete", "first_rocket",
+        "streak_3",
+        "streak_5",
+        "streak_10",
+        "streak_15",
+        "session_3",
+        "session_5",
+        "session_10",
+        "session_20",
+        "first_answer",
+        "first_subject_complete",
+        "first_rocket",
     ]
     for key in expected_keys:
         assert f"'{key}'" in code or f'"{key}"' in code, (
@@ -126,6 +137,7 @@ def test_lifetime_total_correct_increments() -> None:
 
 
 # ── 헬퍼 ───────────────────────────────────────────────────
+
 
 def _extract_function(code: str, fn_name: str) -> str:
     idx = code.index(fn_name)

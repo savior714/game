@@ -32,6 +32,7 @@ normative SSOT: [.agents/core/principles.md](.agents/core/principles.md)
 - **Edit Tool Schema**: [routing.md §1.1](.agents/core/routing.md#11-file-edit-tool-schema-편집-도구-ssot) (Cursor) · Tri-Runtime: [runtime_edit_tools.md](.agents/core/runtime_edit_tools.md) (Cursor · OpenCode · Antigravity)
 - **Workaround Accountability**: [principles.md §1.6](.agents/core/principles.md#16-workaround-accountability--close-turn-reflection)
 - **Code Quality Lifecycle** (설계→구현→리뷰→테스트): [code_quality_lifecycle.md](.agents/core/code_quality_lifecycle.md)
+- **Self-Evolution**: 세션 중 반복된 실패·도구 호출 오류·비효율적인 패턴을 감지하면 사용자에게 개선 사항을 제안. 제안은 MEMORY.md 또는 별도 논의 노트에 기록하고, 승인 시 AGENTS.md·프로젝트 규칙에 반영
 
 ---
 
@@ -45,7 +46,146 @@ normative SSOT: [.agents/core/principles.md](.agents/core/principles.md)
 
 **부분 수정 호출 전 (always-on, tri-runtime)**: 호스트 **읽기 도구**로 디스크 최신본 확보 → 대상 문자열이 파일에 **정확히 1번**인지 확인 → **old ≠ new** (같으면 호출 금지). `"No changes to apply"` 수신 시 동일 쌍 재호출 금지 → 재읽기 → 목표 내용 있으면 완료, 없으면 old/범위/new 변경 후 1회만 재시도. **도구 이름·키**: [runtime_edit_tools.md §1](.agents/core/runtime_edit_tools.md) (Cursor `StrReplace`/`old_string` · OpenCode `edit`/`oldString` · Antigravity `replace_file_content`/`TargetContent`). Terminal Response: [routing.md](.agents/core/routing.md) (Cursor) · [opencode_tools.md §edit](.agents/core/opencode_tools.md) (OpenCode).
 
-### 2.2 Plan / Blueprint
+### 2.2 Multi-Agent Orchestration (병렬 구현·검증 패턴)
+
+복수 파일 수정이 필요한 복합 작업은 단일 에이전트가 순차적으로 처리하지 말고, 아래 5단계 페이즈로 분할 실행한다.
+
+**핵심 원칙**: 각 페이즈는 **상태가 독립적인 fresh subagent**를 사용한다. 이전 페이즈의 컨텍스트·결과를 `task` prompt에 명시적으로 전달하되, subagent 간 내부 상태는 공유되지 않는다.
+
+```
+Phase 1: 분석·계획 (Main Agent)
+  ↓
+Phase 2: 구현 (N개 Subagent 병렬, fresh)
+  ↓
+Phase 3: 검증 (N개 Subagent 병렬, fresh — 구현 페이즈와 별도 인스턴스)
+  ↓
+Phase 4: 수정 (M개 Subagent 병렬, M≤N, fresh)
+  ↓
+Phase 5: 최종 감사 (Main Agent)
+```
+
+#### Phase 1 — 분석·계획 (Main Agent 전담)
+
+- 작업 범위 분석 → 수정 대상 파일·영역 식별
+- N(구현 에이전트 수) 결정: 서로 독립적인 파일 그룹마다 1개
+- 각 태스크의 **범위·목표·성공 기준**을 명확히 정의
+- 의존 관계가 없는 태스크는 병렬 실행 가능하도록 분리
+
+#### Phase 2 — 구현 (N개 Subagent 병렬 실행)
+
+- 각 subagent에 **독립적인 파일 범위** 할당 (중복 금지)
+- `task` 도구로 동시 호출 (동일 메시지 내 복수 호출)
+- subagent별 지시사항:
+  - `subagent_type`: `general` (구현용)
+  - 명시된 파일 범위만 수정, 타 영역 터치 금지
+  - 수정 후 `git diff` 결과 요약 포함
+
+**prompt 템플릿**:
+```
+작업: [파일 경로/범위] 수정
+목표: [구체적 목표]
+성공 기준: [검증 가능한 기준]
+제약: [파일 범위 외 터치 금지, AGENTS.md §4.1–§4.2 준수 등]
+출력: 수정 후 `git diff --stat` + 주요 변경 3줄 요약
+```
+
+#### Phase 3 — 검증 (N개 Subagent 병렬 실행)
+
+- **구현 subagent와 동일한 수**의 audit subagent 배치 (별도 fresh 인스턴스)
+- 각 audit subagent는 **자신의 구현 결과를 전담 검증** (다른 페이즈의 컨텍스트 공유 금지)
+- subagent별 지시사항:
+  - `subagent_type`: `general` (검증용)
+  - 구현 subagent의 `git diff`만 검토 (전체 코드베이스 아님)
+  - 집중 체크리스트:
+    - **한글/인코딩**: `edit` 도구 실패 패턴 재발 여부 ([AGENTS.md §4.1](#41-partial-edit-tool--한글-콘텐츠-limitation-tri-runtime))
+    - **중복 메시지**: 정적 HTML/JS의 `querySelector` 고유성 ([AGENTS.md §4.2](#42-test--메시지-전역-고유성))
+    - **Context Route Gate**: `just route` 절차 준수 여부 ([routing.md §2](.agents/core/routing.md#2-context-route-gate-편집-전-강제ide-공통))
+    - **Partial Edit 규칙**: `oldString ≠ newString`, 단일 매칭 ([routing.md §1.2](.agents/core/routing.md#12-patch-preconditions-메타-금지12))
+  -发现问题 → `git diff` 기반 구체 근거 + 라인 번호 제시
+
+**prompt 템플릿**:
+```
+검증 대상: [파일 경로/범위] — [구현 subagent의 git diff 결과]
+체크리스트:
+  1. 한글/인코딩: edit 도구 실패 없음, UTF-8 정상
+  2. 메시지 고유성: querySelector 중복 텍스트 없음
+  3. Route Gate: just route 절차 준수
+  4. Partial Edit: oldString ≠ newString, 단일 매칭
+결과: issue 있으면 파일:라인 + 근거 제시. clean이면 "PASS"만 출력
+```
+
+#### Phase 4 — 수정 (M개 Subagent 병렬, M≤N)
+
+- Phase 3에서 발견된 issue만 수정
+- 같은 파일에 issue가 여러 개면 **1개 subagent가 전담**
+- 수정 후 `git diff` 결과 포함
+
+**prompt 템플릿**:
+```
+수정 대상: [파일 경로] — Phase 3 issue: [issue 목록]
+지시: 아래 issue만 수정. unrelated 변경 금지.
+  - [issue 1: 파일:라인 + 설명]
+  - [issue 2: 파일:라인 + 설명]
+출력: 수정 후 `git diff` + 변경 요약
+```
+
+#### Phase 5 — 최종 감사 (Main Agent 전담)
+
+- 전체 `git diff` 검토
+- lint/test/verify 실행 (`just lint`, `pytest` 등)
+- 모든 subagent 결과 요약 → 완료 선언
+
+#### 실행 규칙
+
+- **동시 호출**: Phase 2/3의 subagent는 **동일 메시지 내 복수 `task` 호출**로 병렬 실행
+- **결과 대기**: 모든 subagent 완료 전 다음 Phase 시작 금지
+- **고립 범위**: 구현 subagent 간 파일 중복 금지 (충돌 방지)
+- **실패 시**: 해당 subagent 태스크 `Status: failed` + 원인 기록 → Phase 4에서 재시도 1회만
+- **스케일링**: 파일 수 ≤ 5면 N=2~3, 파일 수 > 5면 N=4~5로 분할 (과도한 병렬화 금지)
+- **fresh 인스턴스 강제**: Phase 3 audit subagent는 Phase 2 구현 subagent와 **다른 세션 컨텍스트**. 동일한 task_id 재사용 금지
+
+#### 언제 사용할지
+
+| 작업 규모 | 패턴 적용 |
+|---|---|
+| 단일 파일 수정 | Phase 1 → Main Agent 구현 (단일 실행) |
+| 2~3개 파일, 독립적 | Phase 1 → Phase 2(N=2~3) → Phase 5 |
+| 4개+ 파일 또는 복잡도 높음 | 전체 5단계 페이즈 적용 |
+| 버그 수정 | [/diagnose](.agents/workflows/diagnose.md) 우선 → 필요시 이 패턴 |
+
+#### 예시: 3개 과목 UI 동시 리팩토링
+
+```
+Main Agent → Phase 1: domains/math/, domains/english/, domains/korean/ 식별
+
+task(description="Refactor math UI", subagent_type="general",
+  prompt="작업: domains/math/ 내 HTML/JS/CSS 리팩토링\n목표: UI 일관성 개선, 접근성 준수\n성공 기준: lint PASS, querySelector 중복 없음\n출력: git diff --stat + 주요 변경 3줄")
+
+task(description="Refactor english UI", subagent_type="general",
+  prompt="작업: domains/english/ 내 HTML/JS/CSS 리팩토링\n목표: UI 일관성 개선, 접근성 준수\n성공 기준: lint PASS, querySelector 중복 없음\n출력: git diff --stat + 주요 변경 3줄")
+
+task(description="Refactor korean UI", subagent_type="general",
+  prompt="작업: domains/korean/ 내 HTML/JS/CSS 리팩토링\n목표: UI 일관성 개선, 접근성 준수\n성공 기준: lint PASS, querySelector 중복 없음\n출력: git diff --stat + 주요 변경 3줄")
+
+→ (3개 subagent 병렬 완료 대기)
+
+task(description="Audit math UI", subagent_type="general",
+  prompt="검증 대상: domains/math/ — [math subagent의 git diff]\n체크리스트: 1. 한글 인코딩 2. querySelector 고유성 3. Route Gate 4. Partial Edit 규칙\n결과: issue 있으면 파일:라인 + 근거. clean이면 PASS")
+
+task(description="Audit english UI", subagent_type="general",
+  prompt="검증 대상: domains/english/ — [english subagent의 git diff]\n체크리스트:同上\n결과: issue 있으면 파일:라인 + 근거. clean이면 PASS")
+
+task(description="Audit korean UI", subagent_type="general",
+  prompt="검증 대상: domains/korean/ — [korean subagent의 git diff]\n체크리스트:同上\n결과: issue 있으면 파일:라인 + 근거. clean이면 PASS")
+
+→ (3개 audit subagent 병렬 완료 대기)
+
+Main Agent → Phase 5: 전체 diff 검토 + lint/test
+```
+
+---
+
+### 2.3 Plan / Blueprint
 
 - **Plan First**: 복합 작업은 `just plan-lint` PASS 전 구현 착수 금지 — [PROJECT_RULES.md §3](PROJECT_RULES.md) · [planning.md](.agents/core/planning.md).
 - **Task closeout**: Blueprint Task `Status`/`Conclusion`은 **`just plan-task-close` CLI만** — 에디터 직접 수정 **절대 금지** — [plan.md §1.10](.agents/workflows/plan.md) · [error_patterns/detail/blueprint.md §5.6](.agents/core/error_patterns/detail/blueprint.md#56-task-statusconclusion-%EC%97%90%EB%94%94%ED%84%B0-%EC%A7%81%EC%A0%9D-%EC%88%98%EC%A0%95).

@@ -59,7 +59,7 @@
   <!-- Header -->
   <header class="bg-white border-b border-gray-200 px-5 py-4 sticky top-0 z-50">
     <div class="max-w-2xl mx-auto flex items-center gap-4">
-      <button onclick="location.href='../../index.html'" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 transition-colors shrink-0">
+      <button data-action="go-home" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 transition-colors shrink-0">
         <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
       </button>
       <div>
@@ -73,11 +73,11 @@
     
     <!-- Subject Tabs -->
     <div class="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
-      <button onclick="setSubject('math')" id="tab-math" class="tab-btn px-5 py-2.5 rounded-full text-sm shrink-0 transition-all active-tab">🔢 수학</button>
-      <button onclick="setSubject('english')" id="tab-english" class="tab-btn px-5 py-2.5 rounded-full text-sm shrink-0 transition-all inactive-tab">📚 영어</button>
-      <button onclick="setSubject('korean')" id="tab-korean" class="tab-btn px-5 py-2.5 rounded-full text-sm shrink-0 transition-all inactive-tab">📖 국어</button>
-      <button onclick="setSubject('science')" id="tab-science" class="tab-btn px-5 py-2.5 rounded-full text-sm shrink-0 transition-all inactive-tab">🔬 과학</button>
-      <button onclick="showGrowthTab()" id="tab-growth" class="tab-btn px-5 py-2.5 rounded-full text-sm shrink-0 transition-all inactive-tab">📊 성장</button>
+      <button data-action="set-subject" data-subject="math" id="tab-math" class="tab-btn px-5 py-2.5 rounded-full text-sm shrink-0 transition-all active-tab">🔢 수학</button>
+      <button data-action="set-subject" data-subject="english" id="tab-english" class="tab-btn px-5 py-2.5 rounded-full text-sm shrink-0 transition-all inactive-tab">📚 영어</button>
+      <button data-action="set-subject" data-subject="korean" id="tab-korean" class="tab-btn px-5 py-2.5 rounded-full text-sm shrink-0 transition-all inactive-tab">📖 국어</button>
+      <button data-action="set-subject" data-subject="science" id="tab-science" class="tab-btn px-5 py-2.5 rounded-full text-sm shrink-0 transition-all inactive-tab">🔬 과학</button>
+      <button data-action="show-growth" id="tab-growth" class="tab-btn px-5 py-2.5 rounded-full text-sm shrink-0 transition-all inactive-tab">📊 성장</button>
     </div>
 
     <!-- Difficulty Control Panel -->
@@ -93,7 +93,7 @@
       </div>
 
       <div class="relative py-4">
-        <input type="range" id="level-slider" min="0" max="6" value="1" step="1" oninput="onSliderChange(this.value)">
+        <input type="range" id="level-slider" min="0" max="6" value="1" step="1" data-action="slider-change">
         <div class="flex justify-between text-[10px] sm:text-xs text-gray-400 font-medium px-1 mt-3">
           <span>5~6세</span>
           <span>7세</span>
@@ -106,7 +106,7 @@
       </div>
 
       <div class="mt-8 flex justify-end">
-        <button id="save-btn" onclick="saveSettings()" class="bg-gray-900 text-white px-6 py-3 rounded-xl font-bold text-sm w-full sm:w-auto hover:bg-gray-800 transition-colors shadow-md flex items-center justify-center gap-2">
+        <button id="save-btn" data-action="save-settings" class="bg-gray-900 text-white px-6 py-3 rounded-xl font-bold text-sm w-full sm:w-auto hover:bg-gray-800 transition-colors shadow-md flex items-center justify-center gap-2">
           이 난이도로 적용하기
         </button>
       </div>
@@ -140,7 +140,7 @@
           <div class="flex gap-2 items-center justify-between">
             <div class="flex gap-2 min-w-0">
                <input type="text" id="ww-icon" placeholder="아이콘" class="w-16 px-1 py-2 border border-blue-200 rounded-lg text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="">
-               <button onclick="addWeeklyWord()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-blue-700 transition shrink-0">단어 추가</button>
+               <button data-action="add-weekly-word" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-blue-700 transition shrink-0">단어 추가</button>
             </div>
             <p class="text-[10px] text-gray-400">아이콘 미입력 시 숨김</p>
           </div>
@@ -174,7 +174,7 @@
             <div class="flex items-center gap-2 text-sm text-gray-700">
               <span class="font-bold">가격:</span> 💎 <input type="number" id="cr-price" value="1" min="1" class="w-16 px-2 py-1 border border-gray-200 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-blue-500"> 개
             </div>
-            <button onclick="addCustomReward()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-blue-700 transition">추가하기</button>
+            <button data-action="add-custom-reward" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-blue-700 transition">추가하기</button>
           </div>
         </div>
 

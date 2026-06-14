@@ -1,6 +1,25 @@
 /* ═══════════════════════════════════
+   DOM 요소 캐싱
+   ═══════════════════════════════════ */
+const DOM = {};
+
+function initDOMCache() {
+  DOM.qScore        = document.getElementById('q-score');
+  DOM.feedback      = document.getElementById('feedback');
+  DOM.nextBtn       = document.getElementById('next-btn');
+  DOM.gameArea      = document.getElementById('game-area');
+  DOM.resultScreen  = document.getElementById('result-screen');
+  DOM.stars         = document.getElementById('stars');
+  DOM.resultTitle   = document.getElementById('result-title');
+  DOM.resultMsg     = document.getElementById('result-msg');
+  DOM.answerBtns    = document.getElementById('answer-buttons');
+  DOM.question      = document.getElementById('question');
+  DOM.statsTbody    = document.getElementById('stats-tbody');
+}
+
+/* ═══════════════════════════════════
    순차 빈칸 상태
-═══════════════════════════════════ */
+   ═══════════════════════════════════ */
 let seqBlanks = null;  // { word, blankIndices, blanks, ico, hint }
 let seqStep   = 0;     // 현재 빈칸 인덱스 (0 or 1)
 let seqFilled = [];    // 채워진 글자 배열
@@ -33,20 +52,20 @@ const answerFlowCore = QuizUICore.createAnswerFlowCore({
   },
   onCorrect: () => {
     score++;
-    document.getElementById('q-score').textContent = score;
-    const fb = document.getElementById('feedback');
+    (DOM.qScore || document.getElementById('q-score')).textContent = score;
+    const fb = DOM.feedback || document.getElementById('feedback');
     fb.textContent = ['잘했어요! 🎉', '맞았어요! ⭐', '완벽해요! 🌟', '훌륭해요! 👏'][Math.floor(Math.random()*4)];
     fb.className = 'feedback-correct';
     spawnConfetti();
   },
   onWrong: ({ button, answer: currentAnswer }) => {
     button.classList.add('wrong');
-    const fb = document.getElementById('feedback');
+    const fb = DOM.feedback || document.getElementById('feedback');
     fb.textContent = `정답은 "${currentAnswer}"이에요! 😊`;
     fb.className = 'feedback-wrong';
   },
   showNextButton: () => {
-    document.getElementById('next-btn').style.display = 'inline-block';
+    (DOM.nextBtn || document.getElementById('next-btn')).style.display = 'inline-block';
   }
 });
 const sequentialAnswerCore = QuizUICore.createSequentialAnswerCore({
@@ -57,8 +76,8 @@ const sequentialAnswerCore = QuizUICore.createSequentialAnswerCore({
   recordResult: (ok, elapsed) => recordResult(ok, elapsed),
   onSuccess: () => {
     score++;
-    document.getElementById('q-score').textContent = score;
-    const fb = document.getElementById('feedback');
+    (DOM.qScore || document.getElementById('q-score')).textContent = score;
+    const fb = DOM.feedback || document.getElementById('feedback');
     fb.textContent = ['잘했어요! 🎉', '맞았어요! ⭐', '완벽해요! 🌟', '훌륭해요! 👏'][Math.floor(Math.random()*4)];
     fb.className = 'feedback-correct';
     spawnConfetti();
@@ -66,19 +85,19 @@ const sequentialAnswerCore = QuizUICore.createSequentialAnswerCore({
   },
   onFailure: ({ button }) => {
     button.classList.add('wrong');
-    const fb = document.getElementById('feedback');
+    const fb = DOM.feedback || document.getElementById('feedback');
     fb.textContent = `정답은 "${answer}"이에요! 😊`;
     fb.className = 'feedback-wrong';
     seqBlanks = null;
   },
   showNextButton: () => {
-    document.getElementById('next-btn').style.display = 'inline-block';
+    (DOM.nextBtn || document.getElementById('next-btn')).style.display = 'inline-block';
   }
 });
 
 /* ═══════════════════════════════════
    공통 보기 버튼 렌더
-═══════════════════════════════════ */
+   ═══════════════════════════════════ */
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;')
@@ -88,14 +107,13 @@ function escapeHtml(str) {
 }
 
 function renderChoiceBtns(choices) {
-  const container = document.getElementById('answer-buttons');
+  const container = DOM.answerBtns || document.getElementById('answer-buttons');
   container.className = 'answer-buttons';
   container.innerHTML = '';
   choices.forEach(val => {
     const btn = document.createElement('button');
     btn.className   = 'answer-btn btn-hidden'; // 시작은 숨김 상태
     btn.textContent = val;
-    btn.onclick     = () => checkAnswer(val, btn);
     container.appendChild(btn);
     // 렌더링 루프 확보 후 페이드 인
     setTimeout(() => btn.classList.remove('btn-hidden'), 10);
@@ -103,8 +121,24 @@ function renderChoiceBtns(choices) {
 }
 
 /* ═══════════════════════════════════
+   이벤트 위임 — answer-buttons 컨테이너
+   ═══════════════════════════════════ */
+(function setupAnswerDelegation() {
+  const container = DOM.answerBtns || document.getElementById('answer-buttons');
+  if (!container) return;
+  container.addEventListener('click', (e) => {
+    const btn = e.target.closest('.answer-btn');
+    if (!btn) return;
+    const val = btn.textContent;
+    // 객관식: checkAnswer(val, btn)
+    // 순차 빈칸: checkSeqAnswer(val, btn) — checkAnswer 내부에서 분기
+    checkAnswer(val, btn);
+  });
+})();
+
+/* ═══════════════════════════════════
    순차 빈칸 단어 표시 렌더
-═══════════════════════════════════ */
+   ═══════════════════════════════════ */
 function renderSeqWord() {
   const { word, blankIndices } = seqBlanks;
   let html = '';
@@ -132,7 +166,7 @@ function renderSeqWordComplete() {
 
 /* ═══════════════════════════════════
    문제 표시
-═══════════════════════════════════ */
+   ═══════════════════════════════════ */
 function askQuestion() {
   answered  = false;
   uiQuestionKind = 'mc';
@@ -146,12 +180,13 @@ function askQuestion() {
   currentWordData = { cat: q._cat, level: q._level, en: q._wordEn, isWeakness: q.isWeakness, isWeekly: q.isWeekly };
   answer = q.answer;
 
-  document.getElementById('q-count').textContent     = currentQ + 1;
-  document.getElementById('feedback').textContent    = q.isWeakness ? '🔥 약점 단어 도전!' : '';
-  document.getElementById('feedback').className      = q.isWeakness ? 'weakness-highlight' : '';
-  document.getElementById('next-btn').style.display = 'none';
+  (DOM.qScore || document.getElementById('q-score')).textContent     = currentQ + 1;
+  const fbEl = DOM.feedback || document.getElementById('feedback');
+  fbEl.textContent    = q.isWeakness ? '🔥 약점 단어 도전!' : '';
+  fbEl.className      = q.isWeakness ? 'weakness-highlight' : '';
+  (DOM.nextBtn || document.getElementById('next-btn')).style.display = 'none';
 
-  const qEl = document.getElementById('question');
+  const qEl = DOM.question || document.getElementById('question');
   const iconHtml = (q.ico && (q.ico.startsWith('./') || q.ico.endsWith('.png')))
     ? `<img src="${q.ico}" class="q-img" alt="question-icon">`
     : (q.ico ? `<span class="q-emoji">${q.ico}</span>` : '');
@@ -159,7 +194,7 @@ function askQuestion() {
   const isLong = (q.word && q.word.length > 10) || (q.main && q.main.length > 10);
   const longClass = isLong ? ' q-long' : '';
 
-  const answerBtns = document.getElementById('answer-buttons');
+  const answerBtns = DOM.answerBtns || document.getElementById('answer-buttons');
 
   if (q.blanks) {
     // 순차 빈칸 모드
@@ -182,7 +217,8 @@ function askQuestion() {
       `<button type="button" class="typing-submit" id="typing-submit">확인</button>`;
     const inp = document.getElementById('typing-input');
     const submit = () => checkTypingAnswer(inp.value);
-    document.getElementById('typing-submit').onclick = submit;
+    // typing-submit는 고유 ID로 직접 처리 (이벤트 위임 대상 아님)
+    document.getElementById('typing-submit').addEventListener('click', submit);
     inp.onkeydown = (e) => {
       if (e.key === 'Enter') submit();
     };
@@ -228,28 +264,28 @@ function checkTypingAnswer(raw) {
     if (inp) inp.classList.add('correct');
     recordResult(true, elapsed);
     score++;
-    document.getElementById('q-score').textContent = score;
-    const fb = document.getElementById('feedback');
+    (DOM.qScore || document.getElementById('q-score')).textContent = score;
+    const fb = DOM.feedback || document.getElementById('feedback');
     fb.textContent = ['잘했어요! 🎉', '맞았어요! ⭐', '완벽해요! 🌟', '훌륭해요! 👏'][Math.floor(Math.random() * 4)];
     fb.className = 'feedback-correct';
     spawnConfetti();
   } else {
     if (inp) inp.classList.add('wrong');
     recordResult(false, elapsed);
-    const fb = document.getElementById('feedback');
+    const fb = DOM.feedback || document.getElementById('feedback');
     fb.textContent = `정답은 "${answer}"이에요! 😊`;
     fb.className = 'feedback-wrong';
   }
-  document.getElementById('next-btn').style.display = 'inline-block';
+  (DOM.nextBtn || document.getElementById('next-btn')).style.display = 'inline-block';
 }
 
 /* ═══════════════════════════════════
    결과 기록
-═══════════════════════════════════ */
+   ═══════════════════════════════════ */
 
 /* ═══════════════════════════════════
    타이머
-═══════════════════════════════════ */
+   ═══════════════════════════════════ */
 function startTimer() {
   timerCore.startTimer();
 }
@@ -283,15 +319,15 @@ function timeOut() {
       if (b.textContent === answer) b.classList.add('correct');
     });
   }
-  const fb = document.getElementById('feedback');
+  const fb = DOM.feedback || document.getElementById('feedback');
   fb.textContent = `⏰ 시간 초과! 정답은 "${answer}"이에요!`;
   fb.className   = 'feedback-wrong';
-  document.getElementById('next-btn').style.display = 'inline-block';
+  (DOM.nextBtn || document.getElementById('next-btn')).style.display = 'inline-block';
 }
 
 /* ═══════════════════════════════════
    순차 빈칸 정답 확인
-═══════════════════════════════════ */
+   ═══════════════════════════════════ */
 function checkSeqAnswer(val, btn) {
   const blank = seqBlanks.blanks[seqStep];
   if (val === blank.char) {
@@ -318,7 +354,7 @@ function checkSeqAnswer(val, btn) {
 
 /* ═══════════════════════════════════
    정답 확인
-═══════════════════════════════════ */
+   ═══════════════════════════════════ */
 function checkAnswer(val, btn) {
   if (answered) return;
   if (seqBlanks) { checkSeqAnswer(val, btn); return; }
@@ -328,7 +364,7 @@ function checkAnswer(val, btn) {
 
 /* ═══════════════════════════════════
    게임 흐름
-═══════════════════════════════════ */
+   ═══════════════════════════════════ */
 function nextQuestion() {
   currentQ++;
   if (currentQ >= TOTAL) showResult();
@@ -336,8 +372,8 @@ function nextQuestion() {
 }
 
 function showResult() {
-  document.getElementById('game-area').style.display     = 'none';
-  document.getElementById('result-screen').style.display = 'block';
+  (DOM.gameArea || document.getElementById('game-area')).style.display     = 'none';
+  (DOM.resultScreen || document.getElementById('result-screen')).style.display = 'block';
 
   // 효능감 시스템 — 세션 종료 및 과목 완료
   if (typeof MilestoneTracker !== 'undefined') {
@@ -353,18 +389,18 @@ function showResult() {
   if (pct === 1)       { stars='⭐⭐⭐'; title='완벽해요!';        msg=`10문제 모두 맞췄어요! 영어 천재! 🎊`; }
   else if (pct >= 0.7) { stars='⭐⭐';  title='잘했어요!';        msg=`10문제 중 ${score}개 맞췄어요! 최고예요! 😄`; }
   else                 { stars='⭐';    title='조금 더 연습해요!'; msg=`10문제 중 ${score}개 맞췄어요. 같이 다시 해봐요! 💪`; }
-  document.getElementById('stars').textContent        = stars;
-  document.getElementById('result-title').textContent = title;
-  document.getElementById('result-msg').textContent   = msg;
+  (DOM.stars || document.getElementById('stars')).textContent        = stars;
+  (DOM.resultTitle || document.getElementById('result-title')).textContent = title;
+  (DOM.resultMsg || document.getElementById('result-msg')).textContent   = msg;
 }
 
 function startGame() {
   stopTimer();
   currentQ = 0; score = 0;
   stats    = loadStats();
-  document.getElementById('q-score').textContent         = 0;
-  document.getElementById('result-screen').style.display = 'none';
-  document.getElementById('game-area').style.display     = 'block';
+  (DOM.qScore || document.getElementById('q-score')).textContent         = 0;
+  (DOM.resultScreen || document.getElementById('result-screen')).style.display = 'none';
+  (DOM.gameArea || document.getElementById('game-area')).style.display     = 'block';
 
   // 효능감 시스템 — 세션 초기화
   if (typeof MilestoneTracker !== 'undefined') {
@@ -380,13 +416,13 @@ function startGame() {
 
 /* ═══════════════════════════════════
    통계 모달
-═══════════════════════════════════ */
+   ═══════════════════════════════════ */
 function openStats()  { statsModalCore.openStats(); }
 function closeStats() { statsModalCore.closeStats(); }
 function onModalBackdrop(e) { statsModalCore.onModalBackdrop(e); }
 
 function renderStatsTable() {
-  const tbody = document.getElementById('stats-tbody');
+  const tbody = DOM.statsTbody || document.getElementById('stats-tbody');
   tbody.innerHTML = '';
   for (const [cat, data] of Object.entries(WORDS)) {
     const s = stats[cat];
@@ -414,21 +450,28 @@ function confirmResetStats() { if (confirm('누적 기록을 모두 지울까요
 
 /* ═══════════════════════════════════
    색종이
-═══════════════════════════════════ */
+   ═══════════════════════════════════ */
 function spawnConfetti() {
-  const items=['🎉','🌟','✨','🎊','⭐','🍬','🎈'];
-  for (let i=0;i<8;i++) setTimeout(()=>{
-    const el=document.createElement('div');
-    el.className='confetti-emoji';
-    el.textContent=items[Math.floor(Math.random()*items.length)];
-    el.style.left=Math.random()*100+'vw'; el.style.top='-40px';
-    el.style.animationDuration=(1+Math.random())+'s';
-    document.body.appendChild(el); setTimeout(()=>el.remove(),2500);
-  }, i*100);
+  const items = '🎉','🌟','✨','🎊','⭐','🍬','🎈';
+  for (let i = 0; i < 8; i++) {
+    setTimeout(() => {
+      const el = ParticlePool.acquire('confetti-emoji');
+      if (!el) return;
+      el.textContent = items[Math.floor(Math.random() * items.length)];
+      el.style.left = Math.random() * 100 + 'vw';
+      el.style.top = '-40px';
+      el.style.animationDuration = (1 + Math.random()) + 's';
+      el._confettiTimeout = setTimeout(() => {
+        el.style.display = 'none';
+        ParticlePool.release(el);
+      }, 2500);
+    }, i * 100);
+  }
 }
 
 /* ═══════════════════════════════════
    시작
-═══════════════════════════════════ */
+   ═══════════════════════════════════ */
+initDOMCache();
 initRocketPanel();
 startGame();

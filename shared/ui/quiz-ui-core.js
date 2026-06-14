@@ -41,6 +41,13 @@
       useGameCardDanger,
     } = options;
 
+    const els = {
+      gameCard: document.getElementById("game-card"),
+      timerBar: document.getElementById("timer-bar"),
+      timerLabel: document.getElementById("timer-label"),
+      timerText: document.getElementById("timer-text"),
+    };
+
     function startTimer() {
       stopTimer();
       setTimeLeft(getTimeLimit());
@@ -62,35 +69,28 @@
     function stopTimer() {
       clearInterval(getTimerInterval());
       setTimerInterval(null);
-      const gameCard = document.getElementById("game-card");
-      const bar = document.getElementById("timer-bar");
-      const label = document.getElementById("timer-label");
-      if (useGameCardDanger && gameCard) gameCard.classList.remove("time-danger");
-      if (bar) bar.classList.remove("warn", "danger");
-      if (label) label.classList.remove("danger");
+      if (useGameCardDanger && els.gameCard) els.gameCard.classList.remove("time-danger");
+      if (els.timerBar) els.timerBar.classList.remove("warn", "danger");
+      if (els.timerLabel) els.timerLabel.classList.remove("danger");
     }
 
     function updateTimerUI() {
       const pct = (getTimeLeft() / getTimeLimit()) * 100;
-      const bar = document.getElementById("timer-bar");
-      const label = document.getElementById("timer-label");
-      const text = document.getElementById("timer-text");
-      const gameCard = document.getElementById("game-card");
 
-      if (text) text.textContent = Math.ceil(getTimeLeft());
-      if (bar) {
-        bar.style.width = pct + "%";
-        bar.classList.remove("warn", "danger");
+      if (els.timerText) els.timerText.textContent = Math.ceil(getTimeLeft());
+      if (els.timerBar) {
+        els.timerBar.style.width = pct + "%";
+        els.timerBar.classList.remove("warn", "danger");
       }
-      if (label) label.classList.remove("danger");
-      if (useGameCardDanger && gameCard) gameCard.classList.remove("time-danger");
+      if (els.timerLabel) els.timerLabel.classList.remove("danger");
+      if (useGameCardDanger && els.gameCard) els.gameCard.classList.remove("time-danger");
 
       if (pct <= 25) {
-        if (bar) bar.classList.add("danger");
-        if (label) label.classList.add("danger");
-        if (useGameCardDanger && gameCard) gameCard.classList.add("time-danger");
+        if (els.timerBar) els.timerBar.classList.add("danger");
+        if (els.timerLabel) els.timerLabel.classList.add("danger");
+        if (useGameCardDanger && els.gameCard) els.gameCard.classList.add("time-danger");
       } else if (pct <= 50) {
-        if (bar) bar.classList.add("warn");
+        if (els.timerBar) els.timerBar.classList.add("warn");
       }
     }
 
@@ -100,17 +100,21 @@
   function createStatsModalCore(options) {
     const { renderStatsTable } = options;
 
+    const els = {
+      statsModal: document.getElementById("stats-modal"),
+    };
+
     function openStats() {
       renderStatsTable();
-      document.getElementById("stats-modal").style.display = "flex";
+      if (els.statsModal) els.statsModal.style.display = "flex";
     }
 
     function closeStats() {
-      document.getElementById("stats-modal").style.display = "none";
+      if (els.statsModal) els.statsModal.style.display = "none";
     }
 
     function onModalBackdrop(e) {
-      if (e.target === document.getElementById("stats-modal")) closeStats();
+      if (e.target === els.statsModal) closeStats();
     }
 
     return { openStats, closeStats, onModalBackdrop };
@@ -199,13 +203,15 @@
    */
   function handleQuestionError(err) {
     console.error('[QuizUICore] 문제 생성 에러:', err);
-    const qEl = document.getElementById('question');
-    const answerBtns = document.getElementById('answer-buttons');
-    if (qEl) {
-      qEl.innerHTML = '<div class="error-message">⚠️ 문제를 불러오지 못했어요.<br>다시 시도해주세요!</div>';
+    const els = {
+      question: document.getElementById('question'),
+      answerButtons: document.getElementById('answer-buttons'),
+    };
+    if (els.question) {
+      els.question.innerHTML = '<div class="error-message">⚠️ 문제를 불러오지 못했어요.<br>다시 시도해주세요!</div>';
     }
-    if (answerBtns) {
-      answerBtns.innerHTML = '<button class="answer-btn" onclick="location.reload()">다시 시작 🔄</button>';
+    if (els.answerButtons) {
+      els.answerButtons.innerHTML = '<button class="answer-btn" onclick="location.reload()">다시 시작 🔄</button>';
     }
   }
 

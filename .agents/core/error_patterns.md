@@ -17,6 +17,19 @@ patterns_file: .agents/core/error_patterns/patterns.yaml
 에이전트가 작업을 진행할 때 반복적으로 저지르는 실수들을 기록합니다.
 **헤더(본 문서)** = 라우팅·**TOP 4**·**메타 금지 11** normative SSOT (always-on). TOP 5–9·WRONG/CORRECT = `error_patterns/detail/` **lazy-load**. **규범 SSOT**: 편집 도구 → [runtime_edit_tools.md](runtime_edit_tools.md) (tri-runtime) · Cursor 상세 → [routing.md](routing.md) §1 · AGENTS → [AGENTS.md §2](../../AGENTS.md).
 
+---
+
+## 📋 AGENTS.md 헌법 적용 요약
+
+| 원칙 | 이 문서에서의 구현 |
+|------|-------------------|
+| **1. 규칙 위계** | always_apply: true — 에러 패턴은 최우선 참조, 충돌 시 AGENTS.md §1 우선순위 적용 |
+| **2. 사고→단순→표적** | 메타 금지 3~4 — 실패 후 동일 입력 재시도 금지, 2회 실패 시 전략 전환 (단순화) |
+| **3. 편집 게이트 4단계** | TOP 1~4 + 메타 금지 1~3, 9 — 읽기→단일매칭→old≠new→재시도1회 전량 포함 |
+| **4. 다중 에이전트** | 이 문서의 대상 — Phase 3 검증에서 TOP 1~9 체크리스트 전담 |
+| **5. Plan CLI 전용** | 메타 금지 6 — discuss/plan 종료는 사용자 선택(AskQuestion) 없이 마무리 금지 |
+| **6. 검증·한글·고유성** | Zero-Leak 보안 금지 패턴, 메타 금지 11 — edit 후 검증 누락 방지 |
+
 ### 언제 어떤 문서를 볼지
 
 | 상황 | 먼저 볼 문서 |

@@ -15,6 +15,19 @@ verify_with:
 
 ---
 
+## 📋 AGENTS.md 헌법 적용 요약
+
+| 원칙 | 이 문서에서의 구현 |
+|------|-------------------|
+| **1. 규칙 위계** | priority: 2 — `PROJECT_RULES.md` 다음, `.agents/domains/`보다 우선 |
+| **2. 사고→단순→표적** | §1.3 라인 번호 안전 규칙 — 구조 기반 탐색 우선, 라인 번호 기반 수정 금지 |
+| **3. 편집 게이트 4단계** | §1.2 Patch Preconditions — 읽기 → 단일매칭 → old≠new → 재시도 1회 |
+| **4. 다중 에이전트** | §2.7 세션 매니페스트 — `route-gate-check-touched`로 편집 경로 검증 |
+| **5. Plan CLI 전용** | 이 문서의 대상 — 편집 게이트를 위한 `just route` CLI 전용 절차 |
+| **6. 검증·한글·고유성** | §1.4 Terminal Response Rule — `"No changes"` 재시도 금지, 한글 우회 가이드 |
+
+---
+
 ## 1. File Edit Tool Schema & Editing Rules
 
 > **Tri-Runtime (Cursor · local LLM · Antigravity)**: 본 절 §1.1–§1.4의 **도구 이름·키 스키마**는 **Cursor IDE** 기준이다. `AGENTS.md`는 세 런타임이 **함께** 읽으며, 편집 스키마만 다르다 — local LLM: [opencode_tools.md](./opencode_tools.md) (`edit`/`oldString`), Antigravity: `replace_file_content`/`TargetContent` ([runtime_edit_tools.md](./runtime_edit_tools.md) · [SPEC §1](../../docs/specs/technical/SPEC_TECH_tech_multi_agent_tooling.md)). **문서는 모두 읽되**, 충돌 시 **현재 세션에 노출된 도구** 행만 따른다. 예시: [editing §1.6](error_patterns/detail/editing.md).

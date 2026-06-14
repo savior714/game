@@ -208,7 +208,7 @@ function askQuestion() {
       const btn = document.createElement('button');
       btn.className   = 'answer-btn';
       btn.textContent = val;
-      btn.onclick     = () => checkAnswer(val, btn);
+      btn.addEventListener('click', () => checkAnswer(val, btn));
       container.appendChild(btn);
     });
     document.getElementById('q-count').textContent = currentQ + 1;

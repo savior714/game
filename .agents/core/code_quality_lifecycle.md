@@ -19,6 +19,19 @@ verify_with:
 
 코드 품질 점검을 **시점별**로 묶은 normative SSOT입니다. 세부 도구·게이트는 각 절의 Cross-ref를 따릅니다.
 
+---
+
+## 📋 AGENTS.md 헌법 적용 요약
+
+| 원칙 | 이 문서에서의 구현 |
+|------|-------------------|
+| **1. 규칙 위계** | priority: 1 — `PROJECT_RULES.md` 다음, 시점별 품질 체크 normative SSOT |
+| **2. 사고→단순→표적** | §2 I-2 중첩 3단계 초과 시 평탄화, I-3 함수·파일 크기 상한 (500줄/100줄) |
+| **3. 편집 게이트 4단계** | §2 I-5 신규 function·helper 전 검색 — 중복 타입·pass-through helper 금지 |
+| **4. 다중 에이전트** | §0 적용 순서 — 설계→구현→CI·lint→리뷰 순차 실행, §7 Enforcement Map |
+| **5. Plan CLI 전용** | §1 설계 시점 — Blueprint Task에 레이어 경계·SSOT 먼저 기록, `just ddd-gate` 검증 |
+| **6. 검증·한글·고유성** | §5 T-5 테스트 메시지 전역 고유성 — `querySelector` 중복 방지, §4 CI 강제 E-1~E-3 |
+
 > **용어 — Mock**: 본 문서 **Mock** = 테스트 더블(stub/spy/fake). **DB 시드·fixture**는 [seeding.md](../domains/infra/seeding.md). **`dependency_overrides`** = FastAPI composition root 교체(T-2 허용) — 내부 함수 patch와 구분.
 
 ---

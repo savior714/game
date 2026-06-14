@@ -82,7 +82,7 @@ status: active
 just route common/ docs/discussions/DISCUSS_ddd_structure_reorg.md domains/auth/auth.js domains/english/ domains/korean/ domains/math/ domains/reward/ domains/science/ … (+6 more) --json
 ```
 
-플랜 갱신 시 본 절 재생성: `just plan-preread docs/plans/PLAN_ddd_structure_reorg.md --write` → `just plan-lint docs/plans/PLAN_ddd_structure_reorg.md`
+플랜 갱신 시 본 절 재생성: `just plan-preread docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md --write` → `just plan-lint docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md`
 
 ## Agent Completion Contract
 
@@ -91,7 +91,7 @@ just route common/ docs/discussions/DISCUSS_ddd_structure_reorg.md domains/auth/
 | 허용 | 금지 |
 | :--- | :--- |
 | `just plan-task-close` CLI를 사용한 Task `Status`·`Conclusion` 자동 갱신 | 텍스트 에디터(replace 등)로 본 파일 Task 상태 In-place 직접 수정 |
-| Task `Verify` 직후 `just plan-lint docs/plans/PLAN_ddd_structure_reorg.md` | Conclusion 없이 `Status: done` 처리 |
+| Task `Verify` 직후 `just plan-lint docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md` | Conclusion 없이 `Status: done` 처리 |
 | **Closeout Task**에서 Roll-up 줄 편집 | Closeout Task **외** Blueprint Task `Status`/`Conclusion` 직접 수정 |
 | Task Goal에 명시된 Target·명세 동반 수정 | ROADMAP·다른 Blueprint 대량 수정 |
 | (동결 중) `just plan-task-close`·Closeout Roll-up | Task 추가·삭제·Goal/Target/Dependency/Trace **구조 변경** · 실행 중 AskQuestion 범위 재협상 |
@@ -102,7 +102,7 @@ just route common/ docs/discussions/DISCUSS_ddd_structure_reorg.md domains/auth/
 
 ## 🛠️ Step-by-Step Execution Plan
 
-> **에이전트 스코프**: 사용자가 Blueprint **전체 실행**을 요청하면 Task를 **Dependency 순**으로 1개씩만 진행한다. Blueprint Task 구조는 **동결** — `plan-task-close`·Closeout Roll-up만 예외. `Verify` PASS → `just plan-task-close plan=... task=... conclusion="..."` → `just plan-lint docs/plans/PLAN_ddd_structure_reorg.md` → 다음 Task. **마지막 Closeout Task**에서 Roll-up 후 `just plan-close` Verify. Conclusion 은 `plan-task-close` CLI 만으로 갱신, plan-lint PASS 전 구현 착수 금지.
+> **에이전트 스코프**: 사용자가 Blueprint **전체 실행**을 요청하면 Task를 **Dependency 순**으로 1개씩만 진행한다. Blueprint Task 구조는 **동결** — `plan-task-close`·Closeout Roll-up만 예외. `Verify` PASS → `just plan-task-close plan=... task=... conclusion="..."` → `just plan-lint docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md` → 다음 Task. **마지막 Closeout Task**에서 Roll-up 후 `just plan-close` Verify. Conclusion 은 `plan-task-close` CLI 만으로 갱신, plan-lint PASS 전 구현 착수 금지.
 
 ### Phase 1 — shared/ 구조 생성
 
@@ -111,7 +111,7 @@ just route common/ docs/discussions/DISCUSS_ddd_structure_reorg.md domains/auth/
 - **Pre-read**: 이 Task만 — `write`/`patch` 전 **전부** Read <!-- plan-task-preread:v1 paths=1 must_read_installed=1 -->
   1. `[error_pattern_detail]` `.agents/core/error_patterns/detail/editing.md`
 - **Action**: Shell | **Target**: `shared/domain/progress-engine.js`
-- **Closeout**: `docs/plans/PLAN_ddd_structure_reorg.md` (Task DDD-001 `Conclusion`·`Status`)
+- **Closeout**: `docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md` (Task DDD-001 `Conclusion`·`Status`)
 - **Goal**: `common/progress-engine.js`를 `shared/domain/progress-engine.js`로 이동 (파일 내용 변경 없음)
 - **Diagnostics**: 0
 - **Verify**: `python3 -c "import os; assert os.path.exists('shared/domain/progress-engine.js')"`
@@ -122,7 +122,7 @@ just route common/ docs/discussions/DISCUSS_ddd_structure_reorg.md domains/auth/
 - **Pre-read**: 이 Task만 — `write`/`patch` 전 **전부** Read <!-- plan-task-preread:v1 paths=1 must_read_installed=1 -->
   1. `[error_pattern_detail]` `.agents/core/error_patterns/detail/editing.md`
 - **Action**: Shell | **Target**: `shared/ui/quiz-ui-core.js`
-- **Closeout**: `docs/plans/PLAN_ddd_structure_reorg.md` (Task DDD-002 `Conclusion`·`Status`)
+- **Closeout**: `docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md` (Task DDD-002 `Conclusion`·`Status`)
 - **Goal**: `common/quiz-ui-core.js`를 `shared/ui/quiz-ui-core.js`로 이동 (파일 내용 변경 없음)
 - **Diagnostics**: 0
 - **Verify**: `python3 -c "import os; assert os.path.exists('shared/ui/quiz-ui-core.js')"`
@@ -133,7 +133,7 @@ just route common/ docs/discussions/DISCUSS_ddd_structure_reorg.md domains/auth/
 - **Pre-read**: 이 Task만 — `write`/`patch` 전 **전부** Read <!-- plan-task-preread:v1 paths=1 must_read_installed=1 -->
   1. `[error_pattern_detail]` `.agents/core/error_patterns/detail/editing.md`
 - **Action**: Shell | **Target**: `shared/ui/rocket-core.js`
-- **Closeout**: `docs/plans/PLAN_ddd_structure_reorg.md` (Task DDD-003 `Conclusion`·`Status`)
+- **Closeout**: `docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md` (Task DDD-003 `Conclusion`·`Status`)
 - **Goal**: `common/rocket-core.js`를 `shared/ui/rocket-core.js`로 이동 (파일 내용 변경 없음)
 - **Diagnostics**: 0
 - **Verify**: `python3 -c "import os; assert os.path.exists('shared/ui/rocket-core.js')"`
@@ -144,7 +144,7 @@ just route common/ docs/discussions/DISCUSS_ddd_structure_reorg.md domains/auth/
 - **Pre-read**: 이 Task만 — `write`/`patch` 전 **전부** Read <!-- plan-task-preread:v1 paths=1 must_read_installed=1 -->
   1. `[error_pattern_detail]` `.agents/core/error_patterns/detail/editing.md`
 - **Action**: Shell | **Target**: `shared/ui/rocket-effects.js`
-- **Closeout**: `docs/plans/PLAN_ddd_structure_reorg.md` (Task DDD-004 `Conclusion`·`Status`)
+- **Closeout**: `docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md` (Task DDD-004 `Conclusion`·`Status`)
 - **Goal**: `common/rocket-effects.js`를 `shared/ui/rocket-effects.js`로 이동 (파일 내용 변경 없음)
 - **Diagnostics**: 0
 - **Verify**: `python3 -c "import os; assert os.path.exists('shared/ui/rocket-effects.js')"`
@@ -157,7 +157,7 @@ just route common/ docs/discussions/DISCUSS_ddd_structure_reorg.md domains/auth/
 - **Pre-read**: 이 Task만 — `write`/`patch` 전 **전부** Read <!-- plan-task-preread:v1 paths=1 must_read_installed=1 -->
   1. `[error_pattern_detail]` `.agents/core/error_patterns/detail/editing.md`
 - **Action**: Edit File | **Target**: `shared/event-bus.js`
-- **Closeout**: `docs/plans/PLAN_ddd_structure_reorg.md` (Task DDD-005 `Conclusion`·`Status`)
+- **Closeout**: `docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md` (Task DDD-005 `Conclusion`·`Status`)
 - **Goal**: `shared/event-bus.js` 파일 생성 — emit/on/off 메서드 제공, 전역 `window.GameEvents`로 노출, 기존 도메인에서 window 객체 참조 방식과 호환
 - **Diagnostics**: 0
 - **Verify**: `python3 -c "open('shared/event-bus.js').read()"`
@@ -170,7 +170,7 @@ just route common/ docs/discussions/DISCUSS_ddd_structure_reorg.md domains/auth/
 - **Pre-read**: 이 Task만 — `write`/`patch` 전 **전부** Read <!-- plan-task-preread:v1 paths=1 must_read_installed=1 -->
   1. `[error_pattern_detail]` `.agents/core/error_patterns/detail/editing.md`
 - **Action**: Shell | **Target**: `domains/math/`
-- **Closeout**: `docs/plans/PLAN_ddd_structure_reorg.md` (Task DDD-006 `Conclusion`·`Status`)
+- **Closeout**: `docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md` (Task DDD-006 `Conclusion`·`Status`)
 - **Goal**: 기존 `math/` 폴더 전체를 `domains/math/`로 이동 (파일 내용 변경 없음)
 - **Diagnostics**: 0
 - **Verify**: `python3 -c "import os; assert os.path.isdir('domains/math/')"`
@@ -181,7 +181,7 @@ just route common/ docs/discussions/DISCUSS_ddd_structure_reorg.md domains/auth/
 - **Pre-read**: 이 Task만 — `write`/`patch` 전 **전부** Read <!-- plan-task-preread:v1 paths=1 must_read_installed=1 -->
   1. `[error_pattern_detail]` `.agents/core/error_patterns/detail/editing.md`
 - **Action**: Shell | **Target**: `domains/english/`
-- **Closeout**: `docs/plans/PLAN_ddd_structure_reorg.md` (Task DDD-007 `Conclusion`·`Status`)
+- **Closeout**: `docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md` (Task DDD-007 `Conclusion`·`Status`)
 - **Goal**: 기존 `english/` 폴더 전체를 `domains/english/`로 이동 (파일 내용 변경 없음)
 - **Diagnostics**: 0
 - **Verify**: `python3 -c "import os; assert os.path.isdir('domains/english/')"`
@@ -192,7 +192,7 @@ just route common/ docs/discussions/DISCUSS_ddd_structure_reorg.md domains/auth/
 - **Pre-read**: 이 Task만 — `write`/`patch` 전 **전부** Read <!-- plan-task-preread:v1 paths=1 must_read_installed=1 -->
   1. `[error_pattern_detail]` `.agents/core/error_patterns/detail/editing.md`
 - **Action**: Shell | **Target**: `domains/korean/`
-- **Closeout**: `docs/plans/PLAN_ddd_structure_reorg.md` (Task DDD-008 `Conclusion`·`Status`)
+- **Closeout**: `docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md` (Task DDD-008 `Conclusion`·`Status`)
 - **Goal**: 기존 `korean/` 폴더 전체를 `domains/korean/`로 이동 (파일 내용 변경 없음)
 - **Diagnostics**: 0
 - **Verify**: `python3 -c "import os; assert os.path.isdir('domains/korean/')"`
@@ -203,7 +203,7 @@ just route common/ docs/discussions/DISCUSS_ddd_structure_reorg.md domains/auth/
 - **Pre-read**: 이 Task만 — `write`/`patch` 전 **전부** Read <!-- plan-task-preread:v1 paths=1 must_read_installed=1 -->
   1. `[error_pattern_detail]` `.agents/core/error_patterns/detail/editing.md`
 - **Action**: Shell | **Target**: `domains/science/`
-- **Closeout**: `docs/plans/PLAN_ddd_structure_reorg.md` (Task DDD-009 `Conclusion`·`Status`)
+- **Closeout**: `docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md` (Task DDD-009 `Conclusion`·`Status`)
 - **Goal**: 기존 `science/` 폴더 전체를 `domains/science/`로 이동 (파일 내용 변경 없음)
 - **Diagnostics**: 0
 - **Verify**: `python3 -c "import os; assert os.path.isdir('domains/science/')"`
@@ -216,7 +216,7 @@ just route common/ docs/discussions/DISCUSS_ddd_structure_reorg.md domains/auth/
 - **Pre-read**: 이 Task만 — `write`/`patch` 전 **전부** Read <!-- plan-task-preread:v1 paths=3 must_read_installed=1 -->
   1. `[error_pattern_detail]` `.agents/core/error_patterns/detail/editing.md`
 - **Action**: Shell | **Target**: `domains/reward/`, `domains/auth/`, `domains/sync/`
-- **Closeout**: `docs/plans/PLAN_ddd_structure_reorg.md` (Task DDD-010 `Conclusion`·`Status`)
+- **Closeout**: `docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md` (Task DDD-010 `Conclusion`·`Status`)
 - **Goal**: 기존 `global/`에서 reward.js, reward_ui.js, reward.css → `domains/reward/`, auth.js → `domains/auth/`, sync-engine.js → `domains/sync/`로 이동, `global/` 폴더 비우기
 - **Diagnostics**: 0
 - **Verify**: `python3 -c "import os; assert os.path.isdir('domains/reward/')"`
@@ -227,7 +227,7 @@ just route common/ docs/discussions/DISCUSS_ddd_structure_reorg.md domains/auth/
 - **Pre-read**: 이 Task만 — `write`/`patch` 전 **전부** Read <!-- plan-task-preread:v1 paths=1 must_read_installed=1 -->
   1. `[error_pattern_detail]` `.agents/core/error_patterns/detail/editing.md`
 - **Action**: Edit File | **Target**: `domains/auth/auth.js`
-- **Closeout**: `docs/plans/PLAN_ddd_structure_reorg.md` (Task DDD-011 `Conclusion`·`Status`)
+- **Closeout**: `docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md` (Task DDD-011 `Conclusion`·`Status`)
 - **Goal**: auth.js에 try/catch fallback 추가 — auth/sync 실패 시 기본 기능(게임 플레이, 로컬 통계) 사용 가능하도록 예외 처리
 - **Diagnostics**: 0
 - **Verify**: `python3 -c "assert 'try' in open('domains/auth/auth.js').read()"`
@@ -240,7 +240,7 @@ just route common/ docs/discussions/DISCUSS_ddd_structure_reorg.md domains/auth/
 - **Pre-read**: 이 Task만 — `write`/`patch` 전 **전부** Read <!-- plan-task-preread:v1 paths=1 must_read_installed=1 -->
   1. `[error_pattern_detail]` `.agents/core/error_patterns/detail/editing.md`
 - **Action**: Shell | **Target**: `experiments/`
-- **Closeout**: `docs/plans/PLAN_ddd_structure_reorg.md` (Task DDD-012 `Conclusion`·`Status`)
+- **Closeout**: `docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md` (Task DDD-012 `Conclusion`·`Status`)
 - **Goal**: 기존 `space-explorer/`, `marble/` → `experiments/`로 이동, 루트의 dino-escape.html, orbit-eclipse.html, paint-mixing.html → `experiments/`로 이동
 - **Diagnostics**: 0
 - **Verify**: `python3 -c "import os; assert os.path.isdir('experiments/space-explorer/')"`
@@ -253,7 +253,7 @@ just route common/ docs/discussions/DISCUSS_ddd_structure_reorg.md domains/auth/
 - **Pre-read**: 이 Task만 — `write`/`patch` 전 **전부** Read <!-- plan-task-preread:v1 paths=1 must_read_installed=1 -->
   1. `[error_pattern_detail]` `.agents/core/error_patterns/detail/editing.md`
 - **Action**: Edit File | **Target**: `index.html`, `domains/*/index.html`
-- **Closeout**: `docs/plans/PLAN_ddd_structure_reorg.md` (Task DDD-013 `Conclusion`·`Status`)
+- **Closeout**: `docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md` (Task DDD-013 `Conclusion`·`Status`)
 - **Goal**: index.html — script src를 `shared/`, `domains/` 경로로 변경, domains/*/index.html — script src를 `../../shared/`, `./` 경로로 변경, 모든 script 로딩 순서: shared/ → domains/, 기존 도메인의 window 객체 참조를 Event Bus 패턴으로 전환
 - **Diagnostics**: 0
 - **Verify**: `python3 -c "assert 'shared/' in open('index.html').read()"`
@@ -266,7 +266,7 @@ just route common/ docs/discussions/DISCUSS_ddd_structure_reorg.md domains/auth/
 - **Pre-read**: 이 Task만 — `write`/`patch` 전 **전부** Read <!-- plan-task-preread:v1 paths=2 must_read_installed=1 -->
   1. `[error_pattern_detail]` `.agents/core/error_patterns/detail/editing.md`
 - **Action**: Shell | **Target**: `common/`, `global/`
-- **Closeout**: `docs/plans/PLAN_ddd_structure_reorg.md` (Task DDD-014 `Conclusion`·`Status`)
+- **Closeout**: `docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md` (Task DDD-014 `Conclusion`·`Status`)
 - **Goal**: `common/`, `global/` 폴더 비우기 또는 삭제 (모든 파일 이동 확인 후), 루트 HTML에서 common/, global/ 참조 제거
 - **Diagnostics**: 0
 - **Verify**: `python3 -c "import os; assert not os.path.exists('common/')"`
@@ -280,7 +280,7 @@ just route common/ docs/discussions/DISCUSS_ddd_structure_reorg.md domains/auth/
   1. `[rule]` `.agents/core/execution.md`
   2. `[code]` `index.html`, `domains/*/index.html`
 - **Action**: Shell | **Target**: 브라우저 수동 테스트
-- **Closeout**: `docs/plans/PLAN_ddd_structure_reorg.md` (Task DDD-015 `Conclusion`·`Status`)
+- **Closeout**: `docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md` (Task DDD-015 `Conclusion`·`Status`)
 - **Goal**: math/english/korean/science 게임 페이지에서 퀴즈 풀이 동작 확인, 보상바 (reward) 가 메인 허브에서 동작하는지 확인, experiments/ 폴더 내 게임 페이지 접근성 확인 (space-explorer, marble, dino-escape, orbit-eclipse, paint-mixing)
 - **Diagnostics**: 0
 - **Verify**: `python3 -c "import urllib.request; urllib.request.urlopen(\"http://127.0.0.1:8080/domains/math/index.html\")"
@@ -292,13 +292,13 @@ just route common/ docs/discussions/DISCUSS_ddd_structure_reorg.md domains/auth/
 - Task-ID: [DDD-099] | Linear-Issue: N/A | Status: done | Priority: 3 | Labels: docs | RetryPolicy: none
 - **Pre-read**: 이 Task만 — `write`/`patch` 전 **전부** Read
   1. `[rule]` `.agents/workflows/plan.md`
-- **Action**: Edit File | **Target**: `docs/plans/PLAN_ddd_structure_reorg.md`
-- **Closeout**: `docs/plans/PLAN_ddd_structure_reorg.md` (Task DDD-099 `Conclusion`·`Status`)
+- **Action**: Edit File | **Target**: `docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md`
+- **Closeout**: `docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md` (Task DDD-099 `Conclusion`·`Status`)
 - **Goal**: 선행 Task Conclusion을 근거로 `
 
 ## 🔁 Conclusion & Summary` Roll-up 1문단을 실측으로 작성한다.
 - **Diagnostics**: 0
-- **Verify**: `just plan-close plan=docs/plans/PLAN_ddd_structure_reorg.md`
+- **Verify**: `just plan-close plan=docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md`
 - **Conclusion**: Roll-up 작성 완료. DDD 구조 재편 15개 Task 모두 성공적으로 완료. shared/, domains/, experiments/ 3계층 구조로 재편 완료. 모든 HTML script 경로 업데이트 및 HTTP 200 검증 통과. [closed-by:plan-task-close]
 - **Dependency**: DDD-015
 
@@ -316,13 +316,13 @@ just route common/ docs/discussions/DISCUSS_ddd_structure_reorg.md domains/auth/
 - `test -d shared/domain/ && test -d shared/ui/`
 - `test -d experiments/space-explorer/ && test -d experiments/marble/`
 - `test ! -d common/ && test ! -d global/`
-- `just plan-lint docs/plans/PLAN_ddd_structure_reorg.md`
+- `just plan-lint docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md`
 
 ## 검증 행렬
 
 | Scope | Command |
 | :--- | :--- |
-| Blueprint | `just plan-lint docs/plans/PLAN_ddd_structure_reorg.md` |
+| Blueprint | `just plan-lint docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md` |
 
 ## [아카이브 전 최종 검증 리포트]
 
@@ -339,7 +339,7 @@ just route common/ docs/discussions/DISCUSS_ddd_structure_reorg.md domains/auth/
   - `test -d experiments/marble/` — PASS
   - `test ! -d common/` — PASS (삭제 확인)
   - `test ! -d global/` — PASS (삭제 확인)
-  - `just plan-lint docs/plans/PLAN_ddd_structure_reorg.md` — PASS
+  - `just plan-lint docs/plans/archive/refactor/PLAN_ddd_structure_reorg.md` — PASS
   - HTTP 서버 스모크 테스트 (port 8080): index.html(200), domains/*/index.html(모두 200), experiments/*(모두 200), shared/ 및 domains/reward/ script 파일(모두 200)
 - **Specs 반영 여부**: PROJECT_RULES.md §1, README.md §주요 디렉토리, docs/specs/technical/DESIGN.md Import Source of Truth 및 Runtime Entry 갱신 완료
 - **추가 수정 사항**: guardian/index.html, admin/index.html script 경로, domains/reward/reward_ui.js hardcoded global/ 경로, experiments/*.html CSS 경로 일괄 수정

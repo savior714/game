@@ -92,8 +92,65 @@ function setSubject(sub) {
               if(stats[firstDomain].levels[i].attempts > 3 && (stats[firstDomain].levels[i].correct / stats[firstDomain].levels[i].attempts) >= 0.9) {
                 baseLevel = i+1;
               } else break;
-           }
-        }
+  }
+}
+
+// Slider input handler (replaces oninput="onSliderChange(this.value)")
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'level-slider' && window.onSliderChange) {
+    window.onSliderChange(e.target.value);
+  }
+});
+
+// ── Event Delegation: data-action → handler mapping ──
+document.addEventListener('click', (e) => {
+  const target = e.target.closest('[data-action]');
+  if (!target) return;
+  const action = target.dataset.action;
+
+  switch (action) {
+    case 'go-home':
+      window.location.href = '../../index.html';
+      e.stopPropagation();
+      break;
+    case 'set-subject':
+      if (window.setSubject) {
+        window.setSubject(target.dataset.subject);
+      }
+      e.stopPropagation();
+      break;
+    case 'save-settings':
+      if (window.saveSettings) {
+        window.saveSettings();
+      }
+      e.stopPropagation();
+      break;
+    case 'add-weekly-word':
+      if (window.addWeeklyWord) {
+        window.addWeeklyWord();
+      }
+      e.stopPropagation();
+      break;
+    case 'add-custom-reward':
+      if (window.addCustomReward) {
+        window.addCustomReward();
+      }
+      e.stopPropagation();
+      break;
+    case 'show-growth':
+      if (window.showGrowthTab) {
+        window.showGrowthTab();
+      }
+      e.stopPropagation();
+      break;
+    case 'delete-weekly-word':
+      if (window.deleteWeeklyWord) {
+        window.deleteWeeklyWord(parseInt(target.dataset.idx, 10));
+      }
+      e.stopPropagation();
+      break;
+  }
+});
       }
     } catch(e) {}
   }
@@ -272,7 +329,7 @@ function renderRewardList() {
     iconEl.title = '아이콘·이름 등 편집';
     iconEl.setAttribute('aria-label', '보상 편집');
     iconEl.textContent = item.icon || '🎁';
-    iconEl.onclick = () => openEditReward(item.id);
+    iconEl.addEventListener('click', () => openEditReward(item.id));
     const textWrap = document.createElement('div');
     textWrap.className = 'min-w-0';
     const titleEl = document.createElement('div');
@@ -291,12 +348,12 @@ function renderRewardList() {
     editBtn.className = 'text-blue-600 hover:text-blue-800 transition px-2 py-1 text-sm font-bold';
     editBtn.title = '편집';
     editBtn.textContent = '편집';
-    editBtn.onclick = () => openEditReward(item.id);
+    editBtn.addEventListener('click', () => openEditReward(item.id));
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
     delBtn.className = 'text-gray-400 hover:text-red-500 transition px-2 py-1';
     delBtn.title = '삭제';
-    delBtn.onclick = () => deleteCustomReward(item.id);
+    delBtn.addEventListener('click', () => deleteCustomReward(item.id));
     delBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>';
     actions.append(editBtn, delBtn);
 
@@ -389,13 +446,13 @@ function openEditReward(id) {
   cancelBtn.type = 'button';
   cancelBtn.className = 'px-4 py-2 rounded-lg border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50';
   cancelBtn.textContent = '취소';
-  cancelBtn.onclick = () => overlay.remove();
+  cancelBtn.addEventListener('click', () => overlay.remove());
 
   const saveBtn = document.createElement('button');
   saveBtn.type = 'button';
   saveBtn.className = 'px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-bold hover:bg-blue-700';
   saveBtn.textContent = '저장';
-  saveBtn.onclick = () => {
+  saveBtn.addEventListener('click', () => {
     let icon = iconIn.value.trim();
     if (!icon) icon = '🎁';
     const label = labelIn.value.trim();
@@ -412,7 +469,7 @@ function openEditReward(id) {
     saveRewards();
     renderRewardList();
     overlay.remove();
-  };
+  });
 
   btnRow.append(cancelBtn, saveBtn);
   const iconField = labeledInput('아이콘', iconIn);
@@ -508,7 +565,7 @@ function renderWeeklyWords() {
           <div class="text-[10px] text-blue-600 truncate">${w.ko}</div>
         </div>
       </div>
-      <button onclick="deleteWeeklyWord(${idx})" class="text-gray-400 hover:text-red-500 transition p-1">
+      <button data-action="delete-weekly-word" data-idx="${idx}" class="text-gray-400 hover:text-red-500 transition p-1">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
       </button>
     </div>

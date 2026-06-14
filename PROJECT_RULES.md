@@ -5,6 +5,19 @@
 에이전트 실행 방식은 `AGENTS.md`를 따르며, 부트스트랩 코어 규칙은 `.agents/core/`를 따른다.
 
 ---
+
+## 📋 AGENTS.md 헌법 적용 요약
+
+| 원칙 | 이 문서에서의 구현 |
+|------|-------------------|
+| **1. 규칙 위계** | AGENTS.md §1 우선순위 1위 — 프로젝트 정책·스택·품질·아키텍처 제약 SSOT |
+| **2. 사고→단순→표적** | §2.1 Client & Distribution MUST — Next.js·Tauri·백엔드 API 스택 범위 밖 (단순성) |
+| **3. 편집 게이트 4단계** | 이 문서의 대상 — 정적 HTML/JS/CSS 편집 절차는 AGENTS.md §3, routing.md 참조 |
+| **4. 다중 에이전트** | §1 Architecture Rules — 과목·실험 디렉토리 독립 파일 그룹 → Phase 2 분할 기준 |
+| **5. Plan CLI 전용** | §3 Verification & Quality — `just plan-lint` PASS 전 구현 금지 (AGENTS.md §5 참조) |
+| **6. 검증·한글·고유성** | §3 TDD Red-First, strict lint, §4 Security ZERO-LEAK, §5 한국어 우선 |
+
+---
 # 1. Architecture Rules
 - **런타임 SSOT**: 사용자 화면은 루트 및 과목·실험 디렉터리의 정적 HTML/JS/CSS에 작성한다.
   - 메인 허브: `index.html`

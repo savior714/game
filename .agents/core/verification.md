@@ -15,6 +15,19 @@ verify_with:
 
 ---
 
+## 📋 AGENTS.md 헌법 적용 요약
+
+| 원칙 | 이 문서에서의 구현 |
+|------|-------------------|
+| **1. 규칙 위계** | priority: 1 — `PROJECT_RULES.md` 다음, 검증 수준·게이트 normative SSOT |
+| **2. 사고→단순→표적** | §2.2 구현 중 요청 범위 밖 기능·리팩터 금지 (드라이브바이 리팩터 금지) |
+| **3. 편집 게이트 4단계** | §2.1 Safe Edit Loop — lint → 에러 선택 → read → snippet 확보 → minimal edit |
+| **4. 다중 에이전트** | 이 문서의 대상 — Phase 3 검증에서 `just lint`/`pytest` 결과 전담 검증 |
+| **5. Plan CLI 전용** | §2.3 Turn-End Lint — `just lint-turn-end` 세션 종료 게이트 CLI 전용 |
+| **6. 검증·한글·고유성** | §1 Verification Matrix — Docs/L1/L2/L3scope별 필수 검증 명령어 정의, §2.6 Zero-Leak |
+
+---
+
 ## 1. Verification Matrix
 
 작업 범위에 맞는 검증을 통과한 후 완료를 선언해야 합니다.

@@ -13,6 +13,19 @@ domain: core
 
 ---
 
+## 📋 AGENTS.md 헌법 적용 요약
+
+| 원칙 | 이 문서에서의 구현 |
+|------|-------------------|
+| **1. 규칙 위계** | priority: 1 — `PROJECT_RULES.md` 다음, 가장 높은 계획 수준 우선순위 |
+| **2. 사고→단순→표적** | §0 Zero-Choice Path — 단일 경로 보장, 분기 금지. §0 Optional Tasks 금지 |
+| **3. 편집 게이트 4단계** | §2.1 Blueprint Contract 자동 검증 — `just plan-lint` 전 구조 검사 |
+| **4. 다중 에이전트** | §0 OHT — 복수 가설은 파일 분리, 대표 Blueprint에서만 순서 정의 |
+| **5. Plan CLI 전용** | §2.2 Conclusion 강제 게이트 — `just plan-task-close` CLI만 사용, 에디터 직접 수정 금지 |
+| **6. 검증·한글·고유성** | §2.4 Plan Close Gate — `just verify` → `just plan-close` 순서 준수, DoD 재귀 금지 |
+
+---
+
 ## 0. Strategic Planning Rules
 - **Granularity & Deepening Gate**: 파일 이름이 `PLAN_epic_` 이거나 내용이 거시적 기획인 문서의 Task는 직접 실행(Execute)해서는 안 되며, 반드시 `/plan` 워크플로우를 통해 하위 Blueprint(`PLAN_..._task_...md`)로 쪼개야 한다. (Task 1개가 3개 이상의 파일을 광범위하게 수정하거나, 구체적인 검증 수치가 없으면 Atomic이 아닌 것으로 간주)
 

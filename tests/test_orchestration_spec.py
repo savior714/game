@@ -48,8 +48,12 @@ class TestWorkSpec:
         ws = WorkSpec(
             description="Refactor UI",
             file_groups=[
-                FileGroup(domain_path="domains/math/", files=["domains/math/index.html"]),
-                FileGroup(domain_path="domains/english/", files=["domains/english/index.html"]),
+                FileGroup(
+                    domain_path="domains/math/", files=["domains/math/index.html"]
+                ),
+                FileGroup(
+                    domain_path="domains/english/", files=["domains/english/index.html"]
+                ),
             ],
         )
         assert len(ws.file_groups) == 2
@@ -121,7 +125,9 @@ domains/math/main.js
         assert "domains/math/index.html" in dr.files_modified
 
     def test_from_subagent_output_error(self):
-        dr = DiffResult.from_subagent_output("T1", "JSON parsing failed", has_error=True)
+        dr = DiffResult.from_subagent_output(
+            "T1", "JSON parsing failed", has_error=True
+        )
         assert dr.status == TaskStatus.FAILED
         assert dr.error == "JSON parsing failed"
 
@@ -136,21 +142,27 @@ domains/math/main.js
 class TestAuditReport:
     def test_finding_counts(self):
         report = AuditReport(task_id="T1")
-        report.add_finding(AuditFinding(
-            category=AuditCategory.KOREAN_ENCODING,
-            severity=AuditSeverity.HIGH,
-            description="test",
-        ))
-        report.add_finding(AuditFinding(
-            category=AuditCategory.QUERY_SELECTOR_UNIQUENESS,
-            severity=AuditSeverity.MEDIUM,
-            description="test",
-        ))
-        report.add_finding(AuditFinding(
-            category=AuditCategory.GENERAL,
-            severity=AuditSeverity.LOW,
-            description="test",
-        ))
+        report.add_finding(
+            AuditFinding(
+                category=AuditCategory.KOREAN_ENCODING,
+                severity=AuditSeverity.HIGH,
+                description="test",
+            )
+        )
+        report.add_finding(
+            AuditFinding(
+                category=AuditCategory.QUERY_SELECTOR_UNIQUENESS,
+                severity=AuditSeverity.MEDIUM,
+                description="test",
+            )
+        )
+        report.add_finding(
+            AuditFinding(
+                category=AuditCategory.GENERAL,
+                severity=AuditSeverity.LOW,
+                description="test",
+            )
+        )
 
         assert report.high_count == 1
         assert report.medium_count == 1
@@ -179,11 +191,13 @@ class TestAuditReport:
 
     def test_no_blocking_issues(self):
         report = AuditReport(task_id="T1")
-        report.add_finding(AuditFinding(
-            category=AuditCategory.GENERAL,
-            severity=AuditSeverity.LOW,
-            description="minor",
-        ))
+        report.add_finding(
+            AuditFinding(
+                category=AuditCategory.GENERAL,
+                severity=AuditSeverity.LOW,
+                description="minor",
+            )
+        )
         assert report.has_blocking_issues is False
 
 
@@ -228,30 +242,61 @@ class TestOrchestrationResult:
 class TestValidationHelpers:
     def test_validate_unique_task_ids(self):
         tasks = [
-            TaskSpec(task_id="T1", description="a", target_paths=["f1"], goal="g", scope="s"),
-            TaskSpec(task_id="T2", description="b", target_paths=["f2"], goal="g", scope="s"),
+            TaskSpec(
+                task_id="T1", description="a", target_paths=["f1"], goal="g", scope="s"
+            ),
+            TaskSpec(
+                task_id="T2", description="b", target_paths=["f2"], goal="g", scope="s"
+            ),
         ]
         validate_task_ids_unique(tasks)  # should not raise
 
     def test_validate_duplicate_task_ids_raises(self):
         tasks = [
-            TaskSpec(task_id="T1", description="a", target_paths=["f1"], goal="g", scope="s"),
-            TaskSpec(task_id="T1", description="b", target_paths=["f2"], goal="g", scope="s"),
+            TaskSpec(
+                task_id="T1", description="a", target_paths=["f1"], goal="g", scope="s"
+            ),
+            TaskSpec(
+                task_id="T1", description="b", target_paths=["f2"], goal="g", scope="s"
+            ),
         ]
         with pytest.raises(ValueError, match="Duplicate task_ids"):
             validate_task_ids_unique(tasks)
 
     def test_validate_no_circular_deps(self):
         tasks = [
-            TaskSpec(task_id="T1", description="a", target_paths=["f1"], goal="g", scope="s"),
-            TaskSpec(task_id="T2", description="b", target_paths=["f2"], goal="g", scope="s", dependencies=["T1"]),
+            TaskSpec(
+                task_id="T1", description="a", target_paths=["f1"], goal="g", scope="s"
+            ),
+            TaskSpec(
+                task_id="T2",
+                description="b",
+                target_paths=["f2"],
+                goal="g",
+                scope="s",
+                dependencies=["T1"],
+            ),
         ]
         validate_no_circular_dependencies(tasks)  # should not raise
 
     def test_validate_circular_deps_raises(self):
         tasks = [
-            TaskSpec(task_id="T1", description="a", target_paths=["f1"], goal="g", scope="s", dependencies=["T2"]),
-            TaskSpec(task_id="T2", description="b", target_paths=["f2"], goal="g", scope="s", dependencies=["T1"]),
+            TaskSpec(
+                task_id="T1",
+                description="a",
+                target_paths=["f1"],
+                goal="g",
+                scope="s",
+                dependencies=["T2"],
+            ),
+            TaskSpec(
+                task_id="T2",
+                description="b",
+                target_paths=["f2"],
+                goal="g",
+                scope="s",
+                dependencies=["T1"],
+            ),
         ]
         with pytest.raises(ValueError, match="Circular dependency"):
             validate_no_circular_dependencies(tasks)

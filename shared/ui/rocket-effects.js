@@ -36,12 +36,15 @@
       if (!rocket) return;
       const rect = rocket.getBoundingClientRect();
       const items = ["💨", "🔥", "✨", "⚡", "🌟"];
-      const el = document.createElement("div");
+      const el = ParticlePool.acquire("rocket-particle");
+      if (!el) return;
       const offsetX = (Math.random() - 0.5) * 24;
       el.style.cssText = `position: fixed; left: ${rect.left + rect.width / 2 + offsetX}px; top: ${rect.bottom + 4}px; font-size: ${0.7 + Math.random() * 0.9}rem; pointer-events: none; z-index: 250; animation: exhaust-drift ${0.55 + Math.random() * 0.35}s ease-out forwards;`;
       el.textContent = items[Math.floor(Math.random() * items.length)];
-      document.body.appendChild(el);
-      setTimeout(() => el.remove(), 1000);
+      setTimeout(() => {
+        el.style.display = "none";
+        ParticlePool.release(el);
+      }, 1000);
     },
 
     spawnExplosion() {
@@ -56,13 +59,16 @@
         setTimeout(() => {
           const angle = (i / 10) * Math.PI * 2 + Math.random() * 0.5;
           const dist = 35 + Math.random() * 40;
-          const el = document.createElement("div");
+          const el = ParticlePool.acquire("rocket-particle");
+          if (!el) return;
           el.style.cssText = `position: fixed; left: ${cx}px; top: ${cy}px; font-size: ${0.9 + Math.random() * 0.9}rem; pointer-events: none; z-index: 350; animation: explosion-particle ${0.5 + Math.random() * 0.3}s ease-out forwards;`;
           el.style.setProperty("--pdx", Math.cos(angle) * dist + "px");
           el.style.setProperty("--pdy", Math.sin(angle) * dist + "px");
           el.textContent = items[Math.floor(Math.random() * items.length)];
-          document.body.appendChild(el);
-          setTimeout(() => el.remove(), 900);
+          setTimeout(() => {
+            el.style.display = "none";
+            ParticlePool.release(el);
+          }, 900);
         }, i * 25);
       }
     },
@@ -71,11 +77,14 @@
       const rocket = document.getElementById("rp-rocket");
       if (!rocket) return;
       const rect = rocket.getBoundingClientRect();
-      const el = document.createElement("div");
+      const el = ParticlePool.acquire("rocket-particle");
+      if (!el) return;
       el.style.cssText = `position: fixed; left: ${rect.left + rect.width / 2 + (Math.random() - 0.5) * 14}px; top: ${rect.top + rect.height / 2}px; font-size: ${0.9 + Math.random() * 0.8}rem; pointer-events: none; z-index: 250; animation: smoke-drift ${0.8 + Math.random() * 0.5}s ease-out forwards;`;
       el.textContent = ["💨", "🌫️", "☁️"][Math.floor(Math.random() * 3)];
-      document.body.appendChild(el);
-      setTimeout(() => el.remove(), 1400);
+      setTimeout(() => {
+        el.style.display = "none";
+        ParticlePool.release(el);
+      }, 1400);
     },
 
     spawnImpactDust() {
@@ -84,13 +93,16 @@
       const rect = rocket.getBoundingClientRect();
       const items = ["💥", "⭐", "💫", "✨", "🪨"];
       for (let i = 0; i < 8; i++) {
-        const el = document.createElement("div");
+        const el = ParticlePool.acquire("rocket-particle");
+        if (!el) return;
         const dx = (Math.random() - 0.5) * 80;
         el.style.cssText = `position: fixed; left: ${rect.left + rect.width / 2}px; top: ${rect.bottom - 10}px; font-size: ${0.7 + Math.random() * 0.7}rem; pointer-events: none; z-index: 350; animation: impact-scatter 0.5s ease-out forwards;`;
         el.style.setProperty("--sdx", dx + "px");
         el.textContent = items[Math.floor(Math.random() * items.length)];
-        document.body.appendChild(el);
-        setTimeout(() => el.remove(), 600);
+        setTimeout(() => {
+          el.style.display = "none";
+          ParticlePool.release(el);
+        }, 600);
       }
     },
 

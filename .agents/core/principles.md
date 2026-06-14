@@ -10,6 +10,19 @@ verify_with:
 <!-- Language: ko -->
 # Core Operating Principles
 
+---
+
+## 📋 AGENTS.md 헌법 적용 요약
+
+| 원칙 | 이 문서에서의 구현 |
+|------|-------------------|
+| **1. 규칙 위계** | priority: 1, always_apply: true — 헌법 최상위 normative SSOT, 모든 하위 규칙의 근간 |
+| **2. 사고→단순→표적** | §1.1 Think Before Coding, §1.2 Simplicity First, §1.3 Surgical Changes, §1.4 Goal-Driven |
+| **3. 편집 게이트 4단계** | §1.1.1 Interactive Refine — 경로 임의 선택 금지, Quick Pick decision menu 우선 |
+| **4. 다중 에이전트** | 이 문서의 대상 — §1.4 Goal-Driven에서 작업 검증 가능한 목표로 쪼개기 정의 |
+| **5. Plan CLI 전용** | §1.6 Workaround Accountability — 우회책 사용 시 close turn에 3항 보고 (CLI 전용 절차 아님) |
+| **6. 검증·한글·고유성** | §1.5 Pythonic Integrity (Ruff), §2.10 Information Integrity — 실측 없는 단정 금지 |
+
 ## 1.1 Think Before Coding
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
 - 구현 전 가정은 명시한다.

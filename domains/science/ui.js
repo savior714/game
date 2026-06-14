@@ -1,3 +1,20 @@
+/* ═══════════════════════════════════
+   DOM 요소 캐싱
+   ═══════════════════════════════════ */
+const DOM = {};
+
+function initDOMCache() {
+  DOM.qScore       = document.getElementById('q-score');
+  DOM.feedback     = document.getElementById('feedback');
+  DOM.nextBtn      = document.getElementById('next-btn');
+  DOM.gameArea     = document.getElementById('game-area');
+  DOM.resultScreen = document.getElementById('result-screen');
+  DOM.stars        = document.getElementById('stars');
+  DOM.resultTitle  = document.getElementById('result-title');
+  DOM.resultMsg    = document.getElementById('result-msg');
+  DOM.statsTbody   = document.getElementById('stats-tbody');
+}
+
 const timerCore = QuizUICore.createTimerCore({
   getTimeLimit: () => TIME_LIMIT,
   getTimeLeft: () => timeLeft,
@@ -25,26 +42,26 @@ const answerFlowCore = QuizUICore.createAnswerFlowCore({
   },
   onCorrect: () => {
     score++;
-    document.getElementById('q-score').textContent = score;
-    const fb = document.getElementById('feedback');
+    (DOM.qScore || document.getElementById('q-score')).textContent = score;
+    const fb = DOM.feedback || document.getElementById('feedback');
     fb.textContent = ['참 잘했어요! 🔬', '정답이에요! ✨', '대단해요! 🌟', '과학 박사님! 👏'][Math.floor(Math.random()*4)];
     fb.className = 'feedback-correct';
     spawnConfetti();
   },
   onWrong: ({ button, answer: currentAnswer }) => {
     button.classList.add('wrong');
-    const fb = document.getElementById('feedback');
+    const fb = DOM.feedback || document.getElementById('feedback');
     fb.textContent = `정답은 "${currentAnswer}"이에요! 다시 해봐요 😊`;
     fb.className = 'feedback-wrong';
   },
   showNextButton: () => {
-    document.getElementById('next-btn').style.display = 'inline-block';
+    (DOM.nextBtn || document.getElementById('next-btn')).style.display = 'inline-block';
   }
 });
 
 /* ═══════════════════════════════════
    타이머
-═══════════════════════════════════ */
+   ═══════════════════════════════════ */
 function startTimer() {
   timerCore.startTimer();
 }
@@ -64,22 +81,22 @@ function timeOut() {
   document.querySelectorAll('.answer-btn').forEach(b => {
     if (b.textContent === answer) b.classList.add('correct');
   });
-  const fb = document.getElementById('feedback');
+  const fb = DOM.feedback || document.getElementById('feedback');
   fb.textContent = `⏳ 시간 초과! 정답은 "${answer}" 정답이에요!`;
   fb.className   = 'feedback-wrong';
-  document.getElementById('next-btn').style.display = 'inline-block';
+  (DOM.nextBtn || document.getElementById('next-btn')).style.display = 'inline-block';
 }
 
 /* ═══════════════════════════════════
    정답 확인
-═══════════════════════════════════ */
+   ═══════════════════════════════════ */
 function checkAnswer(val, btn) {
   answerFlowCore.evaluateStandard(val, btn);
 }
 
 /* ═══════════════════════════════════
    게임 흐름
-═══════════════════════════════════ */
+   ═══════════════════════════════════ */
 function nextQuestion() {
   currentQ++;
   if (currentQ >= TOTAL) showResult();
@@ -87,8 +104,8 @@ function nextQuestion() {
 }
 
 function showResult() {
-  document.getElementById('game-area').style.display     = 'none';
-  document.getElementById('result-screen').style.display = 'block';
+  (DOM.gameArea || document.getElementById('game-area')).style.display     = 'none';
+  (DOM.resultScreen || document.getElementById('result-screen')).style.display = 'block';
 
   // 효능감 시스템 — 세션 종료 및 과목 완료
   if (typeof MilestoneTracker !== 'undefined') {
@@ -104,18 +121,18 @@ function showResult() {
   if (pct === 1)       { stars='⭐⭐⭐'; title='완벽해요!';        msg=`10문제 모두 맞췄어요! 미래의 과학자네요! 🎊`; }
   else if (pct >= 0.7) { stars='⭐⭐';  title='잘했어요!';        msg=`10문제 중 ${score}개 맞췄어요! 정말 훌륭해요! 😄`; }
   else                 { stars='⭐';    title='조금 더 연습해요!'; msg=`10문제 중 ${score}개 맞췄어요. 다음에 더 잘할 수 있어요! 💪`; }
-  document.getElementById('stars').textContent        = stars;
-  document.getElementById('result-title').textContent = title;
-  document.getElementById('result-msg').textContent   = msg;
+  (DOM.stars || document.getElementById('stars')).textContent        = stars;
+  (DOM.resultTitle || document.getElementById('result-title')).textContent = title;
+  (DOM.resultMsg || document.getElementById('result-msg')).textContent   = msg;
 }
 
 function startGame() {
   stopTimer();
   currentQ = 0; score = 0;
   stats    = loadStats();
-  document.getElementById('q-score').textContent         = 0;
-  document.getElementById('result-screen').style.display = 'none';
-  document.getElementById('game-area').style.display     = 'block';
+  (DOM.qScore || document.getElementById('q-score')).textContent         = 0;
+  (DOM.resultScreen || document.getElementById('result-screen')).style.display = 'none';
+  (DOM.gameArea || document.getElementById('game-area')).style.display     = 'block';
 
   // 효능감 시스템 — 세션 초기화
   if (typeof MilestoneTracker !== 'undefined') {
@@ -131,14 +148,14 @@ function startGame() {
 
 /* ═══════════════════════════════════
    통계 모달
-═══════════════════════════════════ */
+   ═══════════════════════════════════ */
 function openStats()  { statsModalCore.openStats(); }
 function closeStats() { statsModalCore.closeStats(); }
 function onModalBackdrop(e) { statsModalCore.onModalBackdrop(e); }
 
 function renderStatsTable() {
   const CAT_LABELS = { biology: '생물', earth: '지구과학', physics: '물리/기초' };
-  const tbody = document.getElementById('stats-tbody');
+  const tbody = DOM.statsTbody || document.getElementById('stats-tbody');
   tbody.innerHTML = '';
   for (const cat of ['biology', 'earth', 'physics']) {
     const s = stats[cat];
@@ -166,17 +183,23 @@ function confirmResetStats() { if (confirm('누적 기록을 모두 지울까요
 
 /* ═══════════════════════════════════
    색종이
-═══════════════════════════════════ */
+   ═══════════════════════════════════ */
 function spawnConfetti() {
-  const items=['🧪','🧬','🔬','🌍','🌟','✨'];
-  for (let i=0;i<8;i++) setTimeout(()=>{
-    const el=document.createElement('div');
-    el.className='confetti-emoji';
-    el.textContent=items[Math.floor(Math.random()*items.length)];
-    el.style.left=Math.random()*100+'vw'; el.style.top='-40px';
-    el.style.animationDuration=(1+Math.random())+'s';
-    document.body.appendChild(el); setTimeout(()=>el.remove(),2500);
-  }, i*100);
+  const items = '🧪','🧬','🔬','🌍','🌟','✨';
+  for (let i = 0; i < 8; i++) {
+    setTimeout(() => {
+      const el = ParticlePool.acquire('confetti-emoji');
+      if (!el) return;
+      el.textContent = items[Math.floor(Math.random() * items.length)];
+      el.style.left = Math.random() * 100 + 'vw';
+      el.style.top = '-40px';
+      el.style.animationDuration = (1 + Math.random()) + 's';
+      el._confettiTimeout = setTimeout(() => {
+        el.style.display = 'none';
+        ParticlePool.release(el);
+      }, 2500);
+    }, i * 100);
+  }
 }
 
 async function loadQuestionData() {
@@ -193,6 +216,7 @@ window.onload = async () => {
     console.error(e);
     window.WORDS = {};
   }
+  initDOMCache();
   initRocketPanel();
   startGame();
 };

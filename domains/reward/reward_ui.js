@@ -140,7 +140,7 @@ const RewardSystemUI = (() => {
         <div class="inventory-rail inventory-rail-left" aria-hidden="true"></div>
         <div class="inventory-center">
         <div class="inventory-left">
-        <div class="inventory-item gem-item" data-type="gems" onclick="RewardSystem.openShopModal()" style="display:flex;">
+        <div class="inventory-item gem-item" data-type="gems" data-action="open-shop-modal" style="display:flex;">
           <span class="icon">💎</span> <span class="val" id="inv-gems">${state.gems}</span><span class="unit">개</span>
         </div>
     `;
@@ -151,7 +151,7 @@ const RewardSystemUI = (() => {
       else if (item.id === 'marble') unit = '회';
       
       html += `
-        <div class="inventory-item empty-slot" data-type="${item.id}" onclick="RewardSystem.consume('${item.id}')" style="display:flex;">
+        <div class="inventory-item empty-slot" data-type="${item.id}" data-action="consume" data-item-id="${item.id}" style="display:flex;">
           <span class="icon">${item.icon}</span> <span class="val" id="inv-${item.id}">0</span><span class="unit">${unit}</span>
         </div>
       `;
@@ -162,10 +162,10 @@ const RewardSystemUI = (() => {
         </div>
         <div class="inventory-rail inventory-rail-right">
         <div class="inventory-actions">
-        <div class="inventory-item inventory-auth" style="cursor:pointer; display:flex;" onclick="if(window.Auth?.getUser()) window.Auth.signOut(); else window.Auth?.signInGoogle();">
+        <div class="inventory-item inventory-auth" style="cursor:pointer; display:flex;" data-action="auth-toggle">
           <span class="icon">👤</span> <span class="val" id="inv-auth" style="font-size:0.8rem;">로그인</span>
         </div>
-        <button type="button" class="inventory-bar-icon-btn" onclick="window.checkGuardian()" title="보호자 관리" aria-label="보호자 관리">
+        <button type="button" class="inventory-bar-icon-btn" data-action="check-guardian" title="보호자 관리" aria-label="보호자 관리">
           <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
         </button>
         </div>
@@ -304,7 +304,7 @@ const RewardSystemUI = (() => {
         <p>축하합니다! 보석 1개를 얻었습니다.</p>
         <p class="sub">보석을 모아 원하는 선물로 바꾸세요!</p>
         <div class="choice-actions">
-          <button class="btn-now" onclick="this.closest('.reward-choice-overlay').remove()">확인</button>
+          <button class="btn-now" data-action="close-overlay">확인</button>
         </div>
       </div>
     `;
@@ -318,7 +318,7 @@ const RewardSystemUI = (() => {
     const overlay = document.createElement('div');
     overlay.id = 'reward-shop-overlay';
     overlay.className = 'reward-modal-overlay';
-    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
     
     const shopItems = state.shop_items || [];
 
@@ -333,7 +333,7 @@ const RewardSystemUI = (() => {
         </div>
         <div class="shop-grid" style="display: grid; gap: 12px; margin: 20px 0; max-height:50vh; overflow-y:auto; padding-right:5px;">
           ${shopItems.map(item => `
-            <div class="shop-card" onclick="RewardSystem.exchangeGem('${item.id}')" style="cursor:pointer; padding:15px; border:2px solid #e2e8f0; border-radius:18px; display:flex; align-items:center; gap:15px; text-align:left; transition:all 0.2s;">
+            <div class="shop-card" data-action="exchange-gem" data-item-id="${item.id}" style="cursor:pointer; padding:15px; border:2px solid #e2e8f0; border-radius:18px; display:flex; align-items:center; gap:15px; text-align:left; transition:all 0.2s;">
               <div style="font-size:2rem;">${item.icon}</div>
               <div style="flex:1;">
                 <div style="font-weight:bold; font-size:1.05rem;">${item.label}</div>
@@ -343,7 +343,7 @@ const RewardSystemUI = (() => {
             </div>
           `).join('')}
         </div>
-        <button class="btn-close" style="width:100%; padding:12px;" onclick="this.closest('.reward-modal-overlay').remove()">나가기</button>
+        <button class="btn-close" style="width:100%; padding:12px;" data-action="close-overlay">나가기</button>
       </div>
     `;
     document.body.appendChild(overlay);
@@ -393,7 +393,7 @@ const RewardSystemUI = (() => {
           <button class="btn-primary" id="deduct-yt-btn" style="background:#f43f5e; border-color:#e11d48; width:100%;">15분 사용 기록하기</button>
         </div>
 
-        <button class="btn-close" style="margin-top:15px;" onclick="this.closest('.reward-modal-overlay').remove()">닫기</button>
+        <button class="btn-close" style="margin-top:15px;" data-action="close-overlay">닫기</button>
       </div>
     `;
     document.body.appendChild(overlay);
@@ -404,7 +404,7 @@ const RewardSystemUI = (() => {
     const deductBtn  = overlay.querySelector('#deduct-yt-btn');
     const display    = overlay.querySelector('.secured-time-display');
 
-    lockTrigger.onclick = () => {
+    lockTrigger.addEventListener('click', () => {
       const n1 = Math.floor(Math.random() * 40) + 11; 
       const n2 = Math.floor(Math.random() * 40) + 11;
       const answer = prompt(`🔒 [부모님 잠금 해제]\n\n계산해 주세요: ${n1} + ${n2} = ?`);
@@ -415,9 +415,9 @@ const RewardSystemUI = (() => {
       } else if (answer !== null) {
         alert('정답이 아닙니다.');
       }
-    };
+    });
 
-    deductBtn.onclick = () => {
+    deductBtn.addEventListener('click', () => {
       RewardSystem.consumeInternal('youtube', (newState) => {
         display.textContent = `${newState.youtube_minutes}분`;
         if (newState.youtube_minutes < 15) {
@@ -451,7 +451,7 @@ const RewardSystemUI = (() => {
           <button class="btn-primary" id="deduct-snack-btn" style="background:#8b5cf6; border-color:#7c3aed; width:100%;">간식 1개 사용 기록하기</button>
         </div>
 
-        <button class="btn-close" style="margin-top:15px;" onclick="this.closest('.reward-modal-overlay').remove()">닫기</button>
+        <button class="btn-close" style="margin-top:15px;" data-action="close-overlay">닫기</button>
       </div>
     `;
     document.body.appendChild(overlay);
@@ -462,7 +462,7 @@ const RewardSystemUI = (() => {
     const deductBtn = overlay.querySelector('#deduct-snack-btn');
     const display = overlay.querySelector('.secured-snack-display');
 
-    lockTrigger.onclick = () => {
+    lockTrigger.addEventListener('click', () => {
       const n1 = Math.floor(Math.random() * 40) + 11;
       const n2 = Math.floor(Math.random() * 40) + 11;
       const answer = prompt(`🔒 [부모님 잠금 해제]\n\n계산해 주세요: ${n1} + ${n2} = ?`);
@@ -473,9 +473,9 @@ const RewardSystemUI = (() => {
       } else if (answer !== null) {
         alert('정답이 아닙니다.');
       }
-    };
+    });
 
-    deductBtn.onclick = () => {
+    deductBtn.addEventListener('click', () => {
       RewardSystem.consumeInternal('snack', (newState) => {
         display.textContent = `${newState.snacks}개`;
         if (newState.snacks < 1) {
@@ -496,7 +496,7 @@ const RewardSystemUI = (() => {
     overlay.innerHTML = `
       <div class="reward-marble-content">
          <iframe src="${marbleUrl}" style="width:360px; height:560px; border:none; border-radius:20px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);"></iframe>
-         <button class="btn-close-marble" onclick="this.closest('.reward-modal-overlay').remove()">학습으로 돌아가기</button>
+          <button class="btn-close-marble" data-action="close-overlay">학습으로 돌아가기</button>
       </div>
     `;
     document.body.appendChild(overlay);
@@ -511,7 +511,7 @@ const RewardSystemUI = (() => {
   function createModalOverlay(id) {
     const el = document.createElement('div');
     el.className = 'reward-modal-overlay ' + id;
-    el.onclick = (e) => { if (e.target === el) el.remove(); };
+    el.addEventListener('click', (e) => { if (e.target === el) el.remove(); });
     return el;
   }
 
@@ -563,18 +563,69 @@ const RewardSystemUI = (() => {
             1개 사용 승인하기 (권장: 부모님)
           </button>
         </div>
-        <button class="btn-close" onclick="this.closest('.reward-modal-overlay').remove()">닫기</button>
+        <button class="btn-close" data-action="close-overlay">닫기</button>
       </div>
     `;
     document.body.appendChild(overlay);
 
     const deductBtn = overlay.querySelector('#deduct-custom-btn');
-    deductBtn.onclick = () => {
+    deductBtn.addEventListener('click', () => {
       RewardSystem.consumeInternal(item.id, () => {
         overlay.remove();
       });
     };
   }
+
+  // ── Event Delegation: data-action → handler mapping ──
+  document.addEventListener('click', (e) => {
+    const target = e.target.closest('[data-action]');
+    if (!target) return;
+    const action = target.dataset.action;
+    const itemId = target.dataset.itemId;
+
+    switch (action) {
+      case 'open-shop-modal':
+        if (typeof RewardSystem !== 'undefined' && RewardSystem.openShopModal) {
+          RewardSystem.openShopModal();
+        }
+        e.stopPropagation();
+        break;
+      case 'consume':
+        if (typeof RewardSystem !== 'undefined' && RewardSystem.consume) {
+          RewardSystem.consume(itemId);
+        }
+        e.stopPropagation();
+        break;
+      case 'auth-toggle':
+        if (window.Auth) {
+          if (window.Auth.getUser()) {
+            window.Auth.signOut();
+          } else {
+            window.Auth.signInGoogle();
+          }
+        }
+        e.stopPropagation();
+        break;
+      case 'check-guardian':
+        if (window.checkGuardian) {
+          window.checkGuardian();
+        }
+        e.stopPropagation();
+        break;
+      case 'exchange-gem':
+        if (typeof RewardSystem !== 'undefined' && RewardSystem.exchangeGem) {
+          RewardSystem.exchangeGem(itemId);
+        }
+        e.stopPropagation();
+        break;
+      case 'close-overlay': {
+        const overlay = target.closest('.reward-modal-overlay, .reward-choice-overlay');
+        if (overlay) overlay.remove();
+        e.stopPropagation();
+        break;
+      }
+    }
+  });
 
   return {
     injectCriticalStyles, injectStyles, injectInventoryBar, syncInventoryBarWithState, applyBodyTopOffset, updateUI,

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from scripts.agent.orchestration.spec import (
     DiffResult,
     TaskStatus,
@@ -197,46 +195,63 @@ class TestAudit:
 class TestAuditHelpers:
     def test_has_blocking_issues_true(self):
         reports = [
-            type('R', {'task_id': 'T1', 'findings': [
-                type('F', {'severity': AuditSeverity.HIGH, 'key': 'k1'})()
-            ]})()
+            type(
+                "R",
+                {
+                    "task_id": "T1",
+                    "findings": [
+                        type("F", {"severity": AuditSeverity.HIGH, "key": "k1"})()
+                    ],
+                },
+            )()
         ]
         # Use actual AuditReport
         from scripts.agent.orchestration.spec import AuditReport, AuditFinding
+
         reports = [AuditReport(task_id="T1")]
-        reports[0].add_finding(AuditFinding(
-            category=AuditCategory.GENERAL,
-            severity=AuditSeverity.HIGH,
-            description="test",
-        ))
+        reports[0].add_finding(
+            AuditFinding(
+                category=AuditCategory.GENERAL,
+                severity=AuditSeverity.HIGH,
+                description="test",
+            )
+        )
         assert has_blocking_issues(reports) is True
 
     def test_has_blocking_issues_false(self):
         from scripts.agent.orchestration.spec import AuditReport, AuditFinding
+
         reports = [AuditReport(task_id="T1")]
-        reports[0].add_finding(AuditFinding(
-            category=AuditCategory.GENERAL,
-            severity=AuditSeverity.LOW,
-            description="test",
-        ))
+        reports[0].add_finding(
+            AuditFinding(
+                category=AuditCategory.GENERAL,
+                severity=AuditSeverity.LOW,
+                description="test",
+            )
+        )
         assert has_blocking_issues(reports) is False
 
     def test_summary_format(self):
         from scripts.agent.orchestration.spec import AuditReport, AuditFinding
+
         reports = [
             AuditReport(task_id="T1"),
             AuditReport(task_id="T2"),
         ]
-        reports[0].add_finding(AuditFinding(
-            category=AuditCategory.GENERAL,
-            severity=AuditSeverity.HIGH,
-            description="h1",
-        ))
-        reports[1].add_finding(AuditFinding(
-            category=AuditCategory.GENERAL,
-            severity=AuditSeverity.LOW,
-            description="l1",
-        ))
+        reports[0].add_finding(
+            AuditFinding(
+                category=AuditCategory.GENERAL,
+                severity=AuditSeverity.HIGH,
+                description="h1",
+            )
+        )
+        reports[1].add_finding(
+            AuditFinding(
+                category=AuditCategory.GENERAL,
+                severity=AuditSeverity.LOW,
+                description="l1",
+            )
+        )
         s = summary(reports)
         assert "2 tasks" in s
         assert "High: 1" in s

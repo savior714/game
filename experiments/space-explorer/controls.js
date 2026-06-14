@@ -12,7 +12,8 @@ export function attachControls(options) {
   const playBtn = controlsPanel.querySelector('[data-action="play"]');
   const pauseBtn = controlsPanel.querySelector('[data-action="pause"]');
   const resetBtn = controlsPanel.querySelector('[data-action="reset"]');
-  const speed = document.getElementById("time-scale");
+  const speedSlider = document.getElementById("time-scale");
+  const speedValue = document.getElementById("speed-value");
   const quality = document.getElementById("render-quality");
   const labelToggle = controlsPanel.querySelector('input[type="checkbox"]');
 
@@ -21,7 +22,8 @@ export function attachControls(options) {
     if (!status) return;
     const mode = state.isPlaying ? "재생 중" : "일시정지";
     const renderModeText = state.renderMode === "3d" ? "3D" : "2D";
-    status.textContent = `${mode} · ${Math.round(state.timeScale * 200)}% · ${renderModeText}`;
+    const speedPercent = Math.round(state.timeScale * 100);
+    status.textContent = `${mode} · ${speedPercent}% · ${renderModeText}`;
   }
 
   function renderPlayPauseButtons() {
@@ -57,14 +59,17 @@ export function attachControls(options) {
     state.timeScale = 0.5;
     state.showLabels = true;
     state.renderMode = "2d";
+    state.selectedPlanet = null;
     planets.forEach((planet, index) => {
       planet.angle = initialAngles[index];
+      planet.trail = [];
     });
     setPlaying(true);
   }
 
   function syncControlDefaults() {
-    if (speed) speed.value = String(state.timeScale);
+    if (speedSlider) speedSlider.value = String(state.timeScale);
+    if (speedValue) speedValue.textContent = `${Math.round(state.timeScale * 100)}%`;
     if (quality) quality.value = state.renderMode;
     if (labelToggle) labelToggle.checked = state.showLabels;
     renderPlayPauseButtons();
@@ -84,12 +89,13 @@ export function attachControls(options) {
       render();
     });
   }
-  if (speed) {
-    speed.addEventListener("change", (event) => {
+  if (speedSlider) {
+    speedSlider.addEventListener("input", (event) => {
       const raw = event.target.value;
       const parsed = Number(raw);
       if (!Number.isNaN(parsed)) {
         state.timeScale = parsed;
+        if (speedValue) speedValue.textContent = `${Math.round(parsed * 100)}%`;
         updateStatusText();
       }
     });

@@ -193,14 +193,16 @@ function spawnConfetti() {
   const items = ['🎉','🌟','✨','🎊','⭐','🍬','🎈'];
   for (let i = 0; i < 8; i++) {
     setTimeout(() => {
-      const el = document.createElement('div');
-      el.className = 'confetti-emoji';
+      const el = ParticlePool.acquire('confetti-emoji');
+      if (!el) return;
       el.textContent = items[Math.floor(Math.random() * items.length)];
-      el.style.left  = Math.random() * 100 + 'vw';
-      el.style.top   = '-40px';
+      el.style.left = Math.random() * 100 + 'vw';
+      el.style.top = '-40px';
       el.style.animationDuration = (1 + Math.random()) + 's';
-      document.body.appendChild(el);
-      setTimeout(() => el.remove(), 2500);
+      el._confettiTimeout = setTimeout(() => {
+        el.style.display = 'none';
+        ParticlePool.release(el);
+      }, 2500);
     }, i * 100);
   }
 }

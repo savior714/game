@@ -27,9 +27,15 @@ class TestAnalyze:
         ws = WorkSpec(
             description="Refactor UI",
             file_groups=[
-                FileGroup(domain_path="domains/math/", files=["domains/math/index.html"]),
-                FileGroup(domain_path="domains/english/", files=["domains/english/index.html"]),
-                FileGroup(domain_path="domains/korean/", files=["domains/korean/index.html"]),
+                FileGroup(
+                    domain_path="domains/math/", files=["domains/math/index.html"]
+                ),
+                FileGroup(
+                    domain_path="domains/english/", files=["domains/english/index.html"]
+                ),
+                FileGroup(
+                    domain_path="domains/korean/", files=["domains/korean/index.html"]
+                ),
             ],
         )
         tasks = analyze(ws)
@@ -40,8 +46,12 @@ class TestAnalyze:
         ws = WorkSpec(
             description="Refactor",
             file_groups=[
-                FileGroup(domain_path="domains/math/", files=["domains/math/index.html"]),
-                FileGroup(domain_path="domains/english/", files=["domains/english/index.html"]),
+                FileGroup(
+                    domain_path="domains/math/", files=["domains/math/index.html"]
+                ),
+                FileGroup(
+                    domain_path="domains/english/", files=["domains/english/index.html"]
+                ),
             ],
         )
         tasks = analyze(ws)
@@ -83,22 +93,22 @@ class TestEstimateParallelism:
         assert n == 3
 
     def test_five_files_or_less(self):
-        TaskMock = type('T', (), {'target_paths': None})
+        TaskMock = type("T", (), {"target_paths": None})
         tasks = [
-            TaskMock(target_paths=['a', 'b']),
-            TaskMock(target_paths=['c', 'd']),
-            TaskMock(target_paths=['e']),
+            TaskMock(target_paths=["a", "b"]),
+            TaskMock(target_paths=["c", "d"]),
+            TaskMock(target_paths=["e"]),
         ]
         # 5 files total, 3 tasks → N=2~3
         n = estimate_parallelism(tasks)
         assert 2 <= n <= 3
 
     def test_more_than_five_files(self):
-        TaskMock = type('T', (), {'target_paths': None})
+        TaskMock = type("T", (), {"target_paths": None})
         tasks = [
-            TaskMock(target_paths=['a', 'b', 'c']),
-            TaskMock(target_paths=['d', 'e', 'f']),
-            TaskMock(target_paths=['g', 'h']),
+            TaskMock(target_paths=["a", "b", "c"]),
+            TaskMock(target_paths=["d", "e", "f"]),
+            TaskMock(target_paths=["g", "h"]),
         ]
         # 8 files total → N=4~5, capped by task count (3)
         n = estimate_parallelism(tasks)

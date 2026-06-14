@@ -64,7 +64,6 @@ body {
 
 .container {
   padding: 1rem 1.25rem 1.5rem;
-  max-width: 720px;
   margin: 0 auto;
 }
 
@@ -242,10 +241,6 @@ body {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 1rem;
-}
-
-.explorer-layout.container {
-  max-width: 1480px;
 }
 
 .canvas-panel canvas {

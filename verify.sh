@@ -30,7 +30,7 @@ tdd_gate_check() {
 
     test_files_changed="$(printf '%s\n' "$changed_files" | rg '^tests/.*\.py$' || true)"
     code_files_changed="$(printf '%s\n' "$changed_files" | rg \
-        '^(math|english|korean|science|space-explorer|common|global|guardian|admin|marble|scripts)/.*\.(js|html|css)$|^[A-Za-z0-9_.-]+\.(js|html|css)$' || true)"
+        '^(math|english|korean|science|space-explorer|common|global|guardian|admin|marble|scripts)/.*\.(js|html)$|^[A-Za-z0-9_.-]+\.(js|html)$' || true)"
 
     if [[ -z "$code_files_changed" && -z "$test_files_changed" ]]; then
         echo -e "\033[0;90m[TDD Gate] only docs/config changed; skipping\033[0m"

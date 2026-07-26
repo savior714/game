@@ -110,8 +110,8 @@ def is_sensitive_path(path: str, allowlist: list[str] | None = None) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def get_staged_files() -> list[str]:
-    """git diff --cached --name-only 로 스테이징된 파일 리스트를 반환한다."""
+def get_staged_files() -> list[str] | None:
+    """스테이징 파일을 반환하며 Git 조회 실패 시 None을 반환한다."""
     try:
         result = subprocess.run(
             ["git", "diff", "--cached", "--name-only"],
@@ -122,11 +122,11 @@ def get_staged_files() -> list[str]:
         )
         return [f for f in result.stdout.strip().splitlines() if f]
     except subprocess.CalledProcessError as exc:
-        print(f"[warn] git diff --cached 실패: {exc.stderr.strip()}", file=sys.stderr)
-        return []
+        print(f"[ERROR] git diff --cached 실패: {exc.stderr.strip()}", file=sys.stderr)
+        return None
     except FileNotFoundError:
-        print("[warn] git 명령어를 찾을 수 없습니다.", file=sys.stderr)
-        return []
+        print("[ERROR] git 명령어를 찾을 수 없습니다.", file=sys.stderr)
+        return None
 
 
 def staged_scannable_paths(staged_files: list[str]) -> list[str]:
@@ -192,9 +192,13 @@ def run_trufflehog_scan(staged_files: list[str]) -> list[str]:
 
 
 def main() -> int:
-    """커밋 게이트 진입점. 민감 파일 발견 시 1 반환."""
+    """커밋 게이트 진입점. 민감 파일 발견 또는 검사 실패 시 1 반환."""
     allowlist = load_allowlist()
     staged = get_staged_files()
+
+    if staged is None:
+        print("[ERROR] 스테이징 파일을 확인하지 못해 커밋을 거부합니다.", file=sys.stderr)
+        return 1
 
     if not staged:
         print("[info] 스테이징된 파일 없음 — 통과.", file=sys.stderr)

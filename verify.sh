@@ -80,7 +80,8 @@ run_lint() {
         ruff check tests scripts/verify_korean_text.py tools/mcp_call_wrapper.py
         ruff format --check tests scripts/verify_korean_text.py tools/mcp_call_wrapper.py
     else
-        echo -e "\033[0;33m[WARN] ruff/just not found; skipping lint\033[0m"
+        echo -e "\033[0;31m[ERROR] required lint tool unavailable: install just or ruff\033[0m" >&2
+        return 1
     fi
 }
 
@@ -93,7 +94,8 @@ run_tests() {
     elif command -v pytest >/dev/null 2>&1; then
         PYTHONPATH=. pytest tests
     else
-        echo -e "\033[0;33m[WARN] pytest not found; skipping tests\033[0m"
+        echo -e "\033[0;31m[ERROR] required test tool unavailable: install just, uv, or pytest\033[0m" >&2
+        return 1
     fi
 }
 
@@ -104,7 +106,8 @@ run_korean_check() {
     elif command -v python3 >/dev/null 2>&1; then
         PYTHONPATH=. python3 scripts/verify_korean_js.py --all
     else
-        echo -e "\033[0;33m[WARN] python/uv not found; skipping Korean check\033[0m"
+        echo -e "\033[0;31m[ERROR] required Python runtime unavailable: install uv or python3\033[0m" >&2
+        return 1
     fi
 }
 

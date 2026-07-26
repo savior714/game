@@ -1,7 +1,7 @@
 # 🎮 어린이 학습 게임 놀이터 (AidenGame)
 
 아이들의 성취감과 자기주도 학습을 최우선으로 하는 적응형 학습 게임 플랫폼입니다.  
-현재 런타임은 루트 기반 정적 HTML/JS 구조로 운영됩니다.
+현재 런타임은 루트 기반 정적 HTML/CSS/JavaScript 구조로 운영됩니다.
 
 ## 🚀 핵심 기능
 
@@ -14,20 +14,21 @@
 ## 🧭 현재 엔트리/라우팅 (SSOT)
 
 - 메인 허브: `index.html`
-- 우주 탐험: `experiments/space-explorer.html`
+- 우주 탐험 페이지: `experiments/space-explorer/index.html`
 - 우주 탐험 모듈 엔트리: `experiments/space-explorer/main.js`
 - 배포 라우팅 설정: `vercel.json`
-  - `/space-explorer.html` -> `/space-explorer.html`
+  - 별도 rewrite 없이 정적 파일 경로를 그대로 제공
+  - 루트 허브 링크: `/experiments/space-explorer/index.html`
 
 ### 운영 / 실험 / 레거시 경로 구분표
 
 | 구분 | 경로 | 상태 | 용도 |
 | --- | --- | --- | --- |
 | 메인 운영 엔트리 | `index.html` | 운영중 | 과목 선택 허브 및 공용 진입점 |
-| 우주 탐험 실험 페이지 | `experiments/space-explorer.html` | 운영중(실험) | 2D/3D 우주 시뮬레이션 및 터치 제스처 실험 |
+| 우주 탐험 실험 페이지 | `experiments/space-explorer/index.html` | 운영중(실험) | 2D/3D 우주 시뮬레이션 및 터치 제스처 실험 |
 | 과목별 페이지 | `domains/{math,english,korean,science}/index.html` | 운영중 | 학습 루프 본편 |
 | 보호자/관리 페이지 | `guardian/index.html`, `admin/index.html` | 운영중(권한/설정 필요) | 보상 관리 및 운영 도구 |
-| 과거 루트 엔트리 (`/index.html`) | 없음 | 레거시 폐기 | 템플릿 구조 전환 이후 비사용 |
+| 과거 우주 탐험 alias | `/space-explorer.html` | 없음 | `vercel.json` rewrite가 없으므로 사용하지 않음 |
 
 ## 🛠️ 로컬 개발
 

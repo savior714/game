@@ -38,3 +38,35 @@ def test_main_fails_closed_when_staged_file_collection_fails(
     monkeypatch.setattr(staged_secret_gate.subprocess, "run", raise_collection_error)
 
     assert staged_secret_gate.main() == 1
+
+
+def test_main_fails_closed_when_trufflehog_exits_without_findings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def staged_files() -> list[str]:
+        return ["safe.txt"]
+
+    def not_sensitive(_path: str, _allowlist: list[str]) -> bool:
+        return False
+
+    def trufflehog_path(_name: str) -> str:
+        return "/usr/bin/trufflehog"
+
+    def scannable_paths(_staged_files: list[str]) -> list[str]:
+        return ["safe.txt"]
+
+    def failed_scan(*_args: object, **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            args=["trufflehog"],
+            returncode=2,
+            stdout="",
+            stderr="scanner failure",
+        )
+
+    monkeypatch.setattr(staged_secret_gate, "get_staged_files", staged_files)
+    monkeypatch.setattr(staged_secret_gate, "is_sensitive_path", not_sensitive)
+    monkeypatch.setattr(staged_secret_gate.shutil, "which", trufflehog_path)
+    monkeypatch.setattr(staged_secret_gate, "staged_scannable_paths", scannable_paths)
+    monkeypatch.setattr(staged_secret_gate.subprocess, "run", failed_scan)
+
+    assert staged_secret_gate.main() == 1

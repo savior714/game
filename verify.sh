@@ -76,11 +76,14 @@ run_lint() {
     echo -e "\n\033[0;36m=== Lint ===\033[0m"
     if command -v just >/dev/null 2>&1; then
         just lint
+    elif command -v uv >/dev/null 2>&1; then
+        uv run ruff check tests scripts/verify_korean_text.py tools/mcp_call_wrapper.py
+        uv run ruff format --check tests scripts/verify_korean_text.py tools/mcp_call_wrapper.py
     elif command -v ruff >/dev/null 2>&1; then
         ruff check tests scripts/verify_korean_text.py tools/mcp_call_wrapper.py
         ruff format --check tests scripts/verify_korean_text.py tools/mcp_call_wrapper.py
     else
-        echo -e "\033[0;31m[ERROR] required lint tool unavailable: install just or ruff\033[0m" >&2
+        echo -e "\033[0;31m[ERROR] required lint tool unavailable: install just, uv, or ruff\033[0m" >&2
         return 1
     fi
 }

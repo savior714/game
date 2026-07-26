@@ -7,6 +7,14 @@ repos:
 
   - repo: local
     hooks:
+      - id: staged-security
+        name: staged security gate
+        entry: just commit-gate-hard
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+
       - id: typecheck
         name: typecheck
         entry: just typecheck

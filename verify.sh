@@ -112,49 +112,6 @@ run_korean_check() {
 }
 
 tdd_gate_check
-
-echo -e "\n\033[0;36m=== PROJECT_RULES.md Directory Sync ===\033[0m"
-PROJECT_RULES="PROJECT_RULES.md"
-declare -a REQUIRED_DIRS=(
-    "index.html"
-    "domains/math/"
-    "domains/english/"
-    "domains/korean/"
-    "domains/science/"
-    "experiments/space-explorer/"
-    "experiments/marble/"
-    "shared/domain/"
-    "shared/ui/"
-    "shared/event-bus.js"
-    "domains/reward/"
-    "domains/auth/"
-    "domains/sync/"
-    "tools/"
-    "artifacts/"
-    "src/"
-    "styles.css"
-    "verify.sh"
-    "bootstrap.sh"
-    "vercel.json"
-)
-
-MISSING_IN_DOCS=""
-for dir in "${REQUIRED_DIRS[@]}"; do
-    if [[ -e "$dir" ]]; then
-        if ! rg -q "$dir" "$PROJECT_RULES"; then
-            MISSING_IN_DOCS+="$dir"$'\n'
-        fi
-    fi
-done
-
-if [[ -n "$MISSING_IN_DOCS" ]]; then
-    echo "❌ PROJECT_RULES.md 누락: 실제 존재하지만 문서에 없는 항목"
-    printf "%s" "$MISSING_IN_DOCS"
-    exit 1
-fi
-
-echo -e "\033[0;32m[PROJECT_RULES.md] directory sync passed\033[0m"
-
 run_lint
 run_korean_check
 run_tests

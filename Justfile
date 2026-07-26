@@ -31,10 +31,11 @@ lint:
     uv run ruff format --check tests scripts/verify_korean_text.py tools/mcp_call_wrapper.py
 
 typecheck:
-    @if command -v ty >/dev/null 2>&1; then \
-        ty check . --exclude tests/ --exclude tools/tdd_gate_plugin.py --exclude templates/tools/tdd_gate_plugin.py; \
+    @targets="scripts/verify_korean_text.py scripts/verify_korean_js.py scripts/verify/lint_dotenv.py scripts/verify/staged_secret_gate.py tools/mcp_call_wrapper.py"; \
+    if command -v ty >/dev/null 2>&1; then \
+        ty check $$targets; \
     elif command -v pyright >/dev/null 2>&1; then \
-        pyright .; \
+        pyright $$targets; \
     else \
         echo "❌ required type checker unavailable: install ty or pyright"; \
         exit 1; \

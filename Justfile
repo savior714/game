@@ -33,7 +33,14 @@ lint:
     uv run ruff format --check tests scripts/verify_korean_text.py tools/mcp_call_wrapper.py
 
 typecheck:
-    ty check . --exclude tests/ --exclude tools/tdd_gate_plugin.py --exclude templates/tools/tdd_gate_plugin.py || if command -v pyright >/dev/null 2>&1; then pyright .; else echo "pyright not found; skipping fallback"; fi
+    @if command -v ty >/dev/null 2>&1; then \
+        ty check . --exclude tests/ --exclude tools/tdd_gate_plugin.py --exclude templates/tools/tdd_gate_plugin.py; \
+    elif command -v pyright >/dev/null 2>&1; then \
+        pyright .; \
+    else \
+        echo "❌ required type checker unavailable: install ty or pyright"; \
+        exit 1; \
+    fi
 
 test:
     uv run pytest tests

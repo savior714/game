@@ -43,9 +43,9 @@ typecheck:
 test:
     uv run pytest tests
 
-# --- Commit Gate (git.md §5.0~§5.2) ---
+# --- Commit Gate ---
 
-# hard 게이트: 보안 선제 검증 (env-lint + staged_secret_gate) — --no-verify 금지
+# hard gate: security checks only; --no-verify is prohibited
 commit-gate-hard:
     @echo "🔒 Hard commit gate (security)..."
     @if [ -f .env.example ] || [ -f .env ]; then \
@@ -56,12 +56,11 @@ commit-gate-hard:
     @git diff --cached --quiet || uv run python scripts/verify/staged_secret_gate.py || { echo "❌ 민감 파일 스테이징 감지"; exit 1; }
     @echo "✅ Hard gate 통과."
 
-# soft 게이트: lint + ty (ty.toml에서 EMR 레거시/누락 모듈 제외, --ignore로 json.loads 타입 추론 무시)
+# soft gate: reuse canonical non-mutating lint and typecheck recipes
 commit-gate-soft:
-    @echo "🔍 Soft commit gate (lint/ty)..."
-    @uv run ruff check --fix tests scripts/verify_korean_text.py tools/mcp_call_wrapper.py || { echo "❌ ruff check 실패"; exit 1; }
-    @uv run ruff format tests scripts/verify_korean_text.py tools/mcp_call_wrapper.py || { echo "❌ ruff format 실패"; exit 1; }
-    @ty check . --ignore invalid-argument-type --ignore not-subscriptable --ignore unresolved-reference --ignore invalid-return-type --ignore unsupported-operator --ignore no-matching-overload --ignore invalid-assignment --ignore not-iterable --ignore unresolved-attribute || { echo "❌ ty 체크 실패"; exit 1; }
+    @echo "🔍 Soft commit gate (lint/typecheck)..."
+    @just lint
+    @just typecheck
     @echo "✅ Soft gate 통과."
 
 # --- Utility ---

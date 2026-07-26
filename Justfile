@@ -48,8 +48,11 @@ test:
 # hard gate: security checks only; --no-verify is prohibited
 commit-gate-hard:
     @echo "🔒 Hard commit gate (security)..."
-    @if [ -f .env.example ] || [ -f .env ]; then \
-        uv run python scripts/verify/lint_dotenv.py || { echo "❌ dotenv lint 실패"; exit 1; }; \
+    @dotenv_files=""; \
+    if [ -f .env.example ]; then dotenv_files="$$dotenv_files .env.example"; fi; \
+    if [ -f .env ]; then dotenv_files="$$dotenv_files .env"; fi; \
+    if [ -n "$$dotenv_files" ]; then \
+        uv run python scripts/verify/lint_dotenv.py $$dotenv_files || { echo "❌ dotenv lint 실패"; exit 1; }; \
     else \
         echo "[skip] .env.example/.env 없음 — dotenv lint 건너뜀."; \
     fi

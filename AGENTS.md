@@ -1,291 +1,198 @@
-# AGENTS.md — Unified Execution Constitution
+# AGENTS.md — AidenGame 실행 규약
 
-에이전트 **헌법 요약**입니다. 우선순위·게이트·레지스트리 진입점만 둡니다. 표·긴 스킬 목록은 레지스트리 파일로 위임합니다.
+이 문서는 저장소에서 작업하는 사람과 에이전트가 따라야 할 **최소 실행 규약**이다.
+복잡한 Blueprint, Plan CLI, 라우팅 매니페스트, Linear 동기화는 일반 작업의 선행 조건이 아니다.
 
 ---
 
 ## 1. 규칙 우선순위
 
-우선순위는 아래와 같습니다.
+충돌 시 다음 순서를 따른다.
 
-1. `PROJECT_RULES.md`
-2. 본 문서 (`AGENTS.md`)
-3. `.agents/core/*.md`
-4. `.agents/domains/**/*.md`
-5. 기타 명세 및 가이드라인
+1. 사용자의 현재 요청과 명시적 제약
+2. `PROJECT_RULES.md`
+3. 본 문서 (`AGENTS.md`)
+4. 대상 코드와 테스트가 표현하는 현재 계약
+5. 기타 문서와 과거 계획 자료
 
-충돌 시 위 순서를 따르며, 불명확하면 질문합니다.
-
----
-
-## 2. 핵심 운영 원칙
-
-normative SSOT: [.agents/core/principles.md](.agents/core/principles.md)
-
-- **코딩 전 사고**: 구현 전에 먼저 분석하고 빠르게 결정 — [principles.md §1.1](.agents/core/principles.md#11-think-before-coding)
-- **단순성·표적·목표 지향**: 불필요한 복잡성 배제, 목표 달성에만 집중 — [principles.md §1.2–§1.4](.agents/core/principles.md#12-simplicity-first)
-- **버그 수정 워크플로우**: [/diagnose](.agents/workflows/diagnose.md)(디버깅) · [/investigate](.agents/workflows/investigate.md)(원인 조사)
-- **리뷰 워크플로우**: [/review](.agents/skills/review/SKILL.md)로 병합 전 코드 검토
-- **커밋 게이트 실패 시 --no-verify 절대 금지**: 오류를 수정하고 재시도 — [error_patterns.md §10](.agents/core/error_patterns.md#10-커밋-게이트-실패시--no-verify-금지)
-- **코드 품질 수명주기**: 설계 → 구현 → 리뷰 → 테스트 — [code_quality_lifecycle.md](.agents/core/code_quality_lifecycle.md)
-- **Self-Evolution**: 세션 중 반복된 실패·도구 호출 오류·비효율적인 패턴을 감지하면 사용자에게 개선 사항을 제안
+`.agents/`, `docs/plans/`, `ROADMAP.md` 아래 문서는 참고 자료다. 사용자가 명시적으로 해당 워크플로우를 요청하지 않는 한 실행 게이트가 아니다.
 
 ---
 
-## 3. 실행 게이트 — 파일 편집 절차
+## 2. 기본 개발 모델
 
-**규범 SSOT**: [routing.md](.agents/core/routing.md) §1 · §2. **WRONG/CORRECT 예시**: [error_patterns §1](.agents/core/error_patterns.md#1-파일-편집-실수) lazy-load.
-
-편집 전 반드시 다음 절차를 따름 (**always-on, tri-runtime**):
-
-1. 호스트 **읽기 도구**로 디스크 최신본 확보
-2. 대상 문자열이 파일에 **정확히 1번** 등장하는지 확인
-3. `oldString`과 `newString`이 서로 다른지 확인 (**같으면 호출 금지**)
-4. `"No changes to apply"` 수신 시 동일 쌍 재호출 금지 → 재읽기 → 목표 내용 있으면 완료, 없으면 old/범위/new 변경 후 **1회만 재시도**
-
-**도구 이름·키**: [runtime_edit_tools.md §1](.agents/core/runtime_edit_tools.md) (Cursor `StrReplace`/`old_string` · OpenCode `edit`/`oldString` · Antigravity `replace_file_content`/`TargetContent`). Terminal Response: [routing.md](.agents/core/routing.md) (Cursor) · [opencode_tools.md §edit](.agents/core/opencode_tools.md) (OpenCode).
+- canonical branch는 `origin/main`이다.
+- 1인 개발 기본값은 `main` 직접 수정과 fast-forward push다.
+- PR, feature branch, worktree, Linear 연동은 사용자가 요청한 경우에만 사용한다.
+- force push와 `--no-verify`는 금지한다.
+- 작업 전 `origin/main`과 현재 HEAD를 확인한다.
+- unrelated dirty state가 있으면 보존하고 대상 경로와 섞지 않는다.
+- 원격이 작업 중 선행되면 재확인하고, 안전한 fast-forward가 불가능하면 publish를 중단한다.
 
 ---
 
-## 4. 실행 게이트 — 다중 에이전트 순차 패턴
+## 3. Atomic 작업 계약
 
-복수 파일 수정 작업은 단일 에이전트가 순차적으로 처리하지 않고, 아래 5단계 페이즈로 **순차적** 실행한다. 각 페이즈는 이전 페이즈의 결과를 확인한 후 다음 페이즈를 시작한다.
+모든 개발·디버깅 작업은 다음 경계를 기본으로 한다.
 
-**핵심 원칙**: 각 페이즈는 **상태가 독립적인 fresh subagent**를 사용한다. 이전 페이즈의 컨텍스트·결과를 `task` prompt에 명시적으로 전달하되, subagent 간 내부 상태는 공유되지 않는다.
-
-```
-Phase 1: 분석·계획 (Main Agent)
-  ↓
-Phase 2: 구현 (N개 Subagent 순차, fresh)
-  ↓
-Phase 3: 검증 (N개 Subagent 순차, fresh — 구현 페이즈와 별도 인스턴스)
-  ↓
-Phase 4: 수정 (M개 Subagent 순차, M≤N, fresh)
-  ↓
-Phase 5: 최종 감사 (Main Agent)
+```text
+ONE TASK
+= ONE FAILURE DOMAIN
+= ONE TESTABLE HYPOTHESIS
+= ONE VERDICT CRITERION
 ```
 
-#### Phase 1 — 분석·계획 (Main Agent 전담)
+### 3.1 수정 전
 
-- 작업 범위 분석 → 수정 대상 파일·영역 식별
-- N(구현 에이전트 수) 결정: 서로 독립적인 파일 그룹마다 1개
-- 각 태스크의 **범위·목표·성공 기준**을 명확히 정의
-- 순차 실행 순서 결정 (의존 관계가 있는 태스크는 순서 보장)
+1. 현재 실패 또는 마찰을 재현한다.
+2. 단일 failure domain을 한 문장으로 정의한다.
+3. 직접 검증 가능한 가설 하나를 정의한다.
+4. PASS/FAIL을 가르는 판정 기준 하나를 정한다.
+5. 수정 대상 경로를 최소 범위로 고정한다.
 
-#### Phase 2 — 구현 (N개 Subagent 순차 실행)
+재현되지 않거나 근거가 사라진 가설은 `REJECTED`로 닫고 코드를 수정하지 않는다.
 
-- 각 subagent에 **독립적인 파일 범위** 할당 (중복 금지)
-- `task` 도구로 **순차 호출** (한 번 완료 후 다음 호출)
-- subagent별 지시사항:
-  - `subagent_type`: `general` (구현용)
-  - 명시된 파일 범위만 수정, 타 영역 터치 금지
-  - 수정 후 `git diff` 결과 요약 포함
+### 3.2 수정
 
-**prompt 템플릿**:
-```
-작업: [파일 경로/범위] 수정
-목표: [구체적 목표]
-성공 기준: [검증 가능한 기준]
-제약: [파일 범위 외 터치 금지, AGENTS.md §4.1–§4.2 준수 등]
-출력: 수정 후 `git diff --stat` + 주요 변경 3줄 요약
-```
+- 가설을 검증하는 최소 변경만 한다.
+- unrelated refactor, 대규모 정리, 새 프레임워크 도입을 묶지 않는다.
+- 여러 문제가 보여도 현재 failure domain 밖의 문제는 기록만 하고 수정하지 않는다.
+- workaround, fail-open fallback, 검증 우회로 문제를 숨기지 않는다.
+- 삭제·데이터 변경·배포 등 비가역성이 큰 작업은 현재 요청 범위를 벗어나면 중단한다.
 
-#### Phase 3 — 검증 (N개 Subagent 순차 실행)
+### 3.3 수정 후
 
-- **구현 subagent와 동일한 수**의 audit subagent 배치 (별도 fresh 인스턴스)
-- 각 audit subagent는 **자신의 구현 결과를 전담 검증** (다른 페이즈의 컨텍스트 공유 금지)
-- subagent별 지시사항:
-  - `subagent_type`: `general` (검증용)
-  - 구현 subagent의 `git diff`만 검토 (전체 코드베이스 아님)
-  - 집중 체크리스트:
-    - **한글/인코딩**: `edit` 도구 실패 패턴 재발 여부 ([AGENTS.md §4.1](#41-partial-edit-tool--한글-콘텐츠-limitation-tri-runtime))
-    - **중복 메시지**: 정적 HTML/JS의 `querySelector` 고유성 ([AGENTS.md §4.2](#42-test--메시지-전역-고유성))
-    - **Context Route Gate**: `just route` 절차 준수 여부 ([routing.md §2](.agents/core/routing.md#2-context-route-gate-편집-전-강제ide-공통))
-    - **Partial Edit 규칙**: `oldString ≠ newString`, 단일 매칭 ([routing.md §1.2](.agents/core/routing.md#12-patch-preconditions-메타-금지12))
-  -发现问题 → `git diff` 기반 구체 근거 + 라인 번호 제시
+1. 현재 가설만 targeted verification으로 독립 검증한다.
+2. 판정 기준을 충족하면 해당 작업을 닫는다.
+3. 다른 실패가 남으면 별도 failure domain으로 분리한다.
+4. full-suite는 변경 위험이나 저장소 계약상 필요할 때만 추가한다.
 
-**prompt 템플릿**:
-```
-검증 대상: [파일 경로/범위] — [구현 subagent의 git diff 결과]
-체크리스트:
-  1. 한글/인코딩: edit 도구 실패 없음, UTF-8 정상
-  2. 메시지 고유성: querySelector 중복 텍스트 없음
-  3. Route Gate: just route 절차 준수
-  4. Partial Edit: oldString ≠ newString, 단일 매칭
-결과: issue 있으면 파일:라인 + 근거 제시. clean이면 "PASS"만 출력
-```
-
-#### Phase 4 — 수정 (M개 Subagent 순차, M≤N)
-
-- Phase 3에서 발견된 issue만 수정
-- 같은 파일에 issue가 여러 개면 **1개 subagent가 전담**
-- 수정 후 `git diff` 결과 포함
-
-**prompt 템플릿**:
-```
-수정 대상: [파일 경로] — Phase 3 issue: [issue 목록]
-지시: 아래 issue만 수정. unrelated 변경 금지.
-  - [issue 1: 파일:라인 + 설명]
-  - [issue 2: 파일:라인 + 설명]
-출력: 수정 후 `git diff` + 변경 요약
-```
-
-#### Phase 5 — 최종 감사 (Main Agent 전담)
-
-- 전체 `git diff` 검토
-- lint/test/verify 실행 (`just lint`, `pytest` 등)
-- 모든 subagent 결과 요약 → 완료 선언
-
-#### 실행 규칙
-
-- **순차 호출**: Phase 2/3의 subagent는 **한 번 완료 후 다음 `task` 호출**로 순차 실행
-- **페이즈 완료 전 다음 페이즈 금지**: 이전 페이즈의 모든 subagent가 완료되고 Main Agent가 결과를 확인한 후 다음 페이즈 시작
-- **고립 범위**: 구현 subagent 간 파일 중복 금지 (충돌 방지)
-- **실패 시**: 해당 subagent 태스크 `Status: failed` + 원인 기록 → Phase 4에서 재시도 1회만
-- **스케일링**: 파일 수 ≤ 5면 N=2~3, 파일 수 > 5면 N=4~5로 분할
-- **fresh 인스턴스 강제**: Phase 3 audit subagent는 Phase 2 구현 subagent와 **다른 세션 컨텍스트**. 동일한 task_id 재사용 금지
-
-#### 언제 사용할지
-
-| 작업 규모 | 패턴 적용 |
-|---|---|
-| 단일 파일 수정 | Phase 1 → Main Agent 구현 (단일 실행) |
-| 2~3개 파일, 독립적 | Phase 1 → Phase 2(N=2~3 순차) → Phase 5 |
-| 4개+ 파일 또는 복잡도 높음 | 전체 5단계 페이즈 적용 |
-| 버그 수정 | [/diagnose](.agents/workflows/diagnose.md) 우선 → 필요시 이 패턴 |
-
-#### 예시: 3개 과목 UI 순차 리팩토링
-
-```
-Main Agent → Phase 1: domains/math/, domains/english/, domains/korean/ 식별
-
-# 순차 호출 — math 완료 후 english, english 완료 후 korean
-task(description="Refactor math UI", subagent_type="general",
-  prompt="작업: domains/math/ 내 HTML/JS/CSS 리팩토링\n목표: UI 일관성 개선, 접근성 준수\n성공 기준: lint PASS, querySelector 중복 없음\n출력: git diff --stat + 주요 변경 3줄")
-
-→ (math subagent 완료 후 다음)
-
-task(description="Refactor english UI", subagent_type="general",
-  prompt="작업: domains/english/ 내 HTML/JS/CSS 리팩토링\n목표: UI 일관성 개선, 접근성 준수\n성공 기준: lint PASS, querySelector 중복 없음\n출력: git diff --stat + 주요 변경 3줄")
-
-→ (english subagent 완료 후 다음)
-
-task(description="Refactor korean UI", subagent_type="general",
-  prompt="작업: domains/korean/ 내 HTML/JS/CSS 리팩토링\n목표: UI 일관성 개선, 접근성 준수\n성공 기준: lint PASS, querySelector 중복 없음\n출력: git diff --stat + 주요 변경 3줄")
-
-→ (구현 페이즈 완료 → Phase 3 검증으로 진행)
-
-task(description="Audit math UI", subagent_type="general",
-  prompt="검증 대상: domains/math/ — [math subagent의 git diff]\n체크리스트: 1. 한글 인코딩 2. querySelector 고유성 3. Route Gate 4. Partial Edit 규칙\n결과: issue 있으면 파일:라인 + 근거. clean이면 PASS")
-
-→ (math audit 완료 후 다음)
-
-task(description="Audit english UI", subagent_type="general",
-  prompt="검증 대상: domains/english/ — [english subagent의 git diff]\n체크리스트:同上\n결과: issue 있으면 파일:라인 + 근거. clean이면 PASS")
-
-→ (english audit 완료 후 다음)
-
-task(description="Audit korean UI", subagent_type="general",
-  prompt="검증 대상: domains/korean/ — [korean subagent의 git diff]\n체크리스트:同上\n결과: issue 있으면 파일:라인 + 근거. clean이면 PASS")
-
-→ (검증 페이즈 완료 → Phase 4 수정(필요시) → Phase 5)
-
-Main Agent → Phase 5: 전체 diff 검토 + lint/test
-```
+한 번에 여러 원인을 수정한 뒤 full-suite 결과 하나로 모두를 판정하지 않는다.
 
 ---
 
-## 5. 실행 게이트 — Plan/Blueprint 관리
+## 4. 계획 문서 정책
 
-- **Plan First**: 복합 작업은 `just plan-lint` PASS 전 구현 착수 금지 — [PROJECT_RULES.md §3](PROJECT_RULES.md) · [planning.md](.agents/core/planning.md).
-- **Task closeout**: Blueprint Task `Status`/`Conclusion`은 **`just plan-task-close` CLI만** — 에디터 직접 수정 **절대 금지** — [plan.md §1.10](.agents/workflows/plan.md) · [error_patterns/detail/blueprint.md §5.6](.agents/core/error_patterns/detail/blueprint.md#56-task-statusconclusion-%EC%97%90%EB%94%94%ED%84%B0-%EC%A7%81%EC%A0%9D-%EC%88%98%EC%A0%95).
-- **DoD 재귀 금지**: DoD 섹션에 `just plan-close`를 verify 명령어로 포함하지 않음 — `plan_close_gate.py`가 이를 추출해 자기 자신을 호출하는 재귀 타임아웃을 유발함 — [error_patterns/detail/blueprint.md §5.7](.agents/core/error_patterns/detail/blueprint.md#57-dod%EC%97%90-just-plan-close-%ED%8F%B0%EB%A6%AC%EB%A7%8C-%ED%8F%B0%EB%A6%AC%EB%A7%88%EC%9D%B4%EC%8A%A4%ED%86%B5).
-- **Archive**: `docs/plans/` 파일 이동 시 **반드시** [`.agents/workflows/archive.md`](.agents/workflows/archive.md) 먼저 Read → `scripts/archive_plans.py` 실행 — 수동 복사/삭제 **절대 금지** — [archive.md §실행 절차](.agents/workflows/archive.md#%EC%8B%A4%ED%96%89-%EC%A0%80%EC%B2%9C).
-- 상세: [planning.md](.agents/core/planning.md) · [workflows/plan.md](.agents/workflows/plan.md) · [archive.md](.agents/workflows/archive.md).
+### 4.1 기본값
+
+일반 작업은 별도 Plan 또는 Blueprint 없이 바로 atomic 계약으로 시작한다.
+
+다음 항목은 **필수 선행 게이트가 아니다**.
+
+- `just plan-lint`
+- `just plan-preread`
+- `just plan-task-close`
+- `just plan-close`
+- `just route`, `just route-read`, `just route-gate-check`
+- Linear issue 생성 또는 동기화
+- 다중 subagent 5단계 실행
+
+기존 Plan 관련 스크립트와 문서는 과거 작업 재현 또는 명시적 요청을 위해 남겨둘 수 있으나, 새 작업을 차단하지 않는다.
+
+### 4.2 계획 문서가 필요한 경우
+
+다음 조건 중 하나에 해당할 때만 짧은 SSOT 문서를 추가한다.
+
+- 여러 세션에 걸친 장기 작업
+- 독립적인 atomic task가 3개 이상이며 순서 의존성이 있음
+- 제품·데이터·배포 계약을 장기간 추적해야 함
+
+계획 문서를 만들더라도 각 실행 항목은 여전히 하나의 failure domain으로 분리한다. 계획 문서 자체의 완성도가 제품 변경보다 우선하지 않는다.
 
 ---
 
-## 6. 동적 규칙 로딩
+## 5. 검증 원칙
 
-**세션 시작**: `PROJECT_RULES.md` + [MEMORY.md](docs/agent-context/memory/MEMORY.md) 인덱스.
+검증은 실제 위험, 변경 범위, 회귀 가능성, 계약 경계에 비례해야 한다.
 
-**lazy 로딩** (편집·route 직전): [LOAD_ORDER.md](.agents/registry/LOAD_ORDER.md) Phase 2 · [CONTEXT_ROUTING.md](.agents/registry/CONTEXT_ROUTING.md) · `ROADMAP.md` (plan·roadmap·discuss).
+- 기존 테스트·정적 분석·런타임 계약으로 충분하면 새 게이트를 추가하지 않는다.
+- 새 검증은 잡아낼 구체적 failure mode와 단일 판정 기준이 있을 때만 추가한다.
+- 동일 사실을 반복 확인하는 스크립트, 체크리스트, 중복 게이트를 늘리지 않는다.
+- 필수 검증 도구가 없으면 성공으로 처리하지 말고 fail-closed한다.
+- 문서 전용 변경은 문서 계약만 검증한다.
+- 제품 코드 변경은 관련 테스트를 우선하고 필요할 때만 범위를 확장한다.
 
-편집 직전 절차: `just route <paths> --json --write-manifest` → `must_read` Read → `just route-read` → `just route-gate-check`.
-
----
-
-## 7. 검증 규칙
-
-검증 수준·게이트: [verification.md](.agents/core/verification.md) — 세션 종료 `just lint-turn-end`. 시점별 품질 체크: [code_quality_lifecycle.md](.agents/core/code_quality_lifecycle.md).
-
-### 7.1 한글 콘텐츠 제한
-
-호스트 **부분 수정 도구**(Cursor `StrReplace`, OpenCode `edit`, Antigravity `replace_file_content` 등 — [runtime_edit_tools.md §1](.agents/core/runtime_edit_tools.md))는 ASCII-only JSON 파싱에 최적화됨. 한글/특수문자 본문을 그대로 넣으면 **실패**할 수 있음 (`JSON parsing failed: Property name must be a string literal`).
-
-**규칙**:
-- 영문/코드 변경 → 세션에 노출된 **부분 수정 도구** 사용 (런타임별 이름·키는 [runtime_edit_tools.md §1](.agents/core/runtime_edit_tools.md))
-- 한글/특수문자 대량 → [runtime_edit_tools.md §4](.agents/core/runtime_edit_tools.md) 터미널 우회
-- 한글 포함 대량 콘텐츠 → `bash`/`Shell` + `cat > file << 'EOF'` (또는 OpenCode `bash`, Antigravity `run_command`)
-- `sed -i ''` (macOS)는 한글과 함께 사용하면 이스케이프 오류 발생 → `python3 -c` 또는 `cat << 'EOF'`로 대체
-- MCP `repo_patch` 노출 시: [SPEC_TECH_repo_mcp_tools.md](docs/specs/technical/SPEC_TECH_repo_mcp_tools.md) (`old_text`/`new_text` snake_case) — 선택, tri-runtime 네이티브와 병행
-
-### 7.2 메시지 전역 고유성
-
-정적 HTML/JS 페이지에서 `document.querySelector()` / `getByText()`는 **단일 요소만** 찾음. 중복 텍스트가 있으면 오류.
-
-**규칙**:
-- 테스트 message는 고유 식별자 포함 (`"적정"` X → `"수학 3학년 1단원 정답"` O)
-- 중복 텍스트가 있으면 `querySelectorAll()` + 인덱스 또는 `data-testid` 사용 고려
-
-### 7.3 Plan closeout 실행 순서
-
-`just plan-close`는 다음 순서를 **반드시** 따름.
+저장소의 대표 명령은 다음과 같다.
 
 ```bash
-just verify               # 1. 검증 스크립트 실행
-just plan-close           # 2. plan close gate (실제 justfile 레시피만 사용)
+just verify
+just lint
+just typecheck
+just test
+just ci
 ```
 
-**규칙**:
-- DoD에 명시된 `just <recipe>`는 실제 justfile에 존재하는지 사전 확인 (`just --list`로 검증)
-- 존재하지 않으면 stub 또는 실제 검증 스크립트로 교체
-
-### 7.4 Conclusion 플레이스홀더 금지
-
-`just plan-lint`는 각 Task의 `Conclusion` 필드를 검증.
-
-**규칙**:
-- Conclusion은 최소 **25자 이상**
-- 실제 검증 결과 포함 (파일명, 테스트 수, 명령어 결과)
-- 플레이스홀더 문자열 절대 남기지 않음:
-  - `[판정 — 비개발자용 요약. 검증 결과]` X
-  - `[완료 시 기입]` X
-  - `Task 9.9에서 선행 Task 결과를 근거로 작성한다.` X
-- 예시: `SPEC_ui_billing.md에 청구 준비 점검 패널 요구사항 추가 완료. just docs-ssot-headers PASS.`
-
-### 7.5 Justfile 레시피 실존 검증
-
-PLAN 파일의 DoD에 명시된 `just <recipe>`는 실제 justfile에 존재해야 함.
-
-**규칙**:
-- PLAN 작성 시 `just --list`로 레시피 실존 확인
-- 검증 스크립트가 `--check` 플래그를 지원하지 않으면 stub 또는 별도 검증 로직 사용
+모든 작업에 모든 명령을 실행하는 것이 아니라, 현재 failure domain에 필요한 최소 명령을 선택한다.
 
 ---
 
-## 8. Reference Index
+## 6. 프로젝트 경계
 
-| Purpose | SSOT |
+- 사용자 런타임은 정적 HTML/CSS/JavaScript다.
+- 메인 허브는 `index.html`이다.
+- 과목별 기능은 `domains/` 아래에 둔다.
+- 공용 로직은 `shared/` 아래에 둔다.
+- 실험 기능은 `experiments/` 아래에 둔다.
+- 보호자·관리 기능은 `guardian/`, `admin/` 아래에 둔다.
+- Next.js, Tauri, 별도 백엔드 API는 현재 범위 밖이다.
+
+상세 아키텍처와 스택 계약은 `PROJECT_RULES.md`를 따른다.
+
+---
+
+## 7. 보안과 정직성
+
+- API 키, 토큰, 쿠키, `.env` 원문을 출력하거나 커밋하지 않는다.
+- 민감정보 가능성이 있는 파일은 내용을 노출하지 않고 존재와 상태만 보고한다.
+- 검증하지 않은 결과를 PASS라고 보고하지 않는다.
+- 실행하지 않은 명령, 확인하지 않은 원격 상태, 생성하지 않은 커밋을 수행한 것처럼 표현하지 않는다.
+- blocker가 있으면 우회하지 말고 정확한 복구 조건을 보고한다.
+
+---
+
+## 8. 로컬 에이전트 위임
+
+로컬 LLM에 위임할 때는 하나의 프롬프트에 하나의 atomic task만 담는다.
+
+- 단일 프롬프트는 최대 700줄로 제한한다.
+- 입력에는 failure domain, hypothesis, verdict criterion, allowed paths, targeted verification을 명시한다.
+- 과거 계획 전체를 반복 삽입하지 않고 현재 작업에 필요한 delta만 전달한다.
+- 독립 작업은 순차 실행하며 이전 결과를 확인한 뒤 다음 failure domain을 선택한다.
+
+---
+
+## 9. 완료 보고 계약
+
+완료 보고에는 최소한 다음을 포함한다.
+
+```text
+TASK_ID
+RESULT
+VERDICT
+CONFIDENCE
+BLOCKER
+FAILURE_DOMAIN
+HYPOTHESIS
+HYPOTHESIS_VERDICT
+VERIFICATION
+CHANGED_PATHS
+GIT / PUBLICATION STATUS
+REMAINING_SEPARATE_FAILURES
+```
+
+보고는 실제 실행 근거만 포함한다. 과거 Blueprint의 Status/Conclusion 필드를 갱신하는 것은 일반 완료 조건이 아니다.
+
+---
+
+## 10. SSOT 인덱스
+
+| 목적 | SSOT |
 |---|---|
-| Project overview | `README.md` |
-| Execution protocol | `AGENTS.md` |
-| Project policy | `PROJECT_RULES.md` |
-| Requirements contract | `tests/` |
-| Session memory | `docs/agent-context/memory/MEMORY.md` |
-| Rule registry | `.agents/registry/RULE_INDEX.md` |
-| Space Explorer spec | `docs/SPACE_EXPLORER_PLAN.md` |
+| 프로젝트 개요 | `README.md` |
+| 실행 규약 | `AGENTS.md` |
+| 아키텍처·스택·품질 정책 | `PROJECT_RULES.md` |
+| 실행 가능한 요구사항 | `tests/` |
+| 통합 검증 | `verify.sh`, `Justfile` |
+| 기능별 설계 | 대상 기능과 가장 가까운 `docs/` 문서 |
 
-에이전트 규칙 SSOT는 `PROJECT_RULES.md`, `.agents/core/` 및 `AGENTS.md`입니다.
-
-중복 방지: `.cursor/rules/` 미사용. **`.cursor/commands/*.md`는 workflow pointer만** (본문 SSOT: `.agents/workflows/`). 슬래시·키워드 카탈로그: [WORKFLOW_AND_SKILL_INDEX.md](.agents/registry/WORKFLOW_AND_SKILL_INDEX.md).
+과거 Plan/Blueprint 자료는 역사적 참고 자료이며 현재 실행 규약의 상위 SSOT가 아니다.

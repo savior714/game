@@ -18,12 +18,10 @@ lint-turn-end:
 sync:
     uv sync
 
-# Run all checks (Lint, Type, Test, Verify)
+# Run all checks without repeating verify.sh coverage
 ci:
     @echo "Running AidenGame CI..."
-    @just lint
     @just typecheck
-    @just test
     @just verify
 
 # --- Steps ---

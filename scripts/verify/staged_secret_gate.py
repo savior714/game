@@ -182,7 +182,10 @@ def run_trufflehog_scan(staged_files: list[str]) -> list[str]:
     )
 
     if result.returncode != 0:
-        return _parse_trufflehog_findings(result.stdout)
+        findings = _parse_trufflehog_findings(result.stdout)
+        if findings:
+            return findings
+        return [f"trufflehog 검사 실패 (exit {result.returncode}, findings 없음)"]
     return []
 
 

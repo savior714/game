@@ -17,11 +17,21 @@ tdd_gate_check() {
     fi
 
     echo -e "\n\033[0;36m=== TDD Gate ===\033[0m"
-    local changed_files test_files_changed code_files_changed no_assert_files file
+    local changed_files unstaged_files staged_files test_files_changed code_files_changed no_assert_files file
 
-    changed_files="$(git diff --name-only "$TDD_GATE_BASE_REF" 2>/dev/null || true)"
-    changed_files+=$'\n'"$(git diff --name-only --cached "$TDD_GATE_BASE_REF" 2>/dev/null || true)"
-    changed_files="$(printf '%s\n' "$changed_files" | sed '/^$/d' | sort -u)"
+    if ! unstaged_files="$(git diff --name-only "$TDD_GATE_BASE_REF" 2>&1)"; then
+        echo "[ERROR] TDD Gate could not read unstaged changes for base: $TDD_GATE_BASE_REF" >&2
+        printf '%s\n' "$unstaged_files" >&2
+        return 1
+    fi
+
+    if ! staged_files="$(git diff --name-only --cached "$TDD_GATE_BASE_REF" 2>&1)"; then
+        echo "[ERROR] TDD Gate could not read staged changes for base: $TDD_GATE_BASE_REF" >&2
+        printf '%s\n' "$staged_files" >&2
+        return 1
+    fi
+
+    changed_files="$(printf '%s\n%s\n' "$unstaged_files" "$staged_files" | sed '/^$/d' | sort -u)"
 
     if [[ -z "$(printf '%s\n' "$changed_files" | sed '/^$/d')" ]]; then
         echo -e "\033[0;90m[TDD Gate] no changed files; skipping diff checks\033[0m"

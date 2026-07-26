@@ -39,9 +39,9 @@ tdd_gate_check() {
     fi
 
     test_files_changed="$(printf '%s\n' "$changed_files" | rg '^tests/.*\.py$' || true)"
-    # Runtime code lives under the canonical project directories or root entry files.
+    # Runtime files and executable Python tooling require accompanying test changes.
     code_files_changed="$(printf '%s\n' "$changed_files" | rg \
-        '^(domains|shared|experiments|guardian|admin|scripts)/.*\.(js|html|css)$|^[A-Za-z0-9_.-]+\.(js|html|css)$' || true)"
+        '^(domains|shared|experiments|guardian|admin)/.*\.(js|html|css)$|^(scripts|tools)/.*\.py$|^[A-Za-z0-9_.-]+\.(js|html|css)$' || true)"
 
     if [[ -z "$code_files_changed" && -z "$test_files_changed" ]]; then
         echo -e "\033[0;90m[TDD Gate] only docs/config changed; skipping\033[0m"

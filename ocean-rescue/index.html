@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+  <title>Ocean Rescue — AidenGame</title>
+  <style>
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: #1a2a3a;
+}
+
+#ocean-rescue-root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  max-width: 100vw;
+  max-height: 100vh;
+  aspect-ratio: 16 / 9;
+  margin: 0 auto;
+}
+
+#ocean-rescue-stage {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#ocean-rescue-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+</style>
+</head>
+<body>
+  <main
+    id="ocean-rescue-root"
+    aria-labelledby="ocean-rescue-title"
+    data-ocean-rescue-ready="false"
+  >
+    <h1 id="ocean-rescue-title">Ocean Rescue</h1>
+
+    <p
+      id="ocean-rescue-status"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    ></p>
+
+    <section
+      id="ocean-rescue-stage"
+      aria-label="Ocean Rescue game stage"
+    >
+      <canvas
+        id="ocean-rescue-canvas"
+        width="1280"
+        height="720"
+        aria-label="Ocean Rescue game scene"
+      >
+        Ocean Rescue requires canvas support.
+      </canvas>
+    </section>
+  </main>
+
+  <script>
+(function () {
+  var root = window.OceanRescue = window.OceanRescue || {};
+  root.State = {
+    phase: "BOOT",
+    ready: false
+  };
+})();
+
+</script>
+<script>
+(function () {
+  var State = window.OceanRescue.State;
+
+  var App = {
+    boot: function () {
+      var root = document.getElementById("ocean-rescue-root");
+      var status = document.getElementById("ocean-rescue-status");
+      if (!root || !status) {
+        return;
+      }
+      if (root.getAttribute("data-ocean-rescue-ready") === "true") {
+        return;
+      }
+      window.OceanRescue.State.ready = true;
+      root.setAttribute("data-ocean-rescue-ready", "true");
+      status.textContent = "Ocean Rescue scaffold ready";
+    }
+  };
+
+  window.OceanRescue.App = App;
+
+  document.addEventListener("DOMContentLoaded", function () {
+    App.boot();
+  });
+})();
+
+</script>
+</body>
+</html>

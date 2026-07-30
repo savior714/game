@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+  <title>Ocean Rescue — AidenGame</title>
+  <!-- OCEAN_RESCUE_CSS -->
+</head>
+<body>
+  <main
+    id="ocean-rescue-root"
+    aria-labelledby="ocean-rescue-title"
+    data-ocean-rescue-ready="false"
+  >
+    <h1 id="ocean-rescue-title">Ocean Rescue</h1>
+
+    <p
+      id="ocean-rescue-status"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    ></p>
+
+    <section
+      id="ocean-rescue-stage"
+      aria-label="Ocean Rescue game stage"
+    >
+      <canvas
+        id="ocean-rescue-canvas"
+        width="1280"
+        height="720"
+        aria-label="Ocean Rescue game scene"
+      >
+        Ocean Rescue requires canvas support.
+      </canvas>
+    </section>
+  </main>
+
+  <!-- OCEAN_RESCUE_SCRIPTS -->
+</body>
+</html>

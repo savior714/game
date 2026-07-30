@@ -1,0 +1,21 @@
+{
+  "template": "index.template.html",
+  "styles": [
+    "style.css"
+  ],
+  "scripts": [
+    {
+      "file": "state.js",
+      "namespace": "OceanRescue.State",
+      "depends_on": []
+    },
+    {
+      "file": "app.js",
+      "namespace": "OceanRescue.App",
+      "depends_on": [
+        "OceanRescue.State"
+      ]
+    }
+  ],
+  "assets": []
+}

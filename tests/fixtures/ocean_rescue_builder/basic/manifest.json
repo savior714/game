@@ -1,0 +1,28 @@
+{
+  "template": "template.html",
+  "styles": ["style.css"],
+  "scripts": [
+    {
+      "file": "state.js",
+      "namespace": "OceanRescue.State",
+      "depends_on": []
+    },
+    {
+      "file": "game.js",
+      "namespace": "OceanRescue.Game",
+      "depends_on": ["OceanRescue.State"]
+    }
+  ],
+  "assets": [
+    {
+      "id": "gup-c",
+      "file": "assets/gup-c.svg",
+      "mime": "image/svg+xml"
+    },
+    {
+      "id": "reef-background",
+      "file": "assets/reef-background.svg",
+      "mime": "image/svg+xml"
+    }
+  ]
+}

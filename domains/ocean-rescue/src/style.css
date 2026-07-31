@@ -493,3 +493,159 @@ html, body {
     animation: none;
   }
 }
+
+#ocean-rescue-rescue-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  pointer-events: none;
+  color: #eef5fb;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  text-align: center;
+}
+
+#ocean-rescue-rescue-overlay[hidden] {
+  display: none;
+}
+
+#ocean-rescue-rescue-overlay h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+#ocean-rescue-rescue-companion {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #bcd6ee;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+#ocean-rescue-rescue-situation {
+  margin: 4px 0 0;
+  max-width: 80%;
+  font-size: 17px;
+  font-weight: 700;
+  color: #eef5fb;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+#ocean-rescue-rescue-ready {
+  box-sizing: border-box;
+  margin: 6px 0 0;
+  padding: 8px 26px;
+  border: 2px solid #ffd166;
+  border-radius: 14px;
+  background: rgba(20, 48, 74, 0.9);
+  color: #ffd166;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+#ocean-rescue-rescue-ready[hidden] {
+  display: none;
+}
+
+#ocean-rescue-rescue-tutorial {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  max-width: 86%;
+  min-width: 300px;
+  padding: 10px 18px 12px;
+  border-radius: 14px;
+  background: rgba(10, 24, 40, 0.82);
+  color: #eef5fb;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  text-align: center;
+}
+
+#ocean-rescue-rescue-tutorial[hidden] {
+  display: none;
+}
+
+#ocean-rescue-rescue-instruction {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+#ocean-rescue-rescue-tutorial > p:last-child {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #c6d8ea;
+}
+
+#ocean-rescue-rescue-hand {
+  width: 46px;
+  height: 46px;
+  margin: 10px auto 0;
+  box-sizing: border-box;
+  border: 3px solid rgba(255, 209, 102, 0.9);
+  border-radius: 50% 50% 50% 14%;
+  background: rgba(255, 209, 102, 0.45);
+  opacity: 0;
+}
+
+#ocean-rescue-rescue-tutorial.ocean-rescue-tutorial-active #ocean-rescue-rescue-hand {
+  animation: ocean-rescue-hand-swipe 3s ease-in-out 1 forwards;
+}
+
+#ocean-rescue-rescue-tutorial.ocean-rescue-tutorial-active.ocean-rescue-tutorial-hold #ocean-rescue-rescue-hand {
+  animation-name: ocean-rescue-hand-hold;
+}
+
+@keyframes ocean-rescue-hand-swipe {
+  0% {
+    transform: translate(-140px, 0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.85;
+  }
+  82% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(140px, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes ocean-rescue-hand-hold {
+  0% {
+    transform: translate(0, -40px);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.85;
+  }
+  82% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(0, 40px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #ocean-rescue-rescue-tutorial.ocean-rescue-tutorial-active #ocean-rescue-rescue-hand {
+    animation: none;
+  }
+}

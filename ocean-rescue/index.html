@@ -504,6 +504,162 @@ html, body {
   }
 }
 
+#ocean-rescue-rescue-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  pointer-events: none;
+  color: #eef5fb;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  text-align: center;
+}
+
+#ocean-rescue-rescue-overlay[hidden] {
+  display: none;
+}
+
+#ocean-rescue-rescue-overlay h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+#ocean-rescue-rescue-companion {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #bcd6ee;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+#ocean-rescue-rescue-situation {
+  margin: 4px 0 0;
+  max-width: 80%;
+  font-size: 17px;
+  font-weight: 700;
+  color: #eef5fb;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+#ocean-rescue-rescue-ready {
+  box-sizing: border-box;
+  margin: 6px 0 0;
+  padding: 8px 26px;
+  border: 2px solid #ffd166;
+  border-radius: 14px;
+  background: rgba(20, 48, 74, 0.9);
+  color: #ffd166;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+#ocean-rescue-rescue-ready[hidden] {
+  display: none;
+}
+
+#ocean-rescue-rescue-tutorial {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  max-width: 86%;
+  min-width: 300px;
+  padding: 10px 18px 12px;
+  border-radius: 14px;
+  background: rgba(10, 24, 40, 0.82);
+  color: #eef5fb;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  text-align: center;
+}
+
+#ocean-rescue-rescue-tutorial[hidden] {
+  display: none;
+}
+
+#ocean-rescue-rescue-instruction {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+#ocean-rescue-rescue-tutorial > p:last-child {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #c6d8ea;
+}
+
+#ocean-rescue-rescue-hand {
+  width: 46px;
+  height: 46px;
+  margin: 10px auto 0;
+  box-sizing: border-box;
+  border: 3px solid rgba(255, 209, 102, 0.9);
+  border-radius: 50% 50% 50% 14%;
+  background: rgba(255, 209, 102, 0.45);
+  opacity: 0;
+}
+
+#ocean-rescue-rescue-tutorial.ocean-rescue-tutorial-active #ocean-rescue-rescue-hand {
+  animation: ocean-rescue-hand-swipe 3s ease-in-out 1 forwards;
+}
+
+#ocean-rescue-rescue-tutorial.ocean-rescue-tutorial-active.ocean-rescue-tutorial-hold #ocean-rescue-rescue-hand {
+  animation-name: ocean-rescue-hand-hold;
+}
+
+@keyframes ocean-rescue-hand-swipe {
+  0% {
+    transform: translate(-140px, 0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.85;
+  }
+  82% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(140px, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes ocean-rescue-hand-hold {
+  0% {
+    transform: translate(0, -40px);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.85;
+  }
+  82% {
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(0, 40px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #ocean-rescue-rescue-tutorial.ocean-rescue-tutorial-active #ocean-rescue-rescue-hand {
+    animation: none;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -624,6 +780,40 @@ html, body {
       >
         Ocean Rescue requires canvas support.
       </canvas>
+
+      <section
+        id="ocean-rescue-rescue-overlay"
+        aria-labelledby="ocean-rescue-rescue-title"
+        hidden
+      >
+        <h2 id="ocean-rescue-rescue-title">Rescue Site</h2>
+
+        <p id="ocean-rescue-rescue-companion"></p>
+        <p id="ocean-rescue-rescue-situation"></p>
+
+        <div
+          id="ocean-rescue-rescue-ready"
+          role="status"
+          aria-live="polite"
+          hidden
+        >
+          Ready!
+        </div>
+
+        <div
+          id="ocean-rescue-rescue-tutorial"
+          hidden
+        >
+          <p id="ocean-rescue-rescue-instruction"></p>
+
+          <div
+            id="ocean-rescue-rescue-hand"
+            aria-hidden="true"
+          ></div>
+
+          <p>Tap anywhere to skip.</p>
+        </div>
+      </section>
     </section>
   </main>
 
@@ -1498,12 +1688,89 @@ html, body {
 </script>
 <script>
 (function () {
+  var root = window.OceanRescue = window.OceanRescue || {};
+
+  function freeze(value) {
+    return Object.freeze(value);
+  }
+
+  var ArrivalDistance = 6000;
+  var SiteTransitionMs = 1500;
+  var TutorialDurationMs = 3000;
+
+  var CATALOG = freeze([
+    freeze({
+      missionId: "sea-turtle",
+      targetLabel: "Sea turtle",
+      toolLabel: "Cutter",
+      situation: "The sea turtle is tangled in three ropes.",
+      tutorial: "Start here. Follow the rope to the end!"
+    }),
+    freeze({
+      missionId: "crab",
+      targetLabel: "Crab",
+      toolLabel: "Grabber arm",
+      situation: "The crab is trapped under three rocks.",
+      tutorial: "Hold the rock. Move it. Release it in the zone!"
+    }),
+    freeze({
+      missionId: "young-whale",
+      targetLabel: "Young whale",
+      toolLabel: "GUP hook",
+      situation: "Debris is blocking the young whale’s path.",
+      tutorial: "Drag from the debris to the GUP hook!"
+    })
+  ]);
+
+  function getMissionContent(missionId) {
+    if (typeof missionId !== "string") {
+      return null;
+    }
+    for (var i = 0; i < CATALOG.length; i += 1) {
+      if (CATALOG[i].missionId === missionId) {
+        return CATALOG[i];
+      }
+    }
+    return null;
+  }
+
+  function isFiniteNonNegative(value) {
+    return typeof value === "number" && isFinite(value) && value >= 0;
+  }
+
+  function hasArrived(travelSnapshot) {
+    if (!travelSnapshot || typeof travelSnapshot !== "object") {
+      return false;
+    }
+    if (travelSnapshot.active !== true) {
+      return false;
+    }
+    if (!isFiniteNonNegative(travelSnapshot.distance)) {
+      return false;
+    }
+    return travelSnapshot.distance >= ArrivalDistance;
+  }
+
+  root.Rescue = freeze({
+    Catalog: CATALOG,
+    ArrivalDistance: ArrivalDistance,
+    SiteTransitionMs: SiteTransitionMs,
+    TutorialDurationMs: TutorialDurationMs,
+    getMissionContent: getMissionContent,
+    hasArrived: hasArrived
+  });
+})();
+
+</script>
+<script>
+(function () {
   var State = window.OceanRescue.State;
   var Missions = window.OceanRescue.Missions;
   var Gups = window.OceanRescue.Gups;
   var Launch = window.OceanRescue.Launch;
   var Travel = window.OceanRescue.Travel || null;
   var Terrain = window.OceanRescue.Terrain || null;
+  var Rescue = window.OceanRescue.Rescue || null;
 
   var controlsBound = false;
   var launchSequenceCounter = 0;
@@ -1518,6 +1785,12 @@ html, body {
   var travelLastTimestamp = null;
   var travelInputBound = false;
   var travelCanvas = null;
+
+  var rescueSequenceCounter = 0;
+  var activeRescueSequence = null;
+  var siteTransitionTimerId = null;
+  var tutorialTimerId = null;
+  var rescueInputBound = false;
 
   var pointerActive = false;
   var pointerId = null;
@@ -2147,6 +2420,10 @@ html, body {
       }
     }
     travelLastTimestamp = timestamp;
+    if (tryBeginRescueArrival()) {
+      renderRescueSiteFrame(travelCanvas, resolveTravelContext());
+      return;
+    }
     renderTravelFrame(travelCanvas, resolveTravelContext());
     if (typeof window.requestAnimationFrame === "function") {
       travelFrameId = window.requestAnimationFrame(function (nextTimestamp) {
@@ -2466,6 +2743,445 @@ html, body {
     context.fillText(name, x, drawY);
   }
 
+  function resolveRescueElements() {
+    var stage = document.getElementById("ocean-rescue-stage");
+    var canvas = document.getElementById("ocean-rescue-canvas");
+    var overlay = document.getElementById("ocean-rescue-rescue-overlay");
+    var companion = document.getElementById("ocean-rescue-rescue-companion");
+    var situation = document.getElementById("ocean-rescue-rescue-situation");
+    var ready = document.getElementById("ocean-rescue-rescue-ready");
+    var tutorial = document.getElementById("ocean-rescue-rescue-tutorial");
+    var instruction = document.getElementById("ocean-rescue-rescue-instruction");
+    var hand = document.getElementById("ocean-rescue-rescue-hand");
+    if (
+      !stage ||
+      !canvas ||
+      !overlay ||
+      !companion ||
+      !situation ||
+      !ready ||
+      !tutorial ||
+      !instruction ||
+      !hand
+    ) {
+      return null;
+    }
+    return {
+      stage: stage,
+      canvas: canvas,
+      overlay: overlay,
+      companion: companion,
+      situation: situation,
+      ready: ready,
+      tutorial: tutorial,
+      instruction: instruction,
+      hand: hand
+    };
+  }
+
+  function tryBeginRescueArrival() {
+    if (!Rescue) {
+      return false;
+    }
+    if (activeRescueSequence !== null) {
+      return false;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.TRAVEL) {
+      return false;
+    }
+    if (!Travel) {
+      return false;
+    }
+    var travel = Travel.getSnapshot();
+    if (!travel.active) {
+      return false;
+    }
+    if (!Rescue.hasArrived(travel)) {
+      return false;
+    }
+    var progression = Missions.getSnapshot();
+    var mission = missionById(progression.selectedMissionId);
+    if (mission === null) {
+      return false;
+    }
+    var content = Rescue.getMissionContent(mission.id);
+    if (content === null) {
+      return false;
+    }
+    var gup = gupById(Gups.getSnapshot().lastGupId);
+    if (gup === null) {
+      return false;
+    }
+    var els = resolveRescueElements();
+    if (els === null) {
+      return false;
+    }
+    return beginRescueArrival(mission, gup, content, els);
+  }
+
+  function beginRescueArrival(mission, gup, content, els) {
+    var token = State.beginTransition(State.Phases.RESCUE_SITE_TRANSITION);
+    if (token === null) {
+      return false;
+    }
+    if (!State.completeTransition(token)) {
+      return false;
+    }
+    rescueSequenceCounter += 1;
+    var sequence = {
+      sequenceId: rescueSequenceCounter,
+      missionId: mission.id,
+      gupId: gup.id,
+      missionContent: content,
+      tutorialComplete: false,
+      tutorialSkipped: false
+    };
+    activeRescueSequence = sequence;
+
+    activeTravelRunId = null;
+    if (
+      travelFrameId !== null &&
+      typeof window.cancelAnimationFrame === "function"
+    ) {
+      window.cancelAnimationFrame(travelFrameId);
+    }
+    travelFrameId = null;
+    travelLastTimestamp = null;
+
+    if (Travel) {
+      Travel.stop();
+    }
+    if (Terrain && Terrain.getSnapshot().active) {
+      Terrain.stop();
+    }
+    shutdownActivePointer();
+
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-travel-runtime", "stopped");
+      root.setAttribute("data-travel-input", "disabled");
+      root.setAttribute("data-rescue-sequence", "active");
+      root.setAttribute("data-rescue-phase", "site-transition");
+      root.setAttribute("data-rescue-input", "disabled");
+      root.setAttribute("data-rescue-mission-id", mission.id);
+      root.setAttribute("data-rescue-gup-id", gup.id);
+    }
+
+    els.overlay.hidden = false;
+    els.companion.textContent = mission.companion + ":";
+    els.situation.textContent = content.situation;
+    els.ready.hidden = false;
+    els.tutorial.hidden = true;
+
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = "Rescue site: " + content.situation;
+    }
+
+    scheduleSiteTransitionCompletion(sequence);
+    return true;
+  }
+
+  function shutdownActivePointer() {
+    if (pointerActive && pointerDragging && pointerId !== null && Travel) {
+      Travel.endDrag(pointerId);
+    }
+    if (
+      pointerId !== null &&
+      travelCanvas &&
+      typeof travelCanvas.releasePointerCapture === "function"
+    ) {
+      travelCanvas.releasePointerCapture(pointerId);
+    }
+    resetPointerGesture();
+  }
+
+  function scheduleSiteTransitionCompletion(sequence) {
+    if (typeof window.setTimeout !== "function") {
+      return;
+    }
+    siteTransitionTimerId = window.setTimeout(function () {
+      completeSiteTransition(sequence);
+    }, Rescue.SiteTransitionMs);
+  }
+
+  function completeSiteTransition(sequence) {
+    siteTransitionTimerId = null;
+    if (activeRescueSequence === null) {
+      return false;
+    }
+    if (!sequence || typeof sequence !== "object") {
+      return false;
+    }
+    if (sequence.sequenceId !== activeRescueSequence.sequenceId) {
+      return false;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.RESCUE_SITE_TRANSITION) {
+      return false;
+    }
+    var els = resolveRescueElements();
+    if (els === null) {
+      return false;
+    }
+    var token = State.beginTransition(State.Phases.RESCUE_TUTORIAL);
+    if (token === null) {
+      return false;
+    }
+    if (!State.completeTransition(token)) {
+      return false;
+    }
+    els.ready.hidden = true;
+    els.tutorial.hidden = false;
+    els.instruction.textContent = sequence.missionContent.tutorial;
+    setTutorialActiveClass(els.tutorial, true);
+    if (sequence.missionId === "crab") {
+      setTutorialHoldClass(els.tutorial, true);
+    }
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-rescue-phase", "tutorial");
+      root.setAttribute("data-rescue-input", "disabled");
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = sequence.missionContent.tutorial;
+    }
+    scheduleTutorialCompletion(sequence);
+    return true;
+  }
+
+  function scheduleTutorialCompletion(sequence) {
+    if (typeof window.setTimeout !== "function") {
+      return;
+    }
+    tutorialTimerId = window.setTimeout(function () {
+      completeTutorial(sequence);
+    }, Rescue.TutorialDurationMs);
+  }
+
+  function completeTutorial(sequence) {
+    tutorialTimerId = null;
+    if (activeRescueSequence === null) {
+      return false;
+    }
+    if (!sequence || typeof sequence !== "object") {
+      return false;
+    }
+    if (sequence.sequenceId !== activeRescueSequence.sequenceId) {
+      return false;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.RESCUE_TUTORIAL) {
+      return false;
+    }
+    return finalizeTutorial(sequence, false);
+  }
+
+  function skipTutorial() {
+    var sequence = activeRescueSequence;
+    if (sequence === null) {
+      return false;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.RESCUE_TUTORIAL) {
+      return false;
+    }
+    if (sequence.tutorialComplete) {
+      return false;
+    }
+    clearTutorialTimer();
+    return finalizeTutorial(sequence, true);
+  }
+
+  function finalizeTutorial(sequence, skipped) {
+    if (activeRescueSequence === null) {
+      return false;
+    }
+    if (!sequence || typeof sequence !== "object") {
+      return false;
+    }
+    if (sequence.sequenceId !== activeRescueSequence.sequenceId) {
+      return false;
+    }
+    if (sequence.tutorialComplete) {
+      return false;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.RESCUE_TUTORIAL) {
+      return false;
+    }
+    var els = resolveRescueElements();
+    if (els === null) {
+      return false;
+    }
+    var token = State.beginTransition(State.Phases.RESCUE_ACTIVE);
+    if (token === null) {
+      return false;
+    }
+    if (!State.completeTransition(token)) {
+      return false;
+    }
+    sequence.tutorialComplete = true;
+    sequence.tutorialSkipped = skipped ? true : false;
+    clearTutorialTimer();
+    setTutorialActiveClass(els.tutorial, false);
+    setTutorialHoldClass(els.tutorial, false);
+    els.hand.hidden = true;
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-rescue-phase", "active");
+      root.setAttribute("data-rescue-input", "enabled");
+      root.setAttribute(
+        "data-rescue-tutorial-skipped",
+        skipped ? "true" : "false"
+      );
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = "Rescue controls ready";
+    }
+    return true;
+  }
+
+  function clearTutorialTimer() {
+    if (tutorialTimerId === null) {
+      return;
+    }
+    if (typeof window.clearTimeout === "function") {
+      window.clearTimeout(tutorialTimerId);
+    }
+    tutorialTimerId = null;
+  }
+
+  function setTutorialClass(container, token, active) {
+    if (
+      typeof container.classList === "object" &&
+      typeof container.classList.add === "function" &&
+      typeof container.classList.remove === "function"
+    ) {
+      if (active) {
+        container.classList.add(token);
+      } else {
+        container.classList.remove(token);
+      }
+      return;
+    }
+    var names = String(container.className || "").split(/\s+/);
+    var index = names.indexOf(token);
+    if (active && index === -1) {
+      names.push(token);
+    }
+    if (!active && index !== -1) {
+      names.splice(index, 1);
+    }
+    container.className = names.join(" ").trim();
+  }
+
+  function setTutorialActiveClass(container, active) {
+    setTutorialClass(container, "ocean-rescue-tutorial-active", active);
+  }
+
+  function setTutorialHoldClass(container, active) {
+    setTutorialClass(container, "ocean-rescue-tutorial-hold", active);
+  }
+
+  function onRescueStagePointerDown(event) {
+    if (!event || typeof event !== "object") {
+      return;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase === State.Phases.RESCUE_SITE_TRANSITION) {
+      if (typeof event.preventDefault === "function") {
+        event.preventDefault();
+      }
+      if (typeof event.stopPropagation === "function") {
+        event.stopPropagation();
+      }
+      return;
+    }
+    if (snapshot.phase === State.Phases.RESCUE_TUTORIAL) {
+      if (typeof event.preventDefault === "function") {
+        event.preventDefault();
+      }
+      if (typeof event.stopPropagation === "function") {
+        event.stopPropagation();
+      }
+      skipTutorial();
+    }
+  }
+
+  function renderRescueSiteFrame(canvas, context) {
+    if (!canvas || !context) {
+      return;
+    }
+    if (typeof context.clearRect !== "function") {
+      return;
+    }
+    if (activeRescueSequence === null) {
+      return;
+    }
+    var width = canvas.width;
+    var height = canvas.height;
+    if (typeof width !== "number" || typeof height !== "number") {
+      return;
+    }
+    var sequence = activeRescueSequence;
+    var layout = null;
+    if (Terrain && typeof Terrain.getLayout === "function") {
+      layout = Terrain.getLayout(sequence.missionId);
+    }
+    var palette = terrainPalettes["coral-reef"];
+    if (layout && layout.environment && terrainPalettes[layout.environment]) {
+      palette = terrainPalettes[layout.environment];
+    }
+    context.clearRect(0, 0, width, height);
+    context.fillStyle = "#0a1e33";
+    context.fillRect(0, 0, width, height);
+    var bubbleSpacing = 96;
+    context.fillStyle = "rgba(180, 220, 255, 0.30)";
+    var bx = 40 - bubbleSpacing;
+    while (bx < width) {
+      context.beginPath();
+      context.arc(bx + 40, Math.floor(height * 0.6), 5, 0, Math.PI * 2);
+      context.fill();
+      bx += bubbleSpacing;
+    }
+    context.fillStyle = palette[0];
+    context.fillRect(0, Math.floor(height * 0.55), width, Math.floor(height * 0.45));
+    context.fillStyle = palette[2];
+    context.fillRect(0, Math.floor(height * 0.55), width, 8);
+
+    var gup = gupById(sequence.gupId);
+    var gupName = gup === null ? sequence.gupId : gup.name;
+    var gupY = Math.floor(height * 0.72);
+    context.beginPath();
+    context.arc(220, gupY, 36, 0, Math.PI * 2);
+    context.fillStyle = "#ffd166";
+    context.fill();
+    context.fillStyle = "#0a1e33";
+    context.font = "18px system-ui, sans-serif";
+    context.textAlign = "center";
+    context.fillText(gupName, 220, gupY);
+
+    context.beginPath();
+    context.arc(520, gupY, 30, 0, Math.PI * 2);
+    context.fillStyle = "#9ad0ff";
+    context.fill();
+    context.fillStyle = "#0a1e33";
+    context.font = "16px system-ui, sans-serif";
+    context.fillText(sequence.missionContent.toolLabel, 520, gupY - 44);
+
+    context.beginPath();
+    context.arc(900, gupY, 48, 0, Math.PI * 2);
+    context.fillStyle = "#8fd3a8";
+    context.fill();
+    context.fillStyle = "#0a1e33";
+    context.font = "18px system-ui, sans-serif";
+    context.fillText(sequence.missionContent.targetLabel, 900, gupY);
+  }
+
   function selectMission(missionId) {
     var snapshot = State.getSnapshot();
     if (snapshot.phase !== State.Phases.MISSION_SELECT) {
@@ -2547,6 +3263,13 @@ html, body {
         }
         skipLaunch();
       });
+    }
+    if (!rescueInputBound) {
+      var stage = document.getElementById("ocean-rescue-stage");
+      if (stage && typeof stage.addEventListener === "function") {
+        stage.addEventListener("pointerdown", onRescueStagePointerDown);
+        rescueInputBound = true;
+      }
     }
     controlsBound = true;
   }

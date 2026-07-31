@@ -1,14 +1,16 @@
 # AidenGame Ocean Rescue — Rendering MVP
 
-- **Version:** v0.4
+- **Version:** v0.5
 - **Date:** 2026-07-31
-- **Status:** Renderer, asset representation, and atlas partition closed / resolution policy unresolved
+- **Status:** Renderer, asset pipeline, atlas partition, and resolution policy closed / atlas page limit unresolved
 - **Parent product spec:** `AIDENGAME_OCEAN_RESCUE_MVP_PRD.md`
 - **Scope:** visual rendering quality only
 - **Selected renderer:** PixiJS v8
 - **Current implementation baseline:** PixiJS 8.19.0
 - **Selected asset path:** authored source → build-time raster atlas + JSON metadata
-- **Selected atlas partition:** three lifecycle-based atlases
+- **Selected atlas partition:** three lifecycle-based atlas bundles
+- **Logical resolution:** 1280×720
+- **Renderer resolution:** `min(devicePixelRatio, 2)`
 - **Primary device:** Galaxy Tab S10-class landscape tablet
 - **Build constraint:** final deployable remains a single HTML artifact
 
@@ -18,15 +20,11 @@
 
 This document defines the minimum rendering upgrade required to move Ocean Rescue from a functional geometric prototype to a visually legible children’s game.
 
-It does **not** replace or redesign the gameplay, progression, input, pause, save-data, or mission contracts in the parent MVP PRD.
+It does **not** replace or redesign gameplay, progression, input, pause, save-data, or mission contracts in the parent MVP PRD.
 
 The rendering MVP answers one question only:
 
 > How should the existing game be rendered so that characters, vehicles, environments, and rescue actions are immediately recognizable instead of appearing as placeholder shapes and text panels?
-
----
-
-## 2. Failure domain and binary criterion
 
 ### Failure domain
 
@@ -34,50 +32,48 @@ The rendering MVP answers one question only:
 
 ### Direct hypothesis
 
-Migrating only the visual layer to a PixiJS v8 scene graph and replacing procedural placeholder subjects with authored 2D assets—while preserving current gameplay state and input contracts—will make the product visually understandable and emotionally readable without requiring new missions, progression, mechanics, or broader world-building.
+Migrating only the visual layer to a PixiJS v8 scene graph and replacing procedural placeholder subjects with authored 2D assets—while preserving current gameplay state and input contracts—will make the product visually understandable and emotionally readable without new missions, progression, mechanics, or broader world-building.
 
 ### Binary criterion
 
-A viewer who has not read the instructions can identify within three seconds that:
+A first-time viewer who has not read instructions can identify within three seconds that:
 
 1. a sea-otter rescue leader has arrived,
 2. a sea turtle needs help,
-3. seaweed loops are the current obstacle,
+3. seaweed loops are the obstacle,
 4. the player should pull those loops away.
 
 ---
 
-## 3. Scope boundary
+## 2. Scope boundary
 
-The retained decisions below are visual anchors only. This rendering MVP does not expand:
-
-- character biographies or names,
-- team relationships,
-- dialogue,
-- mission count,
-- rescue mechanics,
-- progression,
-- vehicle catalog,
-- headquarters lore,
-- collectibles or merchandising systems.
-
-Allowed decision areas are limited to:
+Allowed decisions are limited to:
 
 - PixiJS renderer architecture,
 - authored asset representation,
 - atlas generation and partition,
 - scene layering,
 - sprite and cutout animation composition,
-- scaling and pixel-density policy,
+- logical resolution and pixel-density policy,
 - visual effects,
 - performance guardrails,
 - deterministic single-HTML packaging.
 
+Explicitly excluded:
+
+- additional character biography, naming, or relationships,
+- new dialogue,
+- new missions or rescue mechanics,
+- progression redesign,
+- expanded vehicle catalog,
+- headquarters lore,
+- collectibles or merchandising systems.
+
 ---
 
-## 4. Retained visual anchors
+## 3. Retained visual anchors
 
-### 4.1 Style
+### Style
 
 - Original television-animation-style 2D presentation
 - Rounded, readable silhouettes
@@ -87,43 +83,40 @@ Allowed decision areas are limited to:
 - Non-threatening danger presentation
 - No direct copying of an existing commercial character, costume, vehicle, badge, or composition
 
-### 4.2 Rescue team
+### Rescue team
 
 1. **Sea otter** — leader and pilot
 2. **Puffin** — technology and scouting
 3. **Sea lion** — ecology and care
 
-Only the sea otter requires a full in-game cutout rig in the first slice. The puffin and sea lion may remain communication portraits or static support art.
+Only the sea otter requires a complete in-game cutout rig in the first slice. The puffin and sea lion may remain communication portraits or static support art.
 
-### 4.3 Uniform and palette
+### Uniform and palette
 
 - Fully unified retro-futuristic marine rescue suit
 - Rounded helmet and equipment forms
-- Large readable controls and badge
 - Minimal surface detail
 - Primary palette: teal, orange, cream white
 - Supporting palette: deep navy, coral red, pale sky blue
 
-### 4.4 Sea-otter impression
+### Sea-otter impression
 
 The lead character must appear cute, calm, intelligent, dependable, and expressive without exaggerated baby proportions.
 
-### 4.5 Animation representation
+### Animation representation
 
 - 2D cutout rig
 - Separate head, torso, forelimbs, hind limbs, tail, eyes, and mouth where required
 - Facial-expression swaps
-- No full frame-by-frame requirement for this MVP
+- No full frame-by-frame animation requirement for this MVP
 
 ---
 
-## 5. First rendering vertical slice
+## 4. First rendering vertical slice
 
-### 5.1 Target
+The first and only mandatory rendering slice is the **sea-turtle rescue gameplay scene**.
 
-The first and only mandatory rendering slice is the **sea-turtle rescue gameplay scene**. It becomes the reference implementation for later mission rendering.
-
-### 5.2 Presentation
+### Presentation
 
 - Fixed side-view diorama
 - Submarine visible as rear support
@@ -135,23 +128,23 @@ Approximate composition:
 
 ```text
 ┌────────────────────────────────────────────────────┐
-│ Mission objective                    Support portrait│
+│ Mission objective                   Support portrait│
 │                                                    │
-│ Submarine        Sea-otter leader      Sea turtle   │
-│ rear support     active character      rescue target │
+│ Submarine       Sea-otter leader       Sea turtle  │
+│ rear support    active character       rescue target│
 │                                                    │
-│ coral foreground   seaweed interaction   sand/rocks │
+│ coral foreground  seaweed interaction   sand/rocks │
 └────────────────────────────────────────────────────┘
 ```
 
-Recommended screen allocation:
+Recommended allocation:
 
 - left 20–25%: submarine and support light,
 - center 25–30%: sea-otter leader,
 - right 35–40%: turtle and seaweed loops,
 - remaining space: environmental framing and UI safe areas.
 
-### 5.3 Retained interaction
+### Retained interaction
 
 - Three large seaweed loops
 - One active loop at a time
@@ -160,30 +153,29 @@ Recommended screen allocation:
 - Repeated failure strengthens the directional hint
 - Each successful release changes the turtle’s face and posture
 
-This interaction validates rendering and animation only. It must not trigger redesign of the wider mission rules.
+This interaction validates rendering and animation only. It must not reopen wider mission design.
 
 ---
 
-## 6. PixiJS renderer architecture
+## 5. PixiJS renderer architecture
 
-### 6.1 Renderer decision
+### Renderer contract
 
-The rendering MVP uses **PixiJS v8**, currently pinned to **8.19.0** at this decision point.
-
-- PixiJS is bundled locally into the final HTML.
+- Use PixiJS v8, currently pinned to `8.19.0` at this decision point.
+- Bundle PixiJS locally into the final HTML.
 - Runtime CDN dependency is prohibited.
-- One `PIXI.Application`, one renderer, one graphics context, and one controlled frame loop are used.
+- Use one `PIXI.Application`, one renderer, one graphics context, and one controlled frame loop.
 - Rive, Spine, React-Pixi, or a second WebGL renderer are outside this MVP.
 
-### 6.2 Migration boundary
+### Migration boundary
 
 - Existing gameplay modules remain canonical.
 - PixiJS display objects never become canonical gameplay state.
-- A bounded render adapter maps read-only game snapshots into the PixiJS scene graph.
+- A bounded render adapter maps read-only game snapshots into the scene graph.
 - Rendering may emit normalized pointer intents but may not redefine success, failure, or progression.
-- The old Canvas paint path is removed only after the corresponding PixiJS slice independently passes visual and input acceptance.
+- Remove the old Canvas paint path only after the PixiJS slice independently passes visual and input acceptance.
 
-### 6.3 Root hierarchy
+### Root hierarchy
 
 ```text
 stage
@@ -200,22 +192,18 @@ stage
 
 RenderGroups may be used only for major partitions such as `gameplayWorld` and `hud`; they must not be assigned to every small container without profile evidence.
 
-### 6.4 Input boundary
+### Input boundary
 
-- Browser pointer coordinates are converted once into the fixed logical 16:9 coordinate system.
+- Convert browser pointer coordinates once into the fixed logical 1280×720 coordinate system.
 - Existing domain hit-test and gesture rules remain authoritative.
-- PixiJS event targets may identify the visual subject but may not silently alter hit geometry.
+- PixiJS event targets may identify a visual subject but may not silently alter hit geometry.
 - Debug hit areas remain inspectable and invisible in production.
 
 ---
 
-## 7. Authored asset pipeline
-
-### 7.1 Selected representation
+## 6. Authored asset pipeline
 
 Production runtime assets are **build-time packed raster texture atlases with JSON metadata**.
-
-The canonical pipeline is:
 
 ```text
 authored source files
@@ -228,30 +216,30 @@ authored source files
   → PixiJS Assets manifest and cache
 ```
 
-### 7.2 Authoring sources
+### Authoring sources
 
 - SVG is preferred for clean character, vehicle, UI, and simple environment source art.
 - High-resolution raster source is allowed for painted or textured elements.
-- Production must not depend on runtime SVG rasterization for mandatory slice assets.
+- Mandatory production assets must not depend on runtime SVG rasterization.
 - Source files remain individually reviewable and replaceable.
 
-### 7.3 Runtime contract
+### Runtime contract
 
 - PixiJS Sprites and Textures are the primary runtime representation.
-- Textures are created once from the loaded spritesheets and reused.
+- Textures are created once from loaded spritesheets and reused.
 - No texture creation, image decode, or upload is permitted per frame.
 - Frame aliases remain stable across packing runs.
 - Cutout-rig pivots remain stable after trimming.
-- Duplicate aliases, missing frames, invalid pivots, and out-of-bounds frame rectangles fail the build.
+- Duplicate aliases, missing frames, invalid pivots, and out-of-bounds rectangles fail the build.
 
-### 7.4 Determinism
+### Determinism
 
-Given identical source bytes, packer version, raster scale, trim rules, padding, and partition configuration, the build must reproduce identical atlas image bytes and JSON metadata.
+Given identical source bytes, packer version, raster scale, trim rules, padding, partition configuration, and compression settings, the build must reproduce identical atlas image bytes and JSON metadata.
 
-The build records at minimum:
+Record at minimum:
 
 - source-file hash,
-- generated-frame alias,
+- frame alias,
 - source scale,
 - pivot or anchor metadata,
 - atlas membership,
@@ -260,30 +248,20 @@ The build records at minimum:
 
 ---
 
-## 8. Selected atlas partition
+## 7. Atlas partition
 
-The first slice uses exactly three lifecycle-based atlases.
+The first slice uses exactly three lifecycle-based atlas bundles.
 
-### 8.1 `characters.atlas`
+### `characters.atlas`
 
-Contains assets that share character-oriented revision and animation lifecycles:
-
-- sea-otter cutout parts,
-- sea-otter facial states,
-- sea-turtle body states,
-- sea-turtle facial states,
+- sea-otter cutout parts and facial states,
+- sea-turtle body and facial states,
 - puffin communication portrait,
 - sea-lion communication portrait.
 
-Rules:
+Character art updates must not repack the environment atlas. Rig pivots and aliases are stable contracts.
 
-- Rig pivots and frame aliases are contractually stable.
-- Updating character art does not repack the environment atlas.
-- Portraits may share this atlas because they change with character art direction.
-
-### 8.2 `scene.atlas`
-
-Contains assets tied to the sea-turtle rescue environment and stage composition:
+### `scene.atlas`
 
 - submarine side view,
 - coral-reef background elements,
@@ -293,15 +271,9 @@ Contains assets tied to the sea-turtle rescue environment and stage composition:
 - three seaweed-loop assets,
 - static scene props.
 
-Rules:
+Large full-screen or near-full-screen layers may use dedicated pages while remaining inside the `scene` bundle identity.
 
-- The three interaction loops have explicit stable aliases.
-- Background layers remain independently addressable even when packed together.
-- Large full-screen or near-full-screen layers may use dedicated atlas pages when packer limits require it, while remaining inside the `scene` bundle identity.
-
-### 8.3 `effects-ui.atlas`
-
-Contains small, frequently reused presentation assets:
+### `effects-ui.atlas`
 
 - bubbles,
 - glow textures,
@@ -311,33 +283,68 @@ Contains small, frequently reused presentation assets:
 - communication portrait frame,
 - compact HUD icons required by the slice.
 
-Rules:
+### Partition invariants
 
-- Effects remain reusable and independent of the mission scene atlas.
-- Procedural particles may reference atlas textures but particle counts remain bounded.
-- Text panels and large background art do not enter this atlas.
-
-### 8.4 Partition invariants
-
-- Atlas membership is declared, not inferred solely from current file size.
+- Atlas membership is declared, not inferred solely from file size.
 - A frame may not migrate between atlases without an explicit manifest change.
 - No duplicate alias may exist across atlases.
-- All three atlases load before the rescue scene becomes interactive.
-- The runtime accesses frames by stable alias rather than pixel coordinates or atlas page number.
-- `characters`, `scene`, and `effects-ui` are registered as explicit PixiJS asset bundles.
-- A change confined to one partition must not change the generated bytes of the other two partitions.
-
-### 8.5 Why not one global atlas
-
-A single atlas would couple character, environment, and effect revisions, creating unnecessary repacks and unstable incremental evidence.
-
-### 8.6 Why not one atlas per object
-
-Per-object atlases would produce unnecessary texture and manifest fragmentation without a meaningful lifecycle benefit for this slice.
+- All three bundles load before the rescue scene becomes interactive.
+- Runtime access uses stable aliases, never pixel coordinates or page numbers.
+- A change confined to one partition must leave the other two outputs byte-identical.
 
 ---
 
-## 9. Required render layers and authored assets
+## 8. Resolution and pixel-density policy
+
+### Logical coordinate system
+
+- Canonical logical viewport: **1280×720**.
+- All gameplay state, hit geometry, layout anchors, camera bounds, and pointer conversion use this coordinate system.
+- CSS scaling and device pixel ratio must not change gameplay coordinates or acceptance geometry.
+
+### Renderer resolution
+
+Initialize the PixiJS renderer with an effective resolution equivalent to:
+
+```js
+Math.min(window.devicePixelRatio || 1, 2)
+```
+
+Rules:
+
+- DPR values below 1 are normalized to 1 unless a separately validated degraded mode is introduced.
+- DPR values above 2 do not increase the renderer resolution.
+- Maximum normal render target: **2560×1440**.
+- The DPR cap is a rendering-quality and memory guardrail, not a gameplay setting.
+- No automatic runtime DPR switching is part of this MVP.
+
+### Asset source scale
+
+- Mandatory character, creature, vehicle, interaction, and UI assets are rasterized for a declared **2× source scale** relative to logical display size.
+- Assets expected to occupy a stable screen region must not be enlarged from undersized source frames.
+- Lower-DPR devices downsample the 2× atlas through the renderer’s declared scale mode.
+- Atlas metadata must retain source scale so runtime code does not infer it from filenames.
+
+### Resize and input invariants
+
+- Resizing recalculates CSS fit and letterboxing without mutating logical object coordinates.
+- Pointer conversion uses the actual canvas bounds and renderer resolution only once before producing logical coordinates.
+- A DPR or browser zoom change may resize the backing surface but may not move the logical hit target.
+- Visual and hit-test alignment must be verified at effective DPR 1, 1.5, and 2.
+
+### Resolution acceptance
+
+The policy passes only when:
+
+1. the 1280×720 scene remains visually sharp at DPR 2,
+2. character outlines and turtle facial states remain readable,
+3. drag targets remain aligned after CSS resizing and letterboxing,
+4. no code path creates a render target above 2560×1440 in the normal MVP mode,
+5. the Galaxy Tab-class target shows no obvious drag latency or sustained animation collapse from the selected resolution.
+
+---
+
+## 9. Required visual layers and animation
 
 Minimum visible layers:
 
@@ -351,22 +358,7 @@ Minimum visible layers:
 8. interaction hints and effects,
 9. HUD and communication portrait.
 
-Mandatory authored assets:
-
-- sea-otter cutout parts,
-- sea-turtle body and facial states,
-- three seaweed-loop assets,
-- one submarine side-view asset,
-- coral-reef background layers,
-- foreground coral and sand,
-- communication portrait frame,
-- bubble, glow, drag-arrow, and success-effect textures.
-
-Procedural geometry is allowed only for invisible hit areas, debug overlays, temporary development guides, and simple non-disruptive particles. Primary characters, animals, vehicles, rocks, coral, and rescue obstacles must not ship as plain circles, rectangles, labels, or unstyled paths.
-
----
-
-## 10. Minimum animation set
+Minimum animation states:
 
 ### Sea otter
 
@@ -401,31 +393,29 @@ Environmental motion remains slower and lower contrast than the active rescue ac
 
 ---
 
-## 11. Readability and performance guardrails
+## 10. Readability, performance, and packaging
 
-At the target 16:9 viewport:
+### Readability
 
-- sea otter, turtle, submarine, and active loop remain recognizable at 25% screenshot scale,
-- the active loop has the strongest local interaction contrast,
-- the turtle’s face remains readable without zooming,
-- foreground decoration does not obscure interaction targets,
-- inactive fish do not resemble targets,
-- text panels are not the dominant visual mass.
+- Sea otter, turtle, submarine, and active loop remain recognizable at 25% screenshot scale.
+- The active loop has the strongest local interaction contrast.
+- The turtle’s face remains readable without zooming.
+- Foreground decoration does not obscure interaction targets.
+- Inactive fish do not resemble targets.
+- Text panels are not the dominant visual mass.
 
-Runtime guardrails:
+### Runtime guardrails
 
-- responsive pointer tracking during drag,
-- stable animation cadence,
-- no per-frame display-object recreation,
-- no repeated image decode or texture upload,
-- bounded particle counts,
-- one renderer/context only,
-- no filter or mask proliferation without device evidence,
-- no quality fallback to placeholder primary subjects.
+- Responsive pointer tracking during drag
+- Stable animation cadence
+- No per-frame display-object recreation
+- No repeated image decode or texture upload
+- Bounded particle counts
+- One renderer/context only
+- No filter or mask proliferation without device evidence
+- No quality fallback to placeholder primary subjects
 
----
-
-## 12. Packaging
+### Packaging
 
 - Final artifact remains one HTML file.
 - PixiJS, atlas images, spritesheet JSON, manifest, and required runtime code are bundled at build time.
@@ -435,7 +425,7 @@ Runtime guardrails:
 
 ---
 
-## 13. Acceptance criteria
+## 11. Rendering MVP acceptance criteria
 
 The rendering MVP passes only when all are true:
 
@@ -454,12 +444,15 @@ The rendering MVP passes only when all are true:
 13. PixiJS and mandatory assets are bundled locally.
 14. The application uses one PixiJS renderer/context.
 15. Assets are generated into the three declared atlas partitions.
-16. A change confined to one partition leaves the other two atlas outputs byte-identical.
+16. A change confined to one partition leaves the other two outputs byte-identical.
 17. Frame aliases and cutout pivots remain stable across deterministic rebuilds.
+18. Logical gameplay coordinates remain 1280×720 at every supported DPR.
+19. Effective renderer DPR never exceeds 2 in normal MVP mode.
+20. Visual and hit-test alignment passes at effective DPR 1, 1.5, and 2.
 
 ---
 
-## 14. Explicit non-goals
+## 12. Explicit non-goals
 
 - Final-quality rendering of all three missions
 - Full rigs for all three team members
@@ -473,21 +466,12 @@ The rendering MVP passes only when all are true:
 - Rive, Spine, skeletal physics, or another animation runtime
 - React-based PixiJS scene management
 - Runtime procedural character generation
+- Automatic dynamic-resolution switching
 
 ---
 
-## 15. Current technology evidence
+## 13. Next unresolved rendering decision
 
-- PixiJS `Assets` provides cached loading, aliases, manifests, bundles, background loading, and spritesheet JSON support.
-- PixiJS documentation recommends manifests and bundles for structured asset management and documents AssetPack as a manifest-generation option.
-- PixiJS v8.18–8.19 added renderer fallback arrays, live HTML textures, Graphics-to-SVG export, sprite mask channels, and transient WebGPU MSAA attachments.
+Renderer, asset representation, atlas partition, and resolution policy are closed.
 
-These capabilities support the selected three-bundle atlas architecture but do not close the remaining pixel-density and memory-budget decisions.
-
----
-
-## 16. Next unresolved rendering decision
-
-Renderer, asset representation, and atlas partition are closed.
-
-The next Grill-me question must choose only the **logical resolution and device-pixel-ratio policy** for the first slice. It must not reopen character, narrative, mission, mechanic, or world-building decisions.
+The next Grill-me question must choose only the **maximum atlas page dimension and multi-page policy**. It must not reopen character, narrative, mission, mechanic, or world-building decisions.

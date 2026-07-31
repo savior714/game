@@ -1,5 +1,6 @@
 (function () {
   var State = window.OceanRescue.State;
+  var RenderRuntime = window.OceanRescue.RenderRuntime || null;
   var Missions = window.OceanRescue.Missions;
   var Gups = window.OceanRescue.Gups;
   var Launch = window.OceanRescue.Launch;
@@ -24,6 +25,7 @@
   var travelLastTimestamp = null;
   var travelInputBound = false;
   var travelCanvas = null;
+  var travelPaintCanvas = null;
 
   var rescueSequenceCounter = 0;
   var activeRescueSequence = null;
@@ -756,14 +758,11 @@
     }
     travelFrameId = null;
 
-    var canvas = document.getElementById("ocean-rescue-canvas");
-    var context = null;
-    if (canvas && typeof canvas.getContext === "function") {
-      context = canvas.getContext("2d");
-    }
-    travelCanvas = canvas;
-    bindTravelPointerInput(canvas);
-    renderTravelFrame(canvas, context);
+    var inputCanvas = resolveVisibleInputCanvas();
+    travelCanvas = inputCanvas;
+    travelPaintCanvas = resolvePaintCanvas();
+    bindTravelPointerInput(inputCanvas);
+    renderTravelFrame(travelPaintCanvas, resolveTravelContext());
 
     if (typeof window.requestAnimationFrame === "function") {
       travelFrameId = window.requestAnimationFrame(function (timestamp) {
@@ -809,10 +808,10 @@
     }
     travelLastTimestamp = timestamp;
     if (tryBeginRescueArrival()) {
-      renderRescueSiteFrame(travelCanvas, resolveTravelContext());
+      renderRescueSiteFrame(travelPaintCanvas, resolveTravelContext());
       return;
     }
-    renderTravelFrame(travelCanvas, resolveTravelContext());
+    renderTravelFrame(travelPaintCanvas, resolveTravelContext());
     if (typeof window.requestAnimationFrame === "function") {
       travelFrameId = window.requestAnimationFrame(function (nextTimestamp) {
         travelAnimationFrame(runId, nextTimestamp);
@@ -821,10 +820,34 @@
   }
 
   function resolveTravelContext() {
-    if (!travelCanvas || typeof travelCanvas.getContext !== "function") {
-      return null;
+    return resolvePaintContext();
+  }
+
+  function resolveVisibleInputCanvas() {
+    return document.getElementById("ocean-rescue-canvas");
+  }
+
+  function resolvePaintCanvas() {
+    if (RenderRuntime && RenderRuntime.isReady()) {
+      return RenderRuntime.getLegacyCanvas();
     }
-    return travelCanvas.getContext("2d");
+    return resolveVisibleInputCanvas();
+  }
+
+  function resolvePaintContext() {
+    if (RenderRuntime && RenderRuntime.isReady()) {
+      return RenderRuntime.getLegacyContext();
+    }
+    var canvas = resolveVisibleInputCanvas();
+    return canvas && typeof canvas.getContext === "function"
+      ? canvas.getContext("2d")
+      : null;
+  }
+
+  function presentPaintFrame() {
+    if (RenderRuntime && RenderRuntime.isReady()) {
+      RenderRuntime.presentLegacyFrame();
+    }
   }
 
   function bindTravelPointerInput(canvas) {
@@ -885,10 +908,14 @@
     if (typeof rect.height !== "number" || !isFinite(rect.height) || rect.height <= 0) {
       return null;
     }
-    if (typeof travelCanvas.height !== "number" || !isFinite(travelCanvas.height) || travelCanvas.height <= 0) {
-      return null;
+    if (RenderRuntime && RenderRuntime.isReady()) {
+      var mapped = RenderRuntime.mapClientToLogical(
+        typeof event.clientX === "number" ? event.clientX : rect.left,
+        event.clientY
+      );
+      return isFinite(mapped.y) ? mapped.y : null;
     }
-    return event.clientY * (travelCanvas.height / rect.height);
+    return (event.clientY - rect.top) * (720 / rect.height);
   }
 
   function resetPointerGesture() {
@@ -1018,6 +1045,7 @@
       drawCollisionFeedback(context, terrainSnapshot, snapshot.y);
     }
     updateRootCollisionMarkers(terrainSnapshot);
+    presentPaintFrame();
   }
 
   function drawTravelBackground(context, width, height) {
@@ -1136,7 +1164,7 @@
 
   function resolveRescueElements() {
     var stage = document.getElementById("ocean-rescue-stage");
-    var canvas = document.getElementById("ocean-rescue-canvas");
+    var canvas = resolveVisibleInputCanvas();
     var overlay = document.getElementById("ocean-rescue-rescue-overlay");
     var companion = document.getElementById("ocean-rescue-rescue-companion");
     var situation = document.getElementById("ocean-rescue-rescue-situation");
@@ -1569,6 +1597,7 @@
     context.fillStyle = "#0a1e33";
     context.font = "18px system-ui, sans-serif";
     context.fillText(sequence.missionContent.targetLabel, 900, gupY);
+    presentPaintFrame();
   }
 
   function drawRescueSiteBackground(context, width, height, palette) {
@@ -1606,11 +1635,8 @@
     if (seaTurtleRenderMarker) {
       return true;
     }
-    var canvas = document.getElementById("ocean-rescue-canvas");
-    var context = null;
-    if (canvas && typeof canvas.getContext === "function") {
-      context = canvas.getContext("2d");
-    }
+    var canvas = resolveVisibleInputCanvas();
+    var context = resolvePaintContext();
     var overlay = document.getElementById("ocean-rescue-rescue-overlay");
     if (!canvas || !context || !overlay) {
       return false;
@@ -1643,10 +1669,7 @@
       return false;
     }
     var canvas = document.getElementById("ocean-rescue-canvas");
-    var context = null;
-    if (canvas && typeof canvas.getContext === "function") {
-      context = canvas.getContext("2d");
-    }
+    var context = resolvePaintContext();
     var overlay = document.getElementById("ocean-rescue-rescue-overlay");
     if (!canvas || !context || !overlay) {
       return false;
@@ -1677,11 +1700,8 @@
     if (snapshot.phase !== State.Phases.RESCUE_ACTIVE) {
       return false;
     }
-    var canvas = document.getElementById("ocean-rescue-canvas");
-    var context = null;
-    if (canvas && typeof canvas.getContext === "function") {
-      context = canvas.getContext("2d");
-    }
+    var canvas = resolveVisibleInputCanvas();
+    var context = resolvePaintContext();
     var overlay = document.getElementById("ocean-rescue-rescue-overlay");
     if (!canvas || !context || !overlay) {
       return false;
@@ -1834,7 +1854,7 @@
   }
 
   function mapRescueCoordinates(event) {
-    var canvas = document.getElementById("ocean-rescue-canvas");
+    var canvas = resolveVisibleInputCanvas();
     if (!canvas) {
       return null;
     }
@@ -1857,14 +1877,17 @@
     if (typeof rect.height !== "number" || !isFinite(rect.height) || rect.height <= 0) {
       return null;
     }
-    if (typeof canvas.width !== "number" || !isFinite(canvas.width) || canvas.width <= 0) {
-      return null;
+    var mapped = null;
+    if (RenderRuntime && RenderRuntime.isReady()) {
+      mapped = RenderRuntime.mapClientToLogical(event.clientX, event.clientY);
+    } else {
+      mapped = {
+        x: (event.clientX - rect.left) * (1280 / rect.width),
+        y: (event.clientY - rect.top) * (720 / rect.height)
+      };
     }
-    if (typeof canvas.height !== "number" || !isFinite(canvas.height) || canvas.height <= 0) {
-      return null;
-    }
-    var x = (event.clientX - rect.left) * (canvas.width / rect.width);
-    var y = (event.clientY - rect.top) * (canvas.height / rect.height);
+    var x = mapped.x;
+    var y = mapped.y;
     if (!isFinite(x) || !isFinite(y)) {
       return null;
     }
@@ -3422,6 +3445,9 @@
       return;
     }
     pauseActive = true;
+    if (RenderRuntime && RenderRuntime.isReady()) {
+      RenderRuntime.pause();
+    }
     freezeAllPauseTimers();
     cancelPausePointerInteractions();
     clearCrabHoldTimer();
@@ -3455,6 +3481,9 @@
       return;
     }
     pauseActive = false;
+    if (RenderRuntime && RenderRuntime.isReady()) {
+      RenderRuntime.resume();
+    }
     if (
       pauseCountdownTimerId !== null &&
       typeof window.clearTimeout === "function"
@@ -3592,6 +3621,9 @@
       return;
     }
     pauseActive = false;
+    if (RenderRuntime && RenderRuntime.isReady()) {
+      RenderRuntime.resume();
+    }
     var overlay = document.getElementById("ocean-rescue-pause-overlay");
     if (overlay) {
       overlay.hidden = true;
@@ -4331,11 +4363,8 @@
   }
 
   function renderSeaTurtleFrame() {
-    var canvas = document.getElementById("ocean-rescue-canvas");
-    var context = null;
-    if (canvas && typeof canvas.getContext === "function") {
-      context = canvas.getContext("2d");
-    }
+    var canvas = resolvePaintCanvas();
+    var context = resolvePaintContext();
     if (!canvas || !context) {
       return;
     }
@@ -4375,6 +4404,7 @@
     if (snapshot.helpLevel >= 3) {
       drawSeaTurtleAssistedGuide(context, snapshot);
     }
+    presentPaintFrame();
   }
 
   function drawSeaTurtleGup(context, height) {
@@ -4404,11 +4434,8 @@
   }
 
   function renderCrabFrame() {
-    var canvas = document.getElementById("ocean-rescue-canvas");
-    var context = null;
-    if (canvas && typeof canvas.getContext === "function") {
-      context = canvas.getContext("2d");
-    }
+    var canvas = resolvePaintCanvas();
+    var context = resolvePaintContext();
     if (!canvas || !context) {
       return;
     }
@@ -4449,6 +4476,7 @@
     if (snapshot.helpLevel >= 3) {
       drawCrabAssistedGuide(context, snapshot);
     }
+    presentPaintFrame();
   }
 
   function drawCrabGup(context, height) {
@@ -5013,11 +5041,8 @@
   }
 
   function renderYoungWhaleFrame(pointerX, pointerY) {
-    var canvas = document.getElementById("ocean-rescue-canvas");
-    var context = null;
-    if (canvas && typeof canvas.getContext === "function") {
-      context = canvas.getContext("2d");
-    }
+    var canvas = resolvePaintCanvas();
+    var context = resolvePaintContext();
     if (!canvas || !context) {
       return;
     }
@@ -5057,6 +5082,7 @@
     if (snapshot.helpLevel >= 3) {
       drawYoungWhaleAssistedGuide(context, snapshot);
     }
+    presentPaintFrame();
   }
 
   function selectMission(missionId) {
@@ -5208,6 +5234,16 @@
   window.OceanRescue.App = App;
 
   document.addEventListener("DOMContentLoaded", function () {
+    if (RenderRuntime) {
+      RenderRuntime.boot()
+        .then(function () {
+          App.boot();
+        })
+        .catch(function () {
+          RenderRuntime.showCompatibilityFailure();
+        });
+      return;
+    }
     App.boot();
   });
 })();

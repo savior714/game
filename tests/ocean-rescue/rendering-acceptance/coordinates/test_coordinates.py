@@ -11,7 +11,6 @@ Run: pytest tests/ocean-rescue/rendering-acceptance/coordinates/test_coordinates
 from __future__ import annotations
 
 import json
-import math
 from pathlib import Path
 
 import pytest
@@ -54,6 +53,7 @@ def _close(a: float, b: float, tol: float) -> bool:
 # ---------------------------------------------------------------------------
 # Contract assertions on the fixture file itself
 # ---------------------------------------------------------------------------
+
 
 class TestFixtureContract:
     """Verify the fixture file satisfies the minimum required fields."""
@@ -125,6 +125,7 @@ class TestFixtureContract:
 # ---------------------------------------------------------------------------
 # Coordinate accuracy verification
 # ---------------------------------------------------------------------------
+
 
 class TestCoordinateMapping:
     """Verify every fixture case matches the canonical formula."""

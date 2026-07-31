@@ -19,6 +19,14 @@
       "sha256": "5bde860224f432c38bbaed373952433685cad8126b38a8753dbe6e3d3c738cb5"
     },
     {
+      "file": "render-runtime.js",
+      "namespace": "OceanRescue.RenderRuntime",
+      "depends_on": [
+        "PIXI",
+        "OceanRescue.RenderAssets"
+      ]
+    },
+    {
       "file": "state.js",
       "namespace": "OceanRescue.State",
       "depends_on": []
@@ -78,6 +86,7 @@
       "namespace": "OceanRescue.App",
       "depends_on": [
         "OceanRescue.State",
+        "OceanRescue.RenderRuntime",
         "OceanRescue.Missions",
         "OceanRescue.Gups",
         "OceanRescue.Launch",

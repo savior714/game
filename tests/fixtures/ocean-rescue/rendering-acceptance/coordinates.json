@@ -1,8 +1,8 @@
 {
   "meta": {
     "description": "Browser pointer → logical coordinate acceptance fixtures for Ocean Rescue rescue phase (mapRescueCoordinates).",
-    "canonicalMappingSource": "domains/ocean-rescue/src/app.js:1836-1872",
-    "formula": "logicalX = (clientX - rect.left) * (canvas.width / rect.width); logicalY = (clientY - rect.top) * (canvas.height / rect.height)",
+    "canonicalMappingSource": "domains/ocean-rescue/src/render-runtime.js",
+    "formula": "Pixi EventSystem.mapPositionToPoint with logical 1280×720; fallback uses rect-relative 1280×720 scaling",
     "logicalWidth": 1280,
     "logicalHeight": 720,
     "canvasWidth": 1280,

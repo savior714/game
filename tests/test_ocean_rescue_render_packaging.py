@@ -645,10 +645,11 @@ class TestArtifactContract:
             f"Expected only index.html, found: {files}"
         )
 
-    def test_no_pixi_application_in_artifact(self):
+    def test_pixi_application_is_initialized_in_artifact(self):
         html = ARTIFACT.read_text("utf-8")
-        assert "new PIXI.Application" not in html
-        assert "PIXI.Application" not in html
+        assert "new PIXI.Application()" in html
+        assert "await" in html
+        assert 'preference: ["webgl", "canvas"]' in html
 
 
 # ---- Failed registry does not overwrite tracked ----

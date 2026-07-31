@@ -208,6 +208,16 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
+.se-page .nav-list a:focus-visible,
+.se-page .control-group button:focus-visible,
+.se-page .control-group select:focus-visible,
+.se-page .speed-control input[type="range"]:focus-visible,
+.se-page .control-group input[type="checkbox"]:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px rgba(74, 104, 232, 0.9);
+}
+
 #speed-value {
   min-width: 48px;
   text-align: right;

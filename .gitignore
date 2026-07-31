@@ -29,3 +29,6 @@ build/
 .git-snapshots/
 .vercel
 .playwright-mcp/
+
+# Node
+node_modules/

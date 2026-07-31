@@ -1,0 +1,9 @@
+{
+  "name": "@aidengame/ocean-rescue",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "dependencies": {
+    "pixi.js": "8.19.0"
+  }
+}

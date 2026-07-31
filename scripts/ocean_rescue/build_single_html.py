@@ -8,6 +8,7 @@ inlined as data URIs.
 
 import argparse
 import base64
+import hashlib
 import json
 import os
 import re
@@ -32,6 +33,8 @@ MARKER_SCRIPTS = "<!-- OCEAN_RESCUE_SCRIPTS -->"
 
 ASSET_REF_RE = re.compile(r"asset://([a-zA-Z0-9_-]+)")
 
+VALID_KINDS = {"app", "vendor", "generated-assets"}
+
 JS_FORBIDDEN_PATTERNS = [
     (re.compile(r"\bimport\s*\{"), "static import declaration (named)"),
     (re.compile(r'\bimport\s+["\']'), "static import declaration (string)"),
@@ -39,6 +42,17 @@ JS_FORBIDDEN_PATTERNS = [
     (re.compile(r"\bimport\s+\w+\s+from\s+"), "static import declaration (default)"),
     (re.compile(r"\bexport\s+"), "export declaration"),
     (re.compile(r"\bimport\s*\("), "dynamic import()"),
+]
+
+GENERATED_ASSETS_FORBIDDEN_PATTERNS = [
+    (re.compile(r"\bimport\s*\("), "dynamic import()"),
+    (re.compile(r"\bfetch\s*\("), "fetch()"),
+    (re.compile(r"\bXMLHttpRequest\b"), "XMLHttpRequest"),
+    (re.compile(r"\bWebSocket\b"), "WebSocket"),
+    (re.compile(r"\bEventSource\b"), "EventSource"),
+    (re.compile(r"\bPIXI\b"), "PIXI API call"),
+    (re.compile(r"\beval\s*\("), "eval()"),
+    (re.compile(r"\bFunction\s*\("), "Function constructor"),
 ]
 
 JS_SAFETY_PATTERNS = [
@@ -128,7 +142,7 @@ def _validate_styles(data):
 
 
 def _validate_scripts(data):
-    allowed_keys = {"file", "namespace", "depends_on"}
+    allowed_keys = {"file", "namespace", "depends_on", "kind", "sha256"}
     seen_namespaces = set()
     for i, entry in enumerate(data["scripts"]):
         unknown = set(entry.keys()) - allowed_keys
@@ -148,6 +162,23 @@ def _validate_scripts(data):
         if ns in seen_namespaces:
             raise BuildError(f"Duplicate namespace: {ns}")
         seen_namespaces.add(ns)
+
+        kind = entry.get("kind", "app")
+        if kind not in VALID_KINDS:
+            raise BuildError(
+                f"manifest.scripts[{i}].kind must be one of {sorted(VALID_KINDS)}, "
+                f"got '{kind}'"
+            )
+
+        if kind in ("vendor", "generated-assets"):
+            if "sha256" not in entry:
+                raise BuildError(
+                    f"manifest.scripts[{i}] with kind '{kind}' must have 'sha256'"
+                )
+            if not isinstance(entry["sha256"], str):
+                raise BuildError(f"manifest.scripts[{i}].sha256 must be a string")
+            if len(entry["sha256"]) != 64:
+                raise BuildError(f"manifest.scripts[{i}].sha256 must be 64 hex chars")
 
         if "depends_on" in entry:
             deps = entry["depends_on"]
@@ -253,8 +284,25 @@ def validate_template(template_path):
     return content
 
 
-def validate_js_source(script_path, content):
+def validate_js_source(script_path, content, kind="app"):
     """Validate JavaScript source file content."""
+    if kind == "vendor":
+        for pattern, desc in JS_SAFETY_PATTERNS:
+            if pattern.search(content):
+                raise BuildError(f"Vendor script {script_path.name} {desc}")
+        return
+
+    if kind == "generated-assets":
+        for pattern, desc in GENERATED_ASSETS_FORBIDDEN_PATTERNS:
+            if pattern.search(content):
+                raise BuildError(
+                    f"Generated assets script {script_path.name} contains {desc}"
+                )
+        for pattern, desc in JS_SAFETY_PATTERNS:
+            if pattern.search(content):
+                raise BuildError(f"Generated assets script {script_path.name} {desc}")
+        return
+
     for pattern, desc in JS_FORBIDDEN_PATTERNS:
         if pattern.search(content):
             raise BuildError(f"Script {script_path.name} contains forbidden {desc}")
@@ -336,15 +384,8 @@ def resolve_asset_references(content, assets, context=""):
     return ASSET_REF_RE.sub(replacer, content)
 
 
-def validate_no_runtime_network(output):
+def validate_no_runtime_network(output, script_entries=None):
     """Validate the generated output has no runtime network dependencies."""
-    scripts_seen = re.compile(r"<script>(.*?)</script>", re.IGNORECASE | re.DOTALL)
-    script_contents = scripts_seen.findall(output)
-    for script_content in script_contents:
-        for pattern, desc in RUNTIME_NETWORK_PATTERNS:
-            if pattern.search(script_content):
-                raise BuildError(f"Generated output contains {desc}")
-
     ext_script = re.compile(
         r"<script\s+[^>]*src\s*=",
         re.IGNORECASE,
@@ -379,17 +420,44 @@ def validate_no_runtime_network(output):
                     f"Generated output contains external HTML srcset URL: {url}"
                 )
 
-    css_url_re = re.compile(
-        r'url\s*\(\s*["\']?([^"\')\s]+)["\']?\s*\)',
-        re.IGNORECASE,
-    )
-    for m in css_url_re.finditer(output):
-        url = m.group(1)
-        if not url.startswith("data:") and not url.startswith("#"):
-            raise BuildError(f"Generated output contains external CSS url(): {url}")
+    style_re = re.compile(r"<style>(.*?)</style>", re.IGNORECASE | re.DOTALL)
+    for style_match in style_re.finditer(output):
+        style_content = style_match.group(1)
+        css_url_re = re.compile(
+            r'url\s*\(\s*["\']?([^"\')\s]+)["\']?\s*\)',
+            re.IGNORECASE,
+        )
+        for m in css_url_re.finditer(style_content):
+            url = m.group(1)
+            if not url.startswith("data:") and not url.startswith("#"):
+                raise BuildError(f"Generated output contains external CSS url(): {url}")
 
     if ASSET_REF_RE.search(output):
         raise BuildError("Generated output contains unresolved asset:// reference")
+
+    if script_entries is None:
+        return
+
+    script_re = re.compile(r"<script>(.*?)</script>", re.IGNORECASE | re.DOTALL)
+    all_scripts = script_re.findall(output)
+
+    app_indices = [
+        i for i, e in enumerate(script_entries) if e.get("kind", "app") == "app"
+    ]
+
+    for idx in app_indices:
+        if idx < len(all_scripts):
+            for pattern, desc in RUNTIME_NETWORK_PATTERNS:
+                if pattern.search(all_scripts[idx]):
+                    raise BuildError(
+                        f"App script '{script_entries[idx]['namespace']}' "
+                        f"contains {desc}"
+                    )
+
+
+def sha256_hex(data):
+    """Compute SHA-256 hex digest of bytes."""
+    return hashlib.sha256(data).hexdigest()
 
 
 def build(manifest_path, output_path):
@@ -408,7 +476,19 @@ def build(manifest_path, output_path):
     for entry in manifest_data["scripts"]:
         script_path = resolve_manifest_path(manifest_base, entry["file"])
         content = script_path.read_text(encoding="utf-8")
-        validate_js_source(script_path, content)
+
+        kind = entry.get("kind", "app")
+        validate_js_source(script_path, content, kind)
+
+        if kind in ("vendor", "generated-assets"):
+            actual_sha = sha256_hex(content.encode("utf-8"))
+            expected_sha = entry.get("sha256")
+            if actual_sha != expected_sha:
+                raise BuildError(
+                    f"Script '{entry['namespace']}' hash mismatch: "
+                    f"expected {expected_sha}, got {actual_sha}"
+                )
+
         js_contents.append(content)
 
     css_contents = []
@@ -456,7 +536,7 @@ def build(manifest_path, output_path):
     output = template_content.replace(MARKER_CSS, css_html)
     output = output.replace(MARKER_SCRIPTS, scripts_html)
 
-    validate_no_runtime_network(output)
+    validate_no_runtime_network(output, manifest_data["scripts"])
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
 

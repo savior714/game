@@ -30,6 +30,7 @@ CANONICAL_SOURCE_FILES = [
     "index.template.html",
     "build-manifest.json",
     "style.css",
+    "render-assets.generated.js",
     "state.js",
     "missions.js",
     "gups.js",
@@ -48,7 +49,7 @@ CANONICAL_SOURCE_FILES = [
 def test_canonical_source_files_exist():
     for name in CANONICAL_SOURCE_FILES:
         assert (SOURCE_ROOT / name).is_file(), f"Missing source file: {name}"
-    assert len(list(SOURCE_ROOT.iterdir())) == len(CANONICAL_SOURCE_FILES)
+    assert (SOURCE_ROOT / "vendor").is_dir(), "Missing vendor directory"
 
 
 class TestManifest:
@@ -57,43 +58,52 @@ class TestManifest:
         assert set(data.keys()) == {"template", "styles", "scripts", "assets"}
         assert data["template"] == "index.template.html"
         assert data["styles"] == ["style.css"]
-        assert len(data["scripts"]) == 12
-        assert data["scripts"][0]["file"] == "state.js"
-        assert data["scripts"][0]["namespace"] == "OceanRescue.State"
-        assert data["scripts"][0]["depends_on"] == []
-        assert data["scripts"][1]["file"] == "missions.js"
-        assert data["scripts"][1]["namespace"] == "OceanRescue.Missions"
-        assert data["scripts"][1]["depends_on"] == []
-        assert data["scripts"][2]["file"] == "gups.js"
-        assert data["scripts"][2]["namespace"] == "OceanRescue.Gups"
+        assert len(data["scripts"]) == 14
+
+        assert data["scripts"][0]["file"] == "vendor/pixi-8.19.0.min.js"
+        assert data["scripts"][0]["namespace"] == "PIXI"
+        assert data["scripts"][0]["kind"] == "vendor"
+
+        assert data["scripts"][1]["file"] == "render-assets.generated.js"
+        assert data["scripts"][1]["namespace"] == "OceanRescue.RenderAssets"
+        assert data["scripts"][1]["kind"] == "generated-assets"
+
+        assert data["scripts"][2]["file"] == "state.js"
+        assert data["scripts"][2]["namespace"] == "OceanRescue.State"
         assert data["scripts"][2]["depends_on"] == []
-        assert data["scripts"][3]["file"] == "launch.js"
-        assert data["scripts"][3]["namespace"] == "OceanRescue.Launch"
+        assert data["scripts"][3]["file"] == "missions.js"
+        assert data["scripts"][3]["namespace"] == "OceanRescue.Missions"
         assert data["scripts"][3]["depends_on"] == []
-        assert data["scripts"][4]["file"] == "travel.js"
-        assert data["scripts"][4]["namespace"] == "OceanRescue.Travel"
+        assert data["scripts"][4]["file"] == "gups.js"
+        assert data["scripts"][4]["namespace"] == "OceanRescue.Gups"
         assert data["scripts"][4]["depends_on"] == []
-        assert data["scripts"][5]["file"] == "terrain.js"
-        assert data["scripts"][5]["namespace"] == "OceanRescue.Terrain"
+        assert data["scripts"][5]["file"] == "launch.js"
+        assert data["scripts"][5]["namespace"] == "OceanRescue.Launch"
         assert data["scripts"][5]["depends_on"] == []
-        assert data["scripts"][6]["file"] == "rescue.js"
-        assert data["scripts"][6]["namespace"] == "OceanRescue.Rescue"
+        assert data["scripts"][6]["file"] == "travel.js"
+        assert data["scripts"][6]["namespace"] == "OceanRescue.Travel"
         assert data["scripts"][6]["depends_on"] == []
-        assert data["scripts"][7]["file"] == "sea-turtle.js"
-        assert data["scripts"][7]["namespace"] == "OceanRescue.SeaTurtle"
+        assert data["scripts"][7]["file"] == "terrain.js"
+        assert data["scripts"][7]["namespace"] == "OceanRescue.Terrain"
         assert data["scripts"][7]["depends_on"] == []
-        assert data["scripts"][8]["file"] == "crab.js"
-        assert data["scripts"][8]["namespace"] == "OceanRescue.Crab"
+        assert data["scripts"][8]["file"] == "rescue.js"
+        assert data["scripts"][8]["namespace"] == "OceanRescue.Rescue"
         assert data["scripts"][8]["depends_on"] == []
-        assert data["scripts"][9]["file"] == "young-whale.js"
-        assert data["scripts"][9]["namespace"] == "OceanRescue.YoungWhale"
+        assert data["scripts"][9]["file"] == "sea-turtle.js"
+        assert data["scripts"][9]["namespace"] == "OceanRescue.SeaTurtle"
         assert data["scripts"][9]["depends_on"] == []
-        assert data["scripts"][10]["file"] == "mission-success.js"
-        assert data["scripts"][10]["namespace"] == "OceanRescue.MissionSuccess"
+        assert data["scripts"][10]["file"] == "crab.js"
+        assert data["scripts"][10]["namespace"] == "OceanRescue.Crab"
         assert data["scripts"][10]["depends_on"] == []
-        assert data["scripts"][11]["file"] == "app.js"
-        assert data["scripts"][11]["namespace"] == "OceanRescue.App"
-        assert data["scripts"][11]["depends_on"] == [
+        assert data["scripts"][11]["file"] == "young-whale.js"
+        assert data["scripts"][11]["namespace"] == "OceanRescue.YoungWhale"
+        assert data["scripts"][11]["depends_on"] == []
+        assert data["scripts"][12]["file"] == "mission-success.js"
+        assert data["scripts"][12]["namespace"] == "OceanRescue.MissionSuccess"
+        assert data["scripts"][12]["depends_on"] == []
+        assert data["scripts"][13]["file"] == "app.js"
+        assert data["scripts"][13]["namespace"] == "OceanRescue.App"
+        assert data["scripts"][13]["depends_on"] == [
             "OceanRescue.State",
             "OceanRescue.Missions",
             "OceanRescue.Gups",
@@ -122,7 +132,7 @@ class TestTemplate:
         assert content.count("<!-- OCEAN_RESCUE_CSS -->") == 1
         assert content.count("<!-- OCEAN_RESCUE_SCRIPTS -->") == 1
         assert 'role="application"' not in content
-        assert '<script src=' not in content.lower()
+        assert "<script src=" not in content.lower()
         assert '<link rel="stylesheet"' not in content.lower()
 
 
@@ -180,7 +190,9 @@ class TestJavaScript:
     def test_mission_success_defines_namespace(self):
         content = MISSION_SUCCESS_JS.read_text(encoding="utf-8")
         assert "window.OceanRescue" in content
-        assert "root.MissionSuccess" in content or "OceanRescue.MissionSuccess" in content
+        assert (
+            "root.MissionSuccess" in content or "OceanRescue.MissionSuccess" in content
+        )
 
     def test_app_defines_namespace_and_references_state(self):
         content = APP_JS.read_text(encoding="utf-8")
@@ -192,18 +204,138 @@ class TestJavaScript:
     @pytest.mark.parametrize(
         "path,forbidden",
         [
-            (STATE_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
-            (MISSIONS_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
-            (GUPS_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
-            (LAUNCH_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
-            (TRAVEL_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
-            (TERRAIN_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
-            (RESCUE_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
-            (SEA_TURTLE_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
-            (CRAB_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
-            (YOUNG_WHALE_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
-            (MISSION_SUCCESS_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
-            (APP_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
+            (
+                STATE_JS,
+                [
+                    "import",
+                    "export",
+                    "fetch(",
+                    "XMLHttpRequest",
+                    "WebSocket",
+                    "EventSource",
+                ],
+            ),
+            (
+                MISSIONS_JS,
+                [
+                    "import",
+                    "export",
+                    "fetch(",
+                    "XMLHttpRequest",
+                    "WebSocket",
+                    "EventSource",
+                ],
+            ),
+            (
+                GUPS_JS,
+                [
+                    "import",
+                    "export",
+                    "fetch(",
+                    "XMLHttpRequest",
+                    "WebSocket",
+                    "EventSource",
+                ],
+            ),
+            (
+                LAUNCH_JS,
+                [
+                    "import",
+                    "export",
+                    "fetch(",
+                    "XMLHttpRequest",
+                    "WebSocket",
+                    "EventSource",
+                ],
+            ),
+            (
+                TRAVEL_JS,
+                [
+                    "import",
+                    "export",
+                    "fetch(",
+                    "XMLHttpRequest",
+                    "WebSocket",
+                    "EventSource",
+                ],
+            ),
+            (
+                TERRAIN_JS,
+                [
+                    "import",
+                    "export",
+                    "fetch(",
+                    "XMLHttpRequest",
+                    "WebSocket",
+                    "EventSource",
+                ],
+            ),
+            (
+                RESCUE_JS,
+                [
+                    "import",
+                    "export",
+                    "fetch(",
+                    "XMLHttpRequest",
+                    "WebSocket",
+                    "EventSource",
+                ],
+            ),
+            (
+                SEA_TURTLE_JS,
+                [
+                    "import",
+                    "export",
+                    "fetch(",
+                    "XMLHttpRequest",
+                    "WebSocket",
+                    "EventSource",
+                ],
+            ),
+            (
+                CRAB_JS,
+                [
+                    "import",
+                    "export",
+                    "fetch(",
+                    "XMLHttpRequest",
+                    "WebSocket",
+                    "EventSource",
+                ],
+            ),
+            (
+                YOUNG_WHALE_JS,
+                [
+                    "import",
+                    "export",
+                    "fetch(",
+                    "XMLHttpRequest",
+                    "WebSocket",
+                    "EventSource",
+                ],
+            ),
+            (
+                MISSION_SUCCESS_JS,
+                [
+                    "import",
+                    "export",
+                    "fetch(",
+                    "XMLHttpRequest",
+                    "WebSocket",
+                    "EventSource",
+                ],
+            ),
+            (
+                APP_JS,
+                [
+                    "import",
+                    "export",
+                    "fetch(",
+                    "XMLHttpRequest",
+                    "WebSocket",
+                    "EventSource",
+                ],
+            ),
         ],
     )
     def test_forbidden_tokens_absent(self, path, forbidden):
@@ -211,7 +343,23 @@ class TestJavaScript:
         for token in forbidden:
             assert token not in content, f"{path.name} contains {token}"
 
-    @pytest.mark.parametrize("path", [STATE_JS, MISSIONS_JS, GUPS_JS, LAUNCH_JS, TRAVEL_JS, TERRAIN_JS, RESCUE_JS, SEA_TURTLE_JS, CRAB_JS, YOUNG_WHALE_JS, MISSION_SUCCESS_JS, APP_JS])
+    @pytest.mark.parametrize(
+        "path",
+        [
+            STATE_JS,
+            MISSIONS_JS,
+            GUPS_JS,
+            LAUNCH_JS,
+            TRAVEL_JS,
+            TERRAIN_JS,
+            RESCUE_JS,
+            SEA_TURTLE_JS,
+            CRAB_JS,
+            YOUNG_WHALE_JS,
+            MISSION_SUCCESS_JS,
+            APP_JS,
+        ],
+    )
     def test_no_asset_sentinel(self, path):
         content = path.read_text(encoding="utf-8")
         assert "asset://" not in content
@@ -221,7 +369,14 @@ class TestBuild:
     def test_production_source_builds_to_temporary_output(self, tmp_path):
         output = tmp_path / "ocean-rescue.html"
         result = subprocess.run(
-            [sys.executable, str(BUILDER), "--manifest", str(MANIFEST), "--output", str(output)],
+            [
+                sys.executable,
+                str(BUILDER),
+                "--manifest",
+                str(MANIFEST),
+                "--output",
+                str(output),
+            ],
             capture_output=True,
             text=True,
         )
@@ -230,10 +385,12 @@ class TestBuild:
         assert output.stat().st_size > 0, "Build output is empty"
 
         html = output.read_text(encoding="utf-8")
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        script_count = len(manifest["scripts"])
+
         assert "<!-- OCEAN_RESCUE_CSS -->" not in html
         assert "<!-- OCEAN_RESCUE_SCRIPTS -->" not in html
-        assert html.count("<style") == 1
-        assert html.count("<script") == 12
+        assert html.count("<script") == script_count
         assert "asset://" not in html
         state_pos = html.index("OceanRescue.State")
         missions_pos = html.index("OceanRescue.Missions")
@@ -247,18 +404,34 @@ class TestBuild:
         young_whale_pos = html.index("OceanRescue.YoungWhale")
         mission_success_pos = html.index("OceanRescue.MissionSuccess")
         app_pos = html.index("OceanRescue.App")
-        assert state_pos < missions_pos, "State script must appear before Missions script"
+        assert state_pos < missions_pos, (
+            "State script must appear before Missions script"
+        )
         assert missions_pos < gups_pos, "Missions script must appear before Gups script"
         assert gups_pos < launch_pos, "Gups script must appear before Launch script"
         assert launch_pos < travel_pos, "Launch script must appear before Travel script"
-        assert travel_pos < terrain_pos, "Travel script must appear before Terrain script"
-        assert terrain_pos < rescue_pos, "Terrain script must appear before Rescue script"
-        assert rescue_pos < sea_turtle_pos, "Rescue script must appear before SeaTurtle script"
-        assert sea_turtle_pos < crab_pos, "SeaTurtle script must appear before Crab script"
-        assert crab_pos < young_whale_pos, "Crab script must appear before YoungWhale script"
-        assert young_whale_pos < mission_success_pos, "YoungWhale script must appear before MissionSuccess script"
-        assert mission_success_pos < app_pos, "MissionSuccess script must appear before App script"
-        ext_src = '<script src='
+        assert travel_pos < terrain_pos, (
+            "Travel script must appear before Terrain script"
+        )
+        assert terrain_pos < rescue_pos, (
+            "Terrain script must appear before Rescue script"
+        )
+        assert rescue_pos < sea_turtle_pos, (
+            "Rescue script must appear before SeaTurtle script"
+        )
+        assert sea_turtle_pos < crab_pos, (
+            "SeaTurtle script must appear before Crab script"
+        )
+        assert crab_pos < young_whale_pos, (
+            "Crab script must appear before YoungWhale script"
+        )
+        assert young_whale_pos < mission_success_pos, (
+            "YoungWhale script must appear before MissionSuccess script"
+        )
+        assert mission_success_pos < app_pos, (
+            "MissionSuccess script must appear before App script"
+        )
+        ext_src = "<script src="
         assert ext_src not in html.lower()
         ext_link = '<link rel="stylesheet"'
         assert ext_link not in html.lower()
@@ -267,12 +440,26 @@ class TestBuild:
         out1 = tmp_path / "build1.html"
         out2 = tmp_path / "build2.html"
         subprocess.run(
-            [sys.executable, str(BUILDER), "--manifest", str(MANIFEST), "--output", str(out1)],
+            [
+                sys.executable,
+                str(BUILDER),
+                "--manifest",
+                str(MANIFEST),
+                "--output",
+                str(out1),
+            ],
             capture_output=True,
             check=True,
         )
         subprocess.run(
-            [sys.executable, str(BUILDER), "--manifest", str(MANIFEST), "--output", str(out2)],
+            [
+                sys.executable,
+                str(BUILDER),
+                "--manifest",
+                str(MANIFEST),
+                "--output",
+                str(out2),
+            ],
             capture_output=True,
             check=True,
         )

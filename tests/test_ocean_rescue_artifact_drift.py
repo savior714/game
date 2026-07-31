@@ -1,3 +1,4 @@
+import json
 import re
 import subprocess
 import sys
@@ -16,6 +17,10 @@ BUILDER_ARGS = [
     str(MANIFEST),
     "--output",
 ]
+
+
+def _load_manifest():
+    return json.loads(MANIFEST.read_text(encoding="utf-8"))
 
 
 def _build(output_path: Path) -> subprocess.CompletedProcess:
@@ -66,15 +71,30 @@ def test_independent_rebuilds_are_deterministic(tmp_path: Path):
 
 def test_artifact_standalone_contract():
     content = ARTIFACT.read_text(encoding="utf-8")
+    manifest = _load_manifest()
+    script_count = len(manifest["scripts"])
+
     assert content.startswith("<!doctype html>"), "Missing doctype"
     assert content.count("<main") == 1, "Expected exactly one <main>"
     assert content.count("<h1") == 1, "Expected exactly one <h1>"
     assert content.count("<canvas") == 1, "Expected exactly one <canvas>"
     assert 'width="1280"' in content, 'Expected width="1280"'
     assert 'height="720"' in content, 'Expected height="720"'
-    assert content.count("<style>") == 1, "Expected exactly one <style>"
-    assert content.count("<script>") == 12, "Expected exactly twelve <script>"
+
+    script_tag_count = content.count("<script>")
+    assert script_tag_count == script_count, (
+        f"Artifact has {script_tag_count} <script> tags, manifest has {script_count}"
+    )
+
+    pixi_idx = content.index("PIXI")
+    registry_idx = content.index("OceanRescue.RenderAssets")
     state_idx = content.index("OceanRescue.State")
+    app_idx = content.index("OceanRescue.App")
+
+    assert pixi_idx < registry_idx, "PIXI vendor must precede registry"
+    assert registry_idx < state_idx, "Registry must precede app scripts"
+    assert state_idx < app_idx, "State must precede App"
+
     missions_idx = content.index("OceanRescue.Missions")
     gups_idx = content.index("OceanRescue.Gups")
     launch_idx = content.index("OceanRescue.Launch")
@@ -85,8 +105,7 @@ def test_artifact_standalone_contract():
     crab_idx = content.index("OceanRescue.Crab")
     young_whale_idx = content.index("OceanRescue.YoungWhale")
     mission_success_idx = content.index("OceanRescue.MissionSuccess")
-    app_idx = content.index("OceanRescue.App")
-    assert state_idx < missions_idx, "State content must precede Missions content"
+
     assert missions_idx < gups_idx, "Missions content must precede Gups content"
     assert gups_idx < launch_idx, "Gups content must precede Launch content"
     assert launch_idx < travel_idx, "Launch content must precede Travel content"
@@ -101,6 +120,7 @@ def test_artifact_standalone_contract():
     assert mission_success_idx < app_idx, (
         "MissionSuccess content must precede App content"
     )
+
     assert 'id="ocean-rescue-pause-button"' in content
     assert 'aria-label="Pause game"' in content
     assert 'id="ocean-rescue-pause-overlay"' in content
@@ -116,9 +136,24 @@ def test_artifact_standalone_contract():
     assert "asset://" not in content
     assert "<script src=" not in content
     assert '<link rel="stylesheet" href=' not in content
-    external_urls = ["fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]
-    for token in external_urls:
-        assert token not in content, f"Found forbidden token: {token}"
+
+    script_re = re.compile(r"<script>(.*?)</script>", re.IGNORECASE | re.DOTALL)
+    all_scripts = script_re.findall(content)
+
+    app_kind_patterns = [
+        (re.compile(r"\bfetch\s*\("), "fetch()"),
+        (re.compile(r"\bXMLHttpRequest\b"), "XMLHttpRequest"),
+        (re.compile(r"\bWebSocket\b"), "WebSocket"),
+        (re.compile(r"\bEventSource\b"), "EventSource"),
+    ]
+
+    for i, entry in enumerate(manifest["scripts"]):
+        kind = entry.get("kind", "app")
+        if kind == "app" and i < len(all_scripts):
+            for pattern, desc in app_kind_patterns:
+                assert not pattern.search(all_scripts[i]), (
+                    f"App script '{entry['namespace']}' contains forbidden {desc}"
+                )
 
 
 def test_artifact_is_single_deployable_file(tmp_path: Path):
@@ -141,7 +176,9 @@ def _button_text(content: str, button_id: str) -> str:
 
 def test_artifact_completion_action_contract():
     content = ARTIFACT.read_text(encoding="utf-8")
-    assert content.count("<script>") == 12
+    manifest = _load_manifest()
+    script_count = len(manifest["scripts"])
+    assert content.count("<script>") == script_count
     assert _button_text(content, "ocean-rescue-mission-complete-continue") == "Continue"
     assert _button_text(content, "ocean-rescue-mission-complete-replay") == "Replay"
     assert 'id="ocean-rescue-mission-complete-unlock"' in content

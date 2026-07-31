@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "package": "pixi.js",
+  "version": "8.19.0",
+  "packageArtifactPath": "package/dist/pixi.min.js",
+  "runtimeGlobal": "PIXI",
+  "npmIntegrity": "sha512-pq1O6emA/GFjjeF+8d3Pb5t7knD8FsnfWGqQcRjYjsqFZ7QdzG1XgjLDUu0DFJRbafjV5+g8iNLFBx0b9649lg==",
+  "bundleSha256": "83b2d7edf27bb77460f5f5f5e25cd73c91b77a53f44c80ac63096d6c0b5cfda7",
+  "licenseSha256": "5ce7447bc57f7349ffc48338782fbcabe613696e00712b20d66bc58e780f9473"
+}

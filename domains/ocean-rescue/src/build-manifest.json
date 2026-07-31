@@ -5,6 +5,20 @@
   ],
   "scripts": [
     {
+      "file": "vendor/pixi-8.19.0.min.js",
+      "namespace": "PIXI",
+      "depends_on": [],
+      "kind": "vendor",
+      "sha256": "83b2d7edf27bb77460f5f5f5e25cd73c91b77a53f44c80ac63096d6c0b5cfda7"
+    },
+    {
+      "file": "render-assets.generated.js",
+      "namespace": "OceanRescue.RenderAssets",
+      "depends_on": [],
+      "kind": "generated-assets",
+      "sha256": "5bde860224f432c38bbaed373952433685cad8126b38a8753dbe6e3d3c738cb5"
+    },
+    {
       "file": "state.js",
       "namespace": "OceanRescue.State",
       "depends_on": []

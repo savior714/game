@@ -46,6 +46,14 @@ test:
 
 # Rebuild the tracked Ocean Rescue standalone artifact
 build-ocean-rescue:
+    uv run python scripts/ocean_rescue/validate_pixi_vendor.py
+    uv run python scripts/ocean_rescue/validate_atlases.py \
+        --packet domains/ocean-rescue/assets/source/art-packet.json \
+        --approval domains/ocean-rescue/assets/source/art-approval.json \
+        --generated-dir domains/ocean-rescue/assets/generated
+    uv run python scripts/ocean_rescue/build_render_assets_registry.py \
+        --atlas-dir domains/ocean-rescue/assets/generated \
+        --output domains/ocean-rescue/src/render-assets.generated.js
     uv run python scripts/ocean_rescue/build_single_html.py \
         --manifest domains/ocean-rescue/src/build-manifest.json \
         --output ocean-rescue/index.html
@@ -64,6 +72,26 @@ build-ocean-rescue-atlases:
 # Verify Ocean Rescue atlas pipeline
 check-ocean-rescue-atlases:
     uv run pytest -q tests/test_ocean_rescue_atlas_pipeline.py
+
+# Build render package (vendor + atlas registry + single HTML)
+build-ocean-rescue-render-package:
+    uv run python scripts/ocean_rescue/validate_pixi_vendor.py
+    uv run python scripts/ocean_rescue/validate_atlases.py \
+        --packet domains/ocean-rescue/assets/source/art-packet.json \
+        --approval domains/ocean-rescue/assets/source/art-approval.json \
+        --generated-dir domains/ocean-rescue/assets/generated
+    uv run python scripts/ocean_rescue/build_render_assets_registry.py \
+        --atlas-dir domains/ocean-rescue/assets/generated \
+        --output domains/ocean-rescue/src/render-assets.generated.js
+    uv run python scripts/ocean_rescue/build_single_html.py \
+        --manifest domains/ocean-rescue/src/build-manifest.json \
+        --output ocean-rescue/index.html
+
+# Check render package integrity
+check-ocean-rescue-render-package:
+    uv run pytest -q \
+        tests/test_ocean_rescue_render_packaging.py \
+        tests/test_ocean_rescue_artifact_drift.py
 
 # --- Commit Gate ---
 

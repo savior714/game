@@ -10,10 +10,16 @@
       "depends_on": []
     },
     {
+      "file": "missions.js",
+      "namespace": "OceanRescue.Missions",
+      "depends_on": []
+    },
+    {
       "file": "app.js",
       "namespace": "OceanRescue.App",
       "depends_on": [
-        "OceanRescue.State"
+        "OceanRescue.State",
+        "OceanRescue.Missions"
       ]
     }
   ],

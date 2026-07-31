@@ -27,6 +27,7 @@ html, body {
   max-height: 100vh;
   aspect-ratio: 16 / 9;
   margin: 0 auto;
+  position: relative;
 }
 
 #ocean-rescue-stage {
@@ -41,6 +42,115 @@ html, body {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+#ocean-rescue-mission-select {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 16px;
+  background: rgba(18, 32, 46, 0.94);
+  color: #eef5fb;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  text-align: center;
+}
+
+#ocean-rescue-mission-select h2 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+#ocean-rescue-mission-select > p {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #c6d8ea;
+}
+
+#ocean-rescue-mission-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  align-items: stretch;
+}
+
+#ocean-rescue-mission-list button {
+  flex: 1 1 220px;
+  max-width: 280px;
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 2px solid #3b6ea5;
+  border-radius: 12px;
+  background: #14304a;
+  color: #eef5fb;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
+  text-align: center;
+  cursor: pointer;
+}
+
+#ocean-rescue-mission-list button:disabled {
+  cursor: default;
+  opacity: 0.55;
+  border-color: #31465c;
+  background: #22303e;
+  color: #9fb3c7;
+}
+
+#ocean-rescue-mission-list button:not(:disabled):hover {
+  border-color: #7fb3e8;
+  background: #1d4063;
+}
+
+#ocean-rescue-mission-list button:not(:disabled):focus-visible {
+  outline: 3px solid #ffd166;
+  outline-offset: 2px;
+}
+
+.ocean-rescue-mission-title {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.ocean-rescue-mission-companion {
+  font-size: 13px;
+  color: #bcd6ee;
+}
+
+.ocean-rescue-mission-summary {
+  font-size: 13px;
+  color: #d5e4f2;
+}
+
+.ocean-rescue-mission-status {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #8fd3a8;
+}
+
+#ocean-rescue-mission-list button:disabled .ocean-rescue-mission-status {
+  color: #9fb3c7;
+}
+
+.ocean-rescue-mission-new {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #ffd166;
 }
 
 </style>
@@ -59,6 +169,18 @@ html, body {
       aria-live="polite"
       aria-atomic="true"
     ></p>
+
+    <section
+      id="ocean-rescue-mission-select"
+      aria-labelledby="ocean-rescue-mission-select-title"
+    >
+      <h2 id="ocean-rescue-mission-select-title">Choose a Mission</h2>
+      <p>Pick a rescue mission for Aiden.</p>
+      <div
+        id="ocean-rescue-mission-list"
+        aria-label="Rescue missions"
+      ></div>
+    </section>
 
     <section
       id="ocean-rescue-stage"
@@ -218,7 +340,254 @@ html, body {
 </script>
 <script>
 (function () {
+  var root = window.OceanRescue = window.OceanRescue || {};
+
+  function freeze(value) {
+    return Object.freeze(value);
+  }
+
+  var CATALOG = freeze([
+    freeze({
+      id: "sea-turtle",
+      order: 1,
+      title: "Sea Turtle Rescue",
+      companion: "Peso",
+      summary: "Cut the ropes and free the trapped sea turtle."
+    }),
+    freeze({
+      id: "crab",
+      order: 2,
+      title: "Crab Rescue",
+      companion: "Tweak",
+      summary: "Move the rocks and help the trapped crab."
+    }),
+    freeze({
+      id: "young-whale",
+      order: 3,
+      title: "Young Whale Rescue",
+      companion: "Captain Barnacles",
+      summary: "Tow the debris and clear a path for the young whale."
+    })
+  ]);
+
+  var state = {
+    selectedMissionId: null,
+    unlockedMissionIds: ["sea-turtle"],
+    completedMissionIds: [],
+    newMissionIds: []
+  };
+
+  function catalogIndexOf(missionId) {
+    for (var i = 0; i < CATALOG.length; i += 1) {
+      if (CATALOG[i].id === missionId) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  function isUnlocked(missionId) {
+    if (typeof missionId !== "string") {
+      return false;
+    }
+    if (catalogIndexOf(missionId) === -1) {
+      return false;
+    }
+    return state.unlockedMissionIds.indexOf(missionId) !== -1;
+  }
+
+  function getSnapshot() {
+    return freeze({
+      selectedMissionId: state.selectedMissionId,
+      unlockedMissionIds: freeze(state.unlockedMissionIds.slice()),
+      completedMissionIds: freeze(state.completedMissionIds.slice()),
+      newMissionIds: freeze(state.newMissionIds.slice())
+    });
+  }
+
+  function selectMission(missionId) {
+    if (!isUnlocked(missionId)) {
+      return false;
+    }
+    state.selectedMissionId = missionId;
+    return true;
+  }
+
+  function completeMission(missionId) {
+    if (!isUnlocked(missionId)) {
+      return freeze({ changed: false, newlyUnlockedMissionId: null });
+    }
+    if (state.completedMissionIds.indexOf(missionId) !== -1) {
+      return freeze({ changed: false, newlyUnlockedMissionId: null });
+    }
+    state.completedMissionIds.push(missionId);
+    var index = catalogIndexOf(missionId);
+    var next = CATALOG[index + 1];
+    var newlyUnlockedMissionId = null;
+    if (next) {
+      if (state.unlockedMissionIds.indexOf(next.id) === -1) {
+        state.unlockedMissionIds.push(next.id);
+        state.newMissionIds.push(next.id);
+        newlyUnlockedMissionId = next.id;
+      }
+    }
+    return freeze({ changed: true, newlyUnlockedMissionId: newlyUnlockedMissionId });
+  }
+
+  function markMissionViewed(missionId) {
+    var index = state.newMissionIds.indexOf(missionId);
+    if (index === -1) {
+      return false;
+    }
+    state.newMissionIds.splice(index, 1);
+    return true;
+  }
+
+  root.Missions = freeze({
+    Catalog: CATALOG,
+    getSnapshot: getSnapshot,
+    isUnlocked: isUnlocked,
+    selectMission: selectMission,
+    completeMission: completeMission,
+    markMissionViewed: markMissionViewed
+  });
+})();
+
+</script>
+<script>
+(function () {
   var State = window.OceanRescue.State;
+  var Missions = window.OceanRescue.Missions;
+
+  function missionTitleById(missionId) {
+    var catalog = Missions.Catalog;
+    for (var i = 0; i < catalog.length; i += 1) {
+      if (catalog[i].id === missionId) {
+        return catalog[i].title;
+      }
+    }
+    return null;
+  }
+
+  function renderMissionSelect(options) {
+    var section = document.getElementById("ocean-rescue-mission-select");
+    var list = document.getElementById("ocean-rescue-mission-list");
+    if (!section || !list) {
+      return false;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.MISSION_SELECT) {
+      return false;
+    }
+    list.innerHTML = "";
+    var focusMissionId = null;
+    if (
+      options &&
+      typeof options === "object" &&
+      typeof options.focusMissionId === "string"
+    ) {
+      focusMissionId = options.focusMissionId;
+    }
+    var progression = Missions.getSnapshot();
+    var catalog = Missions.Catalog;
+    var focusCard = null;
+    for (var i = 0; i < catalog.length; i += 1) {
+      var mission = catalog[i];
+      var unlocked =
+        progression.unlockedMissionIds.indexOf(mission.id) !== -1;
+      var completed =
+        progression.completedMissionIds.indexOf(mission.id) !== -1;
+      var isNew = progression.newMissionIds.indexOf(mission.id) !== -1;
+
+      var button = document.createElement("button");
+      button.type = "button";
+      button.setAttribute("data-mission-id", mission.id);
+      button.disabled = !unlocked;
+
+      var title = document.createElement("span");
+      title.className = "ocean-rescue-mission-title";
+      title.textContent = mission.title;
+
+      var companion = document.createElement("span");
+      companion.className = "ocean-rescue-mission-companion";
+      companion.textContent = mission.companion;
+
+      var summary = document.createElement("span");
+      summary.className = "ocean-rescue-mission-summary";
+      summary.textContent = mission.summary;
+
+      var status = document.createElement("span");
+      status.className = "ocean-rescue-mission-status";
+      if (completed) {
+        status.textContent = "Completed";
+      } else if (unlocked) {
+        status.textContent = "Available";
+      } else {
+        status.textContent = "Locked";
+      }
+
+      button.appendChild(title);
+      button.appendChild(companion);
+      button.appendChild(summary);
+      button.appendChild(status);
+
+      if (isNew) {
+        var newBadge = document.createElement("span");
+        newBadge.className = "ocean-rescue-mission-new";
+        newBadge.textContent = "New!";
+        button.appendChild(newBadge);
+      }
+
+      list.appendChild(button);
+
+      if (focusMissionId === mission.id && unlocked && isNew) {
+        focusCard = button;
+      }
+    }
+    section.style.display = "block";
+    if (focusCard) {
+      focusCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    return true;
+  }
+
+  function selectMission(missionId) {
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.MISSION_SELECT) {
+      return false;
+    }
+    if (!Missions.isUnlocked(missionId)) {
+      return false;
+    }
+    var token = State.beginTransition(State.Phases.GUP_SELECT);
+    if (token === null) {
+      return false;
+    }
+    if (!State.completeTransition(token)) {
+      return false;
+    }
+    Missions.selectMission(missionId);
+    Missions.markMissionViewed(missionId);
+
+    var section = document.getElementById("ocean-rescue-mission-select");
+    var list = document.getElementById("ocean-rescue-mission-list");
+    if (section) {
+      section.setAttribute("data-selected-mission-id", missionId);
+    }
+    if (list) {
+      var buttons = list.querySelectorAll("button");
+      for (var i = 0; i < buttons.length; i += 1) {
+        buttons[i].disabled = true;
+      }
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      var title = missionTitleById(missionId);
+      status.textContent =
+        "Mission selected: " + (title === null ? missionId : title);
+    }
+    return true;
+  }
 
   var App = {
     boot: function () {
@@ -243,8 +612,15 @@ html, body {
       State.markReady();
       root.setAttribute("data-ocean-rescue-ready", "true");
       status.textContent = "Ocean Rescue ready";
+      var section = document.getElementById("ocean-rescue-mission-select");
+      var list = document.getElementById("ocean-rescue-mission-list");
+      if (section && list) {
+        renderMissionSelect();
+      }
       return true;
-    }
+    },
+    renderMissionSelect: renderMissionSelect,
+    selectMission: selectMission
   };
 
   window.OceanRescue.App = App;

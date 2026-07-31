@@ -2,8 +2,8 @@
 
 import json
 import pathlib
-import re
-import sys
+
+import pytest
 
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -66,7 +66,10 @@ def test_csp_exists_in_html():
 
 def test_unsafe_eval_bundle_is_local():
     content = HTML_PATH.read_text(encoding="utf-8")
-    assert "/domains/ocean-rescue/node_modules/pixi.js/dist/packages/unsafe-eval.min.js" in content
+    assert (
+        "/domains/ocean-rescue/node_modules/pixi.js/dist/packages/unsafe-eval.min.js"
+        in content
+    )
 
 
 def test_preference_array_exists_in_mjs():
@@ -83,7 +86,9 @@ def test_forced_canvas_case_exists_in_mjs():
 def test_schema_version_exists_in_mjs():
     content = MJS_PATH.read_text(encoding="utf-8")
     assert "schemaVersion" in content, "schemaVersion missing"
-    assert "securityPolicyViolationCount" in content, "security policy diagnostics missing"
+    assert "securityPolicyViolationCount" in content, (
+        "security policy diagnostics missing"
+    )
 
 
 def test_runner_uses_localhost():
@@ -110,7 +115,9 @@ def test_runner_uses_ephemeral_port():
     if not RUNNER_PATH.is_file():
         pytest.skip("runner file not created yet")
     content = RUNNER_PATH.read_text(encoding="utf-8")
-    assert "find_free_port" in content or "0)" in content, "runner does not use ephemeral port"
+    assert "find_free_port" in content or "0)" in content, (
+        "runner does not use ephemeral port"
+    )
 
 
 def test_runner_no_third_party_imports():
@@ -135,7 +142,6 @@ def test_package_pinned_pixi():
 
 def test_lock_pinned_pixi():
     lock = json.loads(LOCK_PATH.read_text(encoding="utf-8"))
-    assert lock["packages"]["node_modules/pixi.js"]["version"] == "8.19.0", "lock pixi.js not 8.19.0"
-
-
-import pytest  # noqa: E402
+    assert lock["packages"]["node_modules/pixi.js"]["version"] == "8.19.0", (
+        "lock pixi.js not 8.19.0"
+    )

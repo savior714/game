@@ -9,6 +9,7 @@
   var SeaTurtle = window.OceanRescue.SeaTurtle || null;
   var Crab = window.OceanRescue.Crab || null;
   var YoungWhale = window.OceanRescue.YoungWhale || null;
+  var MissionSuccess = window.OceanRescue.MissionSuccess || null;
 
   var controlsBound = false;
   var launchSequenceCounter = 0;
@@ -47,6 +48,11 @@
   var youngWhaleFeedbackSequence = null;
   var youngWhalePointerId = null;
   var youngWhalePointerCaptureEl = null;
+
+  var missionSuccessSequenceCounter = 0;
+  var activeMissionSuccessSequence = null;
+  var missionSuccessTimerId = null;
+  var missionSuccessInputBound = false;
 
   var pointerActive = false;
   var pointerId = null;
@@ -2324,6 +2330,7 @@
       status.textContent = SeaTurtle.Dialogues[2];
     }
     renderSeaTurtleFrame();
+    startMissionSuccessPresentation(sequence);
   }
 
   function clearCrabHoldTimer() {
@@ -2636,6 +2643,7 @@
       status.textContent = Crab.Dialogues[2];
     }
     renderCrabFrame();
+    startMissionSuccessPresentation(sequence);
   }
 
   function routeYoungWhaleFeedback(result) {
@@ -2951,6 +2959,446 @@
       status.textContent = YoungWhale.Dialogues[2];
     }
     renderYoungWhaleFrame();
+    startMissionSuccessPresentation(sequence);
+  }
+
+  function resolveMissionSuccessElements() {
+    var section = document.getElementById("ocean-rescue-mission-success");
+    var visual = document.getElementById("ocean-rescue-mission-success-visual");
+    var animal = document.getElementById("ocean-rescue-mission-success-animal");
+    var secondaryAnimal = document.getElementById(
+      "ocean-rescue-mission-success-secondary-animal"
+    );
+    var destination = document.getElementById(
+      "ocean-rescue-mission-success-destination"
+    );
+    var ecology = document.getElementById("ocean-rescue-mission-success-ecology");
+    var narration = document.getElementById(
+      "ocean-rescue-mission-success-narration"
+    );
+    var speaker = document.getElementById("ocean-rescue-mission-success-speaker");
+    var line = document.getElementById("ocean-rescue-mission-success-line");
+    var tapHelp = document.getElementById("ocean-rescue-mission-success-tap-help");
+    var card = document.getElementById("ocean-rescue-mission-complete-card");
+    var cardName = document.getElementById("ocean-rescue-mission-complete-name");
+    var cardEcology = document.getElementById(
+      "ocean-rescue-mission-complete-ecology"
+    );
+    if (
+      !section ||
+      !visual ||
+      !animal ||
+      !secondaryAnimal ||
+      !destination ||
+      !ecology ||
+      !narration ||
+      !speaker ||
+      !line ||
+      !tapHelp ||
+      !card ||
+      !cardName ||
+      !cardEcology
+    ) {
+      return null;
+    }
+    return {
+      section: section,
+      visual: visual,
+      animal: animal,
+      secondaryAnimal: secondaryAnimal,
+      destination: destination,
+      ecology: ecology,
+      narration: narration,
+      speaker: speaker,
+      line: line,
+      tapHelp: tapHelp,
+      card: card,
+      cardName: cardName,
+      cardEcology: cardEcology
+    };
+  }
+
+  function clearMissionSuccessTimer() {
+    if (missionSuccessTimerId === null) {
+      return;
+    }
+    if (typeof window.clearTimeout === "function") {
+      window.clearTimeout(missionSuccessTimerId);
+    }
+    missionSuccessTimerId = null;
+  }
+
+  function shutdownRescueInteractionState() {
+    clearSeaTurtleFeedbackTimer();
+    clearCrabFeedbackTimer();
+    clearYoungWhaleFeedbackTimer();
+    clearCrabHoldTimer();
+    if (
+      seaTurtlePointerId !== null &&
+      seaTurtlePointerCaptureEl &&
+      typeof seaTurtlePointerCaptureEl.releasePointerCapture === "function"
+    ) {
+      seaTurtlePointerCaptureEl.releasePointerCapture(seaTurtlePointerId);
+    }
+    seaTurtlePointerId = null;
+    seaTurtlePointerCaptureEl = null;
+    if (
+      crabPointerId !== null &&
+      crabPointerCaptureEl &&
+      typeof crabPointerCaptureEl.releasePointerCapture === "function"
+    ) {
+      crabPointerCaptureEl.releasePointerCapture(crabPointerId);
+    }
+    crabPointerId = null;
+    crabPointerCaptureEl = null;
+    if (
+      youngWhalePointerId !== null &&
+      youngWhalePointerCaptureEl &&
+      typeof youngWhalePointerCaptureEl.releasePointerCapture === "function"
+    ) {
+      youngWhalePointerCaptureEl.releasePointerCapture(youngWhalePointerId);
+    }
+    youngWhalePointerId = null;
+    youngWhalePointerCaptureEl = null;
+  }
+
+  function setMissionSuccessAnimClass(visual, active) {
+    var token = "ocean-rescue-mission-success-anim-active";
+    if (
+      typeof visual.classList === "object" &&
+      typeof visual.classList.add === "function" &&
+      typeof visual.classList.remove === "function"
+    ) {
+      if (active) {
+        visual.classList.add(token);
+      } else {
+        visual.classList.remove(token);
+      }
+      return;
+    }
+    var names = String(visual.className || "").split(/\s+/);
+    var index = names.indexOf(token);
+    if (active && index === -1) {
+      names.push(token);
+    }
+    if (!active && index !== -1) {
+      names.splice(index, 1);
+    }
+    visual.className = names.join(" ").trim();
+  }
+
+  function applyMissionSuccessAnimation(els, sequence) {
+    els.section.hidden = false;
+    els.visual.setAttribute(
+      "data-mission-success-anim",
+      sequence.content.animationKey
+    );
+    setMissionSuccessAnimClass(els.visual, true);
+    els.animal.className = "ocean-rescue-mission-success-shape";
+    els.secondaryAnimal.className = "ocean-rescue-mission-success-shape";
+    els.destination.className = "ocean-rescue-mission-success-shape";
+    els.animal.setAttribute("data-mission-success-animal", sequence.missionId);
+    els.secondaryAnimal.setAttribute(
+      "data-mission-success-secondary-animal",
+      sequence.missionId
+    );
+    els.destination.setAttribute(
+      "data-mission-success-destination",
+      sequence.missionId
+    );
+  }
+
+  function clearMissionSuccessAnimation(els) {
+    setMissionSuccessAnimClass(els.visual, false);
+  }
+
+  function isMissionSuccessStageValid(sequence, expectedStage) {
+    if (activeMissionSuccessSequence === null) {
+      return false;
+    }
+    if (!sequence || typeof sequence !== "object") {
+      return false;
+    }
+    if (sequence.sequenceId !== activeMissionSuccessSequence.sequenceId) {
+      return false;
+    }
+    if (activeMissionSuccessSequence.stage !== expectedStage) {
+      return false;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.RESCUE_SUCCESS) {
+      return false;
+    }
+    return true;
+  }
+
+  function scheduleMissionSuccessTimer(sequence, expectedStage, delayMs, fn) {
+    clearMissionSuccessTimer();
+    if (typeof window.setTimeout !== "function") {
+      return false;
+    }
+    missionSuccessTimerId = window.setTimeout(function () {
+      missionSuccessTimerId = null;
+      if (!isMissionSuccessStageValid(sequence, expectedStage)) {
+        return;
+      }
+      fn(sequence);
+    }, delayMs);
+    return true;
+  }
+
+  function enterMissionSuccessEcology(sequence) {
+    var els = resolveMissionSuccessElements();
+    if (els === null) {
+      return false;
+    }
+    clearMissionSuccessAnimation(els);
+    els.ecology.textContent = sequence.content.ecology;
+    els.ecology.hidden = false;
+    els.narration.hidden = true;
+    els.card.hidden = true;
+    sequence.stage = "ecology";
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-mission-success-stage", "ecology");
+      root.setAttribute("data-mission-success-input", "disabled");
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = sequence.content.ecology;
+    }
+    return scheduleMissionSuccessTimer(
+      sequence,
+      "ecology",
+      MissionSuccess.EcologyDurationMs,
+      enterMissionSuccessNarration1
+    );
+  }
+
+  function enterMissionSuccessNarration1(sequence) {
+    var els = resolveMissionSuccessElements();
+    if (els === null) {
+      return false;
+    }
+    els.narration.hidden = false;
+    els.speaker.textContent = sequence.companion + ":";
+    els.line.textContent = sequence.content.companionLine;
+    els.tapHelp.hidden = false;
+    sequence.stage = "narration-1";
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-mission-success-stage", "narration-1");
+      root.setAttribute("data-mission-success-input", "enabled");
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = sequence.content.companionLine;
+    }
+    return scheduleMissionSuccessTimer(
+      sequence,
+      "narration-1",
+      MissionSuccess.NarrationSentenceMs,
+      enterMissionSuccessNarration2
+    );
+  }
+
+  function enterMissionSuccessNarration2(sequence) {
+    var els = resolveMissionSuccessElements();
+    if (els === null) {
+      return false;
+    }
+    els.speaker.textContent = "Narrator:";
+    els.line.textContent = sequence.content.animalLine;
+    els.tapHelp.hidden = false;
+    sequence.stage = "narration-2";
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-mission-success-stage", "narration-2");
+      root.setAttribute("data-mission-success-input", "enabled");
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = sequence.content.animalLine;
+    }
+    return scheduleMissionSuccessTimer(
+      sequence,
+      "narration-2",
+      MissionSuccess.NarrationSentenceMs,
+      finalizeMissionSuccess
+    );
+  }
+
+  function finalizeMissionSuccess(sequence) {
+    if (!isMissionSuccessStageValid(sequence, "narration-2")) {
+      return false;
+    }
+    var token = State.beginTransition(State.Phases.MISSION_COMPLETE);
+    if (token === null) {
+      return false;
+    }
+    if (!State.completeTransition(token)) {
+      return false;
+    }
+    clearMissionSuccessTimer();
+    var els = resolveMissionSuccessElements();
+    if (els === null) {
+      return false;
+    }
+    els.visual.hidden = true;
+    els.ecology.hidden = true;
+    els.narration.hidden = true;
+    els.tapHelp.hidden = true;
+    els.card.hidden = false;
+    els.cardName.textContent = sequence.missionTitle;
+    els.cardEcology.textContent = sequence.content.ecology;
+    sequence.stage = "complete";
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-rescue-phase", "mission-complete");
+      root.setAttribute("data-rescue-input", "disabled");
+      root.setAttribute("data-mission-success-active", "false");
+      root.setAttribute("data-mission-success-stage", "complete");
+      root.setAttribute("data-mission-success-input", "disabled");
+      root.setAttribute("data-mission-complete-ready", "true");
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = "Mission complete: " + sequence.missionTitle;
+    }
+    return true;
+  }
+
+  function bindMissionSuccessPointerInput(section) {
+    if (missionSuccessInputBound) {
+      return;
+    }
+    if (typeof section.addEventListener !== "function") {
+      return;
+    }
+    section.addEventListener("pointerdown", onMissionSuccessPointerDown);
+    missionSuccessInputBound = true;
+  }
+
+  function onMissionSuccessPointerDown(event) {
+    if (!event || typeof event !== "object") {
+      return;
+    }
+    if (event.isPrimary === false) {
+      return;
+    }
+    if (typeof event.button === "number" && event.button !== 0) {
+      return;
+    }
+    if (activeMissionSuccessSequence === null) {
+      return;
+    }
+    var sequence = activeMissionSuccessSequence;
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.RESCUE_SUCCESS) {
+      return;
+    }
+    if (typeof event.preventDefault === "function") {
+      event.preventDefault();
+    }
+    if (typeof event.stopPropagation === "function") {
+      event.stopPropagation();
+    }
+    if (sequence.stage === "animation") {
+      return;
+    }
+    if (sequence.stage === "ecology") {
+      return;
+    }
+    if (sequence.stage === "narration-1") {
+      clearMissionSuccessTimer();
+      enterMissionSuccessNarration2(sequence);
+      return;
+    }
+    if (sequence.stage === "narration-2") {
+      clearMissionSuccessTimer();
+      finalizeMissionSuccess(sequence);
+    }
+  }
+
+  function startMissionSuccessPresentation(sequence) {
+    if (activeMissionSuccessSequence !== null) {
+      return false;
+    }
+    if (!MissionSuccess) {
+      return false;
+    }
+    if (!sequence || typeof sequence !== "object") {
+      return false;
+    }
+    if (typeof sequence.missionId !== "string") {
+      return false;
+    }
+    var content = MissionSuccess.getContent(sequence.missionId);
+    if (content === null) {
+      return false;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.RESCUE_SUCCESS) {
+      return false;
+    }
+    var mission = missionById(sequence.missionId);
+    if (mission === null) {
+      return false;
+    }
+    var els = resolveMissionSuccessElements();
+    if (els === null) {
+      return false;
+    }
+    if (typeof window.setTimeout !== "function") {
+      return false;
+    }
+    shutdownRescueInteractionState();
+
+    missionSuccessSequenceCounter += 1;
+    var successSequence = {
+      sequenceId: missionSuccessSequenceCounter,
+      missionId: mission.id,
+      missionTitle: mission.title,
+      companion: mission.companion,
+      content: content,
+      stage: "animation"
+    };
+    activeMissionSuccessSequence = successSequence;
+
+    var stageEl = document.getElementById("ocean-rescue-stage");
+    if (stageEl) {
+      stageEl.hidden = true;
+    }
+    var overlay = document.getElementById("ocean-rescue-rescue-overlay");
+    if (overlay) {
+      overlay.hidden = true;
+    }
+
+    bindMissionSuccessPointerInput(els.section);
+    applyMissionSuccessAnimation(els, successSequence);
+
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-rescue-phase", "success-presentation");
+      root.setAttribute("data-rescue-input", "disabled");
+      root.setAttribute("data-mission-success-active", "true");
+      root.setAttribute("data-mission-success-mission-id", mission.id);
+      root.setAttribute("data-mission-success-stage", "animation");
+      root.setAttribute("data-mission-success-input", "disabled");
+      root.removeAttribute("data-mission-complete-ready");
+    }
+
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = "Mission success: " + mission.title;
+    }
+
+    return scheduleMissionSuccessTimer(
+      successSequence,
+      "animation",
+      MissionSuccess.SuccessAnimationMs,
+      enterMissionSuccessEcology
+    );
   }
 
   function drawRopeLine(context, rope, color, lineWidth) {

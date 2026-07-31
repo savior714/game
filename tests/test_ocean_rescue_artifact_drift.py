@@ -72,7 +72,7 @@ def test_artifact_standalone_contract():
     assert 'width="1280"' in content, 'Expected width="1280"'
     assert 'height="720"' in content, 'Expected height="720"'
     assert content.count("<style>") == 1, "Expected exactly one <style>"
-    assert content.count("<script>") == 11, "Expected exactly eleven <script>"
+    assert content.count("<script>") == 12, "Expected exactly twelve <script>"
     state_idx = content.index("OceanRescue.State")
     missions_idx = content.index("OceanRescue.Missions")
     gups_idx = content.index("OceanRescue.Gups")
@@ -83,6 +83,7 @@ def test_artifact_standalone_contract():
     sea_turtle_idx = content.index("OceanRescue.SeaTurtle")
     crab_idx = content.index("OceanRescue.Crab")
     young_whale_idx = content.index("OceanRescue.YoungWhale")
+    mission_success_idx = content.index("OceanRescue.MissionSuccess")
     app_idx = content.index("OceanRescue.App")
     assert state_idx < missions_idx, "State content must precede Missions content"
     assert missions_idx < gups_idx, "Missions content must precede Gups content"
@@ -93,7 +94,12 @@ def test_artifact_standalone_contract():
     assert rescue_idx < sea_turtle_idx, "Rescue content must precede SeaTurtle content"
     assert sea_turtle_idx < crab_idx, "SeaTurtle content must precede Crab content"
     assert crab_idx < young_whale_idx, "Crab content must precede YoungWhale content"
-    assert young_whale_idx < app_idx, "YoungWhale content must precede App content"
+    assert young_whale_idx < mission_success_idx, (
+        "YoungWhale content must precede MissionSuccess content"
+    )
+    assert mission_success_idx < app_idx, (
+        "MissionSuccess content must precede App content"
+    )
     assert "<!-- OCEAN_RESCUE_CSS -->" not in content
     assert "<!-- OCEAN_RESCUE_SCRIPTS -->" not in content
     assert "asset://" not in content

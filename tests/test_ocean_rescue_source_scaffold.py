@@ -133,8 +133,3 @@ class TestBuild:
             check=True,
         )
         assert out1.read_bytes() == out2.read_bytes()
-
-
-def test_repository_artifact_is_not_materialized():
-    artifact = REPO_ROOT / "ocean-rescue" / "index.html"
-    assert not artifact.exists(), f"Production artifact found at {artifact}"

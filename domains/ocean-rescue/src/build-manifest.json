@@ -30,6 +30,11 @@
       "depends_on": []
     },
     {
+      "file": "terrain.js",
+      "namespace": "OceanRescue.Terrain",
+      "depends_on": []
+    },
+    {
       "file": "app.js",
       "namespace": "OceanRescue.App",
       "depends_on": [
@@ -37,7 +42,8 @@
         "OceanRescue.Missions",
         "OceanRescue.Gups",
         "OceanRescue.Launch",
-        "OceanRescue.Travel"
+        "OceanRescue.Travel",
+        "OceanRescue.Terrain"
       ]
     }
   ],

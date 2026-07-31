@@ -18,6 +18,7 @@ MISSIONS_JS = SOURCE_ROOT / "missions.js"
 GUPS_JS = SOURCE_ROOT / "gups.js"
 LAUNCH_JS = SOURCE_ROOT / "launch.js"
 TRAVEL_JS = SOURCE_ROOT / "travel.js"
+TERRAIN_JS = SOURCE_ROOT / "terrain.js"
 APP_JS = SOURCE_ROOT / "app.js"
 
 CANONICAL_SOURCE_FILES = [
@@ -29,6 +30,7 @@ CANONICAL_SOURCE_FILES = [
     "gups.js",
     "launch.js",
     "travel.js",
+    "terrain.js",
     "app.js",
 ]
 
@@ -45,7 +47,7 @@ class TestManifest:
         assert set(data.keys()) == {"template", "styles", "scripts", "assets"}
         assert data["template"] == "index.template.html"
         assert data["styles"] == ["style.css"]
-        assert len(data["scripts"]) == 6
+        assert len(data["scripts"]) == 7
         assert data["scripts"][0]["file"] == "state.js"
         assert data["scripts"][0]["namespace"] == "OceanRescue.State"
         assert data["scripts"][0]["depends_on"] == []
@@ -61,14 +63,18 @@ class TestManifest:
         assert data["scripts"][4]["file"] == "travel.js"
         assert data["scripts"][4]["namespace"] == "OceanRescue.Travel"
         assert data["scripts"][4]["depends_on"] == []
-        assert data["scripts"][5]["file"] == "app.js"
-        assert data["scripts"][5]["namespace"] == "OceanRescue.App"
-        assert data["scripts"][5]["depends_on"] == [
+        assert data["scripts"][5]["file"] == "terrain.js"
+        assert data["scripts"][5]["namespace"] == "OceanRescue.Terrain"
+        assert data["scripts"][5]["depends_on"] == []
+        assert data["scripts"][6]["file"] == "app.js"
+        assert data["scripts"][6]["namespace"] == "OceanRescue.App"
+        assert data["scripts"][6]["depends_on"] == [
             "OceanRescue.State",
             "OceanRescue.Missions",
             "OceanRescue.Gups",
             "OceanRescue.Launch",
             "OceanRescue.Travel",
+            "OceanRescue.Terrain",
         ]
         assert data["assets"] == []
 
@@ -116,6 +122,11 @@ class TestJavaScript:
         assert "window.OceanRescue" in content
         assert "root.Travel" in content or "OceanRescue.Travel" in content
 
+    def test_terrain_defines_namespace(self):
+        content = TERRAIN_JS.read_text(encoding="utf-8")
+        assert "window.OceanRescue" in content
+        assert "root.Terrain" in content or "OceanRescue.Terrain" in content
+
     def test_app_defines_namespace_and_references_state(self):
         content = APP_JS.read_text(encoding="utf-8")
         assert "OceanRescue.App" in content
@@ -131,6 +142,7 @@ class TestJavaScript:
             (GUPS_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
             (LAUNCH_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
             (TRAVEL_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
+            (TERRAIN_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
             (APP_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
         ],
     )
@@ -139,7 +151,7 @@ class TestJavaScript:
         for token in forbidden:
             assert token not in content, f"{path.name} contains {token}"
 
-    @pytest.mark.parametrize("path", [STATE_JS, MISSIONS_JS, GUPS_JS, LAUNCH_JS, TRAVEL_JS, APP_JS])
+    @pytest.mark.parametrize("path", [STATE_JS, MISSIONS_JS, GUPS_JS, LAUNCH_JS, TRAVEL_JS, TERRAIN_JS, APP_JS])
     def test_no_asset_sentinel(self, path):
         content = path.read_text(encoding="utf-8")
         assert "asset://" not in content
@@ -161,19 +173,21 @@ class TestBuild:
         assert "<!-- OCEAN_RESCUE_CSS -->" not in html
         assert "<!-- OCEAN_RESCUE_SCRIPTS -->" not in html
         assert html.count("<style") == 1
-        assert html.count("<script") == 6
+        assert html.count("<script") == 7
         assert "asset://" not in html
         state_pos = html.index("OceanRescue.State")
         missions_pos = html.index("OceanRescue.Missions")
         gups_pos = html.index("OceanRescue.Gups")
         launch_pos = html.index("OceanRescue.Launch")
         travel_pos = html.index("OceanRescue.Travel")
+        terrain_pos = html.index("OceanRescue.Terrain")
         app_pos = html.index("OceanRescue.App")
         assert state_pos < missions_pos, "State script must appear before Missions script"
         assert missions_pos < gups_pos, "Missions script must appear before Gups script"
         assert gups_pos < launch_pos, "Gups script must appear before Launch script"
         assert launch_pos < travel_pos, "Launch script must appear before Travel script"
-        assert travel_pos < app_pos, "Travel script must appear before App script"
+        assert travel_pos < terrain_pos, "Travel script must appear before Terrain script"
+        assert terrain_pos < app_pos, "Terrain script must appear before App script"
         ext_src = '<script src='
         assert ext_src not in html.lower()
         ext_link = '<link rel="stylesheet"'

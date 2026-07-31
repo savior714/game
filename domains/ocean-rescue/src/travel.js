@@ -75,18 +75,28 @@
     return true;
   }
 
-  function step(deltaMs) {
+  function step(deltaMs, forwardSpeedMultiplier) {
     if (!state.active) {
       return false;
     }
     if (!isFiniteNumber(deltaMs) || deltaMs <= 0) {
       return false;
     }
+    var multiplier = 1;
+    if (forwardSpeedMultiplier !== undefined) {
+      if (!isFiniteNumber(forwardSpeedMultiplier)) {
+        return false;
+      }
+      if (forwardSpeedMultiplier < 0 || forwardSpeedMultiplier > 1) {
+        return false;
+      }
+      multiplier = forwardSpeedMultiplier;
+    }
     var applied = deltaMs;
     if (applied > 50) {
       applied = 50;
     }
-    state.distance += AutoForwardSpeed * (applied / 1000);
+    state.distance += AutoForwardSpeed * multiplier * (applied / 1000);
     if (state.tapTargetY !== null) {
       var target = state.tapTargetY;
       var movement = TapSpeed * (applied / 1000);

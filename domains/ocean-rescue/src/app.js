@@ -4,6 +4,7 @@
   var Gups = window.OceanRescue.Gups;
   var Launch = window.OceanRescue.Launch;
   var Travel = window.OceanRescue.Travel || null;
+  var Terrain = window.OceanRescue.Terrain || null;
 
   var controlsBound = false;
   var launchSequenceCounter = 0;
@@ -24,6 +25,12 @@
   var pointerStartClientY = null;
   var pointerStartStageY = null;
   var pointerDragging = false;
+
+  var terrainPalettes = {
+    "coral-reef": ["#ff6b6b", "#ff9ff3", "#3ddad7"],
+    "sandy-reef": ["#e2c290", "#d4a373", "#a47551"],
+    "rocky-canyon": ["#7a8b99", "#5c6b7a", "#3f4b57"]
+  };
 
   function missionById(missionId) {
     var catalog = Missions.Catalog;
@@ -563,11 +570,26 @@
     goalSequenceId = null;
   }
 
+  function startTerrainRuntime() {
+    if (!Terrain) {
+      return;
+    }
+    var root = document.getElementById("ocean-rescue-root");
+    var missionId = root ? root.getAttribute("data-travel-mission-id") : null;
+    if (typeof missionId !== "string") {
+      missionId = Missions.getSnapshot().selectedMissionId;
+    }
+    if (typeof missionId === "string") {
+      Terrain.start(missionId);
+    }
+  }
+
   function startTravelRuntime() {
     if (!Travel) {
       return;
     }
     Travel.start();
+    startTerrainRuntime();
     travelRunIdCounter += 1;
     var runId = travelRunIdCounter;
     activeTravelRunId = runId;
@@ -615,7 +637,14 @@
     if (travelLastTimestamp !== null) {
       var deltaMs = timestamp - travelLastTimestamp;
       if (deltaMs > 0) {
-        Travel.step(deltaMs);
+        if (Terrain && Terrain.getSnapshot().active) {
+          var terrainStepTravelSnapshot = Travel.getSnapshot();
+          Terrain.step(deltaMs, terrainStepTravelSnapshot);
+          var terrainFrameSnapshot = Terrain.getSnapshot();
+          Travel.step(deltaMs, terrainFrameSnapshot.forwardSpeedMultiplier);
+        } else {
+          Travel.step(deltaMs);
+        }
       }
     }
     travelLastTimestamp = timestamp;
@@ -805,6 +834,7 @@
       return;
     }
     var snapshot = Travel.getSnapshot();
+    var terrainSnapshot = Terrain ? Terrain.getSnapshot() : null;
     var width = canvas.width;
     var height = canvas.height;
     if (typeof width !== "number" || typeof height !== "number") {
@@ -813,7 +843,14 @@
     context.clearRect(0, 0, width, height);
     drawTravelBackground(context, width, height);
     drawTravelWater(context, width, height, snapshot.distance);
-    drawTravelGup(context, width, height, snapshot.y);
+    if (terrainSnapshot && terrainSnapshot.active) {
+      drawTravelTerrain(context, terrainSnapshot, snapshot.distance);
+    }
+    drawTravelGup(context, width, height, snapshot.y, terrainSnapshot);
+    if (terrainSnapshot && terrainSnapshot.collisionActive) {
+      drawCollisionFeedback(context, terrainSnapshot, snapshot.y);
+    }
+    updateRootCollisionMarkers(terrainSnapshot);
   }
 
   function drawTravelBackground(context, width, height) {
@@ -836,19 +873,98 @@
     }
   }
 
-  function drawTravelGup(context, width, height, y) {
+  function drawTravelTerrain(context, terrainSnapshot, distance) {
+    var layout = Terrain.getLayout(terrainSnapshot.missionId);
+    if (layout === null) {
+      return;
+    }
+    var palette = terrainPalettes[layout.environment] || terrainPalettes["coral-reef"];
+    var obstacles = layout.obstacles;
+    for (var i = 0; i < obstacles.length; i += 1) {
+      drawTerrainObstacle(context, obstacles[i], distance, palette);
+    }
+  }
+
+  function drawTerrainObstacle(context, obstacle, distance, palette) {
+    var screenX = obstacle.worldX - distance;
+    var rectX = screenX - obstacle.width / 2;
+    var rectY = obstacle.y - obstacle.height / 2;
+    var inset = 8 + (obstacle.kind.length % 5);
+    context.fillStyle = palette[0];
+    context.fillRect(rectX, rectY, obstacle.width, obstacle.height);
+    context.fillStyle = palette[1];
+    context.fillRect(
+      rectX + inset,
+      rectY + inset,
+      obstacle.width - inset * 2,
+      obstacle.height - inset * 2
+    );
+  }
+
+  function drawCollisionFeedback(context, terrainSnapshot, travelY) {
+    var x = 320 - terrainSnapshot.knockbackOffsetX;
+    var y = travelY + terrainSnapshot.shakeOffsetY;
+    context.fillStyle = "rgba(255, 255, 255, 0.30)";
+    context.beginPath();
+    context.arc(x, y, 54, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = "#ffffff";
+    context.font = "16px system-ui, sans-serif";
+    context.textAlign = "center";
+    context.fillText("Whoa!", x, y - 48);
+  }
+
+  function updateRootCollisionMarkers(terrainSnapshot) {
+    if (!Terrain) {
+      return;
+    }
+    if (!terrainSnapshot || !terrainSnapshot.active) {
+      return;
+    }
+    var root = document.getElementById("ocean-rescue-root");
+    if (!root) {
+      return;
+    }
+    root.setAttribute(
+      "data-travel-collision-count",
+      String(terrainSnapshot.collisionCount)
+    );
+    root.setAttribute(
+      "data-travel-collision-active",
+      terrainSnapshot.collisionActive ? "true" : "false"
+    );
+    root.setAttribute(
+      "data-travel-slowed",
+      terrainSnapshot.forwardSpeedMultiplier < 1 ? "true" : "false"
+    );
+    if (terrainSnapshot.lastCollisionObstacleId !== null) {
+      root.setAttribute(
+        "data-travel-last-collision-obstacle-id",
+        terrainSnapshot.lastCollisionObstacleId
+      );
+    } else {
+      root.removeAttribute("data-travel-last-collision-obstacle-id");
+    }
+  }
+
+  function drawTravelGup(context, width, height, y, terrainSnapshot) {
     var gupSnapshot = Gups.getSnapshot();
     var gup = gupById(gupSnapshot.lastGupId);
     var name = gup === null ? String(gupSnapshot.lastGupId) : gup.name;
     var x = 320;
+    var drawY = y;
+    if (terrainSnapshot && terrainSnapshot.active) {
+      x = 320 - terrainSnapshot.knockbackOffsetX;
+      drawY = y + terrainSnapshot.shakeOffsetY;
+    }
     context.beginPath();
-    context.arc(x, y, 36, 0, Math.PI * 2);
+    context.arc(x, drawY, 36, 0, Math.PI * 2);
     context.fillStyle = "#ffd166";
     context.fill();
     context.fillStyle = "#0a1e33";
     context.font = "18px system-ui, sans-serif";
     context.textAlign = "center";
-    context.fillText(name, x, y);
+    context.fillText(name, x, drawY);
   }
 
   function selectMission(missionId) {

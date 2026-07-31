@@ -6,6 +6,7 @@
   var Travel = window.OceanRescue.Travel || null;
   var Terrain = window.OceanRescue.Terrain || null;
   var Rescue = window.OceanRescue.Rescue || null;
+  var SeaTurtle = window.OceanRescue.SeaTurtle || null;
 
   var controlsBound = false;
   var launchSequenceCounter = 0;
@@ -26,6 +27,13 @@
   var siteTransitionTimerId = null;
   var tutorialTimerId = null;
   var rescueInputBound = false;
+
+  var seaTurtleTimerId = null;
+  var seaTurtleFeedbackSequence = null;
+  var seaTurtlePointerId = null;
+  var seaTurtlePointerCaptureEl = null;
+  var seaTurtleInputBound = false;
+  var seaTurtleRenderMarker = false;
 
   var pointerActive = false;
   var pointerId = null;
@@ -1277,6 +1285,7 @@
     if (status) {
       status.textContent = "Rescue controls ready";
     }
+    startSeaTurtleInteraction(sequence);
     return true;
   }
 
@@ -1372,21 +1381,7 @@
       palette = terrainPalettes[layout.environment];
     }
     context.clearRect(0, 0, width, height);
-    context.fillStyle = "#0a1e33";
-    context.fillRect(0, 0, width, height);
-    var bubbleSpacing = 96;
-    context.fillStyle = "rgba(180, 220, 255, 0.30)";
-    var bx = 40 - bubbleSpacing;
-    while (bx < width) {
-      context.beginPath();
-      context.arc(bx + 40, Math.floor(height * 0.6), 5, 0, Math.PI * 2);
-      context.fill();
-      bx += bubbleSpacing;
-    }
-    context.fillStyle = palette[0];
-    context.fillRect(0, Math.floor(height * 0.55), width, Math.floor(height * 0.45));
-    context.fillStyle = palette[2];
-    context.fillRect(0, Math.floor(height * 0.55), width, 8);
+    drawRescueSiteBackground(context, width, height, palette);
 
     var gup = gupById(sequence.gupId);
     var gupName = gup === null ? sequence.gupId : gup.name;
@@ -1415,6 +1410,865 @@
     context.fillStyle = "#0a1e33";
     context.font = "18px system-ui, sans-serif";
     context.fillText(sequence.missionContent.targetLabel, 900, gupY);
+  }
+
+  function drawRescueSiteBackground(context, width, height, palette) {
+    context.fillStyle = "#0a1e33";
+    context.fillRect(0, 0, width, height);
+    var bubbleSpacing = 96;
+    context.fillStyle = "rgba(180, 220, 255, 0.30)";
+    var bx = 40 - bubbleSpacing;
+    while (bx < width) {
+      context.beginPath();
+      context.arc(bx + 40, Math.floor(height * 0.6), 5, 0, Math.PI * 2);
+      context.fill();
+      bx += bubbleSpacing;
+    }
+    context.fillStyle = palette[0];
+    context.fillRect(0, Math.floor(height * 0.55), width, Math.floor(height * 0.45));
+    context.fillStyle = palette[2];
+    context.fillRect(0, Math.floor(height * 0.55), width, 8);
+  }
+
+  function startSeaTurtleInteraction(sequence) {
+    if (!sequence || typeof sequence !== "object") {
+      return false;
+    }
+    if (!SeaTurtle) {
+      return false;
+    }
+    if (sequence.missionId !== SeaTurtle.MissionId) {
+      return false;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.RESCUE_ACTIVE) {
+      return false;
+    }
+    if (seaTurtleRenderMarker) {
+      return true;
+    }
+    var canvas = document.getElementById("ocean-rescue-canvas");
+    var context = null;
+    if (canvas && typeof canvas.getContext === "function") {
+      context = canvas.getContext("2d");
+    }
+    var overlay = document.getElementById("ocean-rescue-rescue-overlay");
+    if (!canvas || !context || !overlay) {
+      return false;
+    }
+    SeaTurtle.start();
+    bindRescuePointerInput(canvas);
+    renderSeaTurtleFrame();
+    seaTurtleRenderMarker = true;
+    var progress = document.getElementById("ocean-rescue-rescue-progress");
+    if (progress) {
+      progress.textContent = "Rope 1 of 3";
+    }
+    hideAssistHand();
+    updateSeaTurtleRootMarkers();
+    return true;
+  }
+
+  function bindRescuePointerInput(canvas) {
+    if (seaTurtleInputBound) {
+      return;
+    }
+    if (!canvas) {
+      return;
+    }
+    if (typeof canvas.addEventListener !== "function") {
+      return;
+    }
+    canvas.addEventListener("pointerdown", onRescuePointerDown);
+    canvas.addEventListener("pointermove", onRescuePointerMove);
+    canvas.addEventListener("pointerup", onRescuePointerUp);
+    canvas.addEventListener("pointercancel", onRescuePointerCancel);
+    seaTurtleInputBound = true;
+  }
+
+  function acceptRescuePointerEvent(event) {
+    if (!event || typeof event !== "object") {
+      return false;
+    }
+    if (!SeaTurtle) {
+      return false;
+    }
+    if (activeRescueSequence === null) {
+      return false;
+    }
+    if (activeRescueSequence.missionId !== SeaTurtle.MissionId) {
+      return false;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.RESCUE_ACTIVE) {
+      return false;
+    }
+    var seaTurtle = SeaTurtle.getSnapshot();
+    if (!seaTurtle.active) {
+      return false;
+    }
+    var root = document.getElementById("ocean-rescue-root");
+    if (root && root.getAttribute("data-rescue-input") === "disabled") {
+      return false;
+    }
+    if (event.isPrimary === false) {
+      return false;
+    }
+    if (typeof event.button === "number" && event.button !== 0) {
+      return false;
+    }
+    if (seaTurtlePointerId !== null) {
+      return false;
+    }
+    if (typeof event.clientX !== "number" || !isFinite(event.clientX)) {
+      return false;
+    }
+    if (typeof event.clientY !== "number" || !isFinite(event.clientY)) {
+      return false;
+    }
+    return true;
+  }
+
+  function isTrackedRescuePointer(event) {
+    if (!event || typeof event !== "object") {
+      return false;
+    }
+    if (!SeaTurtle) {
+      return false;
+    }
+    if (seaTurtlePointerId === null) {
+      return false;
+    }
+    if (typeof event.pointerId !== "number" || !isFinite(event.pointerId)) {
+      return false;
+    }
+    if (event.pointerId !== seaTurtlePointerId) {
+      return false;
+    }
+    if (typeof event.clientX !== "number" || !isFinite(event.clientX)) {
+      return false;
+    }
+    if (typeof event.clientY !== "number" || !isFinite(event.clientY)) {
+      return false;
+    }
+    return true;
+  }
+
+  function mapRescueCoordinates(event) {
+    var canvas = document.getElementById("ocean-rescue-canvas");
+    if (!canvas) {
+      return null;
+    }
+    if (typeof canvas.getBoundingClientRect !== "function") {
+      return null;
+    }
+    var rect = canvas.getBoundingClientRect();
+    if (!rect || typeof rect !== "object") {
+      return null;
+    }
+    if (typeof rect.left !== "number" || !isFinite(rect.left)) {
+      return null;
+    }
+    if (typeof rect.top !== "number" || !isFinite(rect.top)) {
+      return null;
+    }
+    if (typeof rect.width !== "number" || !isFinite(rect.width) || rect.width <= 0) {
+      return null;
+    }
+    if (typeof rect.height !== "number" || !isFinite(rect.height) || rect.height <= 0) {
+      return null;
+    }
+    if (typeof canvas.width !== "number" || !isFinite(canvas.width) || canvas.width <= 0) {
+      return null;
+    }
+    if (typeof canvas.height !== "number" || !isFinite(canvas.height) || canvas.height <= 0) {
+      return null;
+    }
+    var x = (event.clientX - rect.left) * (canvas.width / rect.width);
+    var y = (event.clientY - rect.top) * (canvas.height / rect.height);
+    if (!isFinite(x) || !isFinite(y)) {
+      return null;
+    }
+    return { x: x, y: y };
+  }
+
+  function releaseSeaTurtlePointerCapture(pointerId) {
+    if (
+      seaTurtlePointerCaptureEl &&
+      typeof seaTurtlePointerCaptureEl.releasePointerCapture === "function"
+    ) {
+      seaTurtlePointerCaptureEl.releasePointerCapture(pointerId);
+    }
+  }
+
+  function onRescuePointerDown(event) {
+    if (!acceptRescuePointerEvent(event)) {
+      return;
+    }
+    var mapped = mapRescueCoordinates(event);
+    if (mapped === null) {
+      return;
+    }
+    if (!SeaTurtle.pointerDown(event.pointerId, mapped.x, mapped.y)) {
+      return;
+    }
+    seaTurtlePointerId = event.pointerId;
+    seaTurtlePointerCaptureEl = document.getElementById("ocean-rescue-canvas");
+    if (
+      seaTurtlePointerCaptureEl &&
+      typeof seaTurtlePointerCaptureEl.setPointerCapture === "function"
+    ) {
+      seaTurtlePointerCaptureEl.setPointerCapture(event.pointerId);
+    }
+    hideAssistHand();
+    renderSeaTurtleFrame();
+    updateSeaTurtleRootMarkers();
+    if (typeof event.preventDefault === "function") {
+      event.preventDefault();
+    }
+    if (typeof event.stopPropagation === "function") {
+      event.stopPropagation();
+    }
+  }
+
+  function onRescuePointerMove(event) {
+    if (!isTrackedRescuePointer(event)) {
+      return;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.RESCUE_ACTIVE) {
+      return;
+    }
+    var mapped = mapRescueCoordinates(event);
+    if (mapped === null) {
+      return;
+    }
+    SeaTurtle.pointerMove(event.pointerId, mapped.x, mapped.y);
+    renderSeaTurtleFrame();
+    updateSeaTurtleRootMarkers();
+    if (typeof event.preventDefault === "function") {
+      event.preventDefault();
+    }
+    if (typeof event.stopPropagation === "function") {
+      event.stopPropagation();
+    }
+  }
+
+  function onRescuePointerUp(event) {
+    if (!isTrackedRescuePointer(event)) {
+      return;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.RESCUE_ACTIVE) {
+      return;
+    }
+    var mapped = mapRescueCoordinates(event);
+    var result = null;
+    if (mapped !== null) {
+      result = SeaTurtle.pointerUp(event.pointerId, mapped.x, mapped.y);
+    } else {
+      SeaTurtle.pointerCancel(event.pointerId);
+    }
+    releaseSeaTurtlePointerCapture(event.pointerId);
+    seaTurtlePointerId = null;
+    seaTurtlePointerCaptureEl = null;
+    if (result && result.accepted) {
+      renderSeaTurtleFrame();
+      updateSeaTurtleRootMarkers();
+      routeRescueFeedback(result);
+    }
+    if (typeof event.preventDefault === "function") {
+      event.preventDefault();
+    }
+    if (typeof event.stopPropagation === "function") {
+      event.stopPropagation();
+    }
+  }
+
+  function onRescuePointerCancel(event) {
+    if (!event || typeof event !== "object") {
+      return;
+    }
+    if (!SeaTurtle) {
+      return;
+    }
+    if (seaTurtlePointerId === null) {
+      return;
+    }
+    if (typeof event.pointerId !== "number" || !isFinite(event.pointerId)) {
+      return;
+    }
+    if (event.pointerId !== seaTurtlePointerId) {
+      return;
+    }
+    SeaTurtle.pointerCancel(event.pointerId);
+    releaseSeaTurtlePointerCapture(event.pointerId);
+    seaTurtlePointerId = null;
+    seaTurtlePointerCaptureEl = null;
+  }
+
+  function routeRescueFeedback(result) {
+    if (!result || typeof result !== "object") {
+      return;
+    }
+    if (result.accepted !== true) {
+      return;
+    }
+    if (result.outcome === "success") {
+      beginSeaTurtleSuccessFeedback(result.ropeId);
+      return;
+    }
+    if (result.outcome === "failure") {
+      beginSeaTurtleFailureFeedback(result.ropeId);
+    }
+  }
+
+  function clearSeaTurtleFeedbackTimer() {
+    if (seaTurtleTimerId === null) {
+      return;
+    }
+    if (typeof window.clearTimeout === "function") {
+      window.clearTimeout(seaTurtleTimerId);
+    }
+    seaTurtleTimerId = null;
+  }
+
+  function ropeById(ropeId) {
+    if (!SeaTurtle) {
+      return null;
+    }
+    for (var i = 0; i < SeaTurtle.Ropes.length; i += 1) {
+      if (SeaTurtle.Ropes[i].id === ropeId) {
+        return SeaTurtle.Ropes[i];
+      }
+    }
+    return null;
+  }
+
+  function ropeOrderIndexById(ropeId) {
+    if (!SeaTurtle) {
+      return -1;
+    }
+    for (var i = 0; i < SeaTurtle.Ropes.length; i += 1) {
+      if (SeaTurtle.Ropes[i].id === ropeId) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  function setSeaTurtleDialogue(ropeId) {
+    var index = ropeOrderIndexById(ropeId);
+    if (index < 0 || index >= SeaTurtle.Dialogues.length) {
+      return;
+    }
+    var dialogue = SeaTurtle.Dialogues[index];
+    var progress = document.getElementById("ocean-rescue-rescue-progress");
+    if (progress) {
+      progress.textContent = dialogue;
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = dialogue;
+    }
+  }
+
+  function applySeaTurtleClass(token, active) {
+    var overlay = document.getElementById("ocean-rescue-rescue-overlay");
+    if (!overlay) {
+      return;
+    }
+    if (
+      typeof overlay.classList === "object" &&
+      typeof overlay.classList.add === "function" &&
+      typeof overlay.classList.remove === "function"
+    ) {
+      if (active) {
+        overlay.classList.add(token);
+      } else {
+        overlay.classList.remove(token);
+      }
+      return;
+    }
+    var names = String(overlay.className || "").split(/\s+/);
+    var index = names.indexOf(token);
+    if (active && index === -1) {
+      names.push(token);
+    }
+    if (!active && index !== -1) {
+      names.splice(index, 1);
+    }
+    overlay.className = names.join(" ").trim();
+  }
+
+  function applySeaTurtleSuccessVisual() {
+    applySeaTurtleClass("ocean-rescue-sea-turtle-success", true);
+  }
+
+  function clearSeaTurtleSuccessVisual() {
+    applySeaTurtleClass("ocean-rescue-sea-turtle-success", false);
+  }
+
+  function applySeaTurtleFailureVisual() {
+    applySeaTurtleClass("ocean-rescue-sea-turtle-failure", true);
+  }
+
+  function clearSeaTurtleFailureVisual() {
+    applySeaTurtleClass("ocean-rescue-sea-turtle-failure", false);
+  }
+
+  function showAssistHand() {
+    var hand = document.getElementById("ocean-rescue-rescue-assist-hand");
+    if (!hand) {
+      return;
+    }
+    if (
+      typeof hand.classList === "object" &&
+      typeof hand.classList.add === "function" &&
+      typeof hand.classList.remove === "function"
+    ) {
+      hand.classList.remove("ocean-rescue-assist-hand-visible");
+      hand.classList.add("ocean-rescue-assist-hand-visible");
+    }
+    hand.hidden = false;
+  }
+
+  function hideAssistHand() {
+    var hand = document.getElementById("ocean-rescue-rescue-assist-hand");
+    if (!hand) {
+      return;
+    }
+    if (
+      typeof hand.classList === "object" &&
+      typeof hand.classList.remove === "function"
+    ) {
+      hand.classList.remove("ocean-rescue-assist-hand-visible");
+    }
+    hand.hidden = true;
+  }
+
+  function updateAssistVisuals(snapshot) {
+    if (snapshot.helpLevel >= 1) {
+      showAssistHand();
+    } else {
+      hideAssistHand();
+    }
+  }
+
+  function updateSeaTurtleRootMarkers() {
+    var root = document.getElementById("ocean-rescue-root");
+    if (!root) {
+      return;
+    }
+    var snapshot = SeaTurtle.getSnapshot();
+    root.setAttribute(
+      "data-sea-turtle-active",
+      snapshot.active ? "true" : "false"
+    );
+    root.setAttribute(
+      "data-sea-turtle-rope-id",
+      snapshot.activeRopeId === null ? "" : snapshot.activeRopeId
+    );
+    root.setAttribute(
+      "data-sea-turtle-completed-count",
+      String(snapshot.completedRopeIds.length)
+    );
+    root.setAttribute(
+      "data-sea-turtle-help-level",
+      String(snapshot.helpLevel)
+    );
+    root.setAttribute(
+      "data-sea-turtle-feedback",
+      snapshot.feedback === null ? "none" : snapshot.feedback
+    );
+    root.setAttribute(
+      "data-sea-turtle-complete",
+      snapshot.complete ? "true" : "false"
+    );
+  }
+
+  function beginSeaTurtleSuccessFeedback(ropeId) {
+    clearSeaTurtleFeedbackTimer();
+    applySeaTurtleSuccessVisual();
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-sea-turtle-feedback", "success");
+    }
+    setSeaTurtleDialogue(ropeId);
+    seaTurtleFeedbackSequence = {
+      sequenceId:
+        activeRescueSequence === null ? null : activeRescueSequence.sequenceId,
+      ropeId: ropeId,
+      kind: "success"
+    };
+    if (typeof window.setTimeout === "function") {
+      seaTurtleTimerId = window.setTimeout(function () {
+        completeSeaTurtleFeedback(seaTurtleFeedbackSequence);
+      }, SeaTurtle.Constants.successFeedbackMs);
+    }
+  }
+
+  function beginSeaTurtleFailureFeedback(ropeId) {
+    clearSeaTurtleFeedbackTimer();
+    applySeaTurtleFailureVisual();
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-sea-turtle-feedback", "failure");
+    }
+    var rope = ropeById(ropeId);
+    var progress = document.getElementById("ocean-rescue-rescue-progress");
+    if (progress && rope) {
+      progress.textContent = "Try rope " + rope.order + " again";
+    }
+    seaTurtleFeedbackSequence = {
+      sequenceId:
+        activeRescueSequence === null ? null : activeRescueSequence.sequenceId,
+      ropeId: ropeId,
+      kind: "failure"
+    };
+    if (typeof window.setTimeout === "function") {
+      seaTurtleTimerId = window.setTimeout(function () {
+        completeSeaTurtleFeedback(seaTurtleFeedbackSequence);
+      }, SeaTurtle.Constants.failureFeedbackMs);
+    }
+  }
+
+  function completeSeaTurtleFeedback(sequence) {
+    seaTurtleTimerId = null;
+    if (!sequence || typeof sequence !== "object") {
+      return;
+    }
+    if (activeRescueSequence === null) {
+      return;
+    }
+    if (sequence.sequenceId !== activeRescueSequence.sequenceId) {
+      return;
+    }
+    var snapshot = SeaTurtle.getSnapshot();
+    if (snapshot.feedback === null) {
+      return;
+    }
+    if (snapshot.feedback !== sequence.kind) {
+      return;
+    }
+    if (snapshot.activeRopeId !== sequence.ropeId) {
+      return;
+    }
+    var result = SeaTurtle.finishFeedback();
+    if (!result.changed) {
+      return;
+    }
+    if (result.complete) {
+      completeSeaTurtleSuccess();
+      return;
+    }
+    finishSeaTurtleFeedbackVisuals(sequence, result);
+  }
+
+  function finishSeaTurtleFeedbackVisuals(sequence, result) {
+    var snapshot = SeaTurtle.getSnapshot();
+    if (sequence.kind === "failure") {
+      clearSeaTurtleFailureVisual();
+      var rope = ropeById(snapshot.activeRopeId);
+      var progress = document.getElementById("ocean-rescue-rescue-progress");
+      if (progress && rope) {
+        progress.textContent = "Rope " + rope.order + " of 3";
+      }
+      updateAssistVisuals(snapshot);
+    } else {
+      clearSeaTurtleSuccessVisual();
+      var nextRope = ropeById(result.nextRopeId);
+      var progressEl = document.getElementById("ocean-rescue-rescue-progress");
+      if (progressEl && nextRope) {
+        progressEl.textContent = "Rope " + nextRope.order + " of 3";
+      }
+      hideAssistHand();
+    }
+    updateSeaTurtleRootMarkers();
+    renderSeaTurtleFrame();
+  }
+
+  function completeSeaTurtleSuccess() {
+    clearSeaTurtleSuccessVisual();
+    hideAssistHand();
+    var sequence = activeRescueSequence;
+    if (sequence === null) {
+      return;
+    }
+    var token = State.beginTransition(State.Phases.RESCUE_SUCCESS);
+    if (token !== null) {
+      State.completeTransition(token);
+    }
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-rescue-phase", "success");
+      root.setAttribute("data-rescue-input", "disabled");
+    }
+    updateSeaTurtleRootMarkers();
+    var progress = document.getElementById("ocean-rescue-rescue-progress");
+    if (progress) {
+      progress.textContent = SeaTurtle.Dialogues[2];
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = SeaTurtle.Dialogues[2];
+    }
+    renderSeaTurtleFrame();
+  }
+
+  function drawRopeLine(context, rope, color, lineWidth) {
+    drawRopeLineOffset(context, rope, color, lineWidth, 0);
+  }
+
+  function drawRopeLineOffset(context, rope, color, lineWidth, offsetX) {
+    context.save();
+    context.strokeStyle = color;
+    context.lineWidth = lineWidth;
+    context.lineCap = "round";
+    context.beginPath();
+    context.moveTo(rope.start.x + offsetX, rope.start.y);
+    context.lineTo(rope.end.x + offsetX, rope.end.y);
+    context.stroke();
+    context.restore();
+  }
+
+  function drawCutRope(context, rope, color, lineWidth) {
+    var mx = (rope.start.x + rope.end.x) / 2;
+    var my = (rope.start.y + rope.end.y) / 2;
+    var gap = 18;
+    var dx = rope.end.x - rope.start.x;
+    var dy = rope.end.y - rope.start.y;
+    var length = Math.sqrt(dx * dx + dy * dy) || 1;
+    var ux = dx / length;
+    var uy = dy / length;
+    context.save();
+    context.strokeStyle = color;
+    context.lineWidth = lineWidth;
+    context.lineCap = "round";
+    context.beginPath();
+    context.moveTo(rope.start.x, rope.start.y);
+    context.lineTo(mx - ux * gap, my - uy * gap);
+    context.stroke();
+    context.beginPath();
+    context.moveTo(mx + ux * gap, my + uy * gap);
+    context.lineTo(rope.end.x, rope.end.y);
+    context.stroke();
+    context.restore();
+  }
+
+  function seaTurtleShakeOffset(failureCount) {
+    if (failureCount % 2 === 0) {
+      return -6;
+    }
+    return 6;
+  }
+
+  function drawSeaTurtleRope(context, rope, snapshot) {
+    var completed = snapshot.completedRopeIds.indexOf(rope.id) !== -1;
+    var isActive = snapshot.activeRopeId === rope.id;
+    var feedback = snapshot.feedback;
+    if (completed) {
+      if (snapshot.complete) {
+        drawCutRope(context, rope, "rgba(180, 190, 200, 0.25)", 4);
+      } else {
+        drawCutRope(context, rope, "rgba(180, 190, 200, 0.40)", 5);
+      }
+      return;
+    }
+    if (isActive) {
+      if (feedback === "success") {
+        drawRopeLine(context, rope, "rgba(143, 211, 168, 0.85)", 10);
+        return;
+      }
+      if (feedback === "failure") {
+        drawRopeLineOffset(
+          context,
+          rope,
+          "#ff6b6b",
+          8,
+          seaTurtleShakeOffset(snapshot.failureCount)
+        );
+        return;
+      }
+      drawRopeLine(context, rope, "#ffd166", 8);
+      return;
+    }
+    drawRopeLine(context, rope, "rgba(214, 226, 238, 0.55)", 4);
+  }
+
+  function drawSeaTurtleTurtle(context, snapshot) {
+    var x = 930;
+    var y = 420;
+    if (snapshot.complete) {
+      context.beginPath();
+      context.arc(x, y, 66, 0, Math.PI * 2);
+      context.fillStyle = "#8fd3a8";
+      context.fill();
+      context.beginPath();
+      context.arc(x + 64, y - 20, 22, 0, Math.PI * 2);
+      context.fillStyle = "#b8e3c4";
+      context.fill();
+      context.beginPath();
+      context.arc(x - 64, y - 30, 14, 0, Math.PI * 2);
+      context.fillStyle = "#9fd6b4";
+      context.fill();
+      context.beginPath();
+      context.arc(x - 62, y + 34, 14, 0, Math.PI * 2);
+      context.fillStyle = "#9fd6b4";
+      context.fill();
+      context.fillStyle = "#0a1e33";
+      context.font = "16px system-ui, sans-serif";
+      context.textAlign = "center";
+      context.fillText("Free!", x, y + 4);
+      return;
+    }
+    context.beginPath();
+    context.arc(x, y, 60, 0, Math.PI * 2);
+    context.fillStyle = "#6fae87";
+    context.fill();
+    context.beginPath();
+    context.arc(x + 58, y - 18, 20, 0, Math.PI * 2);
+    context.fillStyle = "#9ad0a8";
+    context.fill();
+    context.beginPath();
+    context.arc(x - 54, y - 24, 12, 0, Math.PI * 2);
+    context.fillStyle = "#8ec9a2";
+    context.fill();
+    context.beginPath();
+    context.arc(x - 50, y + 26, 12, 0, Math.PI * 2);
+    context.fillStyle = "#8ec9a2";
+    context.fill();
+  }
+
+  function drawSeaTurtleActiveMarkers(context, snapshot) {
+    if (snapshot.activeRopeId === null) {
+      return;
+    }
+    var rope = ropeById(snapshot.activeRopeId);
+    if (rope === null) {
+      return;
+    }
+    var enlarged = snapshot.helpLevel >= 2;
+    var startRadius = enlarged ? 30 : 22;
+    var endRadius = enlarged ? 22 : 15;
+    var startFill = enlarged ? "#ffffff" : "#ffd166";
+    context.beginPath();
+    context.arc(rope.start.x, rope.start.y, startRadius + 8, 0, Math.PI * 2);
+    context.fillStyle = "rgba(255, 209, 102, 0.25)";
+    context.fill();
+    context.beginPath();
+    context.arc(rope.start.x, rope.start.y, startRadius, 0, Math.PI * 2);
+    context.fillStyle = startFill;
+    context.fill();
+    context.beginPath();
+    context.arc(rope.end.x, rope.end.y, endRadius, 0, Math.PI * 2);
+    context.fillStyle = "#9ad0ff";
+    context.fill();
+    context.beginPath();
+    context.arc(rope.end.x, rope.end.y, endRadius + 4, 0, Math.PI * 2);
+    context.strokeStyle = "#ffffff";
+    context.lineWidth = 3;
+    context.stroke();
+  }
+
+  function drawSeaTurtleAssistedGuide(context, snapshot) {
+    var rope = ropeById(snapshot.activeRopeId);
+    if (rope === null) {
+      return;
+    }
+    context.save();
+    context.globalAlpha = 0.16;
+    context.strokeStyle = "#bcd6ee";
+    context.lineWidth = 200;
+    context.lineCap = "round";
+    context.beginPath();
+    context.moveTo(rope.start.x, rope.start.y);
+    context.lineTo(rope.end.x, rope.end.y);
+    context.stroke();
+    context.restore();
+    context.save();
+    context.strokeStyle = "#ffd166";
+    context.lineWidth = 4;
+    context.lineCap = "round";
+    context.setLineDash([14, 12]);
+    context.beginPath();
+    context.moveTo(rope.start.x, rope.start.y);
+    context.lineTo(rope.end.x, rope.end.y);
+    context.stroke();
+    context.restore();
+  }
+
+  function renderSeaTurtleFrame() {
+    var canvas = document.getElementById("ocean-rescue-canvas");
+    var context = null;
+    if (canvas && typeof canvas.getContext === "function") {
+      context = canvas.getContext("2d");
+    }
+    if (!canvas || !context) {
+      return;
+    }
+    if (typeof context.clearRect !== "function") {
+      return;
+    }
+    if (activeRescueSequence === null) {
+      return;
+    }
+    if (!SeaTurtle) {
+      return;
+    }
+    var width = canvas.width;
+    var height = canvas.height;
+    if (typeof width !== "number" || typeof height !== "number") {
+      return;
+    }
+    var snapshot = SeaTurtle.getSnapshot();
+    context.clearRect(0, 0, width, height);
+    var layout = null;
+    if (Terrain && typeof Terrain.getLayout === "function") {
+      layout = Terrain.getLayout(activeRescueSequence.missionId);
+    }
+    var palette = terrainPalettes["coral-reef"];
+    if (layout && layout.environment && terrainPalettes[layout.environment]) {
+      palette = terrainPalettes[layout.environment];
+    }
+    drawRescueSiteBackground(context, width, height, palette);
+    drawSeaTurtleGup(context, height);
+    drawSeaTurtleCutter(context, height);
+    drawSeaTurtleTurtle(context, snapshot);
+    var ropes = SeaTurtle.Ropes;
+    for (var i = 0; i < ropes.length; i += 1) {
+      drawSeaTurtleRope(context, ropes[i], snapshot);
+    }
+    drawSeaTurtleActiveMarkers(context, snapshot);
+    if (snapshot.helpLevel >= 3) {
+      drawSeaTurtleAssistedGuide(context, snapshot);
+    }
+  }
+
+  function drawSeaTurtleGup(context, height) {
+    var gup = gupById(activeRescueSequence.gupId);
+    var gupName = gup === null ? activeRescueSequence.gupId : gup.name;
+    var gupY = Math.floor(height * 0.72);
+    context.beginPath();
+    context.arc(220, gupY, 36, 0, Math.PI * 2);
+    context.fillStyle = "#ffd166";
+    context.fill();
+    context.fillStyle = "#0a1e33";
+    context.font = "18px system-ui, sans-serif";
+    context.textAlign = "center";
+    context.fillText(gupName, 220, gupY);
+  }
+
+  function drawSeaTurtleCutter(context, height) {
+    var gupY = Math.floor(height * 0.72);
+    context.beginPath();
+    context.arc(520, gupY, 30, 0, Math.PI * 2);
+    context.fillStyle = "#9ad0ff";
+    context.fill();
+    context.fillStyle = "#0a1e33";
+    context.font = "16px system-ui, sans-serif";
+    context.textAlign = "center";
+    context.fillText(activeRescueSequence.missionContent.toolLabel, 520, gupY - 44);
   }
 
   function selectMission(missionId) {

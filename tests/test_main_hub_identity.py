@@ -19,3 +19,17 @@ def test_templates_index_is_aidengame_hub_page() -> None:
     assert "Main navigation" in html
     assert "experiments/space-explorer/index.html" in html
     assert 'id="main-top-nav"' in html
+
+    assert "Ocean Rescue" in html
+    assert "잠수정을 타고 바다 생물을 구조해요" in html
+    assert html.count("./ocean-rescue/index.html") == 1
+    assert 'aria-labelledby="ocean-rescue-card-title"' in html
+    assert 'id="ocean-rescue-card-title"' in html
+    assert (ROOT / "ocean-rescue" / "index.html").is_file()
+
+    ocean_rescue_position = html.index("./ocean-rescue/index.html")
+    space_experiment_position = html.index(
+        "./experiments/space-explorer/index.html",
+        ocean_rescue_position,
+    )
+    assert ocean_rescue_position < space_experiment_position

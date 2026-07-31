@@ -44,6 +44,16 @@ typecheck:
 test:
     uv run pytest tests
 
+# Rebuild the tracked Ocean Rescue standalone artifact
+build-ocean-rescue:
+    uv run python scripts/ocean_rescue/build_single_html.py \
+        --manifest domains/ocean-rescue/src/build-manifest.json \
+        --output ocean-rescue/index.html
+
+# Verify that the tracked Ocean Rescue artifact matches a clean rebuild
+check-ocean-rescue-drift:
+    uv run pytest tests/test_ocean_rescue_artifact_drift.py -q
+
 # --- Commit Gate ---
 
 # hard gate: security checks only; --no-verify is prohibited

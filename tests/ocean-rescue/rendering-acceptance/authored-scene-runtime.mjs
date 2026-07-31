@@ -2,12 +2,22 @@
 //
 // Loads the published single HTML (/ocean-rescue/index.html) in a same-origin
 // iframe and drives only the public OceanRescue runtime namespaces to prove
-// one canonical rope release is accepted by the authored scene.
+// the authored scene runtime contract.
+//
+// Two flows are supported, selected by the `flow` query parameter:
+//   first-rope  - one canonical rope release (default, preserved behavior)
+//   complete    - rope-1..rope-3 with a pause/resume cycle between rope-1 and
+//                 rope-2 and a final scene exit
+//
+// Unknown flow values fail closed.
 
 const TASK_ID = 'AIDENGAME-OCEAN-RESCUE-AUTHORED-SCENE-RUNTIME-ACCEPTANCE-01';
 const IFRAME_SRC = '/ocean-rescue/index.html';
 const READY_TIMEOUT_MS = 10000;
 const REFERENCE_PREFIX = '/docs/reference/ocean-rescue/';
+
+const params = new URLSearchParams(window.location.search);
+const flowMode = params.get('flow') || 'first-rope';
 
 const diag = {
   schemaVersion: 1,
@@ -17,12 +27,19 @@ const diag = {
   selectedBackend: null,
   logicalWidth: null,
   logicalHeight: null,
+  webglPreflightAvailable: null,
+  webglPreflightKind: null,
+  flowMode,
   initial: null,
   releaseResult: null,
   afterReleaseInterim: null,
   feedback: null,
   afterRelease: null,
   afterExit: null,
+  ropeTransitions: [],
+  pauseCycle: null,
+  finalDomain: null,
+  beforeExit: null,
   externalOriginRequestCount: 0,
   externalOriginRequests: [],
   referenceImageRequestCount: 0,
@@ -98,6 +115,27 @@ async function waitForReady(frame) {
   throw new Error('iframe runtime not ready within 10s');
 }
 
+function webglPreflight() {
+  const names = ['webgl2', 'webgl'];
+  const offscreen = document.createElement('canvas');
+  for (const name of names) {
+    try {
+      const ctx = offscreen.getContext(name, { failIfMajorPerformanceCaveat: false });
+      if (ctx) {
+        diag.webglPreflightAvailable = true;
+        diag.webglPreflightKind = name;
+        if (ctx.getExtension && ctx.getExtension('WEBGL_lose_context')) {
+          ctx.getExtension('WEBGL_lose_context').loseContext();
+        }
+        return;
+      }
+    } catch (_) {
+      /* continue */
+    }
+  }
+  diag.webglPreflightAvailable = false;
+}
+
 function collectNetwork() {
   const frame = document.getElementById('game-frame');
   const frames = frame && frame.contentWindow ? [window, frame.contentWindow] : [window];
@@ -134,9 +172,153 @@ function collectNetwork() {
   diag.referenceImageRequestCount = references.length;
 }
 
+function releaseCanonicalRope(turtle, scene, ropeIndex) {
+  const rope = turtle.Ropes[ropeIndex];
+  const pointerId = 100 + ropeIndex;
+
+  const down = turtle.pointerDown(
+    pointerId,
+    rope.start.x,
+    rope.start.y,
+  );
+
+  const move1 = turtle.pointerMove(
+    pointerId,
+    (rope.start.x + rope.end.x) / 2,
+    (rope.start.y + rope.end.y) / 2,
+  );
+
+  const move2 = turtle.pointerMove(
+    pointerId,
+    rope.end.x,
+    rope.end.y,
+  );
+
+  const up = turtle.pointerUp(
+    pointerId,
+    rope.end.x,
+    rope.end.y,
+  );
+
+  scene.sync(turtle.getSnapshot(), {
+    active: false,
+    x: null,
+    y: null,
+  });
+
+  return {
+    ropeId: rope.id,
+    down,
+    move1,
+    move2,
+    release: up,
+    domainAfterRelease: turtle.getSnapshot(),
+    sceneAfterRelease: scene.getDiagnostics(),
+  };
+}
+
+function snapshotFingerprint(snapshot) {
+  return JSON.stringify({
+    active: snapshot.active,
+    activeRopeId: snapshot.activeRopeId,
+    completedRopeIds: snapshot.completedRopeIds || [],
+    failureCount: snapshot.failureCount,
+    helpLevel: snapshot.helpLevel,
+    tapStartArmed: snapshot.tapStartArmed,
+    pointerActive: snapshot.pointerActive,
+    inputLocked: snapshot.inputLocked,
+    feedback: snapshot.feedback,
+    complete: snapshot.complete,
+  });
+}
+
+function runCompleteFlow(game, turtle, scene) {
+  const noPointerIntent = { active: false, x: null, y: null };
+
+  diag.ropeTransitions = [];
+  for (let i = 0; i < 3; i += 1) {
+    const before = scene.getDiagnostics();
+    const result = releaseCanonicalRope(turtle, scene, i);
+    const afterReleaseScene = scene.getDiagnostics();
+    const transition = {
+      ropeId: result.ropeId,
+      activeRopeBefore: before.activeRopeId,
+      releaseAccepted: result.release.accepted === true,
+      releaseOutcome: result.release.outcome,
+      completedCountAfterRelease: afterReleaseScene.completedCount,
+      reliefAfterRelease: afterReleaseScene.reliefStage,
+    };
+    const feedback = turtle.finishFeedback();
+    scene.sync(turtle.getSnapshot(), noPointerIntent);
+    transition.feedbackChanged = feedback.changed === true;
+    transition.feedbackComplete = feedback.complete === true;
+    transition.nextRopeId = feedback.nextRopeId;
+    diag.ropeTransitions.push(transition);
+
+    if (i === 0) {
+      const domainBeforePause = turtle.getSnapshot();
+
+      turtle.pauseCancel();
+      game.RenderRuntime.pause();
+      scene.pause();
+
+      const pausedScene = scene.getDiagnostics();
+      const domainDuringPause = turtle.getSnapshot();
+      const runtimePausedDuringPause = game.RenderRuntime.isPaused() === true;
+
+      game.RenderRuntime.resume();
+      scene.resume();
+
+      const resumedScene = scene.getDiagnostics();
+      const domainAfterResume = turtle.getSnapshot();
+      const runtimePausedAfterResume = game.RenderRuntime.isPaused() === true;
+
+      diag.pauseCycle = {
+        paused: runtimePausedDuringPause,
+        scenePaused: pausedScene.paused === true,
+        animationStopped: pausedScene.animationRunning === false,
+        domainUnchanged:
+          snapshotFingerprint(domainBeforePause) ===
+            snapshotFingerprint(domainDuringPause) &&
+          snapshotFingerprint(domainDuringPause) ===
+            snapshotFingerprint(domainAfterResume),
+        activeRopeIdDuringPause: domainDuringPause.activeRopeId,
+        completedIdsDuringPause: (domainDuringPause.completedRopeIds || []).slice(),
+        resumed: !runtimePausedAfterResume,
+        sceneActiveAfterResume: resumedScene.active === true,
+        scenePausedAfterResume: resumedScene.paused === true,
+      };
+    }
+  }
+
+  const finalSnapshot = turtle.getSnapshot();
+  diag.finalDomain = {
+    active: finalSnapshot.active,
+    activeRopeId: finalSnapshot.activeRopeId,
+    completedRopeIds: finalSnapshot.completedRopeIds.slice(),
+    completedCount: finalSnapshot.completedRopeIds.length,
+    complete: finalSnapshot.complete,
+    inputLocked: finalSnapshot.inputLocked,
+  };
+  diag.beforeExit = scene.getDiagnostics();
+
+  scene.exit();
+  diag.afterExit = scene.getDiagnostics();
+}
+
 async function run() {
   const frame = document.getElementById('game-frame');
   try {
+    webglPreflight();
+
+    if (flowMode !== 'first-rope' && flowMode !== 'complete') {
+      diag.error = 'unknown flow mode: ' + flowMode;
+      collectNetwork();
+      diag.complete = true;
+      writeDiagnostics();
+      return;
+    }
+
     await waitForReady(frame);
 
     const win = frame.contentWindow;
@@ -169,27 +351,31 @@ async function run() {
     scene.sync(turtle.getSnapshot(), { active: false, x: null, y: null });
     diag.initial = scene.getDiagnostics();
 
-    const rope = turtle.Ropes[0];
-    const pointerId = 1;
+    if (flowMode === 'complete') {
+      runCompleteFlow(game, turtle, scene);
+    } else {
+      const rope = turtle.Ropes[0];
+      const pointerId = 1;
 
-    turtle.pointerDown(pointerId, rope.start.x, rope.start.y);
-    turtle.pointerMove(
-      pointerId,
-      (rope.start.x + rope.end.x) / 2,
-      (rope.start.y + rope.end.y) / 2,
-    );
-    turtle.pointerMove(pointerId, rope.end.x, rope.end.y);
-    diag.releaseResult = turtle.pointerUp(pointerId, rope.end.x, rope.end.y);
+      turtle.pointerDown(pointerId, rope.start.x, rope.start.y);
+      turtle.pointerMove(
+        pointerId,
+        (rope.start.x + rope.end.x) / 2,
+        (rope.start.y + rope.end.y) / 2,
+      );
+      turtle.pointerMove(pointerId, rope.end.x, rope.end.y);
+      diag.releaseResult = turtle.pointerUp(pointerId, rope.end.x, rope.end.y);
 
-    scene.sync(turtle.getSnapshot(), { active: false, x: null, y: null });
-    diag.afterReleaseInterim = scene.getDiagnostics();
+      scene.sync(turtle.getSnapshot(), { active: false, x: null, y: null });
+      diag.afterReleaseInterim = scene.getDiagnostics();
 
-    diag.feedback = turtle.finishFeedback();
-    scene.sync(turtle.getSnapshot(), { active: false, x: null, y: null });
-    diag.afterRelease = scene.getDiagnostics();
+      diag.feedback = turtle.finishFeedback();
+      scene.sync(turtle.getSnapshot(), { active: false, x: null, y: null });
+      diag.afterRelease = scene.getDiagnostics();
 
-    scene.exit();
-    diag.afterExit = scene.getDiagnostics();
+      scene.exit();
+      diag.afterExit = scene.getDiagnostics();
+    }
 
     collectNetwork();
     diag.complete = true;

@@ -1,11 +1,23 @@
 #!/usr/bin/env python3
 """Authored sea-turtle scene runtime acceptance — focused Chrome fixture runner.
 
-Boots the published single HTML in a same-origin iframe harness and proves one
-canonical rope release is accepted by the authored scene. Uses the existing
-backend verifier helpers without modifying them.
+Boots the published single HTML in a same-origin iframe harness and drives only
+the public OceanRescue runtime namespaces.
+
+Two flows are supported:
+  first-rope (default) - one canonical rope release accepted by the authored scene
+  complete              - rope-1..rope-3 with a pause/resume cycle between rope-1
+                          and rope-2 and a final scene exit
+
+Two backend modes are supported:
+  auto (default) - keep the default Chrome flags; the selected backend follows preflight
+  canvas          - disable WebGL in Chrome so the authored scene boots on the
+                    PixiJS Canvas backend and selectedBackend must be canvas
+
+Uses the existing backend verifier helpers without modifying them.
 """
 
+import argparse
 import hashlib
 import importlib.util
 import json
@@ -33,6 +45,34 @@ PRODUCTION_FILES = [
 ]
 
 CHROME_TIMEOUT_SECONDS = 60
+
+WEBGL_DISABLE_FLAG = "--disable-" + "webgl"
+
+COMPLETE_ROPE_IDS = ["rope-1", "rope-2", "rope-3"]
+COMPLETE_RELIEF_STAGES = ["relief-1", "relief-2", "free"]
+COMPLETE_NEXT_ROPES = ["rope-2", "rope-3", None]
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description=(
+            "Authored sea-turtle scene runtime acceptance — focused Chrome "
+            "fixture runner."
+        )
+    )
+    parser.add_argument(
+        "--backend",
+        choices=("auto", "canvas"),
+        default="auto",
+        help="Pixi backend expectation. canvas disables WebGL in Chrome.",
+    )
+    parser.add_argument(
+        "--flow",
+        choices=("first-rope", "complete"),
+        default="first-rope",
+        help="Harness flow to prove.",
+    )
+    return parser.parse_args()
 
 
 def sha256_of(relative_path):
@@ -83,7 +123,7 @@ def parse_diagnostics(output):
         return None, "json parse: {}".format(exc)
 
 
-def assert_diagnostics(diag, before_hashes, after_hashes):
+def assert_first_rope_diagnostics(diag, before_hashes, after_hashes):
     checks = []
 
     def check(name, ok, message):
@@ -99,6 +139,11 @@ def assert_diagnostics(diag, before_hashes, after_hashes):
         "selectedBackend",
         diag.get("selectedBackend") in ("webgl", "canvas"),
         "selectedBackend not in (webgl, canvas): {}".format(diag.get("selectedBackend")),
+    )
+    check(
+        "flowMode",
+        diag.get("flowMode") == "first-rope",
+        "flowMode != first-rope (got {})".format(diag.get("flowMode")),
     )
     check(
         "logicalWidth",
@@ -279,7 +324,348 @@ def assert_diagnostics(diag, before_hashes, after_hashes):
     return checks
 
 
+def assert_complete_canvas_diagnostics(diag, before_hashes, after_hashes):
+    checks = []
+
+    def check(name, ok, message):
+        checks.append((name, ok, message))
+
+    check("singleHtmlReady", diag.get("singleHtmlReady") is True, "singleHtmlReady != true")
+    check(
+        "renderRuntimeReady",
+        diag.get("renderRuntimeReady") is True,
+        "renderRuntimeReady != true",
+    )
+    check(
+        "selectedBackend",
+        diag.get("selectedBackend") == "canvas",
+        "selectedBackend != canvas (got {})".format(diag.get("selectedBackend")),
+    )
+    check(
+        "webglPreflightUnavailable",
+        diag.get("webglPreflightAvailable") is False,
+        "webglPreflightAvailable != false (got {})".format(
+            diag.get("webglPreflightAvailable")
+        ),
+    )
+    check(
+        "flowMode",
+        diag.get("flowMode") == "complete",
+        "flowMode != complete (got {})".format(diag.get("flowMode")),
+    )
+    check(
+        "logicalWidth",
+        diag.get("logicalWidth") == 1280,
+        "logicalWidth != 1280 (got {})".format(diag.get("logicalWidth")),
+    )
+    check(
+        "logicalHeight",
+        diag.get("logicalHeight") == 720,
+        "logicalHeight != 720 (got {})".format(diag.get("logicalHeight")),
+    )
+
+    initial = diag.get("initial") or {}
+    check("initial.mounted", initial.get("mounted") is True, "initial.mounted != true")
+    check("initial.active", initial.get("active") is True, "initial.active != true")
+    check("initial.paused", initial.get("paused") is False, "initial.paused != false")
+    check(
+        "initial.loopCount",
+        initial.get("loopCount") == 3,
+        "initial.loopCount != 3 (got {})".format(initial.get("loopCount")),
+    )
+    check(
+        "initial.activeRopeId",
+        initial.get("activeRopeId") == "rope-1",
+        "initial.activeRopeId != rope-1 (got {})".format(initial.get("activeRopeId")),
+    )
+    check(
+        "initial.completedCount",
+        initial.get("completedCount") == 0,
+        "initial.completedCount != 0 (got {})".format(initial.get("completedCount")),
+    )
+    check(
+        "initial.reliefStage",
+        initial.get("reliefStage") == "worried",
+        "initial.reliefStage != worried (got {})".format(initial.get("reliefStage")),
+    )
+    check(
+        "initial.legacyBridgeVisible",
+        initial.get("legacyBridgeVisible") is False,
+        "initial.legacyBridgeVisible != false",
+    )
+    check(
+        "initial.missingAliases",
+        (initial.get("missingAliases") or []) == [],
+        "initial.missingAliases not empty: {}".format(initial.get("missingAliases")),
+    )
+
+    transitions = diag.get("ropeTransitions") or []
+    check(
+        "ropeTransitions.length",
+        len(transitions) == 3,
+        "ropeTransitions length != 3 (got {})".format(len(transitions)),
+    )
+    check(
+        "ropeTransitions.order",
+        [t.get("ropeId") for t in transitions] == COMPLETE_ROPE_IDS,
+        "rope order != {}".format(COMPLETE_ROPE_IDS),
+    )
+    check(
+        "ropeTransitions.releaseAccepted",
+        all(t.get("releaseAccepted") is True for t in transitions),
+        "not every release accepted",
+    )
+    check(
+        "ropeTransitions.releaseOutcome",
+        all(t.get("releaseOutcome") == "success" for t in transitions),
+        "not every release outcome == success",
+    )
+    check(
+        "ropeTransitions.completedCounts",
+        [t.get("completedCountAfterRelease") for t in transitions] == [1, 2, 3],
+        "completed counts != [1, 2, 3]",
+    )
+    check(
+        "ropeTransitions.reliefStages",
+        [t.get("reliefAfterRelease") for t in transitions] == COMPLETE_RELIEF_STAGES,
+        "relief stages != {}".format(COMPLETE_RELIEF_STAGES),
+    )
+    check(
+        "ropeTransitions.nextRopeIds",
+        [t.get("nextRopeId") for t in transitions] == COMPLETE_NEXT_ROPES,
+        "next rope ids != {}".format(COMPLETE_NEXT_ROPES),
+    )
+    check(
+        "ropeTransitions.feedbackComplete",
+        [t.get("feedbackComplete") for t in transitions] == [False, False, True],
+        "feedback complete flags != [false, false, true]",
+    )
+    check(
+        "rope1.activeRopeBefore",
+        transitions[0].get("activeRopeBefore") == "rope-1",
+        "rope-1 activeRopeBefore != rope-1",
+    )
+    check(
+        "rope2.activeRopeBefore",
+        transitions[1].get("activeRopeBefore") == "rope-2",
+        "rope-2 activeRopeBefore != rope-2",
+    )
+    check(
+        "rope3.activeRopeBefore",
+        transitions[2].get("activeRopeBefore") == "rope-3",
+        "rope-3 activeRopeBefore != rope-3",
+    )
+
+    pause = diag.get("pauseCycle") or {}
+    check("pauseCycle.paused", pause.get("paused") is True, "pauseCycle.paused != true")
+    check(
+        "pauseCycle.scenePaused",
+        pause.get("scenePaused") is True,
+        "pauseCycle.scenePaused != true",
+    )
+    check(
+        "pauseCycle.animationStopped",
+        pause.get("animationStopped") is True,
+        "pauseCycle.animationStopped != true",
+    )
+    check(
+        "pauseCycle.domainUnchanged",
+        pause.get("domainUnchanged") is True,
+        "pauseCycle.domainUnchanged != true",
+    )
+    check(
+        "pauseCycle.activeRopeId",
+        pause.get("activeRopeIdDuringPause") == "rope-2",
+        "pauseCycle.activeRopeIdDuringPause != rope-2 (got {})".format(
+            pause.get("activeRopeIdDuringPause")
+        ),
+    )
+    check(
+        "pauseCycle.completedIds",
+        (pause.get("completedIdsDuringPause") or []) == ["rope-1"],
+        "pauseCycle.completedIdsDuringPause != [rope-1]",
+    )
+    check("pauseCycle.resumed", pause.get("resumed") is True, "pauseCycle.resumed != true")
+    check(
+        "pauseCycle.sceneActiveAfterResume",
+        pause.get("sceneActiveAfterResume") is True,
+        "pauseCycle.sceneActiveAfterResume != true",
+    )
+    check(
+        "pauseCycle.scenePausedAfterResume",
+        pause.get("scenePausedAfterResume") is False,
+        "pauseCycle.scenePausedAfterResume != false",
+    )
+
+    final_domain = diag.get("finalDomain") or {}
+    check(
+        "finalDomain.complete",
+        final_domain.get("complete") is True,
+        "finalDomain.complete != true",
+    )
+    check(
+        "finalDomain.active",
+        final_domain.get("active") is False,
+        "finalDomain.active != false",
+    )
+    check(
+        "finalDomain.activeRopeId",
+        final_domain.get("activeRopeId") is None,
+        "finalDomain.activeRopeId != null (got {})".format(
+            final_domain.get("activeRopeId")
+        ),
+    )
+    check(
+        "finalDomain.completedRopeIds",
+        (final_domain.get("completedRopeIds") or []) == COMPLETE_ROPE_IDS,
+        "finalDomain.completedRopeIds != {}".format(COMPLETE_ROPE_IDS),
+    )
+    check(
+        "finalDomain.completedCount",
+        final_domain.get("completedCount") == 3,
+        "finalDomain.completedCount != 3 (got {})".format(
+            final_domain.get("completedCount")
+        ),
+    )
+    check(
+        "finalDomain.inputLocked",
+        final_domain.get("inputLocked") is True,
+        "finalDomain.inputLocked != true",
+    )
+
+    before = diag.get("beforeExit") or {}
+    check("beforeExit.mounted", before.get("mounted") is True, "beforeExit.mounted != true")
+    check("beforeExit.active", before.get("active") is True, "beforeExit.active != true")
+    check(
+        "beforeExit.completedCount",
+        before.get("completedCount") == 3,
+        "beforeExit.completedCount != 3 (got {})".format(before.get("completedCount")),
+    )
+    check(
+        "beforeExit.reliefStage",
+        before.get("reliefStage") == "free",
+        "beforeExit.reliefStage != free (got {})".format(before.get("reliefStage")),
+    )
+    check(
+        "beforeExit.activeRopeId",
+        before.get("activeRopeId") is None,
+        "beforeExit.activeRopeId != null (got {})".format(before.get("activeRopeId")),
+    )
+    check(
+        "beforeExit.legacyBridgeVisible",
+        before.get("legacyBridgeVisible") is False,
+        "beforeExit.legacyBridgeVisible != false",
+    )
+
+    exit_state = diag.get("afterExit") or {}
+    check("afterExit.mounted", exit_state.get("mounted") is False, "afterExit.mounted != false")
+    check("afterExit.active", exit_state.get("active") is False, "afterExit.active != false")
+    check(
+        "afterExit.animationRunning",
+        exit_state.get("animationRunning") is False,
+        "afterExit.animationRunning != false",
+    )
+    check(
+        "afterExit.legacyBridgeVisible",
+        exit_state.get("legacyBridgeVisible") is True,
+        "afterExit.legacyBridgeVisible != true",
+    )
+
+    check(
+        "uncaughtErrorCount",
+        diag.get("uncaughtErrorCount") == 0,
+        "uncaughtErrorCount != 0 (got {})".format(diag.get("uncaughtErrorCount")),
+    )
+    check(
+        "unhandledRejectionCount",
+        diag.get("unhandledRejectionCount") == 0,
+        "unhandledRejectionCount != 0 (got {})".format(diag.get("unhandledRejectionCount")),
+    )
+    check(
+        "securityPolicyViolationCount",
+        diag.get("securityPolicyViolationCount") == 0,
+        "securityPolicyViolationCount != 0 (got {})".format(
+            diag.get("securityPolicyViolationCount")
+        ),
+    )
+    check(
+        "externalOriginRequestCount",
+        diag.get("externalOriginRequestCount") == 0,
+        "externalOriginRequestCount != 0 (got {})".format(
+            diag.get("externalOriginRequestCount")
+        ),
+    )
+    check(
+        "referenceImageRequestCount",
+        diag.get("referenceImageRequestCount") == 0,
+        "referenceImageRequestCount != 0 (got {})".format(
+            diag.get("referenceImageRequestCount")
+        ),
+    )
+    check("diag.complete", diag.get("complete") is True, "diag.complete != true")
+    check(
+        "diag.error",
+        diag.get("error") is None,
+        "diag.error != null: {}".format(diag.get("error")),
+    )
+
+    check(
+        "productionByteIdentical",
+        before_hashes == after_hashes,
+        "production hashes changed",
+    )
+
+    return checks
+
+
+def run_chrome(chrome_bin, url, backend_mode):
+    user_data = tempfile.mkdtemp(prefix="chrome-ocean-authored-")
+
+    chrome_args = [
+        chrome_bin,
+        url,
+        "--headless",
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--disable-background-networking",
+        "--disable-component-update",
+        "--disable-default-apps",
+        "--disable-extensions",
+        "--disable-sync",
+        "--mute-audio",
+        "--hide-scrollbars",
+        "--dump-dom",
+        "--virtual-time-budget=12000",
+        "--user-data-dir={}".format(user_data),
+    ]
+
+    if backend_mode == "canvas":
+        chrome_args.append(WEBGL_DISABLE_FLAG)
+
+    try:
+        process = subprocess.Popen(
+            chrome_args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            cwd=str(REPO_ROOT),
+            env={**os.environ, "PATH": os.environ.get("PATH", "")},
+        )
+        try:
+            stdout, stderr = process.communicate(timeout=CHROME_TIMEOUT_SECONDS)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            stdout, stderr = process.communicate()
+    except OSError as exc:
+        return None, "chrome launch: {}".format(exc)
+    finally:
+        shutil.rmtree(user_data, ignore_errors=True)
+
+    return (stderr or "") + (stdout or ""), None
+
+
 def main():
+    args = parse_args()
     helpers = load_backend_helpers()
     chrome_bin = helpers.resolve_chrome()
     if not chrome_bin:
@@ -292,46 +678,16 @@ def main():
 
     port = helpers.find_free_port()
     server = helpers.start_server(port)
-    user_data = tempfile.mkdtemp(prefix="chrome-ocean-authored-")
+
+    url = "http://127.0.0.1:{}{}".format(port, HARNESS_URL_PATH)
+    if args.flow == "complete":
+        url += "?flow=complete"
 
     try:
-        args = [
-            chrome_bin,
-            "http://127.0.0.1:{}{}".format(port, HARNESS_URL_PATH),
-            "--headless",
-            "--no-first-run",
-            "--no-default-browser-check",
-            "--disable-background-networking",
-            "--disable-component-update",
-            "--disable-default-apps",
-            "--disable-extensions",
-            "--disable-sync",
-            "--mute-audio",
-            "--hide-scrollbars",
-            "--dump-dom",
-            "--virtual-time-budget=12000",
-            "--user-data-dir={}".format(user_data),
-        ]
-
-        try:
-            process = subprocess.Popen(
-                args,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                cwd=str(REPO_ROOT),
-                env={**os.environ, "PATH": os.environ.get("PATH", "")},
-            )
-            try:
-                stdout, stderr = process.communicate(timeout=CHROME_TIMEOUT_SECONDS)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                stdout, stderr = process.communicate()
-        except OSError as exc:
-            print("BLOCKED: chrome launch: {}".format(exc), file=sys.stderr)
+        output, launch_error = run_chrome(chrome_bin, url, args.backend)
+        if launch_error is not None:
+            print("BLOCKED: {}".format(launch_error), file=sys.stderr)
             return 2
-
-        output = (stderr or "") + (stdout or "")
 
         diag, parse_error = parse_diagnostics(output)
         if parse_error is not None or diag is None:
@@ -342,13 +698,15 @@ def main():
     finally:
         server.shutdown()
         server.server_close()
-        shutil.rmtree(user_data, ignore_errors=True)
 
     after_hashes = {
         path: sha256_of(path) for path in PRODUCTION_FILES
     }
 
-    checks = assert_diagnostics(diag, before_hashes, after_hashes)
+    if args.flow == "complete":
+        checks = assert_complete_canvas_diagnostics(diag, before_hashes, after_hashes)
+    else:
+        checks = assert_first_rope_diagnostics(diag, before_hashes, after_hashes)
 
     all_pass = True
     for name, ok, message in checks:
@@ -365,11 +723,9 @@ def main():
         diag.get("singleHtmlReady"),
         diag.get("renderRuntimeReady"),
     ))
-    print("  release={} relief={} completed={} nextRope={}".format(
-        (diag.get("releaseResult") or {}).get("outcome"),
-        (diag.get("afterRelease") or {}).get("reliefStage"),
-        (diag.get("afterRelease") or {}).get("completedCount"),
-        (diag.get("feedback") or {}).get("nextRopeId"),
+    print("  flow={} webglPreflightAvailable={}".format(
+        diag.get("flowMode"),
+        diag.get("webglPreflightAvailable"),
     ))
     print("  external={} reference={} errors={} rejections={} csp={}".format(
         diag.get("externalOriginRequestCount"),
@@ -380,12 +736,14 @@ def main():
     ))
     print("  production hashes unchanged={}".format(before_hashes == after_hashes))
 
-    if all_pass:
-        print("\nOCEAN_RESCUE_AUTHORED_SCENE_RUNTIME_ACCEPTANCE=PASS")
-        return 0
+    if not all_pass:
+        print("\nOCEAN_RESCUE_AUTHORED_SCENE_RUNTIME_ACCEPTANCE=FAIL", file=sys.stderr)
+        return 1
 
-    print("\nOCEAN_RESCUE_AUTHORED_SCENE_RUNTIME_ACCEPTANCE=FAIL", file=sys.stderr)
-    return 1
+    print("\nOCEAN_RESCUE_AUTHORED_SCENE_RUNTIME_ACCEPTANCE=PASS")
+    if args.flow == "complete":
+        print("OCEAN_RESCUE_CANVAS_COMPLETE_RESCUE_RUNTIME_ACCEPTANCE=PASS")
+    return 0
 
 
 if __name__ == "__main__":

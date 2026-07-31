@@ -256,3 +256,123 @@ def test_mjs_records_initial_scene_state():
     assert "diag.feedback = turtle.finishFeedback()" in mjs, "feedback missing"
     assert "diag.afterRelease" in mjs, "post-feedback diagnostics missing"
     assert "diag.afterExit" in mjs, "exit diagnostics missing"
+
+
+def test_runner_has_argparse_backend_and_flow_choices():
+    runner = _runner()
+    assert "argparse" in runner, "argparse missing"
+    assert '"--backend"' in runner, "backend CLI option missing"
+    assert '"--flow"' in runner, "flow CLI option missing"
+    assert 'choices=("auto", "canvas")' in runner, "backend choices missing"
+    assert 'choices=("first-rope", "complete")' in runner, "flow choices missing"
+
+
+def test_runner_defaults_are_auto_and_first_rope():
+    runner = _runner()
+    assert 'default="auto"' in runner, "backend default != auto"
+    assert 'default="first-rope"' in runner, "flow default != first-rope"
+
+
+def test_webgl_disable_flag_only_in_canvas_mode():
+    runner = _runner()
+    assert "WEBGL_DISABLE_FLAG" in runner, "webgl disable flag constant missing"
+    assert "chrome_args.append(WEBGL_DISABLE_FLAG)" in runner, "flag not appended"
+    assert 'backend_mode == "canvas"' in runner, "flag not guarded by canvas mode"
+    assert "--disable-gpu" not in runner, "disable-gpu added"
+    assert "--disable-software-rasterizer" not in runner, "software rasterizer disabled"
+    assert "--disable-webgl" not in runner, "webgl disable flag leaked into default path"
+
+
+def test_complete_flow_query_passed_to_harness():
+    runner = _runner()
+    assert 'args.flow == "complete"' in runner, "complete flow branch missing"
+    assert '"?flow=complete"' in runner, "complete flow query not appended"
+
+
+def test_harness_uses_indexed_canonical_ropes():
+    mjs = _mjs()
+    assert "releaseCanonicalRope" in mjs, "canonical rope helper missing"
+    assert "turtle.Ropes[ropeIndex]" in mjs, "indexed canonical rope read missing"
+
+
+def test_complete_flow_reads_endpoints_from_canonical_ropes():
+    mjs = _mjs()
+    for token in ("rope.start.x", "rope.start.y", "rope.end.x", "rope.end.y"):
+        assert token in mjs, f"rope endpoint token {token} missing"
+    for literal in (
+        "760", "1040", "300", "330",
+        "750", "1050", "420", "440",
+        "770", "1030", "540", "570",
+    ):
+        assert literal not in mjs, f"hardcoded rope coordinate {literal} found"
+
+
+def test_complete_flow_loops_three_ropes_in_order():
+    mjs = _mjs()
+    assert "for (let i = 0; i < 3; i += 1)" in mjs, "three-rope loop missing"
+    runner = _runner()
+    assert '["rope-1", "rope-2", "rope-3"]' in runner, "expected rope order missing"
+
+
+def test_relief_stage_progression_assertions_exist():
+    runner = _runner()
+    assert '"relief-1"' in runner, "relief-1 assertion missing"
+    assert '"relief-2"' in runner, "relief-2 assertion missing"
+    assert '"free"' in runner, "free assertion missing"
+
+
+def test_pause_resume_cycle_exists():
+    mjs = _mjs()
+    assert "turtle.pauseCancel()" in mjs, "pauseCancel call missing"
+    assert "game.RenderRuntime.pause()" in mjs, "RenderRuntime.pause call missing"
+    assert "scene.pause()" in mjs, "scene.pause call missing"
+    assert "game.RenderRuntime.resume()" in mjs, "RenderRuntime.resume call missing"
+    assert "scene.resume()" in mjs, "scene.resume call missing"
+    runner = _runner()
+    assert "pauseCycle" in runner, "pauseCycle assertion missing"
+
+
+def test_pause_domain_equality_assertion_exists():
+    mjs = _mjs()
+    assert "domainBeforePause" in mjs, "pre-pause snapshot missing"
+    assert "domainDuringPause" in mjs, "during-pause snapshot missing"
+    assert "domainAfterResume" in mjs, "post-resume snapshot missing"
+    runner = _runner()
+    assert "pauseCycle.domainUnchanged" in runner, "pause domain equality assertion missing"
+
+
+def test_final_domain_assertions_exist():
+    runner = _runner()
+    assert "finalDomain.complete" in runner, "final complete assertion missing"
+    assert "finalDomain.active" in runner, "final active=false assertion missing"
+    assert "finalDomain.activeRopeId" in runner, "final activeRopeId assertion missing"
+    assert "beforeExit.reliefStage" in runner, "beforeExit relief assertion missing"
+    assert "afterExit.legacyBridgeVisible" in runner, "legacy bridge restoration assertion missing"
+
+
+def test_existing_first_rope_contract_preserved():
+    runner = _runner()
+    for name in (
+        "singleHtmlReady",
+        "renderRuntimeReady",
+        "release.accepted",
+        "release.outcome",
+        "release.ropeId",
+        "afterRelease.reliefStage",
+        "feedback.nextRopeId",
+        "afterExit.mounted",
+    ):
+        assert name in runner, f"first-rope check {name} removed"
+    assert "OCEAN_RESCUE_AUTHORED_SCENE_RUNTIME_ACCEPTANCE=PASS" in runner, (
+        "existing first-rope PASS marker removed"
+    )
+    assert "OCEAN_RESCUE_CANVAS_COMPLETE_RESCUE_RUNTIME_ACCEPTANCE=PASS" in runner, (
+        "canvas complete PASS marker missing"
+    )
+
+
+def test_runner_touches_no_package_metadata():
+    runner = _runner()
+    assert "package-lock.json" not in runner, "runner references package-lock.json"
+    assert "package.json" not in runner, "runner references package.json"
+    assert "npm" not in runner, "runner references npm"

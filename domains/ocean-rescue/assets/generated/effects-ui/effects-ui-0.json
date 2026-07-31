@@ -1,0 +1,64 @@
+{
+  "frames": {
+    "fx.success-burst": {
+      "frame": {
+        "x": 304,
+        "y": 4,
+        "w": 265,
+        "h": 265
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 29,
+        "y": 29,
+        "w": 265,
+        "h": 265
+      },
+      "sourceSize": {
+        "w": 320,
+        "h": 320
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "ui.drag-arrow": {
+      "frame": {
+        "x": 4,
+        "y": 4,
+        "w": 288,
+        "h": 288
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 16,
+        "y": 16,
+        "w": 288,
+        "h": 288
+      },
+      "sourceSize": {
+        "w": 320,
+        "h": 320
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    }
+  },
+  "animations": {},
+  "meta": {
+    "app": "AidenGame Ocean Rescue Atlas Builder",
+    "version": "1",
+    "image": "effects-ui-0.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 573,
+      "h": 296
+    },
+    "scale": "2"
+  }
+}

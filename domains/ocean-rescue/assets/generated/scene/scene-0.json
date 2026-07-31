@@ -1,0 +1,136 @@
+{
+  "frames": {
+    "scene.coral.foreground": {
+      "frame": {
+        "x": 2166,
+        "y": 4,
+        "w": 800,
+        "h": 256
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 64,
+        "w": 800,
+        "h": 256
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 320
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.8
+      }
+    },
+    "scene.reef.mid": {
+      "frame": {
+        "x": 1354,
+        "y": 4,
+        "w": 800,
+        "h": 258
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 142,
+        "w": 800,
+        "h": 258
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 400
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.65
+      }
+    },
+    "scene.seaweed-loop.01": {
+      "frame": {
+        "x": 2978,
+        "y": 4,
+        "w": 122,
+        "h": 366
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 54,
+        "y": 32,
+        "w": 122,
+        "h": 366
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 400
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.1
+      }
+    },
+    "scene.submarine": {
+      "frame": {
+        "x": 4,
+        "y": 4,
+        "w": 526,
+        "h": 295
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 57,
+        "y": 87,
+        "w": 526,
+        "h": 295
+      },
+      "sourceSize": {
+        "w": 640,
+        "h": 400
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.55
+      }
+    },
+    "scene.water.far": {
+      "frame": {
+        "x": 542,
+        "y": 4,
+        "w": 800,
+        "h": 600
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 800,
+        "h": 600
+      },
+      "sourceSize": {
+        "w": 800,
+        "h": 600
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    }
+  },
+  "animations": {},
+  "meta": {
+    "app": "AidenGame Ocean Rescue Atlas Builder",
+    "version": "1",
+    "image": "scene-0.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 3104,
+      "h": 608
+    },
+    "scale": "2"
+  }
+}

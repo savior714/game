@@ -1,0 +1,31 @@
+{
+  "bundles": [
+    {
+      "name": "characters",
+      "assets": [
+        {
+          "alias": "characters.atlas",
+          "src": "characters/characters-0.json"
+        }
+      ]
+    },
+    {
+      "name": "scene",
+      "assets": [
+        {
+          "alias": "scene.atlas",
+          "src": "scene/scene-0.json"
+        }
+      ]
+    },
+    {
+      "name": "effects-ui",
+      "assets": [
+        {
+          "alias": "effects-ui.atlas",
+          "src": "effects-ui/effects-ui-0.json"
+        }
+      ]
+    }
+  ]
+}

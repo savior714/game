@@ -9,4 +9,6 @@ dependencies = []
 dev = [
     "pytest>=8.0",
     "ruff>=0.4.0",
+    "CairoSVG==2.9.0",
+    "Pillow==12.3.0",
 ]

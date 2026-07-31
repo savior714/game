@@ -54,6 +54,17 @@ build-ocean-rescue:
 check-ocean-rescue-drift:
     uv run pytest tests/test_ocean_rescue_artifact_drift.py -q
 
+# Build Ocean Rescue deterministic 2× atlas pipeline
+build-ocean-rescue-atlases:
+    DYLD_LIBRARY_PATH=/opt/homebrew/opt/cairo/lib uv run python scripts/ocean_rescue/build_atlases.py \
+        --packet domains/ocean-rescue/assets/source/art-packet.json \
+        --approval domains/ocean-rescue/assets/source/art-approval.json \
+        --output-dir domains/ocean-rescue/assets/generated
+
+# Verify Ocean Rescue atlas pipeline
+check-ocean-rescue-atlases:
+    uv run pytest -q tests/test_ocean_rescue_atlas_pipeline.py
+
 # --- Commit Gate ---
 
 # hard gate: security checks only; --no-verify is prohibited

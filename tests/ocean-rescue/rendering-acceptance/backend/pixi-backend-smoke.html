@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PixiJS Backend Smoke</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'none'; media-src 'none'; object-src 'none'; frame-src 'none'">
+<script src="/domains/ocean-rescue/node_modules/pixi.js/dist/pixi.min.js"></script>
+<script src="/domains/ocean-rescue/node_modules/pixi.js/dist/packages/unsafe-eval.min.js"></script>
+</head>
+<body>
+<pre id="diagnostics"></pre>
+<script>
+'use strict';
+
+(function() {
+var Pixi = window.PIXI;
+var Application = Pixi.Application;
+var Graphics = Pixi.Graphics;
+var WebGLRenderer = Pixi.WebGLRenderer;
+var CanvasRenderer = Pixi.CanvasRenderer;
+
+var params = new URLSearchParams(window.location.search);
+var caseId = params.get('case') || 'normal-auto';
+
+var CASE_PREFERENCE = {
+  'normal-auto': ['webgl', 'canvas'],
+  'disabled-webgl-fallback': ['webgl', 'canvas'],
+  'forced-canvas': 'canvas'
+};
+
+var preference = CASE_PREFERENCE[caseId] || ['webgl', 'canvas'];
+
+var diag = {
+  schemaVersion: 1,
+  caseId: caseId,
+  requestedPreference: preference,
+  pixiVersion: Pixi.VERSION,
+  webglPreflightAvailable: false,
+  webglPreflightKind: null,
+  selectedBackend: null,
+  applicationCount: 0,
+  rendererCount: 0,
+  canvasCount: 0,
+  stageChildCount: 0,
+  initializationSucceeded: false,
+  renderSucceeded: false,
+  destroySucceeded: false,
+  uncaughtErrorCount: 0,
+   unhandledRejectionCount: 0,
+   externalOriginRequestCount: 0,
+   externalOriginRequests: [],
+   securityPolicyViolationCount: 0,
+   error: null,
+  complete: false
+};
+
+function writeDiagnostics() {
+  var el = document.getElementById('diagnostics');
+  if (el) {
+    el.textContent = JSON.stringify(diag, null, 2);
+  }
+}
+
+function recordExternalRequests() {
+  var entries = performance.getEntriesByType('resource');
+  var fixtureOrigin = window.location.origin;
+  var externals = [];
+  for (var i = 0; i < entries.length; i++) {
+    try {
+      var url = new URL(entries[i].name);
+      if (url.origin !== fixtureOrigin && url.protocol !== 'data:' && url.protocol !== 'blob:') {
+        externals.push(entries[i].name);
+      }
+    } catch (_) {}
+  }
+  diag.externalOriginRequestCount = externals.length;
+  diag.externalOriginRequests = externals;
+}
+
+window.addEventListener('error', function() {
+  diag.uncaughtErrorCount++;
+  writeDiagnostics();
+});
+
+window.addEventListener('unhandledrejection', function() {
+  diag.unhandledRejectionCount++;
+  writeDiagnostics();
+});
+
+window.addEventListener('securitypolicyviolation', function() {
+  diag.securityPolicyViolationCount++;
+  writeDiagnostics();
+});
+
+function webglPreflight() {
+  var names = ['webgl2', 'webgl'];
+  var offscreen = document.createElement('canvas');
+  for (var i = 0; i < names.length; i++) {
+    try {
+      var ctx = offscreen.getContext(names[i], { failIfMajorPerformanceCaveat: false });
+      if (ctx) {
+        diag.webglPreflightAvailable = true;
+        diag.webglPreflightKind = names[i];
+        if (ctx.getExtension && ctx.getExtension('WEBGL_lose_context')) {
+          ctx.getExtension('WEBGL_lose_context').loseContext();
+        }
+        return;
+      }
+    } catch (_) {
+      /* continue */
+    }
+  }
+}
+
+webglPreflight();
+
+var app = null;
+
+try {
+  app = new Application();
+  diag.applicationCount = 1;
+
+  app.init({
+    width: 64,
+    height: 64,
+    resolution: 1,
+    autoStart: false,
+    sharedTicker: false,
+    preference: preference
+  }).then(function() {
+    diag.initializationSucceeded = true;
+
+    if (app.renderer) {
+      diag.rendererCount = 1;
+      if (app.renderer instanceof CanvasRenderer) {
+        diag.selectedBackend = 'canvas';
+      } else if (app.renderer instanceof WebGLRenderer) {
+        diag.selectedBackend = 'webgl';
+      }
+    }
+
+    document.body.appendChild(app.canvas);
+    if (app.canvas) {
+      diag.canvasCount = 1;
+    }
+
+    var rect = new Graphics();
+    rect.rect(0, 0, 64, 64);
+    rect.fill({ color: 0xff6600 });
+    app.stage.addChild(rect);
+    diag.stageChildCount = app.stage.children.length;
+
+    app.render();
+    diag.renderSucceeded = true;
+
+    app.destroy(true);
+    diag.destroySucceeded = true;
+
+    finalize();
+  }).catch(function(err) {
+    diag.error = String(err);
+    if (app && !diag.destroySucceeded) {
+      try { app.destroy(true); diag.destroySucceeded = true; } catch (_) {}
+    }
+    finalize();
+  });
+} catch (err) {
+  diag.error = String(err);
+  finalize();
+}
+
+function finalize() {
+  recordExternalRequests();
+  diag.complete = true;
+  writeDiagnostics();
+}
+})();
+</script>
+</body>
+</html>

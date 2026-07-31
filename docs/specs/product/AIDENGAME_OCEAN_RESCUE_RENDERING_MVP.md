@@ -1,17 +1,18 @@
 # AidenGame Ocean Rescue — Rendering MVP
 
-- **Version:** v0.6
+- **Version:** v0.7
 - **Date:** 2026-07-31
-- **Status:** Renderer, asset pipeline, atlas partition, resolution, and atlas-page policy closed / renderer preference unresolved
+- **Status:** Renderer architecture and runtime fallback closed / authored-art production workflow unresolved
 - **Parent product spec:** `AIDENGAME_OCEAN_RESCUE_MVP_PRD.md`
 - **Scope:** visual rendering quality only
 - **Selected renderer:** PixiJS v8
 - **Current implementation baseline:** PixiJS 8.19.0
+- **Renderer preference:** WebGL → Canvas fallback
 - **Selected asset path:** authored source → build-time raster atlas + JSON metadata
 - **Selected atlas partition:** `characters` / `scene` / `effects-ui`
 - **Logical resolution:** 1280×720
 - **Renderer resolution:** `min(devicePixelRatio, 2)`
-- **Atlas page limit:** each axis ≤ 4096, explicit multi-page overflow
+- **Atlas page limit:** each axis ≤ 4096, deterministic multi-page overflow
 - **Primary device:** Galaxy Tab S10-class landscape tablet
 - **Build constraint:** final deployable remains a single HTML artifact
 
@@ -42,7 +43,7 @@ A first-time viewer who has not read instructions can identify within three seco
 
 ## 2. Scope boundary
 
-Allowed decisions are limited to PixiJS renderer architecture, authored asset representation, atlas generation and partition, scene layering, sprite/cutout animation, scaling and pixel-density policy, visual effects, performance guardrails, and deterministic single-HTML packaging.
+Allowed decisions are limited to PixiJS renderer architecture, authored asset production and representation, atlas generation, scene layering, sprite/cutout animation, scaling, visual effects, performance guardrails, and deterministic single-HTML packaging.
 
 Explicitly excluded:
 
@@ -126,7 +127,40 @@ Input remains in the fixed logical 1280×720 coordinate system. PixiJS event tar
 
 ---
 
-## 6. Authored asset pipeline
+## 6. Production renderer preference and fallback
+
+### Selected order
+
+```text
+WebGL → Canvas fallback
+```
+
+Equivalent initialization intent:
+
+```js
+preference: ['webgl', 'canvas']
+```
+
+Contracts:
+
+- WebGL/WebGL2 is the production visual-quality reference path.
+- WebGPU is excluded from this rendering MVP and must not be selected automatically.
+- Canvas fallback is an execution-resilience path, not the visual-parity acceptance reference.
+- Canvas fallback must preserve mission progression, input alignment, scene ordering, mandatory character visibility, and rescue completion.
+- Effects unsupported or materially different in Canvas may be disabled through an explicit backend capability table; primary subjects may not revert to visible placeholder geometry.
+- Renderer selection occurs once during application startup and must not switch during an active mission.
+- The selected backend is exposed in diagnostics and automated test evidence.
+- If neither WebGL nor Canvas initializes, the game shows an explicit blocking compatibility message rather than a blank surface.
+
+Validation boundaries:
+
+- Full visual acceptance and Galaxy Tab performance acceptance run on WebGL.
+- Canvas receives a bounded smoke test for startup, asset loading, input alignment, loop dragging, completion, pause, and exit.
+- Both backends use the same logical coordinates, stable frame aliases, asset manifest, and canonical gameplay state.
+
+---
+
+## 7. Authored asset pipeline
 
 Production assets are **build-time packed raster texture atlases with JSON metadata**.
 
@@ -150,13 +184,13 @@ Contracts:
 - No per-frame texture creation, decode, or upload.
 - Frame aliases and cutout pivots remain stable across deterministic rebuilds.
 - Duplicate aliases, missing frames, invalid pivots, or out-of-bounds rectangles fail the build.
-- Identical source bytes, tool versions, scale, trim, padding, partition, and compression settings must reproduce identical atlas bytes and metadata.
+- Identical source bytes, tool versions, scale, trim, padding, partition, and compression settings reproduce identical atlas bytes and metadata.
 
 The generated manifest records source hashes, aliases, source scale, pivot/anchor metadata, atlas membership, page hashes, and spritesheet JSON hashes.
 
 ---
 
-## 7. Atlas partition
+## 8. Atlas partition and page policy
 
 The first slice uses exactly three lifecycle-based bundles.
 
@@ -180,18 +214,22 @@ The first slice uses exactly three lifecycle-based bundles.
 - Success particles
 - Communication frame and compact HUD icons
 
-Partition invariants:
+Partition and page invariants:
 
 - Membership is declared rather than inferred from file size.
 - Frames do not migrate between bundles without an explicit manifest change.
 - Aliases are globally unique.
 - All three bundles load before the rescue scene becomes interactive.
 - Runtime accesses frames by alias, never by pixel coordinates or page number.
-- A change confined to one partition leaves the other two outputs byte-identical.
+- A partition-local change leaves the other two outputs byte-identical.
+- Every atlas page is bounded to 4096 pixels on each axis.
+- 4096×4096 is a ceiling, not a fixed output size.
+- Oversized bundles split into deterministic multiple pages inside the same bundle.
+- Multi-page overflow may not change aliases or cutout pivots.
 
 ---
 
-## 8. Resolution and pixel-density policy
+## 9. Resolution and pixel-density policy
 
 - Canonical logical viewport: **1280×720**.
 - Gameplay state, hit geometry, layout anchors, camera bounds, and pointer conversion use this coordinate system.
@@ -201,29 +239,6 @@ Partition invariants:
 - Mandatory character, creature, vehicle, interaction, and UI art is rasterized at a declared **2× source scale** relative to logical display size.
 - CSS resizing, browser zoom, letterboxing, or DPR changes may resize the backing surface but may not move logical hit targets.
 - Visual/hit alignment is verified at effective DPR 1, 1.5, and 2.
-
----
-
-## 9. Atlas page dimension and multi-page policy
-
-### Maximum page dimension
-
-- Every generated atlas page is bounded to **4096 pixels on each axis**.
-- This is a maximum, not a fixed output size.
-- The packer emits the smallest deterministic dimensions that satisfy declared padding, alignment, source-scale, and packing rules.
-- Small `characters` and `effects-ui` outputs must not be inflated to 4096×4096.
-- A 2× full-screen scene layer up to 2560×1440 may occupy a dedicated `scene` page.
-
-### Explicit multi-page overflow
-
-- When one bundle cannot fit in one page under the 4096-axis ceiling, it emits multiple pages within the same bundle.
-- Overflow never moves a frame into another lifecycle bundle.
-- Multi-page output must be deterministic for identical inputs and configuration.
-- The manifest records bundle identity, page identity, image/JSON hashes, and contained aliases.
-- Runtime resolves textures by stable alias through PixiJS `Assets`; it never depends on page number or packed rectangle location.
-- A page-count change requires explicit generated-manifest evidence and may not alter frame aliases or cutout pivots.
-
-The page policy passes only when no page exceeds 4096 on either axis, small bundles remain smaller when possible, oversized bundles split deterministically, and all pages load before interaction begins.
 
 ---
 
@@ -308,6 +323,9 @@ The MVP passes only when:
 19. Effective renderer DPR never exceeds 2 in normal MVP mode.
 20. No atlas page exceeds 4096 pixels on either axis.
 21. Multi-page overflow remains inside its declared bundle and is deterministic.
+22. WebGL is selected whenever it initializes successfully.
+23. Canvas fallback preserves a complete playable rescue flow without visible primary-subject placeholders.
+24. WebGPU is not selected in this MVP.
 
 ---
 
@@ -321,11 +339,12 @@ The MVP passes only when:
 - Rive, Spine, skeletal physics, React-Pixi, or another animation/runtime layer
 - Runtime procedural character generation
 - Automatic dynamic-resolution switching
+- Visual parity between WebGL and the Canvas resilience path
 
 ---
 
 ## 14. Next unresolved rendering decision
 
-Renderer, asset representation, atlas partition, resolution policy, and atlas-page policy are closed.
+Renderer architecture, renderer fallback, atlas representation, atlas partition, resolution, and page policy are closed.
 
-The next Grill-me question must choose only the **production renderer preference and fallback order** for the first slice. It must not reopen character, narrative, mission, mechanic, or world-building decisions.
+The next Grill-me question must choose only the **authored-art production workflow** for the first slice. It must not reopen character, narrative, mission, mechanic, or world-building decisions.

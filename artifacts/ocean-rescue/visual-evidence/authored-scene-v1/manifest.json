@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "taskId": "AIDENGAME-OCEAN-RESCUE-FOUR-STATE-VISUAL-EVIDENCE-PACKET-01",
+  "sourceCommit": "0a929a72ce46d45cd875b6568be03e9650e6ba93",
+  "sourceSingleHtmlSha256": "08312c3c642cd1b24f36dd984015f2920c908a0f88b32f6a5642651bafa1db85",
+  "viewportCssWidth": 1280,
+  "viewportCssHeight": 720,
+  "deviceScaleFactor": 1,
+  "pixelWidth": 1280,
+  "pixelHeight": 720,
+  "backend": "webgl",
+  "captureOrder": [
+    "worried",
+    "relief-1",
+    "relief-2",
+    "free"
+  ],
+  "captures": [
+    {
+      "state": "worried",
+      "file": "worried.png",
+      "sha256": "0c6dbda668b39bce4294c488606c9fa9e24649af3f1a50f3b18717b3054524e4"
+    },
+    {
+      "state": "relief-1",
+      "file": "relief-1.png",
+      "sha256": "0c6dbda668b39bce4294c488606c9fa9e24649af3f1a50f3b18717b3054524e4"
+    },
+    {
+      "state": "relief-2",
+      "file": "relief-2.png",
+      "sha256": "0c6dbda668b39bce4294c488606c9fa9e24649af3f1a50f3b18717b3054524e4"
+    },
+    {
+      "state": "free",
+      "file": "free.png",
+      "sha256": "0c6dbda668b39bce4294c488606c9fa9e24649af3f1a50f3b18717b3054524e4"
+    }
+  ],
+  "externalOriginRequestCount": 0,
+  "referenceImageRequestCount": 0,
+  "uncaughtErrorCount": 0,
+  "unhandledRejectionCount": 0,
+  "securityPolicyViolationCount": 0
+}

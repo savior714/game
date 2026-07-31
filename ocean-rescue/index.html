@@ -741,6 +741,35 @@ html, body {
   }
 }
 
+#ocean-rescue-rescue-overlay.ocean-rescue-crab-success {
+  animation: ocean-rescue-crab-success-flash 400ms ease-out forwards;
+}
+
+#ocean-rescue-rescue-overlay.ocean-rescue-crab-failure {
+  animation: ocean-rescue-crab-failure-shake 300ms ease-out forwards;
+}
+
+@keyframes ocean-rescue-crab-success-flash {
+  0% {
+    box-shadow: inset 0 0 0 9999px rgba(143, 211, 168, 0.16);
+  }
+  100% {
+    box-shadow: inset 0 0 0 9999px rgba(143, 211, 168, 0);
+  }
+}
+
+@keyframes ocean-rescue-crab-failure-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   #ocean-rescue-rescue-assist-hand.ocean-rescue-assist-hand-visible {
     animation: none;
@@ -748,7 +777,9 @@ html, body {
   }
 
   #ocean-rescue-rescue-overlay.ocean-rescue-sea-turtle-success,
-  #ocean-rescue-rescue-overlay.ocean-rescue-sea-turtle-failure {
+  #ocean-rescue-rescue-overlay.ocean-rescue-sea-turtle-failure,
+  #ocean-rescue-rescue-overlay.ocean-rescue-crab-success,
+  #ocean-rescue-rescue-overlay.ocean-rescue-crab-failure {
     animation: none;
   }
 }
@@ -2332,6 +2363,513 @@ html, body {
 </script>
 <script>
 (function () {
+  var root = window.OceanRescue = window.OceanRescue || {};
+
+  function freeze(value) {
+    return Object.freeze(value);
+  }
+
+  var MissionId = "crab";
+
+  var Constants = freeze({
+    holdDurationMs: 400,
+    tapMovementThreshold: 10,
+    baseHitRadius: 60,
+    assistedHitRadius: 82,
+    assistedZoneMargin: 48,
+    successFeedbackMs: 400,
+    failureFeedbackMs: 300
+  });
+
+  var Rocks = freeze([
+    freeze({
+      id: "rock-1",
+      order: 1,
+      radius: 46,
+      start: freeze({ x: 760, y: 300 }),
+      placed: freeze({ x: 1000, y: 360 })
+    }),
+    freeze({
+      id: "rock-2",
+      order: 2,
+      radius: 52,
+      start: freeze({ x: 720, y: 420 }),
+      placed: freeze({ x: 1090, y: 450 })
+    }),
+    freeze({
+      id: "rock-3",
+      order: 3,
+      radius: 58,
+      start: freeze({ x: 770, y: 540 }),
+      placed: freeze({ x: 1000, y: 540 })
+    })
+  ]);
+
+  var DropZone = freeze({
+    x: 900,
+    y: 280,
+    width: 300,
+    height: 320
+  });
+
+  var Dialogues = freeze([
+    "Great lift! Two rocks left, and the crab can see us.",
+    "One more rock! The crab is getting up.",
+    "All clear! The crab is free!"
+  ]);
+
+  var state = {
+    active: false,
+    activeRockId: null,
+    completedRockIds: [],
+    failureCount: 0,
+    helpLevel: 0,
+    tapRockArmed: false,
+    pointerActive: false,
+    pointerId: null,
+    pointerX: null,
+    pointerY: null,
+    gestureStartX: null,
+    gestureStartY: null,
+    gesturePhase: "idle",
+    gestureMoved: false,
+    gestureFailed: false,
+    currentRockCenter: null,
+    inputLocked: true,
+    feedback: null,
+    feedbackRockId: null,
+    complete: false
+  };
+
+  function isFiniteNumber(value) {
+    return typeof value === "number" && isFinite(value);
+  }
+
+  function rockById(rockId) {
+    if (typeof rockId !== "string") {
+      return null;
+    }
+    for (var i = 0; i < Rocks.length; i += 1) {
+      if (Rocks[i].id === rockId) {
+        return Rocks[i];
+      }
+    }
+    return null;
+  }
+
+  function rockAfter(rockId) {
+    for (var i = 0; i < Rocks.length - 1; i += 1) {
+      if (Rocks[i].id === rockId) {
+        return Rocks[i + 1];
+      }
+    }
+    return null;
+  }
+
+  function currentRock() {
+    return rockById(state.activeRockId);
+  }
+
+  function hitRadius() {
+    if (state.helpLevel >= 2) {
+      return Constants.assistedHitRadius;
+    }
+    return Constants.baseHitRadius;
+  }
+
+  function distanceBetween(x1, y1, x2, y2) {
+    var dx = x2 - x1;
+    var dy = y2 - y1;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  function insideRockHitRadius(rock, x, y) {
+    return distanceBetween(x, y, rock.start.x, rock.start.y) <= hitRadius();
+  }
+
+  function pointInDropZone(x, y) {
+    var margin = state.helpLevel >= 3 ? Constants.assistedZoneMargin : 0;
+    var x1 = DropZone.x - DropZone.width / 2 - margin;
+    var x2 = DropZone.x + DropZone.width / 2 + margin;
+    var y1 = DropZone.y - DropZone.height / 2 - margin;
+    var y2 = DropZone.y + DropZone.height / 2 + margin;
+    return x >= x1 && x <= x2 && y >= y1 && y <= y2;
+  }
+
+  function resetPointerGesture() {
+    state.pointerActive = false;
+    state.pointerId = null;
+    state.pointerX = null;
+    state.pointerY = null;
+    state.gestureStartX = null;
+    state.gestureStartY = null;
+    state.gesturePhase = "idle";
+    state.gestureMoved = false;
+    state.gestureFailed = false;
+    var rock = currentRock();
+    if (rock !== null) {
+      if (state.completedRockIds.indexOf(rock.id) !== -1) {
+        state.currentRockCenter = { x: rock.placed.x, y: rock.placed.y };
+      } else {
+        state.currentRockCenter = { x: rock.start.x, y: rock.start.y };
+      }
+    }
+  }
+
+  function resetAllInteractionState() {
+    state.active = false;
+    state.activeRockId = null;
+    state.completedRockIds = [];
+    state.failureCount = 0;
+    state.helpLevel = 0;
+    state.tapRockArmed = false;
+    state.currentRockCenter = null;
+    state.inputLocked = true;
+    state.feedback = null;
+    state.feedbackRockId = null;
+    state.complete = false;
+    resetPointerGesture();
+  }
+
+  function completeRock(rock) {
+    if (state.completedRockIds.indexOf(rock.id) === -1) {
+      state.completedRockIds.push(rock.id);
+    }
+    state.currentRockCenter = { x: rock.placed.x, y: rock.placed.y };
+    state.feedback = "success";
+    state.feedbackRockId = rock.id;
+    state.inputLocked = true;
+    state.tapRockArmed = false;
+    return freeze({ accepted: true, outcome: "success", rockId: rock.id });
+  }
+
+  function failRock(rock) {
+    state.failureCount += 1;
+    if (state.failureCount >= 3) {
+      state.helpLevel = 3;
+    } else {
+      state.helpLevel = state.failureCount;
+    }
+    state.feedback = "failure";
+    state.feedbackRockId = rock.id;
+    state.inputLocked = true;
+    state.tapRockArmed = false;
+    state.currentRockCenter = { x: rock.start.x, y: rock.start.y };
+    return freeze({ accepted: true, outcome: "failure", rockId: rock.id });
+  }
+
+  function start() {
+    resetAllInteractionState();
+    state.active = true;
+    state.activeRockId = Rocks[0].id;
+    state.currentRockCenter = {
+      x: Rocks[0].start.x,
+      y: Rocks[0].start.y
+    };
+    state.inputLocked = false;
+    return true;
+  }
+
+  function stop() {
+    if (!state.active) {
+      return false;
+    }
+    state.active = false;
+    state.activeRockId = null;
+    state.currentRockCenter = null;
+    state.tapRockArmed = false;
+    state.feedback = null;
+    state.feedbackRockId = null;
+    state.inputLocked = true;
+    resetPointerGesture();
+    return true;
+  }
+
+  function pointerDown(pointerId, x, y) {
+    if (!state.active) {
+      return false;
+    }
+    if (state.inputLocked) {
+      return false;
+    }
+    if (state.pointerActive) {
+      return false;
+    }
+    if (!isFiniteNumber(pointerId)) {
+      return false;
+    }
+    if (!isFiniteNumber(x) || !isFiniteNumber(y)) {
+      return false;
+    }
+    state.pointerActive = true;
+    state.pointerId = pointerId;
+    state.pointerX = x;
+    state.pointerY = y;
+    state.gestureStartX = x;
+    state.gestureStartY = y;
+    state.gesturePhase = "idle";
+    state.gestureMoved = false;
+    state.gestureFailed = false;
+    var rock = currentRock();
+    if (rock === null) {
+      return false;
+    }
+    if (insideRockHitRadius(rock, x, y)) {
+      state.gesturePhase = "holding";
+    }
+    return true;
+  }
+
+  function pointerMove(pointerId, x, y) {
+    if (!state.active) {
+      return false;
+    }
+    if (state.inputLocked) {
+      return false;
+    }
+    if (!state.pointerActive) {
+      return false;
+    }
+    if (!isFiniteNumber(pointerId)) {
+      return false;
+    }
+    if (pointerId !== state.pointerId) {
+      return false;
+    }
+    if (!isFiniteNumber(x) || !isFiniteNumber(y)) {
+      return false;
+    }
+    state.pointerX = x;
+    state.pointerY = y;
+    var displacement = distanceBetween(
+      x,
+      y,
+      state.gestureStartX,
+      state.gestureStartY
+    );
+    if (displacement > Constants.tapMovementThreshold) {
+      state.gestureMoved = true;
+    }
+    if (state.gesturePhase === "holding" && state.gestureMoved) {
+      state.gestureFailed = true;
+    }
+    if (state.gesturePhase === "grabbed") {
+      state.currentRockCenter = { x: x, y: y };
+    }
+    return true;
+  }
+
+  function finishHold() {
+    if (!state.active) {
+      return freeze({ accepted: false, outcome: "none", rockId: null });
+    }
+    if (state.inputLocked) {
+      return freeze({ accepted: false, outcome: "none", rockId: null });
+    }
+    if (!state.pointerActive) {
+      return freeze({ accepted: false, outcome: "none", rockId: null });
+    }
+    if (state.gesturePhase !== "holding") {
+      return freeze({ accepted: false, outcome: "none", rockId: null });
+    }
+    if (state.gestureFailed || state.gestureMoved) {
+      return freeze({ accepted: false, outcome: "none", rockId: null });
+    }
+    var rock = currentRock();
+    if (rock === null) {
+      return freeze({ accepted: false, outcome: "none", rockId: null });
+    }
+    state.gesturePhase = "grabbed";
+    state.currentRockCenter = { x: state.pointerX, y: state.pointerY };
+    return freeze({ accepted: true, outcome: "grabbed", rockId: rock.id });
+  }
+
+  function pointerUp(pointerId, x, y) {
+    if (!state.active) {
+      return false;
+    }
+    if (state.inputLocked) {
+      return false;
+    }
+    if (!state.pointerActive) {
+      return false;
+    }
+    if (!isFiniteNumber(pointerId)) {
+      return false;
+    }
+    if (pointerId !== state.pointerId) {
+      return false;
+    }
+    if (!isFiniteNumber(x) || !isFiniteNumber(y)) {
+      return false;
+    }
+    state.pointerX = x;
+    state.pointerY = y;
+    var rock = currentRock();
+    var phase = state.gesturePhase;
+    var moved = state.gestureMoved;
+    var failed = state.gestureFailed;
+    resetPointerGesture();
+    if (rock === null) {
+      return freeze({ accepted: false, outcome: "none", rockId: null });
+    }
+    if (phase === "grabbed") {
+      if (pointInDropZone(x, y)) {
+        return completeRock(rock);
+      }
+      return failRock(rock);
+    }
+    if (phase === "holding") {
+      if (failed || moved) {
+        return failRock(rock);
+      }
+      if (!state.tapRockArmed) {
+        state.tapRockArmed = true;
+        return freeze({ accepted: true, outcome: "none", rockId: rock.id });
+      }
+      return failRock(rock);
+    }
+    if (moved) {
+      if (state.tapRockArmed) {
+        return failRock(rock);
+      }
+      return freeze({ accepted: true, outcome: "none", rockId: rock.id });
+    }
+    if (state.tapRockArmed) {
+      if (pointInDropZone(x, y)) {
+        return completeRock(rock);
+      }
+      return failRock(rock);
+    }
+    if (pointInDropZone(x, y)) {
+      return failRock(rock);
+    }
+    return freeze({ accepted: true, outcome: "none", rockId: rock.id });
+  }
+
+  function pointerCancel(pointerId) {
+    if (!state.pointerActive) {
+      return false;
+    }
+    if (!isFiniteNumber(pointerId)) {
+      return false;
+    }
+    if (pointerId !== state.pointerId) {
+      return false;
+    }
+    resetPointerGesture();
+    return true;
+  }
+
+  function finishFeedback() {
+    if (state.feedback === null || state.feedbackRockId === null) {
+      return freeze({
+        changed: false,
+        complete: state.complete,
+        nextRockId: null
+      });
+    }
+    var kind = state.feedback;
+    var rockId = state.feedbackRockId;
+    state.feedback = null;
+    state.feedbackRockId = null;
+    if (kind === "failure") {
+      state.inputLocked = false;
+      var failedRock = rockById(rockId);
+      if (failedRock !== null) {
+        state.currentRockCenter = {
+          x: failedRock.start.x,
+          y: failedRock.start.y
+        };
+      }
+      return freeze({
+        changed: true,
+        complete: false,
+        nextRockId: rockId
+      });
+    }
+    if (kind === "success") {
+      state.failureCount = 0;
+      state.helpLevel = 0;
+      var next = rockAfter(rockId);
+      if (next === null) {
+        state.complete = true;
+        state.active = false;
+        state.activeRockId = null;
+        state.currentRockCenter = null;
+        state.inputLocked = true;
+        return freeze({
+          changed: true,
+          complete: true,
+          nextRockId: null
+        });
+      }
+      state.activeRockId = next.id;
+      state.failureCount = 0;
+      state.helpLevel = 0;
+      state.currentRockCenter = {
+        x: next.start.x,
+        y: next.start.y
+      };
+      state.inputLocked = false;
+      return freeze({
+        changed: true,
+        complete: false,
+        nextRockId: next.id
+      });
+    }
+    return freeze({
+      changed: false,
+      complete: state.complete,
+      nextRockId: null
+    });
+  }
+
+  function getSnapshot() {
+    return freeze({
+      active: state.active,
+      activeRockId: state.activeRockId,
+      completedRockIds: freeze(state.completedRockIds.slice()),
+      failureCount: state.failureCount,
+      helpLevel: state.helpLevel,
+      tapRockArmed: state.tapRockArmed,
+      pointerActive: state.pointerActive,
+      holding: state.gesturePhase === "holding",
+      grabbed: state.gesturePhase === "grabbed",
+      currentRockCenter:
+        state.currentRockCenter === null
+          ? null
+          : freeze({
+              x: state.currentRockCenter.x,
+              y: state.currentRockCenter.y
+            }),
+      inputLocked: state.inputLocked,
+      feedback: state.feedback,
+      complete: state.complete
+    });
+  }
+
+  root.Crab = freeze({
+    MissionId: MissionId,
+    Constants: Constants,
+    Rocks: Rocks,
+    DropZone: DropZone,
+    Dialogues: Dialogues,
+    getSnapshot: getSnapshot,
+    start: start,
+    stop: stop,
+    pointerDown: pointerDown,
+    finishHold: finishHold,
+    pointerMove: pointerMove,
+    pointerUp: pointerUp,
+    pointerCancel: pointerCancel,
+    finishFeedback: finishFeedback
+  });
+})();
+
+</script>
+<script>
+(function () {
   var State = window.OceanRescue.State;
   var Missions = window.OceanRescue.Missions;
   var Gups = window.OceanRescue.Gups;
@@ -2340,6 +2878,7 @@ html, body {
   var Terrain = window.OceanRescue.Terrain || null;
   var Rescue = window.OceanRescue.Rescue || null;
   var SeaTurtle = window.OceanRescue.SeaTurtle || null;
+  var Crab = window.OceanRescue.Crab || null;
 
   var controlsBound = false;
   var launchSequenceCounter = 0;
@@ -2367,6 +2906,12 @@ html, body {
   var seaTurtlePointerCaptureEl = null;
   var seaTurtleInputBound = false;
   var seaTurtleRenderMarker = false;
+
+  var crabTimerId = null;
+  var crabFeedbackSequence = null;
+  var crabHoldTimerId = null;
+  var crabPointerId = null;
+  var crabPointerCaptureEl = null;
 
   var pointerActive = false;
   var pointerId = null;
@@ -3619,6 +4164,7 @@ html, body {
       status.textContent = "Rescue controls ready";
     }
     startSeaTurtleInteraction(sequence);
+    startCrabInteraction(sequence);
     return true;
   }
 
@@ -3802,6 +4348,41 @@ html, body {
     return true;
   }
 
+  function startCrabInteraction(sequence) {
+    if (!sequence || typeof sequence !== "object") {
+      return false;
+    }
+    if (!Crab) {
+      return false;
+    }
+    if (sequence.missionId !== Crab.MissionId) {
+      return false;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.RESCUE_ACTIVE) {
+      return false;
+    }
+    var canvas = document.getElementById("ocean-rescue-canvas");
+    var context = null;
+    if (canvas && typeof canvas.getContext === "function") {
+      context = canvas.getContext("2d");
+    }
+    var overlay = document.getElementById("ocean-rescue-rescue-overlay");
+    if (!canvas || !context || !overlay) {
+      return false;
+    }
+    Crab.start();
+    bindRescuePointerInput(canvas);
+    renderCrabFrame();
+    var progress = document.getElementById("ocean-rescue-rescue-progress");
+    if (progress) {
+      progress.textContent = "Rock 1 of 3";
+    }
+    hideAssistHand();
+    updateCrabRootMarkers();
+    return true;
+  }
+
   function bindRescuePointerInput(canvas) {
     if (seaTurtleInputBound) {
       return;
@@ -3823,21 +4404,34 @@ html, body {
     if (!event || typeof event !== "object") {
       return false;
     }
-    if (!SeaTurtle) {
-      return false;
-    }
     if (activeRescueSequence === null) {
       return false;
     }
-    if (activeRescueSequence.missionId !== SeaTurtle.MissionId) {
-      return false;
-    }
+    var missionId = activeRescueSequence.missionId;
     var snapshot = State.getSnapshot();
     if (snapshot.phase !== State.Phases.RESCUE_ACTIVE) {
       return false;
     }
-    var seaTurtle = SeaTurtle.getSnapshot();
-    if (!seaTurtle.active) {
+    if (missionId === SeaTurtle.MissionId) {
+      if (!SeaTurtle) {
+        return false;
+      }
+      var seaTurtle = SeaTurtle.getSnapshot();
+      if (!seaTurtle.active) {
+        return false;
+      }
+      if (seaTurtlePointerId !== null) {
+        return false;
+      }
+    } else if (Crab && missionId === Crab.MissionId) {
+      var crab = Crab.getSnapshot();
+      if (!crab.active) {
+        return false;
+      }
+      if (crabPointerId !== null) {
+        return false;
+      }
+    } else {
       return false;
     }
     var root = document.getElementById("ocean-rescue-root");
@@ -3848,9 +4442,6 @@ html, body {
       return false;
     }
     if (typeof event.button === "number" && event.button !== 0) {
-      return false;
-    }
-    if (seaTurtlePointerId !== null) {
       return false;
     }
     if (typeof event.clientX !== "number" || !isFinite(event.clientX)) {
@@ -3866,16 +4457,34 @@ html, body {
     if (!event || typeof event !== "object") {
       return false;
     }
-    if (!SeaTurtle) {
+    if (activeRescueSequence === null) {
       return false;
     }
-    if (seaTurtlePointerId === null) {
-      return false;
-    }
-    if (typeof event.pointerId !== "number" || !isFinite(event.pointerId)) {
-      return false;
-    }
-    if (event.pointerId !== seaTurtlePointerId) {
+    var missionId = activeRescueSequence.missionId;
+    if (missionId === SeaTurtle.MissionId) {
+      if (!SeaTurtle) {
+        return false;
+      }
+      if (seaTurtlePointerId === null) {
+        return false;
+      }
+      if (typeof event.pointerId !== "number" || !isFinite(event.pointerId)) {
+        return false;
+      }
+      if (event.pointerId !== seaTurtlePointerId) {
+        return false;
+      }
+    } else if (Crab && missionId === Crab.MissionId) {
+      if (crabPointerId === null) {
+        return false;
+      }
+      if (typeof event.pointerId !== "number" || !isFinite(event.pointerId)) {
+        return false;
+      }
+      if (event.pointerId !== crabPointerId) {
+        return false;
+      }
+    } else {
       return false;
     }
     if (typeof event.clientX !== "number" || !isFinite(event.clientX)) {
@@ -3934,6 +4543,15 @@ html, body {
     }
   }
 
+  function releaseCrabPointerCapture(pointerId) {
+    if (
+      crabPointerCaptureEl &&
+      typeof crabPointerCaptureEl.releasePointerCapture === "function"
+    ) {
+      crabPointerCaptureEl.releasePointerCapture(pointerId);
+    }
+  }
+
   function onRescuePointerDown(event) {
     if (!acceptRescuePointerEvent(event)) {
       return;
@@ -3942,6 +4560,17 @@ html, body {
     if (mapped === null) {
       return;
     }
+    var missionId = activeRescueSequence.missionId;
+    if (missionId === SeaTurtle.MissionId) {
+      handleSeaTurtlePointerDown(event, mapped);
+      return;
+    }
+    if (Crab && missionId === Crab.MissionId) {
+      handleCrabPointerDown(event, mapped);
+    }
+  }
+
+  function handleSeaTurtlePointerDown(event, mapped) {
     if (!SeaTurtle.pointerDown(event.pointerId, mapped.x, mapped.y)) {
       return;
     }
@@ -3964,6 +4593,38 @@ html, body {
     }
   }
 
+  function handleCrabPointerDown(event, mapped) {
+    if (!Crab.pointerDown(event.pointerId, mapped.x, mapped.y)) {
+      return;
+    }
+    crabPointerId = event.pointerId;
+    crabPointerCaptureEl = document.getElementById("ocean-rescue-canvas");
+    if (
+      crabPointerCaptureEl &&
+      typeof crabPointerCaptureEl.setPointerCapture === "function"
+    ) {
+      crabPointerCaptureEl.setPointerCapture(event.pointerId);
+    }
+    var snap = Crab.getSnapshot();
+    if (snap.holding && typeof window.setTimeout === "function") {
+      clearCrabHoldTimer();
+      var sequence = activeRescueSequence;
+      var rockId = snap.activeRockId;
+      crabHoldTimerId = window.setTimeout(function () {
+        completeCrabHold(sequence, rockId);
+      }, Crab.Constants.holdDurationMs);
+    }
+    hideAssistHand();
+    renderCrabFrame();
+    updateCrabRootMarkers();
+    if (typeof event.preventDefault === "function") {
+      event.preventDefault();
+    }
+    if (typeof event.stopPropagation === "function") {
+      event.stopPropagation();
+    }
+  }
+
   function onRescuePointerMove(event) {
     if (!isTrackedRescuePointer(event)) {
       return;
@@ -3976,9 +4637,16 @@ html, body {
     if (mapped === null) {
       return;
     }
-    SeaTurtle.pointerMove(event.pointerId, mapped.x, mapped.y);
-    renderSeaTurtleFrame();
-    updateSeaTurtleRootMarkers();
+    var missionId = activeRescueSequence.missionId;
+    if (missionId === SeaTurtle.MissionId) {
+      SeaTurtle.pointerMove(event.pointerId, mapped.x, mapped.y);
+      renderSeaTurtleFrame();
+      updateSeaTurtleRootMarkers();
+    } else if (Crab && missionId === Crab.MissionId) {
+      Crab.pointerMove(event.pointerId, mapped.x, mapped.y);
+      renderCrabFrame();
+      updateCrabRootMarkers();
+    }
     if (typeof event.preventDefault === "function") {
       event.preventDefault();
     }
@@ -3996,19 +4664,37 @@ html, body {
       return;
     }
     var mapped = mapRescueCoordinates(event);
+    var missionId = activeRescueSequence.missionId;
     var result = null;
-    if (mapped !== null) {
-      result = SeaTurtle.pointerUp(event.pointerId, mapped.x, mapped.y);
-    } else {
-      SeaTurtle.pointerCancel(event.pointerId);
-    }
-    releaseSeaTurtlePointerCapture(event.pointerId);
-    seaTurtlePointerId = null;
-    seaTurtlePointerCaptureEl = null;
-    if (result && result.accepted) {
-      renderSeaTurtleFrame();
-      updateSeaTurtleRootMarkers();
-      routeRescueFeedback(result);
+    if (missionId === SeaTurtle.MissionId) {
+      if (mapped !== null) {
+        result = SeaTurtle.pointerUp(event.pointerId, mapped.x, mapped.y);
+      } else {
+        SeaTurtle.pointerCancel(event.pointerId);
+      }
+      releaseSeaTurtlePointerCapture(event.pointerId);
+      seaTurtlePointerId = null;
+      seaTurtlePointerCaptureEl = null;
+      if (result && result.accepted) {
+        renderSeaTurtleFrame();
+        updateSeaTurtleRootMarkers();
+        routeRescueFeedback(result);
+      }
+    } else if (Crab && missionId === Crab.MissionId) {
+      clearCrabHoldTimer();
+      if (mapped !== null) {
+        result = Crab.pointerUp(event.pointerId, mapped.x, mapped.y);
+      } else {
+        Crab.pointerCancel(event.pointerId);
+      }
+      releaseCrabPointerCapture(event.pointerId);
+      crabPointerId = null;
+      crabPointerCaptureEl = null;
+      if (result && result.accepted) {
+        renderCrabFrame();
+        updateCrabRootMarkers();
+        routeCrabFeedback(result);
+      }
     }
     if (typeof event.preventDefault === "function") {
       event.preventDefault();
@@ -4022,22 +4708,48 @@ html, body {
     if (!event || typeof event !== "object") {
       return;
     }
-    if (!SeaTurtle) {
+    if (activeRescueSequence === null) {
       return;
     }
-    if (seaTurtlePointerId === null) {
+    var missionId = activeRescueSequence.missionId;
+    if (missionId === SeaTurtle.MissionId) {
+      if (!SeaTurtle) {
+        return;
+      }
+      if (seaTurtlePointerId === null) {
+        return;
+      }
+      if (typeof event.pointerId !== "number" || !isFinite(event.pointerId)) {
+        return;
+      }
+      if (event.pointerId !== seaTurtlePointerId) {
+        return;
+      }
+      SeaTurtle.pointerCancel(event.pointerId);
+      releaseSeaTurtlePointerCapture(event.pointerId);
+      seaTurtlePointerId = null;
+      seaTurtlePointerCaptureEl = null;
+      return;
+    }
+    if (!Crab || missionId !== Crab.MissionId) {
+      return;
+    }
+    if (crabPointerId === null) {
       return;
     }
     if (typeof event.pointerId !== "number" || !isFinite(event.pointerId)) {
       return;
     }
-    if (event.pointerId !== seaTurtlePointerId) {
+    if (event.pointerId !== crabPointerId) {
       return;
     }
-    SeaTurtle.pointerCancel(event.pointerId);
-    releaseSeaTurtlePointerCapture(event.pointerId);
-    seaTurtlePointerId = null;
-    seaTurtlePointerCaptureEl = null;
+    clearCrabHoldTimer();
+    Crab.pointerCancel(event.pointerId);
+    releaseCrabPointerCapture(event.pointerId);
+    crabPointerId = null;
+    crabPointerCaptureEl = null;
+    renderCrabFrame();
+    updateCrabRootMarkers();
   }
 
   function routeRescueFeedback(result) {
@@ -4349,6 +5061,318 @@ html, body {
     renderSeaTurtleFrame();
   }
 
+  function clearCrabHoldTimer() {
+    if (crabHoldTimerId === null) {
+      return;
+    }
+    if (typeof window.clearTimeout === "function") {
+      window.clearTimeout(crabHoldTimerId);
+    }
+    crabHoldTimerId = null;
+  }
+
+  function completeCrabHold(sequence, rockId) {
+    crabHoldTimerId = null;
+    if (activeRescueSequence === null) {
+      return;
+    }
+    if (!sequence || typeof sequence !== "object") {
+      return;
+    }
+    if (sequence.sequenceId !== activeRescueSequence.sequenceId) {
+      return;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.RESCUE_ACTIVE) {
+      return;
+    }
+    var crab = Crab.getSnapshot();
+    if (crab.activeRockId !== rockId) {
+      return;
+    }
+    if (!crab.holding) {
+      return;
+    }
+    var result = Crab.finishHold();
+    if (!result.accepted) {
+      return;
+    }
+    renderCrabFrame();
+    updateCrabRootMarkers();
+  }
+
+  function routeCrabFeedback(result) {
+    if (!result || typeof result !== "object") {
+      return;
+    }
+    if (result.accepted !== true) {
+      return;
+    }
+    if (result.outcome === "success") {
+      beginCrabSuccessFeedback(result.rockId);
+      return;
+    }
+    if (result.outcome === "failure") {
+      beginCrabFailureFeedback(result.rockId);
+    }
+  }
+
+  function clearCrabFeedbackTimer() {
+    if (crabTimerId === null) {
+      return;
+    }
+    if (typeof window.clearTimeout === "function") {
+      window.clearTimeout(crabTimerId);
+    }
+    crabTimerId = null;
+  }
+
+  function crabRockById(rockId) {
+    if (!Crab) {
+      return null;
+    }
+    for (var i = 0; i < Crab.Rocks.length; i += 1) {
+      if (Crab.Rocks[i].id === rockId) {
+        return Crab.Rocks[i];
+      }
+    }
+    return null;
+  }
+
+  function crabRockOrderIndexById(rockId) {
+    for (var i = 0; i < Crab.Rocks.length; i += 1) {
+      if (Crab.Rocks[i].id === rockId) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  function setCrabDialogue(rockId) {
+    var index = crabRockOrderIndexById(rockId);
+    if (index < 0 || index >= Crab.Dialogues.length) {
+      return;
+    }
+    var dialogue = Crab.Dialogues[index];
+    var progress = document.getElementById("ocean-rescue-rescue-progress");
+    if (progress) {
+      progress.textContent = dialogue;
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = dialogue;
+    }
+  }
+
+  function applyCrabClass(token, active) {
+    var overlay = document.getElementById("ocean-rescue-rescue-overlay");
+    if (!overlay) {
+      return;
+    }
+    if (
+      typeof overlay.classList === "object" &&
+      typeof overlay.classList.add === "function" &&
+      typeof overlay.classList.remove === "function"
+    ) {
+      if (active) {
+        overlay.classList.add(token);
+      } else {
+        overlay.classList.remove(token);
+      }
+      return;
+    }
+    var names = String(overlay.className || "").split(/\s+/);
+    var index = names.indexOf(token);
+    if (active && index === -1) {
+      names.push(token);
+    }
+    if (!active && index !== -1) {
+      names.splice(index, 1);
+    }
+    overlay.className = names.join(" ").trim();
+  }
+
+  function applyCrabSuccessVisual() {
+    applyCrabClass("ocean-rescue-crab-success", true);
+  }
+
+  function clearCrabSuccessVisual() {
+    applyCrabClass("ocean-rescue-crab-success", false);
+  }
+
+  function applyCrabFailureVisual() {
+    applyCrabClass("ocean-rescue-crab-failure", true);
+  }
+
+  function clearCrabFailureVisual() {
+    applyCrabClass("ocean-rescue-crab-failure", false);
+  }
+
+  function updateCrabRootMarkers() {
+    var root = document.getElementById("ocean-rescue-root");
+    if (!root) {
+      return;
+    }
+    var snapshot = Crab.getSnapshot();
+    root.setAttribute(
+      "data-crab-active",
+      snapshot.active ? "true" : "false"
+    );
+    root.setAttribute(
+      "data-crab-rock-id",
+      snapshot.activeRockId === null ? "" : snapshot.activeRockId
+    );
+    root.setAttribute(
+      "data-crab-completed-count",
+      String(snapshot.completedRockIds.length)
+    );
+    root.setAttribute(
+      "data-crab-help-level",
+      String(snapshot.helpLevel)
+    );
+    root.setAttribute(
+      "data-crab-feedback",
+      snapshot.feedback === null ? "none" : snapshot.feedback
+    );
+    root.setAttribute(
+      "data-crab-grabbed",
+      snapshot.grabbed ? "true" : "false"
+    );
+    root.setAttribute(
+      "data-crab-complete",
+      snapshot.complete ? "true" : "false"
+    );
+  }
+
+  function beginCrabSuccessFeedback(rockId) {
+    clearCrabFeedbackTimer();
+    applyCrabSuccessVisual();
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-crab-feedback", "success");
+    }
+    setCrabDialogue(rockId);
+    crabFeedbackSequence = {
+      sequenceId:
+        activeRescueSequence === null ? null : activeRescueSequence.sequenceId,
+      rockId: rockId,
+      kind: "success"
+    };
+    if (typeof window.setTimeout === "function") {
+      crabTimerId = window.setTimeout(function () {
+        completeCrabFeedback(crabFeedbackSequence);
+      }, Crab.Constants.successFeedbackMs);
+    }
+  }
+
+  function beginCrabFailureFeedback(rockId) {
+    clearCrabFeedbackTimer();
+    applyCrabFailureVisual();
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-crab-feedback", "failure");
+    }
+    var rock = crabRockById(rockId);
+    var progress = document.getElementById("ocean-rescue-rescue-progress");
+    if (progress && rock) {
+      progress.textContent = "Try rock " + rock.order + " again";
+    }
+    crabFeedbackSequence = {
+      sequenceId:
+        activeRescueSequence === null ? null : activeRescueSequence.sequenceId,
+      rockId: rockId,
+      kind: "failure"
+    };
+    if (typeof window.setTimeout === "function") {
+      crabTimerId = window.setTimeout(function () {
+        completeCrabFeedback(crabFeedbackSequence);
+      }, Crab.Constants.failureFeedbackMs);
+    }
+  }
+
+  function completeCrabFeedback(sequence) {
+    crabTimerId = null;
+    if (!sequence || typeof sequence !== "object") {
+      return;
+    }
+    if (activeRescueSequence === null) {
+      return;
+    }
+    if (sequence.sequenceId !== activeRescueSequence.sequenceId) {
+      return;
+    }
+    var snapshot = Crab.getSnapshot();
+    if (snapshot.feedback === null) {
+      return;
+    }
+    if (snapshot.feedback !== sequence.kind) {
+      return;
+    }
+    if (snapshot.activeRockId !== sequence.rockId) {
+      return;
+    }
+    var result = Crab.finishFeedback();
+    if (!result.changed) {
+      return;
+    }
+    if (result.complete) {
+      completeCrabSuccess();
+      return;
+    }
+    finishCrabFeedbackVisuals(sequence, result);
+  }
+
+  function finishCrabFeedbackVisuals(sequence, result) {
+    var snapshot = Crab.getSnapshot();
+    if (sequence.kind === "failure") {
+      clearCrabFailureVisual();
+      var rock = crabRockById(snapshot.activeRockId);
+      var progress = document.getElementById("ocean-rescue-rescue-progress");
+      if (progress && rock) {
+        progress.textContent = "Rock " + rock.order + " of 3";
+      }
+      updateAssistVisuals(snapshot);
+    } else {
+      clearCrabSuccessVisual();
+      var nextRock = crabRockById(result.nextRockId);
+      var progressEl = document.getElementById("ocean-rescue-rescue-progress");
+      if (progressEl && nextRock) {
+        progressEl.textContent = "Rock " + nextRock.order + " of 3";
+      }
+      hideAssistHand();
+    }
+    updateCrabRootMarkers();
+    renderCrabFrame();
+  }
+
+  function completeCrabSuccess() {
+    clearCrabSuccessVisual();
+    hideAssistHand();
+    var sequence = activeRescueSequence;
+    if (sequence === null) {
+      return;
+    }
+    var token = State.beginTransition(State.Phases.RESCUE_SUCCESS);
+    if (token !== null) {
+      State.completeTransition(token);
+    }
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-rescue-phase", "success");
+      root.setAttribute("data-rescue-input", "disabled");
+    }
+    updateCrabRootMarkers();
+    var progress = document.getElementById("ocean-rescue-rescue-progress");
+    if (progress) {
+      progress.textContent = Crab.Dialogues[2];
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = Crab.Dialogues[2];
+    }
+    renderCrabFrame();
+  }
+
   function drawRopeLine(context, rope, color, lineWidth) {
     drawRopeLineOffset(context, rope, color, lineWidth, 0);
   }
@@ -4602,6 +5626,314 @@ html, body {
     context.font = "16px system-ui, sans-serif";
     context.textAlign = "center";
     context.fillText(activeRescueSequence.missionContent.toolLabel, 520, gupY - 44);
+  }
+
+  function renderCrabFrame() {
+    var canvas = document.getElementById("ocean-rescue-canvas");
+    var context = null;
+    if (canvas && typeof canvas.getContext === "function") {
+      context = canvas.getContext("2d");
+    }
+    if (!canvas || !context) {
+      return;
+    }
+    if (typeof context.clearRect !== "function") {
+      return;
+    }
+    if (activeRescueSequence === null) {
+      return;
+    }
+    if (!Crab) {
+      return;
+    }
+    var width = canvas.width;
+    var height = canvas.height;
+    if (typeof width !== "number" || typeof height !== "number") {
+      return;
+    }
+    var snapshot = Crab.getSnapshot();
+    context.clearRect(0, 0, width, height);
+    var layout = null;
+    if (Terrain && typeof Terrain.getLayout === "function") {
+      layout = Terrain.getLayout(activeRescueSequence.missionId);
+    }
+    var palette = terrainPalettes["coral-reef"];
+    if (layout && layout.environment && terrainPalettes[layout.environment]) {
+      palette = terrainPalettes[layout.environment];
+    }
+    drawRescueSiteBackground(context, width, height, palette);
+    drawCrabGup(context, height);
+    drawCrabGrabber(context, height);
+    drawCrabDropZone(context, snapshot);
+    drawCrabArm(context, snapshot, height);
+    drawCrabRocks(context, snapshot);
+    drawCrabScene(context, snapshot);
+    if (snapshot.helpLevel >= 2) {
+      drawCrabHelpMarkers(context, snapshot);
+    }
+    if (snapshot.helpLevel >= 3) {
+      drawCrabAssistedGuide(context, snapshot);
+    }
+  }
+
+  function drawCrabGup(context, height) {
+    var gup = gupById(activeRescueSequence.gupId);
+    var gupName = gup === null ? activeRescueSequence.gupId : gup.name;
+    var gupY = Math.floor(height * 0.72);
+    context.beginPath();
+    context.arc(220, gupY, 36, 0, Math.PI * 2);
+    context.fillStyle = "#ffd166";
+    context.fill();
+    context.fillStyle = "#0a1e33";
+    context.font = "18px system-ui, sans-serif";
+    context.textAlign = "center";
+    context.fillText(gupName, 220, gupY);
+  }
+
+  function drawCrabGrabber(context, height) {
+    var gupY = Math.floor(height * 0.72);
+    context.beginPath();
+    context.arc(520, gupY, 30, 0, Math.PI * 2);
+    context.fillStyle = "#9ad0ff";
+    context.fill();
+    context.fillStyle = "#0a1e33";
+    context.font = "16px system-ui, sans-serif";
+    context.textAlign = "center";
+    context.fillText(activeRescueSequence.missionContent.toolLabel, 520, gupY - 44);
+  }
+
+  function drawRectOutline(context, x1, y1, x2, y2) {
+    context.beginPath();
+    context.moveTo(x1, y1);
+    context.lineTo(x2, y1);
+    context.lineTo(x2, y2);
+    context.lineTo(x1, y2);
+    context.lineTo(x1, y1);
+    context.stroke();
+  }
+
+  function drawCrabDropZone(context, snapshot) {
+    var zone = Crab.DropZone;
+    var x1 = zone.x - zone.width / 2;
+    var x2 = zone.x + zone.width / 2;
+    var y1 = zone.y - zone.height / 2;
+    var y2 = zone.y + zone.height / 2;
+    var highlight = snapshot.helpLevel >= 2;
+    context.fillStyle = "rgba(154, 208, 255, 0.08)";
+    context.fillRect(x1, y1, zone.width, zone.height);
+    context.save();
+    context.strokeStyle = highlight ? "#ffffff" : "rgba(154, 208, 255, 0.55)";
+    context.lineWidth = highlight ? 4 : 3;
+    drawRectOutline(context, x1, y1, x2, y2);
+    context.restore();
+    context.fillStyle = "rgba(214, 226, 238, 0.9)";
+    context.font = "15px system-ui, sans-serif";
+    context.textAlign = "center";
+    context.fillText("Drop zone", zone.x, y2 + 24);
+    if (snapshot.helpLevel >= 3) {
+      var margin = Crab.Constants.assistedZoneMargin;
+      context.save();
+      context.strokeStyle = "rgba(255, 209, 102, 0.85)";
+      context.lineWidth = 2;
+      context.setLineDash([10, 8]);
+      drawRectOutline(context, x1 - margin, y1 - margin, x2 + margin, y2 + margin);
+      context.restore();
+    }
+  }
+
+  function drawCrabArm(context, snapshot, height) {
+    if (snapshot.activeRockId === null) {
+      return;
+    }
+    var rock = crabRockById(snapshot.activeRockId);
+    if (rock === null) {
+      return;
+    }
+    var center = snapshot.currentRockCenter;
+    var targetX = center === null ? rock.start.x : center.x;
+    var targetY = center === null ? rock.start.y : center.y;
+    var gupY = Math.floor(height * 0.72);
+    context.save();
+    if (snapshot.grabbed) {
+      context.strokeStyle = "rgba(154, 208, 255, 0.9)";
+      context.lineWidth = 6;
+    } else if (snapshot.holding) {
+      context.strokeStyle = "rgba(154, 208, 255, 0.6)";
+      context.lineWidth = 4;
+      context.setLineDash([10, 8]);
+    } else {
+      context.strokeStyle = "rgba(154, 208, 255, 0.35)";
+      context.lineWidth = 3;
+      context.setLineDash([8, 10]);
+    }
+    context.lineCap = "round";
+    context.beginPath();
+    context.moveTo(520, gupY);
+    context.lineTo(targetX, targetY);
+    context.stroke();
+    context.restore();
+  }
+
+  function drawCrabRocks(context, snapshot) {
+    for (var i = 0; i < Crab.Rocks.length; i += 1) {
+      var rock = Crab.Rocks[i];
+      if (snapshot.completedRockIds.indexOf(rock.id) !== -1) {
+        drawCrabCompletedRock(context, rock);
+        continue;
+      }
+      if (snapshot.activeRockId === rock.id) {
+        drawCrabActiveRock(context, rock, snapshot);
+        continue;
+      }
+      drawCrabPendingRock(context, rock);
+    }
+  }
+
+  function drawCrabCompletedRock(context, rock) {
+    context.beginPath();
+    context.arc(rock.placed.x, rock.placed.y, rock.radius, 0, Math.PI * 2);
+    context.fillStyle = "#8fd3a8";
+    context.fill();
+    context.beginPath();
+    context.arc(rock.placed.x, rock.placed.y, rock.radius - 6, 0, Math.PI * 2);
+    context.strokeStyle = "rgba(10, 30, 51, 0.4)";
+    context.lineWidth = 2;
+    context.stroke();
+  }
+
+  function drawCrabPendingRock(context, rock) {
+    context.beginPath();
+    context.arc(rock.start.x, rock.start.y, rock.radius, 0, Math.PI * 2);
+    context.fillStyle = "#5c6b7a";
+    context.fill();
+    context.beginPath();
+    context.arc(rock.start.x, rock.start.y, rock.radius - 6, 0, Math.PI * 2);
+    context.strokeStyle = "rgba(10, 30, 51, 0.35)";
+    context.lineWidth = 2;
+    context.stroke();
+  }
+
+  function drawCrabActiveRock(context, rock, snapshot) {
+    var center = snapshot.currentRockCenter;
+    var x = center === null ? rock.start.x : center.x;
+    var y = center === null ? rock.start.y : center.y;
+    var feedback = snapshot.feedback;
+    if (feedback === "failure") {
+      x += seaTurtleShakeOffset(snapshot.failureCount);
+    }
+    if (feedback === "success") {
+      context.beginPath();
+      context.arc(x, y, rock.radius + 16, 0, Math.PI * 2);
+      context.fillStyle = "rgba(143, 211, 168, 0.25)";
+      context.fill();
+    }
+    context.beginPath();
+    context.arc(x, y, rock.radius, 0, Math.PI * 2);
+    if (feedback === "success") {
+      context.fillStyle = "#8fd3a8";
+    } else if (feedback === "failure") {
+      context.fillStyle = "#ff6b6b";
+    } else {
+      context.fillStyle = "#ffd166";
+    }
+    context.fill();
+    context.beginPath();
+    context.arc(x, y, rock.radius + 8, 0, Math.PI * 2);
+    context.strokeStyle = "#ffffff";
+    context.lineWidth = 3;
+    context.stroke();
+  }
+
+  function drawCrabScene(context, snapshot) {
+    var x = 900;
+    var y = 500;
+    if (snapshot.complete) {
+      context.beginPath();
+      context.arc(x, y, 60, 0, Math.PI * 2);
+      context.fillStyle = "#d98a5f";
+      context.fill();
+      context.beginPath();
+      context.arc(x - 66, y - 6, 16, 0, Math.PI * 2);
+      context.fillStyle = "#e8a06f";
+      context.fill();
+      context.beginPath();
+      context.arc(x + 66, y - 6, 16, 0, Math.PI * 2);
+      context.fillStyle = "#e8a06f";
+      context.fill();
+      context.fillStyle = "#0a1e33";
+      context.font = "16px system-ui, sans-serif";
+      context.textAlign = "center";
+      context.fillText("Free!", x, y + 4);
+      return;
+    }
+    var count = snapshot.completedRockIds.length;
+    var lift = count * 14;
+    context.beginPath();
+    context.arc(x, y - lift, 42 + count * 6, 0, Math.PI * 2);
+    context.fillStyle = "#c97b56";
+    context.fill();
+    if (count >= 1) {
+      context.fillStyle = "#0a1e33";
+      context.beginPath();
+      context.arc(x - 16, y - lift - 6, 5, 0, Math.PI * 2);
+      context.fill();
+      context.beginPath();
+      context.arc(x + 16, y - lift - 6, 5, 0, Math.PI * 2);
+      context.fill();
+    }
+    if (count >= 2) {
+      context.beginPath();
+      context.arc(x - 44 - lift, y - lift + 6, 12, 0, Math.PI * 2);
+      context.fillStyle = "#e8a06f";
+      context.fill();
+      context.beginPath();
+      context.arc(x + 44 + lift, y - lift + 6, 12, 0, Math.PI * 2);
+      context.fillStyle = "#e8a06f";
+      context.fill();
+    }
+  }
+
+  function drawCrabHelpMarkers(context, snapshot) {
+    if (snapshot.activeRockId === null) {
+      return;
+    }
+    var rock = crabRockById(snapshot.activeRockId);
+    if (rock === null) {
+      return;
+    }
+    var center = snapshot.currentRockCenter;
+    var x = center === null ? rock.start.x : center.x;
+    var y = center === null ? rock.start.y : center.y;
+    var hitRadius = Crab.Constants.assistedHitRadius;
+    context.beginPath();
+    context.arc(x, y, hitRadius, 0, Math.PI * 2);
+    context.fillStyle = "rgba(255, 209, 102, 0.22)";
+    context.fill();
+    context.beginPath();
+    context.arc(x, y, hitRadius, 0, Math.PI * 2);
+    context.strokeStyle = "#ffffff";
+    context.lineWidth = 3;
+    context.stroke();
+  }
+
+  function drawCrabAssistedGuide(context, snapshot) {
+    if (snapshot.activeRockId === null) {
+      return;
+    }
+    var rock = crabRockById(snapshot.activeRockId);
+    if (rock === null) {
+      return;
+    }
+    context.save();
+    context.strokeStyle = "#ffd166";
+    context.lineWidth = 4;
+    context.lineCap = "round";
+    context.setLineDash([14, 12]);
+    context.beginPath();
+    context.moveTo(rock.start.x, rock.start.y);
+    context.lineTo(Crab.DropZone.x, Crab.DropZone.y);
+    context.stroke();
+    context.restore();
   }
 
   function selectMission(missionId) {

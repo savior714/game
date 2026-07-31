@@ -7,6 +7,7 @@
   var Terrain = window.OceanRescue.Terrain || null;
   var Rescue = window.OceanRescue.Rescue || null;
   var SeaTurtle = window.OceanRescue.SeaTurtle || null;
+  var Crab = window.OceanRescue.Crab || null;
 
   var controlsBound = false;
   var launchSequenceCounter = 0;
@@ -34,6 +35,12 @@
   var seaTurtlePointerCaptureEl = null;
   var seaTurtleInputBound = false;
   var seaTurtleRenderMarker = false;
+
+  var crabTimerId = null;
+  var crabFeedbackSequence = null;
+  var crabHoldTimerId = null;
+  var crabPointerId = null;
+  var crabPointerCaptureEl = null;
 
   var pointerActive = false;
   var pointerId = null;
@@ -1286,6 +1293,7 @@
       status.textContent = "Rescue controls ready";
     }
     startSeaTurtleInteraction(sequence);
+    startCrabInteraction(sequence);
     return true;
   }
 
@@ -1469,6 +1477,41 @@
     return true;
   }
 
+  function startCrabInteraction(sequence) {
+    if (!sequence || typeof sequence !== "object") {
+      return false;
+    }
+    if (!Crab) {
+      return false;
+    }
+    if (sequence.missionId !== Crab.MissionId) {
+      return false;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.RESCUE_ACTIVE) {
+      return false;
+    }
+    var canvas = document.getElementById("ocean-rescue-canvas");
+    var context = null;
+    if (canvas && typeof canvas.getContext === "function") {
+      context = canvas.getContext("2d");
+    }
+    var overlay = document.getElementById("ocean-rescue-rescue-overlay");
+    if (!canvas || !context || !overlay) {
+      return false;
+    }
+    Crab.start();
+    bindRescuePointerInput(canvas);
+    renderCrabFrame();
+    var progress = document.getElementById("ocean-rescue-rescue-progress");
+    if (progress) {
+      progress.textContent = "Rock 1 of 3";
+    }
+    hideAssistHand();
+    updateCrabRootMarkers();
+    return true;
+  }
+
   function bindRescuePointerInput(canvas) {
     if (seaTurtleInputBound) {
       return;
@@ -1490,21 +1533,34 @@
     if (!event || typeof event !== "object") {
       return false;
     }
-    if (!SeaTurtle) {
-      return false;
-    }
     if (activeRescueSequence === null) {
       return false;
     }
-    if (activeRescueSequence.missionId !== SeaTurtle.MissionId) {
-      return false;
-    }
+    var missionId = activeRescueSequence.missionId;
     var snapshot = State.getSnapshot();
     if (snapshot.phase !== State.Phases.RESCUE_ACTIVE) {
       return false;
     }
-    var seaTurtle = SeaTurtle.getSnapshot();
-    if (!seaTurtle.active) {
+    if (missionId === SeaTurtle.MissionId) {
+      if (!SeaTurtle) {
+        return false;
+      }
+      var seaTurtle = SeaTurtle.getSnapshot();
+      if (!seaTurtle.active) {
+        return false;
+      }
+      if (seaTurtlePointerId !== null) {
+        return false;
+      }
+    } else if (Crab && missionId === Crab.MissionId) {
+      var crab = Crab.getSnapshot();
+      if (!crab.active) {
+        return false;
+      }
+      if (crabPointerId !== null) {
+        return false;
+      }
+    } else {
       return false;
     }
     var root = document.getElementById("ocean-rescue-root");
@@ -1515,9 +1571,6 @@
       return false;
     }
     if (typeof event.button === "number" && event.button !== 0) {
-      return false;
-    }
-    if (seaTurtlePointerId !== null) {
       return false;
     }
     if (typeof event.clientX !== "number" || !isFinite(event.clientX)) {
@@ -1533,16 +1586,34 @@
     if (!event || typeof event !== "object") {
       return false;
     }
-    if (!SeaTurtle) {
+    if (activeRescueSequence === null) {
       return false;
     }
-    if (seaTurtlePointerId === null) {
-      return false;
-    }
-    if (typeof event.pointerId !== "number" || !isFinite(event.pointerId)) {
-      return false;
-    }
-    if (event.pointerId !== seaTurtlePointerId) {
+    var missionId = activeRescueSequence.missionId;
+    if (missionId === SeaTurtle.MissionId) {
+      if (!SeaTurtle) {
+        return false;
+      }
+      if (seaTurtlePointerId === null) {
+        return false;
+      }
+      if (typeof event.pointerId !== "number" || !isFinite(event.pointerId)) {
+        return false;
+      }
+      if (event.pointerId !== seaTurtlePointerId) {
+        return false;
+      }
+    } else if (Crab && missionId === Crab.MissionId) {
+      if (crabPointerId === null) {
+        return false;
+      }
+      if (typeof event.pointerId !== "number" || !isFinite(event.pointerId)) {
+        return false;
+      }
+      if (event.pointerId !== crabPointerId) {
+        return false;
+      }
+    } else {
       return false;
     }
     if (typeof event.clientX !== "number" || !isFinite(event.clientX)) {
@@ -1601,6 +1672,15 @@
     }
   }
 
+  function releaseCrabPointerCapture(pointerId) {
+    if (
+      crabPointerCaptureEl &&
+      typeof crabPointerCaptureEl.releasePointerCapture === "function"
+    ) {
+      crabPointerCaptureEl.releasePointerCapture(pointerId);
+    }
+  }
+
   function onRescuePointerDown(event) {
     if (!acceptRescuePointerEvent(event)) {
       return;
@@ -1609,6 +1689,17 @@
     if (mapped === null) {
       return;
     }
+    var missionId = activeRescueSequence.missionId;
+    if (missionId === SeaTurtle.MissionId) {
+      handleSeaTurtlePointerDown(event, mapped);
+      return;
+    }
+    if (Crab && missionId === Crab.MissionId) {
+      handleCrabPointerDown(event, mapped);
+    }
+  }
+
+  function handleSeaTurtlePointerDown(event, mapped) {
     if (!SeaTurtle.pointerDown(event.pointerId, mapped.x, mapped.y)) {
       return;
     }
@@ -1631,6 +1722,38 @@
     }
   }
 
+  function handleCrabPointerDown(event, mapped) {
+    if (!Crab.pointerDown(event.pointerId, mapped.x, mapped.y)) {
+      return;
+    }
+    crabPointerId = event.pointerId;
+    crabPointerCaptureEl = document.getElementById("ocean-rescue-canvas");
+    if (
+      crabPointerCaptureEl &&
+      typeof crabPointerCaptureEl.setPointerCapture === "function"
+    ) {
+      crabPointerCaptureEl.setPointerCapture(event.pointerId);
+    }
+    var snap = Crab.getSnapshot();
+    if (snap.holding && typeof window.setTimeout === "function") {
+      clearCrabHoldTimer();
+      var sequence = activeRescueSequence;
+      var rockId = snap.activeRockId;
+      crabHoldTimerId = window.setTimeout(function () {
+        completeCrabHold(sequence, rockId);
+      }, Crab.Constants.holdDurationMs);
+    }
+    hideAssistHand();
+    renderCrabFrame();
+    updateCrabRootMarkers();
+    if (typeof event.preventDefault === "function") {
+      event.preventDefault();
+    }
+    if (typeof event.stopPropagation === "function") {
+      event.stopPropagation();
+    }
+  }
+
   function onRescuePointerMove(event) {
     if (!isTrackedRescuePointer(event)) {
       return;
@@ -1643,9 +1766,16 @@
     if (mapped === null) {
       return;
     }
-    SeaTurtle.pointerMove(event.pointerId, mapped.x, mapped.y);
-    renderSeaTurtleFrame();
-    updateSeaTurtleRootMarkers();
+    var missionId = activeRescueSequence.missionId;
+    if (missionId === SeaTurtle.MissionId) {
+      SeaTurtle.pointerMove(event.pointerId, mapped.x, mapped.y);
+      renderSeaTurtleFrame();
+      updateSeaTurtleRootMarkers();
+    } else if (Crab && missionId === Crab.MissionId) {
+      Crab.pointerMove(event.pointerId, mapped.x, mapped.y);
+      renderCrabFrame();
+      updateCrabRootMarkers();
+    }
     if (typeof event.preventDefault === "function") {
       event.preventDefault();
     }
@@ -1663,19 +1793,37 @@
       return;
     }
     var mapped = mapRescueCoordinates(event);
+    var missionId = activeRescueSequence.missionId;
     var result = null;
-    if (mapped !== null) {
-      result = SeaTurtle.pointerUp(event.pointerId, mapped.x, mapped.y);
-    } else {
-      SeaTurtle.pointerCancel(event.pointerId);
-    }
-    releaseSeaTurtlePointerCapture(event.pointerId);
-    seaTurtlePointerId = null;
-    seaTurtlePointerCaptureEl = null;
-    if (result && result.accepted) {
-      renderSeaTurtleFrame();
-      updateSeaTurtleRootMarkers();
-      routeRescueFeedback(result);
+    if (missionId === SeaTurtle.MissionId) {
+      if (mapped !== null) {
+        result = SeaTurtle.pointerUp(event.pointerId, mapped.x, mapped.y);
+      } else {
+        SeaTurtle.pointerCancel(event.pointerId);
+      }
+      releaseSeaTurtlePointerCapture(event.pointerId);
+      seaTurtlePointerId = null;
+      seaTurtlePointerCaptureEl = null;
+      if (result && result.accepted) {
+        renderSeaTurtleFrame();
+        updateSeaTurtleRootMarkers();
+        routeRescueFeedback(result);
+      }
+    } else if (Crab && missionId === Crab.MissionId) {
+      clearCrabHoldTimer();
+      if (mapped !== null) {
+        result = Crab.pointerUp(event.pointerId, mapped.x, mapped.y);
+      } else {
+        Crab.pointerCancel(event.pointerId);
+      }
+      releaseCrabPointerCapture(event.pointerId);
+      crabPointerId = null;
+      crabPointerCaptureEl = null;
+      if (result && result.accepted) {
+        renderCrabFrame();
+        updateCrabRootMarkers();
+        routeCrabFeedback(result);
+      }
     }
     if (typeof event.preventDefault === "function") {
       event.preventDefault();
@@ -1689,22 +1837,48 @@
     if (!event || typeof event !== "object") {
       return;
     }
-    if (!SeaTurtle) {
+    if (activeRescueSequence === null) {
       return;
     }
-    if (seaTurtlePointerId === null) {
+    var missionId = activeRescueSequence.missionId;
+    if (missionId === SeaTurtle.MissionId) {
+      if (!SeaTurtle) {
+        return;
+      }
+      if (seaTurtlePointerId === null) {
+        return;
+      }
+      if (typeof event.pointerId !== "number" || !isFinite(event.pointerId)) {
+        return;
+      }
+      if (event.pointerId !== seaTurtlePointerId) {
+        return;
+      }
+      SeaTurtle.pointerCancel(event.pointerId);
+      releaseSeaTurtlePointerCapture(event.pointerId);
+      seaTurtlePointerId = null;
+      seaTurtlePointerCaptureEl = null;
+      return;
+    }
+    if (!Crab || missionId !== Crab.MissionId) {
+      return;
+    }
+    if (crabPointerId === null) {
       return;
     }
     if (typeof event.pointerId !== "number" || !isFinite(event.pointerId)) {
       return;
     }
-    if (event.pointerId !== seaTurtlePointerId) {
+    if (event.pointerId !== crabPointerId) {
       return;
     }
-    SeaTurtle.pointerCancel(event.pointerId);
-    releaseSeaTurtlePointerCapture(event.pointerId);
-    seaTurtlePointerId = null;
-    seaTurtlePointerCaptureEl = null;
+    clearCrabHoldTimer();
+    Crab.pointerCancel(event.pointerId);
+    releaseCrabPointerCapture(event.pointerId);
+    crabPointerId = null;
+    crabPointerCaptureEl = null;
+    renderCrabFrame();
+    updateCrabRootMarkers();
   }
 
   function routeRescueFeedback(result) {
@@ -2016,6 +2190,318 @@
     renderSeaTurtleFrame();
   }
 
+  function clearCrabHoldTimer() {
+    if (crabHoldTimerId === null) {
+      return;
+    }
+    if (typeof window.clearTimeout === "function") {
+      window.clearTimeout(crabHoldTimerId);
+    }
+    crabHoldTimerId = null;
+  }
+
+  function completeCrabHold(sequence, rockId) {
+    crabHoldTimerId = null;
+    if (activeRescueSequence === null) {
+      return;
+    }
+    if (!sequence || typeof sequence !== "object") {
+      return;
+    }
+    if (sequence.sequenceId !== activeRescueSequence.sequenceId) {
+      return;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.RESCUE_ACTIVE) {
+      return;
+    }
+    var crab = Crab.getSnapshot();
+    if (crab.activeRockId !== rockId) {
+      return;
+    }
+    if (!crab.holding) {
+      return;
+    }
+    var result = Crab.finishHold();
+    if (!result.accepted) {
+      return;
+    }
+    renderCrabFrame();
+    updateCrabRootMarkers();
+  }
+
+  function routeCrabFeedback(result) {
+    if (!result || typeof result !== "object") {
+      return;
+    }
+    if (result.accepted !== true) {
+      return;
+    }
+    if (result.outcome === "success") {
+      beginCrabSuccessFeedback(result.rockId);
+      return;
+    }
+    if (result.outcome === "failure") {
+      beginCrabFailureFeedback(result.rockId);
+    }
+  }
+
+  function clearCrabFeedbackTimer() {
+    if (crabTimerId === null) {
+      return;
+    }
+    if (typeof window.clearTimeout === "function") {
+      window.clearTimeout(crabTimerId);
+    }
+    crabTimerId = null;
+  }
+
+  function crabRockById(rockId) {
+    if (!Crab) {
+      return null;
+    }
+    for (var i = 0; i < Crab.Rocks.length; i += 1) {
+      if (Crab.Rocks[i].id === rockId) {
+        return Crab.Rocks[i];
+      }
+    }
+    return null;
+  }
+
+  function crabRockOrderIndexById(rockId) {
+    for (var i = 0; i < Crab.Rocks.length; i += 1) {
+      if (Crab.Rocks[i].id === rockId) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  function setCrabDialogue(rockId) {
+    var index = crabRockOrderIndexById(rockId);
+    if (index < 0 || index >= Crab.Dialogues.length) {
+      return;
+    }
+    var dialogue = Crab.Dialogues[index];
+    var progress = document.getElementById("ocean-rescue-rescue-progress");
+    if (progress) {
+      progress.textContent = dialogue;
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = dialogue;
+    }
+  }
+
+  function applyCrabClass(token, active) {
+    var overlay = document.getElementById("ocean-rescue-rescue-overlay");
+    if (!overlay) {
+      return;
+    }
+    if (
+      typeof overlay.classList === "object" &&
+      typeof overlay.classList.add === "function" &&
+      typeof overlay.classList.remove === "function"
+    ) {
+      if (active) {
+        overlay.classList.add(token);
+      } else {
+        overlay.classList.remove(token);
+      }
+      return;
+    }
+    var names = String(overlay.className || "").split(/\s+/);
+    var index = names.indexOf(token);
+    if (active && index === -1) {
+      names.push(token);
+    }
+    if (!active && index !== -1) {
+      names.splice(index, 1);
+    }
+    overlay.className = names.join(" ").trim();
+  }
+
+  function applyCrabSuccessVisual() {
+    applyCrabClass("ocean-rescue-crab-success", true);
+  }
+
+  function clearCrabSuccessVisual() {
+    applyCrabClass("ocean-rescue-crab-success", false);
+  }
+
+  function applyCrabFailureVisual() {
+    applyCrabClass("ocean-rescue-crab-failure", true);
+  }
+
+  function clearCrabFailureVisual() {
+    applyCrabClass("ocean-rescue-crab-failure", false);
+  }
+
+  function updateCrabRootMarkers() {
+    var root = document.getElementById("ocean-rescue-root");
+    if (!root) {
+      return;
+    }
+    var snapshot = Crab.getSnapshot();
+    root.setAttribute(
+      "data-crab-active",
+      snapshot.active ? "true" : "false"
+    );
+    root.setAttribute(
+      "data-crab-rock-id",
+      snapshot.activeRockId === null ? "" : snapshot.activeRockId
+    );
+    root.setAttribute(
+      "data-crab-completed-count",
+      String(snapshot.completedRockIds.length)
+    );
+    root.setAttribute(
+      "data-crab-help-level",
+      String(snapshot.helpLevel)
+    );
+    root.setAttribute(
+      "data-crab-feedback",
+      snapshot.feedback === null ? "none" : snapshot.feedback
+    );
+    root.setAttribute(
+      "data-crab-grabbed",
+      snapshot.grabbed ? "true" : "false"
+    );
+    root.setAttribute(
+      "data-crab-complete",
+      snapshot.complete ? "true" : "false"
+    );
+  }
+
+  function beginCrabSuccessFeedback(rockId) {
+    clearCrabFeedbackTimer();
+    applyCrabSuccessVisual();
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-crab-feedback", "success");
+    }
+    setCrabDialogue(rockId);
+    crabFeedbackSequence = {
+      sequenceId:
+        activeRescueSequence === null ? null : activeRescueSequence.sequenceId,
+      rockId: rockId,
+      kind: "success"
+    };
+    if (typeof window.setTimeout === "function") {
+      crabTimerId = window.setTimeout(function () {
+        completeCrabFeedback(crabFeedbackSequence);
+      }, Crab.Constants.successFeedbackMs);
+    }
+  }
+
+  function beginCrabFailureFeedback(rockId) {
+    clearCrabFeedbackTimer();
+    applyCrabFailureVisual();
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-crab-feedback", "failure");
+    }
+    var rock = crabRockById(rockId);
+    var progress = document.getElementById("ocean-rescue-rescue-progress");
+    if (progress && rock) {
+      progress.textContent = "Try rock " + rock.order + " again";
+    }
+    crabFeedbackSequence = {
+      sequenceId:
+        activeRescueSequence === null ? null : activeRescueSequence.sequenceId,
+      rockId: rockId,
+      kind: "failure"
+    };
+    if (typeof window.setTimeout === "function") {
+      crabTimerId = window.setTimeout(function () {
+        completeCrabFeedback(crabFeedbackSequence);
+      }, Crab.Constants.failureFeedbackMs);
+    }
+  }
+
+  function completeCrabFeedback(sequence) {
+    crabTimerId = null;
+    if (!sequence || typeof sequence !== "object") {
+      return;
+    }
+    if (activeRescueSequence === null) {
+      return;
+    }
+    if (sequence.sequenceId !== activeRescueSequence.sequenceId) {
+      return;
+    }
+    var snapshot = Crab.getSnapshot();
+    if (snapshot.feedback === null) {
+      return;
+    }
+    if (snapshot.feedback !== sequence.kind) {
+      return;
+    }
+    if (snapshot.activeRockId !== sequence.rockId) {
+      return;
+    }
+    var result = Crab.finishFeedback();
+    if (!result.changed) {
+      return;
+    }
+    if (result.complete) {
+      completeCrabSuccess();
+      return;
+    }
+    finishCrabFeedbackVisuals(sequence, result);
+  }
+
+  function finishCrabFeedbackVisuals(sequence, result) {
+    var snapshot = Crab.getSnapshot();
+    if (sequence.kind === "failure") {
+      clearCrabFailureVisual();
+      var rock = crabRockById(snapshot.activeRockId);
+      var progress = document.getElementById("ocean-rescue-rescue-progress");
+      if (progress && rock) {
+        progress.textContent = "Rock " + rock.order + " of 3";
+      }
+      updateAssistVisuals(snapshot);
+    } else {
+      clearCrabSuccessVisual();
+      var nextRock = crabRockById(result.nextRockId);
+      var progressEl = document.getElementById("ocean-rescue-rescue-progress");
+      if (progressEl && nextRock) {
+        progressEl.textContent = "Rock " + nextRock.order + " of 3";
+      }
+      hideAssistHand();
+    }
+    updateCrabRootMarkers();
+    renderCrabFrame();
+  }
+
+  function completeCrabSuccess() {
+    clearCrabSuccessVisual();
+    hideAssistHand();
+    var sequence = activeRescueSequence;
+    if (sequence === null) {
+      return;
+    }
+    var token = State.beginTransition(State.Phases.RESCUE_SUCCESS);
+    if (token !== null) {
+      State.completeTransition(token);
+    }
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-rescue-phase", "success");
+      root.setAttribute("data-rescue-input", "disabled");
+    }
+    updateCrabRootMarkers();
+    var progress = document.getElementById("ocean-rescue-rescue-progress");
+    if (progress) {
+      progress.textContent = Crab.Dialogues[2];
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = Crab.Dialogues[2];
+    }
+    renderCrabFrame();
+  }
+
   function drawRopeLine(context, rope, color, lineWidth) {
     drawRopeLineOffset(context, rope, color, lineWidth, 0);
   }
@@ -2269,6 +2755,314 @@
     context.font = "16px system-ui, sans-serif";
     context.textAlign = "center";
     context.fillText(activeRescueSequence.missionContent.toolLabel, 520, gupY - 44);
+  }
+
+  function renderCrabFrame() {
+    var canvas = document.getElementById("ocean-rescue-canvas");
+    var context = null;
+    if (canvas && typeof canvas.getContext === "function") {
+      context = canvas.getContext("2d");
+    }
+    if (!canvas || !context) {
+      return;
+    }
+    if (typeof context.clearRect !== "function") {
+      return;
+    }
+    if (activeRescueSequence === null) {
+      return;
+    }
+    if (!Crab) {
+      return;
+    }
+    var width = canvas.width;
+    var height = canvas.height;
+    if (typeof width !== "number" || typeof height !== "number") {
+      return;
+    }
+    var snapshot = Crab.getSnapshot();
+    context.clearRect(0, 0, width, height);
+    var layout = null;
+    if (Terrain && typeof Terrain.getLayout === "function") {
+      layout = Terrain.getLayout(activeRescueSequence.missionId);
+    }
+    var palette = terrainPalettes["coral-reef"];
+    if (layout && layout.environment && terrainPalettes[layout.environment]) {
+      palette = terrainPalettes[layout.environment];
+    }
+    drawRescueSiteBackground(context, width, height, palette);
+    drawCrabGup(context, height);
+    drawCrabGrabber(context, height);
+    drawCrabDropZone(context, snapshot);
+    drawCrabArm(context, snapshot, height);
+    drawCrabRocks(context, snapshot);
+    drawCrabScene(context, snapshot);
+    if (snapshot.helpLevel >= 2) {
+      drawCrabHelpMarkers(context, snapshot);
+    }
+    if (snapshot.helpLevel >= 3) {
+      drawCrabAssistedGuide(context, snapshot);
+    }
+  }
+
+  function drawCrabGup(context, height) {
+    var gup = gupById(activeRescueSequence.gupId);
+    var gupName = gup === null ? activeRescueSequence.gupId : gup.name;
+    var gupY = Math.floor(height * 0.72);
+    context.beginPath();
+    context.arc(220, gupY, 36, 0, Math.PI * 2);
+    context.fillStyle = "#ffd166";
+    context.fill();
+    context.fillStyle = "#0a1e33";
+    context.font = "18px system-ui, sans-serif";
+    context.textAlign = "center";
+    context.fillText(gupName, 220, gupY);
+  }
+
+  function drawCrabGrabber(context, height) {
+    var gupY = Math.floor(height * 0.72);
+    context.beginPath();
+    context.arc(520, gupY, 30, 0, Math.PI * 2);
+    context.fillStyle = "#9ad0ff";
+    context.fill();
+    context.fillStyle = "#0a1e33";
+    context.font = "16px system-ui, sans-serif";
+    context.textAlign = "center";
+    context.fillText(activeRescueSequence.missionContent.toolLabel, 520, gupY - 44);
+  }
+
+  function drawRectOutline(context, x1, y1, x2, y2) {
+    context.beginPath();
+    context.moveTo(x1, y1);
+    context.lineTo(x2, y1);
+    context.lineTo(x2, y2);
+    context.lineTo(x1, y2);
+    context.lineTo(x1, y1);
+    context.stroke();
+  }
+
+  function drawCrabDropZone(context, snapshot) {
+    var zone = Crab.DropZone;
+    var x1 = zone.x - zone.width / 2;
+    var x2 = zone.x + zone.width / 2;
+    var y1 = zone.y - zone.height / 2;
+    var y2 = zone.y + zone.height / 2;
+    var highlight = snapshot.helpLevel >= 2;
+    context.fillStyle = "rgba(154, 208, 255, 0.08)";
+    context.fillRect(x1, y1, zone.width, zone.height);
+    context.save();
+    context.strokeStyle = highlight ? "#ffffff" : "rgba(154, 208, 255, 0.55)";
+    context.lineWidth = highlight ? 4 : 3;
+    drawRectOutline(context, x1, y1, x2, y2);
+    context.restore();
+    context.fillStyle = "rgba(214, 226, 238, 0.9)";
+    context.font = "15px system-ui, sans-serif";
+    context.textAlign = "center";
+    context.fillText("Drop zone", zone.x, y2 + 24);
+    if (snapshot.helpLevel >= 3) {
+      var margin = Crab.Constants.assistedZoneMargin;
+      context.save();
+      context.strokeStyle = "rgba(255, 209, 102, 0.85)";
+      context.lineWidth = 2;
+      context.setLineDash([10, 8]);
+      drawRectOutline(context, x1 - margin, y1 - margin, x2 + margin, y2 + margin);
+      context.restore();
+    }
+  }
+
+  function drawCrabArm(context, snapshot, height) {
+    if (snapshot.activeRockId === null) {
+      return;
+    }
+    var rock = crabRockById(snapshot.activeRockId);
+    if (rock === null) {
+      return;
+    }
+    var center = snapshot.currentRockCenter;
+    var targetX = center === null ? rock.start.x : center.x;
+    var targetY = center === null ? rock.start.y : center.y;
+    var gupY = Math.floor(height * 0.72);
+    context.save();
+    if (snapshot.grabbed) {
+      context.strokeStyle = "rgba(154, 208, 255, 0.9)";
+      context.lineWidth = 6;
+    } else if (snapshot.holding) {
+      context.strokeStyle = "rgba(154, 208, 255, 0.6)";
+      context.lineWidth = 4;
+      context.setLineDash([10, 8]);
+    } else {
+      context.strokeStyle = "rgba(154, 208, 255, 0.35)";
+      context.lineWidth = 3;
+      context.setLineDash([8, 10]);
+    }
+    context.lineCap = "round";
+    context.beginPath();
+    context.moveTo(520, gupY);
+    context.lineTo(targetX, targetY);
+    context.stroke();
+    context.restore();
+  }
+
+  function drawCrabRocks(context, snapshot) {
+    for (var i = 0; i < Crab.Rocks.length; i += 1) {
+      var rock = Crab.Rocks[i];
+      if (snapshot.completedRockIds.indexOf(rock.id) !== -1) {
+        drawCrabCompletedRock(context, rock);
+        continue;
+      }
+      if (snapshot.activeRockId === rock.id) {
+        drawCrabActiveRock(context, rock, snapshot);
+        continue;
+      }
+      drawCrabPendingRock(context, rock);
+    }
+  }
+
+  function drawCrabCompletedRock(context, rock) {
+    context.beginPath();
+    context.arc(rock.placed.x, rock.placed.y, rock.radius, 0, Math.PI * 2);
+    context.fillStyle = "#8fd3a8";
+    context.fill();
+    context.beginPath();
+    context.arc(rock.placed.x, rock.placed.y, rock.radius - 6, 0, Math.PI * 2);
+    context.strokeStyle = "rgba(10, 30, 51, 0.4)";
+    context.lineWidth = 2;
+    context.stroke();
+  }
+
+  function drawCrabPendingRock(context, rock) {
+    context.beginPath();
+    context.arc(rock.start.x, rock.start.y, rock.radius, 0, Math.PI * 2);
+    context.fillStyle = "#5c6b7a";
+    context.fill();
+    context.beginPath();
+    context.arc(rock.start.x, rock.start.y, rock.radius - 6, 0, Math.PI * 2);
+    context.strokeStyle = "rgba(10, 30, 51, 0.35)";
+    context.lineWidth = 2;
+    context.stroke();
+  }
+
+  function drawCrabActiveRock(context, rock, snapshot) {
+    var center = snapshot.currentRockCenter;
+    var x = center === null ? rock.start.x : center.x;
+    var y = center === null ? rock.start.y : center.y;
+    var feedback = snapshot.feedback;
+    if (feedback === "failure") {
+      x += seaTurtleShakeOffset(snapshot.failureCount);
+    }
+    if (feedback === "success") {
+      context.beginPath();
+      context.arc(x, y, rock.radius + 16, 0, Math.PI * 2);
+      context.fillStyle = "rgba(143, 211, 168, 0.25)";
+      context.fill();
+    }
+    context.beginPath();
+    context.arc(x, y, rock.radius, 0, Math.PI * 2);
+    if (feedback === "success") {
+      context.fillStyle = "#8fd3a8";
+    } else if (feedback === "failure") {
+      context.fillStyle = "#ff6b6b";
+    } else {
+      context.fillStyle = "#ffd166";
+    }
+    context.fill();
+    context.beginPath();
+    context.arc(x, y, rock.radius + 8, 0, Math.PI * 2);
+    context.strokeStyle = "#ffffff";
+    context.lineWidth = 3;
+    context.stroke();
+  }
+
+  function drawCrabScene(context, snapshot) {
+    var x = 900;
+    var y = 500;
+    if (snapshot.complete) {
+      context.beginPath();
+      context.arc(x, y, 60, 0, Math.PI * 2);
+      context.fillStyle = "#d98a5f";
+      context.fill();
+      context.beginPath();
+      context.arc(x - 66, y - 6, 16, 0, Math.PI * 2);
+      context.fillStyle = "#e8a06f";
+      context.fill();
+      context.beginPath();
+      context.arc(x + 66, y - 6, 16, 0, Math.PI * 2);
+      context.fillStyle = "#e8a06f";
+      context.fill();
+      context.fillStyle = "#0a1e33";
+      context.font = "16px system-ui, sans-serif";
+      context.textAlign = "center";
+      context.fillText("Free!", x, y + 4);
+      return;
+    }
+    var count = snapshot.completedRockIds.length;
+    var lift = count * 14;
+    context.beginPath();
+    context.arc(x, y - lift, 42 + count * 6, 0, Math.PI * 2);
+    context.fillStyle = "#c97b56";
+    context.fill();
+    if (count >= 1) {
+      context.fillStyle = "#0a1e33";
+      context.beginPath();
+      context.arc(x - 16, y - lift - 6, 5, 0, Math.PI * 2);
+      context.fill();
+      context.beginPath();
+      context.arc(x + 16, y - lift - 6, 5, 0, Math.PI * 2);
+      context.fill();
+    }
+    if (count >= 2) {
+      context.beginPath();
+      context.arc(x - 44 - lift, y - lift + 6, 12, 0, Math.PI * 2);
+      context.fillStyle = "#e8a06f";
+      context.fill();
+      context.beginPath();
+      context.arc(x + 44 + lift, y - lift + 6, 12, 0, Math.PI * 2);
+      context.fillStyle = "#e8a06f";
+      context.fill();
+    }
+  }
+
+  function drawCrabHelpMarkers(context, snapshot) {
+    if (snapshot.activeRockId === null) {
+      return;
+    }
+    var rock = crabRockById(snapshot.activeRockId);
+    if (rock === null) {
+      return;
+    }
+    var center = snapshot.currentRockCenter;
+    var x = center === null ? rock.start.x : center.x;
+    var y = center === null ? rock.start.y : center.y;
+    var hitRadius = Crab.Constants.assistedHitRadius;
+    context.beginPath();
+    context.arc(x, y, hitRadius, 0, Math.PI * 2);
+    context.fillStyle = "rgba(255, 209, 102, 0.22)";
+    context.fill();
+    context.beginPath();
+    context.arc(x, y, hitRadius, 0, Math.PI * 2);
+    context.strokeStyle = "#ffffff";
+    context.lineWidth = 3;
+    context.stroke();
+  }
+
+  function drawCrabAssistedGuide(context, snapshot) {
+    if (snapshot.activeRockId === null) {
+      return;
+    }
+    var rock = crabRockById(snapshot.activeRockId);
+    if (rock === null) {
+      return;
+    }
+    context.save();
+    context.strokeStyle = "#ffd166";
+    context.lineWidth = 4;
+    context.lineCap = "round";
+    context.setLineDash([14, 12]);
+    context.beginPath();
+    context.moveTo(rock.start.x, rock.start.y);
+    context.lineTo(Crab.DropZone.x, Crab.DropZone.y);
+    context.stroke();
+    context.restore();
   }
 
   function selectMission(missionId) {

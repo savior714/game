@@ -45,6 +45,11 @@
       "depends_on": []
     },
     {
+      "file": "crab.js",
+      "namespace": "OceanRescue.Crab",
+      "depends_on": []
+    },
+    {
       "file": "app.js",
       "namespace": "OceanRescue.App",
       "depends_on": [
@@ -55,7 +60,8 @@
         "OceanRescue.Travel",
         "OceanRescue.Terrain",
         "OceanRescue.Rescue",
-        "OceanRescue.SeaTurtle"
+        "OceanRescue.SeaTurtle",
+        "OceanRescue.Crab"
       ]
     }
   ],

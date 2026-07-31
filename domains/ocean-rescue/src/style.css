@@ -731,6 +731,35 @@ html, body {
   }
 }
 
+#ocean-rescue-rescue-overlay.ocean-rescue-crab-success {
+  animation: ocean-rescue-crab-success-flash 400ms ease-out forwards;
+}
+
+#ocean-rescue-rescue-overlay.ocean-rescue-crab-failure {
+  animation: ocean-rescue-crab-failure-shake 300ms ease-out forwards;
+}
+
+@keyframes ocean-rescue-crab-success-flash {
+  0% {
+    box-shadow: inset 0 0 0 9999px rgba(143, 211, 168, 0.16);
+  }
+  100% {
+    box-shadow: inset 0 0 0 9999px rgba(143, 211, 168, 0);
+  }
+}
+
+@keyframes ocean-rescue-crab-failure-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   #ocean-rescue-rescue-assist-hand.ocean-rescue-assist-hand-visible {
     animation: none;
@@ -738,7 +767,9 @@ html, body {
   }
 
   #ocean-rescue-rescue-overlay.ocean-rescue-sea-turtle-success,
-  #ocean-rescue-rescue-overlay.ocean-rescue-sea-turtle-failure {
+  #ocean-rescue-rescue-overlay.ocean-rescue-sea-turtle-failure,
+  #ocean-rescue-rescue-overlay.ocean-rescue-crab-success,
+  #ocean-rescue-rescue-overlay.ocean-rescue-crab-failure {
     animation: none;
   }
 }

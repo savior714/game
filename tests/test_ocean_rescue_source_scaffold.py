@@ -15,6 +15,7 @@ TEMPLATE = SOURCE_ROOT / "index.template.html"
 STYLE = SOURCE_ROOT / "style.css"
 STATE_JS = SOURCE_ROOT / "state.js"
 MISSIONS_JS = SOURCE_ROOT / "missions.js"
+GUPS_JS = SOURCE_ROOT / "gups.js"
 APP_JS = SOURCE_ROOT / "app.js"
 
 CANONICAL_SOURCE_FILES = [
@@ -23,6 +24,7 @@ CANONICAL_SOURCE_FILES = [
     "style.css",
     "state.js",
     "missions.js",
+    "gups.js",
     "app.js",
 ]
 
@@ -39,18 +41,22 @@ class TestManifest:
         assert set(data.keys()) == {"template", "styles", "scripts", "assets"}
         assert data["template"] == "index.template.html"
         assert data["styles"] == ["style.css"]
-        assert len(data["scripts"]) == 3
+        assert len(data["scripts"]) == 4
         assert data["scripts"][0]["file"] == "state.js"
         assert data["scripts"][0]["namespace"] == "OceanRescue.State"
         assert data["scripts"][0]["depends_on"] == []
         assert data["scripts"][1]["file"] == "missions.js"
         assert data["scripts"][1]["namespace"] == "OceanRescue.Missions"
         assert data["scripts"][1]["depends_on"] == []
-        assert data["scripts"][2]["file"] == "app.js"
-        assert data["scripts"][2]["namespace"] == "OceanRescue.App"
-        assert data["scripts"][2]["depends_on"] == [
+        assert data["scripts"][2]["file"] == "gups.js"
+        assert data["scripts"][2]["namespace"] == "OceanRescue.Gups"
+        assert data["scripts"][2]["depends_on"] == []
+        assert data["scripts"][3]["file"] == "app.js"
+        assert data["scripts"][3]["namespace"] == "OceanRescue.App"
+        assert data["scripts"][3]["depends_on"] == [
             "OceanRescue.State",
             "OceanRescue.Missions",
+            "OceanRescue.Gups",
         ]
         assert data["assets"] == []
 
@@ -83,17 +89,24 @@ class TestJavaScript:
         assert "window.OceanRescue" in content
         assert "root.Missions" in content or "OceanRescue.Missions" in content
 
+    def test_gups_defines_namespace(self):
+        content = GUPS_JS.read_text(encoding="utf-8")
+        assert "window.OceanRescue" in content
+        assert "root.Gups" in content or "OceanRescue.Gups" in content
+
     def test_app_defines_namespace_and_references_state(self):
         content = APP_JS.read_text(encoding="utf-8")
         assert "OceanRescue.App" in content
         assert "OceanRescue.State" in content
         assert "OceanRescue.Missions" in content
+        assert "OceanRescue.Gups" in content
 
     @pytest.mark.parametrize(
         "path,forbidden",
         [
             (STATE_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
             (MISSIONS_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
+            (GUPS_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
             (APP_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
         ],
     )
@@ -102,7 +115,7 @@ class TestJavaScript:
         for token in forbidden:
             assert token not in content, f"{path.name} contains {token}"
 
-    @pytest.mark.parametrize("path", [STATE_JS, MISSIONS_JS, APP_JS])
+    @pytest.mark.parametrize("path", [STATE_JS, MISSIONS_JS, GUPS_JS, APP_JS])
     def test_no_asset_sentinel(self, path):
         content = path.read_text(encoding="utf-8")
         assert "asset://" not in content
@@ -124,13 +137,15 @@ class TestBuild:
         assert "<!-- OCEAN_RESCUE_CSS -->" not in html
         assert "<!-- OCEAN_RESCUE_SCRIPTS -->" not in html
         assert html.count("<style") == 1
-        assert html.count("<script") == 3
+        assert html.count("<script") == 4
         assert "asset://" not in html
         state_pos = html.index("OceanRescue.State")
         missions_pos = html.index("OceanRescue.Missions")
+        gups_pos = html.index("OceanRescue.Gups")
         app_pos = html.index("OceanRescue.App")
         assert state_pos < missions_pos, "State script must appear before Missions script"
-        assert missions_pos < app_pos, "Missions script must appear before App script"
+        assert missions_pos < gups_pos, "Missions script must appear before Gups script"
+        assert gups_pos < app_pos, "Gups script must appear before App script"
         ext_src = '<script src='
         assert ext_src not in html.lower()
         ext_link = '<link rel="stylesheet"'

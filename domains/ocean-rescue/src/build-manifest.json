@@ -15,11 +15,17 @@
       "depends_on": []
     },
     {
+      "file": "gups.js",
+      "namespace": "OceanRescue.Gups",
+      "depends_on": []
+    },
+    {
       "file": "app.js",
       "namespace": "OceanRescue.App",
       "depends_on": [
         "OceanRescue.State",
-        "OceanRescue.Missions"
+        "OceanRescue.Missions",
+        "OceanRescue.Gups"
       ]
     }
   ],

@@ -153,6 +153,135 @@ html, body {
   color: #ffd166;
 }
 
+#ocean-rescue-gup-select {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 16px;
+  background: rgba(18, 32, 46, 0.94);
+  color: #eef5fb;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  text-align: center;
+}
+
+#ocean-rescue-gup-select h2 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+#ocean-rescue-gup-select > p {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #c6d8ea;
+}
+
+#ocean-rescue-gup-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  align-items: stretch;
+}
+
+#ocean-rescue-gup-list button {
+  flex: 1 1 220px;
+  max-width: 280px;
+  min-height: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 2px solid #3b6ea5;
+  border-radius: 12px;
+  background: #14304a;
+  color: #eef5fb;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
+  text-align: center;
+  cursor: pointer;
+}
+
+#ocean-rescue-gup-list button[aria-pressed="true"] {
+  border-color: #ffd166;
+  background: #1d4063;
+}
+
+#ocean-rescue-gup-list button:not(:disabled):hover {
+  border-color: #7fb3e8;
+  background: #1d4063;
+}
+
+#ocean-rescue-gup-list button:not(:disabled):focus-visible {
+  outline: 3px solid #ffd166;
+  outline-offset: 2px;
+}
+
+#ocean-rescue-gup-list button:disabled {
+  cursor: default;
+  opacity: 0.55;
+  border-color: #31465c;
+  background: #22303e;
+  color: #9fb3c7;
+}
+
+#ocean-rescue-gup-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+#ocean-rescue-gup-actions button {
+  min-height: 48px;
+  min-width: 120px;
+  box-sizing: border-box;
+  padding: 12px 20px;
+  border: 2px solid #3b6ea5;
+  border-radius: 12px;
+  background: #14304a;
+  color: #eef5fb;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+#ocean-rescue-gup-actions button:not(:disabled):hover {
+  border-color: #7fb3e8;
+  background: #1d4063;
+}
+
+#ocean-rescue-gup-actions button:not(:disabled):focus-visible {
+  outline: 3px solid #ffd166;
+  outline-offset: 2px;
+}
+
+#ocean-rescue-gup-actions button:disabled {
+  cursor: default;
+  opacity: 0.6;
+  border-color: #31465c;
+  background: #22303e;
+  color: #9fb3c7;
+}
+
+.ocean-rescue-gup-name {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.ocean-rescue-gup-description {
+  font-size: 13px;
+  color: #bcd6ee;
+}
+
 </style>
 </head>
 <body>
@@ -180,6 +309,41 @@ html, body {
         id="ocean-rescue-mission-list"
         aria-label="Rescue missions"
       ></div>
+    </section>
+
+    <section
+      id="ocean-rescue-gup-select"
+      aria-labelledby="ocean-rescue-gup-select-title"
+      hidden
+    >
+      <h2 id="ocean-rescue-gup-select-title">Choose a GUP</h2>
+
+      <p id="ocean-rescue-gup-mission"></p>
+
+      <p>
+        All GUPs complete every mission the same way.
+      </p>
+
+      <div
+        id="ocean-rescue-gup-list"
+        aria-label="GUP choices"
+      ></div>
+
+      <div id="ocean-rescue-gup-actions">
+        <button
+          id="ocean-rescue-gup-back"
+          type="button"
+        >
+          Back
+        </button>
+
+        <button
+          id="ocean-rescue-gup-launch"
+          type="button"
+        >
+          Launch
+        </button>
+      </div>
     </section>
 
     <section
@@ -456,14 +620,115 @@ html, body {
 </script>
 <script>
 (function () {
+  var root = window.OceanRescue = window.OceanRescue || {};
+
+  function freeze(value) {
+    return Object.freeze(value);
+  }
+
+  var Catalog = freeze([
+    freeze({
+      id: "gup-c",
+      name: "GUP-C",
+      description: "Yellow rescue sub"
+    }),
+    freeze({
+      id: "gup-i",
+      name: "GUP-I",
+      description: "White and blue rescue sub"
+    }),
+    freeze({
+      id: "gup-x",
+      name: "GUP-X",
+      description: "Red rescue sub"
+    })
+  ]);
+
+  var state = {
+    selectedGupId: "gup-c",
+    lastGupId: "gup-c"
+  };
+
+  function catalogIndexOf(gupId) {
+    for (var i = 0; i < Catalog.length; i += 1) {
+      if (Catalog[i].id === gupId) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  function isValidGup(gupId) {
+    if (typeof gupId !== "string") {
+      return false;
+    }
+    return catalogIndexOf(gupId) !== -1;
+  }
+
+  function getSnapshot() {
+    return freeze({
+      selectedGupId: state.selectedGupId,
+      lastGupId: state.lastGupId
+    });
+  }
+
+  function prepareSelection() {
+    state.selectedGupId = state.lastGupId;
+    return state.selectedGupId;
+  }
+
+  function selectGup(gupId) {
+    if (!isValidGup(gupId)) {
+      return false;
+    }
+    state.selectedGupId = gupId;
+    return true;
+  }
+
+  function confirmSelection() {
+    state.lastGupId = state.selectedGupId;
+    return state.selectedGupId;
+  }
+
+  root.Gups = freeze({
+    Catalog: Catalog,
+    getSnapshot: getSnapshot,
+    isValidGup: isValidGup,
+    prepareSelection: prepareSelection,
+    selectGup: selectGup,
+    confirmSelection: confirmSelection
+  });
+})();
+
+</script>
+<script>
+(function () {
   var State = window.OceanRescue.State;
   var Missions = window.OceanRescue.Missions;
+  var Gups = window.OceanRescue.Gups;
 
-  function missionTitleById(missionId) {
+  var controlsBound = false;
+
+  function missionById(missionId) {
     var catalog = Missions.Catalog;
     for (var i = 0; i < catalog.length; i += 1) {
       if (catalog[i].id === missionId) {
-        return catalog[i].title;
+        return catalog[i];
+      }
+    }
+    return null;
+  }
+
+  function missionTitleById(missionId) {
+    var mission = missionById(missionId);
+    return mission === null ? null : mission.title;
+  }
+
+  function gupById(gupId) {
+    var catalog = Gups.Catalog;
+    for (var i = 0; i < catalog.length; i += 1) {
+      if (catalog[i].id === gupId) {
+        return catalog[i];
       }
     }
     return null;
@@ -538,6 +803,14 @@ html, body {
         button.appendChild(newBadge);
       }
 
+      if (unlocked && typeof button.addEventListener === "function") {
+        button.addEventListener("click", (function (id) {
+          return function () {
+            selectMission(id);
+          };
+        })(mission.id));
+      }
+
       list.appendChild(button);
 
       if (focusMissionId === mission.id && unlocked && isNew) {
@@ -547,6 +820,194 @@ html, body {
     section.style.display = "block";
     if (focusCard) {
       focusCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    return true;
+  }
+
+  function renderGupSelect() {
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.GUP_SELECT) {
+      return false;
+    }
+    var progression = Missions.getSnapshot();
+    var mission = missionById(progression.selectedMissionId);
+    if (mission === null) {
+      return false;
+    }
+    var section = document.getElementById("ocean-rescue-gup-select");
+    var list = document.getElementById("ocean-rescue-gup-list");
+    if (!section || !list) {
+      return false;
+    }
+    list.innerHTML = "";
+    var gupSnapshot = Gups.getSnapshot();
+    var catalog = Gups.Catalog;
+    for (var i = 0; i < catalog.length; i += 1) {
+      var gup = catalog[i];
+      var button = document.createElement("button");
+      button.type = "button";
+      button.setAttribute("data-gup-id", gup.id);
+      button.setAttribute(
+        "aria-pressed",
+        gup.id === gupSnapshot.selectedGupId ? "true" : "false"
+      );
+      button.disabled = false;
+
+      var name = document.createElement("span");
+      name.className = "ocean-rescue-gup-name";
+      name.textContent = gup.name;
+
+      var description = document.createElement("span");
+      description.className = "ocean-rescue-gup-description";
+      description.textContent = gup.description;
+
+      button.appendChild(name);
+      button.appendChild(description);
+
+      if (typeof button.addEventListener === "function") {
+        button.addEventListener("click", (function (id) {
+          return function () {
+            selectGup(id);
+          };
+        })(gup.id));
+      }
+
+      list.appendChild(button);
+    }
+    var missionSection = document.getElementById("ocean-rescue-mission-select");
+    if (missionSection) {
+      missionSection.style.display = "none";
+    }
+    var missionText = document.getElementById("ocean-rescue-gup-mission");
+    if (missionText) {
+      missionText.textContent = "Mission: " + mission.title;
+    }
+    section.hidden = false;
+    return true;
+  }
+
+  function selectGup(gupId) {
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.GUP_SELECT) {
+      return false;
+    }
+    if (!Gups.selectGup(gupId)) {
+      return false;
+    }
+    var gup = gupById(gupId);
+    if (gup === null) {
+      return false;
+    }
+    var section = document.getElementById("ocean-rescue-gup-select");
+    var list = document.getElementById("ocean-rescue-gup-list");
+    if (section) {
+      section.setAttribute("data-selected-gup-id", gupId);
+    }
+    if (list) {
+      var buttons = list.querySelectorAll("button");
+      for (var i = 0; i < buttons.length; i += 1) {
+        var id = buttons[i].getAttribute("data-gup-id");
+        buttons[i].setAttribute(
+          "aria-pressed",
+          id === gupId ? "true" : "false"
+        );
+      }
+    }
+    var launch = document.getElementById("ocean-rescue-gup-launch");
+    if (launch) {
+      launch.disabled = false;
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = "Selected GUP: " + gup.name;
+    }
+    return true;
+  }
+
+  function backToMissionSelect() {
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.GUP_SELECT) {
+      return false;
+    }
+    var token = State.beginTransition(State.Phases.MISSION_SELECT);
+    if (token === null) {
+      return false;
+    }
+    if (!State.completeTransition(token)) {
+      return false;
+    }
+    var gupSection = document.getElementById("ocean-rescue-gup-select");
+    if (gupSection) {
+      gupSection.hidden = true;
+      gupSection.removeAttribute("data-selected-gup-id");
+    }
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.removeAttribute("data-launch-mission-id");
+      root.removeAttribute("data-launch-gup-id");
+      root.removeAttribute("data-launch-ready");
+    }
+    var missionSection = document.getElementById("ocean-rescue-mission-select");
+    if (missionSection) {
+      missionSection.removeAttribute("data-selected-mission-id");
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = "Choose a mission";
+    }
+    renderMissionSelect();
+    return true;
+  }
+
+  function launchSelectedGup() {
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.GUP_SELECT) {
+      return false;
+    }
+    var progression = Missions.getSnapshot();
+    var mission = missionById(progression.selectedMissionId);
+    if (mission === null) {
+      return false;
+    }
+    var gupSnapshot = Gups.getSnapshot();
+    var gup = gupById(gupSnapshot.selectedGupId);
+    if (gup === null) {
+      return false;
+    }
+    var token = State.beginTransition(State.Phases.LAUNCH);
+    if (token === null) {
+      return false;
+    }
+    if (!State.completeTransition(token)) {
+      return false;
+    }
+    Gups.confirmSelection();
+
+    var list = document.getElementById("ocean-rescue-gup-list");
+    if (list) {
+      var buttons = list.querySelectorAll("button");
+      for (var i = 0; i < buttons.length; i += 1) {
+        buttons[i].disabled = true;
+      }
+    }
+    var back = document.getElementById("ocean-rescue-gup-back");
+    if (back) {
+      back.disabled = true;
+    }
+    var launch = document.getElementById("ocean-rescue-gup-launch");
+    if (launch) {
+      launch.disabled = true;
+    }
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-launch-mission-id", mission.id);
+      root.setAttribute("data-launch-gup-id", gup.id);
+      root.setAttribute("data-launch-ready", "true");
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent =
+        "Launch ready: " + gup.name + " — " + mission.title;
     }
     return true;
   }
@@ -569,6 +1030,19 @@ html, body {
     Missions.selectMission(missionId);
     Missions.markMissionViewed(missionId);
 
+    var gupSection = document.getElementById("ocean-rescue-gup-select");
+    if (gupSection) {
+      Gups.prepareSelection();
+      renderGupSelect();
+      var status = document.getElementById("ocean-rescue-status");
+      if (status) {
+        var title = missionTitleById(missionId);
+        status.textContent =
+          "Choose a GUP for " + (title === null ? missionId : title);
+      }
+      return true;
+    }
+
     var section = document.getElementById("ocean-rescue-mission-select");
     var list = document.getElementById("ocean-rescue-mission-list");
     if (section) {
@@ -589,6 +1063,25 @@ html, body {
     return true;
   }
 
+  function bindStaticControls() {
+    if (controlsBound) {
+      return;
+    }
+    var back = document.getElementById("ocean-rescue-gup-back");
+    if (back && typeof back.addEventListener === "function") {
+      back.addEventListener("click", function () {
+        backToMissionSelect();
+      });
+    }
+    var launch = document.getElementById("ocean-rescue-gup-launch");
+    if (launch && typeof launch.addEventListener === "function") {
+      launch.addEventListener("click", function () {
+        launchSelectedGup();
+      });
+    }
+    controlsBound = true;
+  }
+
   var App = {
     boot: function () {
       var root = document.getElementById("ocean-rescue-root");
@@ -597,6 +1090,7 @@ html, body {
         return false;
       }
       if (root.getAttribute("data-ocean-rescue-ready") === "true") {
+        bindStaticControls();
         return true;
       }
       var snapshot = State.getSnapshot();
@@ -617,10 +1111,15 @@ html, body {
       if (section && list) {
         renderMissionSelect();
       }
+      bindStaticControls();
       return true;
     },
     renderMissionSelect: renderMissionSelect,
-    selectMission: selectMission
+    selectMission: selectMission,
+    renderGupSelect: renderGupSelect,
+    selectGup: selectGup,
+    backToMissionSelect: backToMissionSelect,
+    launchSelectedGup: launchSelectedGup
   };
 
   window.OceanRescue.App = App;

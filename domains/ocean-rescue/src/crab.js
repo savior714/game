@@ -397,6 +397,29 @@
     return true;
   }
 
+  function pauseCancel() {
+    if (!state.active) {
+      return;
+    }
+    state.pointerActive = false;
+    state.pointerId = null;
+    state.pointerX = null;
+    state.pointerY = null;
+    state.gestureStartX = null;
+    state.gestureStartY = null;
+    state.gesturePhase = "idle";
+    state.gestureMoved = false;
+    state.gestureFailed = false;
+    state.tapRockArmed = false;
+    var rock = currentRock();
+    if (rock !== null) {
+      state.currentRockCenter = {
+        x: rock.start.x,
+        y: rock.start.y
+      };
+    }
+  }
+
   function finishFeedback() {
     if (state.feedback === null || state.feedbackRockId === null) {
       return freeze({
@@ -499,6 +522,7 @@
     pointerMove: pointerMove,
     pointerUp: pointerUp,
     pointerCancel: pointerCancel,
-    finishFeedback: finishFeedback
+    finishFeedback: finishFeedback,
+    pauseCancel: pauseCancel
   });
 })();

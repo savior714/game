@@ -706,6 +706,7 @@ def test_crab_catalog_constants_and_public_contract() -> None:
             "finishFeedback",
             "finishHold",
             "getSnapshot",
+            "pauseCancel",
             "pointerCancel",
             "pointerDown",
             "pointerMove",

@@ -253,6 +253,46 @@
         </div>
       </div>
     </section>
+
+    <button
+      id="ocean-rescue-pause-button"
+      type="button"
+      aria-label="Pause game"
+      hidden
+    >
+      ⏸
+    </button>
+
+    <div
+      id="ocean-rescue-pause-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ocean-rescue-pause-title"
+      hidden
+    >
+      <div id="ocean-rescue-pause-menu">
+        <h2 id="ocean-rescue-pause-title">Game Paused</h2>
+        <button
+          id="ocean-rescue-pause-resume"
+          type="button"
+        >
+          Resume
+        </button>
+        <div
+          id="ocean-rescue-pause-countdown"
+          hidden
+          role="status"
+          aria-live="assertive"
+          aria-atomic="true"
+        ></div>
+        <button
+          id="ocean-rescue-pause-menu-button"
+          type="button"
+        >
+          Back to Missions
+        </button>
+      </div>
+    </div>
   </main>
 
   <!-- OCEAN_RESCUE_SCRIPTS -->

@@ -698,6 +698,7 @@ def test_sea_turtle_catalog_constants_and_public_contract() -> None:
             "Ropes",
             "finishFeedback",
             "getSnapshot",
+            "pauseCancel",
             "pointerCancel",
             "pointerDown",
             "pointerMove",

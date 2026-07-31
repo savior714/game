@@ -726,6 +726,7 @@ def test_young_whale_constants_catalog_and_public_contract() -> None:
             "MissionId",
             "finishFeedback",
             "getSnapshot",
+            "pauseCancel",
             "pointerCancel",
             "pointerDown",
             "pointerMove",

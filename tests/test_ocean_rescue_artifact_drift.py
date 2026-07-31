@@ -101,6 +101,16 @@ def test_artifact_standalone_contract():
     assert mission_success_idx < app_idx, (
         "MissionSuccess content must precede App content"
     )
+    assert 'id="ocean-rescue-pause-button"' in content
+    assert 'aria-label="Pause game"' in content
+    assert 'id="ocean-rescue-pause-overlay"' in content
+    assert 'id="ocean-rescue-pause-menu"' in content
+    assert 'id="ocean-rescue-pause-title"' in content
+    assert 'id="ocean-rescue-pause-resume"' in content
+    assert 'id="ocean-rescue-pause-countdown"' in content
+    assert 'id="ocean-rescue-pause-menu-button"' in content
+    assert "Game Paused" in content
+    assert "Back to Missions" in content
     assert "<!-- OCEAN_RESCUE_CSS -->" not in content
     assert "<!-- OCEAN_RESCUE_SCRIPTS -->" not in content
     assert "asset://" not in content

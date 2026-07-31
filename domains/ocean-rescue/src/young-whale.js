@@ -583,6 +583,39 @@
     return true;
   }
 
+  function pauseCancel() {
+    if (!state.active) {
+      return;
+    }
+    state.pointerActive = false;
+    state.pointerId = null;
+    state.pointerX = null;
+    state.pointerY = null;
+    state.gestureStartX = null;
+    state.gestureStartY = null;
+    state.gestureMoved = false;
+    state.gestureTraceFailed = false;
+    state.gestureMaxProjection = 0;
+    if (state.stage === "connection") {
+      var d = debrisById(state.activeDebrisId);
+      if (d !== null) {
+        state.currentDebrisCenter = {
+          x: d.start.x,
+          y: d.start.y
+        };
+      }
+    } else if (state.stage === "towing") {
+      state.currentGupCenter = { x: GupStart.x, y: GupStart.y };
+      var dt = debrisById(state.activeDebrisId);
+      if (dt !== null) {
+        state.currentDebrisCenter = {
+          x: dt.start.x,
+          y: dt.start.y
+        };
+      }
+    }
+  }
+
   function finishFeedback() {
     if (state.feedback === null || state.feedbackDebrisId === null) {
       return freeze({
@@ -698,6 +731,7 @@
     pointerMove: pointerMove,
     pointerUp: pointerUp,
     pointerCancel: pointerCancel,
-    finishFeedback: finishFeedback
+    finishFeedback: finishFeedback,
+    pauseCancel: pauseCancel
   });
 })();

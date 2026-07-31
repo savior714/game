@@ -124,6 +124,7 @@ def test_state_machine_public_contract() -> None:
           "beginTransition",
           "canTransition",
           "completeTransition",
+          "forcePhase",
           "getSnapshot",
           "markReady",
         ];

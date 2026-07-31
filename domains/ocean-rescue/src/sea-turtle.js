@@ -397,6 +397,22 @@
     return true;
   }
 
+  function pauseCancel() {
+    if (!state.active) {
+      return;
+    }
+    state.pointerActive = false;
+    state.pointerId = null;
+    state.pointerX = null;
+    state.pointerY = null;
+    state.gestureStartX = null;
+    state.gestureStartY = null;
+    state.gestureMoved = false;
+    state.gestureTraceFailed = false;
+    state.gestureMaxProjection = 0;
+    state.tapStartArmed = false;
+  }
+
   function finishFeedback() {
     if (state.feedback === null || state.feedbackRopeId === null) {
       return freeze({ changed: false, complete: state.complete, nextRopeId: null });
@@ -454,6 +470,7 @@
     pointerMove: pointerMove,
     pointerUp: pointerUp,
     pointerCancel: pointerCancel,
-    finishFeedback: finishFeedback
+    finishFeedback: finishFeedback,
+    pauseCancel: pauseCancel
   });
 })();

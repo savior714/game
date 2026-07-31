@@ -127,12 +127,24 @@
     });
   }
 
+  function forcePhase(phase) {
+    if (!isPhase(phase)) {
+      return false;
+    }
+    state.transitionLocked = false;
+    state.pendingPhase = null;
+    state.activeToken = null;
+    state.phase = phase;
+    return true;
+  }
+
   root.State = freeze({
     Phases: Phases,
     getSnapshot: getSnapshot,
     markReady: markReady,
     canTransition: canTransition,
     beginTransition: beginTransition,
-    completeTransition: completeTransition
+    completeTransition: completeTransition,
+    forcePhase: forcePhase
   });
 })();

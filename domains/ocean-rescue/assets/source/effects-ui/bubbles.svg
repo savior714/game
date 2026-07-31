@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <g id="fx-bubbles">
+    <circle cx="40" cy="80" r="10" fill="none" stroke="#FFFFFF" stroke-width="3" opacity="0.5"/>
+    <circle cx="38" cy="77" r="3" fill="#FFFFFF" opacity="0.6"/>
+    <circle cx="64" cy="52" r="14" fill="none" stroke="#FFFFFF" stroke-width="3" opacity="0.45"/>
+    <circle cx="60" cy="48" r="4" fill="#FFFFFF" opacity="0.5"/>
+    <circle cx="90" cy="84" r="8" fill="none" stroke="#8FE3F0" stroke-width="3" opacity="0.5"/>
+    <circle cx="88" cy="82" r="2.5" fill="#FFFFFF" opacity="0.5"/>
+    <circle cx="78" cy="102" r="6" fill="none" stroke="#FFFFFF" stroke-width="2.5" opacity="0.4"/>
+    <circle cx="26" cy="104" r="5" fill="none" stroke="#8FE3F0" stroke-width="2.5" opacity="0.4"/>
+    <circle cx="100" cy="30" r="7" fill="none" stroke="#FFFFFF" stroke-width="2.5" opacity="0.4"/>
+    <circle cx="98" cy="28" r="2" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+</svg>

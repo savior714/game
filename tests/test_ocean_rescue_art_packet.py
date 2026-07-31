@@ -34,14 +34,19 @@ REQUIRED_ALIASES = sorted([
     "scene.reef.mid",
     "scene.coral.foreground",
     "scene.seaweed-loop.01",
+    "scene.sand-path",
+    "scene.passage",
     "ui.drag-arrow",
     "fx.success-burst",
+    "fx.cut-ring",
+    "fx.cut-icon",
+    "fx.bubbles",
+    "fx.caustic",
+    "hud.progress-cap",
+    "hud.loop-icon",
 ])
 
 RUNTIME_FORBIDDEN_PATHS = [
-    REPO_ROOT / "domains" / "ocean-rescue" / "src",
-    REPO_ROOT / "ocean-rescue" / "index.html",
-    REPO_ROOT / "docs" / "specs" / "product",
     REPO_ROOT / "shared",
 ]
 

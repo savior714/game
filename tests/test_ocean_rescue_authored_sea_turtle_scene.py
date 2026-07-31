@@ -18,6 +18,8 @@ ALIASES = [
     "scene.coral.foreground",
     "scene.submarine",
     "scene.seaweed-loop.01",
+    "scene.sand-path",
+    "scene.passage",
     "otter.tail",
     "otter.arm.far",
     "otter.torso",
@@ -32,6 +34,12 @@ ALIASES = [
     "turtle.free",
     "ui.drag-arrow",
     "fx.success-burst",
+    "fx.cut-ring",
+    "fx.cut-icon",
+    "fx.bubbles",
+    "fx.caustic",
+    "hud.progress-cap",
+    "hud.loop-icon",
 ]
 
 

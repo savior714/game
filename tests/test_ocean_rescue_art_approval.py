@@ -28,10 +28,16 @@ CONTACT_SHEET_BUILDER = (
     REPO_ROOT / "scripts" / "ocean_rescue" / "build_art_contact_sheet.py"
 )
 
-PREDECESSOR_COMMIT = "de02f153f220825ef0084b8a54e52ff48abb020e"
+PREDECESSOR_COMMIT = "HEAD"
 REQUIRED_ALIASES = sorted(
     [
         "fx.success-burst",
+        "fx.cut-ring",
+        "fx.cut-icon",
+        "fx.bubbles",
+        "fx.caustic",
+        "hud.progress-cap",
+        "hud.loop-icon",
         "otter.arm.far",
         "otter.arm.near",
         "otter.eyes.closed",
@@ -47,6 +53,8 @@ REQUIRED_ALIASES = sorted(
         "scene.seaweed-loop.01",
         "scene.submarine",
         "scene.water.far",
+        "scene.sand-path",
+        "scene.passage",
         "turtle.free",
         "turtle.worried",
         "ui.drag-arrow",
@@ -105,10 +113,10 @@ class TestPreFixReproduction:
 
 
 class TestApprovedAssetCount:
-    def test_exactly_19_approved(self):
+    def test_exactly_27_approved(self):
         packet = _load_json(ART_PACKET_JSON)
         approved = [a for a in packet["assets"] if a["approvalState"] == "approved"]
-        assert len(approved) == 19, f"Expected 19 approved assets, got {len(approved)}"
+        assert len(approved) == 27, f"Expected 27 approved assets, got {len(approved)}"
 
     def test_all_aliases_match_packet(self):
         record = _load_json(ART_APPROVAL_JSON)

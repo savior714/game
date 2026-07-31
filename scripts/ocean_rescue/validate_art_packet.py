@@ -37,8 +37,16 @@ REQUIRED_ALIASES = sorted(
         "scene.reef.mid",
         "scene.coral.foreground",
         "scene.seaweed-loop.01",
+        "scene.sand-path",
+        "scene.passage",
         "ui.drag-arrow",
         "fx.success-burst",
+        "fx.cut-ring",
+        "fx.cut-icon",
+        "fx.bubbles",
+        "fx.caustic",
+        "hud.progress-cap",
+        "hud.loop-icon",
     ]
 )
 

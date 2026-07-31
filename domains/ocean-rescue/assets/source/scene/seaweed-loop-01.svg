@@ -1,14 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 200">
   <g id="scene-seaweed-loop-01">
-    <path d="M60 195 Q45 170 50 145 Q55 120 45 95 Q35 70 50 50 Q60 35 60 20" fill="none" stroke="#2D8B46" stroke-width="8" stroke-linecap="round"/>
-    <path d="M60 195 Q75 170 70 145 Q65 120 75 95 Q85 70 70 50 Q60 35 60 20" fill="none" stroke="#3AA85A" stroke-width="8" stroke-linecap="round"/>
-    <path d="M60 20 Q55 15 50 20 Q45 30 50 40 Q55 30 60 20Z" fill="#2D8B46" stroke="#1A6B3A" stroke-width="1.5"/>
-    <path d="M50 55 Q40 50 35 55 Q30 65 35 75 Q40 65 50 55Z" fill="#3AA85A" stroke="#1A6B3A" stroke-width="1"/>
-    <path d="M70 80 Q80 75 85 80 Q90 90 85 100 Q80 90 70 80Z" fill="#2D8B46" stroke="#1A6B3A" stroke-width="1"/>
-    <path d="M45 110 Q35 105 30 110 Q25 120 30 130 Q35 120 45 110Z" fill="#3AA85A" stroke="#1A6B3A" stroke-width="1"/>
-    <path d="M55 150 Q45 145 40 150 Q35 160 40 170 Q45 160 55 150Z" fill="#2D8B46" stroke="#1A6B3A" stroke-width="1"/>
-    <circle cx="50" cy="60" r="3" fill="#1A6B3A" opacity="0.3"/>
-    <circle cx="70" cy="100" r="2.5" fill="#1A6B3A" opacity="0.25"/>
-    <circle cx="48" cy="140" r="2" fill="#1A6B3A" opacity="0.2"/>
+    <path d="M60 180 Q14 150 16 104 Q18 58 60 28 Q102 58 104 104 Q106 150 60 180 Z" fill="none" stroke="#2D8B46" stroke-width="10" stroke-linecap="round"/>
+    <path d="M60 178 Q22 150 23 108 Q24 66 60 38 Q96 66 97 108 Q98 150 60 178 Z" fill="none" stroke="#3AA85A" stroke-width="5"/>
+    <circle cx="16" cy="104" r="6" fill="#3AA85A" stroke="#1A6B3A" stroke-width="1.5"/>
+    <circle cx="104" cy="104" r="6" fill="#3AA85A" stroke="#1A6B3A" stroke-width="1.5"/>
+    <circle cx="60" cy="28" r="6" fill="#3AA85A" stroke="#1A6B3A" stroke-width="1.5"/>
+    <circle cx="34" cy="60" r="5" fill="#2D8B46"/>
+    <circle cx="88" cy="150" r="5" fill="#2D8B46"/>
+    <path d="M60 120 Q48 108 52 96 Q56 88 60 92" fill="none" stroke="#3AA85A" stroke-width="3" stroke-linecap="round"/>
   </g>
 </svg>

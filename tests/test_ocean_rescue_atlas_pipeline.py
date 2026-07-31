@@ -32,7 +32,13 @@ BUNDLE_ORDER = ["characters", "scene", "effects-ui"]
 
 REQUIRED_ALIASES = sorted(
     [
+        "fx.bubbles",
+        "fx.caustic",
+        "fx.cut-icon",
+        "fx.cut-ring",
         "fx.success-burst",
+        "hud.loop-icon",
+        "hud.progress-cap",
         "otter.arm.far",
         "otter.arm.near",
         "otter.eyes.closed",
@@ -44,7 +50,9 @@ REQUIRED_ALIASES = sorted(
         "otter.tail",
         "otter.torso",
         "scene.coral.foreground",
+        "scene.passage",
         "scene.reef.mid",
+        "scene.sand-path",
         "scene.seaweed-loop.01",
         "scene.submarine",
         "scene.water.far",
@@ -71,12 +79,23 @@ BUNDLE_MAP = {
     ],
     "scene": [
         "scene.coral.foreground",
+        "scene.passage",
         "scene.reef.mid",
+        "scene.sand-path",
         "scene.seaweed-loop.01",
         "scene.submarine",
         "scene.water.far",
     ],
-    "effects-ui": ["fx.success-burst", "ui.drag-arrow"],
+    "effects-ui": [
+        "fx.bubbles",
+        "fx.caustic",
+        "fx.cut-icon",
+        "fx.cut-ring",
+        "fx.success-burst",
+        "hud.loop-icon",
+        "hud.progress-cap",
+        "ui.drag-arrow",
+    ],
 }
 
 ENV = {"DYLD_LIBRARY_PATH": "/opt/homebrew/opt/cairo/lib"}

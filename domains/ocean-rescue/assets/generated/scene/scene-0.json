@@ -2,42 +2,66 @@
   "frames": {
     "scene.coral.foreground": {
       "frame": {
-        "x": 2166,
-        "y": 4,
-        "w": 800,
-        "h": 256
+        "x": 4,
+        "y": 616,
+        "w": 2560,
+        "h": 436
       },
       "rotated": false,
       "trimmed": true,
       "spriteSourceSize": {
         "x": 0,
-        "y": 64,
-        "w": 800,
-        "h": 256
+        "y": 44,
+        "w": 2560,
+        "h": 436
       },
       "sourceSize": {
-        "w": 800,
-        "h": 320
+        "w": 2560,
+        "h": 480
       },
       "anchor": {
         "x": 0.5,
-        "y": 0.8
+        "y": 0.85
+      }
+    },
+    "scene.passage": {
+      "frame": {
+        "x": 2416,
+        "y": 1064,
+        "w": 960,
+        "h": 674
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 46,
+        "w": 960,
+        "h": 674
+      },
+      "sourceSize": {
+        "w": 960,
+        "h": 720
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
       }
     },
     "scene.reef.mid": {
       "frame": {
-        "x": 1354,
+        "x": 1431,
         "y": 4,
         "w": 800,
-        "h": 258
+        "h": 225
       },
       "rotated": false,
       "trimmed": true,
       "spriteSourceSize": {
         "x": 0,
-        "y": 142,
+        "y": 175,
         "w": 800,
-        "h": 258
+        "h": 225
       },
       "sourceSize": {
         "w": 800,
@@ -48,20 +72,44 @@
         "y": 0.65
       }
     },
-    "scene.seaweed-loop.01": {
+    "scene.sand-path": {
       "frame": {
-        "x": 2978,
-        "y": 4,
-        "w": 122,
-        "h": 366
+        "x": 4,
+        "y": 1064,
+        "w": 2400,
+        "h": 415
       },
       "rotated": false,
       "trimmed": true,
       "spriteSourceSize": {
-        "x": 54,
-        "y": 32,
-        "w": 122,
-        "h": 366
+        "x": 0,
+        "y": 65,
+        "w": 2400,
+        "h": 415
+      },
+      "sourceSize": {
+        "w": 2400,
+        "h": 480
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 1.0
+      }
+    },
+    "scene.seaweed-loop.01": {
+      "frame": {
+        "x": 2576,
+        "y": 616,
+        "w": 204,
+        "h": 330
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 18,
+        "y": 42,
+        "w": 204,
+        "h": 330
       },
       "sourceSize": {
         "w": 240,
@@ -76,16 +124,16 @@
       "frame": {
         "x": 4,
         "y": 4,
-        "w": 526,
-        "h": 295
+        "w": 603,
+        "h": 308
       },
       "rotated": false,
       "trimmed": true,
       "spriteSourceSize": {
-        "x": 57,
-        "y": 87,
-        "w": 526,
-        "h": 295
+        "x": 32,
+        "y": 54,
+        "w": 603,
+        "h": 308
       },
       "sourceSize": {
         "w": 640,
@@ -98,7 +146,7 @@
     },
     "scene.water.far": {
       "frame": {
-        "x": 542,
+        "x": 619,
         "y": 4,
         "w": 800,
         "h": 600
@@ -128,8 +176,8 @@
     "image": "scene-0.png",
     "format": "RGBA8888",
     "size": {
-      "w": 3104,
-      "h": 608
+      "w": 3380,
+      "h": 1742
     },
     "scale": "2"
   }

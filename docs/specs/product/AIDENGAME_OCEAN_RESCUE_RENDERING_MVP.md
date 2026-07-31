@@ -533,7 +533,49 @@ The rendering MVP passes only when all are true:
 
 ---
 
-## 14. Implementation readiness
+## 15. Approved reference alignment
+
+Approved composition references for the sea-turtle rescue slice:
+
+- `docs/reference/ocean-rescue/ocean-rescue-gameplay-reference-01.png`
+- `docs/reference/ocean-rescue/ocean-rescue-gameplay-reference-02.png`
+
+### Reference usage policy
+
+The reference images are **visual references only** for composition, scale,
+palette, lighting, depth layering, and HUD hierarchy.
+
+- Reference pixels are never embedded, cropped, traced, or reused as runtime assets.
+- The runtime never reads the reference files.
+- No whale, cat pilot, or reference-only mission is added to the product.
+- Existing canonical PRD animals, mission order, rescue mechanics, and state models win.
+
+### Canonical scene mapping
+
+| Reference element | Current canonical mapping |
+|---|---|
+| Reference whale | current turtle rescue target (`turtle.worried` / `turtle.free`) |
+| Reference net | current seaweed-loop ring / cut obstacle |
+| Reference cut glow | canonical cut interaction: gold `fx.cut-ring` + `fx.cut-icon` at the active rope cut point |
+
+### Final visual acceptance checklist
+
+1. Submarine is the first focal point, left-middle, orange/yellow/cream toy silhouette.
+2. Rescue turtle is the second focal point, center-right, worried with no injury expression.
+3. The cut point is identifiable without explanation (gold ring + scissors icon).
+4. Right side shows a darker exploration passage.
+5. Sand/rock terrain is value-separated from navigable water.
+6. Far / middle / gameplay-plane / foreground depth bands are visually distinct.
+7. Foreground vegetation frames edges without covering key objects.
+8. HUD stays at screen edges and does not invade the center scene.
+9. Active rescue action is gold; movement/secondary accents are cyan.
+10. The gaze path moves submarine → turtle → cut point.
+11. No placeholder primitives remain on representative subjects.
+12. Reference pixels are absent from the production bundle.
+
+---
+
+## 16. Implementation readiness
 
 All product-level decisions required to begin the rendering MVP are closed:
 

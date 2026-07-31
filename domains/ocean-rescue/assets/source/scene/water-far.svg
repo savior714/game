@@ -1,14 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
   <g id="scene-water-far">
-    <rect width="400" height="300" fill="#0A2E5C"/>
-    <path d="M0 50 Q50 30 100 50 Q150 70 200 50 Q250 30 300 50 Q350 70 400 50 L400 0 L0 0Z" fill="#0D3A6E" opacity="0.7"/>
-    <path d="M0 80 Q60 60 120 80 Q180 100 240 80 Q300 60 360 80 L400 80 L400 40 Q350 20 300 40 Q250 60 200 40 Q150 20 100 40 Q50 60 0 40Z" fill="#103F7A" opacity="0.5"/>
-    <path d="M0 120 Q40 100 80 120 Q120 140 160 120 Q200 100 240 120 Q280 140 320 120 Q360 100 400 120 L400 80 Q360 60 320 80 Q280 100 240 80 Q200 60 160 80 Q120 100 80 80 Q40 60 0 80Z" fill="#154A8A" opacity="0.4"/>
-    <circle cx="50" cy="150" r="2" fill="#FFFFFF" opacity="0.15"/>
-    <circle cx="150" cy="100" r="1.5" fill="#FFFFFF" opacity="0.12"/>
-    <circle cx="280" cy="130" r="2.5" fill="#FFFFFF" opacity="0.1"/>
-    <circle cx="350" cy="80" r="1" fill="#FFFFFF" opacity="0.18"/>
-    <circle cx="100" cy="200" r="1.5" fill="#FFFFFF" opacity="0.08"/>
-    <circle cx="300" cy="180" r="2" fill="#FFFFFF" opacity="0.1"/>
+    <rect width="400" height="300" fill="#1B6CA8"/>
+    <path d="M0 0 L400 0 L400 46 Q330 30 250 44 Q180 58 110 44 Q50 32 0 44 Z" fill="#2E86AB"/>
+    <path d="M400 0 L400 300 L250 300 Q290 200 250 120 Q220 60 260 0 Z" fill="#0B1E3A" opacity="0.72"/>
+    <path d="M400 40 Q360 120 330 200 Q320 260 350 300 L400 300 Z" fill="#081730" opacity="0.6"/>
+    <path d="M120 0 L168 0 L236 300 L188 300 Z" fill="#FFF3DC" opacity="0.1"/>
+    <path d="M230 0 L266 0 L318 300 L282 300 Z" fill="#FFF3DC" opacity="0.08"/>
+    <path d="M60 0 L92 0 L130 300 L98 300 Z" fill="#8FE3F0" opacity="0.07"/>
+    <path d="M0 96 Q60 80 120 96 Q180 112 240 96 Q300 80 360 96 L400 96 L400 84 Q340 70 280 84 Q220 98 160 84 Q100 70 40 84 Q20 88 0 84 Z" fill="#8FE3F0" opacity="0.1"/>
+    <path d="M0 40 Q40 30 80 40 Q120 50 160 40 Q200 30 240 40 Q280 50 320 40 Q360 30 400 40 L400 0 L0 0 Z" fill="#0D3B66" opacity="0.35"/>
+    <path d="M0 70 Q50 58 100 70 Q150 82 200 70 Q250 58 300 70 Q350 82 400 70 L400 34 Q350 24 300 34 Q250 46 200 34 Q150 22 100 34 Q50 46 0 34 Z" fill="#123F6B" opacity="0.3"/>
+    <circle cx="60" cy="120" r="2" fill="#FFFFFF" opacity="0.2"/>
+    <circle cx="140" cy="90" r="1.5" fill="#FFFFFF" opacity="0.16"/>
+    <circle cx="300" cy="150" r="2.5" fill="#FFFFFF" opacity="0.14"/>
+    <circle cx="360" cy="110" r="1.5" fill="#FFFFFF" opacity="0.2"/>
+    <circle cx="200" cy="180" r="2" fill="#FFFFFF" opacity="0.12"/>
+    <circle cx="120" cy="220" r="1.5" fill="#FFFFFF" opacity="0.1"/>
+    <circle cx="320" cy="230" r="2" fill="#FFFFFF" opacity="0.1"/>
   </g>
 </svg>

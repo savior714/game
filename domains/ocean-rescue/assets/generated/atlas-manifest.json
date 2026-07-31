@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "sourcePacketSha256": "fbfb6de16b177fb32ca7db1b0a70e9f5abfbc8b8f7c9399f134784854e941283",
-  "approvalRecordSha256": "06a6589a8bb8ab56eb2784644fcdb42f5f06da1be25899b30e46cc62a601fc20",
-  "sourceSetSha256": "7f395c9b64a9d048152a8262e951c25667a15501c58658fa64bdcc6b899de76b",
+  "sourcePacketSha256": "15871aca08460a0c73e4aeb12c8a78c4e72eb14ab01aa55e84ace6449228ad00",
+  "approvalRecordSha256": "ac971b08e1a3b47104588adc11f5d0f8e67fa9550f3a3c8ec342b9e4ab8e53a0",
+  "sourceSetSha256": "a4b4594344688275669547e26b4fb77fff635d41a61bb37845fe49f98f81eb77",
   "toolchain": {
     "cairosvg": "2.9.0",
     "pillow": "12.3.0",
@@ -42,10 +42,10 @@
           "index": 0,
           "image": "characters-0.png",
           "spritesheet": "characters-0.json",
-          "width": 2487,
+          "width": 2454,
           "height": 354,
-          "imageSha256": "6dde2227b61d9685533bb63a19ee4263e51661e95491dab90619216d259ed15c",
-          "spritesheetSha256": "a868e9c7932d10d7408f5778a63431776244321f459fb9b397d3de4d1ce3745c",
+          "imageSha256": "3bb09292879abbe7807c345344e70a20c8cd6cb9fa6b46d10d6630900d7957a7",
+          "spritesheetSha256": "240198dcfaa2f39cf5ace11b1bca6a1efc49e4a30a1ff5a3e49b426d47419d72",
           "aliases": [
             "otter.arm.far",
             "otter.arm.near",
@@ -62,13 +62,15 @@
           ]
         }
       ],
-      "bundleSha256": "cc65ddc535d1cdfa8ed083e8298b668e2aa69765d390c70809042207944d68b5"
+      "bundleSha256": "72fbc298b0905882a450804cae4a8a6c5c8878b28051b9baee9407bddc477f47"
     },
     {
       "name": "scene",
       "aliases": [
         "scene.coral.foreground",
+        "scene.passage",
         "scene.reef.mid",
+        "scene.sand-path",
         "scene.seaweed-loop.01",
         "scene.submarine",
         "scene.water.far"
@@ -80,25 +82,33 @@
           "index": 0,
           "image": "scene-0.png",
           "spritesheet": "scene-0.json",
-          "width": 3104,
-          "height": 608,
-          "imageSha256": "920683d76d581c96ee7427d4f9b8ca97453d7760194b5b0ccfea25e819f4a86d",
-          "spritesheetSha256": "2aef04843b0036a4c2a3576de50aa38eee01e525acc6d4092887b80d3ca17a1b",
+          "width": 3380,
+          "height": 1742,
+          "imageSha256": "a97ec7ef485fc4baa1284f4264ee40c65f29392def24b0b0e7a8308ce6b7806f",
+          "spritesheetSha256": "71a064ec884bb4b841413880f416db4792a9bfe8c8f5c5c4760ee7ecff0e28ea",
           "aliases": [
             "scene.coral.foreground",
+            "scene.passage",
             "scene.reef.mid",
+            "scene.sand-path",
             "scene.seaweed-loop.01",
             "scene.submarine",
             "scene.water.far"
           ]
         }
       ],
-      "bundleSha256": "d56c75c8ae7843fe500370ebce485c610b0913b7152054d356d4b9beeffda064"
+      "bundleSha256": "51e2df2857fa76767a261fa4a8c2cf7f7517e144e4a936b7d3f62e378f97572d"
     },
     {
       "name": "effects-ui",
       "aliases": [
+        "fx.bubbles",
+        "fx.caustic",
+        "fx.cut-icon",
+        "fx.cut-ring",
         "fx.success-burst",
+        "hud.loop-icon",
+        "hud.progress-cap",
         "ui.drag-arrow"
       ],
       "pageCount": 1,
@@ -108,26 +118,32 @@
           "index": 0,
           "image": "effects-ui-0.png",
           "spritesheet": "effects-ui-0.json",
-          "width": 573,
-          "height": 296,
-          "imageSha256": "d80df597c18f224a464849eca74dcce41f5431622e84e5942dc96913b6d6f8fc",
-          "spritesheetSha256": "086c98fc562b5e21ac16c323a4c2c0a54b253a0e9bf11cd0a430e4002483082f",
+          "width": 2915,
+          "height": 368,
+          "imageSha256": "1e228c7bdec58b02bf9cde7c93b58e51cf3358e65307b9b7372d7aa05676b7a5",
+          "spritesheetSha256": "c451cd65c63d8344327c666d783245159be47bfe4ea6999a6188212794206221",
           "aliases": [
+            "fx.bubbles",
+            "fx.caustic",
+            "fx.cut-icon",
+            "fx.cut-ring",
             "fx.success-burst",
+            "hud.loop-icon",
+            "hud.progress-cap",
             "ui.drag-arrow"
           ]
         }
       ],
-      "bundleSha256": "9a014e582f08219a2e2d0d91e6e5d450e51094b4c198fc1601da052a806c6140"
+      "bundleSha256": "56a9d660747389fa4ded4d312dfc740623374537fc17f9fdfe6520d780d977f0"
     }
   ],
   "files": {
-    "characters/characters-0.json": "a868e9c7932d10d7408f5778a63431776244321f459fb9b397d3de4d1ce3745c",
-    "characters/characters-0.png": "6dde2227b61d9685533bb63a19ee4263e51661e95491dab90619216d259ed15c",
-    "effects-ui/effects-ui-0.json": "086c98fc562b5e21ac16c323a4c2c0a54b253a0e9bf11cd0a430e4002483082f",
-    "effects-ui/effects-ui-0.png": "d80df597c18f224a464849eca74dcce41f5431622e84e5942dc96913b6d6f8fc",
+    "characters/characters-0.json": "240198dcfaa2f39cf5ace11b1bca6a1efc49e4a30a1ff5a3e49b426d47419d72",
+    "characters/characters-0.png": "3bb09292879abbe7807c345344e70a20c8cd6cb9fa6b46d10d6630900d7957a7",
+    "effects-ui/effects-ui-0.json": "c451cd65c63d8344327c666d783245159be47bfe4ea6999a6188212794206221",
+    "effects-ui/effects-ui-0.png": "1e228c7bdec58b02bf9cde7c93b58e51cf3358e65307b9b7372d7aa05676b7a5",
     "pixi-assets-manifest.json": "6a289c5b258880597e129260ce86a5c3c1f89e82df46f337ce6177df668a8dad",
-    "scene/scene-0.json": "2aef04843b0036a4c2a3576de50aa38eee01e525acc6d4092887b80d3ca17a1b",
-    "scene/scene-0.png": "920683d76d581c96ee7427d4f9b8ca97453d7760194b5b0ccfea25e819f4a86d"
+    "scene/scene-0.json": "71a064ec884bb4b841413880f416db4792a9bfe8c8f5c5c4760ee7ecff0e28ea",
+    "scene/scene-0.png": "a97ec7ef485fc4baa1284f4264ee40c65f29392def24b0b0e7a8308ce6b7806f"
   }
 }

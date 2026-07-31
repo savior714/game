@@ -242,18 +242,18 @@
     },
     "turtle.free": {
       "frame": {
-        "x": 2120,
+        "x": 2104,
         "y": 4,
-        "w": 363,
-        "h": 246
+        "w": 346,
+        "h": 238
       },
       "rotated": false,
       "trimmed": true,
       "spriteSourceSize": {
-        "x": 14,
-        "y": 77,
-        "w": 363,
-        "h": 246
+        "x": 25,
+        "y": 89,
+        "w": 346,
+        "h": 238
       },
       "sourceSize": {
         "w": 400,
@@ -268,16 +268,16 @@
       "frame": {
         "x": 1746,
         "y": 4,
-        "w": 362,
-        "h": 246
+        "w": 346,
+        "h": 238
       },
       "rotated": false,
       "trimmed": true,
       "spriteSourceSize": {
-        "x": 15,
-        "y": 77,
-        "w": 362,
-        "h": 246
+        "x": 25,
+        "y": 89,
+        "w": 346,
+        "h": 238
       },
       "sourceSize": {
         "w": 400,
@@ -296,7 +296,7 @@
     "image": "characters-0.png",
     "format": "RGBA8888",
     "size": {
-      "w": 2487,
+      "w": 2454,
       "h": 354
     },
     "scale": "2"

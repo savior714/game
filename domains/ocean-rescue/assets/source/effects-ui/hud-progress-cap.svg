@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 80">
+  <g id="hud-progress-cap">
+    <rect x="4" y="4" width="272" height="72" rx="36" fill="#FFF3DC"/>
+    <rect x="20" y="14" width="240" height="52" rx="26" fill="#0A2540" opacity="0.08"/>
+    <rect x="4" y="4" width="272" height="72" rx="36" fill="none" stroke="#0A2540" stroke-width="5" opacity="0.85"/>
+  </g>
+</svg>

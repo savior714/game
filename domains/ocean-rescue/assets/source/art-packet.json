@@ -1,6 +1,9 @@
 {
   "schemaVersion": 1,
-  "logicalViewport": [1280, 720],
+  "logicalViewport": [
+    1280,
+    720
+  ],
   "declaredRasterScale": 2,
   "paletteVersion": "ocean-rescue-v1",
   "assets": [
@@ -10,9 +13,15 @@
       "source": "characters/otter-head.svg",
       "sourceType": "svg",
       "bundle": "characters",
-      "logicalSize": [200, 200],
+      "logicalSize": [
+        200,
+        200
+      ],
       "declaredRasterScale": 2,
-      "pivot": [0.5, 0.55],
+      "pivot": [
+        0.5,
+        0.55
+      ],
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Initial proof-art packet: sea otter head with ears, eyes area, nose, cheeks, and mouth",
@@ -24,9 +33,15 @@
       "source": "characters/otter-torso.svg",
       "sourceType": "svg",
       "bundle": "characters",
-      "logicalSize": [180, 220],
+      "logicalSize": [
+        180,
+        220
+      ],
       "declaredRasterScale": 2,
-      "pivot": [0.5, 0.3],
+      "pivot": [
+        0.5,
+        0.3
+      ],
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Initial proof-art packet: sea otter torso with belly patch and rescue suit collar",
@@ -38,9 +53,15 @@
       "source": "characters/otter-arm-near.svg",
       "sourceType": "svg",
       "bundle": "characters",
-      "logicalSize": [120, 180],
+      "logicalSize": [
+        120,
+        180
+      ],
       "declaredRasterScale": 2,
-      "pivot": [0.5, 0.12],
+      "pivot": [
+        0.5,
+        0.12
+      ],
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Initial proof-art packet: near-side forelimb with paw pads for cutout assembly",
@@ -52,9 +73,15 @@
       "source": "characters/otter-arm-far.svg",
       "sourceType": "svg",
       "bundle": "characters",
-      "logicalSize": [120, 180],
+      "logicalSize": [
+        120,
+        180
+      ],
       "declaredRasterScale": 2,
-      "pivot": [0.5, 0.12],
+      "pivot": [
+        0.5,
+        0.12
+      ],
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Initial proof-art packet: far-side forelimb with darker shade for depth",
@@ -66,9 +93,15 @@
       "source": "characters/otter-tail.svg",
       "sourceType": "svg",
       "bundle": "characters",
-      "logicalSize": [140, 120],
+      "logicalSize": [
+        140,
+        120
+      ],
       "declaredRasterScale": 2,
-      "pivot": [0.65, 0.15],
+      "pivot": [
+        0.65,
+        0.15
+      ],
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Initial proof-art packet: flat paddle tail for cutout assembly",
@@ -80,9 +113,15 @@
       "source": "characters/otter-eyes-open.svg",
       "sourceType": "svg",
       "bundle": "characters",
-      "logicalSize": [160, 80],
+      "logicalSize": [
+        160,
+        80
+      ],
       "declaredRasterScale": 2,
-      "pivot": [0.5, 0.5],
+      "pivot": [
+        0.5,
+        0.5
+      ],
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Initial proof-art packet: open alert eye pair with highlights",
@@ -94,9 +133,15 @@
       "source": "characters/otter-eyes-closed.svg",
       "sourceType": "svg",
       "bundle": "characters",
-      "logicalSize": [160, 80],
+      "logicalSize": [
+        160,
+        80
+      ],
       "declaredRasterScale": 2,
-      "pivot": [0.5, 0.5],
+      "pivot": [
+        0.5,
+        0.5
+      ],
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Initial proof-art packet: closed happy eye arcs for blink and smile states",
@@ -108,9 +153,15 @@
       "source": "characters/otter-mouth-neutral.svg",
       "sourceType": "svg",
       "bundle": "characters",
-      "logicalSize": [100, 60],
+      "logicalSize": [
+        100,
+        60
+      ],
       "declaredRasterScale": 2,
-      "pivot": [0.5, 0.58],
+      "pivot": [
+        0.5,
+        0.58
+      ],
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Initial proof-art packet: straight neutral mouth line",
@@ -122,9 +173,15 @@
       "source": "characters/otter-mouth-concern.svg",
       "sourceType": "svg",
       "bundle": "characters",
-      "logicalSize": [100, 60],
+      "logicalSize": [
+        100,
+        60
+      ],
       "declaredRasterScale": 2,
-      "pivot": [0.5, 0.47],
+      "pivot": [
+        0.5,
+        0.47
+      ],
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Initial proof-art packet: worried downturned mouth with brow lines",
@@ -136,9 +193,15 @@
       "source": "characters/otter-mouth-smile.svg",
       "sourceType": "svg",
       "bundle": "characters",
-      "logicalSize": [100, 60],
+      "logicalSize": [
+        100,
+        60
+      ],
       "declaredRasterScale": 2,
-      "pivot": [0.5, 0.53],
+      "pivot": [
+        0.5,
+        0.53
+      ],
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Initial proof-art packet: upward smile with blush",
@@ -150,13 +213,19 @@
       "source": "characters/turtle-worried.svg",
       "sourceType": "svg",
       "bundle": "characters",
-      "logicalSize": [200, 180],
+      "logicalSize": [
+        200,
+        180
+      ],
       "declaredRasterScale": 2,
-      "pivot": [0.5, 0.5],
+      "pivot": [
+        0.5,
+        0.5
+      ],
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Initial proof-art packet: worried turtle with downturned mouth and tense flippers",
-      "sourceSha256": "be7a100e0f8da491b0f15d74054965b5f4b2a01f8fb8a0874cf5828cce2663de"
+      "sourceSha256": "384bc971d99fa6a4e5b0bac5558754b74ff8848ff5af124ce928aeb276abfae5"
     },
     {
       "id": "turtle-free-01",
@@ -164,13 +233,19 @@
       "source": "characters/turtle-free.svg",
       "sourceType": "svg",
       "bundle": "characters",
-      "logicalSize": [200, 180],
+      "logicalSize": [
+        200,
+        180
+      ],
       "declaredRasterScale": 2,
-      "pivot": [0.5, 0.5],
+      "pivot": [
+        0.5,
+        0.5
+      ],
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Initial proof-art packet: free happy turtle with smile and relaxed flippers",
-      "sourceSha256": "fc9e06503566a06e568203b3434c31c5f440de14544cabce736cb7f182a2fd4a"
+      "sourceSha256": "fe3dc87ea5d163aa83815f49ef7e04a1a171357f623e3f13846eb6d044d672e4"
     },
     {
       "id": "scene-submarine-01",
@@ -178,13 +253,19 @@
       "source": "scene/submarine.svg",
       "sourceType": "svg",
       "bundle": "scene",
-      "logicalSize": [320, 200],
+      "logicalSize": [
+        320,
+        200
+      ],
       "declaredRasterScale": 2,
-      "pivot": [0.5, 0.55],
+      "pivot": [
+        0.5,
+        0.55
+      ],
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Initial proof-art packet: toy-like rescue submarine with portholes and periscope",
-      "sourceSha256": "3879731c5f28a27792954e7a207d847661ababe8fb213b233e37329dd8aab410"
+      "sourceSha256": "7654768aeb7a0351d65448f741c5969c1ce98993c93fc79da5c63ee6624616fa"
     },
     {
       "id": "scene-water-far-01",
@@ -192,13 +273,19 @@
       "source": "scene/water-far.svg",
       "sourceType": "svg",
       "bundle": "scene",
-      "logicalSize": [400, 300],
+      "logicalSize": [
+        400,
+        300
+      ],
       "declaredRasterScale": 2,
-      "pivot": [0.5, 0.5],
+      "pivot": [
+        0.5,
+        0.5
+      ],
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Initial proof-art packet: deep navy far-water with layered wave silhouettes",
-      "sourceSha256": "a7c89a18091f4afab1f7d68671d8fec536cf2e4c3365e43fcc1527021e9394d1"
+      "sourceSha256": "e84c7995fc1831045105de368201552c7a01c5a36998ad556222f76088043444"
     },
     {
       "id": "scene-reef-mid-01",
@@ -206,13 +293,19 @@
       "source": "scene/reef-mid.svg",
       "sourceType": "svg",
       "bundle": "scene",
-      "logicalSize": [400, 200],
+      "logicalSize": [
+        400,
+        200
+      ],
       "declaredRasterScale": 2,
-      "pivot": [0.5, 0.65],
+      "pivot": [
+        0.5,
+        0.65
+      ],
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Initial proof-art packet: midground reef with fish silhouettes and anemone",
-      "sourceSha256": "b89939f4e74f4780e4b7441224b965c50b59c50ebe34e56ff7accfe6f6cecd42"
+      "sourceSha256": "4c3a77d3c29bfad45116a6a292b8addb7b968c18d191c385df89b08c98e868fd"
     },
     {
       "id": "scene-coral-foreground-01",
@@ -220,13 +313,19 @@
       "source": "scene/coral-foreground.svg",
       "sourceType": "svg",
       "bundle": "scene",
-      "logicalSize": [400, 160],
+      "logicalSize": [
+        1280,
+        240
+      ],
       "declaredRasterScale": 2,
-      "pivot": [0.5, 0.8],
+      "pivot": [
+        0.5,
+        0.85
+      ],
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
-      "revisionNote": "Initial proof-art packet: foreground coral silhouette with sand base",
-      "sourceSha256": "4cead5c2a1afb6beca9bcfd3b25449dfa6dd0bcc1ed493a3b600266bbcdfdaef"
+      "revisionNote": "Edge-framing coral with sand base; open center for gameplay plane",
+      "sourceSha256": "0038393b669a64e4432cc355c21818d96df5a0402fa2305a123b5290d74df905"
     },
     {
       "id": "scene-seaweed-loop-01-01",
@@ -234,13 +333,19 @@
       "source": "scene/seaweed-loop-01.svg",
       "sourceType": "svg",
       "bundle": "scene",
-      "logicalSize": [120, 200],
+      "logicalSize": [
+        120,
+        200
+      ],
       "declaredRasterScale": 2,
-      "pivot": [0.5, 0.1],
+      "pivot": [
+        0.5,
+        0.1
+      ],
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Initial proof-art packet: closed-loop seaweed silhouette with leaf nodes",
-      "sourceSha256": "3aed6b90d0b1879fb01eb7e0276f6b0443f95a5fb077747f263487f7387c4348"
+      "sourceSha256": "28a8b22a65dd12473337bcce235364df5eb7ee7db9bacc1306330dfb378c636d"
     },
     {
       "id": "ui-drag-arrow-01",
@@ -248,9 +353,15 @@
       "source": "effects-ui/drag-arrow.svg",
       "sourceType": "svg",
       "bundle": "effects-ui",
-      "logicalSize": [160, 160],
+      "logicalSize": [
+        160,
+        160
+      ],
       "declaredRasterScale": 2,
-      "pivot": [0.5, 0.5],
+      "pivot": [
+        0.5,
+        0.5
+      ],
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Initial proof-art packet: directional drag arrow with dashed circle",
@@ -262,13 +373,179 @@
       "source": "effects-ui/success-burst.svg",
       "sourceType": "svg",
       "bundle": "effects-ui",
-      "logicalSize": [160, 160],
+      "logicalSize": [
+        160,
+        160
+      ],
       "declaredRasterScale": 2,
-      "pivot": [0.5, 0.5],
+      "pivot": [
+        0.5,
+        0.5
+      ],
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Initial proof-art packet: radial success burst with star rays and particles",
       "sourceSha256": "68e61720e4efbf7c944e2fc50cbe45a1a42763103b21a98591986c54868ce414"
+    },
+    {
+      "id": "scene-sand-path-01",
+      "alias": "scene.sand-path",
+      "source": "scene/sand-path.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        1200,
+        240
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        1.0
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Bottom sand/rock corridor with tide pool and rock shelf value separation",
+      "sourceSha256": "e6e0216dee2dc7a5d2d67e35c700a491cab00823ccdb6073468860679e5129dd"
+    },
+    {
+      "id": "scene-passage-01",
+      "alias": "scene.passage",
+      "source": "scene/passage.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        480,
+        360
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Darker exploration passage arch on the right with faint cyan continuation glow",
+      "sourceSha256": "97d4c85985283469e52dbd78621669551d976f0c96294af0c6f1477022b6f0cd"
+    },
+    {
+      "id": "fx-cut-ring-01",
+      "alias": "fx.cut-ring",
+      "source": "effects-ui/cut-ring.svg",
+      "sourceType": "svg",
+      "bundle": "effects-ui",
+      "logicalSize": [
+        180,
+        180
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Gold circular focus ring with dotted arc and short rays for the cut point",
+      "sourceSha256": "03b0cb659924369b4aa700ae6fb16191cd5c837f4c5e324fcbd16f674b52f80f"
+    },
+    {
+      "id": "fx-cut-icon-01",
+      "alias": "fx.cut-icon",
+      "source": "effects-ui/cut-icon.svg",
+      "sourceType": "svg",
+      "bundle": "effects-ui",
+      "logicalSize": [
+        96,
+        96
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Scissors icon marking the canonical cut action",
+      "sourceSha256": "23e51d53a490f30e9653a2da7943da84ba41199649a1fb1983c8e9e35bf4ce07"
+    },
+    {
+      "id": "fx-bubbles-01",
+      "alias": "fx.bubbles",
+      "source": "effects-ui/bubbles.svg",
+      "sourceType": "svg",
+      "bundle": "effects-ui",
+      "logicalSize": [
+        120,
+        120
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Small translucent bubble cluster for submarine trail and ambient drift",
+      "sourceSha256": "a9303427d1c4de4a742d43529af21b237c9e48855e96799ee138283046d43fd6"
+    },
+    {
+      "id": "fx-caustic-01",
+      "alias": "fx.caustic",
+      "source": "effects-ui/caustic.svg",
+      "sourceType": "svg",
+      "bundle": "effects-ui",
+      "logicalSize": [
+        520,
+        240
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Soft caustic light bands for slow underwater shimmer",
+      "sourceSha256": "2b9ed57ccf37f166fb2afd16df15646ece99b5fc96c3a38ea52191de3255827a"
+    },
+    {
+      "id": "hud-progress-cap-01",
+      "alias": "hud.progress-cap",
+      "source": "effects-ui/hud-progress-cap.svg",
+      "sourceType": "svg",
+      "bundle": "effects-ui",
+      "logicalSize": [
+        280,
+        80
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Rounded capsule backing for the rescue-progress HUD",
+      "sourceSha256": "fd460250ba07353833a954ad76326294bc1cc470adaba3d6fa47165ee4222860"
+    },
+    {
+      "id": "hud-loop-icon-01",
+      "alias": "hud.loop-icon",
+      "source": "effects-ui/hud-loop-icon.svg",
+      "sourceType": "svg",
+      "bundle": "effects-ui",
+      "logicalSize": [
+        48,
+        64
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Small seaweed-loop icon used for the rescue progress HUD",
+      "sourceSha256": "491f53cade4ad7da21ac93e142d30b628f5102e8eb99636904ef90a5e2e97665"
     }
   ]
 }

@@ -16,7 +16,7 @@ from pathlib import Path
 
 SCHEMA_VERSION = 1
 REQUIRED_DECISION = "approved"
-REQUIRED_ASSET_COUNT = 19
+REQUIRED_ASSET_COUNT = 27
 
 
 def fail(msg: str) -> None:

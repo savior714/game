@@ -10,6 +10,8 @@
     "scene.coral.foreground",
     "scene.submarine",
     "scene.seaweed-loop.01",
+    "scene.sand-path",
+    "scene.passage",
     "otter.tail",
     "otter.arm.far",
     "otter.torso",
@@ -23,7 +25,13 @@
     "turtle.worried",
     "turtle.free",
     "ui.drag-arrow",
-    "fx.success-burst"
+    "fx.success-burst",
+    "fx.cut-ring",
+    "fx.cut-icon",
+    "fx.bubbles",
+    "fx.caustic",
+    "hud.progress-cap",
+    "hud.loop-icon"
   ];
 
   var WIDTH = 1280;
@@ -96,7 +104,7 @@
   }
 
   function spriteCount() {
-    return nodes ? 21 : 0;
+    return nodes ? 31 : 0;
   }
 
   function makeSprite(alias, label) {
@@ -136,18 +144,23 @@
     }
     var far = RenderRuntime.getContainer("farBackground");
     var mid = RenderRuntime.getContainer("midground");
+    var gameplayWorld = RenderRuntime.getContainer("gameplayWorld");
     var submarine = RenderRuntime.getContainer("submarine");
     var turtleAndObstacle = RenderRuntime.getContainer("turtleAndObstacle");
     var seaOtterRig = RenderRuntime.getContainer("seaOtterRig");
     var foreground = RenderRuntime.getContainer("foreground");
     var effects = RenderRuntime.getContainer("effects");
-    if (!far || !mid || !submarine || !turtleAndObstacle || !seaOtterRig || !foreground || !effects) {
+    var hud = RenderRuntime.getContainer("hud");
+    if (!far || !mid || !gameplayWorld || !submarine || !turtleAndObstacle || !seaOtterRig || !foreground || !effects || !hud) {
       throw new Error("Missing canonical authored scene container");
     }
 
     nodes = {
       water: makeSprite("scene.water.far", "sea-turtle-water-far"),
       reef: makeSprite("scene.reef.mid", "sea-turtle-reef-mid"),
+      passage: makeSprite("scene.passage", "sea-turtle-passage"),
+      caustic: makeSprite("fx.caustic", "sea-turtle-caustic"),
+      sandPath: makeSprite("scene.sand-path", "sea-turtle-sand-path"),
       foreground: makeSprite("scene.coral.foreground", "sea-turtle-coral-foreground"),
       submarine: makeSprite("scene.submarine", "sea-turtle-submarine"),
       loops: [],
@@ -164,14 +177,25 @@
       otterMouthSmile: makeSprite("otter.mouth.smile", "sea-otter-mouth-smile"),
       otterArmNear: makeSprite("otter.arm.near", "sea-otter-arm-near"),
       dragArrow: makeSprite("ui.drag-arrow", "sea-turtle-drag-arrow"),
-      successBurst: makeSprite("fx.success-burst", "sea-turtle-success-burst")
+      cutRing: makeSprite("fx.cut-ring", "sea-turtle-cut-ring"),
+      cutIcon: makeSprite("fx.cut-icon", "sea-turtle-cut-icon"),
+      bubbles: makeSprite("fx.bubbles", "sea-turtle-bubbles"),
+      successBurst: makeSprite("fx.success-burst", "sea-turtle-success-burst"),
+      hudCap: makeSprite("hud.progress-cap", "sea-turtle-hud-cap"),
+      hudLoops: []
     };
     for (var i = 0; i < 3; i += 1) {
       nodes.loops.push(makeSprite("scene.seaweed-loop.01", "sea-turtle-loop-" + (i + 1)));
     }
+    for (var h = 0; h < 3; h += 1) {
+      nodes.hudLoops.push(makeSprite("hud.loop-icon", "sea-turtle-hud-loop-" + (h + 1)));
+    }
 
     addChild(far, nodes.water);
     addChild(mid, nodes.reef);
+    addChild(mid, nodes.passage);
+    addChild(mid, nodes.caustic);
+    gameplayWorld.addChildAt(nodes.sandPath, 0);
     addChild(submarine, nodes.submarine);
     addChild(turtleAndObstacle, nodes.turtleWorried);
     addChild(turtleAndObstacle, nodes.turtleFree);
@@ -190,7 +214,14 @@
     addChild(seaOtterRig, nodes.otterArmNear);
     addChild(foreground, nodes.foreground);
     addChild(effects, nodes.dragArrow);
+    addChild(effects, nodes.cutRing);
+    addChild(effects, nodes.cutIcon);
+    addChild(effects, nodes.bubbles);
     addChild(effects, nodes.successBurst);
+    addChild(hud, nodes.hudCap);
+    for (var hudIndex = 0; hudIndex < nodes.hudLoops.length; hudIndex += 1) {
+      addChild(hud, nodes.hudLoops[hudIndex]);
+    }
 
     layoutStaticNodes();
   }
@@ -200,21 +231,33 @@
     setScale(nodes.water, 3.2, 2.4);
     nodes.water.alpha = 1;
 
-    setPosition(nodes.reef, WIDTH / 2, 610);
-    setScale(nodes.reef, 1.1, 0.65);
-    nodes.reef.alpha = 0.52;
+    setPosition(nodes.reef, WIDTH / 2, 500);
+    setScale(nodes.reef, 1.4, 0.85);
+    nodes.reef.alpha = 0.6;
+
+    setPosition(nodes.passage, 1200, 330);
+    setScale(nodes.passage, 0.85, 0.85);
+    nodes.passage.alpha = 1;
+
+    setPosition(nodes.caustic, WIDTH / 2, 300);
+    setScale(nodes.caustic, 1.6, 1.3);
+    nodes.caustic.alpha = 0.4;
+
+    setPosition(nodes.sandPath, WIDTH / 2, HEIGHT);
+    setScale(nodes.sandPath, 1, 1);
+    nodes.sandPath.alpha = 1;
 
     setPosition(nodes.foreground, WIDTH / 2, 790);
-    setScale(nodes.foreground, 0.82, 0.58);
-    nodes.foreground.alpha = 0.82;
+    setScale(nodes.foreground, 1, 1);
+    nodes.foreground.alpha = 0.9;
 
     setPosition(nodes.submarine, 220, 390);
-    setScale(nodes.submarine, 0.85, 0.85);
+    setScale(nodes.submarine, 1, 1);
 
     setPosition(nodes.turtleWorried, 950, 430);
     setPosition(nodes.turtleFree, 950, 430);
-    setScale(nodes.turtleWorried, 0.82, 0.82);
-    setScale(nodes.turtleFree, 0.82, 0.82);
+    setScale(nodes.turtleWorried, 0.95, 0.95);
+    setScale(nodes.turtleFree, 0.95, 0.95);
 
     setPosition(nodes.otterTail, -94, 38);
     setPosition(nodes.otterArmFar, -73, -4);
@@ -226,21 +269,34 @@
     setPosition(nodes.otterMouthConcern, 0, -15);
     setPosition(nodes.otterMouthSmile, 0, -15);
     setPosition(nodes.otterArmNear, 73, -4);
-    setScale(nodes.otterTail, 0.7, 0.7);
-    setScale(nodes.otterArmFar, 0.7, 0.7);
-    setScale(nodes.otterTorso, 0.7, 0.7);
-    setScale(nodes.otterHead, 0.7, 0.7);
-    setScale(nodes.otterEyesOpen, 0.7, 0.7);
-    setScale(nodes.otterEyesClosed, 0.7, 0.7);
-    setScale(nodes.otterMouthNeutral, 0.7, 0.7);
-    setScale(nodes.otterMouthConcern, 0.7, 0.7);
-    setScale(nodes.otterMouthSmile, 0.7, 0.7);
-    setScale(nodes.otterArmNear, 0.7, 0.7);
+    setScale(nodes.otterTail, 0.62, 0.62);
+    setScale(nodes.otterArmFar, 0.62, 0.62);
+    setScale(nodes.otterTorso, 0.62, 0.62);
+    setScale(nodes.otterHead, 0.62, 0.62);
+    setScale(nodes.otterEyesOpen, 0.62, 0.62);
+    setScale(nodes.otterEyesClosed, 0.62, 0.62);
+    setScale(nodes.otterMouthNeutral, 0.62, 0.62);
+    setScale(nodes.otterMouthConcern, 0.62, 0.62);
+    setScale(nodes.otterMouthSmile, 0.62, 0.62);
+    setScale(nodes.otterArmNear, 0.62, 0.62);
     var rig = RenderRuntime.getContainer("seaOtterRig");
     setPosition(rig, 590, 420);
 
+    setPosition(nodes.bubbles, 250, 330);
+    setScale(nodes.bubbles, 0.8, 0.8);
+    nodes.bubbles.alpha = 0.75;
+
+    setPosition(nodes.hudCap, 150, 48);
+    setScale(nodes.hudCap, 1, 1);
+    for (var h = 0; h < nodes.hudLoops.length; h += 1) {
+      setPosition(nodes.hudLoops[h], 96 + h * 54, 48);
+      setScale(nodes.hudLoops[h], 0.9, 0.9);
+    }
+
     nodes.dragArrow.visible = false;
     nodes.successBurst.visible = false;
+    nodes.cutRing.visible = false;
+    nodes.cutIcon.visible = false;
     nodes.turtleFree.visible = false;
     nodes.otterEyesClosed.visible = false;
     nodes.otterMouthConcern.visible = false;
@@ -333,6 +389,9 @@
     nodes.turtleWorried.rotation = tenseRotation;
     nodes.turtleFree.rotation = free ? 0.02 : 0;
     nodes.turtleFree.position.y = free ? 414 : 430;
+    var breathe = reducedMotion ? 1 : 1 + Math.sin(activeTime / 1500) * 0.015;
+    nodes.turtleWorried.scale.set(0.95 * breathe, 0.95 * breathe);
+    nodes.turtleFree.scale.set(0.95 * breathe, 0.95 * breathe);
   }
 
   function syncOtter(current) {
@@ -419,6 +478,63 @@
     }
   }
 
+  function syncCutPoint(current) {
+    var activeRopeId = current ? current.activeRopeId : null;
+    var feedback = current ? current.feedback : null;
+    var activeRope = ropeById(activeRopeId);
+    var show = !!activeRope && feedback !== "success";
+    nodes.cutRing.visible = show;
+    nodes.cutIcon.visible = show;
+    if (show) {
+      nodes.cutRing.position.set(activeRope.end.x, activeRope.end.y);
+      var ringPulse = reducedMotion ? 1 : 1 + Math.sin(activeTime / 240) * 0.07;
+      nodes.cutRing.scale.set(ringPulse, ringPulse);
+      nodes.cutRing.alpha = reducedMotion ? 0.9 : 0.9 + Math.sin(activeTime / 300) * 0.1;
+      nodes.cutIcon.position.set(activeRope.end.x - 40, activeRope.end.y + 28);
+      nodes.cutIcon.scale.set(0.7, 0.7);
+      nodes.cutIcon.rotation = reducedMotion ? 0 : Math.sin(activeTime / 700) * 0.06;
+    }
+  }
+
+  function syncBubbles() {
+    var drift = reducedMotion ? 0 : activeTime / 3;
+    var cycle = 170;
+    var y = 330 - (drift % cycle);
+    nodes.bubbles.position.set(250 + Math.sin(activeTime / 1600) * 10, y);
+    nodes.bubbles.alpha = 0.75;
+    nodes.bubbles.scale.set(0.8, 0.8);
+  }
+
+  function syncCaustic() {
+    nodes.caustic.alpha = reducedMotion ? 0.35 : 0.3 + Math.sin(activeTime / 1500) * 0.12;
+    nodes.caustic.position.x = WIDTH / 2 + Math.sin(activeTime / 2400) * 14;
+  }
+
+  function syncHud(current) {
+    var activeRopeId = current ? current.activeRopeId : null;
+    var feedback = current ? current.feedback : null;
+    for (var i = 0; i < nodes.hudLoops.length; i += 1) {
+      var icon = nodes.hudLoops[i];
+      var rope = SeaTurtle.Ropes[i];
+      var completed = current && current.completedRopeIds.indexOf(rope.id) !== -1;
+      var isActive = activeRopeId === rope.id && feedback !== "success";
+      if (completed) {
+        icon.tint = 0xffc94d;
+        icon.alpha = 1;
+        icon.scale.set(0.9, 0.9);
+      } else if (isActive) {
+        icon.tint = 0xffc94d;
+        icon.alpha = 0.95;
+        var hudPulse = reducedMotion ? 1 : 1 + Math.sin(activeTime / 240) * 0.1;
+        icon.scale.set(0.9 * hudPulse, 0.9 * hudPulse);
+      } else {
+        icon.tint = 0x7fb2c4;
+        icon.alpha = 0.7;
+        icon.scale.set(0.9, 0.9);
+      }
+    }
+  }
+
   function updateScene() {
     if (!nodes) {
       return;
@@ -431,6 +547,10 @@
     syncTurtle(snapshot);
     syncOtter(snapshot);
     syncLoops(snapshot);
+    syncCutPoint(snapshot);
+    syncBubbles();
+    syncCaustic();
+    syncHud(snapshot);
   }
 
   function render() {
@@ -623,6 +743,9 @@
     if (nodes && RenderRuntime) {
       removeOwnedChild(RenderRuntime.getContainer("farBackground"), nodes.water);
       removeOwnedChild(RenderRuntime.getContainer("midground"), nodes.reef);
+      removeOwnedChild(RenderRuntime.getContainer("midground"), nodes.passage);
+      removeOwnedChild(RenderRuntime.getContainer("midground"), nodes.caustic);
+      removeOwnedChild(RenderRuntime.getContainer("gameplayWorld"), nodes.sandPath);
       removeOwnedChild(RenderRuntime.getContainer("submarine"), nodes.submarine);
       removeOwnedChild(RenderRuntime.getContainer("turtleAndObstacle"), nodes.turtleWorried);
       removeOwnedChild(RenderRuntime.getContainer("turtleAndObstacle"), nodes.turtleFree);
@@ -642,7 +765,14 @@
       removeOwnedChild(rig, nodes.otterArmNear);
       removeOwnedChild(RenderRuntime.getContainer("foreground"), nodes.foreground);
       removeOwnedChild(RenderRuntime.getContainer("effects"), nodes.dragArrow);
+      removeOwnedChild(RenderRuntime.getContainer("effects"), nodes.cutRing);
+      removeOwnedChild(RenderRuntime.getContainer("effects"), nodes.cutIcon);
+      removeOwnedChild(RenderRuntime.getContainer("effects"), nodes.bubbles);
       removeOwnedChild(RenderRuntime.getContainer("effects"), nodes.successBurst);
+      removeOwnedChild(RenderRuntime.getContainer("hud"), nodes.hudCap);
+      for (var hudIndex = 0; hudIndex < nodes.hudLoops.length; hudIndex += 1) {
+        removeOwnedChild(RenderRuntime.getContainer("hud"), nodes.hudLoops[hudIndex]);
+      }
     }
     nodes = null;
     mounted = false;

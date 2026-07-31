@@ -282,6 +282,203 @@ html, body {
   color: #bcd6ee;
 }
 
+#ocean-rescue-launch {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 16px;
+  background: rgba(18, 32, 46, 0.94);
+  color: #eef5fb;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  text-align: center;
+  cursor: pointer;
+}
+
+#ocean-rescue-launch h2 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+#ocean-rescue-launch > p {
+  margin: 0 0 12px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #c6d8ea;
+}
+
+#ocean-rescue-launch-companion {
+  font-size: 15px;
+  font-weight: 700;
+  color: #bcd6ee;
+}
+
+#ocean-rescue-launch-briefing {
+  font-size: 17px;
+  font-weight: 700;
+  color: #eef5fb;
+}
+
+#ocean-rescue-launch-visual {
+  position: relative;
+  width: min(320px, 72%);
+  height: 140px;
+  margin: 12px auto 16px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: rgba(10, 20, 32, 0.6);
+}
+
+.ocean-rescue-launch-door {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  box-sizing: border-box;
+  background: #0e1c2c;
+  border: 2px solid #3b6ea5;
+}
+
+.ocean-rescue-launch-door-left {
+  left: 0;
+  border-right: none;
+}
+
+.ocean-rescue-launch-door-right {
+  right: 0;
+  border-left: none;
+}
+
+#ocean-rescue-launch-gup {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+}
+
+#ocean-rescue-launch-gup-name {
+  display: inline-block;
+  box-sizing: border-box;
+  padding: 6px 12px;
+  border: 2px solid #ffd166;
+  border-radius: 10px;
+  background: rgba(20, 48, 74, 0.9);
+  color: #ffd166;
+  font-size: 16px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+#ocean-rescue-launch.ocean-rescue-launch-active .ocean-rescue-launch-door-left {
+  animation: ocean-rescue-door-open-left 1.6s ease-out forwards;
+}
+
+#ocean-rescue-launch.ocean-rescue-launch-active .ocean-rescue-launch-door-right {
+  animation: ocean-rescue-door-open-right 1.6s ease-out forwards;
+}
+
+#ocean-rescue-launch.ocean-rescue-launch-active #ocean-rescue-launch-gup {
+  animation: ocean-rescue-gup-depart 3s ease-in forwards;
+}
+
+@keyframes ocean-rescue-door-open-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes ocean-rescue-door-open-right {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes ocean-rescue-gup-depart {
+  0% {
+    transform: translate(-50%, -50%);
+  }
+  60% {
+    transform: translate(-50%, -50%);
+  }
+  100% {
+    transform: translate(120%, -50%);
+  }
+}
+
+#ocean-rescue-launch-skip {
+  min-height: 48px;
+  min-width: 120px;
+  box-sizing: border-box;
+  padding: 12px 20px;
+  border: 2px solid #3b6ea5;
+  border-radius: 12px;
+  background: #14304a;
+  color: #eef5fb;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+#ocean-rescue-launch-skip:not(:disabled):hover {
+  border-color: #7fb3e8;
+  background: #1d4063;
+}
+
+#ocean-rescue-launch-skip:focus-visible {
+  outline: 3px solid #ffd166;
+  outline-offset: 2px;
+}
+
+#ocean-rescue-goal-banner {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  box-sizing: border-box;
+  max-width: 70%;
+  padding: 10px 18px;
+  border: 2px solid #ffd166;
+  border-radius: 14px;
+  background: rgba(20, 48, 74, 0.92);
+  color: #eef5fb;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  pointer-events: none;
+}
+
+#ocean-rescue-stage[hidden] {
+  display: none;
+}
+
+#ocean-rescue-goal-banner[hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #ocean-rescue-launch.ocean-rescue-launch-active .ocean-rescue-launch-door-left,
+  #ocean-rescue-launch.ocean-rescue-launch-active .ocean-rescue-launch-door-right,
+  #ocean-rescue-launch.ocean-rescue-launch-active #ocean-rescue-launch-gup {
+    animation: none;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -347,8 +544,48 @@ html, body {
     </section>
 
     <section
+      id="ocean-rescue-launch"
+      aria-labelledby="ocean-rescue-launch-title"
+      hidden
+    >
+      <h2 id="ocean-rescue-launch-title">Launching!</h2>
+
+      <div
+        id="ocean-rescue-launch-visual"
+        aria-hidden="true"
+      >
+        <div class="ocean-rescue-launch-door ocean-rescue-launch-door-left"></div>
+        <div class="ocean-rescue-launch-door ocean-rescue-launch-door-right"></div>
+
+        <div id="ocean-rescue-launch-gup">
+          <span id="ocean-rescue-launch-gup-name"></span>
+        </div>
+      </div>
+
+      <p id="ocean-rescue-launch-companion"></p>
+      <p id="ocean-rescue-launch-briefing"></p>
+      <p>Tap anywhere to skip.</p>
+
+      <button
+        id="ocean-rescue-launch-skip"
+        type="button"
+      >
+        Skip
+      </button>
+    </section>
+
+    <div
+      id="ocean-rescue-goal-banner"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      hidden
+    ></div>
+
+    <section
       id="ocean-rescue-stage"
       aria-label="Ocean Rescue game stage"
+      hidden
     >
       <canvas
         id="ocean-rescue-canvas"
@@ -703,11 +940,70 @@ html, body {
 </script>
 <script>
 (function () {
+  var root = window.OceanRescue = window.OceanRescue || {};
+
+  function freeze(value) {
+    return Object.freeze(value);
+  }
+
+  var CATALOG = freeze([
+    freeze({
+      missionId: "sea-turtle",
+      briefing:
+        "A sea turtle is trapped in a net. Let’s find it and cut the ropes!",
+      goal: "Rescue the sea turtle!"
+    }),
+    freeze({
+      missionId: "crab",
+      briefing:
+        "A crab is trapped under some rocks. Let’s move them with the grabber!",
+      goal: "Help the trapped crab!"
+    }),
+    freeze({
+      missionId: "young-whale",
+      briefing:
+        "A young whale’s path is blocked. Let’s tow the debris away!",
+      goal: "Clear a path for the young whale!"
+    })
+  ]);
+
+  var DurationMs = 6000;
+  var GoalDurationMs = 3000;
+
+  function getMissionContent(missionId) {
+    if (typeof missionId !== "string") {
+      return null;
+    }
+    for (var i = 0; i < CATALOG.length; i += 1) {
+      if (CATALOG[i].missionId === missionId) {
+        return CATALOG[i];
+      }
+    }
+    return null;
+  }
+
+  root.Launch = freeze({
+    Catalog: CATALOG,
+    DurationMs: DurationMs,
+    GoalDurationMs: GoalDurationMs,
+    getMissionContent: getMissionContent
+  });
+})();
+
+</script>
+<script>
+(function () {
   var State = window.OceanRescue.State;
   var Missions = window.OceanRescue.Missions;
   var Gups = window.OceanRescue.Gups;
+  var Launch = window.OceanRescue.Launch;
 
   var controlsBound = false;
+  var launchSequenceCounter = 0;
+  var activeLaunchSequence = null;
+  var launchTimerId = null;
+  var goalTimerId = null;
+  var goalSequenceId = null;
 
   function missionById(missionId) {
     var catalog = Missions.Catalog;
@@ -1009,7 +1305,240 @@ html, body {
       status.textContent =
         "Launch ready: " + gup.name + " — " + mission.title;
     }
+    var launchEls = resolveLaunchElements();
+    if (launchEls !== null) {
+      var content = Launch.getMissionContent(mission.id);
+      if (content !== null) {
+        startLaunchPresentation(mission, gup, content, launchEls);
+      }
+    }
     return true;
+  }
+
+  function resolveLaunchElements() {
+    var launchSection = document.getElementById("ocean-rescue-launch");
+    var gupName = document.getElementById("ocean-rescue-launch-gup-name");
+    var companion = document.getElementById("ocean-rescue-launch-companion");
+    var briefing = document.getElementById("ocean-rescue-launch-briefing");
+    var goalBanner = document.getElementById("ocean-rescue-goal-banner");
+    if (!launchSection || !gupName || !companion || !briefing || !goalBanner) {
+      return null;
+    }
+    return {
+      launchSection: launchSection,
+      gupName: gupName,
+      companion: companion,
+      briefing: briefing,
+      goalBanner: goalBanner
+    };
+  }
+
+  function setLaunchActiveClass(launchSection, active) {
+    if (
+      typeof launchSection.classList === "object" &&
+      typeof launchSection.classList.add === "function" &&
+      typeof launchSection.classList.remove === "function"
+    ) {
+      if (active) {
+        launchSection.classList.add("ocean-rescue-launch-active");
+      } else {
+        launchSection.classList.remove("ocean-rescue-launch-active");
+      }
+      return;
+    }
+    var token = "ocean-rescue-launch-active";
+    var names = String(launchSection.className || "").split(/\s+/);
+    var index = names.indexOf(token);
+    if (active && index === -1) {
+      names.push(token);
+    }
+    if (!active && index !== -1) {
+      names.splice(index, 1);
+    }
+    launchSection.className = names.join(" ").trim();
+  }
+
+  function clearLaunchTimer() {
+    if (launchTimerId === null) {
+      return;
+    }
+    if (typeof window.clearTimeout === "function") {
+      window.clearTimeout(launchTimerId);
+    }
+    launchTimerId = null;
+  }
+
+  function clearGoalTimer() {
+    if (goalTimerId === null) {
+      return;
+    }
+    if (typeof window.clearTimeout === "function") {
+      window.clearTimeout(goalTimerId);
+    }
+    goalTimerId = null;
+    goalSequenceId = null;
+  }
+
+  function clearGoalBanner(goalBanner) {
+    if (!goalBanner) {
+      return;
+    }
+    goalBanner.hidden = true;
+    goalBanner.textContent = "";
+  }
+
+  function startLaunchPresentation(mission, gup, content, els) {
+    launchSequenceCounter += 1;
+    var sequence = {
+      sequenceId: launchSequenceCounter,
+      missionId: mission.id,
+      gupId: gup.id,
+      missionContent: content
+    };
+    activeLaunchSequence = sequence;
+
+    clearGoalTimer();
+
+    var gupSection = document.getElementById("ocean-rescue-gup-select");
+    if (gupSection) {
+      gupSection.hidden = true;
+    }
+    clearGoalBanner(els.goalBanner);
+
+    els.gupName.textContent = gup.name;
+    els.companion.textContent = mission.companion + ":";
+    els.briefing.textContent = content.briefing;
+
+    els.launchSection.hidden = false;
+    setLaunchActiveClass(els.launchSection, true);
+
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-launch-sequence", "active");
+      root.setAttribute("data-launch-skipped", "false");
+    }
+
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = content.briefing;
+    }
+
+    scheduleLaunchCompletion(sequence);
+  }
+
+  function scheduleLaunchCompletion(sequence) {
+    clearLaunchTimer();
+    if (typeof window.setTimeout !== "function") {
+      return;
+    }
+    launchTimerId = window.setTimeout(function () {
+      completeLaunchPresentation(sequence);
+    }, Launch.DurationMs);
+  }
+
+  function completeLaunchPresentation(sequence) {
+    if (activeLaunchSequence === null) {
+      return false;
+    }
+    if (!sequence || typeof sequence !== "object") {
+      return false;
+    }
+    if (sequence.sequenceId !== activeLaunchSequence.sequenceId) {
+      return false;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.LAUNCH) {
+      return false;
+    }
+    return finalizeLaunch(sequence, false);
+  }
+
+  function skipLaunch() {
+    var sequence = activeLaunchSequence;
+    if (sequence === null) {
+      return false;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.LAUNCH) {
+      return false;
+    }
+    clearLaunchTimer();
+    return finalizeLaunch(sequence, true);
+  }
+
+  function finalizeLaunch(sequence, skipped) {
+    var token = State.beginTransition(State.Phases.TRAVEL);
+    if (token === null) {
+      return false;
+    }
+    if (!State.completeTransition(token)) {
+      return false;
+    }
+    activeLaunchSequence = null;
+    clearLaunchTimer();
+
+    var launchSection = document.getElementById("ocean-rescue-launch");
+    if (launchSection) {
+      launchSection.hidden = true;
+      setLaunchActiveClass(launchSection, false);
+    }
+    var stage = document.getElementById("ocean-rescue-stage");
+    if (stage) {
+      stage.hidden = false;
+      stage.setAttribute("aria-hidden", "false");
+    }
+
+    var goalBanner = document.getElementById("ocean-rescue-goal-banner");
+    if (goalBanner) {
+      showGoalBanner(goalBanner, sequence);
+    }
+
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-travel-mission-id", sequence.missionId);
+      root.setAttribute("data-travel-gup-id", sequence.gupId);
+      root.setAttribute("data-travel-ready", "true");
+      root.setAttribute("data-launch-skipped", skipped ? "true" : "false");
+      root.removeAttribute("data-launch-ready");
+      root.removeAttribute("data-launch-sequence");
+    }
+
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = "Travel ready: " + sequence.missionContent.goal;
+    }
+
+    return true;
+  }
+
+  function showGoalBanner(goalBanner, sequence) {
+    clearGoalTimer();
+    goalSequenceId = sequence.sequenceId;
+    goalBanner.hidden = false;
+    goalBanner.textContent = sequence.missionContent.goal;
+    if (typeof window.setTimeout !== "function") {
+      return;
+    }
+    goalTimerId = window.setTimeout(function () {
+      hideGoalBanner(sequence.sequenceId);
+    }, Launch.GoalDurationMs);
+  }
+
+  function hideGoalBanner(sequenceId) {
+    if (goalSequenceId !== sequenceId) {
+      return;
+    }
+    if (activeLaunchSequence !== null) {
+      return;
+    }
+    var goalBanner = document.getElementById("ocean-rescue-goal-banner");
+    if (!goalBanner) {
+      return;
+    }
+    goalBanner.hidden = true;
+    goalBanner.textContent = "";
+    goalTimerId = null;
+    goalSequenceId = null;
   }
 
   function selectMission(missionId) {
@@ -1077,6 +1606,21 @@ html, body {
     if (launch && typeof launch.addEventListener === "function") {
       launch.addEventListener("click", function () {
         launchSelectedGup();
+      });
+    }
+    var launchSection = document.getElementById("ocean-rescue-launch");
+    if (launchSection && typeof launchSection.addEventListener === "function") {
+      launchSection.addEventListener("click", function () {
+        skipLaunch();
+      });
+    }
+    var skipButton = document.getElementById("ocean-rescue-launch-skip");
+    if (skipButton && typeof skipButton.addEventListener === "function") {
+      skipButton.addEventListener("click", function (event) {
+        if (event && typeof event.stopPropagation === "function") {
+          event.stopPropagation();
+        }
+        skipLaunch();
       });
     }
     controlsBound = true;

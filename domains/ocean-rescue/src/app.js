@@ -2,8 +2,14 @@
   var State = window.OceanRescue.State;
   var Missions = window.OceanRescue.Missions;
   var Gups = window.OceanRescue.Gups;
+  var Launch = window.OceanRescue.Launch;
 
   var controlsBound = false;
+  var launchSequenceCounter = 0;
+  var activeLaunchSequence = null;
+  var launchTimerId = null;
+  var goalTimerId = null;
+  var goalSequenceId = null;
 
   function missionById(missionId) {
     var catalog = Missions.Catalog;
@@ -305,7 +311,240 @@
       status.textContent =
         "Launch ready: " + gup.name + " — " + mission.title;
     }
+    var launchEls = resolveLaunchElements();
+    if (launchEls !== null) {
+      var content = Launch.getMissionContent(mission.id);
+      if (content !== null) {
+        startLaunchPresentation(mission, gup, content, launchEls);
+      }
+    }
     return true;
+  }
+
+  function resolveLaunchElements() {
+    var launchSection = document.getElementById("ocean-rescue-launch");
+    var gupName = document.getElementById("ocean-rescue-launch-gup-name");
+    var companion = document.getElementById("ocean-rescue-launch-companion");
+    var briefing = document.getElementById("ocean-rescue-launch-briefing");
+    var goalBanner = document.getElementById("ocean-rescue-goal-banner");
+    if (!launchSection || !gupName || !companion || !briefing || !goalBanner) {
+      return null;
+    }
+    return {
+      launchSection: launchSection,
+      gupName: gupName,
+      companion: companion,
+      briefing: briefing,
+      goalBanner: goalBanner
+    };
+  }
+
+  function setLaunchActiveClass(launchSection, active) {
+    if (
+      typeof launchSection.classList === "object" &&
+      typeof launchSection.classList.add === "function" &&
+      typeof launchSection.classList.remove === "function"
+    ) {
+      if (active) {
+        launchSection.classList.add("ocean-rescue-launch-active");
+      } else {
+        launchSection.classList.remove("ocean-rescue-launch-active");
+      }
+      return;
+    }
+    var token = "ocean-rescue-launch-active";
+    var names = String(launchSection.className || "").split(/\s+/);
+    var index = names.indexOf(token);
+    if (active && index === -1) {
+      names.push(token);
+    }
+    if (!active && index !== -1) {
+      names.splice(index, 1);
+    }
+    launchSection.className = names.join(" ").trim();
+  }
+
+  function clearLaunchTimer() {
+    if (launchTimerId === null) {
+      return;
+    }
+    if (typeof window.clearTimeout === "function") {
+      window.clearTimeout(launchTimerId);
+    }
+    launchTimerId = null;
+  }
+
+  function clearGoalTimer() {
+    if (goalTimerId === null) {
+      return;
+    }
+    if (typeof window.clearTimeout === "function") {
+      window.clearTimeout(goalTimerId);
+    }
+    goalTimerId = null;
+    goalSequenceId = null;
+  }
+
+  function clearGoalBanner(goalBanner) {
+    if (!goalBanner) {
+      return;
+    }
+    goalBanner.hidden = true;
+    goalBanner.textContent = "";
+  }
+
+  function startLaunchPresentation(mission, gup, content, els) {
+    launchSequenceCounter += 1;
+    var sequence = {
+      sequenceId: launchSequenceCounter,
+      missionId: mission.id,
+      gupId: gup.id,
+      missionContent: content
+    };
+    activeLaunchSequence = sequence;
+
+    clearGoalTimer();
+
+    var gupSection = document.getElementById("ocean-rescue-gup-select");
+    if (gupSection) {
+      gupSection.hidden = true;
+    }
+    clearGoalBanner(els.goalBanner);
+
+    els.gupName.textContent = gup.name;
+    els.companion.textContent = mission.companion + ":";
+    els.briefing.textContent = content.briefing;
+
+    els.launchSection.hidden = false;
+    setLaunchActiveClass(els.launchSection, true);
+
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-launch-sequence", "active");
+      root.setAttribute("data-launch-skipped", "false");
+    }
+
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = content.briefing;
+    }
+
+    scheduleLaunchCompletion(sequence);
+  }
+
+  function scheduleLaunchCompletion(sequence) {
+    clearLaunchTimer();
+    if (typeof window.setTimeout !== "function") {
+      return;
+    }
+    launchTimerId = window.setTimeout(function () {
+      completeLaunchPresentation(sequence);
+    }, Launch.DurationMs);
+  }
+
+  function completeLaunchPresentation(sequence) {
+    if (activeLaunchSequence === null) {
+      return false;
+    }
+    if (!sequence || typeof sequence !== "object") {
+      return false;
+    }
+    if (sequence.sequenceId !== activeLaunchSequence.sequenceId) {
+      return false;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.LAUNCH) {
+      return false;
+    }
+    return finalizeLaunch(sequence, false);
+  }
+
+  function skipLaunch() {
+    var sequence = activeLaunchSequence;
+    if (sequence === null) {
+      return false;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.LAUNCH) {
+      return false;
+    }
+    clearLaunchTimer();
+    return finalizeLaunch(sequence, true);
+  }
+
+  function finalizeLaunch(sequence, skipped) {
+    var token = State.beginTransition(State.Phases.TRAVEL);
+    if (token === null) {
+      return false;
+    }
+    if (!State.completeTransition(token)) {
+      return false;
+    }
+    activeLaunchSequence = null;
+    clearLaunchTimer();
+
+    var launchSection = document.getElementById("ocean-rescue-launch");
+    if (launchSection) {
+      launchSection.hidden = true;
+      setLaunchActiveClass(launchSection, false);
+    }
+    var stage = document.getElementById("ocean-rescue-stage");
+    if (stage) {
+      stage.hidden = false;
+      stage.setAttribute("aria-hidden", "false");
+    }
+
+    var goalBanner = document.getElementById("ocean-rescue-goal-banner");
+    if (goalBanner) {
+      showGoalBanner(goalBanner, sequence);
+    }
+
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-travel-mission-id", sequence.missionId);
+      root.setAttribute("data-travel-gup-id", sequence.gupId);
+      root.setAttribute("data-travel-ready", "true");
+      root.setAttribute("data-launch-skipped", skipped ? "true" : "false");
+      root.removeAttribute("data-launch-ready");
+      root.removeAttribute("data-launch-sequence");
+    }
+
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = "Travel ready: " + sequence.missionContent.goal;
+    }
+
+    return true;
+  }
+
+  function showGoalBanner(goalBanner, sequence) {
+    clearGoalTimer();
+    goalSequenceId = sequence.sequenceId;
+    goalBanner.hidden = false;
+    goalBanner.textContent = sequence.missionContent.goal;
+    if (typeof window.setTimeout !== "function") {
+      return;
+    }
+    goalTimerId = window.setTimeout(function () {
+      hideGoalBanner(sequence.sequenceId);
+    }, Launch.GoalDurationMs);
+  }
+
+  function hideGoalBanner(sequenceId) {
+    if (goalSequenceId !== sequenceId) {
+      return;
+    }
+    if (activeLaunchSequence !== null) {
+      return;
+    }
+    var goalBanner = document.getElementById("ocean-rescue-goal-banner");
+    if (!goalBanner) {
+      return;
+    }
+    goalBanner.hidden = true;
+    goalBanner.textContent = "";
+    goalTimerId = null;
+    goalSequenceId = null;
   }
 
   function selectMission(missionId) {
@@ -373,6 +612,21 @@
     if (launch && typeof launch.addEventListener === "function") {
       launch.addEventListener("click", function () {
         launchSelectedGup();
+      });
+    }
+    var launchSection = document.getElementById("ocean-rescue-launch");
+    if (launchSection && typeof launchSection.addEventListener === "function") {
+      launchSection.addEventListener("click", function () {
+        skipLaunch();
+      });
+    }
+    var skipButton = document.getElementById("ocean-rescue-launch-skip");
+    if (skipButton && typeof skipButton.addEventListener === "function") {
+      skipButton.addEventListener("click", function (event) {
+        if (event && typeof event.stopPropagation === "function") {
+          event.stopPropagation();
+        }
+        skipLaunch();
       });
     }
     controlsBound = true;

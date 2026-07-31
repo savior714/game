@@ -20,12 +20,18 @@
       "depends_on": []
     },
     {
+      "file": "launch.js",
+      "namespace": "OceanRescue.Launch",
+      "depends_on": []
+    },
+    {
       "file": "app.js",
       "namespace": "OceanRescue.App",
       "depends_on": [
         "OceanRescue.State",
         "OceanRescue.Missions",
-        "OceanRescue.Gups"
+        "OceanRescue.Gups",
+        "OceanRescue.Launch"
       ]
     }
   ],

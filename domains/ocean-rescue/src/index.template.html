@@ -72,8 +72,48 @@
     </section>
 
     <section
+      id="ocean-rescue-launch"
+      aria-labelledby="ocean-rescue-launch-title"
+      hidden
+    >
+      <h2 id="ocean-rescue-launch-title">Launching!</h2>
+
+      <div
+        id="ocean-rescue-launch-visual"
+        aria-hidden="true"
+      >
+        <div class="ocean-rescue-launch-door ocean-rescue-launch-door-left"></div>
+        <div class="ocean-rescue-launch-door ocean-rescue-launch-door-right"></div>
+
+        <div id="ocean-rescue-launch-gup">
+          <span id="ocean-rescue-launch-gup-name"></span>
+        </div>
+      </div>
+
+      <p id="ocean-rescue-launch-companion"></p>
+      <p id="ocean-rescue-launch-briefing"></p>
+      <p>Tap anywhere to skip.</p>
+
+      <button
+        id="ocean-rescue-launch-skip"
+        type="button"
+      >
+        Skip
+      </button>
+    </section>
+
+    <div
+      id="ocean-rescue-goal-banner"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      hidden
+    ></div>
+
+    <section
       id="ocean-rescue-stage"
       aria-label="Ocean Rescue game stage"
+      hidden
     >
       <canvas
         id="ocean-rescue-canvas"

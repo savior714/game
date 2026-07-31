@@ -579,6 +579,7 @@ class TestArtifactScriptOrdering:
             "OceanRescue.Terrain",
             "OceanRescue.Rescue",
             "OceanRescue.SeaTurtle",
+            "OceanRescue.SeaTurtleScene",
             "OceanRescue.Crab",
             "OceanRescue.YoungWhale",
             "OceanRescue.MissionSuccess",

@@ -21,6 +21,7 @@ TRAVEL_JS = SOURCE_ROOT / "travel.js"
 TERRAIN_JS = SOURCE_ROOT / "terrain.js"
 RESCUE_JS = SOURCE_ROOT / "rescue.js"
 SEA_TURTLE_JS = SOURCE_ROOT / "sea-turtle.js"
+SEA_TURTLE_SCENE_JS = SOURCE_ROOT / "sea-turtle-scene.js"
 CRAB_JS = SOURCE_ROOT / "crab.js"
 YOUNG_WHALE_JS = SOURCE_ROOT / "young-whale.js"
 MISSION_SUCCESS_JS = SOURCE_ROOT / "mission-success.js"
@@ -39,6 +40,7 @@ CANONICAL_SOURCE_FILES = [
     "terrain.js",
     "rescue.js",
     "sea-turtle.js",
+    "sea-turtle-scene.js",
     "crab.js",
     "young-whale.js",
     "mission-success.js",
@@ -58,7 +60,7 @@ class TestManifest:
         assert set(data.keys()) == {"template", "styles", "scripts", "assets"}
         assert data["template"] == "index.template.html"
         assert data["styles"] == ["style.css"]
-        assert len(data["scripts"]) == 14
+        assert len(data["scripts"]) == 16
 
         assert data["scripts"][0]["file"] == "vendor/pixi-8.19.0.min.js"
         assert data["scripts"][0]["namespace"] == "PIXI"
@@ -68,43 +70,52 @@ class TestManifest:
         assert data["scripts"][1]["namespace"] == "OceanRescue.RenderAssets"
         assert data["scripts"][1]["kind"] == "generated-assets"
 
-        assert data["scripts"][2]["file"] == "state.js"
-        assert data["scripts"][2]["namespace"] == "OceanRescue.State"
-        assert data["scripts"][2]["depends_on"] == []
-        assert data["scripts"][3]["file"] == "missions.js"
-        assert data["scripts"][3]["namespace"] == "OceanRescue.Missions"
+        assert data["scripts"][2]["file"] == "render-runtime.js"
+        assert data["scripts"][2]["namespace"] == "OceanRescue.RenderRuntime"
+        assert data["scripts"][3]["file"] == "state.js"
+        assert data["scripts"][3]["namespace"] == "OceanRescue.State"
         assert data["scripts"][3]["depends_on"] == []
-        assert data["scripts"][4]["file"] == "gups.js"
-        assert data["scripts"][4]["namespace"] == "OceanRescue.Gups"
+        assert data["scripts"][4]["file"] == "missions.js"
+        assert data["scripts"][4]["namespace"] == "OceanRescue.Missions"
         assert data["scripts"][4]["depends_on"] == []
-        assert data["scripts"][5]["file"] == "launch.js"
-        assert data["scripts"][5]["namespace"] == "OceanRescue.Launch"
+        assert data["scripts"][5]["file"] == "gups.js"
+        assert data["scripts"][5]["namespace"] == "OceanRescue.Gups"
         assert data["scripts"][5]["depends_on"] == []
-        assert data["scripts"][6]["file"] == "travel.js"
-        assert data["scripts"][6]["namespace"] == "OceanRescue.Travel"
+        assert data["scripts"][6]["file"] == "launch.js"
+        assert data["scripts"][6]["namespace"] == "OceanRescue.Launch"
         assert data["scripts"][6]["depends_on"] == []
-        assert data["scripts"][7]["file"] == "terrain.js"
-        assert data["scripts"][7]["namespace"] == "OceanRescue.Terrain"
+        assert data["scripts"][7]["file"] == "travel.js"
+        assert data["scripts"][7]["namespace"] == "OceanRescue.Travel"
         assert data["scripts"][7]["depends_on"] == []
-        assert data["scripts"][8]["file"] == "rescue.js"
-        assert data["scripts"][8]["namespace"] == "OceanRescue.Rescue"
+        assert data["scripts"][8]["file"] == "terrain.js"
+        assert data["scripts"][8]["namespace"] == "OceanRescue.Terrain"
         assert data["scripts"][8]["depends_on"] == []
-        assert data["scripts"][9]["file"] == "sea-turtle.js"
-        assert data["scripts"][9]["namespace"] == "OceanRescue.SeaTurtle"
+        assert data["scripts"][9]["file"] == "rescue.js"
+        assert data["scripts"][9]["namespace"] == "OceanRescue.Rescue"
         assert data["scripts"][9]["depends_on"] == []
-        assert data["scripts"][10]["file"] == "crab.js"
-        assert data["scripts"][10]["namespace"] == "OceanRescue.Crab"
+        assert data["scripts"][10]["file"] == "sea-turtle.js"
+        assert data["scripts"][10]["namespace"] == "OceanRescue.SeaTurtle"
         assert data["scripts"][10]["depends_on"] == []
-        assert data["scripts"][11]["file"] == "young-whale.js"
-        assert data["scripts"][11]["namespace"] == "OceanRescue.YoungWhale"
-        assert data["scripts"][11]["depends_on"] == []
-        assert data["scripts"][12]["file"] == "mission-success.js"
-        assert data["scripts"][12]["namespace"] == "OceanRescue.MissionSuccess"
+        assert data["scripts"][11]["file"] == "sea-turtle-scene.js"
+        assert data["scripts"][11]["namespace"] == "OceanRescue.SeaTurtleScene"
+        assert data["scripts"][11]["depends_on"] == [
+            "OceanRescue.RenderRuntime",
+            "OceanRescue.SeaTurtle",
+        ]
+        assert data["scripts"][12]["file"] == "crab.js"
+        assert data["scripts"][12]["namespace"] == "OceanRescue.Crab"
         assert data["scripts"][12]["depends_on"] == []
-        assert data["scripts"][13]["file"] == "app.js"
-        assert data["scripts"][13]["namespace"] == "OceanRescue.App"
-        assert data["scripts"][13]["depends_on"] == [
+        assert data["scripts"][13]["file"] == "young-whale.js"
+        assert data["scripts"][13]["namespace"] == "OceanRescue.YoungWhale"
+        assert data["scripts"][13]["depends_on"] == []
+        assert data["scripts"][14]["file"] == "mission-success.js"
+        assert data["scripts"][14]["namespace"] == "OceanRescue.MissionSuccess"
+        assert data["scripts"][14]["depends_on"] == []
+        assert data["scripts"][15]["file"] == "app.js"
+        assert data["scripts"][15]["namespace"] == "OceanRescue.App"
+        assert data["scripts"][15]["depends_on"] == [
             "OceanRescue.State",
+            "OceanRescue.RenderRuntime",
             "OceanRescue.Missions",
             "OceanRescue.Gups",
             "OceanRescue.Launch",
@@ -112,6 +123,7 @@ class TestManifest:
             "OceanRescue.Terrain",
             "OceanRescue.Rescue",
             "OceanRescue.SeaTurtle",
+            "OceanRescue.SeaTurtleScene",
             "OceanRescue.Crab",
             "OceanRescue.YoungWhale",
             "OceanRescue.MissionSuccess",
@@ -176,6 +188,11 @@ class TestJavaScript:
         content = SEA_TURTLE_JS.read_text(encoding="utf-8")
         assert "window.OceanRescue" in content
         assert "root.SeaTurtle" in content or "OceanRescue.SeaTurtle" in content
+
+    def test_sea_turtle_scene_defines_namespace(self):
+        content = SEA_TURTLE_SCENE_JS.read_text(encoding="utf-8")
+        assert "window.OceanRescue" in content
+        assert "root.SeaTurtleScene" in content
 
     def test_crab_defines_namespace(self):
         content = CRAB_JS.read_text(encoding="utf-8")
@@ -293,6 +310,17 @@ class TestJavaScript:
                 ],
             ),
             (
+                SEA_TURTLE_SCENE_JS,
+                [
+                    "import",
+                    "export",
+                    "fetch(",
+                    "XMLHttpRequest",
+                    "WebSocket",
+                    "EventSource",
+                ],
+            ),
+            (
                 CRAB_JS,
                 [
                     "import",
@@ -354,6 +382,7 @@ class TestJavaScript:
             TERRAIN_JS,
             RESCUE_JS,
             SEA_TURTLE_JS,
+            SEA_TURTLE_SCENE_JS,
             CRAB_JS,
             YOUNG_WHALE_JS,
             MISSION_SUCCESS_JS,
@@ -400,6 +429,7 @@ class TestBuild:
         terrain_pos = html.index("OceanRescue.Terrain")
         rescue_pos = html.index("OceanRescue.Rescue")
         sea_turtle_pos = html.index("OceanRescue.SeaTurtle")
+        sea_turtle_scene_pos = html.index("OceanRescue.SeaTurtleScene")
         crab_pos = html.index("OceanRescue.Crab")
         young_whale_pos = html.index("OceanRescue.YoungWhale")
         mission_success_pos = html.index("OceanRescue.MissionSuccess")
@@ -419,8 +449,11 @@ class TestBuild:
         assert rescue_pos < sea_turtle_pos, (
             "Rescue script must appear before SeaTurtle script"
         )
-        assert sea_turtle_pos < crab_pos, (
-            "SeaTurtle script must appear before Crab script"
+        assert sea_turtle_pos < sea_turtle_scene_pos, (
+            "SeaTurtle script must appear before SeaTurtleScene script"
+        )
+        assert sea_turtle_scene_pos < crab_pos, (
+            "SeaTurtleScene script must appear before Crab script"
         )
         assert crab_pos < young_whale_pos, (
             "Crab script must appear before YoungWhale script"

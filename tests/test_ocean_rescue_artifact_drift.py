@@ -102,6 +102,7 @@ def test_artifact_standalone_contract():
     terrain_idx = content.index("OceanRescue.Terrain")
     rescue_idx = content.index("OceanRescue.Rescue")
     sea_turtle_idx = content.index("OceanRescue.SeaTurtle")
+    sea_turtle_scene_idx = content.index("OceanRescue.SeaTurtleScene")
     crab_idx = content.index("OceanRescue.Crab")
     young_whale_idx = content.index("OceanRescue.YoungWhale")
     mission_success_idx = content.index("OceanRescue.MissionSuccess")
@@ -112,7 +113,12 @@ def test_artifact_standalone_contract():
     assert travel_idx < terrain_idx, "Travel content must precede Terrain content"
     assert terrain_idx < rescue_idx, "Terrain content must precede Rescue content"
     assert rescue_idx < sea_turtle_idx, "Rescue content must precede SeaTurtle content"
-    assert sea_turtle_idx < crab_idx, "SeaTurtle content must precede Crab content"
+    assert sea_turtle_idx < sea_turtle_scene_idx, (
+        "SeaTurtle content must precede SeaTurtleScene content"
+    )
+    assert sea_turtle_scene_idx < crab_idx, (
+        "SeaTurtleScene content must precede Crab content"
+    )
     assert crab_idx < young_whale_idx, "Crab content must precede YoungWhale content"
     assert young_whale_idx < mission_success_idx, (
         "YoungWhale content must precede MissionSuccess content"

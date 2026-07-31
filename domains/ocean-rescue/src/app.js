@@ -8,6 +8,7 @@
   var Terrain = window.OceanRescue.Terrain || null;
   var Rescue = window.OceanRescue.Rescue || null;
   var SeaTurtle = window.OceanRescue.SeaTurtle || null;
+  var SeaTurtleScene = window.OceanRescue.SeaTurtleScene || null;
   var Crab = window.OceanRescue.Crab || null;
   var YoungWhale = window.OceanRescue.YoungWhale || null;
   var MissionSuccess = window.OceanRescue.MissionSuccess || null;
@@ -747,6 +748,9 @@
     if (!Travel) {
       return;
     }
+    if (RenderRuntime && RenderRuntime.isReady()) {
+      RenderRuntime.setLegacyBridgeVisible(true);
+    }
     Travel.start();
     startTerrainRuntime();
     travelRunIdCounter += 1;
@@ -842,6 +846,14 @@
     return canvas && typeof canvas.getContext === "function"
       ? canvas.getContext("2d")
       : null;
+  }
+
+  function syncSeaTurtleScene(pointerIntent) {
+    if (!SeaTurtleScene || !SeaTurtleScene.isMounted() || !SeaTurtle) {
+      return false;
+    }
+    var intent = pointerIntent || { active: false, x: null, y: null };
+    return SeaTurtleScene.sync(SeaTurtle.getSnapshot(), intent);
   }
 
   function presentPaintFrame() {
@@ -1239,6 +1251,28 @@
     return beginRescueArrival(mission, gup, content, els);
   }
 
+  function markSeaTurtleSceneFailure(sequence, error) {
+    sequence.sceneFailed = true;
+    if (SeaTurtleScene && typeof SeaTurtleScene.getDiagnostics === "function") {
+      var diagnostics = SeaTurtleScene.getDiagnostics();
+      if (diagnostics && diagnostics.missingAliases && diagnostics.missingAliases.length > 0) {
+        sequence.sceneFailureReason = diagnostics.missingAliases.join(", ");
+      }
+    }
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-rescue-input", "disabled");
+      root.setAttribute("data-sea-turtle-scene-failure", "true");
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = "This device could not start the authored sea-turtle rescue scene.";
+    }
+    if (error && typeof error.message === "string") {
+      sequence.sceneFailureReason = error.message;
+    }
+  }
+
   function beginRescueArrival(mission, gup, content, els) {
     var token = State.beginTransition(State.Phases.RESCUE_SITE_TRANSITION);
     if (token === null) {
@@ -1257,6 +1291,20 @@
       tutorialSkipped: false
     };
     activeRescueSequence = sequence;
+
+    if (SeaTurtle && mission.id === SeaTurtle.MissionId && RenderRuntime && RenderRuntime.isReady()) {
+      if (!SeaTurtleScene) {
+        markSeaTurtleSceneFailure(sequence, new Error("Sea-turtle authored scene module is unavailable"));
+      } else {
+        try {
+          SeaTurtleScene.prepare(sequence);
+        } catch (error) {
+          markSeaTurtleSceneFailure(sequence, error);
+        }
+      }
+    } else if (SeaTurtleScene && SeaTurtleScene.isMounted()) {
+      SeaTurtleScene.exit();
+    }
 
     activeTravelRunId = null;
     if (
@@ -1553,6 +1601,13 @@
     if (activeRescueSequence === null) {
       return;
     }
+    if (
+      SeaTurtleScene &&
+      SeaTurtle &&
+      activeRescueSequence.missionId === SeaTurtle.MissionId
+    ) {
+      return;
+    }
     var width = canvas.width;
     var height = canvas.height;
     if (typeof width !== "number" || typeof height !== "number") {
@@ -1642,6 +1697,16 @@
       return false;
     }
     SeaTurtle.start();
+    if (SeaTurtleScene && RenderRuntime && RenderRuntime.isReady()) {
+      if (!SeaTurtleScene.isMounted()) {
+        var failedRoot = document.getElementById("ocean-rescue-root");
+        if (failedRoot) {
+          failedRoot.setAttribute("data-rescue-input", "disabled");
+        }
+        return false;
+      }
+      SeaTurtleScene.activate();
+    }
     bindRescuePointerInput(canvas);
     renderSeaTurtleFrame();
     seaTurtleRenderMarker = true;
@@ -1956,7 +2021,7 @@
       seaTurtlePointerCaptureEl.setPointerCapture(event.pointerId);
     }
     hideAssistHand();
-    renderSeaTurtleFrame();
+    renderSeaTurtleFrame({ active: true, x: mapped.x, y: mapped.y });
     updateSeaTurtleRootMarkers();
     if (typeof event.preventDefault === "function") {
       event.preventDefault();
@@ -2036,7 +2101,7 @@
     var missionId = activeRescueSequence.missionId;
     if (missionId === SeaTurtle.MissionId) {
       SeaTurtle.pointerMove(event.pointerId, mapped.x, mapped.y);
-      renderSeaTurtleFrame();
+      renderSeaTurtleFrame({ active: true, x: mapped.x, y: mapped.y });
       updateSeaTurtleRootMarkers();
     } else if (Crab && missionId === Crab.MissionId) {
       Crab.pointerMove(event.pointerId, mapped.x, mapped.y);
@@ -2076,7 +2141,7 @@
       seaTurtlePointerId = null;
       seaTurtlePointerCaptureEl = null;
       if (result && result.accepted) {
-        renderSeaTurtleFrame();
+        renderSeaTurtleFrame({ active: false, x: null, y: null });
         updateSeaTurtleRootMarkers();
         routeRescueFeedback(result);
       }
@@ -2146,6 +2211,7 @@
       releaseSeaTurtlePointerCapture(event.pointerId);
       seaTurtlePointerId = null;
       seaTurtlePointerCaptureEl = null;
+      syncSeaTurtleScene({ active: false, x: null, y: null });
       return;
     }
     if (!Crab || missionId !== Crab.MissionId) {
@@ -3215,6 +3281,9 @@
   }
 
   function shutdownRescueInteractionState() {
+    if (SeaTurtleScene && SeaTurtleScene.isMounted()) {
+      SeaTurtleScene.exit();
+    }
     clearSeaTurtleFeedbackTimer();
     clearCrabFeedbackTimer();
     clearYoungWhaleFeedbackTimer();
@@ -3448,6 +3517,9 @@
     if (RenderRuntime && RenderRuntime.isReady()) {
       RenderRuntime.pause();
     }
+    if (SeaTurtleScene && SeaTurtleScene.isMounted()) {
+      SeaTurtleScene.pause();
+    }
     freezeAllPauseTimers();
     cancelPausePointerInteractions();
     clearCrabHoldTimer();
@@ -3483,6 +3555,9 @@
     pauseActive = false;
     if (RenderRuntime && RenderRuntime.isReady()) {
       RenderRuntime.resume();
+    }
+    if (SeaTurtleScene && SeaTurtleScene.isMounted()) {
+      SeaTurtleScene.exit();
     }
     if (
       pauseCountdownTimerId !== null &&
@@ -3623,6 +3698,9 @@
     pauseActive = false;
     if (RenderRuntime && RenderRuntime.isReady()) {
       RenderRuntime.resume();
+    }
+    if (SeaTurtleScene && SeaTurtleScene.isMounted()) {
+      SeaTurtleScene.resume();
     }
     var overlay = document.getElementById("ocean-rescue-pause-overlay");
     if (overlay) {
@@ -4362,7 +4440,11 @@
     context.restore();
   }
 
-  function renderSeaTurtleFrame() {
+  function renderSeaTurtleFrame(pointerIntent) {
+    if (SeaTurtleScene && SeaTurtleScene.isMounted()) {
+      syncSeaTurtleScene(pointerIntent);
+      return;
+    }
     var canvas = resolvePaintCanvas();
     var context = resolvePaintContext();
     if (!canvas || !context) {

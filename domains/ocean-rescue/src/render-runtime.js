@@ -37,6 +37,7 @@
   var dirty = false;
   var ready = false;
   var failed = false;
+  var legacyBridgeVisible = true;
   var PIXI = window.PIXI;
 
   function getRoot() {
@@ -323,6 +324,7 @@
     legacySprite.width = WIDTH;
     legacySprite.height = HEIGHT;
     legacySprite.eventMode = "none";
+    legacySprite.visible = true;
     containers.legacyPaintBridge.addChild(legacySprite);
   }
 
@@ -409,6 +411,28 @@
     return true;
   }
 
+  function renderSceneFrame() {
+    if (!ready || !application) {
+      return false;
+    }
+    if (paused) {
+      dirty = true;
+      return false;
+    }
+    application.render();
+    dirty = false;
+    return true;
+  }
+
+  function setLegacyBridgeVisible(value) {
+    legacyBridgeVisible = value === true;
+    if (legacySprite) {
+      legacySprite.visible = legacyBridgeVisible;
+    }
+    setDiagnostic("data-render-legacy-visible", legacyBridgeVisible);
+    return legacyBridgeVisible;
+  }
+
   function mapClientToLogical(clientX, clientY) {
     var point = new window.PIXI.Point();
     if (application && application.renderer && application.renderer.events) {
@@ -457,6 +481,7 @@
     sheets = [];
     textures = {};
     containers = {};
+    legacyBridgeVisible = true;
     ready = false;
     failed = false;
     paused = false;
@@ -496,6 +521,9 @@
     getLegacyCanvas: function () { return legacyCanvas; },
     getLegacyContext: function () { return legacyContext; },
     presentLegacyFrame: presentLegacyFrame,
+    renderSceneFrame: renderSceneFrame,
+    setLegacyBridgeVisible: setLegacyBridgeVisible,
+    getLegacyBridgeVisible: function () { return legacyBridgeVisible; },
     mapClientToLogical: mapClientToLogical,
     showCompatibilityFailure: showCompatibilityFailure,
     isReady: function () { return ready; },
@@ -505,7 +533,7 @@
       var wasDirty = dirty;
       paused = false;
       if (wasDirty) {
-        presentLegacyFrame();
+        renderSceneFrame();
       }
     }
   };

@@ -1,3 +1,4 @@
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -116,3 +117,22 @@ def test_artifact_is_single_deployable_file(tmp_path: Path):
         p.relative_to(artifact_dir) for p in artifact_dir.iterdir() if p.is_file()
     )
     assert files == [Path("index.html")], f"Expected only index.html, found: {files}"
+
+
+def _button_text(content: str, button_id: str) -> str:
+    match = re.search(
+        r"<button[^>]*id=\"" + re.escape(button_id) + r"\"[^>]*>(.*?)</button>",
+        content,
+        re.DOTALL,
+    )
+    assert match is not None, f"Missing button with id {button_id}"
+    return match.group(1).strip()
+
+
+def test_artifact_completion_action_contract():
+    content = ARTIFACT.read_text(encoding="utf-8")
+    assert content.count("<script>") == 12
+    assert _button_text(content, "ocean-rescue-mission-complete-continue") == "Continue"
+    assert _button_text(content, "ocean-rescue-mission-complete-replay") == "Replay"
+    assert 'id="ocean-rescue-mission-complete-unlock"' in content
+    assert 'id="ocean-rescue-mission-complete-unlock-name"' in content

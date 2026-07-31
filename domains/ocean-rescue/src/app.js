@@ -53,6 +53,8 @@
   var activeMissionSuccessSequence = null;
   var missionSuccessTimerId = null;
   var missionSuccessInputBound = false;
+  var missionCompleteActionsBound = false;
+  var missionCompleteActionLock = false;
 
   var pointerActive = false;
   var pointerId = null;
@@ -79,6 +81,23 @@
   function missionTitleById(missionId) {
     var mission = missionById(missionId);
     return mission === null ? null : mission.title;
+  }
+
+  function resolveContinueFocusMissionId(newlyUnlockedMissionId) {
+    if (typeof newlyUnlockedMissionId === "string") {
+      return newlyUnlockedMissionId;
+    }
+    var progression = Missions.getSnapshot();
+    if (progression.newMissionIds.length === 0) {
+      return null;
+    }
+    var catalog = Missions.Catalog;
+    for (var i = 0; i < catalog.length; i += 1) {
+      if (progression.newMissionIds.indexOf(catalog[i].id) !== -1) {
+        return catalog[i].id;
+      }
+    }
+    return null;
   }
 
   function gupById(gupId) {
@@ -175,7 +194,7 @@
       }
     }
     section.style.display = "block";
-    if (focusCard) {
+    if (focusCard && typeof focusCard.scrollIntoView === "function") {
       focusCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
     return true;
@@ -3060,6 +3079,7 @@
     }
     youngWhalePointerId = null;
     youngWhalePointerCaptureEl = null;
+    seaTurtleRenderMarker = false;
   }
 
   function setMissionSuccessAnimClass(visual, active) {
@@ -3240,6 +3260,13 @@
       return false;
     }
     clearMissionSuccessTimer();
+    var completionResult = Missions.completeMission(sequence.missionId);
+    sequence.firstCompletion = completionResult.changed ? true : false;
+    sequence.newlyUnlockedMissionId =
+      completionResult.newlyUnlockedMissionId;
+    sequence.continueFocusMissionId = resolveContinueFocusMissionId(
+      sequence.newlyUnlockedMissionId
+    );
     var els = resolveMissionSuccessElements();
     if (els === null) {
       return false;
@@ -3252,6 +3279,28 @@
     els.cardName.textContent = sequence.missionTitle;
     els.cardEcology.textContent = sequence.content.ecology;
     sequence.stage = "complete";
+    var unlock = document.getElementById(
+      "ocean-rescue-mission-complete-unlock"
+    );
+    var unlockName = document.getElementById(
+      "ocean-rescue-mission-complete-unlock-name"
+    );
+    if (sequence.newlyUnlockedMissionId !== null) {
+      if (unlock) {
+        unlock.hidden = false;
+      }
+      if (unlockName) {
+        unlockName.textContent =
+          missionTitleById(sequence.newlyUnlockedMissionId) || "";
+      }
+    } else {
+      if (unlock) {
+        unlock.hidden = true;
+      }
+      if (unlockName) {
+        unlockName.textContent = "";
+      }
+    }
     var root = document.getElementById("ocean-rescue-root");
     if (root) {
       root.setAttribute("data-rescue-phase", "mission-complete");
@@ -3259,13 +3308,241 @@
       root.setAttribute("data-mission-success-active", "false");
       root.setAttribute("data-mission-success-stage", "complete");
       root.setAttribute("data-mission-success-input", "disabled");
+      root.setAttribute("data-mission-completion-recorded", "true");
+      root.setAttribute(
+        "data-mission-first-completion",
+        sequence.firstCompletion ? "true" : "false"
+      );
+      root.setAttribute(
+        "data-mission-newly-unlocked-id",
+        sequence.newlyUnlockedMissionId || ""
+      );
+      root.setAttribute(
+        "data-mission-continue-focus-id",
+        sequence.continueFocusMissionId || ""
+      );
+      root.setAttribute("data-mission-complete-action", "ready");
       root.setAttribute("data-mission-complete-ready", "true");
     }
     var status = document.getElementById("ocean-rescue-status");
     if (status) {
       status.textContent = "Mission complete: " + sequence.missionTitle;
     }
+    resetMissionCompleteActionState();
     return true;
+  }
+
+  function bindMissionCompleteActions() {
+    if (missionCompleteActionsBound) {
+      return;
+    }
+    var continueButton = document.getElementById(
+      "ocean-rescue-mission-complete-continue"
+    );
+    if (
+      continueButton &&
+      typeof continueButton.addEventListener === "function"
+    ) {
+      continueButton.addEventListener(
+        "click",
+        onMissionCompleteContinueClick
+      );
+    }
+    var replayButton = document.getElementById(
+      "ocean-rescue-mission-complete-replay"
+    );
+    if (replayButton && typeof replayButton.addEventListener === "function") {
+      replayButton.addEventListener("click", onMissionCompleteReplayClick);
+    }
+    missionCompleteActionsBound = true;
+  }
+
+  function disableMissionCompleteButtons() {
+    var continueButton = document.getElementById(
+      "ocean-rescue-mission-complete-continue"
+    );
+    if (continueButton) {
+      continueButton.disabled = true;
+    }
+    var replayButton = document.getElementById(
+      "ocean-rescue-mission-complete-replay"
+    );
+    if (replayButton) {
+      replayButton.disabled = true;
+    }
+  }
+
+  function enableMissionCompleteButtons() {
+    var continueButton = document.getElementById(
+      "ocean-rescue-mission-complete-continue"
+    );
+    if (continueButton) {
+      continueButton.disabled = false;
+    }
+    var replayButton = document.getElementById(
+      "ocean-rescue-mission-complete-replay"
+    );
+    if (replayButton) {
+      replayButton.disabled = false;
+    }
+  }
+
+  function resetMissionCompleteActionState() {
+    missionCompleteActionLock = false;
+    enableMissionCompleteButtons();
+  }
+
+  function isMissionCompleteActionReady() {
+    if (missionCompleteActionLock) {
+      return false;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.MISSION_COMPLETE) {
+      return false;
+    }
+    var sequence = activeMissionSuccessSequence;
+    if (sequence === null) {
+      return false;
+    }
+    if (sequence.stage !== "complete") {
+      return false;
+    }
+    var root = document.getElementById("ocean-rescue-root");
+    if (
+      root === null ||
+      root.getAttribute("data-mission-complete-ready") !== "true"
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  function cleanupMissionCompletePresentation() {
+    clearMissionSuccessTimer();
+    var els = resolveMissionSuccessElements();
+    if (els !== null) {
+      clearMissionSuccessAnimation(els);
+      els.visual.hidden = true;
+      els.ecology.hidden = true;
+      els.narration.hidden = true;
+      els.tapHelp.hidden = true;
+      els.card.hidden = true;
+      els.section.hidden = true;
+    }
+    var unlock = document.getElementById(
+      "ocean-rescue-mission-complete-unlock"
+    );
+    if (unlock) {
+      unlock.hidden = true;
+    }
+    var unlockName = document.getElementById(
+      "ocean-rescue-mission-complete-unlock-name"
+    );
+    if (unlockName) {
+      unlockName.textContent = "";
+    }
+    shutdownRescueInteractionState();
+  }
+
+  function onMissionCompleteContinueClick(event) {
+    if (!isMissionCompleteActionReady()) {
+      return;
+    }
+    if (event && typeof event.preventDefault === "function") {
+      event.preventDefault();
+    }
+    if (event && typeof event.stopPropagation === "function") {
+      event.stopPropagation();
+    }
+    missionCompleteActionLock = true;
+    disableMissionCompleteButtons();
+    var sequence = activeMissionSuccessSequence;
+    var focusMissionId = sequence.continueFocusMissionId;
+    var token = State.beginTransition(State.Phases.MISSION_SELECT);
+    if (token === null || !State.completeTransition(token)) {
+      missionCompleteActionLock = false;
+      enableMissionCompleteButtons();
+      return;
+    }
+    cleanupMissionCompletePresentation();
+    activeMissionSuccessSequence = null;
+    activeRescueSequence = null;
+    var stage = document.getElementById("ocean-rescue-stage");
+    if (stage) {
+      stage.hidden = true;
+    }
+    var launchSection = document.getElementById("ocean-rescue-launch");
+    if (launchSection) {
+      launchSection.hidden = true;
+    }
+    var gupSection = document.getElementById("ocean-rescue-gup-select");
+    if (gupSection) {
+      gupSection.hidden = true;
+    }
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-mission-complete-action", "continue");
+      root.setAttribute("data-rescue-phase", "inactive");
+      root.setAttribute("data-rescue-input", "disabled");
+      root.removeAttribute("data-mission-complete-ready");
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = "Choose a mission";
+    }
+    renderMissionSelect({ focusMissionId: focusMissionId });
+    missionCompleteActionLock = false;
+  }
+
+  function onMissionCompleteReplayClick(event) {
+    if (!isMissionCompleteActionReady()) {
+      return;
+    }
+    if (event && typeof event.preventDefault === "function") {
+      event.preventDefault();
+    }
+    if (event && typeof event.stopPropagation === "function") {
+      event.stopPropagation();
+    }
+    missionCompleteActionLock = true;
+    disableMissionCompleteButtons();
+    var sequence = activeMissionSuccessSequence;
+    var missionId = sequence.missionId;
+    var mission = missionById(missionId);
+    if (mission === null) {
+      missionCompleteActionLock = false;
+      enableMissionCompleteButtons();
+      return;
+    }
+    var gupSnapshot = Gups.getSnapshot();
+    var gup = gupById(gupSnapshot.lastGupId);
+    if (gup === null) {
+      missionCompleteActionLock = false;
+      enableMissionCompleteButtons();
+      return;
+    }
+    var content = Launch.getMissionContent(missionId);
+    var token = State.beginTransition(State.Phases.LAUNCH);
+    if (token === null || !State.completeTransition(token)) {
+      missionCompleteActionLock = false;
+      enableMissionCompleteButtons();
+      return;
+    }
+    cleanupMissionCompletePresentation();
+    activeMissionSuccessSequence = null;
+    activeRescueSequence = null;
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-launch-mission-id", mission.id);
+      root.setAttribute("data-launch-gup-id", gup.id);
+      root.setAttribute("data-launch-ready", "true");
+      root.setAttribute("data-mission-complete-action", "replay");
+      root.removeAttribute("data-mission-complete-ready");
+    }
+    var launchEls = resolveLaunchElements();
+    if (launchEls !== null && content !== null) {
+      startLaunchPresentation(mission, gup, content, launchEls);
+    }
   }
 
   function bindMissionSuccessPointerInput(section) {
@@ -4401,6 +4678,7 @@
         rescueInputBound = true;
       }
     }
+    bindMissionCompleteActions();
     controlsBound = true;
   }
 

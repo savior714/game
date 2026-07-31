@@ -434,6 +434,15 @@ _BOOTSTRAP = textwrap.dedent(
         completeCard.hidden = true;
         const completeName = makeElement("p");
         const completeEcology = makeElement("p");
+        const completeUnlock = makeElement("div");
+        completeUnlock.hidden = true;
+        completeUnlock.textContent = "Next Mission Unlocked!";
+        const completeUnlockName = makeElement("p");
+        const completeActions = makeElement("div");
+        const completeContinue = makeElement("button");
+        completeContinue.textContent = "Continue";
+        const completeReplay = makeElement("button");
+        completeReplay.textContent = "Replay";
 
         successSection.appendChild(successTitle);
         successVisual.appendChild(successAnimal);
@@ -445,8 +454,13 @@ _BOOTSTRAP = textwrap.dedent(
         successNarration.appendChild(successLine);
         successSection.appendChild(successNarration);
         successSection.appendChild(successTapHelp);
+        completeUnlock.appendChild(completeUnlockName);
         completeCard.appendChild(completeName);
         completeCard.appendChild(completeEcology);
+        completeCard.appendChild(completeUnlock);
+        completeCard.appendChild(completeActions);
+        completeActions.appendChild(completeContinue);
+        completeActions.appendChild(completeReplay);
         successSection.appendChild(completeCard);
         rootEl.appendChild(successSection);
 
@@ -464,6 +478,11 @@ _BOOTSTRAP = textwrap.dedent(
         elements["ocean-rescue-mission-complete-card"] = completeCard;
         elements["ocean-rescue-mission-complete-name"] = completeName;
         elements["ocean-rescue-mission-complete-ecology"] = completeEcology;
+        elements["ocean-rescue-mission-complete-unlock"] = completeUnlock;
+        elements["ocean-rescue-mission-complete-unlock-name"] = completeUnlockName;
+        elements["ocean-rescue-mission-complete-actions"] = completeActions;
+        elements["ocean-rescue-mission-complete-continue"] = completeContinue;
+        elements["ocean-rescue-mission-complete-replay"] = completeReplay;
 
         dom.missionSuccessSection = successSection;
         dom.missionSuccessTitle = successTitle;
@@ -479,6 +498,11 @@ _BOOTSTRAP = textwrap.dedent(
         dom.completeCard = completeCard;
         dom.completeName = completeName;
         dom.completeEcology = completeEcology;
+        dom.completeUnlock = completeUnlock;
+        dom.completeUnlockName = completeUnlockName;
+        dom.completeActions = completeActions;
+        dom.completeContinue = completeContinue;
+        dom.completeReplay = completeReplay;
       }
 
       return dom;
@@ -1294,7 +1318,7 @@ def test_stale_timers_and_rapid_input_are_idempotent() -> None:
     _assert_node_ok(_run_node(harness))
 
 
-def test_completion_card_does_not_mutate_progression() -> None:
+def test_completion_card_records_progression_once_without_auto_action() -> None:
     harness = _BOOTSTRAP + textwrap.dedent(
         """\
         const dom = makeBootDom({ includeMissionSuccess: true });
@@ -1307,6 +1331,12 @@ def test_completion_card_does_not_mutate_progression() -> None:
         advanceToNarration1(ctx);
         const n1 = timerWithDelay(ctx, 3000);
         ctx.timers.run(n1.id);
+        assert.strictEqual(
+          dom.rootEl.getAttribute("data-mission-success-stage"),
+          "narration-2"
+        );
+        assert.strictEqual(JSON.stringify(ctx.Missions.getSnapshot()), before);
+
         const n2 = timerWithDelay(ctx, 3000);
         ctx.timers.run(n2.id);
         assert.strictEqual(ctx.State.getSnapshot().phase, "MISSION_COMPLETE");
@@ -1318,21 +1348,64 @@ def test_completion_card_does_not_mutate_progression() -> None:
           "Sea turtles can get tangled in ocean trash. Keep ropes and nets out of the sea!"
         );
         assert.strictEqual(dom.rootEl.getAttribute("data-mission-complete-ready"), "true");
+        assert.strictEqual(
+          dom.rootEl.getAttribute("data-mission-completion-recorded"),
+          "true"
+        );
+        assert.strictEqual(
+          dom.rootEl.getAttribute("data-mission-first-completion"),
+          "true"
+        );
+        assert.strictEqual(
+          dom.rootEl.getAttribute("data-mission-newly-unlocked-id"),
+          "crab"
+        );
+        assert.strictEqual(
+          dom.rootEl.getAttribute("data-mission-continue-focus-id"),
+          "crab"
+        );
+        assert.strictEqual(
+          dom.rootEl.getAttribute("data-mission-complete-action"),
+          "ready"
+        );
 
-        assert.strictEqual(dom.completeCard.children.length, 2);
-        assert.strictEqual(dom.completeCard.children[0].tagName, "p");
-        assert.strictEqual(dom.completeCard.children[1].tagName, "p");
-        assert.strictEqual(hasButton(dom.completeCard), false);
-
-        const visibleText = collectVisibleText(dom.missionSuccessSection).join(" ");
-        assert.strictEqual(/continue|replay|unlock/i.test(visibleText), false);
-
-        const after = JSON.stringify(ctx.Missions.getSnapshot());
-        assert.strictEqual(after, before);
-        assert.deepStrictEqual(plain(ctx.Missions.getSnapshot().completedMissionIds), []);
+        assert.deepStrictEqual(
+          plain(ctx.Missions.getSnapshot().completedMissionIds),
+          ["sea-turtle"]
+        );
         assert.deepStrictEqual(
           plain(ctx.Missions.getSnapshot().unlockedMissionIds),
+          ["sea-turtle", "crab"]
+        );
+        assert.deepStrictEqual(
+          plain(ctx.Missions.getSnapshot().newMissionIds),
+          ["crab"]
+        );
+
+        assert.strictEqual(dom.completeUnlock.hidden, false);
+        assert.strictEqual(dom.completeUnlockName.textContent, "Crab Rescue");
+        assert.strictEqual(hasButton(dom.completeCard), true);
+        assert.strictEqual(dom.completeContinue.disabled, false);
+        assert.strictEqual(dom.completeReplay.disabled, false);
+        assert.strictEqual(dom.completeContinue.textContent, "Continue");
+        assert.strictEqual(dom.completeReplay.textContent, "Replay");
+
+        const visibleText = collectVisibleText(dom.missionSuccessSection).join(" ");
+        assert.strictEqual(/next mission unlocked/i.test(visibleText), true);
+
+        n2.fn();
+        assert.strictEqual(ctx.State.getSnapshot().phase, "MISSION_COMPLETE");
+        assert.deepStrictEqual(
+          plain(ctx.Missions.getSnapshot().completedMissionIds),
           ["sea-turtle"]
+        );
+        assert.deepStrictEqual(
+          plain(ctx.Missions.getSnapshot().unlockedMissionIds),
+          ["sea-turtle", "crab"]
+        );
+        assert.deepStrictEqual(
+          plain(ctx.Missions.getSnapshot().newMissionIds),
+          ["crab"]
         );
         """
     )

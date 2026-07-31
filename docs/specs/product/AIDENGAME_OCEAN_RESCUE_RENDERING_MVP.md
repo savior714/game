@@ -1,8 +1,8 @@
 # AidenGame Ocean Rescue — Rendering MVP
 
-- **Version:** v0.2
+- **Version:** v0.3
 - **Date:** 2026-07-31
-- **Status:** Base renderer architecture closed / asset representation unresolved
+- **Status:** Renderer and asset representation closed / atlas partition unresolved
 - **Parent product spec:** `AIDENGAME_OCEAN_RESCUE_MVP_PRD.md`
 - **Scope:** visual rendering quality only
 - **Selected renderer:** PixiJS v8
@@ -256,7 +256,71 @@ PixiJS RenderGroups may be used strategically for major scene partitions such as
 
 ---
 
-## 7. Required render layers
+## 7. Selected asset representation
+
+### 7.1 Asset representation decision
+
+The rendering MVP will use **build-time packed raster texture atlases generated from authored source files**.
+
+- Source art may be SVG or sufficiently high-resolution raster files.
+- Source art remains editable and is not loaded directly by the production runtime.
+- The build converts source art into one or more raster atlas images plus deterministic metadata.
+- PixiJS consumes the generated atlas through `Assets` and exposes named textures to `Sprite` objects.
+- The production scene must not rasterize SVG at runtime.
+- Primary subjects must not be recreated with PixiJS Graphics.
+
+### 7.2 Atlas build contract
+
+The atlas pipeline must:
+
+- use deterministic frame names,
+- preserve trim, source-size, and pivot/origin metadata,
+- fail on duplicate frame identities,
+- fail when a declared mandatory asset is absent,
+- produce stable output for identical source bytes and configuration,
+- record or verify source-to-output hashes,
+- avoid runtime texture discovery by filename guessing,
+- emit metadata accepted by the PixiJS spritesheet loader,
+- support embedding atlas image bytes and metadata into the final single HTML artifact.
+
+### 7.3 Cutout rig contract
+
+The sea-otter rig uses named atlas frames rather than one flattened character sprite.
+
+Minimum frame groups:
+
+- head base,
+- torso,
+- near and far forelimbs,
+- near and far hind limbs where visible,
+- tail,
+- eye states,
+- mouth states,
+- optional helmet or equipment overlay.
+
+The runtime composes these frames with PixiJS Containers and Sprites. Animation changes transforms and selected facial textures; it does not mutate or regenerate texture pixels per frame.
+
+### 7.4 Raster quality contract
+
+- Atlas source resolution must be selected for the target logical display size and bounded DPR policy.
+- Production must not upscale tiny source frames to fill large character regions.
+- Texture filtering and mipmap policy must be explicit and device-tested.
+- Transparent padding or extrusion must prevent atlas edge bleeding.
+- Rotation during atlas packing is prohibited initially unless the generated metadata and visual regression tests prove it safe.
+- Lossy WebP may be used only where alpha-edge and line-art inspection passes; PNG remains acceptable for line art and cutout parts.
+
+### 7.5 Runtime texture contract
+
+- Mandatory atlas bundles are loaded before the rescue slice becomes interactive.
+- Texture aliases are semantic and stable, such as `otter/head/calm` or `turtle/face/worried`.
+- Display objects reuse cached textures.
+- Texture creation, decode, or upload must not occur inside the per-frame render path.
+- Atlas metadata is generated, not hand-maintained after packing.
+- Missing production textures fail closed during build or scene initialization rather than falling back to visible placeholder rectangles.
+
+---
+
+## 8. Required render layers
 
 Minimum visual layers:
 
@@ -274,7 +338,7 @@ Each layer must be independently replaceable without rewriting gameplay state tr
 
 ---
 
-## 8. Required authored assets
+## 9. Required authored assets
 
 Mandatory:
 
@@ -298,9 +362,9 @@ Primary characters, animals, vehicles, rocks, coral, and rescue obstacles must n
 
 ---
 
-## 9. Minimum animation set
+## 10. Minimum animation set
 
-### 9.1 Sea-otter leader
+### 10.1 Sea-otter leader
 
 - idle breathing,
 - blink,
@@ -309,20 +373,20 @@ Primary characters, animals, vehicles, rocks, coral, and rescue obstacles must n
 - pull or lean-back motion,
 - success reaction.
 
-### 9.2 Sea turtle
+### 10.2 Sea turtle
 
 - worried idle,
 - partial relief after loop one,
 - greater relief after loop two,
 - free and happy after loop three.
 
-### 9.3 Submarine
+### 10.3 Submarine
 
 - arrival drift,
 - idle hover,
 - support light or scanner activation.
 
-### 9.4 Environment
+### 10.4 Environment
 
 - slow bubbles,
 - subtle seaweed sway,
@@ -333,7 +397,7 @@ Environmental motion must remain slower and lower contrast than the active rescu
 
 ---
 
-## 10. Visual readability requirements
+## 11. Visual readability requirements
 
 At the target 16:9 viewport:
 
@@ -349,9 +413,9 @@ The scene should look like a paused animation frame before it looks like a debug
 
 ---
 
-## 11. Device and rendering guardrails
+## 12. Device and rendering guardrails
 
-### 11.1 Resolution
+### 12.1 Resolution
 
 - Logical game coordinates remain fixed at 16:9.
 - PixiJS resolution accounts for device pixel ratio under an explicit upper bound.
@@ -359,7 +423,7 @@ The scene should look like a paused animation frame before it looks like a debug
 - Asset scaling avoids repeated interpolation from undersized source images.
 - Pixel-density policy must be validated separately rather than guessed inside the renderer migration.
 
-### 11.2 Performance
+### 12.2 Performance
 
 Rendering quality work must preserve:
 
@@ -373,17 +437,17 @@ Rendering quality work must preserve:
 
 Performance optimization must not be pursued by reverting primary subjects to placeholder geometry.
 
-### 11.3 Packaging
+### 12.3 Packaging
 
 - The final artifact remains one HTML file.
-- PixiJS and all visual assets are embedded or bundled at build time.
+- PixiJS, atlas image bytes, and atlas metadata are embedded or bundled at build time.
 - Source development remains modular.
 - Asset identity and deterministic bundling are testable.
 - The production artifact must make zero third-party runtime requests for renderer code or mandatory slice assets.
 
 ---
 
-## 12. Explicit non-goals for the rendering MVP
+## 13. Explicit non-goals for the rendering MVP
 
 - Rendering all three missions at final quality
 - Full animation rigs for all three team members
@@ -398,10 +462,13 @@ Performance optimization must not be pursued by reverting primary subjects to pl
 - Rive, Spine, skeletal physics, or another animation runtime
 - React-based PixiJS scene management
 - Rewriting domain gameplay state around PixiJS objects
+- Runtime SVG rasterization for production subjects
+- Hand-authored atlas coordinates
+- Dynamic runtime atlas packing
 
 ---
 
-## 13. Rendering MVP acceptance criteria
+## 14. Rendering MVP acceptance criteria
 
 The rendering MVP passes only when all of the following are true.
 
@@ -419,31 +486,38 @@ The rendering MVP passes only when all of the following are true.
 12. Debug-only geometric placeholders are absent from the production scene.
 13. PixiJS is bundled locally and no mandatory renderer or slice asset is fetched from a third-party CDN at runtime.
 14. The application uses one PixiJS renderer/context.
+15. Production primary subjects are loaded from generated raster atlases rather than runtime SVG or procedural Graphics.
+16. Identical source asset bytes and atlas configuration produce identical generated atlas metadata and image bytes.
+17. Missing or duplicate mandatory atlas frames fail closed before gameplay.
+18. Cutout rig pivots remain stable after atlas trimming and packing.
 
 ---
 
-## 14. Current technology evidence
+## 15. Current technology evidence
 
-- PixiJS v8 provides a scene graph based on containers and sprites.
-- PixiJS `Assets` supports cached loading of PNG, WebP, AVIF, SVG, spritesheets, fonts, and other resource types.
-- PixiJS RenderGroups can reduce CPU transformation work for strategic scene partitions, but excessive groups can degrade performance.
+- PixiJS v8 `Assets` provides cached, Promise-based asset loading with manifest bundles and built-in spritesheet support.
+- PixiJS textures represent views into a shared texture source, allowing named subtextures from one atlas image to feed multiple Sprites.
+- Spritesheets combine one atlas image with JSON frame metadata and improve the opportunity for shared-texture batching.
+- PixiJS v8.19.0 added official agent skills inside the npm package and an opt-in HTML-source texture path; neither is required for this rendering slice.
 - PixiJS v8.16 introduced an experimental Canvas renderer fallback for environments without WebGL or WebGPU.
 - PixiJS v8.18–8.19 added renderer preference arrays and optional transient WebGPU MSAA attachments that can reduce mobile memory bandwidth.
-- PixiJS 8.19.0 is the stable `latest` package version at this decision point.
 
-These capabilities support the selected PixiJS architecture. They do not remove the need to validate the asset format, DPR ceiling, atlas size, filter use, and Galaxy Tab performance as separate rendering failure domains.
+These capabilities support the selected PixiJS plus build-time atlas architecture. They do not remove the need to validate atlas partitioning, DPR ceiling, atlas dimensions, compression, filter use, and Galaxy Tab performance as separate rendering failure domains.
 
 ---
 
-## 15. Next unresolved rendering decision
+## 16. Next unresolved rendering decision
 
-The base renderer is closed as **PixiJS v8**.
+The renderer and asset representation are closed as:
 
-The next Grill-me question must choose only how authored assets are represented and packaged for the first slice:
+- **PixiJS v8**
+- **build-time generated raster texture atlases from authored source files**
 
-1. independent raster PNG/WebP textures,
-2. runtime SVG textures,
-3. build-time packed raster texture atlas from authored source files,
-4. mostly procedural PixiJS Graphics.
+The next Grill-me question must choose only how the first vertical slice is partitioned into atlas bundles:
 
-No further character, narrative, mission, or world-building decision is required before this asset-representation decision is closed.
+1. one monolithic atlas for the entire slice,
+2. one atlas per individual subject,
+3. a small number of lifecycle-based atlases,
+4. no stable atlas partition and pack whatever fits.
+
+No character, narrative, mission, UI-flow, or gameplay decision is part of this question.

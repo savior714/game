@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300">
+  <g id="scene-water-far">
+    <rect width="400" height="300" fill="#0A2E5C"/>
+    <path d="M0 50 Q50 30 100 50 Q150 70 200 50 Q250 30 300 50 Q350 70 400 50 L400 0 L0 0Z" fill="#0D3A6E" opacity="0.7"/>
+    <path d="M0 80 Q60 60 120 80 Q180 100 240 80 Q300 60 360 80 L400 80 L400 40 Q350 20 300 40 Q250 60 200 40 Q150 20 100 40 Q50 60 0 40Z" fill="#103F7A" opacity="0.5"/>
+    <path d="M0 120 Q40 100 80 120 Q120 140 160 120 Q200 100 240 120 Q280 140 320 120 Q360 100 400 120 L400 80 Q360 60 320 80 Q280 100 240 80 Q200 60 160 80 Q120 100 80 80 Q40 60 0 80Z" fill="#154A8A" opacity="0.4"/>
+    <circle cx="50" cy="150" r="2" fill="#FFFFFF" opacity="0.15"/>
+    <circle cx="150" cy="100" r="1.5" fill="#FFFFFF" opacity="0.12"/>
+    <circle cx="280" cy="130" r="2.5" fill="#FFFFFF" opacity="0.1"/>
+    <circle cx="350" cy="80" r="1" fill="#FFFFFF" opacity="0.18"/>
+    <circle cx="100" cy="200" r="1.5" fill="#FFFFFF" opacity="0.08"/>
+    <circle cx="300" cy="180" r="2" fill="#FFFFFF" opacity="0.1"/>
+  </g>
+</svg>

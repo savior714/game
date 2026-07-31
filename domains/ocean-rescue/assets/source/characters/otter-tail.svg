@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 120">
+  <g id="otter-tail">
+    <path d="M70 15 Q40 30 20 60 Q10 85 25 100 Q40 112 60 105 Q80 95 90 70 Q95 50 90 30 Q85 18 70 15Z" fill="#8B6F47" stroke="#5C4A2E" stroke-width="3"/>
+    <path d="M65 25 Q42 40 28 65 Q20 82 30 95" fill="none" stroke="#C4A265" stroke-width="10" stroke-linecap="round" opacity="0.5"/>
+    <ellipse cx="25" cy="100" rx="15" ry="10" fill="#C4A265" stroke="#5C4A2E" stroke-width="2" transform="rotate(-15 25 100)"/>
+  </g>
+</svg>

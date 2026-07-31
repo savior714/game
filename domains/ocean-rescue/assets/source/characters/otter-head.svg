@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <g id="otter-head">
+    <ellipse cx="100" cy="110" rx="70" ry="65" fill="#8B6F47" stroke="#5C4A2E" stroke-width="3"/>
+    <ellipse cx="100" cy="115" rx="50" ry="45" fill="#C4A265" stroke="#5C4A2E" stroke-width="2"/>
+    <ellipse cx="65" cy="90" rx="18" ry="22" fill="#8B6F47" stroke="#5C4A2E" stroke-width="2"/>
+    <ellipse cx="135" cy="90" rx="18" ry="22" fill="#8B6F47" stroke="#5C4A2E" stroke-width="2"/>
+    <ellipse cx="65" cy="85" rx="10" ry="13" fill="#C4A265"/>
+    <ellipse cx="135" cy="85" rx="10" ry="13" fill="#C4A265"/>
+    <circle cx="100" cy="105" r="8" fill="#3D2B1F" stroke="#2A1A0E" stroke-width="1.5"/>
+    <ellipse cx="100" cy="103" rx="3" ry="2" fill="#6B4F3A"/>
+    <ellipse cx="80" cy="120" rx="12" ry="8" fill="#E8B4B8" opacity="0.6"/>
+    <ellipse cx="120" cy="120" rx="12" ry="8" fill="#E8B4B8" opacity="0.6"/>
+    <path d="M88 128 Q100 138 112 128" fill="none" stroke="#5C4A2E" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+</svg>

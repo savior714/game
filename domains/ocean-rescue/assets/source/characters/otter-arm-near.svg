@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 180">
+  <g id="otter-arm-near">
+    <path d="M60 20 Q30 60 25 110 Q22 140 40 160 Q55 170 65 150 Q75 130 70 90 Q68 50 60 20Z" fill="#8B6F47" stroke="#5C4A2E" stroke-width="3"/>
+    <path d="M55 30 Q35 65 32 105 Q30 130 42 148" fill="none" stroke="#C4A265" stroke-width="12" stroke-linecap="round" opacity="0.5"/>
+    <circle cx="42" cy="155" r="10" fill="#C4A265" stroke="#5C4A2E" stroke-width="2"/>
+    <circle cx="35" cy="152" r="4" fill="#8B6F47"/>
+    <circle cx="48" cy="150" r="3.5" fill="#8B6F47"/>
+    <circle cx="40" cy="158" r="3" fill="#8B6F47"/>
+  </g>
+</svg>

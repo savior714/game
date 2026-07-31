@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 160">
+  <g id="scene-coral-foreground">
+    <path d="M0 160 L0 100 Q20 80 40 90 Q60 60 80 75 Q100 50 120 70 Q140 55 160 65 Q180 45 200 60 Q220 40 240 55 Q260 35 280 50 Q300 30 320 45 Q340 25 360 40 Q380 30 400 50 L400 160Z" fill="#E85D75" stroke="#CC3355" stroke-width="2.5"/>
+    <path d="M0 160 L0 120 Q30 105 60 115 Q90 95 120 108 Q150 90 180 105 Q210 85 240 100 Q270 80 300 95 Q330 80 360 92 Q390 85 400 100 L400 160Z" fill="#FF7F7F" stroke="#CC3355" stroke-width="1.5"/>
+    <path d="M50 110 Q55 80 60 110" fill="none" stroke="#CC3355" stroke-width="3" stroke-linecap="round"/>
+    <path d="M150 100 Q155 70 160 100" fill="none" stroke="#CC3355" stroke-width="3" stroke-linecap="round"/>
+    <path d="M250 95 Q255 65 260 95" fill="none" stroke="#CC3355" stroke-width="3" stroke-linecap="round"/>
+    <path d="M350 90 Q355 60 360 90" fill="none" stroke="#CC3355" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="70" cy="130" r="8" fill="#FFB6C1" stroke="#CC3355" stroke-width="1.5"/>
+    <circle cx="180" cy="125" r="6" fill="#FFB6C1" stroke="#CC3355" stroke-width="1.5"/>
+    <circle cx="290" cy="120" r="9" fill="#FFB6C1" stroke="#CC3355" stroke-width="1.5"/>
+    <path d="M0 155 Q50 145 100 150 Q150 140 200 148 Q250 138 300 145 Q350 135 400 142 L400 160 L0 160Z" fill="#D2B48C" stroke="#A0845C" stroke-width="1"/>
+  </g>
+</svg>

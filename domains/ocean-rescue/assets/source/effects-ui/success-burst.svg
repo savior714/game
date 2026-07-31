@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
+  <g id="fx-success-burst">
+    <circle cx="80" cy="80" r="30" fill="#FFD700" opacity="0.3"/>
+    <circle cx="80" cy="80" r="20" fill="#FFEB3B" opacity="0.5"/>
+    <circle cx="80" cy="80" r="10" fill="#FFFFFF" opacity="0.7"/>
+    <path d="M80 15 L85 35 L80 30 L75 35Z" fill="#FFD700" stroke="#C47A1E" stroke-width="1"/>
+    <path d="M80 125 L85 145 L80 140 L75 145Z" fill="#FFD700" stroke="#C47A1E" stroke-width="1"/>
+    <path d="M15 80 L35 75 L30 80 L35 85Z" fill="#FFD700" stroke="#C47A1E" stroke-width="1"/>
+    <path d="M125 80 L145 75 L140 80 L145 85Z" fill="#FFD700" stroke="#C47A1E" stroke-width="1"/>
+    <path d="M30 30 L45 40 L40 42 L42 48" fill="none" stroke="#FFD700" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M130 30 L115 40 L120 42 L118 48" fill="none" stroke="#FFD700" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M30 130 L45 120 L40 118 L42 112" fill="none" stroke="#FFD700" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M130 130 L115 120 L120 118 L118 112" fill="none" stroke="#FFD700" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="80" cy="80" r="45" fill="none" stroke="#FFD700" stroke-width="2" stroke-dasharray="4 8" opacity="0.4"/>
+    <circle cx="55" cy="55" r="3" fill="#FFEB3B"/>
+    <circle cx="105" cy="55" r="3" fill="#FFEB3B"/>
+    <circle cx="55" cy="105" r="3" fill="#FFEB3B"/>
+    <circle cx="105" cy="105" r="3" fill="#FFEB3B"/>
+    <circle cx="80" cy="45" r="2.5" fill="#FFFFFF"/>
+    <circle cx="115" cy="80" r="2.5" fill="#FFFFFF"/>
+    <circle cx="80" cy="115" r="2.5" fill="#FFFFFF"/>
+    <circle cx="45" cy="80" r="2.5" fill="#FFFFFF"/>
+  </g>
+</svg>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
+  <g id="ui-drag-arrow">
+    <circle cx="80" cy="80" r="70" fill="none" stroke="#E8A83E" stroke-width="4" stroke-dasharray="12 6" opacity="0.6"/>
+    <path d="M80 25 L95 55 L85 50 L80 70 L75 50 L65 55Z" fill="#E8A83E" stroke="#C47A1E" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M80 70 L80 130" fill="none" stroke="#E8A83E" stroke-width="4" stroke-linecap="round"/>
+    <path d="M65 115 L80 135 L95 115" fill="none" stroke="#E8A83E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="80" cy="25" r="6" fill="#FFD700" stroke="#C47A1E" stroke-width="1.5"/>
+  </g>
+</svg>

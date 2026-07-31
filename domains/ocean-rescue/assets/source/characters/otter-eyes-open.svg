@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80">
+  <g id="otter-eyes-open">
+    <ellipse cx="45" cy="40" rx="22" ry="25" fill="#FFFFFF" stroke="#3D2B1F" stroke-width="2.5"/>
+    <ellipse cx="115" cy="40" rx="22" ry="25" fill="#FFFFFF" stroke="#3D2B1F" stroke-width="2.5"/>
+    <circle cx="48" cy="38" r="11" fill="#3D2B1F"/>
+    <circle cx="118" cy="38" r="11" fill="#3D2B1F"/>
+    <circle cx="52" cy="34" r="4" fill="#FFFFFF"/>
+    <circle cx="122" cy="34" r="4" fill="#FFFFFF"/>
+    <circle cx="45" cy="42" r="2" fill="#FFFFFF" opacity="0.5"/>
+    <circle cx="115" cy="42" r="2" fill="#FFFFFF" opacity="0.5"/>
+  </g>
+</svg>

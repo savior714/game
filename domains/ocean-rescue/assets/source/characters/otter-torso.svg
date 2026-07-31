@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 220">
+  <g id="otter-torso">
+    <ellipse cx="90" cy="110" rx="60" ry="85" fill="#8B6F47" stroke="#5C4A2E" stroke-width="3"/>
+    <ellipse cx="90" cy="120" rx="42" ry="60" fill="#C4A265" stroke="#5C4A2E" stroke-width="2"/>
+    <path d="M60 65 Q90 40 120 65" fill="#8B6F47" stroke="#5C4A2E" stroke-width="2.5"/>
+    <ellipse cx="90" cy="70" rx="25" ry="10" fill="#E8A83E" stroke="#C47A1E" stroke-width="2"/>
+    <path d="M75 68 L80 60 L85 68" fill="#E8A83E" stroke="#C47A1E" stroke-width="1.5"/>
+    <path d="M95 68 L100 60 L105 68" fill="#E8A83E" stroke="#C47A1E" stroke-width="1.5"/>
+  </g>
+</svg>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200">
+  <g id="scene-submarine">
+    <ellipse cx="160" cy="110" rx="130" ry="55" fill="#4A7FB5" stroke="#2A5F8F" stroke-width="3"/>
+    <ellipse cx="160" cy="105" rx="115" ry="45" fill="#5A9FD5" stroke="#2A5F8F" stroke-width="2"/>
+    <rect x="140" y="45" width="40" height="35" rx="8" fill="#E8A83E" stroke="#C47A1E" stroke-width="2.5"/>
+    <rect x="148" y="50" width="24" height="20" rx="4" fill="#87CEEB" stroke="#2A5F8F" stroke-width="1.5"/>
+    <circle cx="160" cy="60" r="5" fill="#FFFFFF" opacity="0.4"/>
+    <rect x="80" y="95" width="20" height="30" rx="4" fill="#E8A83E" stroke="#C47A1E" stroke-width="2"/>
+    <rect x="220" y="95" width="20" height="30" rx="4" fill="#E8A83E" stroke="#C47A1E" stroke-width="2"/>
+    <ellipse cx="60" cy="110" rx="18" ry="30" fill="#4A7FB5" stroke="#2A5F8F" stroke-width="2"/>
+    <ellipse cx="260" cy="110" rx="15" ry="22" fill="#4A7FB5" stroke="#2A5F8F" stroke-width="2"/>
+    <circle cx="110" cy="115" r="10" fill="#87CEEB" stroke="#2A5F8F" stroke-width="1.5"/>
+    <circle cx="110" cy="115" r="5" fill="#FFFFFF" opacity="0.3"/>
+    <circle cx="210" cy="115" r="10" fill="#87CEEB" stroke="#2A5F8F" stroke-width="1.5"/>
+    <circle cx="210" cy="115" r="5" fill="#FFFFFF" opacity="0.3"/>
+    <path d="M160 155 L155 180 Q160 190 165 180 Z" fill="#E8A83E" stroke="#C47A1E" stroke-width="2"/>
+    <circle cx="160" cy="185" r="5" fill="#FF6B6B" stroke="#CC4444" stroke-width="1.5"/>
+    <path d="M100 140 Q80 150 60 145" fill="none" stroke="#2A5F8F" stroke-width="2" stroke-linecap="round"/>
+    <path d="M220 140 Q240 150 260 145" fill="none" stroke="#2A5F8F" stroke-width="2" stroke-linecap="round"/>
+  </g>
+</svg>

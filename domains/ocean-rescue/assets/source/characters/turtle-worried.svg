@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180">
+  <g id="turtle-worried">
+    <ellipse cx="100" cy="100" rx="75" ry="60" fill="#5A8F5A" stroke="#3A6A3A" stroke-width="3"/>
+    <ellipse cx="100" cy="95" rx="60" ry="45" fill="#7AB87A" stroke="#3A6A3A" stroke-width="2"/>
+    <path d="M50 85 Q65 70 80 85 Q95 70 110 85 Q125 70 140 85 Q155 70 155 85" fill="none" stroke="#3A6A3A" stroke-width="2"/>
+    <path d="M60 100 Q75 85 90 100 Q105 85 120 100 Q135 85 140 100" fill="none" stroke="#3A6A3A" stroke-width="2"/>
+    <path d="M55 115 Q70 100 85 115 Q100 100 115 115 Q130 100 145 115" fill="none" stroke="#3A6A3A" stroke-width="2"/>
+    <ellipse cx="165" cy="80" rx="22" ry="18" fill="#5A8F5A" stroke="#3A6A3A" stroke-width="2.5"/>
+    <circle cx="158" cy="74" r="4" fill="#FFFFFF" stroke="#3A6A3A" stroke-width="1.5"/>
+    <circle cx="158" cy="75" r="2" fill="#3D2B1F"/>
+    <circle cx="172" cy="74" r="4" fill="#FFFFFF" stroke="#3A6A3A" stroke-width="1.5"/>
+    <circle cx="172" cy="75" r="2" fill="#3D2B1F"/>
+    <path d="M155 88 Q165 82 175 88" fill="none" stroke="#3A6A3A" stroke-width="2" stroke-linecap="round"/>
+    <path d="M30 75 Q15 60 10 80 Q5 100 20 105 Q30 100 35 90Z" fill="#5A8F5A" stroke="#3A6A3A" stroke-width="2"/>
+    <path d="M30 115 Q15 130 10 115 Q5 100 20 95 Q30 100 35 110Z" fill="#5A8F5A" stroke="#3A6A3A" stroke-width="2"/>
+    <path d="M145 125 Q160 140 170 125 Q175 115 165 110 Q155 115 145 120Z" fill="#5A8F5A" stroke="#3A6A3A" stroke-width="2"/>
+    <path d="M60 145 Q50 160 45 148 Q40 138 50 135 Q55 140 60 142Z" fill="#5A8F5A" stroke="#3A6A3A" stroke-width="2"/>
+  </g>
+</svg>

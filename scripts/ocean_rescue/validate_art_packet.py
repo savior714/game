@@ -18,31 +18,49 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ALLOWED_BUNDLES = {"characters", "scene", "effects-ui"}
-REQUIRED_ALIASES = sorted([
-    "otter.head",
-    "otter.torso",
-    "otter.arm.near",
-    "otter.arm.far",
-    "otter.tail",
-    "otter.eyes.open",
-    "otter.eyes.closed",
-    "otter.mouth.neutral",
-    "otter.mouth.concern",
-    "otter.mouth.smile",
-    "turtle.worried",
-    "turtle.free",
-    "scene.submarine",
-    "scene.water.far",
-    "scene.reef.mid",
-    "scene.coral.foreground",
-    "scene.seaweed-loop.01",
-    "ui.drag-arrow",
-    "fx.success-burst",
-])
+REQUIRED_ALIASES = sorted(
+    [
+        "otter.head",
+        "otter.torso",
+        "otter.arm.near",
+        "otter.arm.far",
+        "otter.tail",
+        "otter.eyes.open",
+        "otter.eyes.closed",
+        "otter.mouth.neutral",
+        "otter.mouth.concern",
+        "otter.mouth.smile",
+        "turtle.worried",
+        "turtle.free",
+        "scene.submarine",
+        "scene.water.far",
+        "scene.reef.mid",
+        "scene.coral.foreground",
+        "scene.seaweed-loop.01",
+        "ui.drag-arrow",
+        "fx.success-burst",
+    ]
+)
 
-FORBIDDEN_SVG_ELEMENTS = {"script", "animate", "animateTransform", "animateMotion", "set"}
-FORBIDDEN_SVG_ATTRS = {"onload", "onclick", "onmouseover", "onmouseout", "onerror", "href", "xlink:href"}
-URL_PATTERN = re.compile(r'https?://|ftp://|data:(?:image|text|application)/', re.IGNORECASE)
+FORBIDDEN_SVG_ELEMENTS = {
+    "script",
+    "animate",
+    "animateTransform",
+    "animateMotion",
+    "set",
+}
+FORBIDDEN_SVG_ATTRS = {
+    "onload",
+    "onclick",
+    "onmouseover",
+    "onmouseout",
+    "onerror",
+    "href",
+    "xlink:href",
+}
+URL_PATTERN = re.compile(
+    r"https?://|ftp://|data:(?:image|text|application)/", re.IGNORECASE
+)
 
 
 def fail(msg: str) -> None:
@@ -57,15 +75,32 @@ def sha256_file(path: Path) -> str:
 
 
 def validate_json_shape(packet: dict) -> None:
-    for key in ("schemaVersion", "logicalViewport", "declaredRasterScale", "paletteVersion", "assets"):
+    for key in (
+        "schemaVersion",
+        "logicalViewport",
+        "declaredRasterScale",
+        "paletteVersion",
+        "assets",
+    ):
         if key not in packet:
             fail(f"Missing root field: {key}")
     if not isinstance(packet["assets"], list):
         fail("assets must be a list")
     for i, asset in enumerate(packet["assets"]):
-        for field in ("id", "alias", "source", "sourceType", "bundle", "logicalSize",
-                       "declaredRasterScale", "pivot", "authoringMethod", "approvalState",
-                       "revisionNote", "sourceSha256"):
+        for field in (
+            "id",
+            "alias",
+            "source",
+            "sourceType",
+            "bundle",
+            "logicalSize",
+            "declaredRasterScale",
+            "pivot",
+            "authoringMethod",
+            "approvalState",
+            "revisionNote",
+            "sourceSha256",
+        ):
             if field not in asset:
                 fail(f"Asset [{i}] missing field: {field}")
 
@@ -77,9 +112,13 @@ def validate_bundles_and_aliases(packet: dict) -> None:
         if asset["bundle"] not in ALLOWED_BUNDLES:
             fail(f"Asset {asset['alias']} has invalid bundle: {asset['bundle']}")
         if asset["sourceType"] != "svg":
-            fail(f"Asset {asset['alias']} sourceType must be 'svg', got: {asset['sourceType']}")
+            fail(
+                f"Asset {asset['alias']} sourceType must be 'svg', got: {asset['sourceType']}"
+            )
         if asset["declaredRasterScale"] != 2:
-            fail(f"Asset {asset['alias']} declaredRasterScale must be 2, got: {asset['declaredRasterScale']}")
+            fail(
+                f"Asset {asset['alias']} declaredRasterScale must be 2, got: {asset['declaredRasterScale']}"
+            )
         aliases.append(asset["alias"])
         ids.append(asset["id"])
 
@@ -122,7 +161,9 @@ def validate_source_hashes(packet: dict, root: Path) -> None:
             fail(f"Source file missing: {asset['source']}")
         actual = sha256_file(source_path)
         if actual != asset["sourceSha256"]:
-            fail(f"Hash mismatch for {asset['alias']}: declared={asset['sourceSha256'][:16]}... actual={actual[:16]}...")
+            fail(
+                f"Hash mismatch for {asset['alias']}: declared={asset['sourceSha256'][:16]}... actual={actual[:16]}..."
+            )
 
 
 def validate_no_path_traversal(packet: dict) -> None:
@@ -135,8 +176,8 @@ def validate_no_path_traversal(packet: dict) -> None:
 def validate_svg(path: Path) -> None:
     content = path.read_text(encoding="utf-8")
 
-    stripped = re.sub(r'\s+xmlns[:\w]*\s*=\s*"[^"]*"', '', content)
-    stripped = re.sub(r'\s+xmlns[:\w]*\s*=\s*\'[^\']*\'', '', stripped)
+    stripped = re.sub(r'\s+xmlns[:\w]*\s*=\s*"[^"]*"', "", content)
+    stripped = re.sub(r"\s+xmlns[:\w]*\s*=\s*\'[^\']*\'", "", stripped)
     if URL_PATTERN.search(stripped):
         fail(f"External URL or data URI found in: {path.name}")
 
@@ -152,10 +193,6 @@ def validate_svg(path: Path) -> None:
     tag = root_elem.tag.split("}")[-1] if "}" in root_elem.tag else root_elem.tag
     if tag.lower() != "svg":
         fail(f"Root element is not <svg> in {path.name}: got <{tag}>")
-
-    ns = ""
-    if "}" in root_elem.tag:
-        ns = root_elem.tag.split("}")[0] + "}"
 
     if root_elem.get("viewBox") is None:
         fail(f"Missing viewBox in: {path.name}")
@@ -176,7 +213,16 @@ def validate_svg(path: Path) -> None:
     has_drawable = False
     for elem in root_elem.iter():
         local = elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag
-        if local.lower() in {"circle", "ellipse", "rect", "path", "line", "polygon", "polyline", "g"}:
+        if local.lower() in {
+            "circle",
+            "ellipse",
+            "rect",
+            "path",
+            "line",
+            "polygon",
+            "polyline",
+            "g",
+        }:
             has_drawable = True
             break
     if not has_drawable:

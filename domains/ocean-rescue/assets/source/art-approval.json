@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "packetSchemaVersion": 1,
+  "decision": "approved",
+  "scope": "ocean-rescue-rendering-mvp-proof-packet",
+  "approvedAssetCount": 19,
+  "approvedAliases": [
+    "fx.success-burst",
+    "otter.arm.far",
+    "otter.arm.near",
+    "otter.eyes.closed",
+    "otter.eyes.open",
+    "otter.head",
+    "otter.mouth.concern",
+    "otter.mouth.neutral",
+    "otter.mouth.smile",
+    "otter.tail",
+    "otter.torso",
+    "scene.coral.foreground",
+    "scene.reef.mid",
+    "scene.seaweed-loop.01",
+    "scene.submarine",
+    "scene.water.far",
+    "turtle.free",
+    "turtle.worried",
+    "ui.drag-arrow"
+  ],
+  "artPacketSha256": "fbfb6de16b177fb32ca7db1b0a70e9f5abfbc8b8f7c9399f134784854e941283",
+  "contactSheetSha256": "56ba660cfcfa2cc909642f77cca26854a09f614385ae14772d50ed573e5ec4e4",
+  "sourceSetSha256": "7f395c9b64a9d048152a8262e951c25667a15501c58658fa64bdcc6b899de76b",
+  "requiredPredecessor": "de02f153f220825ef0084b8a54e52ff48abb020e",
+  "approvalDate": "2026-07-31",
+  "evidence": {
+    "focusedTest": "tests/test_ocean_rescue_art_packet.py",
+    "contactSheet": "../review/proof-art-contact-sheet.html",
+    "visualReviewVerdict": "PASS"
+  }
+}

@@ -1,10 +1,12 @@
 # AidenGame Ocean Rescue — Rendering MVP
 
-- **Version:** v0.1
+- **Version:** v0.2
 - **Date:** 2026-07-31
-- **Status:** Grill-me rendering scope partially closed
+- **Status:** Base renderer architecture closed / asset representation unresolved
 - **Parent product spec:** `AIDENGAME_OCEAN_RESCUE_MVP_PRD.md`
 - **Scope:** visual rendering quality only
+- **Selected renderer:** PixiJS v8
+- **Current implementation baseline:** PixiJS 8.19.0
 - **Primary device:** Galaxy Tab S10-class landscape tablet
 - **Build constraint:** final deployable remains a single HTML artifact
 
@@ -30,7 +32,7 @@ The rendering MVP answers one question only:
 
 ### Direct hypothesis
 
-Replacing procedural placeholder shapes with authored 2D character, vehicle, creature, environment, and effect assets inside one fixed-side rescue scene—while preserving current gameplay state and input contracts—will make the product visually understandable and emotionally readable without requiring new missions, new progression, or a broader world-building pass.
+Migrating only the visual layer to a PixiJS v8 scene graph and replacing procedural placeholder subjects with authored 2D assets—while preserving the current gameplay state and input contracts—will make the product visually understandable and emotionally readable without requiring new missions, progression, mechanics, or a broader world-building pass.
 
 ### Binary criterion
 
@@ -49,7 +51,7 @@ The prior Grill-me sequence expanded into character lore, team structure, costum
 
 From this point forward, the Grill-me process is limited to:
 
-- renderer architecture,
+- PixiJS renderer architecture,
 - asset representation,
 - scene layering,
 - sprite and animation composition,
@@ -74,8 +76,6 @@ The following are explicitly outside the current decision scope:
 ---
 
 ## 4. Retained visual anchors
-
-The following Grill-me decisions are accepted as art-direction constraints for the rendering MVP.
 
 ### 4.1 Overall style
 
@@ -189,11 +189,76 @@ This interaction exists only to validate the rendering and animation system. It 
 
 ---
 
-## 6. Required render layers
+## 6. Selected renderer architecture
 
-The scene must be represented as a scene graph or equivalent ordered layer model rather than one monolithic procedural paint function.
+### 6.1 Renderer decision
 
-Minimum layers:
+The rendering MVP will use **PixiJS v8**.
+
+The current implementation baseline is **PixiJS 8.19.0**, which is the stable `latest` package version at this decision point. The dependency must be pinned exactly in the repository and bundled into the single HTML artifact; the deployed game must not depend on a runtime CDN.
+
+### 6.2 Migration boundary
+
+The renderer migration is strictly visual.
+
+- Existing gameplay modules remain the authoritative source of mission state.
+- Existing progression, pause, save, failure-isolation, and pointer contracts remain authoritative.
+- PixiJS display objects must not become the canonical gameplay state.
+- A bounded render adapter maps immutable or read-only game snapshots into PixiJS scene updates.
+- Rendering code may emit normalized pointer intents but must not redefine success or failure rules.
+- The current Canvas paint path is removed only after the corresponding PixiJS slice independently satisfies visual and input acceptance.
+
+### 6.3 Application and context contract
+
+- Use exactly one `PIXI.Application` for the game.
+- Use one renderer and one graphics context.
+- Do not create one PixiJS application or WebGL context per scene, portrait, character, or effect.
+- Use one ticker or one explicitly controlled frame loop.
+- Do not mix an independent Rive, Spine, or second WebGL renderer into this MVP.
+- Prefer supported GPU renderers for the production slice; Canvas fallback is resilience, not the visual-quality reference path.
+
+### 6.4 Scene graph contract
+
+The scene must use named containers rather than a monolithic draw function.
+
+Minimum root hierarchy:
+
+```text
+stage
+├─ farBackground
+├─ midground
+├─ gameplayWorld
+│  ├─ submarine
+│  ├─ turtleAndObstacle
+│  └─ seaOtterRig
+├─ foreground
+├─ effects
+└─ hud
+```
+
+PixiJS RenderGroups may be used strategically for major scene partitions such as `gameplayWorld` and `hud`. They must not be assigned to every small layer or sprite without profile evidence.
+
+### 6.5 Asset loading contract
+
+- Use PixiJS `Assets` as the single runtime asset registry and cache.
+- Use aliases and a manifest or equivalent deterministic generated asset table.
+- Decode and upload mandatory slice assets before the rescue scene becomes interactive.
+- Repeated asset requests must reuse cached textures.
+- Embedded data URLs, blobs, or generated bundle entries must preserve stable asset identity.
+- Runtime loading from third-party URLs is prohibited in the final single-HTML build.
+
+### 6.6 Input boundary
+
+- Browser pointer coordinates are converted once into the existing logical 16:9 game coordinate system.
+- Existing domain hit-test and gesture rules remain authoritative where already implemented.
+- PixiJS event targets may identify the visual subject, but they must not silently introduce different hit geometry from the existing contract.
+- Debug hit areas remain independently inspectable and must not ship as visible geometry.
+
+---
+
+## 7. Required render layers
+
+Minimum visual layers:
 
 1. water gradient or far background,
 2. distant silhouettes and light rays,
@@ -209,9 +274,7 @@ Each layer must be independently replaceable without rewriting gameplay state tr
 
 ---
 
-## 7. Required authored assets
-
-The rendering MVP must use authored visual assets for the primary readable subjects.
+## 8. Required authored assets
 
 Mandatory:
 
@@ -235,11 +298,9 @@ Primary characters, animals, vehicles, rocks, coral, and rescue obstacles must n
 
 ---
 
-## 8. Minimum animation set
+## 9. Minimum animation set
 
-### 8.1 Sea-otter leader
-
-Required states:
+### 9.1 Sea-otter leader
 
 - idle breathing,
 - blink,
@@ -248,26 +309,20 @@ Required states:
 - pull or lean-back motion,
 - success reaction.
 
-### 8.2 Sea turtle
-
-Required states:
+### 9.2 Sea turtle
 
 - worried idle,
 - partial relief after loop one,
 - greater relief after loop two,
 - free and happy after loop three.
 
-### 8.3 Submarine
-
-Required states:
+### 9.3 Submarine
 
 - arrival drift,
 - idle hover,
 - support light or scanner activation.
 
-### 8.4 Environment
-
-Required motion:
+### 9.4 Environment
 
 - slow bubbles,
 - subtle seaweed sway,
@@ -278,54 +333,57 @@ Environmental motion must remain slower and lower contrast than the active rescu
 
 ---
 
-## 9. Visual readability requirements
+## 10. Visual readability requirements
 
 At the target 16:9 viewport:
 
-- the sea otter, turtle, submarine, and active loop must remain recognizable at 25% screenshot scale,
-- the active loop must have the strongest local interaction contrast,
-- the turtle’s face must remain readable without zooming,
-- the sea otter and turtle must not overlap the HUD,
-- foreground decoration must not cover interaction targets,
-- inactive decorative fish must not resemble targets,
-- text panels must not be the dominant visual mass.
+- the sea otter, turtle, submarine, and active loop remain recognizable at 25% screenshot scale,
+- the active loop has the strongest local interaction contrast,
+- the turtle’s face remains readable without zooming,
+- the sea otter and turtle do not overlap the HUD,
+- foreground decoration does not cover interaction targets,
+- inactive decorative fish do not resemble targets,
+- text panels are not the dominant visual mass.
 
 The scene should look like a paused animation frame before it looks like a debugging canvas.
 
 ---
 
-## 10. Device and rendering guardrails
+## 11. Device and rendering guardrails
 
-### 10.1 Resolution
+### 11.1 Resolution
 
 - Logical game coordinates remain fixed at 16:9.
-- Drawing-surface resolution must account for device pixel ratio.
-- Raster assets must have sufficient source resolution for Galaxy Tab-class high-density screens.
-- Asset scaling must avoid repeated browser interpolation from very small source images.
+- PixiJS resolution accounts for device pixel ratio under an explicit upper bound.
+- Raster assets have sufficient source resolution for Galaxy Tab-class high-density screens.
+- Asset scaling avoids repeated interpolation from undersized source images.
+- Pixel-density policy must be validated separately rather than guessed inside the renderer migration.
 
-### 10.2 Performance
+### 11.2 Performance
 
 Rendering quality work must preserve:
 
 - responsive pointer tracking,
 - stable animation cadence during drag,
-- no allocation-heavy asset recreation per frame,
+- no allocation-heavy display-object recreation per frame,
 - no repeated image decoding during gameplay,
 - bounded particle counts,
-- no requirement for multiple independent WebGL contexts.
+- one renderer/context only,
+- no filter or mask proliferation without device evidence.
 
 Performance optimization must not be pursued by reverting primary subjects to placeholder geometry.
 
-### 10.3 Packaging
+### 11.3 Packaging
 
 - The final artifact remains one HTML file.
-- Runtime dependencies and assets may be embedded or bundled at build time.
-- Source development may remain modular.
-- Asset identity and deterministic bundling must be testable.
+- PixiJS and all visual assets are embedded or bundled at build time.
+- Source development remains modular.
+- Asset identity and deterministic bundling are testable.
+- The production artifact must make zero third-party runtime requests for renderer code or mandatory slice assets.
 
 ---
 
-## 11. Explicit non-goals for the rendering MVP
+## 12. Explicit non-goals for the rendering MVP
 
 - Rendering all three missions at final quality
 - Full animation rigs for all three team members
@@ -337,11 +395,13 @@ Performance optimization must not be pursued by reverting primary subjects to pl
 - Cinematic camera system
 - Dynamic lighting system
 - Procedural character generation
-- Mandatory adoption of PixiJS, Rive, Spine, or another engine before a renderer decision is explicitly closed
+- Rive, Spine, skeletal physics, or another animation runtime
+- React-based PixiJS scene management
+- Rewriting domain gameplay state around PixiJS objects
 
 ---
 
-## 12. Rendering MVP acceptance criteria
+## 13. Rendering MVP acceptance criteria
 
 The rendering MVP passes only when all of the following are true.
 
@@ -353,35 +413,37 @@ The rendering MVP passes only when all of the following are true.
 6. The active seaweed loop is immediately distinguishable from inactive scenery.
 7. A first-time viewer can explain the rescue situation within three seconds without reading the instruction text.
 8. Pointer input remains aligned with the visual target across the supported 16:9 scaling path.
-9. The Galaxy Tab-class target can run the scene without obvious drag latency or sustained animation collapse.
-10. Existing gameplay state, failure isolation, pause, progression, and save-data contracts are not broadened or redesigned by this work.
+9. The Galaxy Tab-class target runs the scene without obvious drag latency or sustained animation collapse.
+10. Existing gameplay state, failure isolation, pause, progression, and save-data contracts are not broadened or redesigned.
 11. The single-HTML build remains deterministic and reproducible.
 12. Debug-only geometric placeholders are absent from the production scene.
+13. PixiJS is bundled locally and no mandatory renderer or slice asset is fetched from a third-party CDN at runtime.
+14. The application uses one PixiJS renderer/context.
 
 ---
 
-## 13. Current technology evidence
+## 14. Current technology evidence
 
-This section records current renderer facts but does not select a renderer.
-
+- PixiJS v8 provides a scene graph based on containers and sprites.
+- PixiJS `Assets` supports cached loading of PNG, WebP, AVIF, SVG, spritesheets, fonts, and other resource types.
+- PixiJS RenderGroups can reduce CPU transformation work for strategic scene partitions, but excessive groups can degrade performance.
 - PixiJS v8.16 introduced an experimental Canvas renderer fallback for environments without WebGL or WebGPU.
-- PixiJS June 2026 updates added renderer preference arrays and transient WebGPU MSAA attachments intended to reduce mobile memory bandwidth.
-- Rive currently recommends its WebGL2 runtime for the highest rendering quality and performance, while also providing a smaller Canvas-based runtime for simpler graphics.
-- Rive also warns that multiple visible WebGL instances can encounter browser context limits unless a shared offscreen renderer is used.
+- PixiJS v8.18–8.19 added renderer preference arrays and optional transient WebGPU MSAA attachments that can reduce mobile memory bandwidth.
+- PixiJS 8.19.0 is the stable `latest` package version at this decision point.
 
-These changes make both a sprite-oriented PixiJS path and a limited Rive-character path technically viable, but neither is accepted until the renderer choice is independently decided.
+These capabilities support the selected PixiJS architecture. They do not remove the need to validate the asset format, DPR ceiling, atlas size, filter use, and Galaxy Tab performance as separate rendering failure domains.
 
 ---
 
-## 14. Next unresolved rendering decision
+## 15. Next unresolved rendering decision
 
-The next Grill-me question must choose only the base renderer strategy for this single vertical slice.
+The base renderer is closed as **PixiJS v8**.
 
-Candidate strategies:
+The next Grill-me question must choose only how authored assets are represented and packaged for the first slice:
 
-1. keep the current Canvas 2D runtime and replace procedural subjects with authored sprite assets plus a small internal scene graph,
-2. preserve gameplay logic but migrate the visual layer to PixiJS v8,
-3. use SVG/DOM cutout composition for the primary scene,
-4. use Rive as the primary character and scene runtime.
+1. independent raster PNG/WebP textures,
+2. runtime SVG textures,
+3. build-time packed raster texture atlas from authored source files,
+4. mostly procedural PixiJS Graphics.
 
-No further character, narrative, mission, or world-building decision is required before this renderer decision is closed.
+No further character, narrative, mission, or world-building decision is required before this asset-representation decision is closed.

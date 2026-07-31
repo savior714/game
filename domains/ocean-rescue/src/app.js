@@ -3,6 +3,7 @@
   var Missions = window.OceanRescue.Missions;
   var Gups = window.OceanRescue.Gups;
   var Launch = window.OceanRescue.Launch;
+  var Travel = window.OceanRescue.Travel || null;
 
   var controlsBound = false;
   var launchSequenceCounter = 0;
@@ -10,6 +11,19 @@
   var launchTimerId = null;
   var goalTimerId = null;
   var goalSequenceId = null;
+
+  var travelRunIdCounter = 0;
+  var activeTravelRunId = null;
+  var travelFrameId = null;
+  var travelLastTimestamp = null;
+  var travelInputBound = false;
+  var travelCanvas = null;
+
+  var pointerActive = false;
+  var pointerId = null;
+  var pointerStartClientY = null;
+  var pointerStartStageY = null;
+  var pointerDragging = false;
 
   function missionById(missionId) {
     var catalog = Missions.Catalog;
@@ -514,6 +528,8 @@
       status.textContent = "Travel ready: " + sequence.missionContent.goal;
     }
 
+    startTravelRuntime();
+
     return true;
   }
 
@@ -545,6 +561,294 @@
     goalBanner.textContent = "";
     goalTimerId = null;
     goalSequenceId = null;
+  }
+
+  function startTravelRuntime() {
+    if (!Travel) {
+      return;
+    }
+    Travel.start();
+    travelRunIdCounter += 1;
+    var runId = travelRunIdCounter;
+    activeTravelRunId = runId;
+    travelLastTimestamp = null;
+    if (travelFrameId !== null && typeof window.cancelAnimationFrame === "function") {
+      window.cancelAnimationFrame(travelFrameId);
+    }
+    travelFrameId = null;
+
+    var canvas = document.getElementById("ocean-rescue-canvas");
+    var context = null;
+    if (canvas && typeof canvas.getContext === "function") {
+      context = canvas.getContext("2d");
+    }
+    travelCanvas = canvas;
+    bindTravelPointerInput(canvas);
+    renderTravelFrame(canvas, context);
+
+    if (typeof window.requestAnimationFrame === "function") {
+      travelFrameId = window.requestAnimationFrame(function (timestamp) {
+        travelAnimationFrame(runId, timestamp);
+      });
+    }
+
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-travel-runtime", "active");
+      root.setAttribute("data-travel-input", "enabled");
+    }
+  }
+
+  function travelAnimationFrame(runId, timestamp) {
+    if (runId !== activeTravelRunId) {
+      return;
+    }
+    travelFrameId = null;
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.TRAVEL) {
+      return;
+    }
+    var travel = Travel.getSnapshot();
+    if (!travel.active) {
+      return;
+    }
+    if (travelLastTimestamp !== null) {
+      var deltaMs = timestamp - travelLastTimestamp;
+      if (deltaMs > 0) {
+        Travel.step(deltaMs);
+      }
+    }
+    travelLastTimestamp = timestamp;
+    renderTravelFrame(travelCanvas, resolveTravelContext());
+    if (typeof window.requestAnimationFrame === "function") {
+      travelFrameId = window.requestAnimationFrame(function (nextTimestamp) {
+        travelAnimationFrame(runId, nextTimestamp);
+      });
+    }
+  }
+
+  function resolveTravelContext() {
+    if (!travelCanvas || typeof travelCanvas.getContext !== "function") {
+      return null;
+    }
+    return travelCanvas.getContext("2d");
+  }
+
+  function bindTravelPointerInput(canvas) {
+    if (travelInputBound) {
+      return;
+    }
+    if (!canvas) {
+      return;
+    }
+    if (typeof canvas.addEventListener !== "function") {
+      return;
+    }
+    canvas.addEventListener("pointerdown", onPointerDown);
+    canvas.addEventListener("pointermove", onPointerMove);
+    canvas.addEventListener("pointerup", onPointerUp);
+    canvas.addEventListener("pointercancel", onPointerCancel);
+    travelInputBound = true;
+  }
+
+  function acceptPointerEvent(event) {
+    if (!event || typeof event !== "object") {
+      return false;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.TRAVEL) {
+      return false;
+    }
+    var travel = Travel.getSnapshot();
+    if (!travel.active) {
+      return false;
+    }
+    if (event.isPrimary === false) {
+      return false;
+    }
+    if (typeof event.button === "number" && event.button !== 0) {
+      return false;
+    }
+    return true;
+  }
+
+  function mapClientYToStage(event) {
+    if (typeof event.clientY !== "number" || !isFinite(event.clientY)) {
+      return null;
+    }
+    if (!travelCanvas) {
+      return null;
+    }
+    if (typeof travelCanvas.getBoundingClientRect !== "function") {
+      return null;
+    }
+    var rect = travelCanvas.getBoundingClientRect();
+    if (!rect || typeof rect !== "object") {
+      return null;
+    }
+    if (typeof rect.height !== "number" || !isFinite(rect.height) || rect.height <= 0) {
+      return null;
+    }
+    if (typeof travelCanvas.height !== "number" || !isFinite(travelCanvas.height) || travelCanvas.height <= 0) {
+      return null;
+    }
+    return event.clientY * (travelCanvas.height / rect.height);
+  }
+
+  function resetPointerGesture() {
+    pointerActive = false;
+    pointerId = null;
+    pointerStartClientY = null;
+    pointerStartStageY = null;
+    pointerDragging = false;
+  }
+
+  function onPointerDown(event) {
+    if (!acceptPointerEvent(event)) {
+      return;
+    }
+    if (pointerActive) {
+      return;
+    }
+    var stageY = mapClientYToStage(event);
+    if (stageY === null) {
+      return;
+    }
+    pointerActive = true;
+    pointerId = event.pointerId;
+    pointerStartClientY = event.clientY;
+    pointerStartStageY = stageY;
+    pointerDragging = false;
+    if (travelCanvas && typeof travelCanvas.setPointerCapture === "function") {
+      travelCanvas.setPointerCapture(event.pointerId);
+    }
+    if (typeof event.preventDefault === "function") {
+      event.preventDefault();
+    }
+  }
+
+  function onPointerMove(event) {
+    if (!acceptPointerEvent(event)) {
+      return;
+    }
+    if (!pointerActive) {
+      return;
+    }
+    if (event.pointerId !== pointerId) {
+      return;
+    }
+    var stageY = mapClientYToStage(event);
+    if (stageY === null) {
+      return;
+    }
+    if (!pointerDragging) {
+      if (Math.abs(event.clientY - pointerStartClientY) < 8) {
+        return;
+      }
+      pointerDragging = true;
+      Travel.beginDrag(pointerId, pointerStartStageY);
+      Travel.moveDrag(pointerId, stageY);
+    } else {
+      Travel.moveDrag(pointerId, stageY);
+    }
+    if (typeof event.preventDefault === "function") {
+      event.preventDefault();
+    }
+  }
+
+  function onPointerUp(event) {
+    if (!acceptPointerEvent(event)) {
+      return;
+    }
+    if (!pointerActive) {
+      return;
+    }
+    if (event.pointerId !== pointerId) {
+      return;
+    }
+    var stageY = mapClientYToStage(event);
+    if (pointerDragging) {
+      if (stageY !== null) {
+        Travel.moveDrag(pointerId, stageY);
+      }
+      Travel.endDrag(pointerId);
+    } else if (stageY !== null) {
+      Travel.tapTo(stageY);
+    }
+    resetPointerGesture();
+    if (travelCanvas && typeof travelCanvas.releasePointerCapture === "function") {
+      travelCanvas.releasePointerCapture(event.pointerId);
+    }
+    if (typeof event.preventDefault === "function") {
+      event.preventDefault();
+    }
+  }
+
+  function onPointerCancel(event) {
+    if (!pointerActive) {
+      return;
+    }
+    if (event.pointerId !== pointerId) {
+      return;
+    }
+    if (pointerDragging) {
+      Travel.endDrag(pointerId);
+    }
+    resetPointerGesture();
+  }
+
+  function renderTravelFrame(canvas, context) {
+    if (!canvas || !context) {
+      return;
+    }
+    if (typeof context.clearRect !== "function") {
+      return;
+    }
+    var snapshot = Travel.getSnapshot();
+    var width = canvas.width;
+    var height = canvas.height;
+    if (typeof width !== "number" || typeof height !== "number") {
+      return;
+    }
+    context.clearRect(0, 0, width, height);
+    drawTravelBackground(context, width, height);
+    drawTravelWater(context, width, height, snapshot.distance);
+    drawTravelGup(context, width, height, snapshot.y);
+  }
+
+  function drawTravelBackground(context, width, height) {
+    context.fillStyle = "#0a1e33";
+    context.fillRect(0, 0, width, height);
+    context.fillStyle = "#123451";
+    context.fillRect(0, 0, width, Math.floor(height * 0.45));
+  }
+
+  function drawTravelWater(context, width, height, distance) {
+    var spacing = 96;
+    var offset = distance % spacing;
+    context.fillStyle = "rgba(180, 220, 255, 0.35)";
+    var x = offset;
+    while (x < width) {
+      context.beginPath();
+      context.arc(x, height * 0.62, 5, 0, Math.PI * 2);
+      context.fill();
+      x += spacing;
+    }
+  }
+
+  function drawTravelGup(context, width, height, y) {
+    var gupSnapshot = Gups.getSnapshot();
+    var gup = gupById(gupSnapshot.lastGupId);
+    var name = gup === null ? String(gupSnapshot.lastGupId) : gup.name;
+    var x = 320;
+    context.beginPath();
+    context.arc(x, y, 36, 0, Math.PI * 2);
+    context.fillStyle = "#ffd166";
+    context.fill();
+    context.fillStyle = "#0a1e33";
+    context.font = "18px system-ui, sans-serif";
+    context.textAlign = "center";
+    context.fillText(name, x, y);
   }
 
   function selectMission(missionId) {

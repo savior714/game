@@ -25,13 +25,19 @@
       "depends_on": []
     },
     {
+      "file": "travel.js",
+      "namespace": "OceanRescue.Travel",
+      "depends_on": []
+    },
+    {
       "file": "app.js",
       "namespace": "OceanRescue.App",
       "depends_on": [
         "OceanRescue.State",
         "OceanRescue.Missions",
         "OceanRescue.Gups",
-        "OceanRescue.Launch"
+        "OceanRescue.Launch",
+        "OceanRescue.Travel"
       ]
     }
   ],

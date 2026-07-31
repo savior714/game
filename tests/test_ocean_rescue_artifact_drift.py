@@ -72,16 +72,18 @@ def test_artifact_standalone_contract():
     assert 'width="1280"' in content, 'Expected width="1280"'
     assert 'height="720"' in content, 'Expected height="720"'
     assert content.count("<style>") == 1, "Expected exactly one <style>"
-    assert content.count("<script>") == 5, "Expected exactly five <script>"
+    assert content.count("<script>") == 6, "Expected exactly six <script>"
     state_idx = content.index("OceanRescue.State")
     missions_idx = content.index("OceanRescue.Missions")
     gups_idx = content.index("OceanRescue.Gups")
     launch_idx = content.index("OceanRescue.Launch")
+    travel_idx = content.index("OceanRescue.Travel")
     app_idx = content.index("OceanRescue.App")
     assert state_idx < missions_idx, "State content must precede Missions content"
     assert missions_idx < gups_idx, "Missions content must precede Gups content"
     assert gups_idx < launch_idx, "Gups content must precede Launch content"
-    assert launch_idx < app_idx, "Launch content must precede App content"
+    assert launch_idx < travel_idx, "Launch content must precede Travel content"
+    assert travel_idx < app_idx, "Travel content must precede App content"
     assert "<!-- OCEAN_RESCUE_CSS -->" not in content
     assert "<!-- OCEAN_RESCUE_SCRIPTS -->" not in content
     assert "asset://" not in content

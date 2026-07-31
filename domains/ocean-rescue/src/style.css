@@ -26,12 +26,37 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 #ocean-rescue-canvas {
   display: block;
   width: 100%;
   height: 100%;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+#ocean-rescue-travel-help {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  box-sizing: border-box;
+  max-width: 90%;
+  margin: 0;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: rgba(10, 24, 40, 0.72);
+  color: #d5e4f2;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+  pointer-events: none;
 }
 
 #ocean-rescue-mission-select {

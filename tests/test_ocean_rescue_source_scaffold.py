@@ -22,6 +22,7 @@ TERRAIN_JS = SOURCE_ROOT / "terrain.js"
 RESCUE_JS = SOURCE_ROOT / "rescue.js"
 SEA_TURTLE_JS = SOURCE_ROOT / "sea-turtle.js"
 CRAB_JS = SOURCE_ROOT / "crab.js"
+YOUNG_WHALE_JS = SOURCE_ROOT / "young-whale.js"
 APP_JS = SOURCE_ROOT / "app.js"
 
 CANONICAL_SOURCE_FILES = [
@@ -37,6 +38,7 @@ CANONICAL_SOURCE_FILES = [
     "rescue.js",
     "sea-turtle.js",
     "crab.js",
+    "young-whale.js",
     "app.js",
 ]
 
@@ -53,7 +55,7 @@ class TestManifest:
         assert set(data.keys()) == {"template", "styles", "scripts", "assets"}
         assert data["template"] == "index.template.html"
         assert data["styles"] == ["style.css"]
-        assert len(data["scripts"]) == 10
+        assert len(data["scripts"]) == 11
         assert data["scripts"][0]["file"] == "state.js"
         assert data["scripts"][0]["namespace"] == "OceanRescue.State"
         assert data["scripts"][0]["depends_on"] == []
@@ -81,9 +83,12 @@ class TestManifest:
         assert data["scripts"][8]["file"] == "crab.js"
         assert data["scripts"][8]["namespace"] == "OceanRescue.Crab"
         assert data["scripts"][8]["depends_on"] == []
-        assert data["scripts"][9]["file"] == "app.js"
-        assert data["scripts"][9]["namespace"] == "OceanRescue.App"
-        assert data["scripts"][9]["depends_on"] == [
+        assert data["scripts"][9]["file"] == "young-whale.js"
+        assert data["scripts"][9]["namespace"] == "OceanRescue.YoungWhale"
+        assert data["scripts"][9]["depends_on"] == []
+        assert data["scripts"][10]["file"] == "app.js"
+        assert data["scripts"][10]["namespace"] == "OceanRescue.App"
+        assert data["scripts"][10]["depends_on"] == [
             "OceanRescue.State",
             "OceanRescue.Missions",
             "OceanRescue.Gups",
@@ -93,6 +98,7 @@ class TestManifest:
             "OceanRescue.Rescue",
             "OceanRescue.SeaTurtle",
             "OceanRescue.Crab",
+            "OceanRescue.YoungWhale",
         ]
         assert data["assets"] == []
 
@@ -160,6 +166,11 @@ class TestJavaScript:
         assert "window.OceanRescue" in content
         assert "root.Crab" in content or "OceanRescue.Crab" in content
 
+    def test_young_whale_defines_namespace(self):
+        content = YOUNG_WHALE_JS.read_text(encoding="utf-8")
+        assert "window.OceanRescue" in content
+        assert "root.YoungWhale" in content or "OceanRescue.YoungWhale" in content
+
     def test_app_defines_namespace_and_references_state(self):
         content = APP_JS.read_text(encoding="utf-8")
         assert "OceanRescue.App" in content
@@ -179,6 +190,7 @@ class TestJavaScript:
             (RESCUE_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
             (SEA_TURTLE_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
             (CRAB_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
+            (YOUNG_WHALE_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
             (APP_JS, ["import", "export", "fetch(", "XMLHttpRequest", "WebSocket", "EventSource"]),
         ],
     )
@@ -187,7 +199,7 @@ class TestJavaScript:
         for token in forbidden:
             assert token not in content, f"{path.name} contains {token}"
 
-    @pytest.mark.parametrize("path", [STATE_JS, MISSIONS_JS, GUPS_JS, LAUNCH_JS, TRAVEL_JS, TERRAIN_JS, RESCUE_JS, SEA_TURTLE_JS, CRAB_JS, APP_JS])
+    @pytest.mark.parametrize("path", [STATE_JS, MISSIONS_JS, GUPS_JS, LAUNCH_JS, TRAVEL_JS, TERRAIN_JS, RESCUE_JS, SEA_TURTLE_JS, CRAB_JS, YOUNG_WHALE_JS, APP_JS])
     def test_no_asset_sentinel(self, path):
         content = path.read_text(encoding="utf-8")
         assert "asset://" not in content
@@ -209,7 +221,7 @@ class TestBuild:
         assert "<!-- OCEAN_RESCUE_CSS -->" not in html
         assert "<!-- OCEAN_RESCUE_SCRIPTS -->" not in html
         assert html.count("<style") == 1
-        assert html.count("<script") == 10
+        assert html.count("<script") == 11
         assert "asset://" not in html
         state_pos = html.index("OceanRescue.State")
         missions_pos = html.index("OceanRescue.Missions")
@@ -220,6 +232,7 @@ class TestBuild:
         rescue_pos = html.index("OceanRescue.Rescue")
         sea_turtle_pos = html.index("OceanRescue.SeaTurtle")
         crab_pos = html.index("OceanRescue.Crab")
+        young_whale_pos = html.index("OceanRescue.YoungWhale")
         app_pos = html.index("OceanRescue.App")
         assert state_pos < missions_pos, "State script must appear before Missions script"
         assert missions_pos < gups_pos, "Missions script must appear before Gups script"
@@ -229,7 +242,8 @@ class TestBuild:
         assert terrain_pos < rescue_pos, "Terrain script must appear before Rescue script"
         assert rescue_pos < sea_turtle_pos, "Rescue script must appear before SeaTurtle script"
         assert sea_turtle_pos < crab_pos, "SeaTurtle script must appear before Crab script"
-        assert crab_pos < app_pos, "Crab script must appear before App script"
+        assert crab_pos < young_whale_pos, "Crab script must appear before YoungWhale script"
+        assert young_whale_pos < app_pos, "YoungWhale script must appear before App script"
         ext_src = '<script src='
         assert ext_src not in html.lower()
         ext_link = '<link rel="stylesheet"'

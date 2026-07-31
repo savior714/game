@@ -8,6 +8,7 @@
   var Rescue = window.OceanRescue.Rescue || null;
   var SeaTurtle = window.OceanRescue.SeaTurtle || null;
   var Crab = window.OceanRescue.Crab || null;
+  var YoungWhale = window.OceanRescue.YoungWhale || null;
 
   var controlsBound = false;
   var launchSequenceCounter = 0;
@@ -41,6 +42,11 @@
   var crabHoldTimerId = null;
   var crabPointerId = null;
   var crabPointerCaptureEl = null;
+
+  var youngWhaleTimerId = null;
+  var youngWhaleFeedbackSequence = null;
+  var youngWhalePointerId = null;
+  var youngWhalePointerCaptureEl = null;
 
   var pointerActive = false;
   var pointerId = null;
@@ -1294,6 +1300,7 @@
     }
     startSeaTurtleInteraction(sequence);
     startCrabInteraction(sequence);
+    startYoungWhaleInteraction(sequence);
     return true;
   }
 
@@ -1512,6 +1519,42 @@
     return true;
   }
 
+  function startYoungWhaleInteraction(sequence) {
+    if (!sequence || typeof sequence !== "object") {
+      return false;
+    }
+    if (!YoungWhale) {
+      return false;
+    }
+    if (sequence.missionId !== YoungWhale.MissionId) {
+      return false;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.RESCUE_ACTIVE) {
+      return false;
+    }
+    var canvas = document.getElementById("ocean-rescue-canvas");
+    var context = null;
+    if (canvas && typeof canvas.getContext === "function") {
+      context = canvas.getContext("2d");
+    }
+    var overlay = document.getElementById("ocean-rescue-rescue-overlay");
+    if (!canvas || !context || !overlay) {
+      return false;
+    }
+    YoungWhale.start();
+    bindRescuePointerInput(canvas);
+    renderYoungWhaleFrame();
+    var progress = document.getElementById("ocean-rescue-rescue-progress");
+    if (progress) {
+      progress.textContent = "Debris 1 of 3";
+    }
+    updateYoungWhaleInstruction();
+    hideAssistHand();
+    updateYoungWhaleRootMarkers();
+    return true;
+  }
+
   function bindRescuePointerInput(canvas) {
     if (seaTurtleInputBound) {
       return;
@@ -1558,6 +1601,14 @@
         return false;
       }
       if (crabPointerId !== null) {
+        return false;
+      }
+    } else if (YoungWhale && missionId === YoungWhale.MissionId) {
+      var youngWhale = YoungWhale.getSnapshot();
+      if (!youngWhale.active) {
+        return false;
+      }
+      if (youngWhalePointerId !== null) {
         return false;
       }
     } else {
@@ -1611,6 +1662,16 @@
         return false;
       }
       if (event.pointerId !== crabPointerId) {
+        return false;
+      }
+    } else if (YoungWhale && missionId === YoungWhale.MissionId) {
+      if (youngWhalePointerId === null) {
+        return false;
+      }
+      if (typeof event.pointerId !== "number" || !isFinite(event.pointerId)) {
+        return false;
+      }
+      if (event.pointerId !== youngWhalePointerId) {
         return false;
       }
     } else {
@@ -1681,6 +1742,15 @@
     }
   }
 
+  function releaseYoungWhalePointerCapture(pointerId) {
+    if (
+      youngWhalePointerCaptureEl &&
+      typeof youngWhalePointerCaptureEl.releasePointerCapture === "function"
+    ) {
+      youngWhalePointerCaptureEl.releasePointerCapture(pointerId);
+    }
+  }
+
   function onRescuePointerDown(event) {
     if (!acceptRescuePointerEvent(event)) {
       return;
@@ -1696,6 +1766,10 @@
     }
     if (Crab && missionId === Crab.MissionId) {
       handleCrabPointerDown(event, mapped);
+      return;
+    }
+    if (YoungWhale && missionId === YoungWhale.MissionId) {
+      handleYoungWhalePointerDown(event, mapped);
     }
   }
 
@@ -1754,6 +1828,29 @@
     }
   }
 
+  function handleYoungWhalePointerDown(event, mapped) {
+    if (!YoungWhale.pointerDown(event.pointerId, mapped.x, mapped.y)) {
+      return;
+    }
+    youngWhalePointerId = event.pointerId;
+    youngWhalePointerCaptureEl = document.getElementById("ocean-rescue-canvas");
+    if (
+      youngWhalePointerCaptureEl &&
+      typeof youngWhalePointerCaptureEl.setPointerCapture === "function"
+    ) {
+      youngWhalePointerCaptureEl.setPointerCapture(event.pointerId);
+    }
+    hideAssistHand();
+    renderYoungWhaleFrame(mapped.x, mapped.y);
+    updateYoungWhaleRootMarkers();
+    if (typeof event.preventDefault === "function") {
+      event.preventDefault();
+    }
+    if (typeof event.stopPropagation === "function") {
+      event.stopPropagation();
+    }
+  }
+
   function onRescuePointerMove(event) {
     if (!isTrackedRescuePointer(event)) {
       return;
@@ -1775,6 +1872,10 @@
       Crab.pointerMove(event.pointerId, mapped.x, mapped.y);
       renderCrabFrame();
       updateCrabRootMarkers();
+    } else if (YoungWhale && missionId === YoungWhale.MissionId) {
+      YoungWhale.pointerMove(event.pointerId, mapped.x, mapped.y);
+      renderYoungWhaleFrame(mapped.x, mapped.y);
+      updateYoungWhaleRootMarkers();
     }
     if (typeof event.preventDefault === "function") {
       event.preventDefault();
@@ -1824,6 +1925,23 @@
         updateCrabRootMarkers();
         routeCrabFeedback(result);
       }
+    } else if (YoungWhale && missionId === YoungWhale.MissionId) {
+      if (mapped !== null) {
+        result = YoungWhale.pointerUp(event.pointerId, mapped.x, mapped.y);
+      } else {
+        YoungWhale.pointerCancel(event.pointerId);
+      }
+      releaseYoungWhalePointerCapture(event.pointerId);
+      youngWhalePointerId = null;
+      youngWhalePointerCaptureEl = null;
+      if (result && result.accepted) {
+        renderYoungWhaleFrame(
+          mapped === null ? null : mapped.x,
+          mapped === null ? null : mapped.y
+        );
+        updateYoungWhaleRootMarkers();
+        routeYoungWhaleFeedback(result);
+      }
     }
     if (typeof event.preventDefault === "function") {
       event.preventDefault();
@@ -1861,6 +1979,24 @@
       return;
     }
     if (!Crab || missionId !== Crab.MissionId) {
+      if (!YoungWhale || missionId !== YoungWhale.MissionId) {
+        return;
+      }
+      if (youngWhalePointerId === null) {
+        return;
+      }
+      if (typeof event.pointerId !== "number" || !isFinite(event.pointerId)) {
+        return;
+      }
+      if (event.pointerId !== youngWhalePointerId) {
+        return;
+      }
+      YoungWhale.pointerCancel(event.pointerId);
+      releaseYoungWhalePointerCapture(event.pointerId);
+      youngWhalePointerId = null;
+      youngWhalePointerCaptureEl = null;
+      renderYoungWhaleFrame();
+      updateYoungWhaleRootMarkers();
       return;
     }
     if (crabPointerId === null) {
@@ -2502,6 +2638,321 @@
     renderCrabFrame();
   }
 
+  function routeYoungWhaleFeedback(result) {
+    if (!result || typeof result !== "object") {
+      return;
+    }
+    if (result.accepted !== true) {
+      return;
+    }
+    if (result.outcome === "success") {
+      beginYoungWhaleSuccessFeedback(result.debrisId);
+      return;
+    }
+    if (result.outcome === "failure") {
+      beginYoungWhaleFailureFeedback(result.debrisId);
+    }
+  }
+
+  function clearYoungWhaleFeedbackTimer() {
+    if (youngWhaleTimerId === null) {
+      return;
+    }
+    if (typeof window.clearTimeout === "function") {
+      window.clearTimeout(youngWhaleTimerId);
+    }
+    youngWhaleTimerId = null;
+  }
+
+  function youngWhaleDebrisById(debrisId) {
+    if (!YoungWhale) {
+      return null;
+    }
+    for (var i = 0; i < YoungWhale.Debris.length; i += 1) {
+      if (YoungWhale.Debris[i].id === debrisId) {
+        return YoungWhale.Debris[i];
+      }
+    }
+    return null;
+  }
+
+  function youngWhaleDebrisOrderIndexById(debrisId) {
+    for (var i = 0; i < YoungWhale.Debris.length; i += 1) {
+      if (YoungWhale.Debris[i].id === debrisId) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  function setYoungWhaleDialogue(debrisId) {
+    var index = youngWhaleDebrisOrderIndexById(debrisId);
+    if (index < 0 || index >= YoungWhale.Dialogues.length) {
+      return;
+    }
+    var dialogue = YoungWhale.Dialogues[index];
+    var progress = document.getElementById("ocean-rescue-rescue-progress");
+    if (progress) {
+      progress.textContent = dialogue;
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = dialogue;
+    }
+  }
+
+  function updateYoungWhaleInstruction() {
+    if (!YoungWhale) {
+      return;
+    }
+    var instruction = document.getElementById("ocean-rescue-rescue-instruction");
+    if (!instruction) {
+      return;
+    }
+    var snapshot = YoungWhale.getSnapshot();
+    var text = null;
+    if (snapshot.stage === "connection") {
+      text = YoungWhale.Instructions.connection;
+    } else if (snapshot.stage === "towing") {
+      text = YoungWhale.Instructions.towing;
+    }
+    if (text !== null) {
+      instruction.textContent = text;
+    }
+  }
+
+  function applyYoungWhaleClass(token, active) {
+    var overlay = document.getElementById("ocean-rescue-rescue-overlay");
+    if (!overlay) {
+      return;
+    }
+    if (
+      typeof overlay.classList === "object" &&
+      typeof overlay.classList.add === "function" &&
+      typeof overlay.classList.remove === "function"
+    ) {
+      if (active) {
+        overlay.classList.add(token);
+      } else {
+        overlay.classList.remove(token);
+      }
+      return;
+    }
+    var names = String(overlay.className || "").split(/\s+/);
+    var index = names.indexOf(token);
+    if (active && index === -1) {
+      names.push(token);
+    }
+    if (!active && index !== -1) {
+      names.splice(index, 1);
+    }
+    overlay.className = names.join(" ").trim();
+  }
+
+  function applyYoungWhaleSuccessVisual() {
+    applyYoungWhaleClass("ocean-rescue-young-whale-success", true);
+  }
+
+  function clearYoungWhaleSuccessVisual() {
+    applyYoungWhaleClass("ocean-rescue-young-whale-success", false);
+  }
+
+  function applyYoungWhaleFailureVisual() {
+    applyYoungWhaleClass("ocean-rescue-young-whale-failure", true);
+  }
+
+  function clearYoungWhaleFailureVisual() {
+    applyYoungWhaleClass("ocean-rescue-young-whale-failure", false);
+  }
+
+  function updateYoungWhaleRootMarkers() {
+    var root = document.getElementById("ocean-rescue-root");
+    if (!root) {
+      return;
+    }
+    if (!YoungWhale) {
+      return;
+    }
+    var snapshot = YoungWhale.getSnapshot();
+    root.setAttribute(
+      "data-young-whale-active",
+      snapshot.active ? "true" : "false"
+    );
+    root.setAttribute(
+      "data-young-whale-debris-id",
+      snapshot.activeDebrisId === null ? "" : snapshot.activeDebrisId
+    );
+    root.setAttribute(
+      "data-young-whale-stage",
+      snapshot.stage === null ? "" : snapshot.stage
+    );
+    root.setAttribute(
+      "data-young-whale-completed-count",
+      String(snapshot.completedDebrisIds.length)
+    );
+    root.setAttribute(
+      "data-young-whale-help-level",
+      String(snapshot.helpLevel)
+    );
+    root.setAttribute(
+      "data-young-whale-feedback",
+      snapshot.feedback === null ? "none" : snapshot.feedback
+    );
+    root.setAttribute(
+      "data-young-whale-connected",
+      snapshot.connected ? "true" : "false"
+    );
+    root.setAttribute(
+      "data-young-whale-complete",
+      snapshot.complete ? "true" : "false"
+    );
+  }
+
+  function beginYoungWhaleSuccessFeedback(debrisId) {
+    clearYoungWhaleFeedbackTimer();
+    applyYoungWhaleSuccessVisual();
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-young-whale-feedback", "success");
+    }
+    var snapshot = YoungWhale.getSnapshot();
+    if (snapshot.stage === "towing") {
+      setYoungWhaleDialogue(debrisId);
+    }
+    youngWhaleFeedbackSequence = {
+      sequenceId:
+        activeRescueSequence === null ? null : activeRescueSequence.sequenceId,
+      debrisId: debrisId,
+      stage: snapshot.stage,
+      kind: "success"
+    };
+    if (typeof window.setTimeout === "function") {
+      youngWhaleTimerId = window.setTimeout(function () {
+        completeYoungWhaleFeedback(youngWhaleFeedbackSequence);
+      }, YoungWhale.Constants.successFeedbackMs);
+    }
+  }
+
+  function beginYoungWhaleFailureFeedback(debrisId) {
+    clearYoungWhaleFeedbackTimer();
+    applyYoungWhaleFailureVisual();
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-young-whale-feedback", "failure");
+    }
+    var debris = youngWhaleDebrisById(debrisId);
+    var progress = document.getElementById("ocean-rescue-rescue-progress");
+    var snapshot = YoungWhale.getSnapshot();
+    if (progress && debris) {
+      if (snapshot.stage === "towing") {
+        progress.textContent = "Try towing debris " + debris.order + " again";
+      } else {
+        progress.textContent =
+          "Try connecting debris " + debris.order + " again";
+      }
+    }
+    youngWhaleFeedbackSequence = {
+      sequenceId:
+        activeRescueSequence === null ? null : activeRescueSequence.sequenceId,
+      debrisId: debrisId,
+      stage: snapshot.stage,
+      kind: "failure"
+    };
+    if (typeof window.setTimeout === "function") {
+      youngWhaleTimerId = window.setTimeout(function () {
+        completeYoungWhaleFeedback(youngWhaleFeedbackSequence);
+      }, YoungWhale.Constants.failureFeedbackMs);
+    }
+  }
+
+  function completeYoungWhaleFeedback(sequence) {
+    youngWhaleTimerId = null;
+    if (!sequence || typeof sequence !== "object") {
+      return;
+    }
+    if (activeRescueSequence === null) {
+      return;
+    }
+    if (sequence.sequenceId !== activeRescueSequence.sequenceId) {
+      return;
+    }
+    var snapshot = YoungWhale.getSnapshot();
+    if (snapshot.feedback === null) {
+      return;
+    }
+    if (snapshot.feedback !== sequence.kind) {
+      return;
+    }
+    if (snapshot.activeDebrisId !== sequence.debrisId) {
+      return;
+    }
+    if (snapshot.stage !== sequence.stage) {
+      return;
+    }
+    var result = YoungWhale.finishFeedback();
+    if (!result.changed) {
+      return;
+    }
+    if (result.complete) {
+      completeYoungWhaleSuccess();
+      return;
+    }
+    finishYoungWhaleFeedbackVisuals(sequence, result);
+  }
+
+  function finishYoungWhaleFeedbackVisuals(sequence, result) {
+    var snapshot = YoungWhale.getSnapshot();
+    if (sequence.kind === "failure") {
+      clearYoungWhaleFailureVisual();
+      var debris = youngWhaleDebrisById(snapshot.activeDebrisId);
+      var progress = document.getElementById("ocean-rescue-rescue-progress");
+      if (progress && debris) {
+        progress.textContent = "Debris " + debris.order + " of 3";
+      }
+      updateYoungWhaleInstruction();
+      updateAssistVisuals(snapshot);
+    } else {
+      clearYoungWhaleSuccessVisual();
+      var nextDebris = youngWhaleDebrisById(result.nextDebrisId);
+      var progressEl = document.getElementById("ocean-rescue-rescue-progress");
+      if (progressEl && nextDebris) {
+        progressEl.textContent = "Debris " + nextDebris.order + " of 3";
+      }
+      updateYoungWhaleInstruction();
+      hideAssistHand();
+    }
+    updateYoungWhaleRootMarkers();
+    renderYoungWhaleFrame();
+  }
+
+  function completeYoungWhaleSuccess() {
+    clearYoungWhaleSuccessVisual();
+    hideAssistHand();
+    var sequence = activeRescueSequence;
+    if (sequence === null) {
+      return;
+    }
+    var token = State.beginTransition(State.Phases.RESCUE_SUCCESS);
+    if (token !== null) {
+      State.completeTransition(token);
+    }
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-rescue-phase", "success");
+      root.setAttribute("data-rescue-input", "disabled");
+    }
+    updateYoungWhaleRootMarkers();
+    var progress = document.getElementById("ocean-rescue-rescue-progress");
+    if (progress) {
+      progress.textContent = YoungWhale.Dialogues[2];
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = YoungWhale.Dialogues[2];
+    }
+    renderYoungWhaleFrame();
+  }
+
   function drawRopeLine(context, rope, color, lineWidth) {
     drawRopeLineOffset(context, rope, color, lineWidth, 0);
   }
@@ -3063,6 +3514,354 @@
     context.lineTo(Crab.DropZone.x, Crab.DropZone.y);
     context.stroke();
     context.restore();
+  }
+
+  function youngWhaleShakeOffset(failureCount) {
+    if (failureCount % 2 === 0) {
+      return -6;
+    }
+    return 6;
+  }
+
+  function drawYoungWhaleGup(context, snapshot) {
+    var gup = gupById(activeRescueSequence.gupId);
+    var gupName = gup === null ? activeRescueSequence.gupId : gup.name;
+    var center =
+      snapshot.currentGupCenter === null
+        ? YoungWhale.GupStart
+        : snapshot.currentGupCenter;
+    context.beginPath();
+    context.arc(center.x, center.y, 36, 0, Math.PI * 2);
+    context.fillStyle = "#ffd166";
+    context.fill();
+    context.fillStyle = "#0a1e33";
+    context.font = "18px system-ui, sans-serif";
+    context.textAlign = "center";
+    context.fillText(gupName, center.x, center.y);
+  }
+
+  function drawYoungWhaleHook(context, snapshot) {
+    var radius =
+      snapshot.helpLevel >= 2
+        ? YoungWhale.Constants.assistedHookRadius
+        : YoungWhale.Constants.hookRadius;
+    context.beginPath();
+    context.arc(YoungWhale.GupHook.x, YoungWhale.GupHook.y, radius, 0, Math.PI * 2);
+    context.strokeStyle = "#9ad0ff";
+    context.lineWidth = 3;
+    context.stroke();
+    context.beginPath();
+    context.arc(YoungWhale.GupHook.x, YoungWhale.GupHook.y, 12, 0, Math.PI * 2);
+    context.fillStyle = "#9ad0ff";
+    context.fill();
+  }
+
+  function drawYoungWhaleSafeSpot(context, snapshot) {
+    if (snapshot.stage !== "towing") {
+      return;
+    }
+    var debris = youngWhaleDebrisById(snapshot.activeDebrisId);
+    if (debris === null) {
+      return;
+    }
+    if (snapshot.completedDebrisIds.indexOf(debris.id) !== -1) {
+      return;
+    }
+    var radius =
+      snapshot.helpLevel >= 3
+        ? YoungWhale.Constants.assistedSafeSpotRadius
+        : YoungWhale.Constants.safeSpotRadius;
+    var enlarged = snapshot.helpLevel >= 2;
+    context.beginPath();
+    context.arc(debris.safeSpot.x, debris.safeSpot.y, radius, 0, Math.PI * 2);
+    context.fillStyle = "rgba(143, 211, 168, 0.18)";
+    context.fill();
+    context.beginPath();
+    context.arc(debris.safeSpot.x, debris.safeSpot.y, radius, 0, Math.PI * 2);
+    context.strokeStyle = enlarged ? "#ffffff" : "rgba(143, 211, 168, 0.7)";
+    context.lineWidth = enlarged ? 4 : 3;
+    context.stroke();
+    context.fillStyle = "rgba(214, 226, 238, 0.9)";
+    context.font = "15px system-ui, sans-serif";
+    context.textAlign = "center";
+    context.fillText("Safe spot", debris.safeSpot.x, debris.safeSpot.y + radius + 18);
+  }
+
+  function drawYoungWhaleDebris(context, snapshot) {
+    for (var i = 0; i < YoungWhale.Debris.length; i += 1) {
+      var debris = YoungWhale.Debris[i];
+      if (snapshot.completedDebrisIds.indexOf(debris.id) !== -1) {
+        drawYoungWhaleCompletedDebris(context, debris, snapshot);
+        continue;
+      }
+      if (snapshot.activeDebrisId === debris.id) {
+        drawYoungWhaleActiveDebris(context, debris, snapshot);
+        continue;
+      }
+      drawYoungWhalePendingDebris(context, debris);
+    }
+  }
+
+  function drawYoungWhaleCompletedDebris(context, debris, snapshot) {
+    var x = debris.cleared.x;
+    var y = debris.cleared.y;
+    if (snapshot.feedback === "success") {
+      context.beginPath();
+      context.arc(x, y, debris.radius + 14, 0, Math.PI * 2);
+      context.fillStyle = "rgba(143, 211, 168, 0.25)";
+      context.fill();
+    }
+    context.beginPath();
+    context.arc(x, y, debris.radius, 0, Math.PI * 2);
+    context.fillStyle = "rgba(143, 211, 168, 0.65)";
+    context.fill();
+    context.beginPath();
+    context.arc(x, y, debris.radius - 6, 0, Math.PI * 2);
+    context.strokeStyle = "rgba(10, 30, 51, 0.4)";
+    context.lineWidth = 2;
+    context.stroke();
+  }
+
+  function drawYoungWhalePendingDebris(context, debris) {
+    context.beginPath();
+    context.arc(debris.start.x, debris.start.y, debris.radius, 0, Math.PI * 2);
+    context.fillStyle = "#5c6b7a";
+    context.fill();
+  }
+
+  function drawYoungWhaleActiveDebris(context, debris, snapshot) {
+    var center = snapshot.currentDebrisCenter;
+    var x = center === null ? debris.start.x : center.x;
+    var y = center === null ? debris.start.y : center.y;
+    var feedback = snapshot.feedback;
+    if (feedback === "failure") {
+      x += youngWhaleShakeOffset(snapshot.failureCount);
+    }
+    if (feedback === "success") {
+      context.beginPath();
+      context.arc(x, y, debris.radius + 14, 0, Math.PI * 2);
+      context.fillStyle = "rgba(143, 211, 168, 0.25)";
+      context.fill();
+    }
+    context.beginPath();
+    context.arc(x, y, debris.radius, 0, Math.PI * 2);
+    if (feedback === "success") {
+      context.fillStyle = "#8fd3a8";
+    } else if (feedback === "failure") {
+      context.fillStyle = "#ff6b6b";
+    } else {
+      context.fillStyle = "#ffd166";
+    }
+    context.fill();
+  }
+
+  function drawYoungWhaleConnectionLine(context, snapshot, pointerX, pointerY) {
+    if (snapshot.connected) {
+      return;
+    }
+    if (snapshot.stage !== "connection") {
+      return;
+    }
+    if (!snapshot.pointerActive) {
+      return;
+    }
+    var debris = youngWhaleDebrisById(snapshot.activeDebrisId);
+    if (debris === null) {
+      return;
+    }
+    if (typeof pointerX !== "number" || typeof pointerY !== "number") {
+      return;
+    }
+    context.save();
+    if (snapshot.feedback === "failure") {
+      context.strokeStyle = "#ff6b6b";
+      context.lineWidth = 6;
+    } else {
+      context.strokeStyle = "rgba(154, 208, 255, 0.85)";
+      context.lineWidth = 5;
+    }
+    context.lineCap = "round";
+    context.beginPath();
+    context.moveTo(debris.connection.x, debris.connection.y);
+    context.lineTo(pointerX, pointerY);
+    context.stroke();
+    context.restore();
+  }
+
+  function drawYoungWhaleTowLine(context, snapshot) {
+    if (!snapshot.connected) {
+      return;
+    }
+    var debris = youngWhaleDebrisById(snapshot.activeDebrisId);
+    if (debris === null) {
+      return;
+    }
+    context.save();
+    context.strokeStyle = "rgba(154, 208, 255, 0.9)";
+    context.lineWidth = 6;
+    context.lineCap = "round";
+    context.beginPath();
+    context.moveTo(debris.connection.x, debris.connection.y);
+    context.lineTo(YoungWhale.GupHook.x, YoungWhale.GupHook.y);
+    context.stroke();
+    context.restore();
+  }
+
+  function drawYoungWhaleActiveMarkers(context, snapshot) {
+    if (snapshot.stage === "connection") {
+      var debris = youngWhaleDebrisById(snapshot.activeDebrisId);
+      if (debris === null) {
+        return;
+      }
+      var startRadius =
+        snapshot.helpLevel >= 2
+          ? YoungWhale.Constants.assistedConnectionStartRadius
+          : YoungWhale.Constants.connectionStartRadius;
+      var hookRadiusMarker =
+        snapshot.helpLevel >= 2
+          ? YoungWhale.Constants.assistedHookRadius
+          : YoungWhale.Constants.hookRadius;
+      context.beginPath();
+      context.arc(debris.connection.x, debris.connection.y, startRadius + 6, 0, Math.PI * 2);
+      context.fillStyle = "rgba(255, 209, 102, 0.25)";
+      context.fill();
+      context.beginPath();
+      context.arc(debris.connection.x, debris.connection.y, startRadius, 0, Math.PI * 2);
+      context.strokeStyle = "#ffffff";
+      context.lineWidth = 3;
+      context.stroke();
+      context.beginPath();
+      context.arc(YoungWhale.GupHook.x, YoungWhale.GupHook.y, hookRadiusMarker, 0, Math.PI * 2);
+      context.strokeStyle = "#ffffff";
+      context.lineWidth = 3;
+      context.stroke();
+    }
+    if (snapshot.stage === "towing") {
+      var gupRadius =
+        snapshot.helpLevel >= 2
+          ? YoungWhale.Constants.assistedGupHitRadius
+          : YoungWhale.Constants.gupHitRadius;
+      var center =
+        snapshot.currentGupCenter === null
+          ? YoungWhale.GupStart
+          : snapshot.currentGupCenter;
+      context.beginPath();
+      context.arc(center.x, center.y, gupRadius, 0, Math.PI * 2);
+      context.strokeStyle = "#ffffff";
+      context.lineWidth = 3;
+      context.stroke();
+    }
+  }
+
+  function drawYoungWhaleAssistedGuide(context, snapshot) {
+    var debris = youngWhaleDebrisById(snapshot.activeDebrisId);
+    if (debris === null) {
+      return;
+    }
+    context.save();
+    context.strokeStyle = "#ffd166";
+    context.lineWidth = 4;
+    context.lineCap = "round";
+    context.setLineDash([14, 12]);
+    if (snapshot.stage === "connection") {
+      context.beginPath();
+      context.moveTo(debris.connection.x, debris.connection.y);
+      context.lineTo(YoungWhale.GupHook.x, YoungWhale.GupHook.y);
+    } else if (snapshot.stage === "towing") {
+      context.beginPath();
+      context.moveTo(YoungWhale.GupStart.x, YoungWhale.GupStart.y);
+      context.lineTo(debris.safeSpot.x, debris.safeSpot.y);
+    }
+    context.stroke();
+    context.restore();
+  }
+
+  function drawYoungWhaleWhale(context, snapshot) {
+    var count = snapshot.completedDebrisIds.length;
+    var x = 1040;
+    var y = 410;
+    if (count >= 2) {
+      x = 1000;
+      y = 400;
+    }
+    if (snapshot.complete) {
+      x = 880;
+      y = 330;
+    }
+    context.beginPath();
+    context.arc(x, y, 66, 0, Math.PI * 2);
+    context.fillStyle = "#5b8fbc";
+    context.fill();
+    context.beginPath();
+    context.arc(x, y - 66, 34, 0, Math.PI * 2);
+    context.fillStyle = "#7aa9d4";
+    context.fill();
+    if (count >= 1) {
+      context.beginPath();
+      context.arc(x - 12, y - 8, 7, 0, Math.PI * 2);
+      context.fillStyle = "#0a1e33";
+      context.fill();
+      context.beginPath();
+      context.arc(x - 12, y + 18, 7, 0, Math.PI * 2);
+      context.fillStyle = "#0a1e33";
+      context.fill();
+    } else {
+      context.beginPath();
+      context.arc(x - 10, y - 8, 3, 0, Math.PI * 2);
+      context.fillStyle = "#0a1e33";
+      context.fill();
+      context.beginPath();
+      context.arc(x - 10, y + 18, 3, 0, Math.PI * 2);
+      context.fillStyle = "#0a1e33";
+      context.fill();
+    }
+  }
+
+  function renderYoungWhaleFrame(pointerX, pointerY) {
+    var canvas = document.getElementById("ocean-rescue-canvas");
+    var context = null;
+    if (canvas && typeof canvas.getContext === "function") {
+      context = canvas.getContext("2d");
+    }
+    if (!canvas || !context) {
+      return;
+    }
+    if (typeof context.clearRect !== "function") {
+      return;
+    }
+    if (activeRescueSequence === null) {
+      return;
+    }
+    if (!YoungWhale) {
+      return;
+    }
+    var width = canvas.width;
+    var height = canvas.height;
+    if (typeof width !== "number" || typeof height !== "number") {
+      return;
+    }
+    var snapshot = YoungWhale.getSnapshot();
+    context.clearRect(0, 0, width, height);
+    var layout = null;
+    if (Terrain && typeof Terrain.getLayout === "function") {
+      layout = Terrain.getLayout(activeRescueSequence.missionId);
+    }
+    var palette = terrainPalettes["coral-reef"];
+    if (layout && layout.environment && terrainPalettes[layout.environment]) {
+      palette = terrainPalettes[layout.environment];
+    }
+    drawRescueSiteBackground(context, width, height, palette);
+    drawYoungWhaleWhale(context, snapshot);
+    drawYoungWhaleGup(context, snapshot);
+    drawYoungWhaleHook(context, snapshot);
+    drawYoungWhaleDebris(context, snapshot);
+    drawYoungWhaleSafeSpot(context, snapshot);
+    drawYoungWhaleConnectionLine(context, snapshot, pointerX, pointerY);
+    drawYoungWhaleTowLine(context, snapshot);
+    drawYoungWhaleActiveMarkers(context, snapshot);
+    if (snapshot.helpLevel >= 3) {
+      drawYoungWhaleAssistedGuide(context, snapshot);
+    }
   }
 
   function selectMission(missionId) {

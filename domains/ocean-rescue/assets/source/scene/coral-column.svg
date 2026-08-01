@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200">
+  <g id="terrain-coral-column">
+    <path d="M120 190 Q115 160 108 140 Q95 120 88 95 Q82 72 90 50 Q96 32 108 22 Q114 16 120 14 Q126 16 132 22 Q144 32 150 50 Q158 72 152 95 Q145 120 132 140 Q125 160 120 190Z" fill="#E85D7A" stroke="#C43A5A" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M108 80 Q90 70 72 58 Q64 52 68 44 Q72 38 82 42 Q96 50 108 62Z" fill="#F27A94" stroke="#C43A5A" stroke-width="2"/>
+    <path d="M132 90 Q150 78 168 64 Q176 58 172 50 Q168 44 158 48 Q144 56 132 68Z" fill="#F27A94" stroke="#C43A5A" stroke-width="2"/>
+    <path d="M100 120 Q84 114 70 106 Q62 102 66 94 Q70 88 80 92 Q94 100 100 110Z" fill="#D94F6E" stroke="#C43A5A" stroke-width="1.5"/>
+    <path d="M140 115 Q156 108 170 98 Q178 93 174 85 Q170 80 160 84 Q146 92 140 104Z" fill="#D94F6E" stroke="#C43A5A" stroke-width="1.5"/>
+    <ellipse cx="120" cy="185" rx="38" ry="10" fill="#A8E6CF" opacity="0.4"/>
+    <circle cx="100" cy="75" r="6" fill="#FFB3C1" opacity="0.7"/>
+    <circle cx="142" cy="68" r="5" fill="#FFB3C1" opacity="0.7"/>
+    <circle cx="82" cy="105" r="4" fill="#FFB3C1" opacity="0.6"/>
+    <circle cx="158" cy="98" r="4.5" fill="#FFB3C1" opacity="0.6"/>
+    <path d="M110 45 Q114 38 120 36 Q126 38 130 45" fill="none" stroke="#FFD6E0" stroke-width="2" opacity="0.6"/>
+  </g>
+</svg>

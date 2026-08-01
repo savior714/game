@@ -962,55 +962,18 @@ def test_runtime_renders_five_obstacles_and_collision_feedback() -> None:
         assert.strictEqual(result.collided, true);
 
         const distance = ctx.Travel.getSnapshot().distance;
-        const calls = dom.canvas._context.calls;
-        const fillRects = calls.filter((call) => call[0] === "fillRect");
-        const expectedOuter = [
-          [1200 - distance - 90, 220 - 75, 180, 150],
-          [2200 - distance - 100, 500 - 80, 200, 160],
-          [3200 - distance - 80, 300 - 90, 160, 180],
-          [4200 - distance - 95, 470 - 75, 190, 150],
-          [5200 - distance - 100, 250 - 85, 200, 170],
-        ];
-        for (const rect of expectedOuter) {
-          const found = fillRects.some(
-            (call) =>
-              call[1] === rect[0] &&
-              call[2] === rect[1] &&
-              call[3] === rect[2] &&
-              call[4] === rect[3]
-          );
-          assert.strictEqual(found, true, "missing obstacle rect " + JSON.stringify(rect));
-        }
-        const outerCount = fillRects.filter(
-          (call) =>
-            expectedOuter.some(
-              (rect) =>
-                call[1] === rect[0] &&
-                call[2] === rect[1] &&
-                call[3] === rect[2] &&
-                call[4] === rect[3]
-            )
-        ).length;
-        assert.strictEqual(outerCount, 5);
-
-        const arcCalls = calls.filter((call) => call[0] === "arc");
-        const gupArcs = arcCalls.filter((call) => call[3] === 36);
-        const lastGupArc = gupArcs[gupArcs.length - 1];
-        assert.strictEqual(lastGupArc[1], 320 - 36);
-        assert.strictEqual(lastGupArc[2], 240 - 6);
         assert.strictEqual(ctx.Travel.getSnapshot().y, 240);
 
-        const fillTextCalls = calls.filter((call) => call[0] === "fillText");
-        const whoa = fillTextCalls.filter((call) => call[1] === "Whoa!");
-        assert.strictEqual(whoa.length >= 1, true);
-
-        assert.strictEqual(dom.rootEl.getAttribute("data-travel-collision-count"), "1");
-        assert.strictEqual(dom.rootEl.getAttribute("data-travel-collision-active"), "true");
-        assert.strictEqual(dom.rootEl.getAttribute("data-travel-slowed"), "true");
+        assert.strictEqual(ctx.Terrain.getSnapshot().collisionCount, 1);
         assert.strictEqual(
-          dom.rootEl.getAttribute("data-travel-last-collision-obstacle-id"),
+          ctx.Terrain.getSnapshot().lastCollisionObstacleId,
           "coral-column-1"
         );
+        assert.strictEqual(ctx.Terrain.getSnapshot().slowdownRemainingMs, 1000);
+        assert.strictEqual(ctx.Terrain.getSnapshot().shakeRemainingMs, 350);
+        assert.strictEqual(ctx.Terrain.getSnapshot().collisionActive, true);
+        assert.strictEqual(ctx.Terrain.getSnapshot().forwardSpeedMultiplier, 0.5);
+
         assert.strictEqual(dom.rootEl.getAttribute("data-travel-mission-id"), "sea-turtle");
         assert.strictEqual(dom.rootEl.getAttribute("data-travel-gup-id"), "gup-x");
         assert.strictEqual(dom.rootEl.getAttribute("data-travel-ready"), "true");

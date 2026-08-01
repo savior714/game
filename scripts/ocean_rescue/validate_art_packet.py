@@ -47,6 +47,21 @@ REQUIRED_ALIASES = sorted(
         "fx.caustic",
         "hud.progress-cap",
         "hud.loop-icon",
+        "terrain.boulder-stack",
+        "terrain.canyon-ledge",
+        "terrain.canyon-pillar",
+        "terrain.canyon-wall",
+        "terrain.coral-column",
+        "terrain.coral-rock",
+        "terrain.kelp-rock",
+        "terrain.low-reef",
+        "terrain.reef-arch",
+        "terrain.reef-spire",
+        "terrain.rock-spire",
+        "terrain.rock-stack",
+        "terrain.sand-pillar",
+        "terrain.sand-rock",
+        "terrain.shell-ledge",
     ]
 )
 

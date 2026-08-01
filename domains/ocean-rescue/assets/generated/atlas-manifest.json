@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "sourcePacketSha256": "15871aca08460a0c73e4aeb12c8a78c4e72eb14ab01aa55e84ace6449228ad00",
-  "approvalRecordSha256": "ac971b08e1a3b47104588adc11f5d0f8e67fa9550f3a3c8ec342b9e4ab8e53a0",
-  "sourceSetSha256": "a4b4594344688275669547e26b4fb77fff635d41a61bb37845fe49f98f81eb77",
+  "sourcePacketSha256": "8e089d7f9793d808ea5972d74d2f7eac3c6ec71b5e246a6c3794b6c8d611d349",
+  "approvalRecordSha256": "a9288429b78696589eec6c1d5508b756a483efe16080619d4659cc921dc0425d",
+  "sourceSetSha256": "622c4691fe845bd9f1a2c90c0322bff880d25429fc08ae63a8a691199244be65",
   "toolchain": {
     "cairosvg": "2.9.0",
     "pillow": "12.3.0",
@@ -73,7 +73,22 @@
         "scene.sand-path",
         "scene.seaweed-loop.01",
         "scene.submarine",
-        "scene.water.far"
+        "scene.water.far",
+        "terrain.boulder-stack",
+        "terrain.canyon-ledge",
+        "terrain.canyon-pillar",
+        "terrain.canyon-wall",
+        "terrain.coral-column",
+        "terrain.coral-rock",
+        "terrain.kelp-rock",
+        "terrain.low-reef",
+        "terrain.reef-arch",
+        "terrain.reef-spire",
+        "terrain.rock-spire",
+        "terrain.rock-stack",
+        "terrain.sand-pillar",
+        "terrain.sand-rock",
+        "terrain.shell-ledge"
       ],
       "pageCount": 1,
       "entry": "scene-0.json",
@@ -82,10 +97,10 @@
           "index": 0,
           "image": "scene-0.png",
           "spritesheet": "scene-0.json",
-          "width": 3380,
-          "height": 1742,
-          "imageSha256": "a97ec7ef485fc4baa1284f4264ee40c65f29392def24b0b0e7a8308ce6b7806f",
-          "spritesheetSha256": "71a064ec884bb4b841413880f416db4792a9bfe8c8f5c5c4760ee7ecff0e28ea",
+          "width": 4032,
+          "height": 2526,
+          "imageSha256": "50915280e2a07741ccc62673396660740bbe4b02ba39b15f953e6e244cc0fb40",
+          "spritesheetSha256": "e12d1f4e89a8e09a3b645c34bb207e7398a42f13f8858e099971392c16339c8f",
           "aliases": [
             "scene.coral.foreground",
             "scene.passage",
@@ -93,11 +108,26 @@
             "scene.sand-path",
             "scene.seaweed-loop.01",
             "scene.submarine",
-            "scene.water.far"
+            "scene.water.far",
+            "terrain.boulder-stack",
+            "terrain.canyon-ledge",
+            "terrain.canyon-pillar",
+            "terrain.canyon-wall",
+            "terrain.coral-column",
+            "terrain.coral-rock",
+            "terrain.kelp-rock",
+            "terrain.low-reef",
+            "terrain.reef-arch",
+            "terrain.reef-spire",
+            "terrain.rock-spire",
+            "terrain.rock-stack",
+            "terrain.sand-pillar",
+            "terrain.sand-rock",
+            "terrain.shell-ledge"
           ]
         }
       ],
-      "bundleSha256": "51e2df2857fa76767a261fa4a8c2cf7f7517e144e4a936b7d3f62e378f97572d"
+      "bundleSha256": "5917a62ba8b952612ca51583140d1e14282d63d147f8f374bfd4015930c8d8ab"
     },
     {
       "name": "effects-ui",
@@ -143,7 +173,7 @@
     "effects-ui/effects-ui-0.json": "c451cd65c63d8344327c666d783245159be47bfe4ea6999a6188212794206221",
     "effects-ui/effects-ui-0.png": "1e228c7bdec58b02bf9cde7c93b58e51cf3358e65307b9b7372d7aa05676b7a5",
     "pixi-assets-manifest.json": "6a289c5b258880597e129260ce86a5c3c1f89e82df46f337ce6177df668a8dad",
-    "scene/scene-0.json": "71a064ec884bb4b841413880f416db4792a9bfe8c8f5c5c4760ee7ecff0e28ea",
-    "scene/scene-0.png": "a97ec7ef485fc4baa1284f4264ee40c65f29392def24b0b0e7a8308ce6b7806f"
+    "scene/scene-0.json": "e12d1f4e89a8e09a3b645c34bb207e7398a42f13f8858e099971392c16339c8f",
+    "scene/scene-0.png": "50915280e2a07741ccc62673396660740bbe4b02ba39b15f953e6e244cc0fb40"
   }
 }

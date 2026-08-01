@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200">
+  <g id="terrain-shell-ledge">
+    <path d="M20 190 Q18 175 22 162 Q30 148 50 140 Q75 130 110 126 Q145 122 175 128 Q200 134 218 148 Q226 158 228 172 Q230 182 226 190Z" fill="#C4956A" stroke="#8B6540" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M40 155 Q60 145 90 140 Q120 136 155 140 Q185 146 210 158" fill="none" stroke="#E8D5B8" stroke-width="4" opacity="0.5"/>
+    <ellipse cx="75" cy="152" rx="16" ry="10" fill="#F5E6D0" stroke="#D4A373" stroke-width="2"/>
+    <path d="M75 142 Q75 152 75 162" fill="none" stroke="#D4A373" stroke-width="1.5"/>
+    <ellipse cx="120" cy="148" rx="14" ry="9" fill="#F5E6D0" stroke="#D4A373" stroke-width="2"/>
+    <path d="M120 139 Q120 148 120 157" fill="none" stroke="#D4A373" stroke-width="1.5"/>
+    <ellipse cx="165" cy="150" rx="15" ry="9" fill="#F5E6D0" stroke="#D4A373" stroke-width="2"/>
+    <path d="M165 141 Q165 150 165 159" fill="none" stroke="#D4A373" stroke-width="1.5"/>
+    <ellipse cx="100" cy="156" rx="10" ry="6" fill="#FFFFFF" opacity="0.4" stroke="#D4A373" stroke-width="1.5"/>
+    <ellipse cx="190" cy="154" rx="11" ry="7" fill="#FFFFFF" opacity="0.35" stroke="#D4A373" stroke-width="1.5"/>
+    <ellipse cx="125" cy="192" rx="100" ry="6" fill="#A8E6CF" opacity="0.2"/>
+  </g>
+</svg>

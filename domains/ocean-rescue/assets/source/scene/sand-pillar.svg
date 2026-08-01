@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200">
+  <g id="terrain-sand-pillar">
+    <path d="M85 190 Q82 170 84 145 Q86 120 90 95 Q94 70 98 50 Q102 35 108 22 L132 22 Q138 35 142 50 Q146 70 150 95 Q154 120 156 145 Q158 170 155 190Z" fill="#D4A373" stroke="#A47551" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M90 60 Q100 55 120 54 Q140 55 150 60" fill="none" stroke="#E2C290" stroke-width="2.5" opacity="0.5"/>
+    <path d="M87 90 Q98 85 120 84 Q142 85 153 90" fill="none" stroke="#E2C290" stroke-width="2" opacity="0.4"/>
+    <path d="M86 120 Q97 115 120 114 Q143 115 154 120" fill="none" stroke="#E2C290" stroke-width="2" opacity="0.35"/>
+    <path d="M88 150 Q98 146 120 145 Q142 146 152 150" fill="none" stroke="#E2C290" stroke-width="1.5" opacity="0.3"/>
+    <path d="M108 22 Q114 16 120 14 Q126 16 132 22" fill="#E8D5B8" stroke="#A47551" stroke-width="1.5"/>
+    <ellipse cx="120" cy="194" rx="36" ry="5" fill="#A8E6CF" opacity="0.2"/>
+  </g>
+</svg>

@@ -167,6 +167,366 @@
         "x": 0.5,
         "y": 0.5
       }
+    },
+    "terrain.boulder-stack": {
+      "frame": {
+        "x": 4,
+        "y": 2138,
+        "w": 354,
+        "h": 293
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 84,
+        "y": 101,
+        "w": 354,
+        "h": 293
+      },
+      "sourceSize": {
+        "w": 480,
+        "h": 400
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "terrain.canyon-ledge": {
+      "frame": {
+        "x": 3431,
+        "y": 1750,
+        "w": 450,
+        "h": 294
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 27,
+        "y": 104,
+        "w": 450,
+        "h": 294
+      },
+      "sourceSize": {
+        "w": 480,
+        "h": 400
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "terrain.canyon-pillar": {
+      "frame": {
+        "x": 370,
+        "y": 2138,
+        "w": 166,
+        "h": 384
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 157,
+        "y": 14,
+        "w": 166,
+        "h": 384
+      },
+      "sourceSize": {
+        "w": 480,
+        "h": 400
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "terrain.canyon-wall": {
+      "frame": {
+        "x": 2803,
+        "y": 1750,
+        "w": 438,
+        "h": 370
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 37,
+        "y": 28,
+        "w": 438,
+        "h": 370
+      },
+      "sourceSize": {
+        "w": 480,
+        "h": 400
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "terrain.coral-column": {
+      "frame": {
+        "x": 3388,
+        "y": 1064,
+        "w": 226,
+        "h": 365
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 127,
+        "y": 25,
+        "w": 226,
+        "h": 365
+      },
+      "sourceSize": {
+        "w": 480,
+        "h": 400
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "terrain.coral-rock": {
+      "frame": {
+        "x": 4,
+        "y": 1750,
+        "w": 384,
+        "h": 272
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 56,
+        "y": 124,
+        "w": 384,
+        "h": 272
+      },
+      "sourceSize": {
+        "w": 480,
+        "h": 400
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "terrain.kelp-rock": {
+      "frame": {
+        "x": 400,
+        "y": 1750,
+        "w": 355,
+        "h": 376
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 73,
+        "y": 20,
+        "w": 355,
+        "h": 376
+      },
+      "sourceSize": {
+        "w": 480,
+        "h": 400
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "terrain.low-reef": {
+      "frame": {
+        "x": 1847,
+        "y": 1750,
+        "w": 460,
+        "h": 132
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 16,
+        "y": 264,
+        "w": 460,
+        "h": 132
+      },
+      "sourceSize": {
+        "w": 480,
+        "h": 400
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "terrain.reef-arch": {
+      "frame": {
+        "x": 3626,
+        "y": 1064,
+        "w": 402,
+        "h": 400
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 39,
+        "y": 0,
+        "w": 402,
+        "h": 400
+      },
+      "sourceSize": {
+        "w": 480,
+        "h": 400
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "terrain.reef-spire": {
+      "frame": {
+        "x": 767,
+        "y": 1750,
+        "w": 226,
+        "h": 364
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 127,
+        "y": 32,
+        "w": 226,
+        "h": 364
+      },
+      "sourceSize": {
+        "w": 480,
+        "h": 400
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "terrain.rock-spire": {
+      "frame": {
+        "x": 3253,
+        "y": 1750,
+        "w": 166,
+        "h": 333
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 157,
+        "y": 29,
+        "w": 166,
+        "h": 333
+      },
+      "sourceSize": {
+        "w": 480,
+        "h": 400
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "terrain.rock-stack": {
+      "frame": {
+        "x": 2319,
+        "y": 1750,
+        "w": 306,
+        "h": 316
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 94,
+        "y": 81,
+        "w": 306,
+        "h": 316
+      },
+      "sourceSize": {
+        "w": 480,
+        "h": 400
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "terrain.sand-pillar": {
+      "frame": {
+        "x": 2637,
+        "y": 1750,
+        "w": 154,
+        "h": 372
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 163,
+        "y": 26,
+        "w": 154,
+        "h": 372
+      },
+      "sourceSize": {
+        "w": 480,
+        "h": 400
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "terrain.sand-rock": {
+      "frame": {
+        "x": 1005,
+        "y": 1750,
+        "w": 394,
+        "h": 175
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 53,
+        "y": 221,
+        "w": 394,
+        "h": 175
+      },
+      "sourceSize": {
+        "w": 480,
+        "h": 400
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "terrain.shell-ledge": {
+      "frame": {
+        "x": 1411,
+        "y": 1750,
+        "w": 424,
+        "h": 150
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 36,
+        "y": 246,
+        "w": 424,
+        "h": 150
+      },
+      "sourceSize": {
+        "w": 480,
+        "h": 400
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
     }
   },
   "animations": {},
@@ -176,8 +536,8 @@
     "image": "scene-0.png",
     "format": "RGBA8888",
     "size": {
-      "w": 3380,
-      "h": 1742
+      "w": 4032,
+      "h": 2526
     },
     "scale": "2"
   }

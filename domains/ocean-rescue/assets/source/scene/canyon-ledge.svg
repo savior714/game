@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200">
+  <g id="terrain-canyon-ledge">
+    <path d="M15 190 L15 80 Q15 70 25 66 L60 56 Q72 52 85 54 L130 64 Q150 68 170 66 L210 60 Q222 58 230 64 L236 72 Q238 78 236 86 L230 130 Q226 155 218 172 L200 190Z" fill="#5C6B7A" stroke="#3F4B57" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M20 80 L65 70 L130 62 L200 60 L234 68" fill="none" stroke="#7A8B99" stroke-width="3" opacity="0.5"/>
+    <path d="M22 100 L70 94 L135 88 L205 86 L234 94" fill="none" stroke="#7A8B99" stroke-width="2.5" opacity="0.4"/>
+    <path d="M24 130 L75 124 L140 118 L210 116 L234 124" fill="none" stroke="#7A8B99" stroke-width="2" opacity="0.35"/>
+    <path d="M26 160 L80 154 L145 148 L215 146 L234 154" fill="none" stroke="#7A8B99" stroke-width="2" opacity="0.3"/>
+    <path d="M50 72 L54 68 L58 74" fill="#4A5A6A" stroke="#3F4B57" stroke-width="1"/>
+    <path d="M160 64 L164 60 L168 66" fill="#4A5A6A" stroke="#3F4B57" stroke-width="1"/>
+    <rect x="100" y="95" width="16" height="12" rx="2" fill="#4A5A6A" stroke="#3F4B57" stroke-width="1" opacity="0.5"/>
+    <rect x="180" y="120" width="14" height="10" rx="2" fill="#4A5A6A" stroke="#3F4B57" stroke-width="1" opacity="0.4"/>
+    <ellipse cx="125" cy="194" rx="105" ry="5" fill="#A8E6CF" opacity="0.15"/>
+  </g>
+</svg>

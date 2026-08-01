@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200">
+  <g id="terrain-reef-spire">
+    <path d="M120 18 Q114 30 108 50 Q100 72 96 95 Q92 118 94 140 Q96 158 100 172 Q104 182 110 190 L130 190 Q136 182 140 172 Q144 158 146 140 Q148 118 144 95 Q140 72 132 50 Q126 30 120 18Z" fill="#E85D7A" stroke="#C43A5A" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M120 30 Q116 42 112 58 Q106 76 104 95 Q102 114 104 132 Q106 148 110 162" fill="none" stroke="#F27A94" stroke-width="3" opacity="0.5"/>
+    <path d="M120 30 Q124 42 128 58 Q134 76 136 95 Q138 114 136 132 Q134 148 130 162" fill="none" stroke="#F27A94" stroke-width="3" opacity="0.5"/>
+    <path d="M96 80 Q82 74 70 66 Q62 60 66 52 Q70 46 80 50 Q92 56 96 68Z" fill="#F27A94" stroke="#C43A5A" stroke-width="1.5"/>
+    <path d="M144 90 Q158 84 170 76 Q178 70 174 62 Q170 56 160 60 Q148 66 144 78Z" fill="#D94F6E" stroke="#C43A5A" stroke-width="1.5"/>
+    <path d="M100 130 Q86 126 74 120 Q66 116 70 108 Q74 102 84 106 Q96 112 100 122Z" fill="#D94F6E" stroke="#C43A5A" stroke-width="1.5"/>
+    <circle cx="120" cy="22" r="6" fill="#FFB3C1" opacity="0.6"/>
+    <ellipse cx="120" cy="192" rx="30" ry="6" fill="#A8E6CF" opacity="0.3"/>
+  </g>
+</svg>

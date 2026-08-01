@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200">
+  <g id="terrain-rock-spire">
+    <path d="M120 16 Q114 28 106 48 Q98 68 92 90 Q86 112 88 135 Q90 155 96 172 L144 172 Q150 155 152 135 Q154 112 148 90 Q142 68 134 48 Q126 28 120 16Z" fill="#5C6B7A" stroke="#3F4B57" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M106 60 Q112 50 120 46 Q128 50 134 60" fill="none" stroke="#6B7A8A" stroke-width="2.5" opacity="0.5"/>
+    <path d="M98 90 Q106 80 120 76 Q134 80 142 90" fill="none" stroke="#6B7A8A" stroke-width="2" opacity="0.4"/>
+    <path d="M92 120 Q100 112 120 108 Q140 112 148 120" fill="none" stroke="#6B7A8A" stroke-width="2" opacity="0.35"/>
+    <path d="M110 30 L120 16 L130 30" fill="#4A5A6A" stroke="#3F4B57" stroke-width="1.5"/>
+    <path d="M96 55 Q88 50 82 46 Q78 44 82 40" fill="none" stroke="#5C6B7A" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M144 65 Q152 60 158 56 Q162 54 158 50" fill="none" stroke="#5C6B7A" stroke-width="2.5" stroke-linecap="round"/>
+    <ellipse cx="120" cy="176" rx="28" ry="5" fill="#A8E6CF" opacity="0.2"/>
+  </g>
+</svg>

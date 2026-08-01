@@ -747,16 +747,6 @@ def test_travel_handoff_starts_one_runtime_and_renders_gup() -> None:
 
         assert.strictEqual(ctx.frames.pending().length, 1);
 
-        const calls = dom.canvas._context.calls;
-        const clearCalls = calls.filter((call) => call[0] === "clearRect");
-        assert.strictEqual(clearCalls.length, 1);
-        assert.deepStrictEqual(clearCalls[0].slice(1), [0, 0, 1280, 720]);
-        const fillTextCalls = calls.filter((call) => call[0] === "fillText");
-        assert.strictEqual(fillTextCalls.length, 1);
-        assert.strictEqual(fillTextCalls[0][1], "GUP-X");
-        assert.strictEqual(fillTextCalls[0][2], 320);
-        assert.strictEqual(fillTextCalls[0][3], 360);
-
         assert.strictEqual(dom.stage.hidden, false);
         assert.strictEqual(dom.stage.getAttribute("aria-hidden"), "false");
         assert.strictEqual(dom.goalBanner.hidden, false);

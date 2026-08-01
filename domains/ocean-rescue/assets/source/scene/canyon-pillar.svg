@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200">
+  <g id="terrain-canyon-pillar">
+    <path d="M88 190 Q84 170 86 145 Q88 120 92 95 Q96 70 100 50 Q104 32 110 20 L130 20 Q136 32 140 50 Q144 70 148 95 Q152 120 154 145 Q156 170 152 190Z" fill="#5C6B7A" stroke="#3F4B57" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M92 40 Q102 35 120 34 Q138 35 148 40" fill="none" stroke="#6B7A8A" stroke-width="2.5" opacity="0.5"/>
+    <path d="M90 70 Q100 65 120 64 Q140 65 150 70" fill="none" stroke="#6B7A8A" stroke-width="2" opacity="0.4"/>
+    <path d="M88 100 Q98 95 120 94 Q142 95 152 100" fill="none" stroke="#6B7A8A" stroke-width="2" opacity="0.35"/>
+    <path d="M87 130 Q97 126 120 125 Q143 126 153 130" fill="none" stroke="#6B7A8A" stroke-width="1.5" opacity="0.3"/>
+    <path d="M89 160 Q98 156 120 155 Q142 156 151 160" fill="none" stroke="#6B7A8A" stroke-width="1.5" opacity="0.25"/>
+    <path d="M100 20 L110 12 L120 8 L130 12 L140 20" fill="#4A5A6A" stroke="#3F4B57" stroke-width="1.5"/>
+    <path d="M92 55 Q86 50 82 46 Q78 44 82 40" fill="none" stroke="#5C6B7A" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M148 75 Q154 70 158 66 Q162 64 158 60" fill="none" stroke="#5C6B7A" stroke-width="2.5" stroke-linecap="round"/>
+    <ellipse cx="120" cy="194" rx="34" ry="5" fill="#A8E6CF" opacity="0.15"/>
+  </g>
+</svg>

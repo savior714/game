@@ -546,6 +546,306 @@
       "approvalState": "approved",
       "revisionNote": "Small seaweed-loop icon used for the rescue progress HUD",
       "sourceSha256": "491f53cade4ad7da21ac93e142d30b628f5102e8eb99636904ef90a5e2e97665"
+    },
+    {
+      "id": "terrain-coral-column-01",
+      "alias": "terrain.coral-column",
+      "source": "scene/coral-column.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        240,
+        200
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Tall branching coral column with pink branches and bulbous tips for coral-reef missions",
+      "sourceSha256": "e66012e7a2404276575fc577e8b33e8ee416ce41ba7803f2085f76fc7fd9002a"
+    },
+    {
+      "id": "terrain-reef-arch-01",
+      "alias": "terrain.reef-arch",
+      "source": "scene/reef-arch.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        240,
+        200
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Thick arching reef formation with coral-texture inner surface for coral-reef missions",
+      "sourceSha256": "9b9c83fb7df30f591056c64585317f1f77886c5f081d018a18e058a5d91a5327"
+    },
+    {
+      "id": "terrain-coral-rock-01",
+      "alias": "terrain.coral-rock",
+      "source": "scene/coral-rock.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        240,
+        200
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Gray rock base topped with clustered pink coral growth for coral-reef missions",
+      "sourceSha256": "8ea8e657f2f280d5d35048667fd786e0b32ac4c194d5d4336c32f9790f29d630"
+    },
+    {
+      "id": "terrain-kelp-rock-01",
+      "alias": "terrain.kelp-rock",
+      "source": "scene/kelp-rock.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        240,
+        200
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Dark rock with three tall kelp strands and bulbous tips for coral-reef missions",
+      "sourceSha256": "f7b0acee8a654a9733a6458b779ac0a8163fbf3d2edf207a050de1a5fadbb57c"
+    },
+    {
+      "id": "terrain-reef-spire-01",
+      "alias": "terrain.reef-spire",
+      "source": "scene/reef-spire.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        240,
+        200
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Tall narrow pink spire with lateral coral branches and bulbous cap for coral-reef missions",
+      "sourceSha256": "0b3d13048f393a3d1d87fb7ca7ab4f0f66f7c02460cdf6f8c3e2a8f9e8a7acfe"
+    },
+    {
+      "id": "terrain-sand-rock-01",
+      "alias": "terrain.sand-rock",
+      "source": "scene/sand-rock.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        240,
+        200
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Rounded sand-colored boulder with gentle highlight ridges for sandy-reef missions",
+      "sourceSha256": "3febedd9880cba3686d1af71440335030fd3605d450ae85cc9f8e9071cab7833"
+    },
+    {
+      "id": "terrain-shell-ledge-01",
+      "alias": "terrain.shell-ledge",
+      "source": "scene/shell-ledge.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        240,
+        200
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Low sand ledge decorated with five cream-colored shells for sandy-reef missions",
+      "sourceSha256": "ab99a70ba18bd62bacdbf11eb3073c683387040bce4c7acf8d66e88584be62be"
+    },
+    {
+      "id": "terrain-low-reef-01",
+      "alias": "terrain.low-reef",
+      "source": "scene/low-reef.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        240,
+        200
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Wide low green reef formation with small coral bumps for sandy-reef missions",
+      "sourceSha256": "9a8c084ed34fb6103b6633a1216606934f9ec355cbae810f5a9325dd4c7651c8"
+    },
+    {
+      "id": "terrain-rock-stack-01",
+      "alias": "terrain.rock-stack",
+      "source": "scene/rock-stack.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        240,
+        200
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Stack of six rounded sand-toned stones decreasing in size for sandy-reef missions",
+      "sourceSha256": "91a88b2d200922a10d54dc5fdaa84f1f848afa9c5e39cf16edb687fd840f1910"
+    },
+    {
+      "id": "terrain-sand-pillar-01",
+      "alias": "terrain.sand-pillar",
+      "source": "scene/sand-pillar.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        240,
+        200
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Tall sand-colored pillar with horizontal strata bands and flared cap for sandy-reef missions",
+      "sourceSha256": "e07ebf29669d98cb57e6d520a5896347aaac15937ff08849dde8c3a211acb870"
+    },
+    {
+      "id": "terrain-canyon-wall-01",
+      "alias": "terrain.canyon-wall",
+      "source": "scene/canyon-wall.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        240,
+        200
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Steep gray canyon wall face with horizontal strata lines and small rock protrusions for rocky-canyon missions",
+      "sourceSha256": "8677a13bb6bc1022176ddc47e6db0a5fe7a7b3e92fc0a31a74dafa7084f81ed7"
+    },
+    {
+      "id": "terrain-rock-spire-01",
+      "alias": "terrain.rock-spire",
+      "source": "scene/rock-spire.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        240,
+        200
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Tall narrow dark-gray spire with lateral broken arms and layered bands for rocky-canyon missions",
+      "sourceSha256": "a8cfdf794d465d5643366bec66a7413f7dd7bfd819c6dfdea3bfb8cb6b857d56"
+    },
+    {
+      "id": "terrain-canyon-ledge-01",
+      "alias": "terrain.canyon-ledge",
+      "source": "scene/canyon-ledge.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        240,
+        200
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Canyon ledge with sharp left face and horizontal stratification bands for rocky-canyon missions",
+      "sourceSha256": "e77913bfac3078fba18f17ba2550ffcdf8e31430acfe36eba801d2fcabbea53a"
+    },
+    {
+      "id": "terrain-boulder-stack-01",
+      "alias": "terrain.boulder-stack",
+      "source": "scene/boulder-stack.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        240,
+        200
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Stack of four angular gray boulders decreasing in size with horizontal detail lines for rocky-canyon missions",
+      "sourceSha256": "1b1bd1d940a76688d34e27747e4c451609d5f9c1b7c8699c108abb963996d4da"
+    },
+    {
+      "id": "terrain-canyon-pillar-01",
+      "alias": "terrain.canyon-pillar",
+      "source": "scene/canyon-pillar.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        240,
+        200
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Tall narrow canyon pillar with horizontal strata and broken lateral arms for rocky-canyon missions",
+      "sourceSha256": "c3d86c09afa493d849819b217b7d801dd78d992b10dd5515d12f72d0ed51946d"
     }
   ]
 }

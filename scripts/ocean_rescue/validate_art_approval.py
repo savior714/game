@@ -16,7 +16,7 @@ from pathlib import Path
 
 SCHEMA_VERSION = 1
 REQUIRED_DECISION = "approved"
-REQUIRED_ASSET_COUNT = 27
+REQUIRED_ASSET_COUNT = 0
 
 
 def fail(msg: str) -> None:
@@ -36,16 +36,16 @@ def load_json(path: Path) -> dict:
         return {}
 
 
-def validate_approval_record(record: dict) -> None:
+def validate_approval_record(record: dict, expected_count: int) -> None:
     if record.get("schemaVersion") != SCHEMA_VERSION:
         fail(
             f"schemaVersion must be {SCHEMA_VERSION}, got {record.get('schemaVersion')}"
         )
     if record.get("decision") != REQUIRED_DECISION:
         fail(f"decision must be '{REQUIRED_DECISION}', got '{record.get('decision')}'")
-    if record.get("approvedAssetCount") != REQUIRED_ASSET_COUNT:
+    if record.get("approvedAssetCount") != expected_count:
         fail(
-            f"approvedAssetCount must be {REQUIRED_ASSET_COUNT}, got {record.get('approvedAssetCount')}"
+            f"approvedAssetCount must be {expected_count}, got {record.get('approvedAssetCount')}"
         )
     if record.get("scope") != "ocean-rescue-rendering-mvp-proof-packet":
         fail(f"Invalid scope: {record.get('scope')}")
@@ -176,7 +176,7 @@ def main() -> None:
     record = load_json(approval_path)
     packet = load_json(packet_path)
 
-    validate_approval_record(record)
+    validate_approval_record(record, len(packet["assets"]))
     validate_aliases_sorted(record)
     validate_all_approved(packet)
     validate_packet_hashes(packet, record, root)

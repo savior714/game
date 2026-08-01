@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200">
+  <g id="terrain-rock-stack">
+    <ellipse cx="120" cy="175" rx="70" ry="22" fill="#B8956A" stroke="#8B6540" stroke-width="2.5"/>
+    <ellipse cx="100" cy="140" rx="52" ry="18" fill="#C4A373" stroke="#8B6540" stroke-width="2"/>
+    <ellipse cx="138" cy="115" rx="42" ry="16" fill="#D4B88A" stroke="#8B6540" stroke-width="2"/>
+    <ellipse cx="118" cy="90" rx="34" ry="14" fill="#E2C9A0" stroke="#8B6540" stroke-width="1.5"/>
+    <ellipse cx="130" cy="68" rx="24" ry="11" fill="#E8D5B8" stroke="#8B6540" stroke-width="1.5"/>
+    <ellipse cx="115" cy="50" rx="16" ry="9" fill="#F0E0C8" stroke="#8B6540" stroke-width="1"/>
+    <path d="M60 178 Q80 172 105 176" fill="none" stroke="#D4A373" stroke-width="2" opacity="0.5"/>
+    <path d="M55 142 Q78 136 102 140" fill="none" stroke="#D4B88A" stroke-width="1.5" opacity="0.4"/>
+    <ellipse cx="125" cy="192" rx="75" ry="6" fill="#A8E6CF" opacity="0.2"/>
+  </g>
+</svg>

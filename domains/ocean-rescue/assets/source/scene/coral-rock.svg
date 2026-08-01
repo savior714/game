@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200">
+  <g id="terrain-coral-rock">
+    <path d="M30 190 Q28 170 32 155 Q38 140 50 132 Q70 120 100 116 Q130 112 160 118 Q185 124 200 136 Q214 148 218 165 Q220 178 216 190Z" fill="#6B7A8A" stroke="#4A5A6A" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M60 125 Q55 110 62 95 Q70 80 85 72 Q95 66 108 64 Q120 62 135 66 Q150 72 160 84 Q168 94 172 108 Q175 118 170 125" fill="#E85D7A" stroke="#C43A5A" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M75 90 Q82 78 95 74 Q105 71 115 74 Q125 78 130 88" fill="#F27A94" opacity="0.7"/>
+    <path d="M85 110 Q92 100 105 96 Q115 94 122 100 Q128 108 125 116" fill="#D94F6E" opacity="0.6"/>
+    <circle cx="95" cy="82" r="7" fill="#FFB3C1" opacity="0.5"/>
+    <circle cx="120" cy="76" r="6" fill="#FFB3C1" opacity="0.5"/>
+    <circle cx="140" cy="86" r="5" fill="#FFB3C1" opacity="0.4"/>
+    <ellipse cx="125" cy="192" rx="90" ry="6" fill="#A8E6CF" opacity="0.25"/>
+  </g>
+</svg>

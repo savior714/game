@@ -116,7 +116,7 @@ class TestApprovedAssetCount:
     def test_exactly_27_approved(self):
         packet = _load_json(ART_PACKET_JSON)
         approved = [a for a in packet["assets"] if a["approvalState"] == "approved"]
-        assert len(approved) == 27, f"Expected 27 approved assets, got {len(approved)}"
+        assert len(approved) == 42, f"Expected 42 approved assets, got {len(approved)}"
 
     def test_all_aliases_match_packet(self):
         record = _load_json(ART_APPROVAL_JSON)

@@ -15,8 +15,41 @@
     "scene.sand-path",
     "scene.passage",
     "fx.bubbles",
-    "fx.caustic"
+    "fx.caustic",
+    "terrain.coral-column",
+    "terrain.coral-rock",
+    "terrain.reef-arch",
+    "terrain.reef-spire",
+    "terrain.kelp-rock",
+    "terrain.sand-rock",
+    "terrain.shell-ledge",
+    "terrain.low-reef",
+    "terrain.rock-stack",
+    "terrain.sand-pillar",
+    "terrain.canyon-wall",
+    "terrain.canyon-ledge",
+    "terrain.canyon-pillar",
+    "terrain.boulder-stack",
+    "terrain.rock-spire"
   ];
+
+  var OBSTACLE_KIND_ALIASES = {
+    "coral-column": "terrain.coral-column",
+    "reef-arch": "terrain.reef-arch",
+    "coral-rock": "terrain.coral-rock",
+    "kelp-rock": "terrain.kelp-rock",
+    "reef-spire": "terrain.reef-spire",
+    "sand-rock": "terrain.sand-rock",
+    "shell-ledge": "terrain.shell-ledge",
+    "low-reef": "terrain.low-reef",
+    "rock-stack": "terrain.rock-stack",
+    "sand-pillar": "terrain.sand-pillar",
+    "canyon-wall": "terrain.canyon-wall",
+    "rock-spire": "terrain.rock-spire",
+    "canyon-ledge": "terrain.canyon-ledge",
+    "boulder-stack": "terrain.boulder-stack",
+    "canyon-pillar": "terrain.canyon-pillar"
+  };
 
   var ENVIRONMENT_PALETTES = {
     "coral-reef": 0x7fb2c4,
@@ -327,8 +360,15 @@
     nodes.submarine.rotation = reducedMotion ? 0 : Math.sin(activeTime / 1400) * 0.02;
   }
 
-  function syncObstacles(terrainSnap) {
-    if (!nodes || !Terrain || !terrainSnap || !terrainSnap.active) {
+  function resolveObstacleAlias(kind) {
+    if (!kind || typeof kind !== "string") {
+      return null;
+    }
+    return OBSTACLE_KIND_ALIASES[kind] || null;
+  }
+
+  function syncObstacles(travelSnap, terrainSnap) {
+    if (!nodes || !Terrain || !travelSnap || !terrainSnap || !terrainSnap.active) {
       return;
     }
     var layout = Terrain.getLayout(terrainSnap.missionId);
@@ -337,9 +377,20 @@
     }
     var env = layout.environment;
     var tint = ENVIRONMENT_PALETTES[env] || ENVIRONMENT_PALETTES["coral-reef"];
+    var travelDistance = typeof travelSnap.distance === "number" ? travelSnap.distance : 0;
 
     while (nodes.obstacleSprites.length < layout.obstacles.length) {
-      var obstacleSprite = new PIXI.Graphics();
+      var obstacleKind = layout.obstacles[nodes.obstacleSprites.length]
+        ? layout.obstacles[nodes.obstacleSprites.length].kind
+        : null;
+      var probeAlias = obstacleKind ? resolveObstacleAlias(obstacleKind) : null;
+      var probeTexture = probeAlias ? RenderRuntime.getTexture(probeAlias) : null;
+      if (!probeTexture) {
+        throw new Error(
+          "Missing authored obstacle texture: " + (probeAlias || obstacleKind)
+        );
+      }
+      var obstacleSprite = new PIXI.Sprite(probeTexture);
       obstacleSprite.label = "travel-obstacle-" + nodes.obstacleSprites.length;
       obstacleSprite.name = obstacleSprite.label;
       obstacleSprite.eventMode = "none";
@@ -348,41 +399,65 @@
       nodes.obstacleSprites.push(obstacleSprite);
     }
 
+    var visibleCount = 0;
+    var nonFiniteCount = 0;
+    var firstVisibleId = "";
+    var firstVisibleAlias = "";
+
     for (var i = 0; i < layout.obstacles.length; i += 1) {
       var obstacle = layout.obstacles[i];
       var sprite = nodes.obstacleSprites[i];
-      var screenX = obstacle.worldX - terrainSnap.distance;
+      var screenX = obstacle.worldX - travelDistance;
+      var screenY = obstacle.y;
+      if (!isFinite(screenX) || !isFinite(screenY)) {
+        nonFiniteCount += 1;
+        sprite.visible = false;
+        continue;
+      }
       if (screenX < -obstacle.width || screenX > WIDTH + obstacle.width) {
         sprite.visible = false;
         continue;
       }
+      var alias = resolveObstacleAlias(obstacle.kind);
+      var texture = alias ? RenderRuntime.getTexture(alias) : null;
+      if (texture && sprite instanceof PIXI.Sprite) {
+        sprite.texture = texture;
+        if (sprite.anchor && texture.defaultAnchor) {
+          sprite.anchor.copyFrom(texture.defaultAnchor);
+        } else if (sprite.anchor) {
+          sprite.anchor.set(0.5, 0.5);
+        }
+      } else if (!texture) {
+        sprite.visible = false;
+        continue;
+      }
+      var frameWidth = (sprite.texture && sprite.texture.frame) ? sprite.texture.frame.width : 1;
+      var frameHeight = (sprite.texture && sprite.texture.frame) ? sprite.texture.frame.height : 1;
+      var scaleX = obstacle.width / frameWidth;
+      var scaleY = obstacle.height / frameHeight;
+      var scaleRatio = Math.min(scaleX, scaleY);
+      setScale(sprite, scaleRatio, scaleRatio);
+      sprite.position.set(screenX, screenY);
+      sprite.tint = tint;
       sprite.visible = true;
-      sprite.clear();
-      sprite.beginFill(tint, 0.85);
-      sprite.drawRoundedRect(
-        screenX - obstacle.width / 2,
-        obstacle.y - obstacle.height / 2,
-        obstacle.width,
-        obstacle.height,
-        12
-      );
-      sprite.endFill();
-      sprite.beginFill(0x0a1e33, 0.4);
-      sprite.drawRoundedRect(
-        screenX - obstacle.width / 2 + 10,
-        obstacle.y - obstacle.height / 2 + 10,
-        obstacle.width - 20,
-        obstacle.height - 20,
-        8
-      );
-      sprite.endFill();
-      sprite.x = 0;
-      sprite.y = 0;
+      visibleCount += 1;
+      if (!firstVisibleId) {
+        firstVisibleId = obstacle.id || "";
+        firstVisibleAlias = alias || "";
+      }
     }
 
     for (var j = layout.obstacles.length; j < nodes.obstacleSprites.length; j += 1) {
       nodes.obstacleSprites[j].visible = false;
     }
+
+    setDiagnostic("data-travel-scene-obstacle-renderer", "sprite");
+    setDiagnostic("data-travel-scene-placeholder-obstacle-count", "0");
+    setDiagnostic("data-travel-scene-obstacle-alias-count", String(Object.keys(OBSTACLE_KIND_ALIASES).length));
+    setDiagnostic("data-travel-scene-visible-obstacle-count", String(visibleCount));
+    setDiagnostic("data-travel-scene-nonfinite-obstacle-count", String(nonFiniteCount));
+    setDiagnostic("data-travel-scene-first-visible-obstacle-id", firstVisibleId);
+    setDiagnostic("data-travel-scene-first-visible-obstacle-alias", firstVisibleAlias);
   }
 
   function syncCollisionFeedback(terrainSnap) {
@@ -419,7 +494,7 @@
     syncSeaweed();
     syncBubbles();
     syncSubmarine(travelSnap.y);
-    syncObstacles(terrainSnap);
+    syncObstacles(travelSnap, terrainSnap);
     syncCollisionFeedback(terrainSnap);
   }
 

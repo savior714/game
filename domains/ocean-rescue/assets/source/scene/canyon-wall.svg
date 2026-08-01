@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200">
+  <g id="terrain-canyon-wall">
+    <path d="M20 190 L20 30 Q20 22 28 20 L50 16 Q56 14 60 20 L70 36 Q78 48 90 56 L120 72 Q134 80 148 84 L180 92 Q196 96 208 104 L224 116 Q232 124 234 138 L236 170 Q237 182 230 190Z" fill="#6B7A8A" stroke="#4A5A6A" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M30 60 L60 52 L90 62 L120 56 L150 66 L180 60 L210 70" fill="none" stroke="#7A8B99" stroke-width="2" opacity="0.5"/>
+    <path d="M28 90 L62 84 L95 94 L130 88 L165 98 L200 92" fill="none" stroke="#7A8B99" stroke-width="1.5" opacity="0.4"/>
+    <path d="M26 120 L65 114 L100 124 L140 118 L175 128 L210 122" fill="none" stroke="#7A8B99" stroke-width="1.5" opacity="0.35"/>
+    <path d="M32 150 L68 144 L105 154 L145 148 L180 158" fill="none" stroke="#7A8B99" stroke-width="1.5" opacity="0.3"/>
+    <path d="M45 40 L50 36 L55 42" fill="#5C6B7A" stroke="#4A5A6A" stroke-width="1"/>
+    <path d="M100 48 L106 44 L112 50" fill="#5C6B7A" stroke="#4A5A6A" stroke-width="1"/>
+    <path d="M160 72 L166 68 L172 74" fill="#5C6B7A" stroke="#4A5A6A" stroke-width="1"/>
+    <rect x="80" y="100" width="12" height="16" rx="2" fill="#5C6B7A" stroke="#4A5A6A" stroke-width="1" opacity="0.5"/>
+    <rect x="150" y="120" width="10" height="14" rx="2" fill="#5C6B7A" stroke="#4A5A6A" stroke-width="1" opacity="0.4"/>
+    <ellipse cx="130" cy="194" rx="105" ry="5" fill="#A8E6CF" opacity="0.15"/>
+  </g>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200">
+  <g id="terrain-low-reef">
+    <path d="M10 190 Q8 178 14 168 Q22 156 40 150 Q65 142 100 138 Q135 134 170 138 Q200 142 220 152 Q232 160 236 172 Q238 182 234 190Z" fill="#8FA87A" stroke="#6B8060" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M30 158 Q50 148 80 144 Q110 140 145 142 Q178 146 205 156" fill="none" stroke="#A8C494" stroke-width="3.5" opacity="0.6"/>
+    <path d="M50 165 Q75 156 110 152 Q145 148 180 156 Q205 164 220 172" fill="none" stroke="#A8C494" stroke-width="2.5" opacity="0.4"/>
+    <path d="M65 148 Q72 140 82 138 Q90 136 95 142" fill="#7BA862" stroke="#6B8060" stroke-width="1.5"/>
+    <path d="M140 144 Q148 136 158 134 Q166 134 170 140" fill="#7BA862" stroke="#6B8060" stroke-width="1.5"/>
+    <path d="M195 150 Q202 143 210 142 Q216 142 218 148" fill="#7BA862" stroke="#6B8060" stroke-width="1.5"/>
+    <circle cx="120" cy="140" r="8" fill="#A8E6CF" opacity="0.3"/>
+    <ellipse cx="125" cy="192" rx="110" ry="6" fill="#A8E6CF" opacity="0.2"/>
+  </g>
+</svg>

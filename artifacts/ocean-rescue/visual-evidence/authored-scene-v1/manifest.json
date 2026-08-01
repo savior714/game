@@ -1,8 +1,10 @@
 {
-  "schemaVersion": 1,
-  "taskId": "AIDENGAME-OCEAN-RESCUE-FOUR-STATE-VISUAL-EVIDENCE-PACKET-01",
-  "sourceCommit": "0a929a72ce46d45cd875b6568be03e9650e6ba93",
+  "schemaVersion": 2,
+  "taskId": "AIDENGAME-OCEAN-RESCUE-VISUAL-PACKET-CAPTURE-SYNC-REPAIR-01",
+  "repairsTaskId": "AIDENGAME-OCEAN-RESCUE-FOUR-STATE-VISUAL-EVIDENCE-PACKET-01",
+  "sourceCommit": "a94b69a0331d0d14e87f45ed6142e9ca24e5010d",
   "sourceSingleHtmlSha256": "08312c3c642cd1b24f36dd984015f2920c908a0f88b32f6a5642651bafa1db85",
+  "captureMethod": "cdp-page-capture-screenshot",
   "viewportCssWidth": 1280,
   "viewportCssHeight": 720,
   "deviceScaleFactor": 1,
@@ -15,31 +17,80 @@
     "relief-2",
     "free"
   ],
+  "pairwiseDistinctPixels": true,
+  "reproducibleAcrossTwoRuns": true,
   "captures": [
     {
       "state": "worried",
       "file": "worried.png",
-      "sha256": "0c6dbda668b39bce4294c488606c9fa9e24649af3f1a50f3b18717b3054524e4"
+      "fileSha256": "1e7c8de3510b5a69e43dc3800fe92f7c7e2b4134b2517efc26ba0d3354a4a32b",
+      "pixelSha256": "252ef9543c72d66f883641b1f72db4bc8d77aa388bd876ecc09c080ca7ab1d21",
+      "byteSize": 261461,
+      "pixelWidth": 1280,
+      "pixelHeight": 720,
+      "activeRopeId": "rope-1",
+      "completedCount": 0,
+      "complete": false,
+      "reliefStage": "worried",
+      "externalOriginRequestCount": 0,
+      "referenceImageRequestCount": 0,
+      "uncaughtErrorCount": 0,
+      "unhandledRejectionCount": 0,
+      "securityPolicyViolationCount": 0
     },
     {
       "state": "relief-1",
       "file": "relief-1.png",
-      "sha256": "0c6dbda668b39bce4294c488606c9fa9e24649af3f1a50f3b18717b3054524e4"
+      "fileSha256": "a70077f3326c8526c7ada886d9d84b0445846587c7f0c6580ca1931c334c1f51",
+      "pixelSha256": "e4b6dd52d0573c1fc32711ba92803a38b6a6b15efcf9d7d914e9996e247cebeb",
+      "byteSize": 258169,
+      "pixelWidth": 1280,
+      "pixelHeight": 720,
+      "activeRopeId": "rope-2",
+      "completedCount": 1,
+      "complete": false,
+      "reliefStage": "relief-1",
+      "externalOriginRequestCount": 0,
+      "referenceImageRequestCount": 0,
+      "uncaughtErrorCount": 0,
+      "unhandledRejectionCount": 0,
+      "securityPolicyViolationCount": 0
     },
     {
       "state": "relief-2",
       "file": "relief-2.png",
-      "sha256": "0c6dbda668b39bce4294c488606c9fa9e24649af3f1a50f3b18717b3054524e4"
+      "fileSha256": "6e26e14fba9af2676c8eef8c04dee31369e8fe2d795fd293e67de5a4ff07b8c6",
+      "pixelSha256": "10bd897b7faefabc056b3a2dafcdc7cda5de19e6bc7f04354bfc415eb58fab46",
+      "byteSize": 253268,
+      "pixelWidth": 1280,
+      "pixelHeight": 720,
+      "activeRopeId": "rope-3",
+      "completedCount": 2,
+      "complete": false,
+      "reliefStage": "relief-2",
+      "externalOriginRequestCount": 0,
+      "referenceImageRequestCount": 0,
+      "uncaughtErrorCount": 0,
+      "unhandledRejectionCount": 0,
+      "securityPolicyViolationCount": 0
     },
     {
       "state": "free",
       "file": "free.png",
-      "sha256": "0c6dbda668b39bce4294c488606c9fa9e24649af3f1a50f3b18717b3054524e4"
+      "fileSha256": "6e815aa485476a2b2a30a0a12ababfa3ad823faf933895926e0b21ccd15d6743",
+      "pixelSha256": "64d90a49db4e4017a44f6d438d34cfccac31e8aef54ee7a49fcedf9efcacc648",
+      "byteSize": 235697,
+      "pixelWidth": 1280,
+      "pixelHeight": 720,
+      "activeRopeId": null,
+      "completedCount": 3,
+      "complete": true,
+      "reliefStage": "free",
+      "externalOriginRequestCount": 0,
+      "referenceImageRequestCount": 0,
+      "uncaughtErrorCount": 0,
+      "unhandledRejectionCount": 0,
+      "securityPolicyViolationCount": 0
     }
-  ],
-  "externalOriginRequestCount": 0,
-  "referenceImageRequestCount": 0,
-  "uncaughtErrorCount": 0,
-  "unhandledRejectionCount": 0,
-  "securityPolicyViolationCount": 0
+  ]
 }

@@ -318,7 +318,24 @@ async function main() {
     diag.ready = true;
     diag.error = null;
 
-    root.setAttribute('data-visual-packet-ready', 'true');
+    writeDiagnostics();
+
+    if (win.OceanRescue && win.OceanRescue.RenderRuntime && typeof win.OceanRescue.RenderRuntime.renderSceneFrame === 'function') {
+      win.OceanRescue.RenderRuntime.renderSceneFrame();
+      win.OceanRescue.RenderRuntime.renderSceneFrame();
+      win.OceanRescue.RenderRuntime.renderSceneFrame();
+    }
+
+    let rafCount = 0;
+    const settleRaf = () => {
+      rafCount += 1;
+      if (rafCount >= 3) {
+        document.documentElement.dataset.visualPacketReady = 'true';
+      } else {
+        window.requestAnimationFrame(settleRaf);
+      }
+    };
+    window.requestAnimationFrame(settleRaf);
   } catch (err) {
     diag.error = err.message;
   }
@@ -330,12 +347,3 @@ main().catch((err) => {
   diag.error = 'Unhandled error: ' + err.message;
   writeDiagnostics();
 });
-
-// Signal to Chrome --screenshot that we're done
-if (typeof window !== 'undefined') {
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      try { window.stop(); } catch (_) {}
-    }, 500);
-  });
-}

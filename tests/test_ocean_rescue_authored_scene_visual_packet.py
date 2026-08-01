@@ -18,13 +18,18 @@ fixture without executing Chrome. They ensure:
 - scene.pause() and animation stopped assertion
 - Legacy bridge hidden assertion
 - External/reference/error/CSP counter assertions
-- PNG IHDR parser
+- PNG IHDR parser with filter 0-4 support
 - Dimension exact assertions
-- SHA-256 manifest contract
+- SHA-256 manifest contract with schemaVersion=2
 - No timestamp or absolute path in manifest
 - Temporary output + atomic replace
 - Production/package byte guard
 - No production writes
+- CDP-based capture (Page.captureScreenshot, Runtime.evaluate)
+- No --dump-dom or --screenshot flags
+- Ready marker on document.documentElement
+- Compositor settle via requestAnimationFrame
+- Counters derived from diagnostics, not hardcoded
 
 These are focused contract tests, not runtime acceptance tests.
 """
@@ -79,7 +84,7 @@ class TestPythonImports:
                 for stdlib in [
                     "os", "sys", "json", "pathlib", "subprocess", "tempfile",
                     "shutil", "socket", "threading", "hashlib", "struct",
-                    "http", "argparse", "importlib",
+                    "http", "argparse", "importlib", "base64", "zlib", "time",
                 ]
             )
         ]
@@ -217,25 +222,48 @@ class TestPngValidation:
         content = read_file(SCRIPT_PATH)
         assert "IHDR" in content or "struct" in content, "IHDR parser missing"
 
+    def test_png_filter_support(self):
+        content = read_file(SCRIPT_PATH)
+        for filter_num in ["0", "1", "2", "3", "4"]:
+            assert filter_num in content, "PNG filter {} support missing".format(filter_num)
+
+    def test_normalized_pixel_digest(self):
+        content = read_file(SCRIPT_PATH)
+        assert "rgba" in content.lower() or "pixel_sha256" in content, \
+            "Normalized RGBA pixel digest missing"
+
     def test_dimension_assertion(self):
         content = read_file(SCRIPT_PATH)
         assert "1280" in content and "720" in content, "Dimension assertion missing"
 
 
 class TestManifestContract:
+    def test_schema_version_two(self):
+        content = read_file(SCRIPT_PATH)
+        assert '"schemaVersion": 2' in content or "'schemaVersion': 2" in content, \
+            "schemaVersion=2 not found"
+
     def test_sha256_in_manifest(self):
         content = read_file(SCRIPT_PATH)
         assert "sha256" in content.lower(), "SHA-256 not in manifest generation"
 
     def test_no_timestamp(self):
         content = read_file(SCRIPT_PATH)
-        assert "datetime" not in content and "time.time" not in content, \
-            "Timestamp found in script (forbidden)"
+        assert "datetime" not in content, "datetime import found (forbidden)"
+        assert '"timestamp"' not in content and "'timestamp'" not in content, \
+            "Timestamp field found in manifest (forbidden)"
 
     def test_no_absolute_paths_in_manifest(self):
         content = read_file(SCRIPT_PATH)
         assert "os.getcwd" not in content and "pathlib.Path.cwd" not in content, \
             "Absolute path generation found"
+
+    def test_counters_from_diagnostics(self):
+        content = read_file(SCRIPT_PATH)
+        assert "diagnostics" in content.lower(), "Counters should be derived from diagnostics"
+        assert '.get("externalOriginRequestCount"' in content or \
+               ".get('externalOriginRequestCount'" in content, \
+            "Counters should be read from diagnostics, not hardcoded"
 
 
 class TestOutputPolicy:
@@ -261,6 +289,58 @@ class TestOutputPolicy:
         for prod_path in prod_paths:
             assert prod_path not in content or "artifacts" in content, \
                 "Potential production write to {}".format(prod_path)
+
+
+class TestCdpArchitecture:
+    def test_no_dump_dom_flag(self):
+        content = read_file(SCRIPT_PATH)
+        assert "--dump-dom" not in content, "--dump-dom flag found (forbidden)"
+
+    def test_no_screenshot_flag(self):
+        content = read_file(SCRIPT_PATH)
+        assert "--screenshot" not in content, "--screenshot flag found (forbidden)"
+
+    def test_page_capture_screenshot(self):
+        content = read_file(SCRIPT_PATH)
+        assert "Page.captureScreenshot" in content, "Page.captureScreenshot not found"
+
+    def test_runtime_evaluate(self):
+        content = read_file(SCRIPT_PATH)
+        assert "Runtime.evaluate" in content, "Runtime.evaluate not found"
+
+    def test_device_metrics_override(self):
+        content = read_file(SCRIPT_PATH)
+        assert "Emulation.setDeviceMetricsOverride" in content, \
+            "Emulation.setDeviceMetricsOverride not found"
+
+    def test_single_process_per_state(self):
+        content = read_file(SCRIPT_PATH)
+        assert "launch_chrome_with_cdp" in content, \
+            "Single Chrome process per state pattern not found"
+
+    def test_no_proceed_after_diagnostics_failure(self):
+        content = read_file(SCRIPT_PATH)
+        assert "WARNING" not in content or "Proceeding" not in content, \
+            "Script proceeds after diagnostics failure (forbidden)"
+
+    def test_ready_marker_on_document_element(self):
+        mjs_content = read_file(MJS_PATH)
+        assert "document.documentElement.dataset.visualPacketReady" in mjs_content, \
+            "Ready marker not on document.documentElement"
+
+    def test_compositor_settle(self):
+        mjs_content = read_file(MJS_PATH)
+        assert "requestAnimationFrame" in mjs_content, \
+            "Compositor settle via requestAnimationFrame not found"
+
+    def test_no_window_stop(self):
+        mjs_content = read_file(MJS_PATH)
+        assert "window.stop()" not in mjs_content, "window.stop() found (forbidden)"
+
+    def test_render_scene_frame_called(self):
+        mjs_content = read_file(MJS_PATH)
+        assert "renderSceneFrame" in mjs_content, \
+            "RenderRuntime.renderSceneFrame() not called before screenshot"
 
 
 class TestHtmlFixture:

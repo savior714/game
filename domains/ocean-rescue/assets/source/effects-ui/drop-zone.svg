@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 320" width="300" height="320">
+  <defs>
+    <linearGradient id="dropZoneBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9ad0ff" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#7ab8e0" stop-opacity="0.2"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="296" height="316" rx="16" ry="16" fill="url(#dropZoneBg)" stroke="#9ad0ff" stroke-width="3" stroke-opacity="0.55" stroke-dasharray="12 6"/>
+  <text x="150" y="168" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" fill="#d6e2ee" opacity="0.9">Drop zone</text>
+  <rect x="60" y="185" width="180" height="4" rx="2" fill="#9ad0ff" opacity="0.25"/>
+</svg>

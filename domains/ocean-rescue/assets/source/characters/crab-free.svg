@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" width="200" height="180">
+  <defs>
+    <radialGradient id="crabBodyFree" cx="0.5" cy="0.4" r="0.5">
+      <stop offset="0%" stop-color="#e8a06f"/>
+      <stop offset="100%" stop-color="#d98a5f"/>
+    </radialGradient>
+  </defs>
+  <!-- Body -->
+  <ellipse cx="100" cy="95" rx="52" ry="42" fill="url(#crabBodyFree)"/>
+  <!-- Carapace ridge -->
+  <path d="M68 80 Q100 65 132 80" fill="none" stroke="#c97b56" stroke-width="2.5" opacity="0.5"/>
+  <!-- Eyes on stalks -->
+  <line x1="78" y1="68" x2="72" y2="50" stroke="#d98a5f" stroke-width="4" stroke-linecap="round"/>
+  <line x1="122" y1="68" x2="128" y2="50" stroke="#d98a5f" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="72" cy="48" r="7" fill="#f5e6d3"/>
+  <circle cx="128" cy="48" r="7" fill="#f5e6d3"/>
+  <!-- Happy closed eyes (curved lines) -->
+  <path d="M67 47 Q72 43 77 47" fill="none" stroke="#1a1a2e" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M123 47 Q128 43 133 47" fill="none" stroke="#1a1a2e" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Happy mouth -->
+  <path d="M88 106 Q100 116 112 106" fill="none" stroke="#6a3a18" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Claws (relaxed, down) -->
+  <path d="M52 84 Q36 90 30 96" fill="none" stroke="#d98a5f" stroke-width="7" stroke-linecap="round"/>
+  <ellipse cx="28" cy="98" rx="10" ry="8" fill="#e8a06f"/>
+  <path d="M148 84 Q164 90 170 96" fill="none" stroke="#d98a5f" stroke-width="7" stroke-linecap="round"/>
+  <ellipse cx="172" cy="98" rx="10" ry="8" fill="#e8a06f"/>
+  <!-- Legs (natural stance) -->
+  <path d="M72 120 Q62 132 54 138" fill="none" stroke="#c97b56" stroke-width="4" stroke-linecap="round"/>
+  <path d="M84 126 Q78 136 74 140" fill="none" stroke="#c97b56" stroke-width="4" stroke-linecap="round"/>
+  <path d="M116 126 Q122 136 126 140" fill="none" stroke="#c97b56" stroke-width="4" stroke-linecap="round"/>
+  <path d="M128 120 Q138 132 146 138" fill="none" stroke="#c97b56" stroke-width="4" stroke-linecap="round"/>
+  <!-- Blush marks -->
+  <ellipse cx="76" cy="92" rx="8" ry="4" fill="#ff9fa3" opacity="0.35"/>
+  <ellipse cx="124" cy="92" rx="8" ry="4" fill="#ff9fa3" opacity="0.35"/>
+</svg>

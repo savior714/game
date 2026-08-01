@@ -846,6 +846,226 @@
       "approvalState": "approved",
       "revisionNote": "Tall narrow canyon pillar with horizontal strata and broken lateral arms for rocky-canyon missions",
       "sourceSha256": "c3d86c09afa493d849819b217b7d801dd78d992b10dd5515d12f72d0ed51946d"
+    },
+    {
+      "id": "crab-trapped-01",
+      "alias": "crab.trapped",
+      "source": "characters/crab-trapped.svg",
+      "sourceType": "svg",
+      "bundle": "characters",
+      "logicalSize": [
+        200,
+        180
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Crab rescue scene: worried/trapped crab with raised claws and sweat drop",
+      "sourceSha256": "1be431c232caced8028c99155e66b84b13a2cdb49a1237aad64be647d9101dcb"
+    },
+    {
+      "id": "crab-free-01",
+      "alias": "crab.free",
+      "source": "characters/crab-free.svg",
+      "sourceType": "svg",
+      "bundle": "characters",
+      "logicalSize": [
+        200,
+        180
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Crab rescue scene: free/relieved crab with happy closed eyes and blush",
+      "sourceSha256": "4a9e2a96b681b658636e36dd12832590af7fef17629225e329d64b8f4366ab90"
+    },
+    {
+      "id": "rescue-rock-01-01",
+      "alias": "rescue.rock.01",
+      "source": "scene/rock-01.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        100,
+        90
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Crab rescue scene: small rounded gray rock for first movable rock",
+      "sourceSha256": "ae40aff40f82fed2313b78599276a373db70b351cc773a0ac38cd456e00ae884"
+    },
+    {
+      "id": "rescue-rock-02-01",
+      "alias": "rescue.rock.02",
+      "source": "scene/rock-02.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        110,
+        100
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Crab rescue scene: medium textured rock for second movable rock",
+      "sourceSha256": "e8e841000b788de2407df3e65f32008c601e695f8fee83a75fabed5ffca928f3"
+    },
+    {
+      "id": "rescue-rock-03-01",
+      "alias": "rescue.rock.03",
+      "source": "scene/rock-03.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        120,
+        110
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Crab rescue scene: large angular rock for third movable rock",
+      "sourceSha256": "59b4e5a28ed68ee3d8553343bae532ca58891dd5c0792342591eb620150f65f4"
+    },
+    {
+      "id": "grabber-base-01",
+      "alias": "tool.grabber.base",
+      "source": "scene/grabber-base.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        80,
+        70
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Crab rescue scene: GUP-mounted grabber base housing with circular detail",
+      "sourceSha256": "f410cc455e1178e0ee823ea9d57f59ca2e0cd2aa2f1211010913a1005f601620"
+    },
+    {
+      "id": "grabber-arm-01",
+      "alias": "tool.grabber.arm",
+      "source": "scene/grabber-arm.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        40,
+        160
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.05
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Crab rescue scene: articulated grabber arm segment connecting base to claw",
+      "sourceSha256": "fbea8ec1cab3d1b4a928e984d6419034876624015d0cb241870daf235137cf79"
+    },
+    {
+      "id": "grabber-claw-open-01",
+      "alias": "tool.grabber.claw.open",
+      "source": "scene/grabber-claw-open.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        80,
+        70
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.85
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Crab rescue scene: open claw state for hold and approach phases",
+      "sourceSha256": "c11975b374ae338c6758271f6d5ff16714d64bf96399bc0b3ae483752a302c1e"
+    },
+    {
+      "id": "grabber-claw-closed-01",
+      "alias": "tool.grabber.claw.closed",
+      "source": "scene/grabber-claw-closed.svg",
+      "sourceType": "svg",
+      "bundle": "scene",
+      "logicalSize": [
+        80,
+        70
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.85
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Crab rescue scene: closed claw state for grabbed rock phase",
+      "sourceSha256": "6590647f73453c32b76a3995c37a0000572040446c81128bd3a79698cc5383b2"
+    },
+    {
+      "id": "ui-drop-zone-01",
+      "alias": "ui.drop-zone",
+      "source": "effects-ui/drop-zone.svg",
+      "sourceType": "svg",
+      "bundle": "effects-ui",
+      "logicalSize": [
+        300,
+        320
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Crab rescue scene: child-readable drop zone with dashed border and label",
+      "sourceSha256": "cb3c83785c3213968b3fbf931fbab955a5aa6babea98bc248f9fadffc915dabe"
+    },
+    {
+      "id": "fx-hold-ring-01",
+      "alias": "fx.hold-ring",
+      "source": "effects-ui/hold-ring.svg",
+      "sourceType": "svg",
+      "bundle": "effects-ui",
+      "logicalSize": [
+        160,
+        160
+      ],
+      "declaredRasterScale": 2,
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "authoringMethod": "manual-vector",
+      "approvalState": "approved",
+      "revisionNote": "Crab rescue scene: hold progress ring cue around active rock",
+      "sourceSha256": "ad19ea99cec55222013000f01f1080f3bad83ccf1b40795651f9596e9a15af40"
     }
   ]
 }

@@ -16,7 +16,7 @@
       "namespace": "OceanRescue.RenderAssets",
       "depends_on": [],
       "kind": "generated-assets",
-      "sha256": "6ca20f91dec8c229f32abc98670c78fbfdf8deba2a700343ac5b00096fe7125d"
+      "sha256": "d7654092698391389cb53d534e4d09165b75436b8cb507444483be390d040998"
     },
     {
       "file": "render-runtime.js",
@@ -85,6 +85,14 @@
       "file": "crab.js",
       "namespace": "OceanRescue.Crab",
       "depends_on": []
+    },
+    {
+      "file": "crab-scene.js",
+      "namespace": "OceanRescue.CrabScene",
+      "depends_on": [
+        "OceanRescue.RenderRuntime",
+        "OceanRescue.Crab"
+      ]
     },
     {
       "file": "young-whale.js",

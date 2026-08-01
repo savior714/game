@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 180" width="200" height="180">
+  <defs>
+    <radialGradient id="crabBody" cx="0.5" cy="0.4" r="0.5">
+      <stop offset="0%" stop-color="#d98a5f"/>
+      <stop offset="100%" stop-color="#b8693a"/>
+    </radialGradient>
+  </defs>
+  <!-- Body -->
+  <ellipse cx="100" cy="95" rx="52" ry="42" fill="url(#crabBody)"/>
+  <!-- Carapace ridge -->
+  <path d="M68 80 Q100 65 132 80" fill="none" stroke="#a05a30" stroke-width="2.5" opacity="0.6"/>
+  <!-- Eyes on stalks -->
+  <line x1="78" y1="68" x2="72" y2="50" stroke="#c97b56" stroke-width="4" stroke-linecap="round"/>
+  <line x1="122" y1="68" x2="128" y2="50" stroke="#c97b56" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="72" cy="48" r="7" fill="#f5e6d3"/>
+  <circle cx="128" cy="48" r="7" fill="#f5e6d3"/>
+  <!-- Worried pupils -->
+  <circle cx="70" cy="49" r="3.5" fill="#1a1a2e"/>
+  <circle cx="130" cy="49" r="3.5" fill="#1a1a2e"/>
+  <!-- Worried brows -->
+  <path d="M65 40 Q72 37 78 41" fill="none" stroke="#8a4a20" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M135 40 Q128 37 122 41" fill="none" stroke="#8a4a20" stroke-width="2.2" stroke-linecap="round"/>
+  <!-- Worried mouth -->
+  <path d="M88 105 Q100 112 112 105" fill="none" stroke="#6a3a18" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Claws (trapped position - slightly raised) -->
+  <path d="M52 80 Q36 64 30 56" fill="none" stroke="#c97b56" stroke-width="7" stroke-linecap="round"/>
+  <ellipse cx="28" cy="54" rx="10" ry="8" fill="#d98a5f"/>
+  <path d="M148 80 Q164 64 170 56" fill="none" stroke="#c97b56" stroke-width="7" stroke-linecap="round"/>
+  <ellipse cx="172" cy="54" rx="10" ry="8" fill="#d98a5f"/>
+  <!-- Legs (trapped - splayed outward) -->
+  <path d="M72 120 Q60 134 50 140" fill="none" stroke="#b8693a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M84 126 Q76 138 70 142" fill="none" stroke="#b8693a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M116 126 Q124 138 130 142" fill="none" stroke="#b8693a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M128 120 Q140 134 150 140" fill="none" stroke="#b8693a" stroke-width="4" stroke-linecap="round"/>
+  <!-- Trapped expression - slight sweat drop -->
+  <ellipse cx="138" cy="60" rx="4" ry="6" fill="#9ad0ff" opacity="0.7"/>
+</svg>

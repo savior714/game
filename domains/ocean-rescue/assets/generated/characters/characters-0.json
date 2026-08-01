@@ -1,5 +1,53 @@
 {
   "frames": {
+    "crab.free": {
+      "frame": {
+        "x": 2802,
+        "y": 4,
+        "w": 328,
+        "h": 202
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 36,
+        "y": 82,
+        "w": 328,
+        "h": 202
+      },
+      "sourceSize": {
+        "w": 400,
+        "h": 360
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
+    "crab.trapped": {
+      "frame": {
+        "x": 2462,
+        "y": 4,
+        "w": 328,
+        "h": 213
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 36,
+        "y": 75,
+        "w": 328,
+        "h": 213
+      },
+      "sourceSize": {
+        "w": 400,
+        "h": 360
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
     "otter.arm.far": {
       "frame": {
         "x": 673,
@@ -296,7 +344,7 @@
     "image": "characters-0.png",
     "format": "RGBA8888",
     "size": {
-      "w": 2454,
+      "w": 3134,
       "h": 354
     },
     "scale": "2"

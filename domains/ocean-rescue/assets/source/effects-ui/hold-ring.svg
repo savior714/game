@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160">
+  <defs>
+    <radialGradient id="holdRing" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="70%" stop-color="#ffd166" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#ffd166" stop-opacity="0.7"/>
+    </radialGradient>
+  </defs>
+  <circle cx="80" cy="80" r="72" fill="none" stroke="#ffd166" stroke-width="4" stroke-opacity="0.7" stroke-dasharray="10 6"/>
+  <circle cx="80" cy="80" r="64" fill="url(#holdRing)"/>
+</svg>

@@ -96,6 +96,30 @@
         "y": 0.5
       }
     },
+    "fx.hold-ring": {
+      "frame": {
+        "x": 3533,
+        "y": 4,
+        "w": 296,
+        "h": 296
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 12,
+        "y": 12,
+        "w": 296,
+        "h": 296
+      },
+      "sourceSize": {
+        "w": 320,
+        "h": 320
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
+    },
     "fx.success-burst": {
       "frame": {
         "x": 304,
@@ -191,6 +215,30 @@
         "x": 0.5,
         "y": 0.5
       }
+    },
+    "ui.drop-zone": {
+      "frame": {
+        "x": 2923,
+        "y": 4,
+        "w": 598,
+        "h": 638
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 1,
+        "y": 1,
+        "w": 598,
+        "h": 638
+      },
+      "sourceSize": {
+        "w": 600,
+        "h": 640
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      }
     }
   },
   "animations": {},
@@ -200,8 +248,8 @@
     "image": "effects-ui-0.png",
     "format": "RGBA8888",
     "size": {
-      "w": 2915,
-      "h": 368
+      "w": 3833,
+      "h": 646
     },
     "scale": "2"
   }

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 70" width="80" height="70">
+  <defs>
+    <linearGradient id="clawOpen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9ad0ff"/>
+      <stop offset="100%" stop-color="#5a9ec4"/>
+    </linearGradient>
+  </defs>
+  <path d="M16 10 Q8 35 14 60" fill="none" stroke="url(#clawOpen)" stroke-width="10" stroke-linecap="round"/>
+  <path d="M64 10 Q72 35 66 60" fill="none" stroke="url(#clawOpen)" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="12" cy="62" r="7" fill="#4a8eb4"/>
+  <circle cx="68" cy="62" r="7" fill="#4a8eb4"/>
+</svg>

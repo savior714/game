@@ -13,6 +13,7 @@
   var YoungWhale = window.OceanRescue.YoungWhale || null;
   var MissionSuccess = window.OceanRescue.MissionSuccess || null;
   var TravelScene = window.OceanRescue.TravelScene || null;
+  var CrabScene = window.OceanRescue.CrabScene || null;
 
   var controlsBound = false;
   var launchSequenceCounter = 0;
@@ -867,6 +868,14 @@
     return SeaTurtleScene.sync(SeaTurtle.getSnapshot(), intent);
   }
 
+  function syncCrabScene(pointerIntent) {
+    if (!CrabScene || !CrabScene.isMounted() || !Crab) {
+      return false;
+    }
+    var intent = pointerIntent || { active: false, x: null, y: null };
+    return CrabScene.sync(Crab.getSnapshot(), intent);
+  }
+
   function presentPaintFrame() {
     if (RenderRuntime && RenderRuntime.isReady()) {
       RenderRuntime.presentLegacyFrame();
@@ -1142,6 +1151,28 @@
     }
   }
 
+  function markCrabSceneFailure(sequence, error) {
+    sequence.sceneFailed = true;
+    if (CrabScene && typeof CrabScene.getDiagnostics === "function") {
+      var diagnostics = CrabScene.getDiagnostics();
+      if (diagnostics && diagnostics.missingAliases && diagnostics.missingAliases.length > 0) {
+        sequence.sceneFailureReason = diagnostics.missingAliases.join(", ");
+      }
+    }
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-rescue-input", "disabled");
+      root.setAttribute("data-crab-scene-failure", "true");
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = "This device could not start the authored crab rescue scene.";
+    }
+    if (error && typeof error.message === "string") {
+      sequence.sceneFailureReason = error.message;
+    }
+  }
+
   function beginRescueArrival(mission, gup, content, els) {
     var token = State.beginTransition(State.Phases.RESCUE_SITE_TRANSITION);
     if (token === null) {
@@ -1177,6 +1208,20 @@
       }
     } else if (SeaTurtleScene && SeaTurtleScene.isMounted()) {
       SeaTurtleScene.exit();
+    }
+
+    if (Crab && mission.id === Crab.MissionId && RenderRuntime && RenderRuntime.isReady()) {
+      if (!CrabScene) {
+        markCrabSceneFailure(sequence, new Error("Crab authored scene module is unavailable"));
+      } else {
+        try {
+          CrabScene.prepare(sequence);
+        } catch (error) {
+          markCrabSceneFailure(sequence, error);
+        }
+      }
+    } else if (CrabScene && CrabScene.isMounted()) {
+      CrabScene.exit();
     }
 
     activeTravelRunId = null;
@@ -1481,6 +1526,13 @@
     ) {
       return;
     }
+    if (
+      CrabScene &&
+      Crab &&
+      activeRescueSequence.missionId === Crab.MissionId
+    ) {
+      return;
+    }
     var width = canvas.width;
     var height = canvas.height;
     if (typeof width !== "number" || typeof height !== "number") {
@@ -1607,14 +1659,23 @@
       return false;
     }
     var canvas = document.getElementById("ocean-rescue-canvas");
-    var context = resolvePaintContext();
     var overlay = document.getElementById("ocean-rescue-rescue-overlay");
-    if (!canvas || !context || !overlay) {
+    if (!canvas || !overlay) {
       return false;
     }
     Crab.start();
+    if (CrabScene && RenderRuntime && RenderRuntime.isReady()) {
+      if (!CrabScene.isMounted()) {
+        var failedRoot = document.getElementById("ocean-rescue-root");
+        if (failedRoot) {
+          failedRoot.setAttribute("data-rescue-input", "disabled");
+        }
+        return false;
+      }
+      CrabScene.activate();
+    }
     bindRescuePointerInput(canvas);
-    renderCrabFrame();
+    syncCrabScene();
     var progress = document.getElementById("ocean-rescue-rescue-progress");
     if (progress) {
       progress.textContent = "Rock 1 of 3";
@@ -1926,7 +1987,11 @@
       }, Crab.Constants.holdDurationMs);
     }
     hideAssistHand();
-    renderCrabFrame();
+    if (CrabScene && CrabScene.isMounted()) {
+      syncCrabScene({ active: true, x: mapped.x, y: mapped.y });
+    } else {
+      renderCrabFrame();
+    }
     updateCrabRootMarkers();
     if (typeof event.preventDefault === "function") {
       event.preventDefault();
@@ -1978,7 +2043,11 @@
       updateSeaTurtleRootMarkers();
     } else if (Crab && missionId === Crab.MissionId) {
       Crab.pointerMove(event.pointerId, mapped.x, mapped.y);
-      renderCrabFrame();
+      if (CrabScene && CrabScene.isMounted()) {
+        syncCrabScene({ active: true, x: mapped.x, y: mapped.y });
+      } else {
+        renderCrabFrame();
+      }
       updateCrabRootMarkers();
     } else if (YoungWhale && missionId === YoungWhale.MissionId) {
       YoungWhale.pointerMove(event.pointerId, mapped.x, mapped.y);
@@ -2029,7 +2098,11 @@
       crabPointerId = null;
       crabPointerCaptureEl = null;
       if (result && result.accepted) {
-        renderCrabFrame();
+        if (CrabScene && CrabScene.isMounted()) {
+          syncCrabScene({ active: false, x: null, y: null });
+        } else {
+          renderCrabFrame();
+        }
         updateCrabRootMarkers();
         routeCrabFeedback(result);
       }
@@ -2122,7 +2195,11 @@
     releaseCrabPointerCapture(event.pointerId);
     crabPointerId = null;
     crabPointerCaptureEl = null;
-    renderCrabFrame();
+    if (CrabScene && CrabScene.isMounted()) {
+      syncCrabScene({ active: false, x: null, y: null });
+    } else {
+      renderCrabFrame();
+    }
     updateCrabRootMarkers();
   }
 
@@ -2479,7 +2556,11 @@
     if (!result.accepted) {
       return;
     }
-    renderCrabFrame();
+    if (CrabScene && CrabScene.isMounted()) {
+      syncCrabScene();
+    } else {
+      renderCrabFrame();
+    }
     updateCrabRootMarkers();
   }
 
@@ -2730,7 +2811,11 @@
       hideAssistHand();
     }
     updateCrabRootMarkers();
-    renderCrabFrame();
+    if (CrabScene && CrabScene.isMounted()) {
+      syncCrabScene();
+    } else {
+      renderCrabFrame();
+    }
   }
 
   function completeCrabSuccess() {
@@ -2758,7 +2843,11 @@
     if (status) {
       status.textContent = Crab.Dialogues[2];
     }
-    renderCrabFrame();
+    if (CrabScene && CrabScene.isMounted()) {
+      CrabScene.sync(Crab.getSnapshot());
+    } else {
+      renderCrabFrame();
+    }
     startMissionSuccessPresentation(sequence);
     syncPauseButton();
   }
@@ -3157,6 +3246,12 @@
     if (SeaTurtleScene && SeaTurtleScene.isMounted()) {
       SeaTurtleScene.exit();
     }
+    if (CrabScene && CrabScene.isMounted()) {
+      CrabScene.exit();
+    }
+    if (CrabScene && CrabScene.isMounted()) {
+      CrabScene.exit();
+    }
     clearSeaTurtleFeedbackTimer();
     clearCrabFeedbackTimer();
     clearYoungWhaleFeedbackTimer();
@@ -3393,6 +3488,9 @@
     if (SeaTurtleScene && SeaTurtleScene.isMounted()) {
       SeaTurtleScene.pause();
     }
+    if (CrabScene && CrabScene.isMounted()) {
+      CrabScene.pause();
+    }
     freezeAllPauseTimers();
     cancelPausePointerInteractions();
     clearCrabHoldTimer();
@@ -3574,6 +3672,9 @@
     }
     if (SeaTurtleScene && SeaTurtleScene.isMounted()) {
       SeaTurtleScene.resume();
+    }
+    if (CrabScene && CrabScene.isMounted()) {
+      CrabScene.resume();
     }
     var overlay = document.getElementById("ocean-rescue-pause-overlay");
     if (overlay) {

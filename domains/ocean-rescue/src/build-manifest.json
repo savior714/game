@@ -57,6 +57,13 @@
       "depends_on": []
     },
     {
+      "file": "travel-scene.js",
+      "namespace": "OceanRescue.TravelScene",
+      "depends_on": [
+        "OceanRescue.RenderRuntime"
+      ]
+    },
+    {
       "file": "rescue.js",
       "namespace": "OceanRescue.Rescue",
       "depends_on": []
@@ -103,6 +110,7 @@
         "OceanRescue.Rescue",
         "OceanRescue.SeaTurtle",
         "OceanRescue.SeaTurtleScene",
+        "OceanRescue.TravelScene",
         "OceanRescue.Crab",
         "OceanRescue.YoungWhale",
         "OceanRescue.MissionSuccess"

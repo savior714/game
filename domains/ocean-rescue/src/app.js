@@ -12,6 +12,7 @@
   var Crab = window.OceanRescue.Crab || null;
   var YoungWhale = window.OceanRescue.YoungWhale || null;
   var MissionSuccess = window.OceanRescue.MissionSuccess || null;
+  var TravelScene = window.OceanRescue.TravelScene || null;
 
   var controlsBound = false;
   var launchSequenceCounter = 0;
@@ -748,8 +749,15 @@
     if (!Travel) {
       return;
     }
-    if (RenderRuntime && RenderRuntime.isReady()) {
-      RenderRuntime.setLegacyBridgeVisible(true);
+    if (RenderRuntime && RenderRuntime.isReady() && TravelScene) {
+      try {
+        TravelScene.prepare();
+        TravelScene.activate();
+      } catch (error) {
+        if (RenderRuntime) {
+          RenderRuntime.setLegacyBridgeVisible(true);
+        }
+      }
     }
     Travel.start();
     startTerrainRuntime();
@@ -766,7 +774,6 @@
     travelCanvas = inputCanvas;
     travelPaintCanvas = resolvePaintCanvas();
     bindTravelPointerInput(inputCanvas);
-    renderTravelFrame(travelPaintCanvas, resolveTravelContext());
 
     if (typeof window.requestAnimationFrame === "function") {
       travelFrameId = window.requestAnimationFrame(function (timestamp) {
@@ -815,7 +822,11 @@
       renderRescueSiteFrame(travelPaintCanvas, resolveTravelContext());
       return;
     }
-    renderTravelFrame(travelPaintCanvas, resolveTravelContext());
+    if (TravelScene && TravelScene.isMounted()) {
+      var travelSnap = Travel.getSnapshot();
+      var terrainSnap = Terrain && Terrain.getSnapshot() ? Terrain.getSnapshot() : null;
+      TravelScene.sync(travelSnap, terrainSnap);
+    }
     if (typeof window.requestAnimationFrame === "function") {
       travelFrameId = window.requestAnimationFrame(function (nextTimestamp) {
         travelAnimationFrame(runId, nextTimestamp);
@@ -1032,148 +1043,6 @@
     resetPointerGesture();
   }
 
-  function renderTravelFrame(canvas, context) {
-    if (!canvas || !context) {
-      return;
-    }
-    if (typeof context.clearRect !== "function") {
-      return;
-    }
-    var snapshot = Travel.getSnapshot();
-    var terrainSnapshot = Terrain ? Terrain.getSnapshot() : null;
-    var width = canvas.width;
-    var height = canvas.height;
-    if (typeof width !== "number" || typeof height !== "number") {
-      return;
-    }
-    context.clearRect(0, 0, width, height);
-    drawTravelBackground(context, width, height);
-    drawTravelWater(context, width, height, snapshot.distance);
-    if (terrainSnapshot && terrainSnapshot.active) {
-      drawTravelTerrain(context, terrainSnapshot, snapshot.distance);
-    }
-    drawTravelGup(context, width, height, snapshot.y, terrainSnapshot);
-    if (terrainSnapshot && terrainSnapshot.collisionActive) {
-      drawCollisionFeedback(context, terrainSnapshot, snapshot.y);
-    }
-    updateRootCollisionMarkers(terrainSnapshot);
-    presentPaintFrame();
-  }
-
-  function drawTravelBackground(context, width, height) {
-    context.fillStyle = "#0a1e33";
-    context.fillRect(0, 0, width, height);
-    context.fillStyle = "#123451";
-    context.fillRect(0, 0, width, Math.floor(height * 0.45));
-  }
-
-  function drawTravelWater(context, width, height, distance) {
-    var spacing = 96;
-    var offset = distance % spacing;
-    context.fillStyle = "rgba(180, 220, 255, 0.35)";
-    var x = offset;
-    while (x < width) {
-      context.beginPath();
-      context.arc(x, height * 0.62, 5, 0, Math.PI * 2);
-      context.fill();
-      x += spacing;
-    }
-  }
-
-  function drawTravelTerrain(context, terrainSnapshot, distance) {
-    var layout = Terrain.getLayout(terrainSnapshot.missionId);
-    if (layout === null) {
-      return;
-    }
-    var palette = terrainPalettes[layout.environment] || terrainPalettes["coral-reef"];
-    var obstacles = layout.obstacles;
-    for (var i = 0; i < obstacles.length; i += 1) {
-      drawTerrainObstacle(context, obstacles[i], distance, palette);
-    }
-  }
-
-  function drawTerrainObstacle(context, obstacle, distance, palette) {
-    var screenX = obstacle.worldX - distance;
-    var rectX = screenX - obstacle.width / 2;
-    var rectY = obstacle.y - obstacle.height / 2;
-    var inset = 8 + (obstacle.kind.length % 5);
-    context.fillStyle = palette[0];
-    context.fillRect(rectX, rectY, obstacle.width, obstacle.height);
-    context.fillStyle = palette[1];
-    context.fillRect(
-      rectX + inset,
-      rectY + inset,
-      obstacle.width - inset * 2,
-      obstacle.height - inset * 2
-    );
-  }
-
-  function drawCollisionFeedback(context, terrainSnapshot, travelY) {
-    var x = 320 - terrainSnapshot.knockbackOffsetX;
-    var y = travelY + terrainSnapshot.shakeOffsetY;
-    context.fillStyle = "rgba(255, 255, 255, 0.30)";
-    context.beginPath();
-    context.arc(x, y, 54, 0, Math.PI * 2);
-    context.fill();
-    context.fillStyle = "#ffffff";
-    context.font = "16px system-ui, sans-serif";
-    context.textAlign = "center";
-    context.fillText("Whoa!", x, y - 48);
-  }
-
-  function updateRootCollisionMarkers(terrainSnapshot) {
-    if (!Terrain) {
-      return;
-    }
-    if (!terrainSnapshot || !terrainSnapshot.active) {
-      return;
-    }
-    var root = document.getElementById("ocean-rescue-root");
-    if (!root) {
-      return;
-    }
-    root.setAttribute(
-      "data-travel-collision-count",
-      String(terrainSnapshot.collisionCount)
-    );
-    root.setAttribute(
-      "data-travel-collision-active",
-      terrainSnapshot.collisionActive ? "true" : "false"
-    );
-    root.setAttribute(
-      "data-travel-slowed",
-      terrainSnapshot.forwardSpeedMultiplier < 1 ? "true" : "false"
-    );
-    if (terrainSnapshot.lastCollisionObstacleId !== null) {
-      root.setAttribute(
-        "data-travel-last-collision-obstacle-id",
-        terrainSnapshot.lastCollisionObstacleId
-      );
-    } else {
-      root.removeAttribute("data-travel-last-collision-obstacle-id");
-    }
-  }
-
-  function drawTravelGup(context, width, height, y, terrainSnapshot) {
-    var gupSnapshot = Gups.getSnapshot();
-    var gup = gupById(gupSnapshot.lastGupId);
-    var name = gup === null ? String(gupSnapshot.lastGupId) : gup.name;
-    var x = 320;
-    var drawY = y;
-    if (terrainSnapshot && terrainSnapshot.active) {
-      x = 320 - terrainSnapshot.knockbackOffsetX;
-      drawY = y + terrainSnapshot.shakeOffsetY;
-    }
-    context.beginPath();
-    context.arc(x, drawY, 36, 0, Math.PI * 2);
-    context.fillStyle = "#ffd166";
-    context.fill();
-    context.fillStyle = "#0a1e33";
-    context.font = "18px system-ui, sans-serif";
-    context.textAlign = "center";
-    context.fillText(name, x, drawY);
-  }
-
   function resolveRescueElements() {
     var stage = document.getElementById("ocean-rescue-stage");
     var canvas = resolveVisibleInputCanvas();
@@ -1291,6 +1160,10 @@
       tutorialSkipped: false
     };
     activeRescueSequence = sequence;
+
+    if (TravelScene && TravelScene.isMounted()) {
+      TravelScene.exit();
+    }
 
     if (SeaTurtle && mission.id === SeaTurtle.MissionId && RenderRuntime && RenderRuntime.isReady()) {
       if (!SeaTurtleScene) {

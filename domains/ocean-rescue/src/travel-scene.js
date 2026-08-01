@@ -57,6 +57,14 @@
     "rocky-canyon": 0x6b7a8a
   };
 
+  var OBSTACLE_OUTER_TINT = 0x04151F;
+  var OBSTACLE_RIM_TINT = 0xFFF7D6;
+  var OBSTACLE_BODY_TINT = 0xFFFFFF;
+  var OBSTACLE_RIM_SCALE = 1.065;
+  var OBSTACLE_OUTER_SCALE = 1.12;
+  var OBSTACLE_RIM_ALPHA = 0.82;
+  var OBSTACLE_OUTER_ALPHA = 0.9;
+
   var WIDTH = 1280;
   var HEIGHT = 720;
   var MAX_DELTA_MS = 50;
@@ -196,7 +204,10 @@
       bubbles: makeSprite("fx.bubbles", "travel-bubbles"),
       caustic: makeSprite("fx.caustic", "travel-caustic"),
       collisionFlash: null,
-      obstacleSprites: []
+      obstacleSprites: [],
+      obstacleGroups: [],
+      obstacleOuters: [],
+      obstacleRims: []
     };
 
     for (var i = 0; i < 4; i += 1) {
@@ -387,6 +398,69 @@
     return OBSTACLE_KIND_ALIASES[kind] || null;
   }
 
+  function createObstacleGroup(index, kind) {
+    var alias = resolveObstacleAlias(kind);
+    if (!alias) {
+      throw new Error("Missing obstacle kind alias: " + kind);
+    }
+    var texture = RenderRuntime.getTexture(alias);
+    if (!texture) {
+      throw new Error(
+        "Missing authored obstacle texture: " + alias
+      );
+    }
+
+    var group = new PIXI.Container();
+    group.label = "travel-obstacle-" + index;
+    group.name = "travel-obstacle-" + index;
+    group.eventMode = "none";
+    group.visible = false;
+
+    var outerSprite = new PIXI.Sprite(texture);
+    outerSprite.label = "travel-obstacle-" + index + "-outer";
+    outerSprite.name = outerSprite.label;
+    outerSprite.eventMode = "none";
+    outerSprite.tint = OBSTACLE_OUTER_TINT;
+    outerSprite.alpha = OBSTACLE_OUTER_ALPHA;
+    if (outerSprite.anchor && texture.defaultAnchor) {
+      outerSprite.anchor.copyFrom(texture.defaultAnchor);
+    }
+
+    var rimSprite = new PIXI.Sprite(texture);
+    rimSprite.label = "travel-obstacle-" + index + "-rim";
+    rimSprite.name = rimSprite.label;
+    rimSprite.eventMode = "none";
+    rimSprite.tint = OBSTACLE_RIM_TINT;
+    rimSprite.alpha = OBSTACLE_RIM_ALPHA;
+    if (rimSprite.anchor && texture.defaultAnchor) {
+      rimSprite.anchor.copyFrom(texture.defaultAnchor);
+    }
+
+    var bodySprite = new PIXI.Sprite(texture);
+    bodySprite.label = "travel-obstacle-" + index;
+    bodySprite.name = bodySprite.label;
+    bodySprite.eventMode = "none";
+    bodySprite.tint = OBSTACLE_BODY_TINT;
+    bodySprite.alpha = 1.0;
+    if (bodySprite.anchor && texture.defaultAnchor) {
+      bodySprite.anchor.copyFrom(texture.defaultAnchor);
+    }
+
+    group.addChild(outerSprite);
+    group.addChild(rimSprite);
+    group.addChild(bodySprite);
+
+    RenderRuntime.getContainer("gameplayWorld").addChild(group);
+
+    return {
+      group: group,
+      outer: outerSprite,
+      rim: rimSprite,
+      body: bodySprite,
+      texture: texture
+    };
+  }
+
   function syncObstacles(travelSnap, terrainSnap) {
     if (!nodes || !Terrain || !travelSnap || !terrainSnap || !terrainSnap.active) {
       return;
@@ -395,89 +469,123 @@
     if (!layout || !layout.obstacles) {
       return;
     }
-    var env = layout.environment;
-    var tint = ENVIRONMENT_PALETTES[env] || ENVIRONMENT_PALETTES["coral-reef"];
     var travelDistance = typeof travelSnap.distance === "number" ? travelSnap.distance : 0;
 
-    while (nodes.obstacleSprites.length < layout.obstacles.length) {
-      var obstacleKind = layout.obstacles[nodes.obstacleSprites.length]
-        ? layout.obstacles[nodes.obstacleSprites.length].kind
+    while (nodes.obstacleGroups.length < layout.obstacles.length) {
+      var obstacleKind = layout.obstacles[nodes.obstacleGroups.length]
+        ? layout.obstacles[nodes.obstacleGroups.length].kind
         : null;
-      var probeAlias = obstacleKind ? resolveObstacleAlias(obstacleKind) : null;
-      var probeTexture = probeAlias ? RenderRuntime.getTexture(probeAlias) : null;
-      if (!probeTexture) {
-        throw new Error(
-          "Missing authored obstacle texture: " + (probeAlias || obstacleKind)
-        );
-      }
-      var obstacleSprite = new PIXI.Sprite(probeTexture);
-      obstacleSprite.label = "travel-obstacle-" + nodes.obstacleSprites.length;
-      obstacleSprite.name = obstacleSprite.label;
-      obstacleSprite.eventMode = "none";
-      obstacleSprite.visible = false;
-      RenderRuntime.getContainer("gameplayWorld").addChild(obstacleSprite);
-      nodes.obstacleSprites.push(obstacleSprite);
+      var created = createObstacleGroup(nodes.obstacleGroups.length, obstacleKind);
+      nodes.obstacleGroups.push(created.group);
+      nodes.obstacleOuters.push(created.outer);
+      nodes.obstacleRims.push(created.rim);
+      nodes.obstacleSprites.push(created.body);
     }
 
     var visibleCount = 0;
     var nonFiniteCount = 0;
     var firstVisibleId = "";
     var firstVisibleAlias = "";
+    var bodyVisibleCount = 0;
+    var rimVisibleCount = 0;
+    var outerVisibleCount = 0;
 
     for (var i = 0; i < layout.obstacles.length; i += 1) {
       var obstacle = layout.obstacles[i];
-      var sprite = nodes.obstacleSprites[i];
+      var group = nodes.obstacleGroups[i];
+      var outer = nodes.obstacleOuters[i];
+      var rim = nodes.obstacleRims[i];
+      var body = nodes.obstacleSprites[i];
       var screenX = obstacle.worldX - travelDistance;
       var screenY = obstacle.y;
       if (!isFinite(screenX) || !isFinite(screenY)) {
         nonFiniteCount += 1;
-        sprite.visible = false;
+        group.visible = false;
+        outer.visible = false;
+        rim.visible = false;
+        body.visible = false;
         continue;
       }
       if (screenX < -obstacle.width || screenX > WIDTH + obstacle.width) {
-        sprite.visible = false;
+        group.visible = false;
+        outer.visible = false;
+        rim.visible = false;
+        body.visible = false;
         continue;
       }
       var alias = resolveObstacleAlias(obstacle.kind);
       var texture = alias ? RenderRuntime.getTexture(alias) : null;
-      if (texture && sprite instanceof PIXI.Sprite) {
-        sprite.texture = texture;
-        if (sprite.anchor && texture.defaultAnchor) {
-          sprite.anchor.copyFrom(texture.defaultAnchor);
-        } else if (sprite.anchor) {
-          sprite.anchor.set(0.5, 0.5);
+      if (texture && group instanceof PIXI.Container) {
+        outer.texture = texture;
+        rim.texture = texture;
+        body.texture = texture;
+        if (outer.anchor && texture.defaultAnchor) {
+          outer.anchor.copyFrom(texture.defaultAnchor);
+        } else if (outer.anchor) {
+          outer.anchor.set(0.5, 0.5);
+        }
+        if (rim.anchor && texture.defaultAnchor) {
+          rim.anchor.copyFrom(texture.defaultAnchor);
+        } else if (rim.anchor) {
+          rim.anchor.set(0.5, 0.5);
+        }
+        if (body.anchor && texture.defaultAnchor) {
+          body.anchor.copyFrom(texture.defaultAnchor);
+        } else if (body.anchor) {
+          body.anchor.set(0.5, 0.5);
         }
       } else if (!texture) {
-        sprite.visible = false;
+        group.visible = false;
+        outer.visible = false;
+        rim.visible = false;
+        body.visible = false;
         continue;
       }
-      var frameWidth = (sprite.texture && sprite.texture.frame) ? sprite.texture.frame.width : 1;
-      var frameHeight = (sprite.texture && sprite.texture.frame) ? sprite.texture.frame.height : 1;
+      var frameWidth = (body.texture && body.texture.frame) ? body.texture.frame.width : 1;
+      var frameHeight = (body.texture && body.texture.frame) ? body.texture.frame.height : 1;
       var scaleX = obstacle.width / frameWidth;
       var scaleY = obstacle.height / frameHeight;
       var scaleRatio = Math.min(scaleX, scaleY);
-      setScale(sprite, scaleRatio, scaleRatio);
-      sprite.position.set(screenX, screenY);
-      sprite.tint = tint;
-      sprite.visible = true;
+      var outerScale = scaleRatio * OBSTACLE_OUTER_SCALE;
+      var rimScale = scaleRatio * OBSTACLE_RIM_SCALE;
+      setScale(outer, scaleRatio * OBSTACLE_OUTER_SCALE, scaleRatio * OBSTACLE_OUTER_SCALE);
+      setScale(rim, scaleRatio * OBSTACLE_RIM_SCALE, scaleRatio * OBSTACLE_RIM_SCALE);
+      setScale(body, scaleRatio, scaleRatio);
+      group.position.set(screenX, screenY);
+      body.tint = OBSTACLE_BODY_TINT;
+      group.visible = true;
+      outer.visible = true;
+      rim.visible = true;
+      body.visible = true;
       visibleCount += 1;
+      bodyVisibleCount += 1;
+      rimVisibleCount += 1;
+      outerVisibleCount += 1;
       if (!firstVisibleId) {
         firstVisibleId = obstacle.id || "";
         firstVisibleAlias = alias || "";
       }
     }
 
-    for (var j = layout.obstacles.length; j < nodes.obstacleSprites.length; j += 1) {
+    for (var j = layout.obstacles.length; j < nodes.obstacleGroups.length; j += 1) {
+      nodes.obstacleGroups[j].visible = false;
+      nodes.obstacleOuters[j].visible = false;
+      nodes.obstacleRims[j].visible = false;
       nodes.obstacleSprites[j].visible = false;
     }
 
     setDiagnostic("data-travel-scene-obstacle-renderer", "sprite");
+    setDiagnostic("data-travel-scene-obstacle-boundary-mode", "dual-silhouette");
     setDiagnostic("data-travel-scene-placeholder-obstacle-count", "0");
     setDiagnostic("data-travel-scene-obstacle-alias-count", String(Object.keys(OBSTACLE_KIND_ALIASES).length));
     setDiagnostic("data-travel-scene-visible-obstacle-count", String(visibleCount));
+    setDiagnostic("data-travel-scene-visible-obstacle-body-count", String(bodyVisibleCount));
+    setDiagnostic("data-travel-scene-visible-obstacle-rim-count", String(rimVisibleCount));
+    setDiagnostic("data-travel-scene-visible-obstacle-outer-count", String(outerVisibleCount));
     setDiagnostic("data-travel-scene-nonfinite-obstacle-count", String(nonFiniteCount));
     setDiagnostic("data-travel-scene-first-visible-obstacle-id", firstVisibleId);
     setDiagnostic("data-travel-scene-first-visible-obstacle-alias", firstVisibleAlias);
+    setDiagnostic("data-travel-scene-obstacle-body-tint", "ffffff");
   }
 
   function syncCollisionFeedback(terrainSnap) {
@@ -701,8 +809,17 @@
       if (nodes.collisionFlash) {
         removeOwnedChild(RenderRuntime.getContainer("effects"), nodes.collisionFlash);
       }
-      for (var j = 0; j < nodes.obstacleSprites.length; j += 1) {
-        removeOwnedChild(RenderRuntime.getContainer("gameplayWorld"), nodes.obstacleSprites[j]);
+      for (var j = 0; j < nodes.obstacleGroups.length; j += 1) {
+        removeOwnedChild(RenderRuntime.getContainer("gameplayWorld"), nodes.obstacleGroups[j]);
+        if (nodes.obstacleOuters[j]) {
+          removeOwnedChild(nodes.obstacleGroups[j], nodes.obstacleOuters[j]);
+        }
+        if (nodes.obstacleRims[j]) {
+          removeOwnedChild(nodes.obstacleGroups[j], nodes.obstacleRims[j]);
+        }
+        if (nodes.obstacleSprites[j]) {
+          removeOwnedChild(nodes.obstacleGroups[j], nodes.obstacleSprites[j]);
+        }
       }
     }
     nodes = null;

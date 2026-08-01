@@ -97,7 +97,7 @@ def _sha256(path: Path) -> str:
 
 
 def _collect_readiness(pg):
-    """Read-only readiness diagnostics plus live obstacle sprite summary."""
+    """Read-only readiness diagnostics plus live obstacle group summary."""
     return pg.evaluate(
         """() => {
       const root = document.getElementById('ocean-rescue-root');
@@ -114,7 +114,12 @@ def _collect_readiness(pg):
         'data-travel-scene-environment',
         'data-travel-scene-obstacle-count',
         'data-travel-scene-obstacle-renderer',
+        'data-travel-scene-obstacle-boundary-mode',
         'data-travel-scene-visible-obstacle-count',
+        'data-travel-scene-visible-obstacle-body-count',
+        'data-travel-scene-visible-obstacle-outer-count',
+        'data-travel-scene-visible-obstacle-rim-count',
+        'data-travel-scene-obstacle-body-tint',
         'data-travel-scene-nonfinite-obstacle-count',
         'data-travel-scene-placeholder-obstacle-count',
         'data-travel-scene-first-visible-obstacle-id',
@@ -125,23 +130,32 @@ def _collect_readiness(pg):
         diag[name] = attr(name);
       }
       const gw = OceanRescue.RenderRuntime.getContainer('gameplayWorld');
-      const sprites = [];
+      const groups = [];
       for (const child of gw.children) {
-        if (child && String(child.label).indexOf('travel-obstacle-') === 0) {
-          const t = child.texture;
-          sprites.push({
+        if (child && String(child.label).indexOf('travel-obstacle-') === 0 && child.children && child.children.length >= 3) {
+          const layerInfo = [];
+          for (const layer of child.children) {
+            const t = layer.texture;
+            layerInfo.push({
+              label: layer.label,
+              isSprite: layer instanceof PIXI.Sprite,
+              tint: layer.tint !== undefined ? layer.tint : null,
+              alpha: layer.alpha,
+              scale: { x: layer.scale.x, y: layer.scale.y },
+              eventMode: layer.eventMode,
+              visible: layer.visible,
+              hasFrame: !!(t && t.frame && t.frame.width > 0 && t.frame.height > 0)
+            });
+          }
+          groups.push({
             label: child.label,
-            isSprite: child instanceof PIXI.Sprite,
-            hasFrame: !!(t && t.frame && t.frame.width > 0 && t.frame.height > 0),
-            frameWidth: t && t.frame ? t.frame.width : 0,
-            frameHeight: t && t.frame ? t.frame.height : 0,
-            textureLabel: t ? t.label : null,
-            sourceWidth: t && t.source ? t.source.width : 0,
-            sourceHeight: t && t.source ? t.source.height : 0,
+            isContainer: child instanceof PIXI.Container,
+            childCount: child.children.length,
+            layers: layerInfo,
             x: child.x,
             y: child.y,
             visible: child.visible,
-            renderable: child.renderable
+            groupScale: { x: child.scale.x, y: child.scale.y }
           });
         }
       }
@@ -149,7 +163,7 @@ def _collect_readiness(pg):
       const terrain = OceanRescue.Terrain.getSnapshot();
       return {
         diag: diag,
-        sprites: sprites,
+        groups: groups,
         travelDistance: travel.distance,
         travelY: travel.y,
         terrainCollisionCount: terrain.collisionCount,
@@ -245,7 +259,7 @@ def _run_scenario(pg, backend, run_index, base_url, screenshot_path):
 
     readiness = _collect_readiness(pg)
     diag = readiness["diag"]
-    sprites = readiness["sprites"]
+    groups = readiness["groups"]
     assert diag["data-ocean-rescue-ready"] == "true"
     assert diag["data-render-runtime"] == "ready"
     assert diag["data-travel-scene"] == "active"
@@ -258,8 +272,10 @@ def _run_scenario(pg, backend, run_index, base_url, screenshot_path):
     assert diag["data-travel-scene-gup-id"] == "gup-x"
     assert diag["data-travel-scene-obstacle-count"] == "5"
 
-    # Sprite-backed authored obstacles (criterion: sprite renderer, no placeholder).
+    # 3-layer boundary mode (outer silhouette + inner rim + natural-color body).
     assert diag["data-travel-scene-obstacle-renderer"] == "sprite"
+    assert diag["data-travel-scene-obstacle-boundary-mode"] == "dual-silhouette"
+    assert diag["data-travel-scene-obstacle-body-tint"] == "ffffff"
     assert diag["data-travel-scene-placeholder-obstacle-count"] == "0"
     assert diag["data-travel-scene-nonfinite-obstacle-count"] == "0"
     assert diag["data-travel-scene-visible-obstacle-count"] in ("1", "2", "3")
@@ -269,17 +285,58 @@ def _run_scenario(pg, backend, run_index, base_url, screenshot_path):
         diag["data-travel-scene-first-visible-obstacle-alias"] == "terrain.coral-column"
     )
 
-    # Live PIXI.Sprite in gameplayWorld with atlas-backed texture.
-    assert len(sprites) == 5, f"expected 5 obstacle sprites, got {len(sprites)}"
-    first = sprites[0]
-    assert first["isSprite"] is True
+    # Verify body/rim/outer visible counts match.
+    body_count = int(diag["data-travel-scene-visible-obstacle-body-count"] or "0")
+    outer_count = int(diag["data-travel-scene-visible-obstacle-outer-count"] or "0")
+    rim_count = int(diag["data-travel-scene-visible-obstacle-rim-count"] or "0")
+    total_count = int(diag["data-travel-scene-visible-obstacle-count"] or "0")
+    assert body_count > 0, "must have visible body obstacles"
+    assert body_count == rim_count, f"body count ({body_count}) must equal rim count ({rim_count})"
+    assert body_count == outer_count, f"body count ({body_count}) must equal outer count ({outer_count})"
+    assert body_count == total_count, f"body count ({body_count}) must equal total count ({total_count})"
+
+    # Live PIXI.Container groups with 3 layers in gameplayWorld.
+    assert len(groups) == 5, f"expected 5 obstacle groups, got {len(groups)}"
+    first = groups[0]
+    assert first["isContainer"] is True, "obstacle must be a PIXI.Container group"
+    assert first["childCount"] == 3, f"expected 3 layers, got {first['childCount']}"
     assert first["visible"] is True
-    assert first["renderable"] is True
-    assert first["hasFrame"] is True
-    assert first["textureLabel"] == "terrain.coral-column"
-    assert first["frameWidth"] > 0 and first["frameHeight"] > 0
-    assert first["sourceWidth"] > 0 and first["sourceHeight"] > 0
     assert first["x"] > 0 and first["y"] > 0
+
+    # Verify layer structure: outer, rim, body.
+    layers = first["layers"]
+    assert len(layers) == 3
+    assert "outer" in layers[0]["label"], f"first layer must be outer, got {layers[0]['label']}"
+    assert "rim" in layers[1]["label"], f"second layer must be rim, got {layers[1]['label']}"
+    assert layers[2]["label"] == "travel-obstacle-0", f"third layer must be body, got {layers[2]['label']}"
+
+    # All layers are sprites with atlas-backed textures.
+    for layer in layers:
+        assert layer["isSprite"] is True, f"layer {layer['label']} must be a Sprite"
+        assert layer["hasFrame"] is True, f"layer {layer['label']} must have a frame"
+        assert layer["eventMode"] == "none", f"layer {layer['label']} eventMode must be none"
+        assert layer["visible"] is True
+
+    # Body tint is white (0xFFFFFF = 16777215).
+    body_layer = layers[2]
+    assert body_layer["tint"] == 0xFFFFFF, f"body tint must be 0xFFFFFF, got {body_layer['tint']}"
+    assert body_layer["alpha"] == 1.0, f"body alpha must be 1.0, got {body_layer['alpha']}"
+
+    # Inner rim tint is warm-white (0xFFF7D6 = 16825430).
+    rim_layer = layers[1]
+    assert rim_layer["tint"] == 0xFFF7D6, f"rim tint must be 0xFFF7D6, got {rim_layer['tint']}"
+
+    # Outer boundary tint is deep-ocean (0x04151F = 267551).
+    outer_layer = layers[0]
+    assert outer_layer["tint"] == 0x04151F, f"outer tint must be 0x04151F, got {outer_layer['tint']}"
+
+    # Scale hierarchy: outer > rim > body (absolute scales).
+    assert outer_layer["scale"]["x"] > rim_layer["scale"]["x"], "outer absolute scale must be > rim"
+    assert rim_layer["scale"]["x"] > body_layer["scale"]["x"], "rim absolute scale must be > body"
+
+    # All layers share the same texture.
+    textures = [l["hasFrame"] for l in layers]
+    assert all(textures), "all layers must have valid textures"
 
     # Readiness evidence: one 1280x720 screenshot per backend while travel is
     # active and the first authored obstacle is on screen.
@@ -361,7 +418,7 @@ def _run_scenario(pg, backend, run_index, base_url, screenshot_path):
         "backend": backend,
         "run_index": run_index,
         "readiness": readiness,
-        "sprites": sprites,
+        "groups": groups,
         "collision": collision,
         "arrival": arrival,
         "movement": {"d1": d1, "d2": d2, "x1": x1, "x2": x2},
@@ -415,13 +472,16 @@ class TestTravelObstacleBrowserAcceptance:
                     "screenshot_sha256": sha,
                     "binary_diagnostics": readiness["diag"],
                     "obstacle_identity": {
-                        "count": len(readiness["sprites"]),
+                        "count": len(readiness["groups"]),
                         "first": {
-                            "label": readiness["sprites"][0]["label"],
-                            "textureLabel": readiness["sprites"][0]["textureLabel"],
-                            "visible": readiness["sprites"][0]["visible"],
-                            "isSprite": readiness["sprites"][0]["isSprite"],
-                            "hasFrame": readiness["sprites"][0]["hasFrame"],
+                            "label": readiness["groups"][0]["label"],
+                            "isContainer": readiness["groups"][0]["isContainer"],
+                            "childCount": readiness["groups"][0]["childCount"],
+                            "visible": readiness["groups"][0]["visible"],
+                            "layers": [
+                                {"label": l["label"], "isSprite": l["isSprite"], "visible": l["visible"], "hasFrame": l["hasFrame"]}
+                                for l in readiness["groups"][0]["layers"]
+                            ],
                         },
                     },
                     "collision": result["collision"],
@@ -458,7 +518,12 @@ class TestTravelObstacleBrowserAcceptance:
         stable = [
             "data-render-backend",
             "data-travel-scene-obstacle-renderer",
+            "data-travel-scene-obstacle-boundary-mode",
+            "data-travel-scene-obstacle-body-tint",
             "data-travel-scene-visible-obstacle-count",
+            "data-travel-scene-visible-obstacle-body-count",
+            "data-travel-scene-visible-obstacle-outer-count",
+            "data-travel-scene-visible-obstacle-rim-count",
             "data-travel-scene-nonfinite-obstacle-count",
             "data-travel-scene-placeholder-obstacle-count",
             "data-travel-scene-first-visible-obstacle-id",

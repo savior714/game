@@ -185,7 +185,7 @@ function confirmResetStats() { if (confirm('누적 기록을 모두 지울까요
    색종이
    ═══════════════════════════════════ */
 function spawnConfetti() {
-  const items = '🧪','🧬','🔬','🌍','🌟','✨';
+  const items = ['🧪','🧬','🔬','🌍','🌟','✨'];
   for (let i = 0; i < 8; i++) {
     setTimeout(() => {
       const el = ParticlePool.acquire('confetti-emoji');

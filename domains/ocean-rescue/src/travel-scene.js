@@ -351,12 +351,32 @@
     nodes.bubbles.scale.set(scalePulse, scalePulse);
   }
 
-  function syncSubmarine(travelY) {
+  function getCollisionVisualOffset(terrainSnap) {
+    if (!terrainSnap || !terrainSnap.collisionActive) {
+      return { knockbackX: 0, shakeY: 0 };
+    }
+    if (lastCollisionId !== terrainSnap.lastCollisionObstacleId) {
+      collisionEffectStart = activeTime;
+      lastCollisionId = terrainSnap.lastCollisionObstacleId;
+    }
+    var elapsed = activeTime - collisionEffectStart;
+    var envelopeDuration = 380;
+    var normalized = Math.min(1, elapsed / envelopeDuration);
+    var decay = Math.pow(1 - normalized, 2.2);
+    var knockbackX = decay * (terrainSnap.knockbackOffsetX || 0);
+    var shakeY = reducedMotion ? 0 : (terrainSnap.shakeOffsetY || 0) * decay;
+    return { knockbackX: knockbackX, shakeY: shakeY };
+  }
+
+  function syncSubmarine(travelY, terrainSnap) {
     if (!nodes || !nodes.submarine) {
       return;
     }
     var hover = reducedMotion ? 0 : Math.sin(activeTime / 900) * 4;
-    setPosition(nodes.submarine, 260, travelY + hover);
+    var offset = getCollisionVisualOffset(terrainSnap);
+    var baseX = 260 - offset.knockbackX;
+    var baseY = travelY + hover + offset.shakeY;
+    setPosition(nodes.submarine, baseX, baseY);
     nodes.submarine.rotation = reducedMotion ? 0 : Math.sin(activeTime / 1400) * 0.02;
   }
 
@@ -493,7 +513,7 @@
     syncBackground();
     syncSeaweed();
     syncBubbles();
-    syncSubmarine(travelSnap.y);
+    syncSubmarine(travelSnap.y, terrainSnap);
     syncObstacles(travelSnap, terrainSnap);
     syncCollisionFeedback(terrainSnap);
   }

@@ -103,8 +103,14 @@ def _make_harness(script_body: str) -> str:
           }};
           function FakeContainer() {{
             this.children = [];
-            this.position = {{ x: 0, y: 0 }};
-            this.scale = {{ x: 1, y: 1 }};
+            this.position = new FakePoint(0, 0);
+            this.scale = new FakePoint(1, 1);
+            this.rotation = 0;
+            this.alpha = 1;
+            this.visible = true;
+            this.label = "";
+            this.name = "";
+            this.eventMode = "none";
           }}
           FakeContainer.prototype.addChild = function (child) {{ this.children.push(child); }};
           FakeContainer.prototype.addChildAt = function (child, index) {{ this.children.splice(index, 0, child); }};
@@ -112,8 +118,27 @@ def _make_harness(script_body: str) -> str:
             var index = this.children.indexOf(child);
             if (index !== -1) this.children.splice(index, 1);
           }};
+          function FakeGraphics() {{
+            this.position = new FakePoint(0, 0);
+            this.scale = new FakePoint(1, 1);
+            this.rotation = 0;
+            this.alpha = 1;
+            this.visible = true;
+            this.tint = 0xFFFFFF;
+            this.blendMode = "normal";
+            this.label = "";
+            this.name = "";
+            this.eventMode = "none";
+            this.children = [];
+          }}
+          FakeGraphics.prototype.addChild = function (child) {{ this.children.push(child); }};
+          FakeGraphics.prototype.circle = function () {{ return this; }};
+          FakeGraphics.prototype.moveTo = function () {{ return this; }};
+          FakeGraphics.prototype.lineTo = function () {{ return this; }};
+          FakeGraphics.prototype.fill = function () {{ return this; }};
+          FakeGraphics.prototype.stroke = function () {{ return this; }};
 
-          window.PIXI = {{ Sprite: FakeSprite, Texture: function () {{ return new FakeTexture(); }}, Container: FakeContainer }};
+          window.PIXI = {{ Sprite: FakeSprite, Texture: function () {{ return new FakeTexture(); }}, Container: FakeContainer, Graphics: FakeGraphics }};
 
           var RenderRuntime = {{
             isReady: function () {{ return true; }},

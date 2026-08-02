@@ -124,8 +124,29 @@ def _make_harness(script_body: str) -> str:
             var index = this.children.indexOf(child);
             if (index !== -1) this.children.splice(index, 1);
           }};
+          function FakeGraphics() {{
+            this.children = [];
+            this.position = new FakePoint(0, 0);
+            this.position.set = function (x, y) {{ this.x = x; this.y = y; }};
+            this.scale = new FakePoint(1, 1);
+            this.scale.set = function (x, y) {{ this.x = x; this.y = typeof y === "number" ? y : x; }};
+            this.rotation = 0;
+            this.alpha = 1;
+            this.visible = true;
+            this.label = "";
+            this.name = "";
+            this.eventMode = "none";
+            this.tint = 0xFFFFFF;
+            this.blendMode = "normal";
+          }}
+          FakeGraphics.prototype.addChild = function (child) {{ this.children.push(child); }};
+          FakeGraphics.prototype.circle = function () {{ return this; }};
+          FakeGraphics.prototype.moveTo = function () {{ return this; }};
+          FakeGraphics.prototype.lineTo = function () {{ return this; }};
+          FakeGraphics.prototype.fill = function () {{ return this; }};
+          FakeGraphics.prototype.stroke = function () {{ return this; }};
 
-          window.PIXI = {{ Sprite: FakeSprite, Texture: function () {{ return new FakeTexture(); }}, Container: FakeContainer }};
+          window.PIXI = {{ Sprite: FakeSprite, Texture: function () {{ return new FakeTexture(); }}, Container: FakeContainer, Graphics: FakeGraphics }};
 
           var RenderRuntime = {{
             isReady: function () {{ return true; }},

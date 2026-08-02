@@ -83,6 +83,28 @@
   var collisionEffectStart = 0;
   var lastCollisionId = null;
 
+  var impactEffectStart = 0;
+  var impactEffectId = null;
+  var impactEffectMissionId = null;
+  var impactEffectRunning = false;
+  var impactObstacleIndex = -1;
+  var impactContactX = 0;
+  var impactContactY = 0;
+  var impactHandledCollisionCount = -1;
+
+  var IMPACT_TOTAL_MS = 420;
+  var IMPACT_CORE_PEAK_MS = 90;
+  var IMPACT_RAYS_MS = 240;
+  var IMPACT_RING_MS = 380;
+  var IMPACT_PULSE_MS = 220;
+  var IMPACT_OVERLAY_MS = 140;
+  var IMPACT_REDUCED_MS = 180;
+
+  var IMPACT_CORE_COLOR = 0xFFFBE6;
+  var IMPACT_RING_COLOR = 0xFF9F43;
+  var IMPACT_RAYS_COLOR = 0xFFD166;
+  var IMPACT_OVERLAY_TINT = 0xFFF2CC;
+
   function getRoot() {
     return document.getElementById("ocean-rescue-root");
   }
@@ -204,6 +226,11 @@
       bubbles: makeSprite("fx.bubbles", "travel-bubbles"),
       caustic: makeSprite("fx.caustic", "travel-caustic"),
       collisionFlash: null,
+      collisionImpactRoot: null,
+      collisionImpactCore: null,
+      collisionImpactRing: null,
+      collisionImpactRays: null,
+      collisionSubmarineFlash: null,
       obstacleSprites: [],
       obstacleGroups: [],
       obstacleOuters: [],
@@ -225,17 +252,70 @@
       nodes.collisionFlash.visible = false;
     }
 
+    var impactRoot = new PIXI.Container();
+    impactRoot.label = "travel-collision-impact-root";
+    impactRoot.name = "travel-collision-impact-root";
+    impactRoot.eventMode = "none";
+    impactRoot.visible = false;
+    impactRoot.alpha = 0;
+
+    var impactCore = new PIXI.Graphics();
+    impactCore.label = "travel-collision-impact-core";
+    impactCore.name = "travel-collision-impact-core";
+    impactCore.eventMode = "none";
+    impactCore.circle(0, 0, 12).fill(IMPACT_CORE_COLOR);
+
+    var impactRing = new PIXI.Graphics();
+    impactRing.label = "travel-collision-impact-ring";
+    impactRing.name = "travel-collision-impact-ring";
+    impactRing.eventMode = "none";
+    impactRing.circle(0, 0, 30).stroke({ width: 6, color: IMPACT_RING_COLOR });
+
+    var impactRays = new PIXI.Graphics();
+    impactRays.label = "travel-collision-impact-rays";
+    impactRays.name = "travel-collision-impact-rays";
+    impactRays.eventMode = "none";
+    for (var rayIndex = 0; rayIndex < 8; rayIndex += 1) {
+      var rayAngle = (rayIndex / 8) * Math.PI * 2;
+      impactRays.moveTo(Math.cos(rayAngle) * 20, Math.sin(rayAngle) * 20);
+      impactRays.lineTo(Math.cos(rayAngle) * 38, Math.sin(rayAngle) * 38);
+    }
+    impactRays.stroke({ width: 5, color: IMPACT_RAYS_COLOR });
+
+    impactRoot.addChild(impactCore);
+    impactRoot.addChild(impactRing);
+    impactRoot.addChild(impactRays);
+
+    var submarineTexture = RenderRuntime.getTexture("scene.submarine");
+    var submarineFlash = new PIXI.Sprite(submarineTexture);
+    submarineFlash.label = "travel-submarine-impact-flash";
+    submarineFlash.name = "travel-submarine-impact-flash";
+    submarineFlash.eventMode = "none";
+    submarineFlash.visible = false;
+    submarineFlash.alpha = 0;
+    if (submarineFlash.anchor && submarineTexture && submarineTexture.defaultAnchor) {
+      submarineFlash.anchor.copyFrom(submarineTexture.defaultAnchor);
+    }
+
+    nodes.collisionImpactRoot = impactRoot;
+    nodes.collisionImpactCore = impactCore;
+    nodes.collisionImpactRing = impactRing;
+    nodes.collisionImpactRays = impactRays;
+    nodes.collisionSubmarineFlash = submarineFlash;
+
     addChild(far, nodes.waterFar);
     addChild(mid, nodes.reefMid);
     addChild(mid, nodes.passage);
     addChild(mid, nodes.caustic);
     gameplayWorld.addChildAt(nodes.sandPath, 0);
     addChild(submarine, nodes.submarine);
+    addChild(submarine, nodes.collisionSubmarineFlash);
     for (var loopIndex = 0; loopIndex < nodes.seaweedLoops.length; loopIndex += 1) {
       addChild(gameplayWorld, nodes.seaweedLoops[loopIndex]);
     }
     addChild(foreground, nodes.coralForeground);
     addChild(effects, nodes.bubbles);
+    addChild(effects, nodes.collisionImpactRoot);
     if (nodes.collisionFlash) {
       addChild(effects, nodes.collisionFlash);
     }
@@ -287,6 +367,14 @@
     if (nodes.collisionFlash) {
       nodes.collisionFlash.visible = false;
       nodes.collisionFlash.alpha = 0;
+    }
+    if (nodes.collisionImpactRoot) {
+      nodes.collisionImpactRoot.visible = false;
+      nodes.collisionImpactRoot.alpha = 0;
+    }
+    if (nodes.collisionSubmarineFlash) {
+      nodes.collisionSubmarineFlash.visible = false;
+      nodes.collisionSubmarineFlash.alpha = 0;
     }
   }
 
@@ -588,28 +676,337 @@
     setDiagnostic("data-travel-scene-obstacle-body-tint", "ffffff");
   }
 
-  function syncCollisionFeedback(terrainSnap) {
-    if (!nodes || !nodes.collisionFlash) {
+  function findImpactObstacle(terrainSnap) {
+    if (!Terrain || !terrainSnap || !terrainSnap.missionId) {
+      return null;
+    }
+    var layout = Terrain.getLayout(terrainSnap.missionId);
+    if (!layout || !layout.obstacles) {
+      return null;
+    }
+    var collisionId = terrainSnap.lastCollisionObstacleId;
+    if (!collisionId) {
+      return null;
+    }
+    for (var i = 0; i < layout.obstacles.length; i += 1) {
+      if (layout.obstacles[i].id === collisionId) {
+        return { index: i, obstacle: layout.obstacles[i] };
+      }
+    }
+    return null;
+  }
+
+  function computeImpactContact(obstacle, travelSnap) {
+    var distance =
+      travelSnap && typeof travelSnap.distance === "number" ? travelSnap.distance : 0;
+    var gupCenterX = Terrain.Constants.gupScreenX;
+    var gupRight = gupCenterX + Terrain.Constants.gupHalfWidth;
+    var obstacleCenterX = obstacle.worldX - distance;
+    var obstacleLeft = obstacleCenterX - obstacle.width / 2;
+    var contactX = (gupRight + obstacleLeft) / 2;
+    var halfHeight = obstacle.height / 2;
+    var contactY = Math.max(
+      obstacle.y - halfHeight,
+      Math.min(travelSnap.y, obstacle.y + halfHeight)
+    );
+    if (!finite(contactX) || !finite(contactY)) {
+      return null;
+    }
+    return { x: contactX, y: contactY };
+  }
+
+  function resetImpactEffect() {
+    if (nodes) {
+      if (nodes.collisionImpactRoot) {
+        nodes.collisionImpactRoot.visible = false;
+        nodes.collisionImpactRoot.alpha = 0;
+        setScale(nodes.collisionImpactRoot, 1, 1);
+        nodes.collisionImpactRoot.rotation = 0;
+      }
+      if (nodes.collisionImpactCore) {
+        nodes.collisionImpactCore.visible = true;
+        nodes.collisionImpactCore.alpha = 1;
+        setScale(nodes.collisionImpactCore, 1, 1);
+      }
+      if (nodes.collisionImpactRing) {
+        nodes.collisionImpactRing.visible = true;
+        nodes.collisionImpactRing.alpha = 1;
+        setScale(nodes.collisionImpactRing, 1, 1);
+      }
+      if (nodes.collisionImpactRays) {
+        nodes.collisionImpactRays.visible = true;
+        nodes.collisionImpactRays.alpha = 1;
+        setScale(nodes.collisionImpactRays, 1, 1);
+      }
+      if (nodes.collisionFlash) {
+        nodes.collisionFlash.visible = false;
+        nodes.collisionFlash.alpha = 0;
+      }
+      if (nodes.collisionSubmarineFlash) {
+        nodes.collisionSubmarineFlash.visible = false;
+        nodes.collisionSubmarineFlash.alpha = 0;
+        nodes.collisionSubmarineFlash.tint = 0xFFFFFF;
+      }
+      if (
+        impactObstacleIndex >= 0 &&
+        impactObstacleIndex < nodes.obstacleGroups.length
+      ) {
+        var group = nodes.obstacleGroups[impactObstacleIndex];
+        if (group) {
+          setScale(group, 1, 1);
+        }
+        var outer = nodes.obstacleOuters[impactObstacleIndex];
+        var rim = nodes.obstacleRims[impactObstacleIndex];
+        if (outer) {
+          outer.alpha = OBSTACLE_OUTER_ALPHA;
+          outer.tint = OBSTACLE_OUTER_TINT;
+        }
+        if (rim) {
+          rim.alpha = OBSTACLE_RIM_ALPHA;
+          rim.tint = OBSTACLE_RIM_TINT;
+        }
+      }
+    }
+    impactEffectRunning = false;
+    impactEffectId = null;
+    impactEffectMissionId = null;
+    impactObstacleIndex = -1;
+    impactContactX = 0;
+    impactContactY = 0;
+  }
+
+  function startImpactEffect(terrainSnap, travelSnap) {
+    var found = findImpactObstacle(terrainSnap);
+    if (!found) {
+      resetImpactEffect();
+      return;
+    }
+    var contact = computeImpactContact(found.obstacle, travelSnap);
+    if (!contact) {
+      resetImpactEffect();
+      return;
+    }
+    resetImpactEffect();
+    impactEffectId = terrainSnap.lastCollisionObstacleId;
+    impactEffectStart = activeTime;
+    impactEffectMissionId = terrainSnap.missionId;
+    impactEffectRunning = true;
+    impactObstacleIndex = found.index;
+    impactContactX = contact.x;
+    impactContactY = contact.y;
+    if (typeof terrainSnap.collisionCount === "number") {
+      impactHandledCollisionCount = terrainSnap.collisionCount;
+    }
+  }
+
+  function syncSubmarineFlashOverlay(elapsed) {
+    var overlay = nodes.collisionSubmarineFlash;
+    var sub = nodes.submarine;
+    if (!overlay || !sub) {
+      return;
+    }
+    overlay.position.set(sub.position.x, sub.position.y);
+    overlay.scale.set(sub.scale.x, sub.scale.y);
+    overlay.rotation = sub.rotation;
+    overlay.visible = true;
+    if (overlay.blendMode !== undefined && overlay.blendMode !== "add") {
+      overlay.blendMode = "add";
+    }
+    overlay.tint = IMPACT_OVERLAY_TINT;
+    if (reducedMotion) {
+      var reducedProgress = Math.min(1, elapsed / IMPACT_REDUCED_MS);
+      overlay.alpha = Math.max(0, 0.65 * (1 - reducedProgress));
+    } else {
+      var overlayProgress = Math.min(1, elapsed / IMPACT_OVERLAY_MS);
+      overlay.alpha = Math.max(0, 0.65 * (1 - overlayProgress));
+    }
+  }
+
+  function syncImpactPulse(elapsed) {
+    if (
+      reducedMotion ||
+      impactObstacleIndex < 0 ||
+      !nodes ||
+      impactObstacleIndex >= nodes.obstacleGroups.length
+    ) {
+      return;
+    }
+    var group = nodes.obstacleGroups[impactObstacleIndex];
+    if (!group) {
+      return;
+    }
+    var pulseProgress = Math.min(1, elapsed / IMPACT_PULSE_MS);
+    var pulse = Math.sin(pulseProgress * Math.PI);
+    var factor = 1 + 0.05 * pulse;
+    setScale(group, factor, factor);
+    var outer = nodes.obstacleOuters[impactObstacleIndex];
+    var rim = nodes.obstacleRims[impactObstacleIndex];
+    if (outer) {
+      outer.alpha = Math.min(1, OBSTACLE_OUTER_ALPHA + 0.12 * pulse);
+    }
+    if (rim) {
+      rim.alpha = Math.min(1, OBSTACLE_RIM_ALPHA + 0.12 * pulse);
+    }
+  }
+
+  function setImpactDiagnostics() {
+    var running = impactEffectRunning;
+    setDiagnostic("data-travel-scene-impact-mode", "contact-burst-v1");
+    setDiagnostic("data-travel-scene-impact-active", running ? "true" : "false");
+    var phase = "idle";
+    if (running) {
+      var elapsed = activeTime - impactEffectStart;
+      if (elapsed < IMPACT_CORE_PEAK_MS) {
+        phase = "core";
+      } else if (elapsed < IMPACT_RAYS_MS) {
+        phase = "rays";
+      } else if (elapsed < IMPACT_RING_MS) {
+        phase = "ring";
+      } else {
+        phase = "bubble";
+      }
+    }
+    setDiagnostic("data-travel-scene-impact-phase", phase);
+    setDiagnostic(
+      "data-travel-scene-impact-obstacle-id",
+      running && impactEffectId ? String(impactEffectId) : ""
+    );
+    setDiagnostic(
+      "data-travel-scene-impact-contact-x",
+      running ? String(impactContactX) : ""
+    );
+    setDiagnostic(
+      "data-travel-scene-impact-contact-y",
+      running ? String(impactContactY) : ""
+    );
+    setDiagnostic(
+      "data-travel-scene-impact-core-visible",
+      running && nodes && nodes.collisionImpactCore
+        ? String(nodes.collisionImpactCore.visible)
+        : "false"
+    );
+    setDiagnostic(
+      "data-travel-scene-impact-ring-visible",
+      running && nodes && nodes.collisionImpactRing
+        ? String(nodes.collisionImpactRing.visible)
+        : "false"
+    );
+    setDiagnostic(
+      "data-travel-scene-impact-rays-visible",
+      running && nodes && nodes.collisionImpactRays
+        ? String(nodes.collisionImpactRays.visible)
+        : "false"
+    );
+    setDiagnostic(
+      "data-travel-scene-impact-bubbles-visible",
+      running && nodes && nodes.collisionFlash
+        ? String(nodes.collisionFlash.visible)
+        : "false"
+    );
+    setDiagnostic(
+      "data-travel-scene-impact-target-pulse",
+      running && impactObstacleIndex >= 0 ? "true" : "false"
+    );
+    setDiagnostic(
+      "data-travel-scene-impact-submarine-flash",
+      running && nodes && nodes.collisionSubmarineFlash
+        ? String(nodes.collisionSubmarineFlash.visible)
+        : "false"
+    );
+  }
+
+  function syncImpactEffect(travelSnap, terrainSnap) {
+    if (!nodes) {
       return;
     }
     var collisionActive = terrainSnap && terrainSnap.collisionActive;
-    if (collisionActive && lastCollisionId !== terrainSnap.lastCollisionObstacleId) {
-      collisionEffectStart = activeTime;
-      lastCollisionId = terrainSnap.lastCollisionObstacleId;
+    var collisionCount =
+      terrainSnap && typeof terrainSnap.collisionCount === "number"
+        ? terrainSnap.collisionCount
+        : -1;
+
+    if (
+      collisionActive &&
+      impactHandledCollisionCount !== collisionCount
+    ) {
+      startImpactEffect(terrainSnap, travelSnap);
     }
-    if (collisionActive) {
-      var elapsed = activeTime - collisionEffectStart;
-      var progress = Math.min(1, elapsed / 400);
-      nodes.collisionFlash.visible = true;
-      nodes.collisionFlash.alpha = 1 - progress * 0.85;
-      var flashScale = 0.6 + progress * 0.5;
-      nodes.collisionFlash.scale.set(flashScale, flashScale);
-      var gupY = snapshot ? snapshot.y : 360;
-      setPosition(nodes.collisionFlash, 260, gupY + (terrainSnap.shakeOffsetY || 0));
+
+    if (
+      impactEffectRunning &&
+      terrainSnap &&
+      terrainSnap.active &&
+      impactEffectMissionId &&
+      impactEffectMissionId !== terrainSnap.missionId
+    ) {
+      resetImpactEffect();
+    }
+
+    if (!impactEffectRunning) {
+      setImpactDiagnostics();
+      return;
+    }
+
+    var elapsed = activeTime - impactEffectStart;
+    var totalDuration = reducedMotion ? IMPACT_REDUCED_MS : IMPACT_TOTAL_MS;
+    if (elapsed >= totalDuration) {
+      resetImpactEffect();
+      setImpactDiagnostics();
+      return;
+    }
+
+    var root = nodes.collisionImpactRoot;
+    root.visible = true;
+    setPosition(root, impactContactX, impactContactY);
+
+    var burst = nodes.collisionFlash;
+    var core = nodes.collisionImpactCore;
+    var ring = nodes.collisionImpactRing;
+    var rays = nodes.collisionImpactRays;
+
+    if (reducedMotion) {
+      var reducedProgress = Math.min(1, elapsed / IMPACT_REDUCED_MS);
+      var reducedAlpha = 1 - reducedProgress * 0.85;
+      root.alpha = reducedAlpha;
+      core.visible = true;
+      setScale(core, 1, 1);
+      core.alpha = reducedAlpha;
+      ring.visible = true;
+      setScale(ring, 1, 1);
+      ring.alpha = reducedAlpha;
+      rays.visible = false;
+      if (burst) {
+        burst.visible = false;
+      }
     } else {
-      nodes.collisionFlash.visible = false;
-      lastCollisionId = null;
+      var coreProgress = Math.min(1, elapsed / IMPACT_CORE_PEAK_MS);
+      core.visible = true;
+      setScale(core, 1 - coreProgress * 0.25, 1 - coreProgress * 0.25);
+      core.alpha = 1 - coreProgress * 0.9;
+
+      var ringProgress = Math.min(1, elapsed / IMPACT_RING_MS);
+      ring.visible = true;
+      setScale(ring, 1 + ringProgress * 1.5, 1 + ringProgress * 1.5);
+      ring.alpha = 1 - ringProgress * 0.92;
+
+      var raysProgress = Math.min(1, elapsed / IMPACT_RAYS_MS);
+      rays.visible = true;
+      setScale(rays, 1 + raysProgress * 0.55, 1 + raysProgress * 0.55);
+      rays.alpha = 1 - raysProgress * 0.9;
+
+      if (burst) {
+        burst.visible = true;
+        setPosition(burst, impactContactX, impactContactY);
+        var burstScale = 0.35 + (elapsed / IMPACT_TOTAL_MS) * 0.55;
+        burst.scale.set(burstScale, burstScale);
+        burst.alpha = Math.max(0, 1 - (elapsed / IMPACT_TOTAL_MS) * 0.95);
+      }
     }
+
+    syncImpactPulse(elapsed);
+    syncSubmarineFlashOverlay(elapsed);
+
+    setImpactDiagnostics();
   }
 
   function updateScene() {
@@ -623,7 +1020,7 @@
     syncBubbles();
     syncSubmarine(travelSnap.y, terrainSnap);
     syncObstacles(travelSnap, terrainSnap);
-    syncCollisionFeedback(terrainSnap);
+    syncImpactEffect(travelSnap, terrainSnap);
   }
 
   function render() {
@@ -691,6 +1088,7 @@
     setReducedMotion();
     createSceneGraph();
     showOwnedNodes();
+    resetImpactEffect();
     mounted = true;
     active = false;
     paused = false;
@@ -776,6 +1174,8 @@
 
   function exit() {
     cancelFrame();
+    resetImpactEffect();
+    setImpactDiagnostics();
     active = false;
     paused = false;
     mounted = false;
@@ -794,6 +1194,7 @@
 
   function destroy() {
     cancelFrame();
+    resetImpactEffect();
     if (nodes && RenderRuntime) {
       removeOwnedChild(RenderRuntime.getContainer("farBackground"), nodes.waterFar);
       removeOwnedChild(RenderRuntime.getContainer("midground"), nodes.reefMid);
@@ -806,6 +1207,12 @@
       }
       removeOwnedChild(RenderRuntime.getContainer("foreground"), nodes.coralForeground);
       removeOwnedChild(RenderRuntime.getContainer("effects"), nodes.bubbles);
+      if (nodes.collisionImpactRoot) {
+        removeOwnedChild(RenderRuntime.getContainer("effects"), nodes.collisionImpactRoot);
+      }
+      if (nodes.collisionSubmarineFlash) {
+        removeOwnedChild(RenderRuntime.getContainer("submarine"), nodes.collisionSubmarineFlash);
+      }
       if (nodes.collisionFlash) {
         removeOwnedChild(RenderRuntime.getContainer("effects"), nodes.collisionFlash);
       }

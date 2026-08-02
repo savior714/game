@@ -248,5 +248,97 @@ class TestHandoffSvgValidator:
         assert first == second
 
 
+OTTER_ASSET_ID = "otter-head-01"
+OTTER_ALIAS = "otter.head"
+OTTER_CANONICAL_TARGET = "domains/ocean-rescue/assets/source/characters/otter-head.svg"
+
+OTTER_BRIEF_TEMPLATE = """# Asset identity
+
+- Asset ID: `{asset_id}`
+- Runtime alias: `{alias}`
+- Target canonical path: `{target}`
+
+# Facial base contract
+
+- Fixed eyes: `none`
+- Fixed mouth: `none`
+- Fixed brows: `none`
+
+# Required structure
+
+- Root viewBox: `{viewbox}`
+- Required root group: `otter-head`
+- `otter-head-ears`
+- `otter-head-silhouette`
+- `otter-head-muzzle`
+- `otter-head-details`
+"""
+
+OTTER_VALID_SVG = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <g id="otter-head">
+    <g id="otter-head-ears"><ellipse cx="40" cy="40" rx="15" ry="20" fill="#765037"/></g>
+    <g id="otter-head-silhouette"><path d="M100 20 C140 20 170 60 170 100 C170 140 140 180 100 180 C60 180 30 140 30 100 C30 60 60 20 100 20Z" fill="#8A6246"/></g>
+    <g id="otter-head-muzzle"><ellipse cx="100" cy="120" rx="40" ry="28" fill="#EED7A8"/><ellipse cx="100" cy="105" rx="12" ry="10" fill="#2D3037"/></g>
+    <g id="otter-head-details"><circle cx="60" cy="120" r="3" fill="#5E4636"/></g>
+  </g>
+</svg>
+"""
+
+
+def _write_otter_brief(tmp_path: Path) -> Path:
+    briefs = tmp_path / "briefs"
+    briefs.mkdir(parents=True, exist_ok=True)
+    brief = briefs / f"{OTTER_ASSET_ID}.md"
+    brief.write_text(
+        OTTER_BRIEF_TEMPLATE.format(
+            asset_id=OTTER_ASSET_ID,
+            alias=OTTER_ALIAS,
+            target=OTTER_CANONICAL_TARGET,
+            viewbox="0 0 200 200",
+        ),
+        encoding="utf-8",
+    )
+    return brief
+
+
+def _write_otter_svg(tmp_path: Path, content: str) -> Path:
+    return _write_svg(tmp_path, content, name=f"{OTTER_ASSET_ID}.svg")
+
+
+class TestHandoffSvgValidatorFaceBase:
+    def test_face_base_contract_absent_features_pass(self, tmp_path: Path):
+        brief = _write_otter_brief(tmp_path)
+        svg = _write_otter_svg(tmp_path, OTTER_VALID_SVG)
+        proc = _run(brief, svg, tmp_path)
+        assert proc.returncode == 0, proc.stderr
+        report = _load_report(tmp_path)
+        assert report["verdict"] == "STRUCTURE_PASS"
+        assert report["faceBaseContract"]["enforced"] == ["eyes", "mouth", "brows"]
+        assert report["faceBaseContract"]["fixedFeatureIds"] == []
+        assert any("geometry-level" in item for item in report["warnings"])
+
+    def test_face_base_fixed_mouth_rejects(self, tmp_path: Path):
+        brief = _write_otter_brief(tmp_path)
+        content = OTTER_VALID_SVG.replace(
+            "</g>\n</svg>",
+            '<g id="baked-mouth"><path d="M80 130 Q100 145 120 130" '
+            'fill="none" stroke="#5C4A2E" stroke-width="3"/></g>\n</g>\n</svg>',
+        )
+        svg = _write_otter_svg(tmp_path, content)
+        proc = _run(brief, svg, tmp_path)
+        assert proc.returncode != 0
+        report = _load_report(tmp_path)
+        assert report["verdict"] == "STRUCTURE_REJECTED"
+        assert any("baked-mouth" in item for item in report["faceBaseContract"]["fixedFeatureIds"])
+
+    def test_absent_face_contract_skips_face_base_check(self, tmp_path: Path):
+        brief = _write_brief(tmp_path)
+        svg = _write_svg(tmp_path, VALID_SVG)
+        proc = _run(brief, svg, tmp_path)
+        assert proc.returncode == 0, proc.stderr
+        report = _load_report(tmp_path)
+        assert "faceBaseContract" not in report
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-q"]))

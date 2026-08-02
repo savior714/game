@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Deterministic Gate A/B validation for a manual Ocean Rescue SVG handoff asset.
 
-Reads the active asset brief and the inbox SVG candidate for the
-``scene-submarine-01`` handoff, validates intake identity and SVG structure
-and security, and writes JSON + Markdown evidence reports.
+Reads the active asset brief and the inbox SVG candidate for the handoff,
+validates intake identity and SVG structure and security, and writes JSON +
+Markdown evidence reports.
+
+The intake contract (asset ID, alias, canonical target, viewBox, required groups)
+and the optional facial base contract are read from the per-asset brief.
 
 The candidate SVG is only ever read, never written.
 
@@ -31,19 +34,24 @@ REPORT_SCHEMA_VERSION = 1
 
 SVG_NS = "http://www.w3.org/2000/svg"
 
-INTAKE_CONTRACT = {
-    "assetId": "scene-submarine-01",
-    "alias": "scene.submarine",
-    "canonicalTarget": "domains/ocean-rescue/assets/source/scene/submarine.svg",
-    "viewBox": "0 0 320 200",
-    "requiredGroups": [
-        "scene-submarine",
-        "submarine-hull",
-        "submarine-cockpit",
-        "submarine-propulsion",
-        "submarine-rescue-gear",
-        "submarine-lights",
-    ],
+REQUIRED_BRIEF_FIELDS = (
+    "assetId",
+    "alias",
+    "canonicalTarget",
+    "viewBox",
+    "rootGroup",
+)
+
+FACE_FEATURE_FIELDS = (
+    ("eyes", "Fixed eyes"),
+    ("mouth", "Fixed mouth"),
+    ("brows", "Fixed brows"),
+)
+
+FACE_FEATURE_ID_PATTERNS = {
+    "eyes": ("eye", "pupil", "iris", "eyelid"),
+    "mouth": ("mouth", "lip", "smile", "frown", "grin"),
+    "brows": ("brow",),
 }
 
 FORBIDDEN_ELEMENTS = {
@@ -167,14 +175,43 @@ def _semantic_groups(section: str) -> list[str]:
 def _parse_brief(path: Path) -> dict:
     text = path.read_text(encoding="utf-8")
     structure = _section(text, "Required structure")
+    face = _section(text, "Facial base contract")
     return {
+        "taskId": _field(text, "Task ID"),
         "assetId": _field(text, "Asset ID"),
         "alias": _field(text, "Runtime alias"),
         "canonicalTarget": _field(text, "Target canonical path"),
         "viewBox": _field(structure, "Root viewBox"),
         "rootGroup": _field(structure, "Required root group"),
         "semanticGroups": _semantic_groups(structure),
+        "face": {label: _field(face, label) for _, label in FACE_FEATURE_FIELDS},
     }
+
+
+def _contract_from_brief(brief: dict) -> dict:
+    missing = [name for name in REQUIRED_BRIEF_FIELDS if not brief.get(name)]
+    if missing:
+        raise ValueError(f"Brief is missing required fields: {', '.join(missing)}")
+    groups = [brief["rootGroup"]]
+    for group in brief["semanticGroups"]:
+        if group not in groups:
+            groups.append(group)
+    return {
+        "assetId": brief["assetId"],
+        "alias": brief["alias"],
+        "canonicalTarget": brief["canonicalTarget"],
+        "viewBox": brief["viewBox"],
+        "requiredGroups": groups,
+    }
+
+
+def _enforced_face_features(brief: dict) -> list[str]:
+    face = brief.get("face") or {}
+    return [
+        name
+        for name, label in FACE_FEATURE_FIELDS
+        if (face.get(label) or "").strip().lower() == "none"
+    ]
 
 
 def _parse_viewbox(value: str | None) -> list[float] | None:
@@ -197,20 +234,26 @@ def _parse_viewbox(value: str | None) -> list[float] | None:
     return numbers
 
 
-def _new_report(repo_root: Path, brief_path: Path, svg_path: Path) -> dict:
+def _new_report(
+    repo_root: Path,
+    brief_path: Path,
+    svg_path: Path,
+    brief: dict,
+    contract: dict,
+) -> dict:
     return {
         "schemaVersion": REPORT_SCHEMA_VERSION,
-        "taskId": TASK_ID,
-        "assetId": INTAKE_CONTRACT["assetId"],
-        "alias": INTAKE_CONTRACT["alias"],
+        "taskId": brief.get("taskId") or TASK_ID,
+        "assetId": contract["assetId"],
+        "alias": contract["alias"],
         "briefPath": _repo_relative(brief_path, repo_root),
         "briefSha256": _sha256(brief_path.read_bytes()),
         "svgPath": _repo_relative(svg_path, repo_root),
         "svgSha256": _sha256(svg_path.read_bytes()),
-        "canonicalTargetPath": INTAKE_CONTRACT["canonicalTarget"],
-        "viewBoxExpected": INTAKE_CONTRACT["viewBox"],
+        "canonicalTargetPath": contract["canonicalTarget"],
+        "viewBoxExpected": contract["viewBox"],
         "viewBoxActual": "",
-        "requiredGroupsExpected": list(INTAKE_CONTRACT["requiredGroups"]),
+        "requiredGroupsExpected": list(contract["requiredGroups"]),
         "requiredGroupsFound": [],
         "missingRequiredGroups": [],
         "emptyRequiredGroups": [],
@@ -251,13 +294,14 @@ def _gate_a(
     brief_path: Path,
     svg_path: Path,
     brief: dict,
+    contract: dict,
     rejection: list[str],
 ) -> None:
-    asset_id = INTAKE_CONTRACT["assetId"]
-    alias = INTAKE_CONTRACT["alias"]
-    target = INTAKE_CONTRACT["canonicalTarget"]
-    viewbox = INTAKE_CONTRACT["viewBox"]
-    required = INTAKE_CONTRACT["requiredGroups"]
+    asset_id = contract["assetId"]
+    alias = contract["alias"]
+    target = contract["canonicalTarget"]
+    viewbox = contract["viewBox"]
+    required = contract["requiredGroups"]
 
     if brief["assetId"] != asset_id:
         rejection.append(f"Brief Asset ID mismatch: {brief['assetId']} != {asset_id}")
@@ -696,10 +740,47 @@ def _check_background(
     report["backgroundTransparencyPass"] = passes
 
 
+def _check_face_base(
+    elements: list[ET.Element],
+    report: dict,
+    rejection: list[str],
+    enforced: list[str],
+) -> None:
+    if not enforced:
+        return
+    fixed_ids: list[str] = []
+    for elem in elements:
+        eid = elem.get("id")
+        if not eid:
+            continue
+        low = eid.lower()
+        for feature in enforced:
+            if any(
+                token in low
+                for token in FACE_FEATURE_ID_PATTERNS.get(feature, ())
+            ):
+                fixed_ids.append(f"{eid} (fixed {feature})")
+                break
+    fixed_ids = _dedup_ordered(fixed_ids)
+    report["faceBaseContract"] = {
+        "enforced": list(enforced),
+        "fixedFeatureIds": fixed_ids,
+        "geometryLevelAssertion": False,
+    }
+    for item in fixed_ids:
+        rejection.append(f"Fixed face feature present in face base: {item}")
+    if not fixed_ids:
+        report["warnings"].append(
+            "Face base verified by element ID structure only; "
+            "geometry-level eye/mouth presence is not automatically asserted."
+        )
+
+
 def _gate_b(
     svg_path: Path,
     report: dict,
     rejection: list[str],
+    enforced_face: list[str],
 ) -> None:
     raw = svg_path.read_bytes()
     try:
@@ -765,6 +846,7 @@ def _gate_b(
     _check_security(elements, report, rejection)
     _check_finite(elements, report, rejection)
     _check_background(elements, report, rejection)
+    _check_face_base(elements, report, rejection, enforced_face)
 
 
 def _write_json(path: Path, report: dict) -> None:
@@ -789,6 +871,18 @@ def _write_markdown(path: Path, report: dict) -> None:
             "Return the rejection reasons to the frontier model. "
             "Do not modify or canonicalize the candidate locally."
         )
+    face_lines: list[str] = []
+    if "faceBaseContract" in report:
+        face_lines = [
+            "",
+            "## Face base contract",
+            f"- Enforced absent features: "
+            f"{_join_or_none(report['faceBaseContract'].get('enforced', []))}",
+            f"- Fixed feature IDs found: "
+            f"{_join_or_none(report['faceBaseContract'].get('fixedFeatureIds', []))}",
+            f"- Geometry-level assertion: "
+            f"{report['faceBaseContract'].get('geometryLevelAssertion', False)}",
+        ]
     lines = [
         "# Ocean Rescue — Handoff SVG Structure Report",
         "",
@@ -827,6 +921,7 @@ def _write_markdown(path: Path, report: dict) -> None:
         f"- Non-finite numeric values: {_join_or_none(report['nonFiniteFindings'])}",
         f"- Transparent background: {report['backgroundTransparencyPass']}",
         "",
+    ] + face_lines + [
         "## Warnings",
         _join_or_none(report["warnings"]),
         "",
@@ -854,12 +949,18 @@ def run(args: argparse.Namespace) -> int:
         print(f"ERROR: inbox SVG not found: {svg_path}", file=sys.stderr)
         return 2
 
-    report = _new_report(repo_root, brief_path, svg_path)
     rejection: list[str] = []
 
-    brief = _parse_brief(brief_path)
-    _gate_a(brief_path, svg_path, brief, rejection)
-    _gate_b(svg_path, report, rejection)
+    try:
+        brief = _parse_brief(brief_path)
+        contract = _contract_from_brief(brief)
+    except ValueError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+
+    report = _new_report(repo_root, brief_path, svg_path, brief, contract)
+    _gate_a(brief_path, svg_path, brief, contract, rejection)
+    _gate_b(svg_path, report, rejection, _enforced_face_features(brief))
 
     report["warnings"] = _dedup_ordered(report["warnings"])
     report["rejectionReasons"] = _dedup_ordered(rejection)

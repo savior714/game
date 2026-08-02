@@ -1,0 +1,56 @@
+# Development Docker Compose configuration
+# Includes PostgreSQL for local testing of Supabase-like behavior
+
+version: '3.8'
+
+services:
+  # Local PostgreSQL for testing game stats atomic operations
+  postgres:
+    image: postgres:15-alpine
+    container_name: aiden_game_postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: aiden_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: test_password
+    volumes:
+      # Persist data between restarts
+      - postgres_data:/var/lib/postgresql/data
+      # Apply migrations on startup
+      - ./supabase/migrations:/docker-entrypoint-initdb.d/migrations
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d aiden_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aiden_network
+
+  # Optional: Local Supabase stack for full integration testing
+  # Uncomment to use instead of plain PostgreSQL
+  # supabase-db:
+  #   image: supabase/postgres:15.1.0.117
+  #   container_name: supabase-db
+  #   ports:
+  #     - "54322:5432"
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: postgres
+  #     POSTGRES_DB: postgres
+  #   volumes:
+  #     - supabase_db_data:/var/lib/postgresql/data
+  #     - ./supabase/migrations:/docker-entrypoint-initdb.d/migrations
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
+
+volumes:
+  postgres_data:
+  # supabase_db_data:
+
+networks:
+  aiden_network:
+    driver: bridge

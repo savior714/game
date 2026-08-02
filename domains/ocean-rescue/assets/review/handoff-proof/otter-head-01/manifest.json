@@ -1,0 +1,364 @@
+{
+  "schemaVersion": 1,
+  "taskId": "AIDENGAME-OCEAN-RESCUE-OTTER-HEAD-HANDOFF-RENDER-PROOF-01",
+  "assetId": "otter-head-01",
+  "alias": "otter.head",
+  "candidateSvgSha256": "87e6b35d67e0d856d389570614bb47abef9f6271402e881660f98f400e40c5ec",
+  "candidateSvgPath": "domains/ocean-rescue/assets/handoff/inbox/otter-head-01.svg",
+  "structureReportSha256": "bd5e5537247cce996f25c2f0ae3416adc67c08c1d49fe3a7675f6e4dd849cd29",
+  "structureReportSvgSha256": "87e6b35d67e0d856d389570614bb47abef9f6271402e881660f98f400e40c5ec",
+  "structureVerdict": "STRUCTURE_PASS",
+  "viewBox": "0 0 200 200",
+  "sourceLogicalSize": [
+    200,
+    200
+  ],
+  "pivot": [
+    0.5,
+    0.55
+  ],
+  "runtimeScale": [
+    0.62,
+    0.62
+  ],
+  "rasterizer": "CairoSVG",
+  "rasterizerVersion": "2.9.0",
+  "rendererBackend": "webgl",
+  "viewport": [
+    1280,
+    720
+  ],
+  "deviceScaleFactor": 1,
+  "headSpriteLabel": "sea-otter-head",
+  "headPosition": [
+    0,
+    -42
+  ],
+  "headScale": [
+    0.62,
+    0.62
+  ],
+  "headAnchor": [
+    0.5,
+    0.55
+  ],
+  "eyeOverlayLabels": [
+    "sea-otter-eyes-open",
+    "sea-otter-eyes-closed"
+  ],
+  "mouthOverlayLabels": [
+    "sea-otter-mouth-neutral",
+    "sea-otter-mouth-concern",
+    "sea-otter-mouth-smile"
+  ],
+  "faceCrop": {
+    "x": 440,
+    "y": 230,
+    "width": 300,
+    "height": 300
+  },
+  "isolated1x": {
+    "path": "isolated-1x.png",
+    "fileSha256": "8f08ecfa98f23439210e61f2b30e7440f2ae49803d1ff9b8395b8674daafbadc",
+    "pixelSha256": "4a0bd666e394ae222b6d64d050996de56988b38d47ecf262fe4742f1d68b577b",
+    "byteSize": 17614,
+    "width": 200,
+    "height": 200,
+    "alphaPresent": true,
+    "visibleAlphaBounds": {
+      "x": 15,
+      "y": 21,
+      "width": 170,
+      "height": 169
+    }
+  },
+  "isolated2x": {
+    "path": "isolated-2x.png",
+    "fileSha256": "10a4ad48ab9c56241b74164ea6ccd3585ac714f4e1c59167b875d46153f6befb",
+    "pixelSha256": "dee47164ab12d192d93fd66efdbb0909febac683a0be09aafe56c3ae92221d14",
+    "byteSize": 37523,
+    "width": 400,
+    "height": 400,
+    "alphaPresent": true,
+    "visibleAlphaBounds": {
+      "x": 30,
+      "y": 42,
+      "width": 340,
+      "height": 338
+    }
+  },
+  "proofImages": [
+    {
+      "path": "isolated-1x.png",
+      "fileSha256": "8f08ecfa98f23439210e61f2b30e7440f2ae49803d1ff9b8395b8674daafbadc",
+      "width": 200,
+      "height": 200,
+      "pixelSha256": "4a0bd666e394ae222b6d64d050996de56988b38d47ecf262fe4742f1d68b577b"
+    },
+    {
+      "path": "isolated-2x.png",
+      "fileSha256": "10a4ad48ab9c56241b74164ea6ccd3585ac714f4e1c59167b875d46153f6befb",
+      "width": 400,
+      "height": 400,
+      "pixelSha256": "dee47164ab12d192d93fd66efdbb0909febac683a0be09aafe56c3ae92221d14"
+    },
+    {
+      "path": "rig-base-only.png",
+      "fileSha256": "e6213fedea29c183e5a2bf2abeb0e84d3b157bf93f27ef5ca6a685514e43adfe",
+      "width": 300,
+      "height": 300
+    },
+    {
+      "path": "rig-neutral.png",
+      "fileSha256": "bf388e25f1be7aebcafda49a1b7c80cb458f45aa1eb512eb39baa658bb8b576b",
+      "width": 300,
+      "height": 300
+    },
+    {
+      "path": "rig-concern.png",
+      "fileSha256": "36e08a265480a43c60e072faf539309942b9fb8d0b544f2950134b4c7985d7ca",
+      "width": 300,
+      "height": 300
+    },
+    {
+      "path": "rig-smile.png",
+      "fileSha256": "bf15187023f431fbf2deed468fc22406abdfff4c5ad3d58c5f10699f47a408a6",
+      "width": 300,
+      "height": 300
+    },
+    {
+      "path": "face-rig-contact-sheet.png",
+      "fileSha256": "89fd46075b329f1d4ae35c3876fde18cc7129b176a019e6188e425d3e5f15516",
+      "width": 1252,
+      "height": 358
+    },
+    {
+      "path": "sea-turtle-context.png",
+      "fileSha256": "4f444c9b4d5db047b0e8ccd4a65a213bb54e39090ef06365b371072679473a66",
+      "width": 1280,
+      "height": 720
+    }
+  ],
+  "runs": [
+    {
+      "runIndex": 1,
+      "rendererBackend": "webgl",
+      "headSprite": {
+        "label": "sea-otter-head",
+        "isSprite": true,
+        "visible": true,
+        "renderable": true,
+        "x": 0,
+        "y": -42,
+        "rotation": -0.025,
+        "scaleX": 0.62,
+        "scaleY": 0.62,
+        "anchor": {
+          "x": 0.5,
+          "y": 0.55
+        },
+        "textureLabel": "candidate-otter-head-01",
+        "textureOrig": {
+          "w": 200,
+          "h": 200
+        },
+        "bounds": {
+          "x": 526.314551589523,
+          "y": 308.27147284328487,
+          "width": 127.06092911161147,
+          "height": 127.06092911161147
+        }
+      },
+      "faceState": {
+        "headRotation": -0.025,
+        "eyesOpenVisible": false,
+        "eyesClosedVisible": true,
+        "mouthNeutralVisible": false,
+        "mouthConcernVisible": false,
+        "mouthSmileVisible": true
+      },
+      "texturesUnchanged": true,
+      "frozen": true,
+      "legacyBridgeVisible": false,
+      "states": {
+        "base-only": {
+          "cropFileSha256": "e6213fedea29c183e5a2bf2abeb0e84d3b157bf93f27ef5ca6a685514e43adfe",
+          "cropPixelSha256": "21d5a25e4cfbb626165cede99346e80a4b76c089d0ee5d66abfe6d7b43097847",
+          "cropWidth": 300,
+          "cropHeight": 300,
+          "stateResult": {
+            "headRotation": 0,
+            "eyesOpenVisible": false,
+            "eyesClosedVisible": false,
+            "mouthNeutralVisible": false,
+            "mouthConcernVisible": false,
+            "mouthSmileVisible": false
+          }
+        },
+        "neutral": {
+          "cropFileSha256": "bf388e25f1be7aebcafda49a1b7c80cb458f45aa1eb512eb39baa658bb8b576b",
+          "cropPixelSha256": "ba25e490047e2038794855df533eeaff232668feef793248ac7d965c9c313b92",
+          "cropWidth": 300,
+          "cropHeight": 300,
+          "stateResult": {
+            "headRotation": 0,
+            "eyesOpenVisible": true,
+            "eyesClosedVisible": false,
+            "mouthNeutralVisible": true,
+            "mouthConcernVisible": false,
+            "mouthSmileVisible": false
+          }
+        },
+        "concern": {
+          "cropFileSha256": "36e08a265480a43c60e072faf539309942b9fb8d0b544f2950134b4c7985d7ca",
+          "cropPixelSha256": "fb9d5806db7798122248c7bfb5990f5beed27f9323a4f7b57c789306d61071dd",
+          "cropWidth": 300,
+          "cropHeight": 300,
+          "stateResult": {
+            "headRotation": 0.035,
+            "eyesOpenVisible": true,
+            "eyesClosedVisible": false,
+            "mouthNeutralVisible": false,
+            "mouthConcernVisible": true,
+            "mouthSmileVisible": false
+          }
+        },
+        "smile": {
+          "cropFileSha256": "bf15187023f431fbf2deed468fc22406abdfff4c5ad3d58c5f10699f47a408a6",
+          "cropPixelSha256": "0cfd3af8c1e2719b2e308727afee00d0ea8e976f1f5af0869c6eb44a49dacfbe",
+          "cropWidth": 300,
+          "cropHeight": 300,
+          "stateResult": {
+            "headRotation": -0.025,
+            "eyesOpenVisible": false,
+            "eyesClosedVisible": true,
+            "mouthNeutralVisible": false,
+            "mouthConcernVisible": false,
+            "mouthSmileVisible": true
+          }
+        }
+      },
+      "contextPixelSha256": "7e1d7b7e04525867a750c46e17350bb8ca4de97ed26591e8dc5fb210e8a7796b",
+      "externalOriginRequestCount": 0,
+      "pageErrorCount": 0,
+      "consoleErrorCount": 0,
+      "unhandledRejectionCount": 0,
+      "securityPolicyViolationCount": 0
+    },
+    {
+      "runIndex": 2,
+      "rendererBackend": "webgl",
+      "headSprite": {
+        "label": "sea-otter-head",
+        "isSprite": true,
+        "visible": true,
+        "renderable": true,
+        "x": 0,
+        "y": -42,
+        "rotation": -0.025,
+        "scaleX": 0.62,
+        "scaleY": 0.62,
+        "anchor": {
+          "x": 0.5,
+          "y": 0.55
+        },
+        "textureLabel": "candidate-otter-head-01",
+        "textureOrig": {
+          "w": 200,
+          "h": 200
+        },
+        "bounds": {
+          "x": 526.314551589523,
+          "y": 308.27147284328487,
+          "width": 127.06092911161147,
+          "height": 127.06092911161147
+        }
+      },
+      "faceState": {
+        "headRotation": -0.025,
+        "eyesOpenVisible": false,
+        "eyesClosedVisible": true,
+        "mouthNeutralVisible": false,
+        "mouthConcernVisible": false,
+        "mouthSmileVisible": true
+      },
+      "texturesUnchanged": true,
+      "frozen": true,
+      "legacyBridgeVisible": false,
+      "states": {
+        "base-only": {
+          "cropFileSha256": "e6213fedea29c183e5a2bf2abeb0e84d3b157bf93f27ef5ca6a685514e43adfe",
+          "cropPixelSha256": "21d5a25e4cfbb626165cede99346e80a4b76c089d0ee5d66abfe6d7b43097847",
+          "cropWidth": 300,
+          "cropHeight": 300,
+          "stateResult": {
+            "headRotation": 0,
+            "eyesOpenVisible": false,
+            "eyesClosedVisible": false,
+            "mouthNeutralVisible": false,
+            "mouthConcernVisible": false,
+            "mouthSmileVisible": false
+          }
+        },
+        "neutral": {
+          "cropFileSha256": "bf388e25f1be7aebcafda49a1b7c80cb458f45aa1eb512eb39baa658bb8b576b",
+          "cropPixelSha256": "ba25e490047e2038794855df533eeaff232668feef793248ac7d965c9c313b92",
+          "cropWidth": 300,
+          "cropHeight": 300,
+          "stateResult": {
+            "headRotation": 0,
+            "eyesOpenVisible": true,
+            "eyesClosedVisible": false,
+            "mouthNeutralVisible": true,
+            "mouthConcernVisible": false,
+            "mouthSmileVisible": false
+          }
+        },
+        "concern": {
+          "cropFileSha256": "36e08a265480a43c60e072faf539309942b9fb8d0b544f2950134b4c7985d7ca",
+          "cropPixelSha256": "fb9d5806db7798122248c7bfb5990f5beed27f9323a4f7b57c789306d61071dd",
+          "cropWidth": 300,
+          "cropHeight": 300,
+          "stateResult": {
+            "headRotation": 0.035,
+            "eyesOpenVisible": true,
+            "eyesClosedVisible": false,
+            "mouthNeutralVisible": false,
+            "mouthConcernVisible": true,
+            "mouthSmileVisible": false
+          }
+        },
+        "smile": {
+          "cropFileSha256": "bf15187023f431fbf2deed468fc22406abdfff4c5ad3d58c5f10699f47a408a6",
+          "cropPixelSha256": "0cfd3af8c1e2719b2e308727afee00d0ea8e976f1f5af0869c6eb44a49dacfbe",
+          "cropWidth": 300,
+          "cropHeight": 300,
+          "stateResult": {
+            "headRotation": -0.025,
+            "eyesOpenVisible": false,
+            "eyesClosedVisible": true,
+            "mouthNeutralVisible": false,
+            "mouthConcernVisible": false,
+            "mouthSmileVisible": true
+          }
+        }
+      },
+      "contextPixelSha256": "7e1d7b7e04525867a750c46e17350bb8ca4de97ed26591e8dc5fb210e8a7796b",
+      "externalOriginRequestCount": 0,
+      "pageErrorCount": 0,
+      "consoleErrorCount": 0,
+      "unhandledRejectionCount": 0,
+      "securityPolicyViolationCount": 0
+    }
+  ],
+  "candidateTextureApplied": true,
+  "otherTexturesUnchanged": true,
+  "externalRequestCount": 0,
+  "pageErrorCount": 0,
+  "consoleErrorCount": 0,
+  "cspViolationCount": 0,
+  "unhandledRejectionCount": 0,
+  "twoRunDeterministic": true,
+  "verdict": "RENDER_PROOF_READY",
+  "rejectionReasons": []
+}

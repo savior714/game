@@ -1,0 +1,220 @@
+{
+  "schemaVersion": 1,
+  "taskId": "AIDENGAME-OCEAN-RESCUE-SUBMARINE-HANDOFF-POSTCANONICAL-RENDER-PROOF-01",
+  "assetId": "scene-submarine-01",
+  "alias": "scene.submarine",
+  "sourceCommit": "ecf2b7aa56e4c6bb7bcf21370dbf1a3fd9aa7cf9",
+  "briefPath": "domains/ocean-rescue/assets/handoff/briefs/scene-submarine-01.md",
+  "briefSha256": "498c104090bf7739189d6618c08c264f6aa38e6d8dd5b1d462a0f269d0c637ce",
+  "inboxSvgPath": "/Users/seungjulee/Desktop/Dev/.worktrees/game/AIDENGAME-OCEAN-RESCUE-SUBMARINE-HANDOFF-POSTCANONICAL-RENDER-PROOF-01/domains/ocean-rescue/assets/handoff/inbox/scene-submarine-01.svg",
+  "inboxSvgCanonicalPath": "/Users/seungjulee/Desktop/Dev/game/domains/ocean-rescue/assets/handoff/inbox/scene-submarine-01.svg",
+  "inboxSvgSha256": "338e71c483e9e01eba7ddc154e68ef858482c85d39d899eda493e9112df714e9",
+  "structureReportPath": "domains/ocean-rescue/assets/review/handoff-intake/scene-submarine-01/structure-report.json",
+  "structureReportSha256": "14ad3356fa007d3b9792d5bff263aa6610f8507e20ffd5eb0020b69123854963",
+  "structureVerdict": "STRUCTURE_PASS",
+  "canonicalSourcePath": "domains/ocean-rescue/assets/source/scene/submarine.svg",
+  "canonicalSourceSha256": "338e71c483e9e01eba7ddc154e68ef858482c85d39d899eda493e9112df714e9",
+  "artPacketPath": "domains/ocean-rescue/assets/source/art-packet.json",
+  "artPacketSha256": "5a3e2f8cf2ee1bdd62ebdacae7836907baa222966822553817aa4ffc74d2542f",
+  "artPacketAssetSourceSha256": "338e71c483e9e01eba7ddc154e68ef858482c85d39d899eda493e9112df714e9",
+  "artApprovalPath": "domains/ocean-rescue/assets/source/art-approval.json",
+  "artApprovalSha256": "39cda1702e89d99cb35021cef9ee55a45bd2edcf86730773b499d17dd3b9a2cd",
+  "atlasManifestPath": "domains/ocean-rescue/assets/generated/atlas-manifest.json",
+  "atlasManifestSha256": "57fc12a62ea05286dad3967e1280c097bf8bae39b4140e0b0962af7ee6267a24",
+  "sceneAtlasJsonSha256": "cf2ef1f330a9da6859d3539f6145dd1776428273acc6867afd2832a196410daf",
+  "sceneAtlasPngSha256": "3b925f566343c6b945015b3ec22d4ad13f3679109f8694b1eb2e00b89276b848",
+  "renderAssetsSha256": "30e60981540d17d7854221d725306eb16984041e76af76911e36ca47e928552f",
+  "singleHtmlSha256": "978474e31585f2a0a7589808b1ae088f14780e73467b50647a304e271046382e",
+  "rasterizer": "CairoSVG",
+  "rasterizerVersion": "2.9.0",
+  "rendererBackend": "webgl",
+  "logicalViewport": [
+    1280,
+    720
+  ],
+  "deviceScaleFactor": 1,
+  "sourceLogicalSize": [
+    320,
+    200
+  ],
+  "pivot": [
+    0.5,
+    0.55
+  ],
+  "runtimeScale": [
+    1.1,
+    1.1
+  ],
+  "candidateCanonicalHashMatch": true,
+  "candidateArtPacketHashMatch": true,
+  "workflowOrderViolation": true,
+  "preexistingCanonicalizationCommit": "9336240d8462d47cbe94bcb65935f86cb82f8318",
+  "candidateWasCanonicalBeforeStructureProof": true,
+  "humanVisualDecisionAfterThisProofRequired": true,
+  "isolated1x": {
+    "path": "isolated-1x.png",
+    "fileSha256": "b592fe7fe3ffd6dd5069318d4ad88faa456a025146efc0b3b772d1a7256c8d8d",
+    "pixelSha256": "e0a53d6aaa2cff39edbfa07304f4fee5eeae62cb91a5e6ff9ef1af202fe659e4",
+    "byteSize": 21608,
+    "width": 320,
+    "height": 200,
+    "alphaPresent": true,
+    "visibleAlphaBounds": {
+      "x": 17,
+      "y": 15,
+      "width": 272,
+      "height": 161
+    }
+  },
+  "isolated2x": {
+    "path": "isolated-2x.png",
+    "fileSha256": "332c00a90e42ec4695e1bbcf638e9605d9816dd7c9fdd98844749d092d69f8c9",
+    "pixelSha256": "c47145bdf6f11f95ed7a2e5bacf05835ecd6c94625b29c8adcf9fe119a831507",
+    "byteSize": 43416,
+    "width": 640,
+    "height": 400,
+    "alphaPresent": true,
+    "visibleAlphaBounds": {
+      "x": 35,
+      "y": 31,
+      "width": 543,
+      "height": 320
+    }
+  },
+  "inContextRuns": [
+    {
+      "rendererBackend": "webgl",
+      "viewport": [
+        1280,
+        720
+      ],
+      "deviceScaleFactor": 1,
+      "spriteLabel": "travel-submarine",
+      "spriteType": "PIXI.Sprite",
+      "textureLabel": "scene.submarine",
+      "textureFrame": {
+        "x": 2,
+        "y": 2,
+        "w": 271.5,
+        "h": 160,
+        "finite": true,
+        "nonzero": true
+      },
+      "textureSourceSize": {
+        "w": 320,
+        "h": 200,
+        "finite": true,
+        "nonzero": true
+      },
+      "textureResolution": 2,
+      "spriteAnchor": {
+        "x": 0.5,
+        "y": 0.55
+      },
+      "spriteScale": [
+        1.1,
+        1.1
+      ],
+      "spritePosition": [
+        260,
+        360
+      ],
+      "travelSceneState": "active",
+      "animationState": "paused",
+      "collisionCount": 0,
+      "collisionActive": false,
+      "impactActive": "false",
+      "impactPhase": "idle",
+      "impactOverlayVisible": false,
+      "submarineFlashVisible": false,
+      "obstacleDiagnostics": {
+        "renderer": "sprite",
+        "boundaryMode": "dual-silhouette",
+        "placeholderCount": "0",
+        "nonfiniteCount": "0",
+        "impactMode": "contact-burst-v1"
+      },
+      "externalOriginRequestCount": 0,
+      "referenceImageRequestCount": 0,
+      "pageErrorCount": 0,
+      "consoleErrorCount": 0,
+      "unhandledRejectionCount": 0,
+      "securityPolicyViolationCount": 0,
+      "screenshot": {
+        "width": 1280,
+        "height": 720,
+        "fileSha256": "8a78b3fc1b30e5ba5d2e2322cc639bb6c9145263adb6f9a22c181f5b8bc95a1b",
+        "pixelSha256": "5cbd3149ef6a9dc221d744fd989344125ff41a9674d5081df0714a1bdf7e3a99",
+        "byteSize": 147409
+      }
+    },
+    {
+      "rendererBackend": "webgl",
+      "viewport": [
+        1280,
+        720
+      ],
+      "deviceScaleFactor": 1,
+      "spriteLabel": "travel-submarine",
+      "spriteType": "PIXI.Sprite",
+      "textureLabel": "scene.submarine",
+      "textureFrame": {
+        "x": 2,
+        "y": 2,
+        "w": 271.5,
+        "h": 160,
+        "finite": true,
+        "nonzero": true
+      },
+      "textureSourceSize": {
+        "w": 320,
+        "h": 200,
+        "finite": true,
+        "nonzero": true
+      },
+      "textureResolution": 2,
+      "spriteAnchor": {
+        "x": 0.5,
+        "y": 0.55
+      },
+      "spriteScale": [
+        1.1,
+        1.1
+      ],
+      "spritePosition": [
+        260,
+        360
+      ],
+      "travelSceneState": "active",
+      "animationState": "paused",
+      "collisionCount": 0,
+      "collisionActive": false,
+      "impactActive": "false",
+      "impactPhase": "idle",
+      "impactOverlayVisible": false,
+      "submarineFlashVisible": false,
+      "obstacleDiagnostics": {
+        "renderer": "sprite",
+        "boundaryMode": "dual-silhouette",
+        "placeholderCount": "0",
+        "nonfiniteCount": "0",
+        "impactMode": "contact-burst-v1"
+      },
+      "externalOriginRequestCount": 0,
+      "referenceImageRequestCount": 0,
+      "pageErrorCount": 0,
+      "consoleErrorCount": 0,
+      "unhandledRejectionCount": 0,
+      "securityPolicyViolationCount": 0,
+      "screenshot": {
+        "width": 1280,
+        "height": 720,
+        "fileSha256": "8a78b3fc1b30e5ba5d2e2322cc639bb6c9145263adb6f9a22c181f5b8bc95a1b",
+        "pixelSha256": "5cbd3149ef6a9dc221d744fd989344125ff41a9674d5081df0714a1bdf7e3a99",
+        "byteSize": 147409
+      }
+    }
+  ],
+  "verdict": "RENDER_PROOF_READY",
+  "rejectionReasons": []
+}

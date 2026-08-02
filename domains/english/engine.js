@@ -131,6 +131,7 @@ function pickCategory() {
    문제 생성 및 유형
 ═══════════════════════════════════ */
 const Q_TYPE_ORDER = ['kor2word', 'spelling', 'minimal_pair', 'sentence', 'shopping_dialogue', 'typing'];
+const WEEKLY_Q_TYPE_ORDER = ['kor2word', 'spelling', 'minimal_pair', 'sentence', 'typing'];
 
 function pickQuestionType(level) {
   const rows = {
@@ -149,6 +150,12 @@ function pickQuestionType(level) {
     if (r <= 0) return Q_TYPE_ORDER[i];
   }
   return 'kor2word';
+}
+
+function pickWeeklyQuestionType(level) {
+  const type = pickQuestionType(level);
+  if (WEEKLY_Q_TYPE_ORDER.indexOf(type) !== -1) return type;
+  return 'spelling';
 }
 
 function buildQuestion(type, word, meta) {
@@ -225,7 +232,7 @@ function buildQuestion(type, word, meta) {
       blankIndices, blanks 
     };
   }
-  return { type, ico, main: ko, hint: null, answer: en, choices: makeWordChoices(word, 'en') };
+  return { type, ico, main: ko, hint: null, answer: en, word: en, choices: makeWordChoices(word, 'en') };
 }
 
 function generateQuestion() {
@@ -279,10 +286,10 @@ function _generateCandidate() {
     const wordData = [w.en, w.ko, w.icon || "", diff];
     
     // 유형 순환 (주간 단어는 유형 다각도 노출)
-    let type = pickQuestionType(diff);
+    let type = pickWeeklyQuestionType(diff);
     if (weeklyTypeHistory[w.en] !== undefined) {
-      const idx = Q_TYPE_ORDER.indexOf(weeklyTypeHistory[w.en]);
-      const next = Q_TYPE_ORDER[(idx + 1 + Q_TYPE_ORDER.length) % Q_TYPE_ORDER.length];
+      const idx = WEEKLY_Q_TYPE_ORDER.indexOf(weeklyTypeHistory[w.en]);
+      const next = WEEKLY_Q_TYPE_ORDER[(idx + 1 + WEEKLY_Q_TYPE_ORDER.length) % WEEKLY_Q_TYPE_ORDER.length];
       type = next;
     }
     weeklyTypeHistory[w.en] = type;
@@ -319,7 +326,7 @@ function _generateCandidate() {
     }
     if (!word) word = WORDS[p.cat].words.find(w => wEn(w) === p.en) || pickWord(p.cat, p.level);
     
-    const res = buildQuestion(pickQuestionType(p.level), word, { cat: p.cat });
+    const res = buildQuestion(p.isWeekly ? pickWeeklyQuestionType(p.level) : pickQuestionType(p.level), word, { cat: p.cat });
     return { ...res, _cat: p.cat, _level: p.level, _wordEn: res.type === 'shopping_dialogue' ? wEn(word) + '_' + (res.id || '') : wEn(word), isWeekly: p.isWeekly };
   }
 

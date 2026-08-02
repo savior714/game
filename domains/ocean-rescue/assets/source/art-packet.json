@@ -262,10 +262,10 @@
         0.5,
         0.55
       ],
-      "authoringMethod": "manual-vector",
+      "authoringMethod": "frontier-svg-human-approved",
       "approvalState": "approved",
-      "revisionNote": "Initial proof-art packet: toy-like rescue submarine with portholes and periscope",
-      "sourceSha256": "7654768aeb7a0351d65448f741c5969c1ce98993c93fc79da5c63ee6624616fa"
+      "revisionNote": "Revision: improved silhouette readability at travel-scene size; distinct hull, cockpit canopy, propulsion, rescue gear, and lights with semantic groups",
+      "sourceSha256": "338e71c483e9e01eba7ddc154e68ef858482c85d39d899eda493e9112df714e9"
     },
     {
       "id": "scene-water-far-01",

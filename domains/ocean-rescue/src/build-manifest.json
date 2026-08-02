@@ -16,7 +16,7 @@
       "namespace": "OceanRescue.RenderAssets",
       "depends_on": [],
       "kind": "generated-assets",
-      "sha256": "d7654092698391389cb53d534e4d09165b75436b8cb507444483be390d040998"
+      "sha256": "30e60981540d17d7854221d725306eb16984041e76af76911e36ca47e928552f"
     },
     {
       "file": "render-runtime.js",

@@ -59,11 +59,11 @@
     "ui.drag-arrow",
     "ui.drop-zone"
   ],
-  "artPacketSha256": "1d35ff837194c1d9b052bc0e959357f93ec3bcd90dd0c8d0b37157b2cc3584f4",
-  "contactSheetSha256": "477667799d549d383db38e522c8c28146c409d063728a1b7c10d43cee12f54d5",
-  "sourceSetSha256": "b99584c13d2d5862bf40f9b1f4d33334a817a9d0ae531951ff35bb64e4405b1a",
+  "artPacketSha256": "5a3e2f8cf2ee1bdd62ebdacae7836907baa222966822553817aa4ffc74d2542f",
+  "contactSheetSha256": "06f1d6f0f224f8eda945e1b782242cf23ee057cf153b68b290f3e90488c451cb",
+  "sourceSetSha256": "e45009b2953a3f6321afc3cab5a20b2f3588f1fdda03b0d1244db17514e87588",
   "requiredPredecessor": "163b3206399c051b516c121c6c8c0ca4bd19268a",
-  "approvalDate": "2026-08-01",
+  "approvalDate": "2026-08-02",
   "evidence": {
     "focusedTest": "tests/test_ocean_rescue_art_packet.py",
     "contactSheet": "../review/proof-art-contact-sheet.html",

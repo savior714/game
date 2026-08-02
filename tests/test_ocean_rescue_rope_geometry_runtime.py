@@ -90,6 +90,52 @@ def test_mjs_probes_retained_pixi_nodes():
     assert "centerDelta" in mjs
 
 
+def test_mjs_footprint_uses_trim_not_frame_as_offset():
+    mjs = _mjs()
+    assert "tex.trim" in mjs, "trim must be read from the runtime texture"
+    assert "worldTransform.apply" in mjs, "world transform must be applied canonically"
+    assert "trimX + trimW / 2 - anchor.x * origW" in mjs, (
+        "trim-aware local center missing"
+    )
+    assert "trimY + trimH / 2 - anchor.y * origH" in mjs, (
+        "trim-aware local center missing"
+    )
+    assert "tex.frame.x - anchorX" not in mjs, (
+        "atlas frame position used as trim offset"
+    )
+    assert "tex.frame.x - anchor.x" not in mjs, (
+        "atlas frame position used as trim offset"
+    )
+
+
+def test_mjs_has_visible_footprint_crosschecks():
+    mjs = _mjs()
+    assert "visibleFootprint" in mjs
+    assert "crossCheckVsVisualBounds" in mjs
+    assert "crossCheckVsGetBounds" in mjs
+    assert "boundsCenter" in mjs
+    assert "visualBoundsCenter" in mjs
+    assert "visibleCenterDelta" in mjs
+    assert "normalOffset" in mjs
+    assert "tangentOffset" in mjs
+
+
+def test_mjs_reports_runtime_texture_semantics():
+    mjs = _mjs()
+    assert (
+        "trimX" in mjs and "trimY" in mjs and "trimWidth" in mjs and "trimHeight" in mjs
+    )
+    assert "defaultAnchorX" in mjs and "defaultAnchorY" in mjs
+    assert "resolution" in mjs
+
+
+def test_mjs_bounds_helper_does_not_call_update_transform():
+    mjs = _mjs()
+    assert "obj.updateTransform()" not in mjs, (
+        "updateTransform() without parent transform throws in PixiJS 8"
+    )
+
+
 def test_runner_has_production_hash_guard():
     runner = _runner()
     assert "hashlib" in runner
@@ -125,6 +171,17 @@ def test_runner_guards_main_and_pass_marker():
     runner = _runner()
     assert '__name__ == "__main__"' in runner
     assert "SEA_TURTLE_ROPE_VISUAL_HIT_GEOMETRY_ALIGNMENT=PASS" in runner
+
+
+def test_runner_has_visible_footprint_contract():
+    runner = _runner()
+    assert "CROSS_CHECK_EPS" in runner
+    assert "RESIDUAL_MIN" in runner
+    assert "crossVsVisual<=1px" in runner
+    assert "visibleResidualConfirmed" in runner
+    assert "normalSignConsistent" in runner
+    assert "RESIDUAL_VISIBLE_OFFSET=CONFIRMED" in runner
+    assert "SEA_TURTLE_ROPE_VISIBLE_FOOTPRINT_MEASUREMENT=VALID" in runner
 
 
 def test_runner_no_third_party_imports():

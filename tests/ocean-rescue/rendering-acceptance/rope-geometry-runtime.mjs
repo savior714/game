@@ -177,7 +177,6 @@ function rectOf(el) {
 function boundsOf(obj) {
   let error = null;
   try {
-    obj.updateTransform();
     const b = obj.getBounds();
     let local = null;
     try {
@@ -275,6 +274,7 @@ function run() {
     let angleDelta = NaN;
     let loopTexture = null;
     let footprint = null;
+    let visibleFootprint = null;
     if (loop) {
       centerDelta = Math.hypot(
         loop.position.x - midpoint.x,
@@ -282,6 +282,7 @@ function run() {
       );
       angleDelta = normalizeAngleDelta(loop.rotation - canonicalAngle);
       const tex = loop.texture;
+      const sourceRes = tex && tex.source ? tex.source._resolution : null;
       loopTexture = {
         width: tex ? tex.width : null,
         height: tex ? tex.height : null,
@@ -291,26 +292,76 @@ function run() {
         frameHeight: tex && tex.frame ? tex.frame.height : null,
         frameOffsetX: tex && tex.frame ? tex.frame.x : null,
         frameOffsetY: tex && tex.frame ? tex.frame.y : null,
+        trimX: tex && tex.trim ? tex.trim.x : null,
+        trimY: tex && tex.trim ? tex.trim.y : null,
+        trimWidth: tex && tex.trim ? tex.trim.width : null,
+        trimHeight: tex && tex.trim ? tex.trim.height : null,
+        defaultAnchorX: tex && tex.defaultAnchor ? tex.defaultAnchor.x : null,
+        defaultAnchorY: tex && tex.defaultAnchor ? tex.defaultAnchor.y : null,
+        resolution: sourceRes,
       };
       const anchor = loop.anchor || { x: 0.5, y: 0.5 };
       const sx = loop.scale ? loop.scale.x : 1;
       const sy = loop.scale ? loop.scale.y : 1;
-      if (tex && tex.orig && tex.frame) {
-        const anchorX = anchor.x * tex.orig.width;
-        const anchorY = anchor.y * tex.orig.height;
-        const localX = tex.frame.x - anchorX;
-        const localY = tex.frame.y - anchorY;
-        const centerX = localX + tex.frame.width / 2;
-        const centerY = localY + tex.frame.height / 2;
-        const rot = loop.rotation || 0;
-        const worldCenterX = loop.position.x + Math.cos(rot) * centerX * sx;
-        const worldCenterY = loop.position.y + Math.sin(rot) * centerY * sx;
+      const bounds = boundsOf(loop);
+      if (tex && tex.orig) {
+        const origW = tex.orig.width;
+        const origH = tex.orig.height;
+        const trim = tex.trim;
+        const trimX = trim ? trim.x : 0;
+        const trimY = trim ? trim.y : 0;
+        const trimW = trim ? trim.width : origW;
+        const trimH = trim ? trim.height : origH;
+        // Sprite-local center of the trimmed visible frame. Matches the PIXI
+        // visualBounds rect: min = (trim.x - anchor.x * orig, trim.y - anchor.y * orig).
+        const localCenterX = trimX + trimW / 2 - anchor.x * origW;
+        const localCenterY = trimY + trimH / 2 - anchor.y * origH;
+        const worldCenter = loop.worldTransform.apply({ x: localCenterX, y: localCenterY });
         footprint = {
-          frameWorldWidth: tex.frame.width * sx,
-          frameWorldHeight: tex.frame.height * sy,
-          frameWorldCenter: { x: worldCenterX, y: worldCenterY },
+          frameWorldWidth: trimW * sx,
+          frameWorldHeight: trimH * sy,
+          frameWorldCenter: { x: worldCenter.x, y: worldCenter.y },
+          localCenter: { x: localCenterX, y: localCenterY },
           anchor: { x: anchor.x, y: anchor.y },
           scale: { x: sx, y: sy },
+          trim: { x: trimX, y: trimY, width: trimW, height: trimH },
+          orig: { width: origW, height: origH },
+        };
+
+        // Independent cross-checks of the visible footprint center.
+        let boundsCenter = null;
+        if (bounds && !bounds.error) {
+          boundsCenter = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+        }
+        let visualBoundsCenter = null;
+        if (loop.visualBounds) {
+          const vb = loop.visualBounds;
+          const tl = loop.worldTransform.apply({ x: vb.minX, y: vb.minY });
+          const br = loop.worldTransform.apply({ x: vb.maxX, y: vb.maxY });
+          visualBoundsCenter = { x: (tl.x + br.x) / 2, y: (tl.y + br.y) / 2 };
+        }
+        const deltaX = worldCenter.x - midpoint.x;
+        const deltaY = worldCenter.y - midpoint.y;
+        const segmentX = rope.end.x - rope.start.x;
+        const segmentY = rope.end.y - rope.start.y;
+        const segmentLen = Math.hypot(segmentX, segmentY) || 1;
+        const unitTangent = { x: segmentX / segmentLen, y: segmentY / segmentLen };
+        const unitNormal = { x: -unitTangent.y, y: unitTangent.x };
+        visibleFootprint = {
+          trimAwareCenter: { x: worldCenter.x, y: worldCenter.y },
+          boundsCenter,
+          visualBoundsCenter,
+          crossCheckVsGetBounds: boundsCenter
+            ? Math.hypot(worldCenter.x - boundsCenter.x, worldCenter.y - boundsCenter.y)
+            : NaN,
+          crossCheckVsVisualBounds: visualBoundsCenter
+            ? Math.hypot(worldCenter.x - visualBoundsCenter.x, worldCenter.y - visualBoundsCenter.y)
+            : NaN,
+          visibleCenterDelta: Math.hypot(deltaX, deltaY),
+          deltaX,
+          deltaY,
+          tangentOffset: deltaX * unitTangent.x + deltaY * unitTangent.y,
+          normalOffset: deltaX * unitNormal.x + deltaY * unitNormal.y,
         };
       }
     }
@@ -328,6 +379,7 @@ function run() {
       loopScale: loop ? { x: loop.scale.x, y: loop.scale.y } : null,
       loopBounds: loop ? boundsOf(loop) : null,
       footprint,
+      visibleFootprint,
       loopTexture,
       centerDelta,
       angleDelta,

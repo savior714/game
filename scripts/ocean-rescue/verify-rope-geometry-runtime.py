@@ -53,6 +53,16 @@ WEBGL_DISABLE_FLAG = "--disable-" + "webgl"
 POSITION_EPS = 1.0
 ANGLE_EPS = 0.01
 
+# Visible-footprint measurement contract (PixiJS 8.19.0).
+# texture.trim + orig + Sprite anchor + worldTransform produce the trimmed
+# visible-frame center. It must converge with Sprite.visualBounds (the same
+# trimmed rect) within 1px. Sprite.getBounds() in PixiJS 8 measures the
+# UNTRIMMED orig rect, so its center is expected to differ by the trim/anchor
+# artifact; it is kept as a sanity bound (<= 4px) only.
+CROSS_CHECK_EPS = 1.0
+GET_BOUNDS_ARTIFACT_MAX = 4.0
+RESIDUAL_MIN = 2.0
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -189,6 +199,82 @@ def finite_number(value):
     return number(value) and math.isfinite(value)
 
 
+def visible_footprint_checks(ropes, tag, checks, require_residual=False):
+    """Validate the trimmed visible-footprint measurement for each rope.
+
+    MEASUREMENT_VALID requires the trim-aware center to converge with
+    Sprite.visualBounds (the trimmed visible rect) within 1px per axis. The
+    getBounds() delta is reported under a documented sanity bound because
+    PixiJS 8 getBounds() measures the untrimmed orig rect.
+    """
+    normals = []
+    for idx, rope in enumerate(ropes):
+        vt = "{}r{}.visible".format(tag, idx + 1)
+        vf = rope.get("visibleFootprint") or {}
+        checks.append(
+            (
+                "{}.present".format(vt),
+                bool(vf),
+                "{} visibleFootprint missing".format(vt),
+            )
+        )
+        trim = vf.get("trimAwareCenter") or {}
+        checks.append(
+            (
+                "{}.trimAwareFinite".format(vt),
+                finite_number(trim.get("x")) and finite_number(trim.get("y")),
+                "{} trimAware center not finite".format(vt),
+            )
+        )
+        cross_visual = vf.get("crossCheckVsVisualBounds")
+        checks.append(
+            (
+                "{}.crossVsVisual<=1px".format(vt),
+                finite_number(cross_visual) and cross_visual <= CROSS_CHECK_EPS,
+                "{} trim-aware vs visualBounds delta {:.3f}px > {:.0f}px".format(
+                    vt, cross_visual, CROSS_CHECK_EPS
+                ),
+            )
+        )
+        cross_bounds = vf.get("crossCheckVsGetBounds")
+        checks.append(
+            (
+                "{}.crossVsGetBounds<=4px".format(vt),
+                finite_number(cross_bounds) and cross_bounds <= GET_BOUNDS_ARTIFACT_MAX,
+                "{} trim-aware vs getBounds delta {:.3f}px (PixiJS getBounds uses "
+                "untrimmed orig)".format(vt, cross_bounds),
+            )
+        )
+        delta = vf.get("visibleCenterDelta")
+        checks.append(
+            (
+                "{}.visibleDeltaFinite".format(vt),
+                finite_number(delta),
+                "{} visibleCenterDelta not finite".format(vt),
+            )
+        )
+        normal = vf.get("normalOffset")
+        if finite_number(normal):
+            normals.append(normal)
+    if require_residual and normals:
+        checks.append(
+            (
+                "{}visibleResidualConfirmed".format(tag),
+                all(abs(n) > RESIDUAL_MIN for n in normals),
+                "{} visible footprint not > {:.0f}px from canonical midpoint".format(
+                    tag, RESIDUAL_MIN
+                ),
+            )
+        )
+        checks.append(
+            (
+                "{}normalSignConsistent".format(tag),
+                all(n > 0 for n in normals) or all(n < 0 for n in normals),
+                "{} visible footprint normal offsets not same direction".format(tag),
+            )
+        )
+
+
 def geometry_checks(diag, allow_red, checks):
     def check(name, ok, message):
         checks.append((name, ok, message))
@@ -263,6 +349,7 @@ def geometry_checks(diag, allow_red, checks):
             ),
             "{} loop footprint not finite".format(tag),
         )
+    visible_footprint_checks(ropes, "pointerInactive.", checks, require_residual=True)
 
     active = diag.get("pointerActive") or {}
     active_ropes = (active.get("geometry") or {}).get("ropes") or []
@@ -292,6 +379,7 @@ def geometry_checks(diag, allow_red, checks):
                 ar.get("angleDelta"), ANGLE_EPS
             ),
         )
+        visible_footprint_checks(active_ropes[:1], "pointerActive.", checks)
 
     inactive_after = diag.get("pointerInactiveAfter") or {}
     after_ropes = inactive_after.get("ropes") or []
@@ -307,6 +395,7 @@ def geometry_checks(diag, allow_red, checks):
                 after_ropes[0].get("centerDelta"), POSITION_EPS
             ),
         )
+        visible_footprint_checks(after_ropes[:1], "pointerInactiveAfter.", checks)
 
     cut = (inactive or {}).get("cutRing") or {}
     check(
@@ -544,6 +633,17 @@ def main():
             )[0].get("centerDelta")
         )
     )
+    inactive_ropes = (diag.get("pointerInactive") or {}).get("ropes") or []
+    vf0 = (inactive_ropes[0].get("visibleFootprint") or {}) if inactive_ropes else {}
+    print(
+        "  pointerInactive.r1.visibleCenterDelta={} normalOffset={} "
+        "crossVsVisual={} crossVsGetBounds={}".format(
+            vf0.get("visibleCenterDelta"),
+            vf0.get("normalOffset"),
+            vf0.get("crossCheckVsVisualBounds"),
+            vf0.get("crossCheckVsGetBounds"),
+        )
+    )
     print(
         "  external={} reference={} errors={} rejections={} csp={}".format(
             diag.get("externalOriginRequestCount"),
@@ -559,6 +659,18 @@ def main():
         print("\nSEA_TURTLE_ROPE_VISUAL_HIT_GEOMETRY_ALIGNMENT=FAIL", file=sys.stderr)
         return 1
 
+    measurement_valid = True
+    for name, ok, _ in checks:
+        if "crossVsVisual" in name and not ok:
+            measurement_valid = False
+    residual_confirmed = all(
+        ok for name, ok, _ in checks if name.endswith("visibleResidualConfirmed")
+    )
+    if measurement_valid and residual_confirmed:
+        print(
+            "\nSEA_TURTLE_ROPE_VISIBLE_FOOTPRINT_MEASUREMENT=VALID "
+            "RESIDUAL_VISIBLE_OFFSET=CONFIRMED"
+        )
     print("\nSEA_TURTLE_ROPE_VISUAL_HIT_GEOMETRY_ALIGNMENT=PASS")
     return 0
 

@@ -46,7 +46,7 @@
           "spritesheet": "characters-0.json",
           "width": 3188,
           "height": 354,
-          "imageSha256": "0118213c5ba4bf3da4310b6d954fe990a5317d27b37400f0106a72caf55396d4",
+          "imageSha256": "b9ad42ac939bb3dd860c523b42a1d77b915b9c92d50dc6c0e600201f126f4546",
           "spritesheetSha256": "9c75969c3cbc6b037604dfbef6d81da28c76a26b2242f7070182c0aeb2bfadd9",
           "aliases": [
             "crab.free",
@@ -66,7 +66,7 @@
           ]
         }
       ],
-      "bundleSha256": "30f00f975818a0ebe86383cbf58bb4d01178363c6414eb627a3d95a6132f1126"
+      "bundleSha256": "4e7e554be330920bf99f55deefda3fd9b8c8069314dff30aa5ef7093ff87c963"
     },
     {
       "name": "scene",
@@ -110,7 +110,7 @@
           "spritesheet": "scene-0.json",
           "width": 4032,
           "height": 2526,
-          "imageSha256": "3b925f566343c6b945015b3ec22d4ad13f3679109f8694b1eb2e00b89276b848",
+          "imageSha256": "bc8de21db85ba7bdee653bf2b85f05e98e39f04a05f0a5ca7d85c095db9db16d",
           "spritesheetSha256": "cf2ef1f330a9da6859d3539f6145dd1776428273acc6867afd2832a196410daf",
           "aliases": [
             "rescue.rock.01",
@@ -145,7 +145,7 @@
           ]
         }
       ],
-      "bundleSha256": "4935cdebc85f907e7d5c80c13de8b56e44cf7355a64a57cc5693c331ceb96f5b"
+      "bundleSha256": "60322e67a7754046aaa452589ddefd6e80c4f4b408355bac8287c0d4656a5b64"
     },
     {
       "name": "effects-ui",
@@ -170,7 +170,7 @@
           "spritesheet": "effects-ui-0.json",
           "width": 3833,
           "height": 646,
-          "imageSha256": "abd12921a225a28d225a57d0a4b25aaadbf9c2497b586b190ff94958a64c7687",
+          "imageSha256": "594e6eafac1c6a2a492afad9459d1acdd084f7b359fa6e3c93201043ab2d753a",
           "spritesheetSha256": "d27ee6522bcb61eef70a7ab42de7d6694ae92d1fd9db4a6bfe7a723c5d8ee3bc",
           "aliases": [
             "fx.bubbles",
@@ -186,16 +186,16 @@
           ]
         }
       ],
-      "bundleSha256": "9468ac0fe2ca5f258ee136f6c0977e4cadc0ceaa1ab0a28d612516e74d8c1ccc"
+      "bundleSha256": "b8346a5db1e497df39290843306b9959890ea3359ddff5237e1d1140c96661d4"
     }
   ],
   "files": {
     "characters/characters-0.json": "9c75969c3cbc6b037604dfbef6d81da28c76a26b2242f7070182c0aeb2bfadd9",
-    "characters/characters-0.png": "0118213c5ba4bf3da4310b6d954fe990a5317d27b37400f0106a72caf55396d4",
+    "characters/characters-0.png": "b9ad42ac939bb3dd860c523b42a1d77b915b9c92d50dc6c0e600201f126f4546",
     "effects-ui/effects-ui-0.json": "d27ee6522bcb61eef70a7ab42de7d6694ae92d1fd9db4a6bfe7a723c5d8ee3bc",
-    "effects-ui/effects-ui-0.png": "abd12921a225a28d225a57d0a4b25aaadbf9c2497b586b190ff94958a64c7687",
+    "effects-ui/effects-ui-0.png": "594e6eafac1c6a2a492afad9459d1acdd084f7b359fa6e3c93201043ab2d753a",
     "pixi-assets-manifest.json": "6a289c5b258880597e129260ce86a5c3c1f89e82df46f337ce6177df668a8dad",
     "scene/scene-0.json": "cf2ef1f330a9da6859d3539f6145dd1776428273acc6867afd2832a196410daf",
-    "scene/scene-0.png": "3b925f566343c6b945015b3ec22d4ad13f3679109f8694b1eb2e00b89276b848"
+    "scene/scene-0.png": "bc8de21db85ba7bdee653bf2b85f05e98e39f04a05f0a5ca7d85c095db9db16d"
   }
 }

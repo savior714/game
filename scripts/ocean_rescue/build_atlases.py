@@ -470,9 +470,14 @@ class AtlasBuilder:
                     content_x = item["x"] + self.padding_px
                     content_y = item["y"] + self.padding_px
 
-                    # Paste trimmed image onto page
+                    # Paste trimmed image onto page.
+                    # The atlas page is transparent RGBA and packed frames are
+                    # non-overlapping, so the RGBA frame bytes must be copied
+                    # verbatim. Passing the source image as a mask would blend
+                    # semi-transparent channels against the page and attenuate
+                    # RGB by alpha and alpha by alpha.
                     trimmed_img = meta["png_data"]
-                    page_img.paste(trimmed_img, (content_x, content_y), trimmed_img)
+                    page_img.paste(trimmed_img, (content_x, content_y))
 
                     # sourceSize = untrimmed physical dimensions
                     phys_w, phys_h = meta["physical_size"]

@@ -1,0 +1,746 @@
+{
+  "schemaVersion": 1,
+  "taskId": "AIDENGAME-OCEAN-RESCUE-OTTER-HEAD-POST-CANONICAL-RENDER-PROOF-02",
+  "assetId": "otter-head-01",
+  "alias": "otter.head",
+  "sourceCommit": "fba9c1a3a581d89c1b98cb903f78eb43c6652db5",
+  "canonicalizationCommit": "fba9c1a3a581d89c1b98cb903f78eb43c6652db5",
+  "atlasRepairCommit": "e8bb970c0c8dac394c662bead5fbc3d4160927c3",
+  "humanApproval": {
+    "decision": "APPROVED",
+    "date": "2026-08-02",
+    "input": "승인",
+    "approvedProofTaskId": "AIDENGAME-OCEAN-RESCUE-OTTER-HEAD-HANDOFF-RENDER-PROOF-01"
+  },
+  "approvedCandidateSha256": "87e6b35d67e0d856d389570614bb47abef9f6271402e881660f98f400e40c5ec",
+  "structureReportPath": "domains/ocean-rescue/assets/review/handoff-intake/otter-head-01/structure-report.json",
+  "structureReportSha256": "bd5e5537247cce996f25c2f0ae3416adc67c08c1d49fe3a7675f6e4dd849cd29",
+  "structureVerdict": "STRUCTURE_PASS",
+  "preCanonicalProofManifestPath": "domains/ocean-rescue/assets/review/handoff-proof/otter-head-01/manifest.json",
+  "preCanonicalProofManifestSha256": "d845045d198bfbc8dc16053f4fda70d22666fa41c3d9254ae564b81fd8ac7670",
+  "preCanonicalProofVerdict": "RENDER_PROOF_READY",
+  "canonicalSourcePath": "domains/ocean-rescue/assets/source/characters/otter-head.svg",
+  "canonicalSourceSha256": "87e6b35d67e0d856d389570614bb47abef9f6271402e881660f98f400e40c5ec",
+  "artPacketPath": "domains/ocean-rescue/assets/source/art-packet.json",
+  "artPacketSha256": "320b6f6dae13e161e00ea9e1ba79e837096b9cfd1e2e443af0b1c20882796ea8",
+  "artPacketAssetSourceSha256": "87e6b35d67e0d856d389570614bb47abef9f6271402e881660f98f400e40c5ec",
+  "artApprovalPath": "domains/ocean-rescue/assets/source/art-approval.json",
+  "artApprovalSha256": "7921e21e25098a36593117a5e3cabb525726cd4afc07364a040d9f834250ddd4",
+  "atlasManifestPath": "domains/ocean-rescue/assets/generated/atlas-manifest.json",
+  "atlasManifestSha256": "6de43eb8e56e944fadb22d6d2b247b118e7f2346b27a921bae6dbdf51f73c071",
+  "charactersAtlasJsonPath": "domains/ocean-rescue/assets/generated/characters/characters-0.json",
+  "charactersAtlasJsonSha256": "9c75969c3cbc6b037604dfbef6d81da28c76a26b2242f7070182c0aeb2bfadd9",
+  "charactersAtlasPngPath": "domains/ocean-rescue/assets/generated/characters/characters-0.png",
+  "charactersAtlasPngSha256": "b9ad42ac939bb3dd860c523b42a1d77b915b9c92d50dc6c0e600201f126f4546",
+  "renderAssetsPath": "domains/ocean-rescue/src/render-assets.generated.js",
+  "renderAssetsSha256": "092673c6784fff9dc4b851fa636c54b5e5f4694ff245539cf1b446ad8228819e",
+  "singleHtmlPath": "ocean-rescue/index.html",
+  "singleHtmlSha256": "74781093b54da0db5d699333e05e484c586ca46c118043d5c585973b481cda0e",
+  "rasterizer": "CairoSVG",
+  "rasterizerVersion": "2.9.0",
+  "rendererBackend": "webgl",
+  "logicalViewport": [
+    1280,
+    720
+  ],
+  "deviceScaleFactor": 1,
+  "sourceLogicalSize": [
+    200,
+    200
+  ],
+  "physicalRasterSize": [
+    400,
+    400
+  ],
+  "pivot": [
+    0.5,
+    0.55
+  ],
+  "runtimeScale": [
+    0.62,
+    0.62
+  ],
+  "isolated1x": {
+    "path": "isolated-1x.png",
+    "fileSha256": "8f08ecfa98f23439210e61f2b30e7440f2ae49803d1ff9b8395b8674daafbadc",
+    "pixelSha256": "4a0bd666e394ae222b6d64d050996de56988b38d47ecf262fe4742f1d68b577b",
+    "byteSize": 17614,
+    "width": 200,
+    "height": 200,
+    "alphaPresent": true,
+    "visibleAlphaBounds": {
+      "x": 15,
+      "y": 21,
+      "width": 170,
+      "height": 169
+    }
+  },
+  "isolated2x": {
+    "path": "isolated-2x.png",
+    "fileSha256": "10a4ad48ab9c56241b74164ea6ccd3585ac714f4e1c59167b875d46153f6befb",
+    "pixelSha256": "dee47164ab12d192d93fd66efdbb0909febac683a0be09aafe56c3ae92221d14",
+    "byteSize": 37523,
+    "width": 400,
+    "height": 400,
+    "alphaPresent": true,
+    "visibleAlphaBounds": {
+      "x": 30,
+      "y": 42,
+      "width": 340,
+      "height": 338
+    }
+  },
+  "atlasFrame": {
+    "frame": {
+      "x": 4,
+      "y": 4,
+      "w": 340,
+      "h": 338
+    },
+    "sourceSize": {
+      "w": 400,
+      "h": 400
+    },
+    "spriteSourceSize": {
+      "x": 30,
+      "y": 42,
+      "w": 340,
+      "h": 338
+    },
+    "rotated": false,
+    "trimmed": true,
+    "anchor": {
+      "x": 0.5,
+      "y": 0.55
+    },
+    "reconstructedSize": [
+      400,
+      400
+    ],
+    "reconstructedPixelSha256": "dee47164ab12d192d93fd66efdbb0909febac683a0be09aafe56c3ae92221d14",
+    "canonical2xPixelSha256": "dee47164ab12d192d93fd66efdbb0909febac683a0be09aafe56c3ae92221d14",
+    "pixelExact": true,
+    "mismatchedPixels": 0,
+    "mismatchedChannels": 0
+  },
+  "atlasReconstructionPixelSha256": "dee47164ab12d192d93fd66efdbb0909febac683a0be09aafe56c3ae92221d14",
+  "canonical2xPixelSha256": "dee47164ab12d192d93fd66efdbb0909febac683a0be09aafe56c3ae92221d14",
+  "atlasCanonicalPixelExact": true,
+  "atlasMismatchPixelCount": 0,
+  "atlasMismatchChannelCount": 0,
+  "headSprite": {
+    "label": "sea-otter-head",
+    "isSprite": true,
+    "visible": true,
+    "renderable": true,
+    "x": 0,
+    "y": -42,
+    "rotation": 0,
+    "scaleX": 0.62,
+    "scaleY": 0.62,
+    "anchor": {
+      "x": 0.5,
+      "y": 0.55
+    },
+    "textureLabel": "otter.head",
+    "textureFrame": {
+      "x": 2,
+      "y": 2,
+      "w": 170,
+      "h": 169
+    },
+    "textureOrig": {
+      "w": 200,
+      "h": 200
+    },
+    "textureResolution": 2,
+    "bounds": {
+      "x": 528,
+      "y": 309.8,
+      "width": 124,
+      "height": 124
+    }
+  },
+  "overlaySprites": {
+    "sea-otter-eyes-open": {
+      "label": "sea-otter-eyes-open",
+      "isSprite": true,
+      "visible": true,
+      "renderable": true,
+      "x": 0,
+      "y": -55,
+      "rotation": 0,
+      "scaleX": 0.62,
+      "scaleY": 0.62,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "textureLabel": "otter.eyes.open",
+      "textureFrame": {
+        "x": 511,
+        "y": 2,
+        "w": 117,
+        "h": 53
+      },
+      "textureOrig": {
+        "w": 160,
+        "h": 80
+      },
+      "textureResolution": 2,
+      "bounds": {
+        "x": 540.4,
+        "y": 340.2,
+        "width": 99.20000000000005,
+        "height": 49.60000000000002
+      }
+    },
+    "sea-otter-eyes-closed": {
+      "label": "sea-otter-eyes-closed",
+      "isSprite": true,
+      "visible": false,
+      "renderable": true,
+      "x": 0,
+      "y": -55,
+      "rotation": 0,
+      "scaleX": 0.62,
+      "scaleY": 0.62,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "textureLabel": "otter.eyes.closed",
+      "textureFrame": {
+        "x": 634,
+        "y": 2,
+        "w": 113,
+        "h": 10.5
+      },
+      "textureOrig": {
+        "w": 160,
+        "h": 80
+      },
+      "textureResolution": 2,
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      }
+    },
+    "sea-otter-mouth-neutral": {
+      "label": "sea-otter-mouth-neutral",
+      "isSprite": true,
+      "visible": true,
+      "renderable": true,
+      "x": 0,
+      "y": -15,
+      "rotation": 0,
+      "scaleX": 0.62,
+      "scaleY": 0.62,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.58
+      },
+      "textureLabel": "otter.mouth.neutral",
+      "textureFrame": {
+        "x": 753,
+        "y": 2,
+        "w": 43,
+        "h": 3
+      },
+      "textureOrig": {
+        "w": 100,
+        "h": 60
+      },
+      "textureResolution": 2,
+      "bounds": {
+        "x": 559,
+        "y": 383.424,
+        "width": 62,
+        "height": 37.200000000000045
+      }
+    },
+    "sea-otter-mouth-concern": {
+      "label": "sea-otter-mouth-concern",
+      "isSprite": true,
+      "visible": false,
+      "renderable": true,
+      "x": 0,
+      "y": -15,
+      "rotation": 0,
+      "scaleX": 0.62,
+      "scaleY": 0.62,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.47
+      },
+      "textureLabel": "otter.mouth.concern",
+      "textureFrame": {
+        "x": 802,
+        "y": 2,
+        "w": 43,
+        "h": 12.5
+      },
+      "textureOrig": {
+        "w": 100,
+        "h": 60
+      },
+      "textureResolution": 2,
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      }
+    },
+    "sea-otter-mouth-smile": {
+      "label": "sea-otter-mouth-smile",
+      "isSprite": true,
+      "visible": false,
+      "renderable": true,
+      "x": 0,
+      "y": -15,
+      "rotation": 0,
+      "scaleX": 0.62,
+      "scaleY": 0.62,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.53
+      },
+      "textureLabel": "otter.mouth.smile",
+      "textureFrame": {
+        "x": 851,
+        "y": 2,
+        "w": 43,
+        "h": 13.5
+      },
+      "textureOrig": {
+        "w": 100,
+        "h": 60
+      },
+      "textureResolution": 2,
+      "bounds": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0
+      }
+    },
+    "sea-otter-torso": {
+      "label": "sea-otter-torso",
+      "isSprite": true,
+      "visible": true,
+      "renderable": true,
+      "x": 0,
+      "y": 22,
+      "rotation": 0,
+      "scaleX": 0.62,
+      "scaleY": 0.62,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.3
+      },
+      "textureLabel": "otter.torso",
+      "textureFrame": {
+        "x": 178,
+        "y": 2,
+        "w": 123,
+        "h": 173
+      },
+      "textureOrig": {
+        "w": 180,
+        "h": 220
+      },
+      "textureResolution": 2,
+      "bounds": {
+        "x": 534.2,
+        "y": 401.08,
+        "width": 111.59999999999991,
+        "height": 136.40000000000003
+      }
+    },
+    "sea-otter-arm-near": {
+      "label": "sea-otter-arm-near",
+      "isSprite": true,
+      "visible": true,
+      "renderable": true,
+      "x": 73,
+      "y": -4,
+      "rotation": 0.16,
+      "scaleX": 0.62,
+      "scaleY": 0.62,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.12
+      },
+      "textureLabel": "otter.arm.near",
+      "textureFrame": {
+        "x": 307,
+        "y": 2,
+        "w": 50.5,
+        "h": 149.5
+      },
+      "textureOrig": {
+        "w": 120,
+        "h": 180
+      },
+      "textureResolution": 2,
+      "bounds": {
+        "x": 610.6288226232548,
+        "y": 396.85241493498364,
+        "width": 91.22962174129657,
+        "height": 122.02783939681984
+      }
+    },
+    "sea-otter-arm-far": {
+      "label": "sea-otter-arm-far",
+      "isSprite": true,
+      "visible": true,
+      "renderable": true,
+      "x": -73,
+      "y": -4,
+      "rotation": -0.08,
+      "scaleX": 0.62,
+      "scaleY": 0.62,
+      "anchor": {
+        "x": 0.5,
+        "y": 0.12
+      },
+      "textureLabel": "otter.arm.far",
+      "textureFrame": {
+        "x": 363.5,
+        "y": 2,
+        "w": 50.5,
+        "h": 149.5
+      },
+      "textureOrig": {
+        "w": 120,
+        "h": 180
+      },
+      "textureResolution": 2,
+      "bounds": {
+        "x": 478.8487589439074,
+        "y": 399.67800493354207,
+        "width": 83.08052679587462,
+        "height": 117.18872365467882
+      }
+    },
+    "sea-otter-tail": {
+      "label": "sea-otter-tail",
+      "isSprite": true,
+      "visible": true,
+      "renderable": true,
+      "x": -94,
+      "y": 38,
+      "rotation": 0,
+      "scaleX": 0.62,
+      "scaleY": 0.62,
+      "anchor": {
+        "x": 0.65,
+        "y": 0.15
+      },
+      "textureLabel": "otter.tail",
+      "textureFrame": {
+        "x": 420,
+        "y": 2,
+        "w": 85,
+        "h": 98.5
+      },
+      "textureOrig": {
+        "w": 140,
+        "h": 120
+      },
+      "textureResolution": 2,
+      "bounds": {
+        "x": 439.58,
+        "y": 446.84,
+        "width": 86.80000000000001,
+        "height": 74.40000000000003
+      }
+    }
+  },
+  "proofImages": [
+    {
+      "path": "isolated-1x.png",
+      "fileSha256": "8f08ecfa98f23439210e61f2b30e7440f2ae49803d1ff9b8395b8674daafbadc",
+      "width": 200,
+      "height": 200,
+      "pixelSha256": "4a0bd666e394ae222b6d64d050996de56988b38d47ecf262fe4742f1d68b577b"
+    },
+    {
+      "path": "isolated-2x.png",
+      "fileSha256": "10a4ad48ab9c56241b74164ea6ccd3585ac714f4e1c59167b875d46153f6befb",
+      "width": 400,
+      "height": 400,
+      "pixelSha256": "dee47164ab12d192d93fd66efdbb0909febac683a0be09aafe56c3ae92221d14"
+    },
+    {
+      "path": "rig-base-only.png",
+      "fileSha256": "4ef2b9298917633a597f4cd5fb415274190f16c03a31a7814abf1b1a6936da79",
+      "width": 300,
+      "height": 300
+    },
+    {
+      "path": "rig-neutral.png",
+      "fileSha256": "f54203e66fc5812cce79872009dfd3a07bed469fce9a3054d0b02b85322ccd98",
+      "width": 300,
+      "height": 300
+    },
+    {
+      "path": "rig-concern.png",
+      "fileSha256": "99ab95e03388f8db58bb50fbff2ab2efe24c54176007af7b6f8ca4604cceec45",
+      "width": 300,
+      "height": 300
+    },
+    {
+      "path": "rig-smile.png",
+      "fileSha256": "a3338d8113c003b761db92edea5f340258167d20fd8749c5d8c466c8b99693aa",
+      "width": 300,
+      "height": 300
+    },
+    {
+      "path": "face-rig-contact-sheet.png",
+      "fileSha256": "12c4a9fce726760407ea7baedcbd02deef9fb9b6b08ca8c7f0359a8828363371",
+      "width": 1252,
+      "height": 358
+    },
+    {
+      "path": "sea-turtle-context.png",
+      "fileSha256": "3aa11b2c375ba199058ec36740f50efc5ae9c2768dae9b15c472a01268b7cbf9",
+      "width": 1280,
+      "height": 720
+    }
+  ],
+  "runs": [
+    {
+      "runIndex": 1,
+      "rendererBackend": "webgl",
+      "headSprite": {
+        "label": "sea-otter-head",
+        "isSprite": true,
+        "visible": true,
+        "renderable": true,
+        "x": 0,
+        "y": -42,
+        "rotation": 0,
+        "scaleX": 0.62,
+        "scaleY": 0.62,
+        "anchor": {
+          "x": 0.5,
+          "y": 0.55
+        },
+        "textureLabel": "otter.head",
+        "textureFrame": {
+          "x": 2,
+          "y": 2,
+          "w": 170,
+          "h": 169
+        },
+        "textureOrig": {
+          "w": 200,
+          "h": 200
+        },
+        "textureResolution": 2,
+        "bounds": {
+          "x": 528,
+          "y": 309.8,
+          "width": 124,
+          "height": 124
+        }
+      },
+      "faceState": {
+        "headRotation": 0,
+        "eyesOpenVisible": true,
+        "eyesClosedVisible": false,
+        "mouthNeutralVisible": true,
+        "mouthConcernVisible": false,
+        "mouthSmileVisible": false
+      },
+      "candidateInjectionAbsent": true,
+      "frozen": true,
+      "legacyBridgeVisible": false,
+      "states": {
+        "base-only": {
+          "cropFileSha256": "4ef2b9298917633a597f4cd5fb415274190f16c03a31a7814abf1b1a6936da79",
+          "cropPixelSha256": "e0ac796545ce65c93cf9f7af119d5f09f15971bd799d868ad57e0d271b90a4eb",
+          "cropWidth": 300,
+          "cropHeight": 300,
+          "stateResult": {
+            "headRotation": 0,
+            "eyesOpenVisible": false,
+            "eyesClosedVisible": false,
+            "mouthNeutralVisible": false,
+            "mouthConcernVisible": false,
+            "mouthSmileVisible": false
+          }
+        },
+        "neutral": {
+          "cropFileSha256": "f54203e66fc5812cce79872009dfd3a07bed469fce9a3054d0b02b85322ccd98",
+          "cropPixelSha256": "4e113e1d37958afcfd82e07b79263ff0118dd66ec7a5698d487de1d2d37f76fa",
+          "cropWidth": 300,
+          "cropHeight": 300,
+          "stateResult": {
+            "headRotation": 0,
+            "eyesOpenVisible": true,
+            "eyesClosedVisible": false,
+            "mouthNeutralVisible": true,
+            "mouthConcernVisible": false,
+            "mouthSmileVisible": false
+          }
+        },
+        "concern": {
+          "cropFileSha256": "99ab95e03388f8db58bb50fbff2ab2efe24c54176007af7b6f8ca4604cceec45",
+          "cropPixelSha256": "9f32b227ce35796ec989f13c3a4ba9e70df911798f60592893a1eaa12ff13245",
+          "cropWidth": 300,
+          "cropHeight": 300,
+          "stateResult": {
+            "headRotation": 0.035,
+            "eyesOpenVisible": true,
+            "eyesClosedVisible": false,
+            "mouthNeutralVisible": false,
+            "mouthConcernVisible": true,
+            "mouthSmileVisible": false
+          }
+        },
+        "smile": {
+          "cropFileSha256": "a3338d8113c003b761db92edea5f340258167d20fd8749c5d8c466c8b99693aa",
+          "cropPixelSha256": "afcc9de4e7d6e6cd30bc72a61a9eb97d956b04b84d67964984f58ac9676b2b5c",
+          "cropWidth": 300,
+          "cropHeight": 300,
+          "stateResult": {
+            "headRotation": -0.025,
+            "eyesOpenVisible": false,
+            "eyesClosedVisible": true,
+            "mouthNeutralVisible": false,
+            "mouthConcernVisible": false,
+            "mouthSmileVisible": true
+          }
+        }
+      },
+      "contextPixelSha256": "b032b09471bfc89879cdacee1bca68526d248cf668a986a06d24c67785112063",
+      "externalOriginRequestCount": 0,
+      "pageErrorCount": 0,
+      "consoleErrorCount": 0,
+      "unhandledRejectionCount": 0,
+      "securityPolicyViolationCount": 0
+    },
+    {
+      "runIndex": 2,
+      "rendererBackend": "webgl",
+      "headSprite": {
+        "label": "sea-otter-head",
+        "isSprite": true,
+        "visible": true,
+        "renderable": true,
+        "x": 0,
+        "y": -42,
+        "rotation": 0,
+        "scaleX": 0.62,
+        "scaleY": 0.62,
+        "anchor": {
+          "x": 0.5,
+          "y": 0.55
+        },
+        "textureLabel": "otter.head",
+        "textureFrame": {
+          "x": 2,
+          "y": 2,
+          "w": 170,
+          "h": 169
+        },
+        "textureOrig": {
+          "w": 200,
+          "h": 200
+        },
+        "textureResolution": 2,
+        "bounds": {
+          "x": 528,
+          "y": 309.8,
+          "width": 124,
+          "height": 124
+        }
+      },
+      "faceState": {
+        "headRotation": 0,
+        "eyesOpenVisible": true,
+        "eyesClosedVisible": false,
+        "mouthNeutralVisible": true,
+        "mouthConcernVisible": false,
+        "mouthSmileVisible": false
+      },
+      "candidateInjectionAbsent": true,
+      "frozen": true,
+      "legacyBridgeVisible": false,
+      "states": {
+        "base-only": {
+          "cropFileSha256": "4ef2b9298917633a597f4cd5fb415274190f16c03a31a7814abf1b1a6936da79",
+          "cropPixelSha256": "e0ac796545ce65c93cf9f7af119d5f09f15971bd799d868ad57e0d271b90a4eb",
+          "cropWidth": 300,
+          "cropHeight": 300,
+          "stateResult": {
+            "headRotation": 0,
+            "eyesOpenVisible": false,
+            "eyesClosedVisible": false,
+            "mouthNeutralVisible": false,
+            "mouthConcernVisible": false,
+            "mouthSmileVisible": false
+          }
+        },
+        "neutral": {
+          "cropFileSha256": "f54203e66fc5812cce79872009dfd3a07bed469fce9a3054d0b02b85322ccd98",
+          "cropPixelSha256": "4e113e1d37958afcfd82e07b79263ff0118dd66ec7a5698d487de1d2d37f76fa",
+          "cropWidth": 300,
+          "cropHeight": 300,
+          "stateResult": {
+            "headRotation": 0,
+            "eyesOpenVisible": true,
+            "eyesClosedVisible": false,
+            "mouthNeutralVisible": true,
+            "mouthConcernVisible": false,
+            "mouthSmileVisible": false
+          }
+        },
+        "concern": {
+          "cropFileSha256": "99ab95e03388f8db58bb50fbff2ab2efe24c54176007af7b6f8ca4604cceec45",
+          "cropPixelSha256": "9f32b227ce35796ec989f13c3a4ba9e70df911798f60592893a1eaa12ff13245",
+          "cropWidth": 300,
+          "cropHeight": 300,
+          "stateResult": {
+            "headRotation": 0.035,
+            "eyesOpenVisible": true,
+            "eyesClosedVisible": false,
+            "mouthNeutralVisible": false,
+            "mouthConcernVisible": true,
+            "mouthSmileVisible": false
+          }
+        },
+        "smile": {
+          "cropFileSha256": "a3338d8113c003b761db92edea5f340258167d20fd8749c5d8c466c8b99693aa",
+          "cropPixelSha256": "afcc9de4e7d6e6cd30bc72a61a9eb97d956b04b84d67964984f58ac9676b2b5c",
+          "cropWidth": 300,
+          "cropHeight": 300,
+          "stateResult": {
+            "headRotation": -0.025,
+            "eyesOpenVisible": false,
+            "eyesClosedVisible": true,
+            "mouthNeutralVisible": false,
+            "mouthConcernVisible": false,
+            "mouthSmileVisible": true
+          }
+        }
+      },
+      "contextPixelSha256": "b032b09471bfc89879cdacee1bca68526d248cf668a986a06d24c67785112063",
+      "externalOriginRequestCount": 0,
+      "pageErrorCount": 0,
+      "consoleErrorCount": 0,
+      "unhandledRejectionCount": 0,
+      "securityPolicyViolationCount": 0
+    }
+  ],
+  "twoRunDeterministic": true,
+  "productionFilesUnchanged": true,
+  "preCanonicalEvidenceUnchanged": true,
+  "verdict": "POST_CANONICAL_RENDER_PROOF_READY",
+  "rejectionReasons": []
+}

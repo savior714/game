@@ -1122,6 +1122,234 @@ def test_towing_failure_preserves_connection_and_completed_debris() -> None:
     _assert_node_ok(_run_node(harness))
 
 
+def test_towing_visual_geometry_tracks_gup_and_debris_translation() -> None:
+    harness = _BOOTSTRAP + textwrap.dedent(
+        """\
+        const dom = makeBootDom();
+        const ctx = loadApp(dom.document);
+        ctx.Missions.completeMission("sea-turtle");
+        ctx.Missions.completeMission("crab");
+        startLaunchToTravel(dom, ctx, 0, 2);
+        runToRescueActive(ctx);
+
+        function hookArc(calls) {
+          const matches = calls
+            .filter((c) => c[0] === "arc" && Math.abs(c[3] - 12) < 0.5)
+            .map((c) => [c[1], c[2]]);
+          assert.strictEqual(matches.length >= 1, true, "missing hook dot arc");
+          return matches[matches.length - 1];
+        }
+
+        function arcAt(calls, radius) {
+          const matches = calls
+            .filter((c) => c[0] === "arc" && Math.abs(c[3] - radius) < 0.5)
+            .map((c) => [c[1], c[2]]);
+          assert.strictEqual(matches.length >= 1, true, "missing arc at radius " + radius);
+          return matches[matches.length - 1];
+        }
+
+        function towLine(calls) {
+          let last = null;
+          for (let i = 0; i < calls.length; i += 1) {
+            if (calls[i][0] !== "moveTo") continue;
+            for (let j = i + 1; j < calls.length; j += 1) {
+              if (calls[j][0] === "moveTo") break;
+              if (calls[j][0] === "lineTo") {
+                last = [calls[i].slice(1), calls[j].slice(1)];
+                break;
+              }
+            }
+          }
+          assert.strictEqual(last !== null, true, "missing tow line");
+          return last;
+        }
+
+        dispatch(dom.canvas, "pointerdown", pointerEvent(1, 800, 260));
+        dispatch(dom.canvas, "pointermove", pointerEvent(1, 650, 300));
+        dispatch(dom.canvas, "pointermove", pointerEvent(1, 500, 360));
+        dispatch(dom.canvas, "pointerup", pointerEvent(1, 285, 420));
+        runSuccessFeedback(ctx);
+        assert.strictEqual(ctx.YoungWhale.getSnapshot().stage, "towing");
+
+        const initCalls = dom.canvas._context.calls;
+        assert.deepStrictEqual(hookArc(initCalls), [275, 420]);
+        assert.deepStrictEqual(towLine(initCalls), [[780, 260], [275, 420]]);
+
+        dispatch(dom.canvas, "pointerdown", pointerEvent(11, 350, 420));
+        dispatch(dom.canvas, "pointermove", pointerEvent(11, 300, 390));
+        const snap = ctx.YoungWhale.getSnapshot();
+        assert.strictEqual(snap.stage, "towing");
+        assert.deepStrictEqual(plain(snap.currentGupCenter), { x: 300, y: 390 });
+        assert.deepStrictEqual(plain(snap.currentDebrisCenter), { x: 770, y: 230 });
+
+        const before = dom.canvas._context.calls.length;
+        dispatch(dom.canvas, "pointermove", pointerEvent(11, 280, 360));
+        const frameCalls = dom.canvas._context.calls.slice(before);
+        const movedSnap = ctx.YoungWhale.getSnapshot();
+        assert.deepStrictEqual(plain(movedSnap.currentGupCenter), { x: 280, y: 360 });
+        assert.deepStrictEqual(plain(movedSnap.currentDebrisCenter), { x: 750, y: 200 });
+        assert.deepStrictEqual(arcAt(frameCalls, 36), [280, 360]);
+        assert.deepStrictEqual(arcAt(frameCalls, 44), [750, 200]);
+        assert.deepStrictEqual(hookArc(frameCalls), [215, 360]);
+        assert.deepStrictEqual(towLine(frameCalls), [[710, 200], [215, 360]]);
+
+        const safeSpotLabel = frameCalls
+          .filter((c) => c[0] === "fillText" && c[1] === "Safe spot")
+          .map((c) => c.slice(1));
+        assert.strictEqual(safeSpotLabel.length, 1);
+        assert.deepStrictEqual(safeSpotLabel[0], ["Safe spot", 180, 280]);
+        """
+    )
+    _assert_node_ok(_run_node(harness))
+
+
+def test_towing_failure_reset_restores_static_geometry() -> None:
+    harness = _BOOTSTRAP + textwrap.dedent(
+        """\
+        const dom = makeBootDom();
+        const ctx = loadApp(dom.document);
+        ctx.Missions.completeMission("sea-turtle");
+        ctx.Missions.completeMission("crab");
+        startLaunchToTravel(dom, ctx, 0, 2);
+        runToRescueActive(ctx);
+
+        function hookArc(calls) {
+          const matches = calls
+            .filter((c) => c[0] === "arc" && Math.abs(c[3] - 12) < 0.5)
+            .map((c) => [c[1], c[2]]);
+          assert.strictEqual(matches.length >= 1, true, "missing hook dot arc");
+          return matches[matches.length - 1];
+        }
+
+        function arcAt(calls, radius) {
+          const matches = calls
+            .filter((c) => c[0] === "arc" && Math.abs(c[3] - radius) < 0.5)
+            .map((c) => [c[1], c[2]]);
+          assert.strictEqual(matches.length >= 1, true, "missing arc at radius " + radius);
+          return matches[matches.length - 1];
+        }
+
+        function towLine(calls) {
+          let last = null;
+          for (let i = 0; i < calls.length; i += 1) {
+            if (calls[i][0] !== "moveTo") continue;
+            for (let j = i + 1; j < calls.length; j += 1) {
+              if (calls[j][0] === "moveTo") break;
+              if (calls[j][0] === "lineTo") {
+                last = [calls[i].slice(1), calls[j].slice(1)];
+                break;
+              }
+            }
+          }
+          assert.strictEqual(last !== null, true, "missing tow line");
+          return last;
+        }
+
+        dispatch(dom.canvas, "pointerdown", pointerEvent(1, 800, 260));
+        dispatch(dom.canvas, "pointermove", pointerEvent(1, 650, 300));
+        dispatch(dom.canvas, "pointermove", pointerEvent(1, 500, 360));
+        dispatch(dom.canvas, "pointerup", pointerEvent(1, 285, 420));
+        runSuccessFeedback(ctx);
+
+        const before = dom.canvas._context.calls.length;
+        dispatch(dom.canvas, "pointerdown", pointerEvent(11, 350, 420));
+        dispatch(dom.canvas, "pointermove", pointerEvent(11, 300, 390));
+        dispatch(dom.canvas, "pointerup", pointerEvent(11, 300, 390));
+        assert.strictEqual(ctx.YoungWhale.getSnapshot().feedback, "failure");
+        runFailureFeedback(ctx);
+
+        let snap = ctx.YoungWhale.getSnapshot();
+        assert.strictEqual(snap.stage, "towing");
+        assert.strictEqual(snap.feedback, null);
+        assert.deepStrictEqual(plain(snap.currentGupCenter), { x: 340, y: 420 });
+        assert.deepStrictEqual(plain(snap.currentDebrisCenter), { x: 820, y: 260 });
+
+        const frameCalls = dom.canvas._context.calls.slice(before);
+        assert.deepStrictEqual(arcAt(frameCalls, 36), [340, 420]);
+        assert.deepStrictEqual(arcAt(frameCalls, 44), [820, 260]);
+        assert.deepStrictEqual(hookArc(frameCalls), [275, 420]);
+        assert.deepStrictEqual(towLine(frameCalls), [[780, 260], [275, 420]]);
+        """
+    )
+    _assert_node_ok(_run_node(harness))
+
+
+def test_towing_success_completes_without_stale_translated_connector() -> None:
+    harness = _BOOTSTRAP + textwrap.dedent(
+        """\
+        const dom = makeBootDom();
+        const ctx = loadApp(dom.document);
+        ctx.Missions.completeMission("sea-turtle");
+        ctx.Missions.completeMission("crab");
+        startLaunchToTravel(dom, ctx, 0, 2);
+        runToRescueActive(ctx);
+
+        function hookArc(calls) {
+          const matches = calls
+            .filter((c) => c[0] === "arc" && Math.abs(c[3] - 12) < 0.5)
+            .map((c) => [c[1], c[2]]);
+          assert.strictEqual(matches.length >= 1, true, "missing hook dot arc");
+          return matches[matches.length - 1];
+        }
+
+        function arcAt(calls, radius) {
+          const matches = calls
+            .filter((c) => c[0] === "arc" && Math.abs(c[3] - radius) < 0.5)
+            .map((c) => [c[1], c[2]]);
+          assert.strictEqual(matches.length >= 1, true, "missing arc at radius " + radius);
+          return matches[matches.length - 1];
+        }
+
+        function towLines(calls) {
+          const lines = [];
+          for (let i = 0; i < calls.length; i += 1) {
+            if (calls[i][0] !== "moveTo") continue;
+            for (let j = i + 1; j < calls.length; j += 1) {
+              if (calls[j][0] === "moveTo") break;
+              if (calls[j][0] === "lineTo") {
+                lines.push([calls[i].slice(1), calls[j].slice(1)]);
+                break;
+              }
+            }
+          }
+          return lines;
+        }
+
+        dispatch(dom.canvas, "pointerdown", pointerEvent(1, 800, 260));
+        dispatch(dom.canvas, "pointermove", pointerEvent(1, 650, 300));
+        dispatch(dom.canvas, "pointermove", pointerEvent(1, 500, 360));
+        dispatch(dom.canvas, "pointerup", pointerEvent(1, 285, 420));
+        runSuccessFeedback(ctx);
+
+        dispatch(dom.canvas, "pointerdown", pointerEvent(11, 350, 420));
+        dispatch(dom.canvas, "pointermove", pointerEvent(11, 300, 390));
+        dispatch(dom.canvas, "pointermove", pointerEvent(11, 260, 330));
+        dispatch(dom.canvas, "pointermove", pointerEvent(11, 220, 270));
+        dispatch(dom.canvas, "pointerup", pointerEvent(11, 200, 220));
+        let snap = ctx.YoungWhale.getSnapshot();
+        assert.strictEqual(snap.feedback, "success");
+        assert.deepStrictEqual(plain(snap.completedDebrisIds), ["debris-1"]);
+        assert.deepStrictEqual(plain(snap.currentDebrisCenter), { x: 680, y: 30 });
+
+        const before = dom.canvas._context.calls.length;
+        runSuccessFeedback(ctx);
+        snap = ctx.YoungWhale.getSnapshot();
+        assert.strictEqual(snap.stage, "connection");
+        assert.strictEqual(snap.connected, false);
+        assert.strictEqual(snap.activeDebrisId, "debris-2");
+        assert.deepStrictEqual(plain(snap.currentDebrisCenter), { x: 880, y: 420 });
+        assert.strictEqual(snap.currentGupCenter, null);
+
+        const frameCalls = dom.canvas._context.calls.slice(before);
+        assert.deepStrictEqual(arcAt(frameCalls, 36), [340, 420]);
+        assert.deepStrictEqual(hookArc(frameCalls), [275, 420]);
+        assert.deepStrictEqual(arcAt(frameCalls, 52), [880, 420]);
+        assert.deepStrictEqual(towLines(frameCalls), []);
+        """
+    )
+    _assert_node_ok(_run_node(harness))
+
+
 def test_progressive_assistance_feedback_durations_and_immutable_snapshots() -> None:
     harness = _BOOTSTRAP + textwrap.dedent(
         """\

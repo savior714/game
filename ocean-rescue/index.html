@@ -13336,6 +13336,33 @@ fn mainFragment(
     return null;
   }
 
+  function youngWhaleTowingGeometry(snapshot) {
+    var debris = youngWhaleDebrisById(snapshot.activeDebrisId);
+    if (debris === null) {
+      return null;
+    }
+    var gupCenter =
+      snapshot.currentGupCenter === null
+        ? YoungWhale.GupStart
+        : snapshot.currentGupCenter;
+    var debrisCenter =
+      snapshot.currentDebrisCenter === null
+        ? debris.start
+        : snapshot.currentDebrisCenter;
+    return {
+      gupCenter: { x: gupCenter.x, y: gupCenter.y },
+      hookCenter: {
+        x: gupCenter.x + (YoungWhale.GupHook.x - YoungWhale.GupStart.x),
+        y: gupCenter.y + (YoungWhale.GupHook.y - YoungWhale.GupStart.y)
+      },
+      debrisCenter: { x: debrisCenter.x, y: debrisCenter.y },
+      debrisConnection: {
+        x: debrisCenter.x + (debris.connection.x - debris.start.x),
+        y: debrisCenter.y + (debris.connection.y - debris.start.y)
+      }
+    };
+  }
+
   function youngWhaleDebrisOrderIndexById(debrisId) {
     for (var i = 0; i < YoungWhale.Debris.length; i += 1) {
       if (YoungWhale.Debris[i].id === debrisId) {
@@ -15268,13 +15295,20 @@ fn mainFragment(
       snapshot.helpLevel >= 2
         ? YoungWhale.Constants.assistedHookRadius
         : YoungWhale.Constants.hookRadius;
+    var center = YoungWhale.GupHook;
+    if (snapshot.stage === "towing") {
+      var geometry = youngWhaleTowingGeometry(snapshot);
+      if (geometry !== null) {
+        center = geometry.hookCenter;
+      }
+    }
     context.beginPath();
-    context.arc(YoungWhale.GupHook.x, YoungWhale.GupHook.y, radius, 0, Math.PI * 2);
+    context.arc(center.x, center.y, radius, 0, Math.PI * 2);
     context.strokeStyle = "#9ad0ff";
     context.lineWidth = 3;
     context.stroke();
     context.beginPath();
-    context.arc(YoungWhale.GupHook.x, YoungWhale.GupHook.y, 12, 0, Math.PI * 2);
+    context.arc(center.x, center.y, 12, 0, Math.PI * 2);
     context.fillStyle = "#9ad0ff";
     context.fill();
   }
@@ -15419,13 +15453,26 @@ fn mainFragment(
     if (debris === null) {
       return;
     }
+    var startX = debris.connection.x;
+    var startY = debris.connection.y;
+    var endX = YoungWhale.GupHook.x;
+    var endY = YoungWhale.GupHook.y;
+    if (snapshot.stage === "towing") {
+      var geometry = youngWhaleTowingGeometry(snapshot);
+      if (geometry !== null) {
+        startX = geometry.debrisConnection.x;
+        startY = geometry.debrisConnection.y;
+        endX = geometry.hookCenter.x;
+        endY = geometry.hookCenter.y;
+      }
+    }
     context.save();
     context.strokeStyle = "rgba(154, 208, 255, 0.9)";
     context.lineWidth = 6;
     context.lineCap = "round";
     context.beginPath();
-    context.moveTo(debris.connection.x, debris.connection.y);
-    context.lineTo(YoungWhale.GupHook.x, YoungWhale.GupHook.y);
+    context.moveTo(startX, startY);
+    context.lineTo(endX, endY);
     context.stroke();
     context.restore();
   }

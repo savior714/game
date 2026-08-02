@@ -508,7 +508,7 @@ _JS_TEST_7 = _SOURCES + textwrap.dedent(
 
     const cr = freshCrab();
     cr.start("crab");
-    cr.pointerDown(1, 760, 300);
+    cr.pointerDown(1, 900, 440);
     snap = cr.getSnapshot();
     assert.strictEqual(snap.pointerActive, true);
     assert.strictEqual(snap.holding, true);

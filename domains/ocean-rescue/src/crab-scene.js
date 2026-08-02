@@ -4,6 +4,25 @@
   var root = window.OceanRescue = window.OceanRescue || {};
   var RenderRuntime = root.RenderRuntime || null;
   var Crab = root.Crab || null;
+  var Layout = (Crab && Crab.Layout) || null;
+
+  function layoutCrabCenter() {
+    return Layout ? Layout.crabCenter : { x: 900, y: 500 };
+  }
+
+  function layoutGrabberBase() {
+    return Layout
+      ? Layout.grabberBase
+      : { x: 520, y: Math.floor(HEIGHT * 0.72) };
+  }
+
+  function layoutDropZone() {
+    return Layout ? Layout.dropZone : (Crab && Crab.DropZone) || null;
+  }
+
+  function layoutRocks() {
+    return Layout ? Layout.rocks : (Crab && Crab.Rocks) || [];
+  }
   var REQUIRED_ALIASES = [
     "crab.trapped",
     "crab.free",
@@ -237,29 +256,31 @@
     setScale(NODES.bubbles, 0.8, 0.8);
     NODES.bubbles.alpha = 0.7;
 
-    setPosition(NODES.crabTrapped, 900, 500);
-    setPosition(NODES.crabFree, 900, 500);
+    var crabCenter = layoutCrabCenter();
+    setPosition(NODES.crabTrapped, crabCenter.x, crabCenter.y);
+    setPosition(NODES.crabFree, crabCenter.x, crabCenter.y);
     setScale(NODES.crabTrapped, 1.0, 1.0);
     setScale(NODES.crabFree, 1.0, 1.0);
 
-    for (var r = 0; r < 3; r += 1) {
-      var rock = Crab.Rocks[r];
+    var rocks = layoutRocks();
+    for (var r = 0; r < rocks.length; r += 1) {
+      var rock = rocks[r];
       setPosition(NODES.rocks[r], rock.start.x, rock.start.y);
       var baseScale = rock.radius / 46;
       setScale(NODES.rocks[r], baseScale, baseScale);
     }
 
-    var gupY = Math.floor(HEIGHT * 0.72);
-    setPosition(NODES.grabberBase, 520, gupY);
+    var grabberBase = layoutGrabberBase();
+    setPosition(NODES.grabberBase, grabberBase.x, grabberBase.y);
     setScale(NODES.grabberBase, 0.85, 0.85);
-    setPosition(NODES.grabberArm, 520, gupY);
+    setPosition(NODES.grabberArm, grabberBase.x, grabberBase.y);
     setScale(NODES.grabberArm, 0.7, 0.7);
-    setPosition(NODES.grabberClawOpen, 520, gupY);
+    setPosition(NODES.grabberClawOpen, grabberBase.x, grabberBase.y);
     setScale(NODES.grabberClawOpen, 0.85, 0.85);
-    setPosition(NODES.grabberClawClosed, 520, gupY);
+    setPosition(NODES.grabberClawClosed, grabberBase.x, grabberBase.y);
     setScale(NODES.grabberClawClosed, 0.85, 0.85);
 
-    var dz = Crab.DropZone;
+    var dz = layoutDropZone();
     setPosition(NODES.dropZone, dz.x, dz.y);
     var dzScaleX = dz.width / 300;
     var dzScaleY = dz.height / 320;
@@ -316,12 +337,13 @@
   }
 
   function rockById(rockId) {
-    if (!Crab || !Array.isArray(Crab.Rocks)) {
+    var rocks = layoutRocks();
+    if (!Array.isArray(rocks)) {
       return null;
     }
-    for (var i = 0; i < Crab.Rocks.length; i += 1) {
-      if (Crab.Rocks[i].id === rockId) {
-        return Crab.Rocks[i];
+    for (var i = 0; i < rocks.length; i += 1) {
+      if (rocks[i].id === rockId) {
+        return rocks[i];
       }
     }
     return null;
@@ -346,6 +368,7 @@
   function syncCrab(current) {
     var state = crabState(current);
     var free = state === "free";
+    var crabCenter = layoutCrabCenter();
     NODES.crabTrapped.visible = !free;
     NODES.crabFree.visible = free;
     if (state === "trapped") {
@@ -363,19 +386,20 @@
     }
     var count = current ? current.completedRockIds.length : 0;
     var lift = count * 14;
-    NODES.crabTrapped.position.y = 500 - lift;
-    NODES.crabFree.position.y = free ? 484 : 500 - lift;
+    NODES.crabTrapped.position.y = crabCenter.y - lift;
+    NODES.crabFree.position.y = free ? crabCenter.y - 16 : crabCenter.y - lift;
     var breathe = REDUCED_MOTION ? 1 : 1 + Math.sin(ACTIVE_TIME / 1500) * 0.012;
     NODES.crabTrapped.scale.set(breathe, breathe);
     NODES.crabFree.scale.set(breathe, breathe);
   }
 
   function syncRocks(current) {
-    if (!current || !Crab) {
+    if (!current) {
       return;
     }
-    for (var i = 0; i < Crab.Rocks.length; i += 1) {
-      var rock = Crab.Rocks[i];
+    var rocks = layoutRocks();
+    for (var i = 0; i < rocks.length; i += 1) {
+      var rock = rocks[i];
       var sprite = NODES.rocks[i];
       var completed = current.completedRockIds.indexOf(rock.id) !== -1;
       var isActive = current.activeRockId === rock.id;
@@ -416,7 +440,7 @@
     if (!current) {
       return;
     }
-    var gupY = Math.floor(HEIGHT * 0.72);
+    var grabberBase = layoutGrabberBase();
     NODES.grabberBase.visible = true;
     var hasActiveRock = current.activeRockId !== null;
     NODES.grabberArm.visible = hasActiveRock;
@@ -430,10 +454,10 @@
         var targetX = center === null ? rock.start.x : center.x;
         var targetY = center === null ? rock.start.y : center.y;
         var armLength = Math.sqrt(
-          Math.pow(targetX - 520, 2) + Math.pow(targetY - gupY, 2)
+          Math.pow(targetX - grabberBase.x, 2) + Math.pow(targetY - grabberBase.y, 2)
         ) || 1;
-        var armAngle = Math.atan2(targetX - 520, targetY - gupY);
-        NODES.grabberArm.position.set(520, gupY);
+        var armAngle = Math.atan2(targetX - grabberBase.x, targetY - grabberBase.y);
+        NODES.grabberArm.position.set(grabberBase.x, grabberBase.y);
         NODES.grabberArm.rotation = armAngle;
         var armScale = armLength / 140;
         setScale(NODES.grabberArm, Math.min(armScale, 1.6), armScale);
@@ -679,6 +703,7 @@
     cancelFrame();
     ACTIVE = false;
     PAUSED = false;
+    MOUNTED = false;
     hideOwnedNodes();
     if (RenderRuntime) {
       RenderRuntime.setLegacyBridgeVisible(true);

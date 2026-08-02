@@ -771,14 +771,14 @@ _BOOTSTRAP = textwrap.dedent(
       ctx.Missions.completeMission("sea-turtle");
       startLaunchToTravel(dom, ctx, 0, 1);
       runToRescueActiveClean(ctx);
-      completeRockByHoldDrag(dom, ctx, 1, { x: 790, y: 305 }, { x: 900, y: 320 });
+      completeRockByHoldDrag(dom, ctx, 1, { x: 900, y: 440 }, { x: 310, y: 290 });
       runSuccessFeedback(ctx);
-      dispatch(dom.canvas, "pointerdown", pointerEvent(11, 750, 430));
-      dispatch(dom.canvas, "pointerup", pointerEvent(11, 750, 430));
-      dispatch(dom.canvas, "pointerdown", pointerEvent(12, 900, 300));
-      dispatch(dom.canvas, "pointerup", pointerEvent(12, 900, 300));
+      dispatch(dom.canvas, "pointerdown", pointerEvent(11, 1060, 510));
+      dispatch(dom.canvas, "pointerup", pointerEvent(11, 1060, 510));
+      dispatch(dom.canvas, "pointerdown", pointerEvent(12, 310, 290));
+      dispatch(dom.canvas, "pointerup", pointerEvent(12, 310, 290));
       runSuccessFeedback(ctx);
-      completeRockByHoldDrag(dom, ctx, 22, { x: 800, y: 545 }, { x: 900, y: 330 });
+      completeRockByHoldDrag(dom, ctx, 22, { x: 930, y: 575 }, { x: 330, y: 215 });
       runSuccessFeedback(ctx);
       assert.strictEqual(ctx.State.getSnapshot().phase, "RESCUE_SUCCESS");
     }

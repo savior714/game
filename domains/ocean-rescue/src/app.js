@@ -1675,7 +1675,11 @@
       CrabScene.activate();
     }
     bindRescuePointerInput(canvas);
-    syncCrabScene();
+    if (CrabScene && CrabScene.isMounted()) {
+      syncCrabScene();
+    } else {
+      renderCrabFrame();
+    }
     var progress = document.getElementById("ocean-rescue-rescue-progress");
     if (progress) {
       progress.textContent = "Rock 1 of 3";
@@ -4550,15 +4554,22 @@
   }
 
   function drawCrabGrabber(context, height) {
-    var gupY = Math.floor(height * 0.72);
+    var base = CrabGrabberBase(height);
     context.beginPath();
-    context.arc(520, gupY, 30, 0, Math.PI * 2);
+    context.arc(base.x, base.y, 30, 0, Math.PI * 2);
     context.fillStyle = "#9ad0ff";
     context.fill();
     context.fillStyle = "#0a1e33";
     context.font = "16px system-ui, sans-serif";
     context.textAlign = "center";
-    context.fillText(activeRescueSequence.missionContent.toolLabel, 520, gupY - 44);
+    context.fillText(activeRescueSequence.missionContent.toolLabel, base.x, base.y - 44);
+  }
+
+  function CrabGrabberBase(height) {
+    if (Crab && Crab.Layout && Crab.Layout.grabberBase) {
+      return Crab.Layout.grabberBase;
+    }
+    return { x: 520, y: Math.floor(height * 0.72) };
   }
 
   function drawRectOutline(context, x1, y1, x2, y2) {
@@ -4611,7 +4622,7 @@
     var center = snapshot.currentRockCenter;
     var targetX = center === null ? rock.start.x : center.x;
     var targetY = center === null ? rock.start.y : center.y;
-    var gupY = Math.floor(height * 0.72);
+    var base = CrabGrabberBase(height);
     context.save();
     if (snapshot.grabbed) {
       context.strokeStyle = "rgba(154, 208, 255, 0.9)";
@@ -4627,7 +4638,7 @@
     }
     context.lineCap = "round";
     context.beginPath();
-    context.moveTo(520, gupY);
+    context.moveTo(base.x, base.y);
     context.lineTo(targetX, targetY);
     context.stroke();
     context.restore();
@@ -4704,8 +4715,9 @@
   }
 
   function drawCrabScene(context, snapshot) {
-    var x = 900;
-    var y = 500;
+    var crabCenter = Crab.Layout ? Crab.Layout.crabCenter : { x: 900, y: 500 };
+    var x = crabCenter.x;
+    var y = crabCenter.y;
     if (snapshot.complete) {
       context.beginPath();
       context.arc(x, y, 60, 0, Math.PI * 2);

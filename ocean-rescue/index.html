@@ -8309,30 +8309,44 @@ fn mainFragment(
       id: "rock-1",
       order: 1,
       radius: 46,
-      start: freeze({ x: 760, y: 300 }),
-      placed: freeze({ x: 1000, y: 360 })
+      start: freeze({ x: 870, y: 420 }),
+      placed: freeze({ x: 240, y: 300 })
     }),
     freeze({
       id: "rock-2",
       order: 2,
       radius: 52,
-      start: freeze({ x: 720, y: 420 }),
-      placed: freeze({ x: 1090, y: 450 })
+      start: freeze({ x: 1030, y: 500 }),
+      placed: freeze({ x: 390, y: 330 })
     }),
     freeze({
       id: "rock-3",
       order: 3,
       radius: 58,
-      start: freeze({ x: 770, y: 540 }),
-      placed: freeze({ x: 1000, y: 540 })
+      start: freeze({ x: 900, y: 560 }),
+      placed: freeze({ x: 330, y: 215 })
     })
   ]);
 
   var DropZone = freeze({
-    x: 900,
-    y: 280,
+    x: 310,
+    y: 290,
     width: 300,
     height: 320
+  });
+
+  var CrabCenter = freeze({ x: 900, y: 500 });
+  var CrabFootprint = freeze({ width: 200, height: 180 });
+  var GrabberBase = freeze({ x: 520, y: 520 });
+
+  var Layout = freeze({
+    logicalWidth: 1280,
+    logicalHeight: 720,
+    crabCenter: CrabCenter,
+    crabFootprint: CrabFootprint,
+    grabberBase: GrabberBase,
+    dropZone: DropZone,
+    rocks: Rocks
   });
 
   var Dialogues = freeze([
@@ -8800,6 +8814,7 @@ fn mainFragment(
     Constants: Constants,
     Rocks: Rocks,
     DropZone: DropZone,
+    Layout: Layout,
     Dialogues: Dialogues,
     getSnapshot: getSnapshot,
     start: start,
@@ -8822,6 +8837,25 @@ fn mainFragment(
   var root = window.OceanRescue = window.OceanRescue || {};
   var RenderRuntime = root.RenderRuntime || null;
   var Crab = root.Crab || null;
+  var Layout = (Crab && Crab.Layout) || null;
+
+  function layoutCrabCenter() {
+    return Layout ? Layout.crabCenter : { x: 900, y: 500 };
+  }
+
+  function layoutGrabberBase() {
+    return Layout
+      ? Layout.grabberBase
+      : { x: 520, y: Math.floor(HEIGHT * 0.72) };
+  }
+
+  function layoutDropZone() {
+    return Layout ? Layout.dropZone : (Crab && Crab.DropZone) || null;
+  }
+
+  function layoutRocks() {
+    return Layout ? Layout.rocks : (Crab && Crab.Rocks) || [];
+  }
   var REQUIRED_ALIASES = [
     "crab.trapped",
     "crab.free",
@@ -9055,29 +9089,31 @@ fn mainFragment(
     setScale(NODES.bubbles, 0.8, 0.8);
     NODES.bubbles.alpha = 0.7;
 
-    setPosition(NODES.crabTrapped, 900, 500);
-    setPosition(NODES.crabFree, 900, 500);
+    var crabCenter = layoutCrabCenter();
+    setPosition(NODES.crabTrapped, crabCenter.x, crabCenter.y);
+    setPosition(NODES.crabFree, crabCenter.x, crabCenter.y);
     setScale(NODES.crabTrapped, 1.0, 1.0);
     setScale(NODES.crabFree, 1.0, 1.0);
 
-    for (var r = 0; r < 3; r += 1) {
-      var rock = Crab.Rocks[r];
+    var rocks = layoutRocks();
+    for (var r = 0; r < rocks.length; r += 1) {
+      var rock = rocks[r];
       setPosition(NODES.rocks[r], rock.start.x, rock.start.y);
       var baseScale = rock.radius / 46;
       setScale(NODES.rocks[r], baseScale, baseScale);
     }
 
-    var gupY = Math.floor(HEIGHT * 0.72);
-    setPosition(NODES.grabberBase, 520, gupY);
+    var grabberBase = layoutGrabberBase();
+    setPosition(NODES.grabberBase, grabberBase.x, grabberBase.y);
     setScale(NODES.grabberBase, 0.85, 0.85);
-    setPosition(NODES.grabberArm, 520, gupY);
+    setPosition(NODES.grabberArm, grabberBase.x, grabberBase.y);
     setScale(NODES.grabberArm, 0.7, 0.7);
-    setPosition(NODES.grabberClawOpen, 520, gupY);
+    setPosition(NODES.grabberClawOpen, grabberBase.x, grabberBase.y);
     setScale(NODES.grabberClawOpen, 0.85, 0.85);
-    setPosition(NODES.grabberClawClosed, 520, gupY);
+    setPosition(NODES.grabberClawClosed, grabberBase.x, grabberBase.y);
     setScale(NODES.grabberClawClosed, 0.85, 0.85);
 
-    var dz = Crab.DropZone;
+    var dz = layoutDropZone();
     setPosition(NODES.dropZone, dz.x, dz.y);
     var dzScaleX = dz.width / 300;
     var dzScaleY = dz.height / 320;
@@ -9134,12 +9170,13 @@ fn mainFragment(
   }
 
   function rockById(rockId) {
-    if (!Crab || !Array.isArray(Crab.Rocks)) {
+    var rocks = layoutRocks();
+    if (!Array.isArray(rocks)) {
       return null;
     }
-    for (var i = 0; i < Crab.Rocks.length; i += 1) {
-      if (Crab.Rocks[i].id === rockId) {
-        return Crab.Rocks[i];
+    for (var i = 0; i < rocks.length; i += 1) {
+      if (rocks[i].id === rockId) {
+        return rocks[i];
       }
     }
     return null;
@@ -9164,6 +9201,7 @@ fn mainFragment(
   function syncCrab(current) {
     var state = crabState(current);
     var free = state === "free";
+    var crabCenter = layoutCrabCenter();
     NODES.crabTrapped.visible = !free;
     NODES.crabFree.visible = free;
     if (state === "trapped") {
@@ -9181,19 +9219,20 @@ fn mainFragment(
     }
     var count = current ? current.completedRockIds.length : 0;
     var lift = count * 14;
-    NODES.crabTrapped.position.y = 500 - lift;
-    NODES.crabFree.position.y = free ? 484 : 500 - lift;
+    NODES.crabTrapped.position.y = crabCenter.y - lift;
+    NODES.crabFree.position.y = free ? crabCenter.y - 16 : crabCenter.y - lift;
     var breathe = REDUCED_MOTION ? 1 : 1 + Math.sin(ACTIVE_TIME / 1500) * 0.012;
     NODES.crabTrapped.scale.set(breathe, breathe);
     NODES.crabFree.scale.set(breathe, breathe);
   }
 
   function syncRocks(current) {
-    if (!current || !Crab) {
+    if (!current) {
       return;
     }
-    for (var i = 0; i < Crab.Rocks.length; i += 1) {
-      var rock = Crab.Rocks[i];
+    var rocks = layoutRocks();
+    for (var i = 0; i < rocks.length; i += 1) {
+      var rock = rocks[i];
       var sprite = NODES.rocks[i];
       var completed = current.completedRockIds.indexOf(rock.id) !== -1;
       var isActive = current.activeRockId === rock.id;
@@ -9234,7 +9273,7 @@ fn mainFragment(
     if (!current) {
       return;
     }
-    var gupY = Math.floor(HEIGHT * 0.72);
+    var grabberBase = layoutGrabberBase();
     NODES.grabberBase.visible = true;
     var hasActiveRock = current.activeRockId !== null;
     NODES.grabberArm.visible = hasActiveRock;
@@ -9248,10 +9287,10 @@ fn mainFragment(
         var targetX = center === null ? rock.start.x : center.x;
         var targetY = center === null ? rock.start.y : center.y;
         var armLength = Math.sqrt(
-          Math.pow(targetX - 520, 2) + Math.pow(targetY - gupY, 2)
+          Math.pow(targetX - grabberBase.x, 2) + Math.pow(targetY - grabberBase.y, 2)
         ) || 1;
-        var armAngle = Math.atan2(targetX - 520, targetY - gupY);
-        NODES.grabberArm.position.set(520, gupY);
+        var armAngle = Math.atan2(targetX - grabberBase.x, targetY - grabberBase.y);
+        NODES.grabberArm.position.set(grabberBase.x, grabberBase.y);
         NODES.grabberArm.rotation = armAngle;
         var armScale = armLength / 140;
         setScale(NODES.grabberArm, Math.min(armScale, 1.6), armScale);
@@ -9497,6 +9536,7 @@ fn mainFragment(
     cancelFrame();
     ACTIVE = false;
     PAUSED = false;
+    MOUNTED = false;
     hideOwnedNodes();
     if (RenderRuntime) {
       RenderRuntime.setLegacyBridgeVisible(true);
@@ -12067,7 +12107,11 @@ fn mainFragment(
       CrabScene.activate();
     }
     bindRescuePointerInput(canvas);
-    syncCrabScene();
+    if (CrabScene && CrabScene.isMounted()) {
+      syncCrabScene();
+    } else {
+      renderCrabFrame();
+    }
     var progress = document.getElementById("ocean-rescue-rescue-progress");
     if (progress) {
       progress.textContent = "Rock 1 of 3";
@@ -14942,15 +14986,22 @@ fn mainFragment(
   }
 
   function drawCrabGrabber(context, height) {
-    var gupY = Math.floor(height * 0.72);
+    var base = CrabGrabberBase(height);
     context.beginPath();
-    context.arc(520, gupY, 30, 0, Math.PI * 2);
+    context.arc(base.x, base.y, 30, 0, Math.PI * 2);
     context.fillStyle = "#9ad0ff";
     context.fill();
     context.fillStyle = "#0a1e33";
     context.font = "16px system-ui, sans-serif";
     context.textAlign = "center";
-    context.fillText(activeRescueSequence.missionContent.toolLabel, 520, gupY - 44);
+    context.fillText(activeRescueSequence.missionContent.toolLabel, base.x, base.y - 44);
+  }
+
+  function CrabGrabberBase(height) {
+    if (Crab && Crab.Layout && Crab.Layout.grabberBase) {
+      return Crab.Layout.grabberBase;
+    }
+    return { x: 520, y: Math.floor(height * 0.72) };
   }
 
   function drawRectOutline(context, x1, y1, x2, y2) {
@@ -15003,7 +15054,7 @@ fn mainFragment(
     var center = snapshot.currentRockCenter;
     var targetX = center === null ? rock.start.x : center.x;
     var targetY = center === null ? rock.start.y : center.y;
-    var gupY = Math.floor(height * 0.72);
+    var base = CrabGrabberBase(height);
     context.save();
     if (snapshot.grabbed) {
       context.strokeStyle = "rgba(154, 208, 255, 0.9)";
@@ -15019,7 +15070,7 @@ fn mainFragment(
     }
     context.lineCap = "round";
     context.beginPath();
-    context.moveTo(520, gupY);
+    context.moveTo(base.x, base.y);
     context.lineTo(targetX, targetY);
     context.stroke();
     context.restore();
@@ -15096,8 +15147,9 @@ fn mainFragment(
   }
 
   function drawCrabScene(context, snapshot) {
-    var x = 900;
-    var y = 500;
+    var crabCenter = Crab.Layout ? Crab.Layout.crabCenter : { x: 900, y: 500 };
+    var x = crabCenter.x;
+    var y = crabCenter.y;
     if (snapshot.complete) {
       context.beginPath();
       context.arc(x, y, 60, 0, Math.PI * 2);

@@ -675,9 +675,9 @@ def test_crab_catalog_constants_and_public_contract() -> None:
         assert.strictEqual(Object.isFrozen(Crab.Constants), true);
 
         assert.deepStrictEqual(plain(Crab.Rocks), [
-          { id: "rock-1", order: 1, radius: 46, start: { x: 760, y: 300 }, placed: { x: 1000, y: 360 } },
-          { id: "rock-2", order: 2, radius: 52, start: { x: 720, y: 420 }, placed: { x: 1090, y: 450 } },
-          { id: "rock-3", order: 3, radius: 58, start: { x: 770, y: 540 }, placed: { x: 1000, y: 540 } }
+          { id: "rock-1", order: 1, radius: 46, start: { x: 870, y: 420 }, placed: { x: 240, y: 300 } },
+          { id: "rock-2", order: 2, radius: 52, start: { x: 1030, y: 500 }, placed: { x: 390, y: 330 } },
+          { id: "rock-3", order: 3, radius: 58, start: { x: 900, y: 560 }, placed: { x: 330, y: 215 } }
         ]);
         assert.strictEqual(Object.isFrozen(Crab.Rocks), true);
         assert.strictEqual(Object.isFrozen(Crab.Rocks[0]), true);
@@ -685,8 +685,27 @@ def test_crab_catalog_constants_and_public_contract() -> None:
         assert.strictEqual(Object.isFrozen(Crab.Rocks[0].placed), true);
         assert.strictEqual(Object.isFrozen(Crab.Rocks[2].start), true);
 
-        assert.deepStrictEqual(plain(Crab.DropZone), { x: 900, y: 280, width: 300, height: 320 });
+        assert.deepStrictEqual(plain(Crab.DropZone), { x: 310, y: 290, width: 300, height: 320 });
         assert.strictEqual(Object.isFrozen(Crab.DropZone), true);
+
+        assert.deepStrictEqual(plain(Crab.Layout), {
+          logicalWidth: 1280,
+          logicalHeight: 720,
+          crabCenter: { x: 900, y: 500 },
+          crabFootprint: { width: 200, height: 180 },
+          grabberBase: { x: 520, y: 520 },
+          dropZone: { x: 310, y: 290, width: 300, height: 320 },
+          rocks: [
+            { id: "rock-1", order: 1, radius: 46, start: { x: 870, y: 420 }, placed: { x: 240, y: 300 } },
+            { id: "rock-2", order: 2, radius: 52, start: { x: 1030, y: 500 }, placed: { x: 390, y: 330 } },
+            { id: "rock-3", order: 3, radius: 58, start: { x: 900, y: 560 }, placed: { x: 330, y: 215 } }
+          ]
+        });
+        assert.strictEqual(Object.isFrozen(Crab.Layout), true);
+        assert.strictEqual(Object.isFrozen(Crab.Layout.crabCenter), true);
+        assert.strictEqual(Object.isFrozen(Crab.Layout.grabberBase), true);
+        assert.strictEqual(Crab.Layout.dropZone, Crab.DropZone);
+        assert.strictEqual(Crab.Layout.rocks, Crab.Rocks);
 
         assert.deepStrictEqual(plain(Crab.Dialogues), [
           "Great lift! Two rocks left, and the crab can see us.",
@@ -701,6 +720,7 @@ def test_crab_catalog_constants_and_public_contract() -> None:
             "Constants",
             "Dialogues",
             "DropZone",
+            "Layout",
             "MissionId",
             "Rocks",
             "finishFeedback",
@@ -775,7 +795,7 @@ def test_crab_catalog_constants_and_public_contract() -> None:
           pointerActive: false,
           holding: false,
           grabbed: false,
-          currentRockCenter: { x: 760, y: 300 },
+          currentRockCenter: { x: 870, y: 420 },
           inputLocked: false,
           feedback: null,
           complete: false
@@ -812,19 +832,19 @@ def test_four_hundred_ms_hold_and_direct_follow_drag() -> None:
         assert.strictEqual(snap.activeRockId, "rock-1");
         assert.strictEqual(snap.inputLocked, false);
         assert.deepStrictEqual(plain(snap.completedRockIds), []);
-        assert.deepStrictEqual(plain(snap.currentRockCenter), { x: 760, y: 300 });
+        assert.deepStrictEqual(plain(snap.currentRockCenter), { x: 870, y: 420 });
 
-        assert.strictEqual(Crab.pointerDown(1, 790, 305), true);
+        assert.strictEqual(Crab.pointerDown(1, 900, 440), true);
         snap = Crab.getSnapshot();
         assert.strictEqual(snap.holding, true);
         assert.strictEqual(snap.grabbed, false);
         assert.strictEqual(snap.pointerActive, true);
 
-        assert.strictEqual(Crab.pointerMove(1, 800, 305), true);
+        assert.strictEqual(Crab.pointerMove(1, 900, 440), true);
         snap = Crab.getSnapshot();
         assert.strictEqual(snap.holding, true);
         assert.strictEqual(snap.grabbed, false);
-        assert.deepStrictEqual(plain(snap.currentRockCenter), { x: 760, y: 300 });
+        assert.deepStrictEqual(plain(snap.currentRockCenter), { x: 870, y: 420 });
 
         const hold = Crab.finishHold();
         assert.deepStrictEqual(plain(hold), {
@@ -835,14 +855,14 @@ def test_four_hundred_ms_hold_and_direct_follow_drag() -> None:
         snap = Crab.getSnapshot();
         assert.strictEqual(snap.grabbed, true);
         assert.strictEqual(snap.holding, false);
-        assert.deepStrictEqual(plain(snap.currentRockCenter), { x: 800, y: 305 });
+        assert.deepStrictEqual(plain(snap.currentRockCenter), { x: 900, y: 440 });
 
-        Crab.pointerMove(1, 900, 320);
-        Crab.pointerMove(1, 950, 330);
+        Crab.pointerMove(1, 310, 290);
+        Crab.pointerMove(1, 240, 300);
         snap = Crab.getSnapshot();
-        assert.deepStrictEqual(plain(snap.currentRockCenter), { x: 950, y: 330 });
+        assert.deepStrictEqual(plain(snap.currentRockCenter), { x: 240, y: 300 });
 
-        const result = Crab.pointerUp(1, 950, 330);
+        const result = Crab.pointerUp(1, 240, 300);
         assert.deepStrictEqual(plain(result), {
           accepted: true,
           outcome: "success",
@@ -856,15 +876,15 @@ def test_four_hundred_ms_hold_and_direct_follow_drag() -> None:
         Crab.finishFeedback();
         assert.strictEqual(Crab.getSnapshot().activeRockId, "rock-2");
 
-        assert.strictEqual(Crab.pointerDown(2, 750, 430), true);
-        assert.strictEqual(Crab.pointerMove(2, 800, 430), true);
+        assert.strictEqual(Crab.pointerDown(2, 1060, 510), true);
+        assert.strictEqual(Crab.pointerMove(2, 1080, 510), true);
         const failedHold = Crab.finishHold();
         assert.deepStrictEqual(plain(failedHold), {
           accepted: false,
           outcome: "none",
           rockId: null
         });
-        const failedUp = Crab.pointerUp(2, 800, 430);
+        const failedUp = Crab.pointerUp(2, 1080, 510);
         assert.deepStrictEqual(plain(failedUp), {
           accepted: true,
           outcome: "failure",
@@ -874,7 +894,7 @@ def test_four_hundred_ms_hold_and_direct_follow_drag() -> None:
         assert.strictEqual(snap.feedback, "failure");
         assert.strictEqual(snap.activeRockId, "rock-2");
         assert.deepStrictEqual(plain(snap.completedRockIds), ["rock-1"]);
-        assert.deepStrictEqual(plain(snap.currentRockCenter), { x: 720, y: 420 });
+        assert.deepStrictEqual(plain(snap.currentRockCenter), { x: 1030, y: 500 });
 
         Crab.finishFeedback();
         const idleHold = Crab.finishHold();
@@ -894,17 +914,17 @@ def test_center_in_zone_success_and_outside_zone_reset() -> None:
         const Crab = freshCrab();
         Crab.start();
 
-        Crab.pointerDown(1, 790, 305);
+        Crab.pointerDown(1, 900, 440);
         Crab.finishHold();
-        Crab.pointerMove(1, 900, 300);
-        Crab.pointerMove(1, 1000, 360);
-        const success = Crab.pointerUp(1, 1000, 360);
+        Crab.pointerMove(1, 310, 290);
+        Crab.pointerMove(1, 240, 300);
+        const success = Crab.pointerUp(1, 240, 300);
         assert.strictEqual(success.outcome, "success");
         assert.strictEqual(success.rockId, "rock-1");
         Crab.finishFeedback();
         assert.strictEqual(Crab.getSnapshot().activeRockId, "rock-2");
 
-        Crab.pointerDown(2, 750, 430);
+        Crab.pointerDown(2, 1060, 510);
         Crab.finishHold();
         Crab.pointerMove(2, 700, 500);
         const fail = Crab.pointerUp(2, 700, 500);
@@ -914,7 +934,7 @@ def test_center_in_zone_success_and_outside_zone_reset() -> None:
         assert.strictEqual(snap.feedback, "failure");
         assert.strictEqual(snap.activeRockId, "rock-2");
         assert.deepStrictEqual(plain(snap.completedRockIds), ["rock-1"]);
-        assert.deepStrictEqual(plain(snap.currentRockCenter), { x: 720, y: 420 });
+        assert.deepStrictEqual(plain(snap.currentRockCenter), { x: 1030, y: 500 });
 
         Crab.finishFeedback();
         snap = Crab.getSnapshot();
@@ -922,8 +942,8 @@ def test_center_in_zone_success_and_outside_zone_reset() -> None:
         assert.strictEqual(snap.inputLocked, false);
         assert.strictEqual(snap.feedback, null);
         assert.deepStrictEqual(plain(snap.completedRockIds), ["rock-1"]);
-        assert.deepStrictEqual(plain(Crab.Rocks[0].placed), { x: 1000, y: 360 });
-        assert.deepStrictEqual(plain(snap.currentRockCenter), { x: 720, y: 420 });
+        assert.deepStrictEqual(plain(Crab.Rocks[0].placed), { x: 240, y: 300 });
+        assert.deepStrictEqual(plain(snap.currentRockCenter), { x: 1030, y: 500 });
         """
     )
     _assert_node_ok(_run_node(harness))
@@ -935,9 +955,9 @@ def test_two_tap_alternative_and_wrong_order_failure() -> None:
         const Crab = freshCrab();
         Crab.start();
 
-        const firstTap = Crab.pointerDown(1, 790, 305);
+        const firstTap = Crab.pointerDown(1, 900, 440);
         assert.strictEqual(firstTap, true);
-        const armed = Crab.pointerUp(1, 790, 305);
+        const armed = Crab.pointerUp(1, 900, 440);
         assert.deepStrictEqual(plain(armed), {
           accepted: true,
           outcome: "none",
@@ -949,9 +969,9 @@ def test_two_tap_alternative_and_wrong_order_failure() -> None:
         assert.strictEqual(snap.feedback, null);
         assert.strictEqual(snap.failureCount, 0);
 
-        const secondTap = Crab.pointerDown(2, 900, 300);
+        const secondTap = Crab.pointerDown(2, 310, 290);
         assert.strictEqual(secondTap, true);
-        const done = Crab.pointerUp(2, 900, 300);
+        const done = Crab.pointerUp(2, 310, 290);
         assert.deepStrictEqual(plain(done), {
           accepted: true,
           outcome: "success",
@@ -964,9 +984,9 @@ def test_two_tap_alternative_and_wrong_order_failure() -> None:
         Crab.finishFeedback();
         assert.strictEqual(Crab.getSnapshot().activeRockId, "rock-2");
 
-        const zoneFirst = Crab.pointerDown(3, 900, 300);
+        const zoneFirst = Crab.pointerDown(3, 310, 290);
         assert.strictEqual(zoneFirst, true);
-        const zoneFirstUp = Crab.pointerUp(3, 900, 300);
+        const zoneFirstUp = Crab.pointerUp(3, 310, 290);
         assert.deepStrictEqual(plain(zoneFirstUp), {
           accepted: true,
           outcome: "failure",
@@ -979,8 +999,8 @@ def test_two_tap_alternative_and_wrong_order_failure() -> None:
         assert.strictEqual(snap.failureCount, 1);
         Crab.finishFeedback();
 
-        assert.strictEqual(Crab.pointerDown(4, 750, 430), true);
-        assert.deepStrictEqual(plain(Crab.pointerUp(4, 750, 430)), {
+        assert.strictEqual(Crab.pointerDown(4, 1060, 510), true);
+        assert.deepStrictEqual(plain(Crab.pointerUp(4, 1060, 510)), {
           accepted: true,
           outcome: "none",
           rockId: "rock-2"
@@ -988,9 +1008,9 @@ def test_two_tap_alternative_and_wrong_order_failure() -> None:
         snap = Crab.getSnapshot();
         assert.strictEqual(snap.tapRockArmed, true);
 
-        const wrongSecond = Crab.pointerDown(5, 600, 500);
+        const wrongSecond = Crab.pointerDown(5, 700, 500);
         assert.strictEqual(wrongSecond, true);
-        const wrongSecondUp = Crab.pointerUp(5, 600, 500);
+        const wrongSecondUp = Crab.pointerUp(5, 700, 500);
         assert.deepStrictEqual(plain(wrongSecondUp), {
           accepted: true,
           outcome: "failure",
@@ -1002,12 +1022,12 @@ def test_two_tap_alternative_and_wrong_order_failure() -> None:
         assert.strictEqual(snap.activeRockId, "rock-2");
         Crab.finishFeedback();
 
-        assert.strictEqual(Crab.pointerDown(6, 750, 430), true);
-        assert.strictEqual(Crab.pointerUp(6, 750, 430).outcome, "none");
+        assert.strictEqual(Crab.pointerDown(6, 1060, 510), true);
+        assert.strictEqual(Crab.pointerUp(6, 1060, 510).outcome, "none");
         assert.strictEqual(Crab.getSnapshot().tapRockArmed, true);
-        const tapRockAgain = Crab.pointerDown(7, 750, 430);
+        const tapRockAgain = Crab.pointerDown(7, 1060, 510);
         assert.strictEqual(tapRockAgain, true);
-        const tapRockAgainUp = Crab.pointerUp(7, 750, 430);
+        const tapRockAgainUp = Crab.pointerUp(7, 1060, 510);
         assert.strictEqual(tapRockAgainUp.outcome, "failure");
         snap = Crab.getSnapshot();
         assert.strictEqual(snap.feedback, "failure");
@@ -1024,23 +1044,23 @@ def test_fixed_order_completed_rock_preservation_and_immutable_snapshot() -> Non
         const Crab = freshCrab();
         Crab.start();
 
-        Crab.pointerDown(1, 720, 420);
-        Crab.pointerUp(1, 720, 420);
+        Crab.pointerDown(1, 1060, 510);
+        Crab.pointerUp(1, 1060, 510);
         let snap = Crab.getSnapshot();
         assert.strictEqual(snap.activeRockId, "rock-1");
         assert.strictEqual(snap.feedback, null);
         assert.strictEqual(snap.tapRockArmed, false);
         assert.deepStrictEqual(plain(snap.completedRockIds), []);
 
-        Crab.pointerDown(2, 790, 305);
-        Crab.pointerUp(2, 790, 305);
-        Crab.pointerDown(3, 900, 300);
-        Crab.pointerUp(3, 900, 300);
+        Crab.pointerDown(2, 900, 440);
+        Crab.pointerUp(2, 900, 440);
+        Crab.pointerDown(3, 310, 290);
+        Crab.pointerUp(3, 310, 290);
         assert.strictEqual(Crab.getSnapshot().feedback, "success");
         Crab.finishFeedback();
         assert.strictEqual(Crab.getSnapshot().activeRockId, "rock-2");
 
-        Crab.pointerDown(4, 750, 430);
+        Crab.pointerDown(4, 1060, 510);
         Crab.pointerMove(4, 700, 500);
         Crab.pointerUp(4, 700, 500);
         assert.strictEqual(Crab.getSnapshot().feedback, "failure");
@@ -1080,7 +1100,7 @@ def test_progressive_assistance_and_exact_feedback_duration() -> None:
         Crab.start();
 
         function failRock1(pointerId) {
-          Crab.pointerDown(pointerId, 790, 305);
+          Crab.pointerDown(pointerId, 900, 440);
           Crab.pointerMove(pointerId, 900, 100);
           const r = Crab.pointerUp(pointerId, 900, 100);
           assert.strictEqual(r.outcome, "failure");
@@ -1112,10 +1132,10 @@ def test_progressive_assistance_and_exact_feedback_duration() -> None:
         assert.strictEqual(Crab.Constants.successFeedbackMs, 400);
         assert.strictEqual(Crab.Constants.failureFeedbackMs, 300);
 
-        Crab.pointerDown(5, 790, 305);
+        Crab.pointerDown(5, 900, 440);
         Crab.finishHold();
-        Crab.pointerMove(5, 900, 300);
-        const done = Crab.pointerUp(5, 900, 300);
+        Crab.pointerMove(5, 310, 290);
+        const done = Crab.pointerUp(5, 310, 290);
         assert.strictEqual(done.outcome, "success");
         Crab.finishFeedback();
         snap = Crab.getSnapshot();
@@ -1124,9 +1144,9 @@ def test_progressive_assistance_and_exact_feedback_duration() -> None:
         assert.strictEqual(snap.helpLevel, 0);
 
         function failRock2(pointerId) {
-          Crab.pointerDown(pointerId, 750, 430);
-          Crab.pointerMove(pointerId, 650, 500);
-          const r = Crab.pointerUp(pointerId, 650, 500);
+          Crab.pointerDown(pointerId, 1060, 510);
+          Crab.pointerMove(pointerId, 700, 500);
+          const r = Crab.pointerUp(pointerId, 700, 500);
           assert.strictEqual(r.outcome, "failure");
           Crab.finishFeedback();
         }
@@ -1137,7 +1157,7 @@ def test_progressive_assistance_and_exact_feedback_duration() -> None:
         snap = Crab.getSnapshot();
         assert.strictEqual(snap.helpLevel, 3);
 
-        Crab.pointerDown(9, 750, 430);
+        Crab.pointerDown(9, 1060, 510);
         Crab.finishHold();
         Crab.pointerMove(9, 600, 300);
         const outsideExpanded = Crab.pointerUp(9, 600, 300);
@@ -1145,10 +1165,10 @@ def test_progressive_assistance_and_exact_feedback_duration() -> None:
         Crab.finishFeedback();
         assert.strictEqual(Crab.getSnapshot().helpLevel, 3);
 
-        Crab.pointerDown(10, 750, 430);
+        Crab.pointerDown(10, 1060, 510);
         Crab.finishHold();
-        Crab.pointerMove(10, 740, 460);
-        const expanded = Crab.pointerUp(10, 740, 460);
+        Crab.pointerMove(10, 120, 100);
+        const expanded = Crab.pointerUp(10, 120, 100);
         assert.strictEqual(expanded.outcome, "success");
         snap = Crab.getSnapshot();
         assert.deepStrictEqual(plain(snap.completedRockIds), ["rock-1", "rock-2"]);
@@ -1199,15 +1219,15 @@ def test_real_pointer_flow_completes_three_rocks_and_enters_success() -> None:
           true
         );
         assert.strictEqual(
-          arcs.some((a) => a[0] === 760 && a[1] === 300 && a[2] === 46),
+          arcs.some((a) => a[0] === 870 && a[1] === 420 && a[2] === 46),
           true
         );
         assert.strictEqual(
-          arcs.some((a) => a[0] === 720 && a[1] === 420 && a[2] === 52),
+          arcs.some((a) => a[0] === 1030 && a[1] === 500 && a[2] === 52),
           true
         );
         assert.strictEqual(
-          arcs.some((a) => a[0] === 770 && a[1] === 540 && a[2] === 58),
+          arcs.some((a) => a[0] === 900 && a[1] === 560 && a[2] === 58),
           true
         );
         assert.strictEqual(ctx.frames.pending().length, 0);
@@ -1216,7 +1236,7 @@ def test_real_pointer_flow_completes_three_rocks_and_enters_success() -> None:
           ["pointercancel", "pointerdown", "pointermove", "pointerup"]
         );
 
-        completeRockByHoldDrag(dom, ctx, 1, { x: 790, y: 305 }, { x: 900, y: 320 });
+        completeRockByHoldDrag(dom, ctx, 1, { x: 900, y: 440 }, { x: 310, y: 290 });
         snap = ctx.Crab.getSnapshot();
         assert.deepStrictEqual(plain(snap.completedRockIds), ["rock-1"]);
         assert.strictEqual(snap.feedback, "success");
@@ -1248,13 +1268,13 @@ def test_real_pointer_flow_completes_three_rocks_and_enters_success() -> None:
           false
         );
 
-        dispatch(dom.canvas, "pointerdown", pointerEvent(11, 750, 430));
-        dispatch(dom.canvas, "pointerup", pointerEvent(11, 750, 430));
+        dispatch(dom.canvas, "pointerdown", pointerEvent(11, 1060, 510));
+        dispatch(dom.canvas, "pointerup", pointerEvent(11, 1060, 510));
         snap = ctx.Crab.getSnapshot();
         assert.strictEqual(snap.tapRockArmed, true);
         assert.strictEqual(snap.feedback, null);
-        dispatch(dom.canvas, "pointerdown", pointerEvent(12, 900, 300));
-        dispatch(dom.canvas, "pointerup", pointerEvent(12, 900, 300));
+        dispatch(dom.canvas, "pointerdown", pointerEvent(12, 310, 290));
+        dispatch(dom.canvas, "pointerup", pointerEvent(12, 310, 290));
         snap = ctx.Crab.getSnapshot();
         assert.deepStrictEqual(plain(snap.completedRockIds), ["rock-1", "rock-2"]);
         assert.strictEqual(snap.feedback, "success");
@@ -1271,7 +1291,7 @@ def test_real_pointer_flow_completes_three_rocks_and_enters_success() -> None:
         assert.strictEqual(snap.activeRockId, "rock-3");
         assert.strictEqual(dom.rescueProgress.textContent, "Rock 3 of 3");
 
-        dispatch(dom.canvas, "pointerdown", pointerEvent(21, 800, 545));
+        dispatch(dom.canvas, "pointerdown", pointerEvent(21, 930, 575));
         const hold3 = timerWithDelay(ctx, 400);
         ctx.timers.run(hold3.id);
         dispatch(dom.canvas, "pointermove", pointerEvent(21, 880, 560));
@@ -1300,7 +1320,7 @@ def test_real_pointer_flow_completes_three_rocks_and_enters_success() -> None:
         assert.strictEqual(dom.rootEl.getAttribute("data-crab-feedback"), "none");
         assert.strictEqual(dom.rescueProgress.textContent, "Rock 3 of 3");
 
-        completeRockByHoldDrag(dom, ctx, 22, { x: 800, y: 545 }, { x: 900, y: 330 });
+        completeRockByHoldDrag(dom, ctx, 22, { x: 930, y: 575 }, { x: 330, y: 215 });
         snap = ctx.Crab.getSnapshot();
         assert.deepStrictEqual(
           plain(snap.completedRockIds),
@@ -1345,15 +1365,15 @@ def test_real_pointer_flow_completes_three_rocks_and_enters_success() -> None:
 
         const afterArcs = callArgs(dom.canvas, "arc");
         assert.strictEqual(
-          afterArcs.some((a) => a[0] === 1000 && a[1] === 360 && a[2] === 46),
+          afterArcs.some((a) => a[0] === 240 && a[1] === 300 && a[2] === 46),
           true
         );
         assert.strictEqual(
-          afterArcs.some((a) => a[0] === 1090 && a[1] === 450 && a[2] === 52),
+          afterArcs.some((a) => a[0] === 390 && a[1] === 330 && a[2] === 52),
           true
         );
         assert.strictEqual(
-          afterArcs.some((a) => a[0] === 1000 && a[1] === 540 && a[2] === 58),
+          afterArcs.some((a) => a[0] === 330 && a[1] === 215 && a[2] === 58),
           true
         );
         const afterLabels = fillTextLabels(dom.canvas);
@@ -1432,6 +1452,138 @@ def test_mission_gating_stale_timers_and_missing_runtime_safety() -> None:
         assert.strictEqual(
           missingCrabDom.rootEl.getAttribute("data-crab-active"),
           null
+        );
+        """
+    )
+    _assert_node_ok(_run_node(harness))
+
+
+def test_crab_interaction_geometry_contract() -> None:
+    harness = _BOOTSTRAP + textwrap.dedent(
+        """\
+        const Crab = freshCrab();
+
+        const Layout = Crab.Layout || null;
+        const logicalWidth = Layout ? Layout.logicalWidth : 1280;
+        const logicalHeight = Layout ? Layout.logicalHeight : 720;
+
+        const dz = Crab.DropZone;
+        const dzRect = {
+          x1: dz.x - dz.width / 2,
+          x2: dz.x + dz.width / 2,
+          y1: dz.y - dz.height / 2,
+          y2: dz.y + dz.height / 2
+        };
+        assert.strictEqual(
+          Object.prototype.hasOwnProperty.call(dz, "x") &&
+            Object.prototype.hasOwnProperty.call(dz, "y") &&
+            Object.prototype.hasOwnProperty.call(dz, "width") &&
+            Object.prototype.hasOwnProperty.call(dz, "height"),
+          true
+        );
+        assert.strictEqual(dz.width > 0 && dz.height > 0, true);
+
+        const crabFootprint = Layout
+          ? {
+              x1: Layout.crabCenter.x - Layout.crabFootprint.width / 2,
+              x2: Layout.crabCenter.x + Layout.crabFootprint.width / 2,
+              y1: Layout.crabCenter.y - Layout.crabFootprint.height / 2,
+              y2: Layout.crabCenter.y + Layout.crabFootprint.height / 2
+            }
+          : { x1: 800, x2: 1000, y1: 410, y2: 590 };
+
+        function circleIntersectsRect(cx, cy, r, rect) {
+          const nx = Math.max(rect.x1, Math.min(cx, rect.x2));
+          const ny = Math.max(rect.y1, Math.min(cy, rect.y2));
+          return Math.hypot(cx - nx, cy - ny) <= r;
+        }
+
+        function circleInsideRect(cx, cy, r, rect) {
+          return (
+            cx - r >= rect.x1 &&
+            cx + r <= rect.x2 &&
+            cy - r >= rect.y1 &&
+            cy + r <= rect.y2
+          );
+        }
+
+        assert.strictEqual(Crab.Rocks.length, 3);
+        const ids = Crab.Rocks.map((rock) => rock.id);
+        assert.strictEqual(new Set(ids).size, 3);
+        const orders = Crab.Rocks.map((rock) => rock.order);
+        assert.deepStrictEqual(plain(orders), [1, 2, 3]);
+
+        for (const rock of Crab.Rocks) {
+          assert.strictEqual(
+            Number.isFinite(rock.radius) && rock.radius > 0,
+            true,
+            rock.id + " radius"
+          );
+          assert.strictEqual(
+            Number.isFinite(rock.start.x) && Number.isFinite(rock.start.y),
+            true,
+            rock.id + " start finite"
+          );
+          assert.strictEqual(
+            Number.isFinite(rock.placed.x) && Number.isFinite(rock.placed.y),
+            true,
+            rock.id + " placed finite"
+          );
+          assert.strictEqual(
+            rock.start.x >= 0 && rock.start.x <= logicalWidth &&
+              rock.start.y >= 0 && rock.start.y <= logicalHeight,
+            true,
+            rock.id + " start in viewport"
+          );
+          assert.strictEqual(
+            rock.placed.x >= 0 && rock.placed.x <= logicalWidth &&
+              rock.placed.y >= 0 && rock.placed.y <= logicalHeight,
+            true,
+            rock.id + " placed in viewport"
+          );
+          assert.strictEqual(
+            circleIntersectsRect(rock.start.x, rock.start.y, rock.radius, dzRect),
+            false,
+            rock.id + " start rock must not intersect the drop zone"
+          );
+          assert.strictEqual(
+            circleInsideRect(rock.placed.x, rock.placed.y, rock.radius, dzRect),
+            true,
+            rock.id + " placed rock must sit fully inside the drop zone"
+          );
+          assert.strictEqual(
+            circleIntersectsRect(rock.start.x, rock.start.y, rock.radius, crabFootprint),
+            true,
+            rock.id + " start rock must press on the crab footprint"
+          );
+          assert.strictEqual(
+            circleIntersectsRect(rock.placed.x, rock.placed.y, rock.radius, crabFootprint),
+            false,
+            rock.id + " placed rock must be clear of the crab footprint"
+          );
+        }
+
+        assert.strictEqual(
+          dz.x - dz.width / 2 >= 0 &&
+            dz.x + dz.width / 2 <= logicalWidth &&
+            dz.y - dz.height / 2 >= 0 &&
+            dz.y + dz.height / 2 <= logicalHeight,
+          true,
+          "drop zone must be fully inside the logical viewport"
+        );
+        assert.strictEqual(
+          circleIntersectsRect(
+            crabFootprint.x1 + (crabFootprint.x2 - crabFootprint.x1) / 2,
+            crabFootprint.y1 + (crabFootprint.y2 - crabFootprint.y1) / 2,
+            0,
+            dzRect
+          ) === false ||
+            dz.x + dz.width / 2 < crabFootprint.x1 ||
+            dz.x - dz.width / 2 > crabFootprint.x2 ||
+            dz.y + dz.height / 2 < crabFootprint.y1 ||
+            dz.y - dz.height / 2 > crabFootprint.y2,
+          true,
+          "drop zone must be visually separate from the crab footprint"
         );
         """
     )

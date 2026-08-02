@@ -22,30 +22,44 @@
       id: "rock-1",
       order: 1,
       radius: 46,
-      start: freeze({ x: 760, y: 300 }),
-      placed: freeze({ x: 1000, y: 360 })
+      start: freeze({ x: 870, y: 420 }),
+      placed: freeze({ x: 240, y: 300 })
     }),
     freeze({
       id: "rock-2",
       order: 2,
       radius: 52,
-      start: freeze({ x: 720, y: 420 }),
-      placed: freeze({ x: 1090, y: 450 })
+      start: freeze({ x: 1030, y: 500 }),
+      placed: freeze({ x: 390, y: 330 })
     }),
     freeze({
       id: "rock-3",
       order: 3,
       radius: 58,
-      start: freeze({ x: 770, y: 540 }),
-      placed: freeze({ x: 1000, y: 540 })
+      start: freeze({ x: 900, y: 560 }),
+      placed: freeze({ x: 330, y: 215 })
     })
   ]);
 
   var DropZone = freeze({
-    x: 900,
-    y: 280,
+    x: 310,
+    y: 290,
     width: 300,
     height: 320
+  });
+
+  var CrabCenter = freeze({ x: 900, y: 500 });
+  var CrabFootprint = freeze({ width: 200, height: 180 });
+  var GrabberBase = freeze({ x: 520, y: 520 });
+
+  var Layout = freeze({
+    logicalWidth: 1280,
+    logicalHeight: 720,
+    crabCenter: CrabCenter,
+    crabFootprint: CrabFootprint,
+    grabberBase: GrabberBase,
+    dropZone: DropZone,
+    rocks: Rocks
   });
 
   var Dialogues = freeze([
@@ -513,6 +527,7 @@
     Constants: Constants,
     Rocks: Rocks,
     DropZone: DropZone,
+    Layout: Layout,
     Dialogues: Dialogues,
     getSnapshot: getSnapshot,
     start: start,

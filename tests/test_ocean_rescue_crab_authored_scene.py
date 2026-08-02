@@ -33,7 +33,9 @@ def test_crab_scene_module_exists():
 
 
 def test_crab_scene_in_build_manifest():
-    manifest_path = REPO_ROOT / "domains" / "ocean-rescue" / "src" / "build-manifest.json"
+    manifest_path = (
+        REPO_ROOT / "domains" / "ocean-rescue" / "src" / "build-manifest.json"
+    )
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     files = [entry["file"] for entry in manifest["scripts"]]
     assert "crab-scene.js" in files, "crab-scene.js missing from build-manifest.json"
@@ -44,7 +46,9 @@ def test_crab_scene_in_build_manifest():
 
 
 def test_crab_scene_dependency_order():
-    manifest_path = REPO_ROOT / "domains" / "ocean-rescue" / "src" / "build-manifest.json"
+    manifest_path = (
+        REPO_ROOT / "domains" / "ocean-rescue" / "src" / "build-manifest.json"
+    )
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     for entry in manifest["scripts"]:
         if entry["file"] == "crab-scene.js":
@@ -55,7 +59,9 @@ def test_crab_scene_dependency_order():
 
 
 def test_required_crab_aliases_in_generated_assets():
-    registry_path = REPO_ROOT / "domains" / "ocean-rescue" / "src" / "render-assets.generated.js"
+    registry_path = (
+        REPO_ROOT / "domains" / "ocean-rescue" / "src" / "render-assets.generated.js"
+    )
     source = registry_path.read_text(encoding="utf-8")
     required = [
         "crab.trapped",
@@ -71,7 +77,9 @@ def test_required_crab_aliases_in_generated_assets():
         "fx.hold-ring",
     ]
     for alias in required:
-        assert alias in source, f"Missing required alias {alias} in render-assets.generated.js"
+        assert alias in source, (
+            f"Missing required alias {alias} in render-assets.generated.js"
+        )
 
 
 def test_legacy_canvas_path_excluded_from_production_crab():
@@ -92,7 +100,9 @@ def test_legacy_canvas_path_excluded_from_production_crab():
 def test_no_pixi_graphics_in_crab_scene():
     scene_path = REPO_ROOT / "domains" / "ocean-rescue" / "src" / "crab-scene.js"
     source = scene_path.read_text(encoding="utf-8")
-    assert "PIXI.Graphics" not in source, "Primary scene bodies must be texture-backed sprites"
+    assert "PIXI.Graphics" not in source, (
+        "Primary scene bodies must be texture-backed sprites"
+    )
 
 
 def test_no_remote_loading_in_crab_scene():
@@ -107,7 +117,9 @@ def test_crab_scene_has_lifecycle_methods():
     scene_path = REPO_ROOT / "domains" / "ocean-rescue" / "src" / "crab-scene.js"
     source = scene_path.read_text(encoding="utf-8")
     for method in ("prepare", "activate", "sync", "pause", "resume", "exit", "destroy"):
-        assert f"{method}:" in source or f"{method} :" in source, f"Missing lifecycle method: {method}"
+        assert f"{method}:" in source or f"{method} :" in source, (
+            f"Missing lifecycle method: {method}"
+        )
     assert "isMounted:" in source or "isMounted" in source
     assert "getDiagnostics:" in source or "getDiagnostics" in source
 
@@ -133,3 +145,49 @@ def test_app_js_syncs_crab_scene_on_interactions():
     assert "CrabScene.pause" in source
     assert "CrabScene.resume" in source
     assert "CrabScene.exit" in source
+
+
+def test_crab_layout_exposes_canonical_geometry():
+    crab_path = REPO_ROOT / "domains" / "ocean-rescue" / "src" / "crab.js"
+    source = crab_path.read_text(encoding="utf-8")
+    assert "Layout" in source
+    for token in (
+        "logicalWidth",
+        "logicalHeight",
+        "crabCenter",
+        "crabFootprint",
+        "grabberBase",
+        "dropZone",
+        "rocks",
+    ):
+        assert token in source, f"Layout missing canonical field: {token}"
+    assert "Layout: Layout" in source, "Layout not exported from Crab"
+
+
+def test_crab_scene_consumes_canonical_layout():
+    scene_path = REPO_ROOT / "domains" / "ocean-rescue" / "src" / "crab-scene.js"
+    source = scene_path.read_text(encoding="utf-8")
+    assert "Crab.Layout" in source, "scene does not read canonical Crab.Layout"
+    assert "layoutCrabCenter" in source, "crab center not read from layout"
+    assert "layoutGrabberBase" in source, "grabber base not read from layout"
+    assert "layoutDropZone" in source, "drop zone not read from layout"
+    assert "layoutRocks" in source, "rocks not read from layout"
+
+
+def test_crab_scene_has_no_duplicate_geometry_magic_numbers():
+    scene_path = REPO_ROOT / "domains" / "ocean-rescue" / "src" / "crab-scene.js"
+    source = scene_path.read_text(encoding="utf-8")
+    assert "setPosition(NODES.crabTrapped, 900, 500)" not in source
+    assert "setPosition(NODES.crabFree, 900, 500)" not in source
+    assert "NODES.grabberArm.position.set(520, gupY)" not in source
+    assert "setPosition(NODES.grabberBase, 520," not in source
+    assert "var dz = Crab.DropZone;" not in source
+    assert "NODES.crabTrapped.position.y = 500 - lift" not in source
+    assert "NODES.crabFree.position.y = free ? 484" not in source
+
+
+def test_crab_scene_completed_rocks_use_placed_positions():
+    scene_path = REPO_ROOT / "domains" / "ocean-rescue" / "src" / "crab-scene.js"
+    source = scene_path.read_text(encoding="utf-8")
+    assert "rock.placed.x" in source, "completed rock x not canonical placed.x"
+    assert "rock.placed.y" in source, "completed rock y not canonical placed.y"

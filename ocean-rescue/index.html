@@ -7897,6 +7897,7 @@ fn mainFragment(
       loop.scale.set(0.58, 0.58);
       loop.rotation = Math.atan2(rope.end.y - rope.start.y, rope.end.x - rope.start.x);
       loop.position.set(base.x, base.y);
+      var isDragging = isActive && pointerIntent.active && finite(pointerIntent.x) && finite(pointerIntent.y);
       if (isActive && feedback === "failure") {
         loop.tint = 0xff6b6b;
         if (!reducedMotion) {
@@ -7909,12 +7910,11 @@ fn mainFragment(
         loop.position.y += (rope.end.y - rope.start.y) * successProgress * 0.22;
         loop.alpha = 1 - successProgress;
       }
-      if (isActive && pointerIntent.active && finite(pointerIntent.x) && finite(pointerIntent.y)) {
-        loop.position.x += Math.max(-24, Math.min(24, (pointerIntent.x - base.x) * 0.18));
-        loop.position.y += Math.max(-24, Math.min(24, (pointerIntent.y - base.y) * 0.18));
-      }
       if (isActive && !reducedMotion && feedback === null) {
         var pulse = 1 + Math.sin(activeTime / 260) * 0.035;
+        if (isDragging) {
+          pulse += 0.05;
+        }
         loop.scale.set(0.58 * pulse, 0.58 * pulse);
       }
     }

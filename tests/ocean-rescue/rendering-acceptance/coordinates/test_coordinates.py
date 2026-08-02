@@ -179,7 +179,7 @@ class TestCoordinateMapping:
 
     def test_dpr_invariance(self, fixture_data, tolerance):
         """Same viewport + same CSS pointer → same logical result regardless of DPR."""
-        by_viewport_point: dict[str, list] = {}
+        by_viewport_point: dict[tuple, list] = {}
         for c in fixture_data["cases"]:
             if c.get("outsideViewport"):
                 continue

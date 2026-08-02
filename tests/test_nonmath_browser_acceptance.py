@@ -232,7 +232,7 @@ class TestMathBrowserControl:
         
         question_el = page.wait_for_selector("#question", state="visible", timeout=5000)
         text = question_el.inner_text().strip()
-        assert len(text) > 0, f"Math question text is blank"
+        assert len(text) > 0, "Math question text is blank"
     
     def test_math_answer_interaction(self, server, page):
         """Math answer interaction works."""

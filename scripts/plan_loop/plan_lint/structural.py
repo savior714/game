@@ -4,6 +4,12 @@ import re
 from pathlib import Path
 from typing import Optional
 
+from scripts.plan_loop.plan_lint.shared import (
+    LETTER_PREFIX_TASK_HEADING_RE,
+    REQUIRED_SECTIONS,
+    is_blueprint_markdown,
+)
+
 COLLABORATION_SUBSECTIONS: tuple[tuple[str, str], ...] = (
     (r"^### 개요\s*$", "개요"),
     (r"^### staff·경영에서 바뀌는 점\s*$", "staff·경영에서 바뀌는 점"),
@@ -23,13 +29,6 @@ EXECUTION_PLAN_HEADING_RE = re.compile(
 AGENT_SCOPE_BLOCKQUOTE_RE = re.compile(
     r"^>\s*\*\*에이전트 스코프\*\*",
     re.MULTILINE,
-)
-
-
-from scripts.plan_loop.plan_lint.shared import (
-    LETTER_PREFIX_TASK_HEADING_RE,
-    REQUIRED_SECTIONS,
-    is_blueprint_markdown,
 )
 
 

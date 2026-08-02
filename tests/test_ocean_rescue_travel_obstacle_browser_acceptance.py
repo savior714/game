@@ -68,7 +68,7 @@ class HTTPServerFixture:
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, directory=str(REPO_ROOT), **kwargs)
 
-            def log_message(self, *args):
+            def log_message(self, format: str, *args) -> None:
                 pass
 
         socketserver.TCPServer.allow_reuse_address = True
@@ -335,7 +335,7 @@ def _run_scenario(pg, backend, run_index, base_url, screenshot_path):
     assert rim_layer["scale"]["x"] > body_layer["scale"]["x"], "rim absolute scale must be > body"
 
     # All layers share the same texture.
-    textures = [l["hasFrame"] for l in layers]
+    textures = [layer["hasFrame"] for layer in layers]
     assert all(textures), "all layers must have valid textures"
 
     # Readiness evidence: one 1280x720 screenshot per backend while travel is
@@ -479,8 +479,8 @@ class TestTravelObstacleBrowserAcceptance:
                             "childCount": readiness["groups"][0]["childCount"],
                             "visible": readiness["groups"][0]["visible"],
                             "layers": [
-                                {"label": l["label"], "isSprite": l["isSprite"], "visible": l["visible"], "hasFrame": l["hasFrame"]}
-                                for l in readiness["groups"][0]["layers"]
+                                {"label": layer["label"], "isSprite": layer["isSprite"], "visible": layer["visible"], "hasFrame": layer["hasFrame"]}
+                                for layer in readiness["groups"][0]["layers"]
                             ],
                         },
                     },

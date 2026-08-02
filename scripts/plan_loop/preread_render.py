@@ -7,8 +7,10 @@ import sys
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from scripts.agent.route_context import find_repo_root, get_route_bundle, normalize_repo_rel
+from scripts.agent.route_bundle import RouteBundle
 from scripts.plan_loop.intent_utils import extract_plan_intents
 from scripts.plan_loop.path_utils import SECTION_RE, extract_plan_paths, extract_task_paths
 from scripts.plan_loop.spec_routing import route_spec_files
@@ -87,7 +89,7 @@ def cap_installed_entries(
 def render_task_preread_field(
     *,
     paths: Sequence[str],
-    bundle: dict[str, object],
+    bundle: RouteBundle,
 ) -> str:
     """Per-task Pre-read block — co-located so single-task sessions cannot skip the doc gate."""
     must_read = bundle.get("must_read") or []
@@ -162,7 +164,7 @@ def upsert_task_prereads_in_plan(
     return "".join(parts), updated
 
 
-def _merge_specs_into_bundle(bundle: dict[str, object], spec_files: list[str], repo_root: Path) -> None:
+def _merge_specs_into_bundle(bundle: RouteBundle, spec_files: list[str], repo_root: Path) -> None:
     """Add routed spec files to bundle's must_read (after rules, before skills)."""
     if not spec_files:
         return
@@ -192,7 +194,7 @@ def render_preread_section(
     plan_text: str,
     paths: Sequence[str],
     intents: Sequence[str],
-    bundle: dict[str, object],
+    bundle: RouteBundle,
     bundle_id: str | None = None,
 ) -> str:
     stacks = infer_stack_labels(paths, plan_text)
@@ -298,7 +300,7 @@ def build_manifest_for_plan(
     repo_root: Path | None = None,
     extra_paths: Sequence[str] = (),
     extra_intents: Sequence[str] = (),
-) -> dict[str, object]:
+) -> dict[str, Any]:
     root = repo_root or find_repo_root(plan_path.parent)
     text = plan_path.read_text(encoding="utf-8")
     paths = sorted(set(extract_plan_paths(text, root)) | {normalize_repo_rel(p) for p in extra_paths})
@@ -317,7 +319,7 @@ def build_manifest_for_plan(
         intents=intents,
         bundle=bundle,
     )
-    route_bundle = {
+    route_bundle: dict[str, Any] = {
         "files": paths,
         "must_read": bundle.get("must_read", []),
         "must_read_paths": bundle.get("must_read_paths", []),

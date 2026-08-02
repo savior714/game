@@ -46,7 +46,7 @@ def build_dispatch_instructions(
 
 
 def parse_results(
-    raw_outputs: list[dict[str, str]],
+    raw_outputs: list[dict[str, str | bool]],
 ) -> list[DiffResult]:
     """Parse raw subagent outputs into DiffResults.
 
@@ -57,9 +57,9 @@ def parse_results(
     """
     results: list[DiffResult] = []
     for raw in raw_outputs:
-        task_id = raw.get("task_id", "unknown")
-        output_text = raw.get("output", "")
-        has_error = raw.get("error", False)
+        task_id = str(raw.get("task_id", "unknown"))
+        output_text = str(raw.get("output", ""))
+        has_error = bool(raw.get("error", False))
         results.append(DiffResult.from_subagent_output(task_id, output_text, has_error))
     return results
 

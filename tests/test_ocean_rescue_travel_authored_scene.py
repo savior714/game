@@ -6,8 +6,6 @@ Verifies that the TRAVEL phase renders through an authored Pixi scene
 
 import json
 import re
-import subprocess
-import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -266,7 +264,7 @@ def test_no_network_or_remote_loads_in_travel_scene():
     forbidden = [r"\bimport\s*\(", r"\bfetch\s*\(", r"\bWebSocket\b"]
     for pattern in forbidden:
         assert not re.search(pattern, source), (
-            f"TravelScene uses forbidden runtime pattern: {pattern.pattern}"
+            f"TravelScene uses forbidden runtime pattern: {pattern}"
         )
 
 

@@ -19,7 +19,6 @@ from __future__ import annotations
 from scripts.agent.orchestration.spec import (
     WorkSpec,
     DiffResult,
-    AuditReport,
     OrchestrationResult,
     OrchestrationStatus,
 )
@@ -29,7 +28,7 @@ from scripts.agent.orchestration.dispatcher import (
     parse_results,
     validate_dispatch_results,
 )
-from scripts.agent.orchestration.auditor import audit as audit_diffs, has_blocking_issues, summary
+from scripts.agent.orchestration.auditor import audit as audit_diffs, summary
 from scripts.agent.orchestration.fixer import build_fix_requests, should_retry
 from scripts.agent.orchestration.final_auditor import final_audit
 
@@ -123,7 +122,7 @@ class PipelineOrchestrator:
             current_diff_results = fixer_apply_fixes(fix_instructions, fix_raw_outputs)
 
             # Re-audit after fixes
-            self.phase_log.append(f"Phase 3 (re-audit): Checking fixes")
+            self.phase_log.append("Phase 3 (re-audit): Checking fixes")
             current_audit_reports = audit_diffs(current_diff_results)
 
         # ── Phase 5: Final Audit ─────────────────────────────────────────

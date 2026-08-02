@@ -26,6 +26,7 @@ import math
 import re
 import sys
 from pathlib import Path
+from typing import overload
 
 import xml.etree.ElementTree as ET
 
@@ -504,6 +505,14 @@ def _check_finite(
     report["nonFiniteFindings"] = findings
     for finding in findings:
         rejection.append(f"Non-finite numeric value: {finding}")
+
+
+@overload
+def _float(value: str | None, default: float) -> float: ...
+
+
+@overload
+def _float(value: str | None, default: None) -> float | None: ...
 
 
 def _float(value: str | None, default: float | None) -> float | None:

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Dict, Iterable, List, Sequence, Set
+from typing import Any, Iterable, List, Sequence, Set, TypedDict
 
 from scripts.agent.route_matching import (
     get_relevant_project_skills,
@@ -12,6 +12,42 @@ from scripts.agent.route_matching import (
 )
 from scripts.agent.route_parsing import find_repo_root, normalize_repo_rel
 from scripts.error_patterns.detail_paths import detail_paths_for_edit_files
+
+
+class MustReadEntry(TypedDict, total=False):
+    path: str
+    kind: str
+    installed: bool
+    lazy_load: bool
+    detail_path: str
+
+
+class RouteGateInfo(TypedDict):
+    command: str
+    manifest: str
+    before_edit: str
+    violation: str
+
+
+class RouteBundle(TypedDict, total=False):
+    repo_root: str
+    files: list[str]
+    tight: bool
+    skill_cap: int
+    rules: list[str]
+    project_skills: list[str]
+    project_meta: dict[str, Any]
+    project_install_paths: dict[str, str]
+    project_installed: dict[str, bool]
+    must_read: list[dict[str, Any]]
+    must_read_paths: list[str]
+    missing_paths: list[str]
+    gate: RouteGateInfo
+    budget: dict[str, Any]
+    query: str
+    classified_intents: list[str]
+    path_hints: list[str]
+    spec_files: list[str]
 
 
 def _strip_rule_annotation(rule: str) -> str:
@@ -74,13 +110,13 @@ def build_must_read(
     rules: Sequence[str],
     project_skills: Sequence[str],
     file_paths: Sequence[str] = (),
-) -> List[Dict[str, object]]:
+) -> list[dict[str, Any]]:
     """
     Ordered checklist of files the agent MUST Read before editing target paths.
     Order: domain/core rules → project skills.
     Project skills expose lazy_load + detail_path for two-phase loading.
     """
-    must_read: List[Dict[str, object]] = []
+    must_read: list[dict[str, Any]] = []
     seen: Set[str] = set()
 
     def append_entry(rel: str, kind: str, *, lazy_load: bool = False) -> None:
@@ -89,7 +125,7 @@ def build_must_read(
             return
         seen.add(rel)
         full = repo_root / rel
-        entry: Dict[str, object] = {
+        entry: dict[str, Any] = {
             "path": rel,
             "kind": kind,
             "installed": full.is_file(),
@@ -126,7 +162,7 @@ def get_route_bundle(
     apply_cap: bool = True,
     cap: int = 5,
     tight: bool = True,
-) -> Dict[str, object]:
+) -> RouteBundle:
     """Full routing payload for agents (rules + skills + mandatory read list)."""
     root = repo_root or find_repo_root()
     skill_cap = 2 if tight else cap

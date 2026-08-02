@@ -3,6 +3,10 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from scripts.plan_loop.plan_lint.fixer import apply_fix_to_file
+from scripts.plan_loop.plan_lint.linter import lint_plan_file
+from scripts.plan_loop.plan_lint.shared import ATOMIC_UNIT_TAG, DEPRECATED_LEVEL_LOW_TAG
+
 COLOR_RED = "\033[91m"
 
 COLOR_GREEN = "\033[92m"
@@ -12,11 +16,6 @@ COLOR_YELLOW = "\033[93m"
 COLOR_BLUE = "\033[94m"
 
 COLOR_RESET = "\033[0m"
-
-
-from scripts.plan_loop.plan_lint.fixer import apply_fix_to_file
-from scripts.plan_loop.plan_lint.linter import lint_plan_file
-from scripts.plan_loop.plan_lint.shared import ATOMIC_UNIT_TAG, DEPRECATED_LEVEL_LOW_TAG
 
 
 def main() -> int:

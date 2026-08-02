@@ -88,6 +88,8 @@ def load_backend_helpers():
     spec = importlib.util.spec_from_file_location(
         "ocean_rescue_backend_helpers", helper_path
     )
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load backend helpers from {helper_path}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

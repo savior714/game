@@ -76,10 +76,15 @@ class TestDispatcher:
         assert results[0].status == TaskStatus.FAILED
 
     def test_validate_dispatch_results_missing(self):
-        tasks = [
-            type("T", (), {"task_id": "T1", "target_paths": ["f1"]})(),
-            type("T", (), {"task_id": "T2", "target_paths": ["f2"]})(),
-        ]
+        tasks = analyze(
+            WorkSpec(
+                description="test",
+                file_groups=[
+                    FileGroup(domain_path="domains/math/", files=["f1"]),
+                    FileGroup(domain_path="domains/english/", files=["f2"]),
+                ],
+            )
+        )
         results = [DiffResult(task_id="T1", status=TaskStatus.DONE)]
         errors = validate_dispatch_results(tasks, results)
         assert any("T2" in e for e in errors)

@@ -92,21 +92,31 @@ class TestEstimateParallelism:
         assert n == 2
 
     def test_five_files_or_less(self):
-        tasks = [
-            type("T", (), {"target_paths": ["a", "b"]})(),
-            type("T", (), {"target_paths": ["c", "d"]})(),
-            type("T", (), {"target_paths": ["e"]})(),
-        ]
+        tasks = analyze(
+            WorkSpec(
+                description="test",
+                file_groups=[
+                    FileGroup(domain_path="domains/math/", files=["a", "b"]),
+                    FileGroup(domain_path="domains/english/", files=["c", "d"]),
+                    FileGroup(domain_path="domains/korean/", files=["e"]),
+                ],
+            )
+        )
         # 5 files total, 3 tasks → min(max(3,2),3) = 3
         n = estimate_parallelism(tasks)
         assert 2 <= n <= 3
 
     def test_more_than_five_files(self):
-        tasks = [
-            type("T", (), {"target_paths": ["a", "b", "c"]})(),
-            type("T", (), {"target_paths": ["d", "e", "f"]})(),
-            type("T", (), {"target_paths": ["g", "h"]})(),
-        ]
+        tasks = analyze(
+            WorkSpec(
+                description="test",
+                file_groups=[
+                    FileGroup(domain_path="domains/math/", files=["a", "b", "c"]),
+                    FileGroup(domain_path="domains/english/", files=["d", "e", "f"]),
+                    FileGroup(domain_path="domains/korean/", files=["g", "h"]),
+                ],
+            )
+        )
         # 8 files total, 3 tasks → min(max(3,4),5) = 4
         n = estimate_parallelism(tasks)
         assert 3 <= n <= 5

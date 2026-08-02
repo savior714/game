@@ -56,7 +56,6 @@ def build_contact_sheet(source_root: Path) -> str:
             svg_path = source_root / asset["source"]
             svg_bytes = svg_path.read_bytes()
             svg_b64 = base64.b64encode(svg_bytes).decode("ascii")
-            svg_text = svg_path.read_text(encoding="utf-8")
             w, h = asset["logicalSize"]
             px, py = asset["pivot"]
             sha_prefix = asset["sourceSha256"][:12]

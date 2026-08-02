@@ -171,7 +171,7 @@ def assert_case(diag, case_id, expect_canvas, webgl_must_be_unavailable=False):
         ("destroySucceeded", diag.get("destroySucceeded") is True, "destroySucceeded != true"),
         ("uncaughtErrorCount", diag.get("uncaughtErrorCount") == 0, f"uncaughtErrorCount != 0 (got {diag.get('uncaughtErrorCount')})"),
         ("unhandledRejectionCount", diag.get("unhandledRejectionCount") == 0, f"unhandledRejectionCount != 0 (got {diag.get('unhandledRejectionCount')})"),
-        ("externalOriginRequestCount", diag.get("externalOriginRequestCount") == 0, f"externalOriginRequestCount != 0"),
+        ("externalOriginRequestCount", diag.get("externalOriginRequestCount") == 0, "externalOriginRequestCount != 0"),
         ("securityPolicyViolationCount", diag.get("securityPolicyViolationCount") == 0, f"securityPolicyViolationCount != 0 (got {diag.get('securityPolicyViolationCount')})"),
         ("error", diag.get("error") is None, f"error is not null: {diag.get('error')}"),
     ]

@@ -20,7 +20,7 @@ _SCRIPTS_VERIFY = Path(__file__).resolve().parent
 if str(_SCRIPTS_VERIFY) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_VERIFY))
 
-from baseline_gate import filter_new_entries, load_baseline, write_baseline
+from baseline_gate import filter_new_entries, load_baseline, write_baseline  # noqa: E402
 
 DEFAULT_FRONTEND = ROOT / "apps" / "renderer"
 BASELINE_PATH = ROOT / "scripts" / "verify" / "frontend_complexity_baseline.txt"

@@ -13,6 +13,7 @@ import hashlib
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 SCHEMA_VERSION = 1
 REQUIRED_DECISION = "approved"
@@ -36,7 +37,7 @@ def load_json(path: Path) -> dict:
         return {}
 
 
-def validate_approval_record(record: dict, expected_count: int) -> None:
+def validate_approval_record(record: dict[str, Any], expected_count: int) -> None:
     if record.get("schemaVersion") != SCHEMA_VERSION:
         fail(
             f"schemaVersion must be {SCHEMA_VERSION}, got {record.get('schemaVersion')}"
@@ -63,17 +64,19 @@ def validate_approval_record(record: dict, expected_count: int) -> None:
         fail("approvedAliases must be a list")
 
 
-def validate_aliases_sorted(record: dict) -> None:
+def validate_aliases_sorted(record: dict[str, Any]) -> None:
     aliases = record.get("approvedAliases") or []
     if sorted(aliases) != aliases:
         fail("approvedAliases must be sorted")
 
 
-def validate_approved_aliases_parity(packet: dict, record: dict) -> None:
+def validate_approved_aliases_parity(packet: dict[str, Any], record: dict[str, Any]) -> None:
     packet_aliases = sorted(asset["alias"] for asset in packet["assets"])
-    approved = record.get("approvedAliases")
-    if not isinstance(approved, list):
+    approved_raw = record.get("approvedAliases")
+    if not isinstance(approved_raw, list):
         fail("approvedAliases must be a list")
+        return
+    approved: list[str] = [str(a) for a in approved_raw]
 
     duplicates = sorted({a for a in approved if approved.count(a) > 1})
     if duplicates:
@@ -100,12 +103,13 @@ def validate_approved_aliases_parity(packet: dict, record: dict) -> None:
         fail("Approved alias mismatch. " + ". ".join(errors))
 
 
-def validate_packet_hashes(packet: dict, record: dict, root: Path) -> None:
+def validate_packet_hashes(packet: dict[str, Any], record: dict[str, Any], root: Path) -> None:
     packet_path = root / "art-packet.json"
     actual_packet_sha = sha256_bytes(packet_path.read_bytes())
-    if actual_packet_sha != record.get("artPacketSha256"):
+    record_packet_sha = record.get("artPacketSha256")
+    if actual_packet_sha != record_packet_sha:
         fail(
-            f"artPacketSha256 mismatch: record={record.get('artPacketSha256')[:16]}... actual={actual_packet_sha[:16]}..."
+            f"artPacketSha256 mismatch: record={str(record_packet_sha)[:16]}... actual={actual_packet_sha[:16]}..."
         )
 
     for asset in packet["assets"]:
@@ -119,7 +123,7 @@ def validate_packet_hashes(packet: dict, record: dict, root: Path) -> None:
             )
 
 
-def validate_all_approved(packet: dict) -> None:
+def validate_all_approved(packet: dict[str, Any]) -> None:
     for asset in packet["assets"]:
         if asset.get("approvalState") != "approved":
             fail(
@@ -127,7 +131,7 @@ def validate_all_approved(packet: dict) -> None:
             )
 
 
-def validate_source_set_sha(packet: dict, record: dict, root: Path) -> None:
+def validate_source_set_sha(packet: dict[str, Any], record: dict[str, Any], root: Path) -> None:
     parts = []
     for asset in sorted(packet["assets"], key=lambda a: a["alias"]):
         source_path = root / asset["source"]
@@ -135,20 +139,22 @@ def validate_source_set_sha(packet: dict, record: dict, root: Path) -> None:
         parts.append(f"{asset['alias']}:{actual_sha}")
     canonical = "\n".join(parts) + "\n"
     expected_sha = sha256_bytes(canonical.encode("utf-8"))
-    if expected_sha != record.get("sourceSetSha256"):
+    record_source_sha = record.get("sourceSetSha256")
+    if expected_sha != record_source_sha:
         fail(
-            f"sourceSetSha256 mismatch: record={record.get('sourceSetSha256')[:16]}... expected={expected_sha[:16]}..."
+            f"sourceSetSha256 mismatch: record={str(record_source_sha)[:16]}... expected={expected_sha[:16]}..."
         )
 
 
-def validate_contact_sheet(record: dict, root: Path) -> None:
+def validate_contact_sheet(record: dict[str, Any], root: Path) -> None:
     contact_sheet = root.parent / "review" / "proof-art-contact-sheet.html"
     if not contact_sheet.exists():
         fail(f"Contact sheet not found: {contact_sheet}")
     actual_sha = sha256_bytes(contact_sheet.read_bytes())
-    if actual_sha != record.get("contactSheetSha256"):
+    record_sheet_sha = record.get("contactSheetSha256")
+    if actual_sha != record_sheet_sha:
         fail(
-            f"contactSheetSha256 mismatch: record={record.get('contactSheetSha256')[:16]}... actual={actual_sha[:16]}..."
+            f"contactSheetSha256 mismatch: record={str(record_sheet_sha)[:16]}... actual={actual_sha[:16]}..."
         )
 
 
@@ -165,7 +171,7 @@ def _is_unsafe_path(path_str: str) -> bool:
     return depth < 0
 
 
-def validate_evidence_paths(record: dict) -> None:
+def validate_evidence_paths(record: dict[str, Any]) -> None:
     evidence = record.get("evidence", {})
     for key in ("focusedTest", "contactSheet", "visualReviewVerdict"):
         if key not in evidence:
@@ -180,7 +186,7 @@ def validate_evidence_paths(record: dict) -> None:
         )
 
 
-def validate_no_nondeterministic(record: dict) -> None:
+def validate_no_nondeterministic(record: dict[str, Any]) -> None:
     for key in ("approvalDate",):
         val = record.get(key, "")
         if not isinstance(val, str):

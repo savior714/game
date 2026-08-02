@@ -16,10 +16,10 @@ Rules:
 from __future__ import annotations
 
 from scripts.agent.orchestration.spec import (
+    AuditFinding,
     AuditReport,
     DiffResult,
     TaskStatus,
-    AuditSeverity,
 )
 
 
@@ -34,14 +34,14 @@ def build_fix_requests(reports: list[AuditReport]) -> list[dict]:
         "prompt": str  # formatted for subagent
       }
     """
-    groups: dict[tuple[str, str], list] = {}
+    groups: dict[tuple[str, str], dict[str, str | list[AuditFinding]]] = {}
 
     for report in reports:
         if not report.findings:
             continue
 
         # Group findings by file path
-        by_file: dict[str, list] = {}
+        by_file: dict[str, list[AuditFinding]] = {}
         for finding in report.findings:
             fp = finding.file_path or f"unknown ({report.task_id})"
             by_file.setdefault(fp, []).append(finding)

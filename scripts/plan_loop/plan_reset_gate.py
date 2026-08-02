@@ -12,7 +12,7 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from scripts.plan_loop.plan_lint.shared import _parse_fields, _split_task_blocks
+from scripts.plan_loop.plan_lint.shared import _parse_fields, _split_task_blocks  # noqa: E402
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 _MIN_APPROVAL_LEN = 10

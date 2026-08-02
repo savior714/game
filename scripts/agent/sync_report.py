@@ -64,8 +64,10 @@ def build_footer(
 def print_spec_alignment_result(ok: bool, report: dict[str, object]) -> None:
     """Spec alignment 검증 결과를 터미널에 출력."""
     level = report.get("level", "skip")
-    docs = report.get("docs_touched") or []
-    missing = report.get("missing_specs") or []
+    docs_raw = report.get("docs_touched") or []
+    docs = docs_raw if isinstance(docs_raw, list) else []
+    missing_raw = report.get("missing_specs") or []
+    missing = missing_raw if isinstance(missing_raw, list) else []
 
     if report.get("ack_spec"):
         print("\n✅ [PASS] Spec alignment: `--ack-spec` (수동 역검증 완료 선언)")

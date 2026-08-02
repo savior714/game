@@ -72,7 +72,8 @@ def reset_task_in_markdown(
             status_updated = True
 
         if not conclusion_updated and re.match(r"^\s*-\s*\*\*Conclusion\*\*:.*", lines[i]):
-            indent = re.match(r"^(\s*)", lines[i]).group(1)  # type: ignore[union-attr]
+            indent_match = re.match(r"^(\s*)", lines[i])
+            indent = indent_match.group(1) if indent_match else ""
             lines[i] = f"{indent}- **Conclusion**: {_CSF_CONCLUSION}"
             conclusion_updated = True
 

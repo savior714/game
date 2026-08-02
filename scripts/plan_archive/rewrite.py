@@ -79,7 +79,7 @@ def rewrite_to_archive(
 ) -> str:
     """path_map: basename -> archive 상대 경로 (예: refactor/PLAN_x.md)."""
     out = content
-    for base in sorted(path_map.keys(), key=len, reverse=True):
+    for base in sorted(path_map.keys(), key=lambda k: len(k), reverse=True):
         rel = path_map[base]
         if to_archive:
             out = out.replace(f"docs/plans/archive/{rel}", f"\x00ARC:{base}\x00")

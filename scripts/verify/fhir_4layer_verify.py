@@ -32,7 +32,7 @@ def get_fhir_model(resource_type: str):
             module_name = f"fhir.resources.R4B.{resource_type.lower().replace('_', '')}"
             module = importlib.import_module(module_name)
             return getattr(module, resource_type)
-        except:
+        except Exception:
             return None
 
 @dataclass

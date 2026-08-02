@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import subprocess
-from pathlib import Path
+import sys
 
 from scripts.plan_archive.collect import collect_missing_plan_refs, resolve_plan_reference
 from scripts.plan_archive.constants import REPO_ROOT

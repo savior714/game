@@ -140,6 +140,7 @@ class TestMaskedPasteContract:
         src = Image.new("RGBA", (1, 1), (200, 120, 40, 128))
         dst.paste(src, (0, 0), src)
         out = dst.getpixel((0, 0))
+        assert isinstance(out, tuple), "expected RGBA tuple from getpixel"
 
         assert out != (200, 120, 40, 128), (
             "masked paste must not equal the source pixel"

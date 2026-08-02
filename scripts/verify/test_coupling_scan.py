@@ -289,7 +289,7 @@ def _detect_test_import_chains(
             dep_file = module_to_rel.get(dep_module, "")
             if not dep_file or dep_file == test_file:
                 continue
-            pair = tuple(sorted([test_file, dep_file]))
+            pair = (test_file, dep_file) if test_file <= dep_file else (dep_file, test_file)
             if pair in checked:
                 continue
             checked.add(pair)

@@ -7,6 +7,7 @@ import argparse
 import subprocess
 import sys
 import os
+from datetime import datetime
 from typing import List, Dict, Tuple
 
 import yaml
@@ -203,8 +204,6 @@ def run_command(command: str) -> bool:
     except Exception as e:
         print(f"💥 Exception while running {command}: {e}")
         return False
-
-from datetime import datetime
 
 def generate_report(results: Dict[str, Dict], overall_success: bool):
     """Generate a markdown report of the compliance check results."""

@@ -542,8 +542,8 @@ def analyze_isolated_png(png_bytes: bytes, expected_w: int, expected_h: int) -> 
     img = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
     width, height = img.size
     alpha = img.split()[3]
+    alpha_extrema = alpha.getextrema()
     bbox = alpha.getbbox()
-    extrema = img.getextrema()
     rgba, _w, _h = decode_png_to_rgba(png_bytes)
     pixel_sha = sha256_bytes(rgba)
 
@@ -563,8 +563,8 @@ def analyze_isolated_png(png_bytes: bytes, expected_w: int, expected_h: int) -> 
         "expectedWidth": expected_w,
         "expectedHeight": expected_h,
         "alphaPresent": img.mode == "RGBA",
-        "alphaMin": extrema[3][0],
-        "alphaMax": extrema[3][1],
+        "alphaMin": alpha_extrema[0],
+        "alphaMax": alpha_extrema[1],
         "visibleAlphaBounds": visible_bounds,
         "pixelSha256": pixel_sha,
         "fileSha256": sha256_bytes(png_bytes),
@@ -620,7 +620,7 @@ class QuietHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(kwargs.pop("directory")), **kwargs)
 
-    def log_message(self, *args):
+    def log_message(self, format: str, *args) -> None:
         pass
 
 

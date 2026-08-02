@@ -133,7 +133,6 @@ def main(argv: list[str] | None = None) -> int:
     exclude_prefixes = tuple(Path(p) for p in args.exclude_prefix)
     changed_files = 0
     total_replacements = 0
-    skipped = 0
     for path in iter_markdown_files(root, exclude_prefixes=exclude_prefixes):
         original = path.read_text(encoding="utf-8")
         normalized, n = normalize_text(original)

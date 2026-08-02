@@ -49,6 +49,7 @@ import subprocess
 import sys
 import threading
 from http.server import SimpleHTTPRequestHandler
+from typing import Any
 
 TASK_ID = "AIDENGAME-OCEAN-RESCUE-OTTER-HEAD-POST-CANONICAL-RENDER-PROOF-02"
 ASSET_ID = "otter-head-01"
@@ -508,8 +509,8 @@ def analyze_isolated_png(png_bytes: bytes, expected_w: int, expected_h: int) -> 
     img = Image.open(io.BytesIO(png_bytes)).convert("RGBA")
     width, height = img.size
     alpha = img.split()[3]
+    alpha_extrema = alpha.getextrema()
     bbox = alpha.getbbox()
-    extrema = img.getextrema()
     rgba, _w, _h = decode_png_to_rgba(png_bytes)
     pixel_sha = sha256_bytes(rgba)
 
@@ -529,8 +530,8 @@ def analyze_isolated_png(png_bytes: bytes, expected_w: int, expected_h: int) -> 
         "expectedWidth": expected_w,
         "expectedHeight": expected_h,
         "alphaPresent": img.mode == "RGBA",
-        "alphaMin": extrema[3][0],
-        "alphaMax": extrema[3][1],
+        "alphaMin": alpha_extrema[0],
+        "alphaMax": alpha_extrema[1],
         "visibleAlphaBounds": visible_bounds,
         "pixelSha256": pixel_sha,
         "fileSha256": sha256_bytes(png_bytes),
@@ -694,7 +695,7 @@ class QuietHandler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(kwargs.pop("directory")), **kwargs)
 
-    def log_message(self, *args):
+    def log_message(self, format: str, *args) -> None:
         pass
 
 
@@ -1142,11 +1143,11 @@ def check_capture_state(result: dict) -> tuple[bool, list[str]]:
     return (not reasons, reasons)
 
 
-def validate_face_state(name: str, state_result: dict) -> tuple[bool, list[str]]:
+def validate_face_state(name: str, state_result: dict[str, Any]) -> tuple[bool, list[str]]:
     expected = {s["name"]: s for s in FACE_STATES}[name]
     reasons = []
     rotation = state_result.get("headRotation")
-    if abs(float(rotation) - expected["rotation"]) > 1e-6:
+    if rotation is not None and abs(float(rotation) - float(expected["rotation"])) > 1e-6:
         reasons.append(
             "{} head rotation {} != {}".format(name, rotation, expected["rotation"])
         )

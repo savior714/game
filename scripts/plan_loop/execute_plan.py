@@ -9,6 +9,7 @@ import subprocess
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TypedDict
 
 from scripts.plan_loop.plan_lint import (
     EXECUTOR_REQUIRED_FIELDS,
@@ -19,6 +20,16 @@ from scripts.plan_loop.plan_lint import (
 
 VERIFY_RESULT_FILE = Path("artifacts/verify/verify-last-result.json")
 _DEFAULT_REPORT_DIR = Path("docs/reports/plan-loop")
+
+
+class PlanExecutionSummary(TypedDict, total=False):
+    status: str
+    reason: str
+    halted_before_execution: bool
+    executed: int
+    failed: int
+    blocked: int
+    details: list[str] | dict[str, str]
 
 
 @dataclass
@@ -76,7 +87,6 @@ def _load_tasks_from_plan(plan_path: Path) -> list[TaskRecord]:
 
 def _resolve_dependencies(tasks: list[TaskRecord]) -> dict[str, list[str]]:
     """Build adjacency map: task_id -> list of dependency task_ids."""
-    id_map = {t.task_id: t for t in tasks}
     deps: dict[str, list[str]] = {}
     for t in tasks:
         dep_str = t.dependency.strip().lower()
@@ -179,7 +189,7 @@ def execute_plan(
     dry_run: bool = False,
     max_steps: int | None = None,
     report_dir: Path = _DEFAULT_REPORT_DIR,
-) -> dict[str, str]:
+) -> PlanExecutionSummary:
     """
     Execute a validated plan file sequentially.
 
@@ -317,8 +327,9 @@ def main() -> int:
     result = execute_plan(args.plan_file, dry_run=args.dry_run, max_steps=args.max_steps, report_dir=report_dir)
     print(f"\n[RESULT] Status: {result.get('status', 'unknown')}")
 
-    if result.get("details"):
-        for tid, status in result["details"].items():
+    details = result.get("details")
+    if isinstance(details, dict):
+        for tid, status in details.items():
             print(f"  - {tid}: {status}")
 
     if result.get("status") == "failed":

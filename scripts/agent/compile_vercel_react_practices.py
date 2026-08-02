@@ -203,7 +203,8 @@ def generate_markdown(
     org = str(metadata.get("organization", "Vercel Engineering"))
     date = str(metadata.get("date", "January 2026"))
     abstract = str(metadata.get("abstract", ""))
-    references = list(metadata.get("references") or [])
+    refs = metadata.get("references") or []
+    references = list(refs) if isinstance(refs, list) else []
 
     lines: list[str] = [
         f"# {title}",

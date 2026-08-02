@@ -13,7 +13,7 @@ import sys
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from scripts.agent.verify_rules import verify_links
 
@@ -322,13 +322,16 @@ def prune_warnings(
         return {"removed": 0, "remaining": 0}
 
     try:
-        data = json.loads(out.read_text(encoding="utf-8"))
+        data: dict[str, object] = json.loads(out.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         data = {"warnings": []}
 
-    warnings = data.get("warnings", [])
-    if not isinstance(warnings, list):
-        warnings = []
+    raw_warnings: object = data.get("warnings", [])
+    warnings: list[dict[str, Any]] = []
+    if isinstance(raw_warnings, list):
+        for w in raw_warnings:
+            if isinstance(w, dict):
+                warnings.append({str(k): v for k, v in w.items()})
 
     pruned = [w for w in warnings if (w.get("file", ""), w.get("rule", ""), w.get("message", "")) in current_keys]
     removed = len(warnings) - len(pruned)

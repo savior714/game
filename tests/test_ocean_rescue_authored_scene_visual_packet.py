@@ -34,13 +34,8 @@ fixture without executing Chrome. They ensure:
 These are focused contract tests, not runtime acceptance tests.
 """
 
-import hashlib
-import json
-import os
 import pathlib
 import re
-
-import pytest
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 

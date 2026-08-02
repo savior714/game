@@ -18,7 +18,7 @@ _SCRIPTS_VERIFY = Path(__file__).resolve().parent
 if str(_SCRIPTS_VERIFY) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_VERIFY))
 
-from baseline_gate import load_baseline, write_baseline
+from baseline_gate import load_baseline, write_baseline  # noqa: E402
 
 BASELINE_PATH = ROOT / "scripts" / "verify" / "service_layer_baseline.txt"
 INFRA_SERVICES_DIR = ROOT / "src" / "infrastructure" / "services"

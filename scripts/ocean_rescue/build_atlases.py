@@ -517,17 +517,18 @@ class AtlasBuilder:
                 page_png_sha = _sha256_file(page_png_path)
 
                 # Build spritesheet JSON
+                meta: dict[str, Any] = {
+                    "app": APP_NAME,
+                    "version": APP_VERSION,
+                    "image": page_png_name,
+                    "format": "RGBA8888",
+                    "size": {"w": page_w, "h": page_h},
+                    "scale": str(RASTER_SCALE),
+                }
                 spritesheet_json: dict[str, Any] = {
                     "frames": frames_json,
                     "animations": {},
-                    "meta": {
-                        "app": APP_NAME,
-                        "version": APP_VERSION,
-                        "image": page_png_name,
-                        "format": "RGBA8888",
-                        "size": {"w": page_w, "h": page_h},
-                        "scale": str(RASTER_SCALE),
-                    },
+                    "meta": meta,
                 }
 
                 # Multi-page related packs
@@ -537,7 +538,7 @@ class AtlasBuilder:
                         for i in range(len(pages))
                         if i != page_idx
                     ]
-                    spritesheet_json["meta"]["related_multi_packs"] = related
+                    meta["related_multi_packs"] = related
 
                 page_json_name = f"{bundle_name}-{page_idx}.json"
                 page_json_path = bundle_dir / page_json_name

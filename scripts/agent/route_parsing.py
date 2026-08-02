@@ -4,10 +4,18 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Any, List, Tuple, TypedDict
 
 ROUTING_FILE = ".agents/registry/CONTEXT_ROUTING.md"
 PROJECT_SKILL_ROUTING_FILE = ".agents/registry/PROJECT_SKILL_ROUTING.json"
+
+
+class ProjectSkillRouting(TypedDict, total=False):
+    version: str
+    cap: int
+    priority: list[str]
+    path_routes: list[dict[str, Any]]
+    intent_routes: list[dict[str, Any]]
 
 _PROJECT_SKILL_PATH = re.compile(
     r"(\.agents/skills/[\w./-]+/SKILL\.md)",
@@ -171,7 +179,7 @@ def get_always_load_rules(file_path: str = ROUTING_FILE) -> List[str]:
     return rules
 
 
-def load_project_skill_routing(repo_root: Path) -> Dict[str, object]:
+def load_project_skill_routing(repo_root: Path) -> ProjectSkillRouting:
     path = repo_root / PROJECT_SKILL_ROUTING_FILE
     if not path.is_file():
         return {"version": "0", "cap": 5, "priority": [], "path_routes": [], "intent_routes": []}

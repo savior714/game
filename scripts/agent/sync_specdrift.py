@@ -253,7 +253,7 @@ def auto_fix_suggested_drift(candidates: list[str]) -> int:
             for i, line in enumerate(lines):
                 if "## Claim" in line or "**Claim**" in line:
                     # Check if there's already a drift note
-                    has_drift = any("drift" in l.lower() or "sync" in l.lower() for l in lines[i:i+5])
+                    has_drift = any("drift" in line.lower() or "sync" in line.lower() for line in lines[i:i+5])
                     if not has_drift:
                         indent = len(line) - len(line.lstrip())
                         lines.insert(i + 1, f"{' ' * indent}- Auto-synced by `sync --fix` on {today}")

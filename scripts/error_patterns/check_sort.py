@@ -14,7 +14,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from scripts.error_patterns.patterns_store import load_patterns, save_patterns  # noqa: E402
+from scripts.error_patterns.patterns_store import load_patterns  # noqa: E402
 
 
 def load_ids() -> list[str]:

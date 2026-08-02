@@ -17,8 +17,8 @@ _SCRIPTS_VERIFY = Path(__file__).resolve().parent
 if str(_SCRIPTS_VERIFY) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_VERIFY))
 
-from baseline_gate import filter_new_entries, load_baseline, write_baseline
-from runtime_coupling_scan import ScanResult, scan_directory, CouplingSignal
+from baseline_gate import filter_new_entries, load_baseline, write_baseline  # noqa: E402
+from runtime_coupling_scan import ScanResult, scan_directory, CouplingSignal  # noqa: E402
 
 DEFAULT_TARGET = ROOT / "src"
 BASELINE_PATH = ROOT / "scripts" / "verify" / "runtime_coupling_baseline.txt"

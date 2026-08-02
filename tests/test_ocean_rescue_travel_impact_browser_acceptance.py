@@ -53,7 +53,7 @@ class HTTPServerFixture:
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, directory=str(REPO_ROOT), **kwargs)
 
-            def log_message(self, *args):
+            def log_message(self, format: str, *args) -> None:
                 pass
 
         socketserver.TCPServer.allow_reuse_address = True

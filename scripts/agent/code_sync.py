@@ -13,8 +13,20 @@ import json
 import os
 import re
 from pathlib import Path
+from typing import TypedDict
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+class CodeSyncLock(TypedDict):
+    id: str
+    filepath: Path
+    start_line: int
+    end_line: int
+    expected_hash: str
+    calculated_hash: str
+    spec: str
+    block_lines: list[str]
 
 # @code-sync-lock parse pattern
 LOCK_PATTERN = re.compile(
@@ -70,7 +82,7 @@ def parse_metadata(meta_str: str) -> dict[str, str]:
         return meta
 
 
-def scan_file_locks(filepath: Path) -> list[dict[str, object]]:
+def scan_file_locks(filepath: Path) -> list[CodeSyncLock]:
     """Scans a file for code-sync lock blocks."""
     try:
         content = filepath.read_text("utf-8")

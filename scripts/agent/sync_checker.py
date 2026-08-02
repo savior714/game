@@ -44,7 +44,7 @@ def run_check(*, strict: bool, ack_spec: bool, fix: bool, skip_spec_check: bool 
     # Auto-fix suggested drift if --fix is set
     if fix and level == "suggested" and not spec_report.get("docs_touched"):
         raw = spec_report.get("missing_specs") or []
-        candidates: list[str] = list(raw) if isinstance(raw, list) else []  # type: ignore[assignment]
+        candidates: list[str] = list(raw) if isinstance(raw, list) else []  # type: ignore
         if candidates:
             fixed = auto_fix_suggested_drift(candidates)
             if fixed > 0:

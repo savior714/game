@@ -16,7 +16,7 @@ try:
 
     _HAS_FCNTL = True
 except ImportError:  # pragma: no cover - Windows
-    fcntl = None  # type: ignore[assignment]
+    fcntl = None  # type: ignore
     _HAS_FCNTL = False
 
 SCHEMA_VERSION = "1"

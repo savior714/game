@@ -12,7 +12,7 @@ from tools.mcp_call_wrapper import build_payload
 
 
 def _ns(**kwargs: object) -> argparse.Namespace:
-    defaults = {
+    defaults: dict[str, object] = {
         "server": "user-sequentialthinking",
         "tool": "sequentialthinking",
         "prompt": "원인 분석",

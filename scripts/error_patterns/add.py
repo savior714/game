@@ -67,7 +67,7 @@ def find_category(new_name: str) -> str:
     for cat, words in keywords.items():
         score = sum(1 for w in words if w.lower() in new_lower)
         scores[cat] = score
-    best = max(scores, key=scores.get)
+    best = max(scores, key=scores.__getitem__)
     return best if scores[best] > 0 else "기타 실수"
 
 
@@ -81,7 +81,7 @@ def add_pattern(name: str, symptom: str, cause: str, fix: str):
     # 중복 감지
     similar = find_similar(name, patterns)
     if similar:
-        print(f"경고: 유사한 패턴이 있습니다:")
+        print("경고: 유사한 패턴이 있습니다:")
         for p, score in similar:
             print(f"  - {p['id']}: {p['name']} (공통 단어: {score})")
         print()

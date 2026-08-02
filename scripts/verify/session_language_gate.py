@@ -71,7 +71,7 @@ def check_language_annotation(filepath: Path) -> tuple[bool, str]:
         has_annotation = LANGUAGE_ANNOTATION_PATTERN.lower() in content.lower()
         
         if not has_annotation:
-            return False, f"Language 주석 누락 (첫 10줄 내 검색)"
+            return False, "Language 주석 누락 (첫 10줄 내 검색)"
         
         # 주석이 있는지 확인하고 내용 추출
         for line in lines[:5]:

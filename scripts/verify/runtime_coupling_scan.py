@@ -18,7 +18,7 @@ from __future__ import annotations
 import argparse
 import ast
 import json
-import sys
+import re
 from collections import defaultdict
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
@@ -286,16 +286,14 @@ def _build_call_graph(file_path: Path) -> dict[str, list[str]]:
 # These are functions in application/infrastructure that call into domain
 _CROSS_LAYER_PATTERNS: dict[str, list[re.Pattern]] = {}  # populated below
 
-import re as _re_module
-
 _CROSS_LAYER_PATTERNS = {
     # application service → domain service/repository interface
     "application": [
-        _re_module.compile(r"^save_|^create_|^update_|^delete_|^process_"),
+        re.compile(r"^save_|^create_|^update_|^delete_|^process_"),
     ],
     # infrastructure → domain (these should only be via ports)
     "infrastructure": [
-        _re_module.compile(r"^execute_|^query_|^fetch_"),
+        re.compile(r"^execute_|^query_|^fetch_"),
     ],
 }
 
@@ -371,12 +369,12 @@ def _is_domain_func(func_name: str) -> bool:
 # ---------------------------------------------------------------------------
 
 _MUTABLE_ASSIGN_PATTERNS = [
-    _re_module.compile(r"\.append\("),
-    _re_module.compile(r"\.extend\("),
-    _re_module.compile(r"\.pop\("),
-    _re_module.compile(r"\.remove\("),
-    _re_module.compile(r"\.update\("),
-    _re_module.compile(r"\[\w+\]\s*="),
+    re.compile(r"\.append\("),
+    re.compile(r"\.extend\("),
+    re.compile(r"\.pop\("),
+    re.compile(r"\.remove\("),
+    re.compile(r"\.update\("),
+    re.compile(r"\[\w+\]\s*="),
 ]
 
 
@@ -485,7 +483,7 @@ def _detect_circular_calls(
                 if depth < 3:
                     _dfs(neighbor, depth + 1)
             elif neighbor in rec_stack:
-                cycle_key = tuple(sorted([node, neighbor]))
+                cycle_key = (node, neighbor) if node < neighbor else (neighbor, node)
                 if cycle_key not in cycles_found:
                     cycles_found.add(cycle_key)
                     result.signals.append(

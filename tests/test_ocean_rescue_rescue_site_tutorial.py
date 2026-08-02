@@ -15,8 +15,8 @@ import textwrap
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-NODE_BIN = shutil.which("node")
-if NODE_BIN is None:
+NODE_BIN: str = shutil.which("node") or ""
+if not NODE_BIN:
     raise RuntimeError("Node executable not found on PATH")
 
 

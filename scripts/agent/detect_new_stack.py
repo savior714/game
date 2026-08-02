@@ -36,7 +36,8 @@ def get_python_deps():
 
             # Clean version specifiers
             for dep in raw_deps:
-                if not isinstance(dep, str): continue
+                if not isinstance(dep, str):
+                    continue
                 # Split by standard specifiers: >=, ==, <=, ~=, <, >, [, ;
                 name = dep.replace(" ", "")
                 for op in [">=", "==", "<=", "~=", "<", ">", "[", ";"]:
@@ -198,7 +199,8 @@ def register_rule_to_registry(lib_name, scope):
                         if lines[j].startswith("##"):
                             target_line_idx = j
                             break
-                    if target_line_idx != -1: break
+                    if target_line_idx != -1:
+                        break
             
             if target_line_idx != -1:
                 new_row = f"| **Tech Stack** | [.agents/domains/tech-stack/{lib_name}.md](../specs/domains/tech-stack/{lib_name}.md) | {lib_name} 라이브러리 사용 지침 |"
@@ -221,7 +223,8 @@ def register_rule_to_registry(lib_name, scope):
                         if lines[j].startswith("##"):
                             target_line_idx = j
                             break
-                    if target_line_idx != -1: break
+                    if target_line_idx != -1:
+                        break
 
             if target_line_idx != -1:
                 scope_str = ", ".join([f"`{s}`" for s in scope])

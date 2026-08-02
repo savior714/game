@@ -20,11 +20,8 @@ def fix_rule_file(path: Path, dry_run: bool = False, backup: bool = False) -> bo
         print(f"❌ Failed to read {path}: {e}")
         return False
 
-    dirty = False
-    
     # 1. Strip existing Language Gate to normalize content
     # We'll re-insert it later in the correct position.
-    has_gate = LANGUAGE_GATE in content
     # Remove gate and leading/trailing whitespace around it
     cleaned_content = content.replace(LANGUAGE_GATE, "").strip()
     
@@ -70,7 +67,6 @@ def fix_rule_file(path: Path, dry_run: bool = False, backup: bool = False) -> bo
     for field in REQUIRED_YAML_FIELDS:
         if field not in header_data:
             header_data[field] = defaults[field]
-            dirty = True
 
     # 4. Reconstruct File
     # Always sort keys to be consistent

@@ -31,6 +31,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from typing import TypeGuard, cast
 
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
@@ -111,6 +112,8 @@ def load_backend_helpers():
     spec = importlib.util.spec_from_file_location(
         "ocean_rescue_backend_helpers", helper_path
     )
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load backend helpers from {helper_path}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -192,11 +195,11 @@ def run_chrome(chrome_bin, url, backend_mode):
     return (stderr or "") + (stdout or ""), None
 
 
-def number(value):
+def number(value: object) -> TypeGuard[int | float]:
     return isinstance(value, (int, float)) and not isinstance(value, bool)
 
 
-def finite_number(value):
+def finite_number(value: object) -> TypeGuard[float]:
     return number(value) and math.isfinite(value)
 
 
@@ -428,22 +431,27 @@ def geometry_checks(diag, allow_red, checks):
         )
         inactive_r1 = (inactive or {}).get("ropes") or []
         if inactive_r1:
-            base_center = (inactive_r1[0].get("visibleFootprint") or {}).get(
+            base_center_raw = (inactive_r1[0].get("visibleFootprint") or {}).get(
                 "trimAwareCenter"
-            ) or {}
-            pulse_center = (ar.get("visibleFootprint") or {}).get(
+            )
+            pulse_center_raw = (ar.get("visibleFootprint") or {}).get(
                 "trimAwareCenter"
-            ) or {}
-            if (
-                finite_number(base_center.get("x"))
-                and finite_number(base_center.get("y"))
-                and finite_number(pulse_center.get("x"))
-                and finite_number(pulse_center.get("y"))
-            ):
-                drift = math.hypot(
-                    pulse_center.get("x") - base_center.get("x"),
-                    pulse_center.get("y") - base_center.get("y"),
-                )
+            )
+            if isinstance(base_center_raw, dict) and isinstance(pulse_center_raw, dict):
+                base_center = cast(dict[str, object], base_center_raw)
+                pulse_center = cast(dict[str, object], pulse_center_raw)
+                base_x, base_y = base_center.get("x"), base_center.get("y")
+                pulse_x, pulse_y = pulse_center.get("x"), pulse_center.get("y")
+                if (
+                    finite_number(base_x)
+                    and finite_number(base_y)
+                    and finite_number(pulse_x)
+                    and finite_number(pulse_y)
+                ):
+                    drift = math.hypot(
+                        float(pulse_x) - float(base_x),
+                        float(pulse_y) - float(base_y),
+                    )
                 check(
                     "pointerActive.r1.pulseDrift<=1px",
                     drift <= ALIGN_EPS,

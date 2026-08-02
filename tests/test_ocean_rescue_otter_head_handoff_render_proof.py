@@ -38,6 +38,8 @@ def _load_proof():
     spec = importlib.util.spec_from_file_location(
         "ocean_rescue_otter_head_render_proof", PROOF_SCRIPT
     )
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load proof script {PROOF_SCRIPT}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module

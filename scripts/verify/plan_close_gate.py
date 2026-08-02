@@ -34,10 +34,7 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
-from scripts.plan_loop.plan_lint.verification import check_rollup_summary_for_close
-
-# Inline is_conclusion_placeholder (copied from plan_lint.verification for standalone use)
-import re as _re
+from scripts.plan_loop.plan_lint.verification import check_rollup_summary_for_close  # noqa: E402
 
 _CANONICAL_TODO_CONCLUSION_SLOTS = (
     "[판정 — 비개발자용 요약. 검증 결과]",
@@ -58,7 +55,7 @@ def is_conclusion_placeholder(value: str) -> bool:
         if normalized.startswith(marker):
             return False
     for pattern in _BAD_PATTERNS:
-        if _re.search(pattern, normalized):
+        if re.search(pattern, normalized):
             return True
     return False
 

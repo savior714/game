@@ -101,6 +101,8 @@ def load_backend_helpers():
     spec = importlib.util.spec_from_file_location(
         "ocean_rescue_backend_helpers", helper_path
     )
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load backend helpers from {helper_path}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -150,14 +152,12 @@ class CDPWebSocket:
 
     def __init__(self, ws_url):
         self.ws_url = ws_url
-        self.sock = None
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._id_counter = 0
         self._pending = {}
         self._event_callbacks = {}
 
     def connect(self):
-        import http.client
-
         parsed = self.ws_url.replace("ws://", "").replace("wss://", "")
         if "/" in parsed:
             host_port, path = parsed.split("/", 1)
@@ -238,7 +238,6 @@ class CDPWebSocket:
             self.sock.settimeout(timeout)
 
         header = self._recv_exact(2)
-        opcode = header[0] & 0x0F
         length_byte = header[1]
 
         masked = bool(length_byte & 0x80)
@@ -384,12 +383,10 @@ def decode_png_to_rgba(png_bytes):
     for y in range(height):
         filter_type = raw_data[src_pos]
         src_pos += 1
-        row_start = y * width * (4 if color_type == 6 else 3)
         row_out_start = y * width * 4
 
         if color_type == 6:
             for x in range(width):
-                px = row_start + x * 4
                 rgba[row_out_start + x * 4] = raw_data[src_pos]
                 rgba[row_out_start + x * 4 + 1] = raw_data[src_pos + 1]
                 rgba[row_out_start + x * 4 + 2] = raw_data[src_pos + 2]
@@ -398,7 +395,6 @@ def decode_png_to_rgba(png_bytes):
         elif color_type == 2:
             prev_row = bytearray(width * 4) if y > 0 else bytearray(width * 4)
             for x in range(width):
-                px = row_start + x * 3
                 r = raw_data[src_pos]
                 g = raw_data[src_pos + 1]
                 b = raw_data[src_pos + 2]
@@ -606,7 +602,7 @@ def validate_diagnostics(diag, state_name):
         if actual != expected:
             raise RuntimeError(
                 "State {} diagnostics mismatch for {}: expected={}, got={}".format(
-                    state_name, key, actual
+                    state_name, key, expected, actual
                 )
             )
 

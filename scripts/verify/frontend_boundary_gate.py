@@ -18,8 +18,8 @@ _SCRIPTS_VERIFY = Path(__file__).resolve().parent
 if str(_SCRIPTS_VERIFY) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_VERIFY))
 
-from baseline_gate import filter_new_entries, load_baseline, write_baseline
-from dependency_boundary_scan import ScanResult, scan_directory, Violation
+from baseline_gate import filter_new_entries, load_baseline, write_baseline  # noqa: E402
+from dependency_boundary_scan import ScanResult, scan_directory, Violation  # noqa: E402
 
 DEFAULT_TARGET = ROOT / "apps" / "renderer" / "src"
 BASELINE_PATH = ROOT / "scripts" / "verify" / "frontend_boundary_baseline.txt"

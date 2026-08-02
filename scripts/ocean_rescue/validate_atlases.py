@@ -16,6 +16,7 @@ import json
 import re
 import sys
 from pathlib import Path
+from typing import cast
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -298,7 +299,7 @@ def validate_padding(gen_dir: Path, manifest: dict, errs: ValidationErrors) -> N
                         px = x0 - 1
                         py = y0 + dy
                         if 0 <= px < img.width and 0 <= py < img.height:
-                            r, g, b, a = img.getpixel((px, py))
+                            r, g, b, a = cast(tuple[int, int, int, int], img.getpixel((px, py)))
                             if a != 0:
                                 errs.add(
                                     f"Padding violation (left) for {alias} at ({px},{py})"
@@ -312,7 +313,7 @@ def validate_padding(gen_dir: Path, manifest: dict, errs: ValidationErrors) -> N
                         px = x1
                         py = y0 + dy
                         if 0 <= px < img.width and 0 <= py < img.height:
-                            r, g, b, a = img.getpixel((px, py))
+                            r, g, b, a = cast(tuple[int, int, int, int], img.getpixel((px, py)))
                             if a != 0:
                                 errs.add(
                                     f"Padding violation (right) for {alias} at ({px},{py})"
@@ -325,7 +326,7 @@ def validate_padding(gen_dir: Path, manifest: dict, errs: ValidationErrors) -> N
                         px = x0 + dx
                         py = y0 - 1
                         if 0 <= px < img.width and 0 <= py < img.height:
-                            r, g, b, a = img.getpixel((px, py))
+                            r, g, b, a = cast(tuple[int, int, int, int], img.getpixel((px, py)))
                             if a != 0:
                                 errs.add(
                                     f"Padding violation (top) for {alias} at ({px},{py})"
@@ -339,7 +340,7 @@ def validate_padding(gen_dir: Path, manifest: dict, errs: ValidationErrors) -> N
                         px = x0 + dx
                         py = y1
                         if 0 <= px < img.width and 0 <= py < img.height:
-                            r, g, b, a = img.getpixel((px, py))
+                            r, g, b, a = cast(tuple[int, int, int, int], img.getpixel((px, py)))
                             if a != 0:
                                 errs.add(
                                     f"Padding violation (bottom) for {alias} at ({px},{py})"

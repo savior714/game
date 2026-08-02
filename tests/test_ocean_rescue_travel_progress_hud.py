@@ -749,3 +749,83 @@ def test_source_identity_progress_derived_from_authoritative_contract() -> None:
     assert "aria-live" not in progress_block, (
         "progress HUD must not use aria-live (no per-frame screen reader announcements)"
     )
+
+
+STYLE_CSS = REPO_ROOT / "domains" / "ocean-rescue" / "src" / "style.css"
+
+
+def _css_rule_block(css: str, selector: str) -> str:
+    match = re.search(re.escape(selector) + r"\s*\{([\s\S]*?)\n\}", css)
+    assert match is not None, f"missing CSS rule for {selector}"
+    return match.group(1)
+
+
+def _css_px_values(block: str, prop: str) -> list[float]:
+    match = re.search(prop + r"\s*:\s*([^;]+);", block)
+    assert match is not None, f"missing CSS property '{prop}' in rule: {block!r}"
+    return [float(m.group(1)) for m in re.finditer(r"([0-9.]+)px", match.group(1))]
+
+
+def test_travel_help_copy_is_short_action_oriented_and_obstacle_hinting() -> None:
+    template = TEMPLATE.read_text(encoding="utf-8")
+    match = re.search(
+        r'<p\s+id="ocean-rescue-travel-help">([\s\S]*?)</p>',
+        template,
+    )
+    assert match is not None, "travel help paragraph must exist"
+    text = re.sub(r"\s+", " ", match.group(1)).strip()
+    lower = text.lower()
+    assert "drag" in lower, f"help must instruct dragging: {text!r}"
+    assert "tap" in lower, f"help must instruct tapping: {text!r}"
+    assert ("dodge" in lower) or ("avoid" in lower) or ("obstacle" in lower), (
+        f"help must hint at obstacle avoidance: {text!r}"
+    )
+    sentences = [s for s in re.split(r"[.!?]+", text) if s.strip()]
+    assert len(sentences) <= 2, f"help must be at most two sentences: {text!r}"
+    assert len(text) <= 90, f"help must stay short, got {len(text)} chars: {text!r}"
+
+
+def test_travel_progress_hud_has_clear_explanatory_label() -> None:
+    template = TEMPLATE.read_text(encoding="utf-8")
+    label = re.search(
+        r'<span\s+id="ocean-rescue-travel-progress-label"[^>]*>([\s\S]*?)</span>',
+        template,
+    )
+    assert label is not None, "progress HUD must include an explanatory label"
+    text = re.sub(r"\s+", " ", label.group(1)).strip()
+    assert text, "progress label must not be empty"
+    assert "progress" in text.lower() or "rescue" in text.lower(), (
+        f"label must name the meaning of the bar: {text!r}"
+    )
+    assert len(text) <= 40, f"progress label must stay short: {len(text)} chars"
+
+
+def test_travel_progress_hud_minimum_readability_contract() -> None:
+    css = STYLE_CSS.read_text(encoding="utf-8")
+
+    panel = _css_rule_block(css, "#ocean-rescue-travel-progress")
+    assert min(_css_px_values(panel, "padding")) >= 12, (
+        "progress panel padding must be at least 12px"
+    )
+    assert _css_px_values(panel, "border-radius")[0] >= 16, (
+        "progress panel radius must be at least 16px"
+    )
+
+    bar = _css_rule_block(css, "#ocean-rescue-travel-progress-bar")
+    assert _css_px_values(bar, "height")[0] >= 16, (
+        "progress bar height must be at least 16px"
+    )
+    assert "clamp(" in bar or "min(" in bar or "flex:" in bar or "vw" in bar, (
+        "progress bar width must use a responsive rule"
+    )
+
+    value = _css_rule_block(css, "#ocean-rescue-travel-progress-value")
+    assert _css_px_values(value, "font-size")[0] >= 18, (
+        "percent text must be at least 18px"
+    )
+    assert "bold" in value, "percent text must be bold"
+
+    label = _css_rule_block(css, ".ocean-rescue-travel-progress-label")
+    assert 12 <= _css_px_values(label, "font-size")[0] <= 16, (
+        "progress label must use the 12-16px range"
+    )

@@ -65,12 +65,13 @@ body {
   box-sizing: border-box;
   max-width: 90%;
   margin: 0;
-  padding: 6px 16px;
+  padding: 8px 18px;
   border-radius: 999px;
-  background: rgba(10, 24, 40, 0.72);
-  color: #d5e4f2;
+  background: rgba(10, 24, 40, 0.78);
+  color: #eef5fb;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 600;
   line-height: 1.4;
   text-align: center;
   pointer-events: none;
@@ -78,19 +79,22 @@ body {
 
 #ocean-rescue-travel-progress {
   position: absolute;
-  bottom: 18px;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 2;
   box-sizing: border-box;
   display: flex;
-  align-items: center;
-  gap: 10px;
-  max-width: 86%;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  max-width: min(90%, 480px);
   margin: 0;
-  padding: 8px 14px;
-  border-radius: 14px;
-  background: rgba(10, 24, 40, 0.72);
+  padding: 12px 18px;
+  border-radius: 18px;
+  background: rgba(10, 24, 40, 0.78);
+  border: 1px solid rgba(61, 218, 215, 0.35);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
   pointer-events: none;
 }
 
@@ -98,19 +102,37 @@ body {
   display: none;
 }
 
+.ocean-rescue-travel-progress-label {
+  color: #b9d9ee;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  text-align: left;
+}
+
+.ocean-rescue-travel-progress-meter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 #ocean-rescue-travel-progress-start,
 #ocean-rescue-travel-progress-end {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   flex: 0 0 auto;
   border-radius: 50%;
   background: #3ddad7;
 }
 
 #ocean-rescue-travel-progress-bar {
-  width: 220px;
-  max-width: 60vw;
-  height: 12px;
+  width: clamp(140px, 28vw, 340px);
+  flex: 0 1 auto;
+  min-width: 0;
+  height: 16px;
   border: 0;
   border-radius: 999px;
   background: rgba(213, 228, 242, 0.28);
@@ -135,11 +157,13 @@ body {
 }
 
 #ocean-rescue-travel-progress-value {
-  min-width: 40px;
+  min-width: 44px;
+  flex: 0 0 auto;
   color: #eef5fb;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  font-size: 13px;
-  line-height: 1.4;
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 1.2;
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -1456,7 +1480,7 @@ body {
       hidden
     >
       <p id="ocean-rescue-travel-help">
-        Drag up or down, or tap where you want the GUP to move.
+        Avoid the obstacles! Drag up or down, or tap where you want the GUP to go.
       </p>
       <canvas
         id="ocean-rescue-canvas"
@@ -1475,26 +1499,34 @@ body {
         hidden
       >
         <span
-          id="ocean-rescue-travel-progress-start"
+          id="ocean-rescue-travel-progress-label"
+          class="ocean-rescue-travel-progress-label"
           aria-hidden="true"
-        ></span>
+        >Rescue progress</span>
 
-        <progress
-          id="ocean-rescue-travel-progress-bar"
-          max="100"
-          value="0"
-          aria-label="Travel progress"
-        ></progress>
+        <div class="ocean-rescue-travel-progress-meter">
+          <span
+            id="ocean-rescue-travel-progress-start"
+            aria-hidden="true"
+          ></span>
 
-        <span
-          id="ocean-rescue-travel-progress-end"
-          aria-hidden="true"
-        ></span>
+          <progress
+            id="ocean-rescue-travel-progress-bar"
+            max="100"
+            value="0"
+            aria-label="Travel progress"
+          ></progress>
 
-        <span
-          id="ocean-rescue-travel-progress-value"
-          aria-hidden="true"
-        >0%</span>
+          <span
+            id="ocean-rescue-travel-progress-end"
+            aria-hidden="true"
+          ></span>
+
+          <span
+            id="ocean-rescue-travel-progress-value"
+            aria-hidden="true"
+          >0%</span>
+        </div>
       </div>
 
       <section

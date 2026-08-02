@@ -87,6 +87,8 @@ _COLLECT_BODY = """() => {
   const el = document.getElementById('ocean-rescue-travel-progress');
   const bar = document.getElementById('ocean-rescue-travel-progress-bar');
   const value = document.getElementById('ocean-rescue-travel-progress-value');
+  const label = document.getElementById('ocean-rescue-travel-progress-label');
+  const help = document.getElementById('ocean-rescue-travel-help');
   const root = document.getElementById('ocean-rescue-root');
   const travel = OceanRescue.Travel.getSnapshot();
   return {
@@ -97,6 +99,8 @@ _COLLECT_BODY = """() => {
     percent: el ? el.getAttribute('data-travel-progress-percent') : null,
     distance: el ? el.getAttribute('data-travel-progress-distance') : null,
     arrival: el ? el.getAttribute('data-travel-progress-arrival-distance') : null,
+    label: label ? label.textContent.trim() : null,
+    help: help ? help.textContent.replace(/\\s+/g, ' ').trim() : null,
     travelDistance: travel.distance,
     arrivalDistance: OceanRescue.Rescue.ArrivalDistance,
     phase: OceanRescue.State.getSnapshot().phase,
@@ -141,6 +145,43 @@ def _frozen_samples(pg, gap_ms=400):
     return pg.evaluate(source, {"gapMs": gap_ms, "collectSource": _COLLECT_BODY})
 
 
+_READABILITY_BODY = """() => {
+  const panel = document.getElementById('ocean-rescue-travel-progress');
+  const bar = document.getElementById('ocean-rescue-travel-progress-bar');
+  const value = document.getElementById('ocean-rescue-travel-progress-value');
+  const label = document.getElementById('ocean-rescue-travel-progress-label');
+  const help = document.getElementById('ocean-rescue-travel-help');
+  const cs = (el) => getComputedStyle(el);
+  const rect = (el) => el.getBoundingClientRect();
+  const panelRect = rect(panel);
+  const helpRect = rect(help);
+  return {
+    hidden: panel.hidden,
+    state: panel.getAttribute('data-travel-progress-state'),
+    helpText: help.textContent.replace(/\\s+/g, ' ').trim(),
+    label: label ? label.textContent.trim() : null,
+    barHeight: parseFloat(cs(bar).height),
+    barWidth: parseFloat(cs(bar).width),
+    percentFontSize: parseFloat(cs(value).fontSize),
+    panelPaddingTop: parseFloat(cs(panel).paddingTop),
+    panelPaddingLeft: parseFloat(cs(panel).paddingLeft),
+    panelRadius: parseFloat(cs(panel).borderRadius),
+    scrollWidth: document.documentElement.scrollWidth,
+    innerWidth: window.innerWidth,
+    innerHeight: window.innerHeight,
+    panelLeft: panelRect.left,
+    panelRight: panelRect.right,
+    panelBottom: panelRect.bottom,
+    helpTop: helpRect.top,
+    helpRight: helpRect.right,
+  };
+}"""
+
+
+def _readability_report(pg):
+    return pg.evaluate(_READABILITY_BODY)
+
+
 def _go_through_normal_flow(pg, base_url):
     pg.goto(f"{base_url}/ocean-rescue/index.html")
     pg.wait_for_selector(
@@ -153,6 +194,19 @@ def _go_through_normal_flow(pg, base_url):
     pg.wait_for_selector("#ocean-rescue-launch:not([hidden])", timeout=10000)
     pg.click("#ocean-rescue-launch-skip")
     pg.wait_for_selector("#ocean-rescue-root[data-travel-scene=active]", timeout=15000)
+
+
+def _assert_copy_contract(s):
+    assert s["label"] and (
+        "progress" in s["label"].lower() or "rescue" in s["label"].lower()
+    ), f"missing progress label: {s}"
+    assert s["help"], f"missing travel help copy: {s}"
+    lower = s["help"].lower()
+    assert "drag" in lower, f"help must teach drag: {s['help']!r}"
+    assert "tap" in lower, f"help must teach tap: {s['help']!r}"
+    assert "dodge" in lower or "avoid" in lower or "obstacle" in lower, (
+        f"help must hint at obstacles: {s['help']!r}"
+    )
 
 
 def _verify_active_travel_snapshots(samples, label):
@@ -170,6 +224,7 @@ def _verify_active_travel_snapshots(samples, label):
             f"{label}: value must be monotonic non-decreasing: {prev} -> {s['value']}"
         )
         prev = s["value"]
+        _assert_copy_contract(s)
     return samples
 
 
@@ -267,6 +322,7 @@ def _run_scenario(pg, base_url):
     )
     initial = _collect_progress(pg)
     assert initial["hidden"] is True, "progress HUD must be hidden before TRAVEL"
+    _assert_copy_contract(initial)
 
     travel = _run_travel_and_resume(pg, base_url)
 
@@ -321,3 +377,49 @@ class TestTravelProgressBrowserAcceptance:
         assert result["pageErrors"] == [], result["pageErrors"]
         assert result["consoleErrors"] == [], result["consoleErrors"]
         assert result["cspViolations"] == [], result["cspViolations"]
+
+    @pytest.mark.browser
+    def test_progress_hud_readability_at_320px(self, server):
+        evidence = EVIDENCE_DIR / "readability-320px"
+        evidence.mkdir(parents=True, exist_ok=True)
+
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True, args=["--disable-webgl"])
+            context = browser.new_context(
+                viewport={"width": 320, "height": 568},
+                locale="en-US",
+            )
+            pg = context.new_page()
+            _go_through_normal_flow(pg, server)
+            report = _readability_report(pg)
+            context.close()
+            browser.close()
+
+        (evidence / "readability.json").write_text(
+            json.dumps(report, indent=2, ensure_ascii=False) + "\n"
+        )
+
+        assert report["hidden"] is False, "HUD must be visible during TRAVEL"
+        assert report["state"] == "active", report
+        assert report["label"] and "progress" in report["label"].lower(), report
+        assert report["helpText"] and "drag" in report["helpText"].lower(), report
+        assert report["helpText"] and "tap" in report["helpText"].lower(), report
+
+        assert report["scrollWidth"] <= report["innerWidth"], (
+            f"no horizontal page overflow at 320px: {report}"
+        )
+        assert (
+            report["panelLeft"] >= 0 and report["panelRight"] <= report["innerWidth"]
+        ), f"progress panel must stay inside the 320px viewport: {report}"
+        assert report["panelBottom"] <= report["innerHeight"], (
+            f"progress panel must stay inside the vertical viewport: {report}"
+        )
+        assert report["helpTop"] >= 0 and report["helpRight"] <= report["innerWidth"], (
+            f"help bubble must stay inside the 320px viewport: {report}"
+        )
+
+        assert report["barHeight"] >= 16, f"bar height below minimum: {report}"
+        assert report["barWidth"] >= 140, f"bar width below minimum: {report}"
+        assert report["percentFontSize"] >= 18, f"percent below minimum: {report}"
+        assert report["panelPaddingTop"] >= 12, f"panel padding too small: {report}"
+        assert report["panelPaddingLeft"] >= 12, f"panel padding too small: {report}"

@@ -116,7 +116,7 @@
       hidden
     >
       <p id="ocean-rescue-travel-help">
-        Drag up or down, or tap where you want the GUP to move.
+        Avoid the obstacles! Drag up or down, or tap where you want the GUP to go.
       </p>
       <canvas
         id="ocean-rescue-canvas"
@@ -135,26 +135,34 @@
         hidden
       >
         <span
-          id="ocean-rescue-travel-progress-start"
+          id="ocean-rescue-travel-progress-label"
+          class="ocean-rescue-travel-progress-label"
           aria-hidden="true"
-        ></span>
+        >Rescue progress</span>
 
-        <progress
-          id="ocean-rescue-travel-progress-bar"
-          max="100"
-          value="0"
-          aria-label="Travel progress"
-        ></progress>
+        <div class="ocean-rescue-travel-progress-meter">
+          <span
+            id="ocean-rescue-travel-progress-start"
+            aria-hidden="true"
+          ></span>
 
-        <span
-          id="ocean-rescue-travel-progress-end"
-          aria-hidden="true"
-        ></span>
+          <progress
+            id="ocean-rescue-travel-progress-bar"
+            max="100"
+            value="0"
+            aria-label="Travel progress"
+          ></progress>
 
-        <span
-          id="ocean-rescue-travel-progress-value"
-          aria-hidden="true"
-        >0%</span>
+          <span
+            id="ocean-rescue-travel-progress-end"
+            aria-hidden="true"
+          ></span>
+
+          <span
+            id="ocean-rescue-travel-progress-value"
+            aria-hidden="true"
+          >0%</span>
+        </div>
       </div>
 
       <section

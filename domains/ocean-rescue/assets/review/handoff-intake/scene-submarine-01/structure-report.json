@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "taskId": "AIDENGAME-OCEAN-RESCUE-SUBMARINE-HANDOFF-SVG-INTAKE-STRUCTURE-GATE-02",
+  "assetId": "scene-submarine-01",
+  "alias": "scene.submarine",
+  "briefPath": "domains/ocean-rescue/assets/handoff/briefs/scene-submarine-01.md",
+  "briefSha256": "498c104090bf7739189d6618c08c264f6aa38e6d8dd5b1d462a0f269d0c637ce",
+  "svgPath": "domains/ocean-rescue/assets/handoff/inbox/scene-submarine-01.svg",
+  "svgSha256": "338e71c483e9e01eba7ddc154e68ef858482c85d39d899eda493e9112df714e9",
+  "canonicalTargetPath": "domains/ocean-rescue/assets/source/scene/submarine.svg",
+  "viewBoxExpected": "0 0 320 200",
+  "viewBoxActual": "0 0 320 200",
+  "requiredGroupsExpected": [
+    "scene-submarine",
+    "submarine-hull",
+    "submarine-cockpit",
+    "submarine-propulsion",
+    "submarine-rescue-gear",
+    "submarine-lights"
+  ],
+  "requiredGroupsFound": [
+    "scene-submarine",
+    "submarine-hull",
+    "submarine-cockpit",
+    "submarine-propulsion",
+    "submarine-rescue-gear",
+    "submarine-lights"
+  ],
+  "missingRequiredGroups": [],
+  "emptyRequiredGroups": [],
+  "duplicateIds": [],
+  "unresolvedReferences": [],
+  "externalReferences": [],
+  "forbiddenElements": [],
+  "forbiddenAttributes": [],
+  "nonFiniteFindings": [],
+  "backgroundTransparencyPass": true,
+  "warnings": [],
+  "verdict": "STRUCTURE_PASS",
+  "rejectionReasons": []
+}

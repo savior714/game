@@ -62,6 +62,7 @@ ANGLE_EPS = 0.01
 CROSS_CHECK_EPS = 1.0
 GET_BOUNDS_ARTIFACT_MAX = 4.0
 RESIDUAL_MIN = 2.0
+ALIGN_EPS = 1.0
 
 
 def parse_args():
@@ -199,13 +200,20 @@ def finite_number(value):
     return number(value) and math.isfinite(value)
 
 
-def visible_footprint_checks(ropes, tag, checks, require_residual=False):
+def visible_footprint_checks(
+    ropes, tag, checks, require_residual=False, require_alignment=False
+):
     """Validate the trimmed visible-footprint measurement for each rope.
 
     MEASUREMENT_VALID requires the trim-aware center to converge with
     Sprite.visualBounds (the trimmed visible rect) within 1px per axis. The
     getBounds() delta is reported under a documented sanity bound because
     PixiJS 8 getBounds() measures the untrimmed orig rect.
+
+    Post-fix ALIGNMENT requires the trim-aware visible center of each rope to
+    stay on the canonical midpoint (visibleCenterDelta, tangentOffset,
+    normalOffset all <= 1px). Residual confirmation is reserved for the
+    pre-fix --allow-red reproduction path.
     """
     normals = []
     for idx, rope in enumerate(ropes):
@@ -253,6 +261,36 @@ def visible_footprint_checks(ropes, tag, checks, require_residual=False):
                 "{} visibleCenterDelta not finite".format(vt),
             )
         )
+        if require_alignment:
+            checks.append(
+                (
+                    "{}.visibleDelta<=1px".format(vt),
+                    finite_number(delta) and abs(delta) <= ALIGN_EPS,
+                    "{} visible center {:.3f}px from canonical midpoint > {:.0f}px".format(
+                        vt, delta, ALIGN_EPS
+                    ),
+                )
+            )
+            tangent = vf.get("tangentOffset")
+            checks.append(
+                (
+                    "{}.tangentOffset<=1px".format(vt),
+                    finite_number(tangent) and abs(tangent) <= ALIGN_EPS,
+                    "{} tangent offset {:.3f}px > {:.0f}px".format(
+                        vt, tangent, ALIGN_EPS
+                    ),
+                )
+            )
+            normal = vf.get("normalOffset")
+            checks.append(
+                (
+                    "{}.normalOffset<=1px".format(vt),
+                    finite_number(normal) and abs(normal) <= ALIGN_EPS,
+                    "{} normal offset {:.3f}px > {:.0f}px".format(
+                        vt, normal, ALIGN_EPS
+                    ),
+                )
+            )
         normal = vf.get("normalOffset")
         if finite_number(normal):
             normals.append(normal)
@@ -349,7 +387,13 @@ def geometry_checks(diag, allow_red, checks):
             ),
             "{} loop footprint not finite".format(tag),
         )
-    visible_footprint_checks(ropes, "pointerInactive.", checks, require_residual=True)
+    visible_footprint_checks(
+        ropes,
+        "pointerInactive.",
+        checks,
+        require_residual=allow_red,
+        require_alignment=not allow_red,
+    )
 
     active = diag.get("pointerActive") or {}
     active_ropes = (active.get("geometry") or {}).get("ropes") or []
@@ -379,7 +423,32 @@ def geometry_checks(diag, allow_red, checks):
                 ar.get("angleDelta"), ANGLE_EPS
             ),
         )
-        visible_footprint_checks(active_ropes[:1], "pointerActive.", checks)
+        visible_footprint_checks(
+            active_ropes[:1], "pointerActive.", checks, require_alignment=not allow_red
+        )
+        inactive_r1 = (inactive or {}).get("ropes") or []
+        if inactive_r1:
+            base_center = (inactive_r1[0].get("visibleFootprint") or {}).get(
+                "trimAwareCenter"
+            ) or {}
+            pulse_center = (ar.get("visibleFootprint") or {}).get(
+                "trimAwareCenter"
+            ) or {}
+            if (
+                finite_number(base_center.get("x"))
+                and finite_number(base_center.get("y"))
+                and finite_number(pulse_center.get("x"))
+                and finite_number(pulse_center.get("y"))
+            ):
+                drift = math.hypot(
+                    pulse_center.get("x") - base_center.get("x"),
+                    pulse_center.get("y") - base_center.get("y"),
+                )
+                check(
+                    "pointerActive.r1.pulseDrift<=1px",
+                    drift <= ALIGN_EPS,
+                    "pointer pulse moved visible center {:.3f}px".format(drift),
+                )
 
     inactive_after = diag.get("pointerInactiveAfter") or {}
     after_ropes = inactive_after.get("ropes") or []
@@ -395,7 +464,12 @@ def geometry_checks(diag, allow_red, checks):
                 after_ropes[0].get("centerDelta"), POSITION_EPS
             ),
         )
-        visible_footprint_checks(after_ropes[:1], "pointerInactiveAfter.", checks)
+        visible_footprint_checks(
+            after_ropes[:1],
+            "pointerInactiveAfter.",
+            checks,
+            require_alignment=not allow_red,
+        )
 
     cut = (inactive or {}).get("cutRing") or {}
     check(
@@ -439,6 +513,10 @@ def geometry_checks(diag, allow_red, checks):
             aa_ropes[0].get("loopVisible") is False,
             "completed rope-1 loop still visible",
         )
+        if not allow_red:
+            visible_footprint_checks(
+                aa_ropes[1:2], "trace.afterAdvance.", checks, require_alignment=True
+            )
 
     off_path = diag.get("traceOffPath") or {}
     off_result = off_path.get("result") or {}
@@ -470,6 +548,10 @@ def geometry_checks(diag, allow_red, checks):
                 reset.get("activeRopeId")
             ),
         )
+        if not allow_red:
+            visible_footprint_checks(
+                reset_ropes[1:2], "offPath.afterReset.", checks, require_alignment=True
+            )
 
     tap = diag.get("tapSuccess") or {}
     tap_result = tap.get("result") or {}
@@ -636,9 +718,10 @@ def main():
     inactive_ropes = (diag.get("pointerInactive") or {}).get("ropes") or []
     vf0 = (inactive_ropes[0].get("visibleFootprint") or {}) if inactive_ropes else {}
     print(
-        "  pointerInactive.r1.visibleCenterDelta={} normalOffset={} "
+        "  pointerInactive.r1.visibleCenterDelta={} tangentOffset={} normalOffset={} "
         "crossVsVisual={} crossVsGetBounds={}".format(
             vf0.get("visibleCenterDelta"),
+            vf0.get("tangentOffset"),
             vf0.get("normalOffset"),
             vf0.get("crossCheckVsVisualBounds"),
             vf0.get("crossCheckVsGetBounds"),
@@ -663,14 +746,30 @@ def main():
     for name, ok, _ in checks:
         if "crossVsVisual" in name and not ok:
             measurement_valid = False
-    residual_confirmed = all(
-        ok for name, ok, _ in checks if name.endswith("visibleResidualConfirmed")
+    residual_names = [
+        name for name, _, _ in checks if name.endswith("visibleResidualConfirmed")
+    ]
+    residual_confirmed = bool(residual_names) and all(
+        ok for name, ok, _ in checks if name in residual_names
+    )
+    alignment_names = [
+        name
+        for name, _, _ in checks
+        if name.endswith("visibleDelta<=1px")
+        or name.endswith("tangentOffset<=1px")
+        or name.endswith("normalOffset<=1px")
+        or name.endswith("pulseDrift<=1px")
+    ]
+    alignment_pass = bool(alignment_names) and all(
+        ok for name, ok, _ in checks if name in alignment_names
     )
     if measurement_valid and residual_confirmed:
         print(
             "\nSEA_TURTLE_ROPE_VISIBLE_FOOTPRINT_MEASUREMENT=VALID "
             "RESIDUAL_VISIBLE_OFFSET=CONFIRMED"
         )
+    elif measurement_valid and alignment_pass:
+        print("\nSEA_TURTLE_ROPE_VISIBLE_FOOTPRINT_ALIGNMENT=PASS")
     print("\nSEA_TURTLE_ROPE_VISUAL_HIT_GEOMETRY_ALIGNMENT=PASS")
     return 0
 

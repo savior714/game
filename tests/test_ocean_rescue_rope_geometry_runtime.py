@@ -9,6 +9,7 @@ RENDER_DIR = REPO_ROOT / "tests/ocean-rescue/rendering-acceptance"
 HTML_PATH = RENDER_DIR / "rope-geometry-runtime.html"
 MJS_PATH = RENDER_DIR / "rope-geometry-runtime.mjs"
 RUNNER_PATH = REPO_ROOT / "scripts/ocean-rescue/verify-rope-geometry-runtime.py"
+SEA_TURTLE_SCENE_PATH = REPO_ROOT / "domains/ocean-rescue/src/sea-turtle-scene.js"
 
 
 def _runner():
@@ -21,6 +22,10 @@ def _mjs():
 
 def _html():
     return HTML_PATH.read_text(encoding="utf-8")
+
+
+def _scene():
+    return SEA_TURTLE_SCENE_PATH.read_text(encoding="utf-8")
 
 
 def test_harness_files_exist():
@@ -182,6 +187,87 @@ def test_runner_has_visible_footprint_contract():
     assert "normalSignConsistent" in runner
     assert "RESIDUAL_VISIBLE_OFFSET=CONFIRMED" in runner
     assert "SEA_TURTLE_ROPE_VISIBLE_FOOTPRINT_MEASUREMENT=VALID" in runner
+    assert "SEA_TURTLE_ROPE_VISIBLE_FOOTPRINT_ALIGNMENT=PASS" in runner
+
+
+def test_runner_requires_alignment_in_post_fix_normal_invocation():
+    runner = _runner()
+    assert "ALIGN_EPS" in runner
+    assert "require_alignment" in runner
+    assert "visibleDelta<=1px" in runner
+    assert "tangentOffset<=1px" in runner
+    assert "normalOffset<=1px" in runner
+    assert "pulseDrift<=1px" in runner
+    assert "trace.afterAdvance." in runner
+    assert "offPath.afterReset." in runner
+
+
+def test_runner_reserves_residual_confirmation_for_red_reproduction():
+    runner = _runner()
+    assert "require_residual=allow_red" in runner
+    assert "require_alignment=not allow_red" in runner
+    # The post-fix normal invocation must not accept a > 2px residual as PASS.
+    assert "if not all_pass:" in runner
+    assert 'name.endswith("visibleResidualConfirmed")' in runner
+
+
+def test_scene_has_trim_aware_loop_anchor_helper():
+    scene = _scene()
+    assert "function centerAnchorOnTrimmedVisibleFrame(sprite)" in scene
+    assert "sprite.anchor.set(" in scene
+
+
+def test_helper_derives_anchor_from_runtime_trim_and_orig():
+    scene = _scene()
+    helper = scene.split("function centerAnchorOnTrimmedVisibleFrame(sprite)", 1)[1]
+    assert "texture.orig" in helper
+    assert "texture.trim" in helper
+    assert "orig.width" in helper and "orig.height" in helper
+    assert "trim.x" in helper and "trim.width" in helper
+    assert "(trim.x + trim.width / 2) / orig.width" in helper
+    assert "(trim.y + trim.height / 2) / orig.height" in helper
+
+
+def test_helper_never_reads_atlas_frame_coordinates():
+    scene = _scene()
+    helper = scene.split("function centerAnchorOnTrimmedVisibleFrame(sprite)", 1)[1]
+    assert "texture.frame" not in helper
+    assert ".frame.x" not in helper
+    assert ".frame.y" not in helper
+
+
+def test_scene_has_no_asset_specific_anchor_hardcodes():
+    scene = _scene()
+    assert "0.5175" not in scene
+    assert "48.43" not in scene
+
+
+def test_helper_applied_to_each_loop_sprite_at_creation():
+    scene = _scene()
+    assert 'makeSprite("scene.seaweed-loop.01"' in scene
+    assert "centerAnchorOnTrimmedVisibleFrame(loopSprite)" in scene
+    assert "nodes.loops.push(loopSprite)" in scene
+
+
+def test_sync_loops_keeps_canonical_midpoint_position():
+    scene = _scene()
+    assert "loop.position.set(base.x, base.y)" in scene
+    assert (
+        "loop.rotation = Math.atan2(rope.end.y - rope.start.y, rope.end.x - rope.start.x)"
+        in scene
+    )
+
+
+def test_loop_position_is_never_translated_by_pointer_intent():
+    scene = _scene()
+    sync = scene.split("function syncLoops", 1)[1]
+    position_lines = [line for line in sync.splitlines() if "loop.position" in line]
+    assert position_lines, "no loop.position references in syncLoops"
+    for line in position_lines:
+        assert "pointerIntent" not in line, (
+            "loop.position driven by pointer: {}".format(line.strip())
+        )
+    assert any("base.x" in line and "base.y" in line for line in position_lines)
 
 
 def test_runner_no_third_party_imports():

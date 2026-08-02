@@ -7590,6 +7590,42 @@ fn mainFragment(
     return sprite;
   }
 
+  function centerAnchorOnTrimmedVisibleFrame(sprite) {
+    var texture = sprite && sprite.texture;
+    var orig = texture && texture.orig;
+    if (
+      !orig ||
+      !finite(orig.width) ||
+      !finite(orig.height) ||
+      orig.width <= 0 ||
+      orig.height <= 0
+    ) {
+      throw new Error(
+        "Cannot center loop anchor: authored texture.orig is missing or invalid"
+      );
+    }
+    var trim = texture.trim;
+    if (trim) {
+      if (
+        !finite(trim.x) ||
+        !finite(trim.y) ||
+        !finite(trim.width) ||
+        !finite(trim.height)
+      ) {
+        throw new Error(
+          "Cannot center loop anchor: authored texture.trim is invalid"
+        );
+      }
+      sprite.anchor.set(
+        (trim.x + trim.width / 2) / orig.width,
+        (trim.y + trim.height / 2) / orig.height
+      );
+    } else {
+      sprite.anchor.set(0.5, 0.5);
+    }
+    return sprite;
+  }
+
   function setPosition(displayObject, x, y) {
     displayObject.position.set(x, y);
   }
@@ -7652,7 +7688,9 @@ fn mainFragment(
       hudLoops: []
     };
     for (var i = 0; i < 3; i += 1) {
-      nodes.loops.push(makeSprite("scene.seaweed-loop.01", "sea-turtle-loop-" + (i + 1)));
+      var loopSprite = makeSprite("scene.seaweed-loop.01", "sea-turtle-loop-" + (i + 1));
+      centerAnchorOnTrimmedVisibleFrame(loopSprite);
+      nodes.loops.push(loopSprite);
     }
     for (var h = 0; h < 3; h += 1) {
       nodes.hudLoops.push(makeSprite("hud.loop-icon", "sea-turtle-hud-loop-" + (h + 1)));

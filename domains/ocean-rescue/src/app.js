@@ -746,6 +746,115 @@
     }
   }
 
+  function resolveTravelProgressElements() {
+    var root = document.getElementById("ocean-rescue-travel-progress");
+    var bar = document.getElementById("ocean-rescue-travel-progress-bar");
+    var value = document.getElementById("ocean-rescue-travel-progress-value");
+    if (!root || !bar || !value) {
+      return null;
+    }
+    return {
+      root: root,
+      bar: bar,
+      value: value
+    };
+  }
+
+  function computeTravelProgress(travelSnapshot) {
+    if (!Rescue) {
+      return { valid: false };
+    }
+    var arrivalDistance = Rescue.ArrivalDistance;
+    if (
+      typeof arrivalDistance !== "number" ||
+      !isFinite(arrivalDistance) ||
+      arrivalDistance <= 0
+    ) {
+      return { valid: false };
+    }
+    if (!travelSnapshot || typeof travelSnapshot !== "object") {
+      return { valid: false };
+    }
+    var distance = travelSnapshot.distance;
+    if (typeof distance !== "number" || !isFinite(distance) || distance < 0) {
+      return { valid: false };
+    }
+    var ratio = distance / arrivalDistance;
+    if (ratio < 0) {
+      ratio = 0;
+    }
+    if (ratio > 1) {
+      ratio = 1;
+    }
+    return {
+      valid: true,
+      percent: Math.round(ratio * 100),
+      distance: distance,
+      arrivalDistance: arrivalDistance
+    };
+  }
+
+  function setTravelProgressDiagnostics(root, state, progress) {
+    root.setAttribute("data-travel-progress-state", state);
+    if (progress && progress.valid) {
+      root.setAttribute("data-travel-progress-percent", String(progress.percent));
+      root.setAttribute("data-travel-progress-distance", String(progress.distance));
+      root.setAttribute(
+        "data-travel-progress-arrival-distance",
+        String(progress.arrivalDistance)
+      );
+    } else {
+      root.removeAttribute("data-travel-progress-percent");
+      root.removeAttribute("data-travel-progress-distance");
+      root.removeAttribute("data-travel-progress-arrival-distance");
+    }
+  }
+
+  function hideTravelProgress() {
+    var els = resolveTravelProgressElements();
+    if (els === null) {
+      return false;
+    }
+    els.root.hidden = true;
+    els.bar.max = 100;
+    els.bar.value = 0;
+    els.value.textContent = "0%";
+    setTravelProgressDiagnostics(els.root, "hidden", null);
+    return true;
+  }
+
+  function syncTravelProgress(travelSnapshot) {
+    var els = resolveTravelProgressElements();
+    if (els === null) {
+      return false;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.TRAVEL) {
+      hideTravelProgress();
+      return false;
+    }
+    var progress = computeTravelProgress(travelSnapshot);
+    if (!progress.valid) {
+      els.root.hidden = true;
+      setTravelProgressDiagnostics(els.root, "invalid", null);
+      return false;
+    }
+    els.root.hidden = false;
+    els.bar.max = 100;
+    els.bar.value = progress.percent;
+    els.value.textContent = String(progress.percent) + "%";
+    setTravelProgressDiagnostics(els.root, "active", progress);
+    return true;
+  }
+
+  function showTravelProgress(travelSnapshot) {
+    var els = resolveTravelProgressElements();
+    if (els === null) {
+      return false;
+    }
+    return syncTravelProgress(travelSnapshot);
+  }
+
   function startTravelRuntime() {
     if (!Travel) {
       return;
@@ -762,6 +871,8 @@
     }
     Travel.start();
     startTerrainRuntime();
+    hideTravelProgress();
+    showTravelProgress(Travel.getSnapshot());
     travelRunIdCounter += 1;
     var runId = travelRunIdCounter;
     activeTravelRunId = runId;
@@ -819,6 +930,7 @@
       }
     }
     travelLastTimestamp = timestamp;
+    syncTravelProgress(Travel.getSnapshot());
     if (tryBeginRescueArrival()) {
       renderRescueSiteFrame(travelPaintCanvas, resolveTravelContext());
       return;
@@ -1241,6 +1353,7 @@
       Terrain.stop();
     }
     shutdownActivePointer();
+    hideTravelProgress();
 
     var root = document.getElementById("ocean-rescue-root");
     if (root) {
@@ -3635,6 +3748,7 @@
     if (gupSection) {
       gupSection.hidden = true;
     }
+    hideTravelProgress();
     State.forcePhase(State.Phases.MISSION_SELECT);
     renderMissionSelect();
     var status = document.getElementById("ocean-rescue-status");
@@ -5347,6 +5461,10 @@
   };
 
   window.OceanRescue.App = App;
+
+  window.OceanRescue.TravelProgress = Object.freeze({
+    compute: computeTravelProgress
+  });
 
   document.addEventListener("DOMContentLoaded", function () {
     if (RenderRuntime) {

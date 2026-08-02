@@ -76,6 +76,74 @@ body {
   pointer-events: none;
 }
 
+#ocean-rescue-travel-progress {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 86%;
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 14px;
+  background: rgba(10, 24, 40, 0.72);
+  pointer-events: none;
+}
+
+#ocean-rescue-travel-progress[hidden] {
+  display: none;
+}
+
+#ocean-rescue-travel-progress-start,
+#ocean-rescue-travel-progress-end {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #3ddad7;
+}
+
+#ocean-rescue-travel-progress-bar {
+  width: 220px;
+  max-width: 60vw;
+  height: 12px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(213, 228, 242, 0.28);
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+#ocean-rescue-travel-progress-bar::-webkit-progress-bar {
+  background: rgba(213, 228, 242, 0.28);
+  border-radius: 999px;
+}
+
+#ocean-rescue-travel-progress-bar::-webkit-progress-value {
+  background: #3ddad7;
+  border-radius: 999px;
+}
+
+#ocean-rescue-travel-progress-bar::-moz-progress-bar {
+  background: #3ddad7;
+  border-radius: 999px;
+}
+
+#ocean-rescue-travel-progress-value {
+  min-width: 40px;
+  color: #eef5fb;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
 #ocean-rescue-mission-select {
   display: none;
   position: absolute;
@@ -1399,6 +1467,35 @@ body {
       >
         Ocean Rescue requires canvas support.
       </canvas>
+
+      <div
+        id="ocean-rescue-travel-progress"
+        role="group"
+        aria-label="Distance to rescue site"
+        hidden
+      >
+        <span
+          id="ocean-rescue-travel-progress-start"
+          aria-hidden="true"
+        ></span>
+
+        <progress
+          id="ocean-rescue-travel-progress-bar"
+          max="100"
+          value="0"
+          aria-label="Travel progress"
+        ></progress>
+
+        <span
+          id="ocean-rescue-travel-progress-end"
+          aria-hidden="true"
+        ></span>
+
+        <span
+          id="ocean-rescue-travel-progress-value"
+          aria-hidden="true"
+        >0%</span>
+      </div>
 
       <section
         id="ocean-rescue-rescue-overlay"
@@ -11216,6 +11313,115 @@ fn mainFragment(
     }
   }
 
+  function resolveTravelProgressElements() {
+    var root = document.getElementById("ocean-rescue-travel-progress");
+    var bar = document.getElementById("ocean-rescue-travel-progress-bar");
+    var value = document.getElementById("ocean-rescue-travel-progress-value");
+    if (!root || !bar || !value) {
+      return null;
+    }
+    return {
+      root: root,
+      bar: bar,
+      value: value
+    };
+  }
+
+  function computeTravelProgress(travelSnapshot) {
+    if (!Rescue) {
+      return { valid: false };
+    }
+    var arrivalDistance = Rescue.ArrivalDistance;
+    if (
+      typeof arrivalDistance !== "number" ||
+      !isFinite(arrivalDistance) ||
+      arrivalDistance <= 0
+    ) {
+      return { valid: false };
+    }
+    if (!travelSnapshot || typeof travelSnapshot !== "object") {
+      return { valid: false };
+    }
+    var distance = travelSnapshot.distance;
+    if (typeof distance !== "number" || !isFinite(distance) || distance < 0) {
+      return { valid: false };
+    }
+    var ratio = distance / arrivalDistance;
+    if (ratio < 0) {
+      ratio = 0;
+    }
+    if (ratio > 1) {
+      ratio = 1;
+    }
+    return {
+      valid: true,
+      percent: Math.round(ratio * 100),
+      distance: distance,
+      arrivalDistance: arrivalDistance
+    };
+  }
+
+  function setTravelProgressDiagnostics(root, state, progress) {
+    root.setAttribute("data-travel-progress-state", state);
+    if (progress && progress.valid) {
+      root.setAttribute("data-travel-progress-percent", String(progress.percent));
+      root.setAttribute("data-travel-progress-distance", String(progress.distance));
+      root.setAttribute(
+        "data-travel-progress-arrival-distance",
+        String(progress.arrivalDistance)
+      );
+    } else {
+      root.removeAttribute("data-travel-progress-percent");
+      root.removeAttribute("data-travel-progress-distance");
+      root.removeAttribute("data-travel-progress-arrival-distance");
+    }
+  }
+
+  function hideTravelProgress() {
+    var els = resolveTravelProgressElements();
+    if (els === null) {
+      return false;
+    }
+    els.root.hidden = true;
+    els.bar.max = 100;
+    els.bar.value = 0;
+    els.value.textContent = "0%";
+    setTravelProgressDiagnostics(els.root, "hidden", null);
+    return true;
+  }
+
+  function syncTravelProgress(travelSnapshot) {
+    var els = resolveTravelProgressElements();
+    if (els === null) {
+      return false;
+    }
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.TRAVEL) {
+      hideTravelProgress();
+      return false;
+    }
+    var progress = computeTravelProgress(travelSnapshot);
+    if (!progress.valid) {
+      els.root.hidden = true;
+      setTravelProgressDiagnostics(els.root, "invalid", null);
+      return false;
+    }
+    els.root.hidden = false;
+    els.bar.max = 100;
+    els.bar.value = progress.percent;
+    els.value.textContent = String(progress.percent) + "%";
+    setTravelProgressDiagnostics(els.root, "active", progress);
+    return true;
+  }
+
+  function showTravelProgress(travelSnapshot) {
+    var els = resolveTravelProgressElements();
+    if (els === null) {
+      return false;
+    }
+    return syncTravelProgress(travelSnapshot);
+  }
+
   function startTravelRuntime() {
     if (!Travel) {
       return;
@@ -11232,6 +11438,8 @@ fn mainFragment(
     }
     Travel.start();
     startTerrainRuntime();
+    hideTravelProgress();
+    showTravelProgress(Travel.getSnapshot());
     travelRunIdCounter += 1;
     var runId = travelRunIdCounter;
     activeTravelRunId = runId;
@@ -11289,6 +11497,7 @@ fn mainFragment(
       }
     }
     travelLastTimestamp = timestamp;
+    syncTravelProgress(Travel.getSnapshot());
     if (tryBeginRescueArrival()) {
       renderRescueSiteFrame(travelPaintCanvas, resolveTravelContext());
       return;
@@ -11711,6 +11920,7 @@ fn mainFragment(
       Terrain.stop();
     }
     shutdownActivePointer();
+    hideTravelProgress();
 
     var root = document.getElementById("ocean-rescue-root");
     if (root) {
@@ -14105,6 +14315,7 @@ fn mainFragment(
     if (gupSection) {
       gupSection.hidden = true;
     }
+    hideTravelProgress();
     State.forcePhase(State.Phases.MISSION_SELECT);
     renderMissionSelect();
     var status = document.getElementById("ocean-rescue-status");
@@ -15817,6 +16028,10 @@ fn mainFragment(
   };
 
   window.OceanRescue.App = App;
+
+  window.OceanRescue.TravelProgress = Object.freeze({
+    compute: computeTravelProgress
+  });
 
   document.addEventListener("DOMContentLoaded", function () {
     if (RenderRuntime) {

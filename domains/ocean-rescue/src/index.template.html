@@ -128,6 +128,35 @@
         Ocean Rescue requires canvas support.
       </canvas>
 
+      <div
+        id="ocean-rescue-travel-progress"
+        role="group"
+        aria-label="Distance to rescue site"
+        hidden
+      >
+        <span
+          id="ocean-rescue-travel-progress-start"
+          aria-hidden="true"
+        ></span>
+
+        <progress
+          id="ocean-rescue-travel-progress-bar"
+          max="100"
+          value="0"
+          aria-label="Travel progress"
+        ></progress>
+
+        <span
+          id="ocean-rescue-travel-progress-end"
+          aria-hidden="true"
+        ></span>
+
+        <span
+          id="ocean-rescue-travel-progress-value"
+          aria-hidden="true"
+        >0%</span>
+      </div>
+
       <section
         id="ocean-rescue-rescue-overlay"
         aria-labelledby="ocean-rescue-rescue-title"

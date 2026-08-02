@@ -66,6 +66,74 @@ body {
   pointer-events: none;
 }
 
+#ocean-rescue-travel-progress {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 86%;
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 14px;
+  background: rgba(10, 24, 40, 0.72);
+  pointer-events: none;
+}
+
+#ocean-rescue-travel-progress[hidden] {
+  display: none;
+}
+
+#ocean-rescue-travel-progress-start,
+#ocean-rescue-travel-progress-end {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #3ddad7;
+}
+
+#ocean-rescue-travel-progress-bar {
+  width: 220px;
+  max-width: 60vw;
+  height: 12px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(213, 228, 242, 0.28);
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+#ocean-rescue-travel-progress-bar::-webkit-progress-bar {
+  background: rgba(213, 228, 242, 0.28);
+  border-radius: 999px;
+}
+
+#ocean-rescue-travel-progress-bar::-webkit-progress-value {
+  background: #3ddad7;
+  border-radius: 999px;
+}
+
+#ocean-rescue-travel-progress-bar::-moz-progress-bar {
+  background: #3ddad7;
+  border-radius: 999px;
+}
+
+#ocean-rescue-travel-progress-value {
+  min-width: 40px;
+  color: #eef5fb;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
 #ocean-rescue-mission-select {
   display: none;
   position: absolute;

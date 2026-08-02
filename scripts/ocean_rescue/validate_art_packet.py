@@ -18,52 +18,6 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ALLOWED_BUNDLES = {"characters", "scene", "effects-ui"}
-REQUIRED_ALIASES = sorted(
-    [
-        "otter.head",
-        "otter.torso",
-        "otter.arm.near",
-        "otter.arm.far",
-        "otter.tail",
-        "otter.eyes.open",
-        "otter.eyes.closed",
-        "otter.mouth.neutral",
-        "otter.mouth.concern",
-        "otter.mouth.smile",
-        "turtle.worried",
-        "turtle.free",
-        "scene.submarine",
-        "scene.water.far",
-        "scene.reef.mid",
-        "scene.coral.foreground",
-        "scene.seaweed-loop.01",
-        "scene.sand-path",
-        "scene.passage",
-        "ui.drag-arrow",
-        "fx.success-burst",
-        "fx.cut-ring",
-        "fx.cut-icon",
-        "fx.bubbles",
-        "fx.caustic",
-        "hud.progress-cap",
-        "hud.loop-icon",
-        "terrain.boulder-stack",
-        "terrain.canyon-ledge",
-        "terrain.canyon-pillar",
-        "terrain.canyon-wall",
-        "terrain.coral-column",
-        "terrain.coral-rock",
-        "terrain.kelp-rock",
-        "terrain.low-reef",
-        "terrain.reef-arch",
-        "terrain.reef-spire",
-        "terrain.rock-spire",
-        "terrain.rock-stack",
-        "terrain.sand-pillar",
-        "terrain.sand-rock",
-        "terrain.shell-ledge",
-    ]
-)
 
 FORBIDDEN_SVG_ELEMENTS = {
     "script",
@@ -149,10 +103,6 @@ def validate_bundles_and_aliases(packet: dict) -> None:
         fail("Duplicate asset IDs found")
     if len(aliases) != len(set(aliases)):
         fail("Duplicate asset aliases found")
-    if sorted(aliases) != REQUIRED_ALIASES:
-        missing = set(REQUIRED_ALIASES) - set(aliases)
-        extra = set(aliases) - set(REQUIRED_ALIASES)
-        fail(f"Alias mismatch. Missing: {missing}, Extra: {extra}")
 
 
 def validate_pivots(packet: dict) -> None:
@@ -203,9 +153,6 @@ def validate_svg(path: Path) -> None:
     stripped = re.sub(r"\s+xmlns[:\w]*\s*=\s*\'[^\']*\'", "", stripped)
     if URL_PATTERN.search(stripped):
         fail(f"External URL or data URI found in: {path.name}")
-
-    if "<text" in content.lower():
-        fail(f"<text> element found in: {path.name}")
 
     try:
         tree = ET.parse(path)

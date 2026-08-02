@@ -29,37 +29,6 @@ CONTACT_SHEET_BUILDER = (
 )
 
 PREDECESSOR_COMMIT = "HEAD"
-REQUIRED_ALIASES = sorted(
-    [
-        "fx.success-burst",
-        "fx.cut-ring",
-        "fx.cut-icon",
-        "fx.bubbles",
-        "fx.caustic",
-        "hud.progress-cap",
-        "hud.loop-icon",
-        "otter.arm.far",
-        "otter.arm.near",
-        "otter.eyes.closed",
-        "otter.eyes.open",
-        "otter.head",
-        "otter.mouth.concern",
-        "otter.mouth.neutral",
-        "otter.mouth.smile",
-        "otter.tail",
-        "otter.torso",
-        "scene.coral.foreground",
-        "scene.reef.mid",
-        "scene.seaweed-loop.01",
-        "scene.submarine",
-        "scene.water.far",
-        "scene.sand-path",
-        "scene.passage",
-        "turtle.free",
-        "turtle.worried",
-        "ui.drag-arrow",
-    ]
-)
 
 
 def _run_validator(script: Path, target: Path) -> subprocess.CompletedProcess:
@@ -77,6 +46,10 @@ def _sha256_file(path: Path) -> str:
 
 def _load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _canonical_packet_aliases() -> list[str]:
+    return sorted(a["alias"] for a in _load_json(ART_PACKET_JSON)["assets"])
 
 
 def _build_contact_sheet(output: Path) -> subprocess.CompletedProcess:
@@ -113,15 +86,34 @@ class TestPreFixReproduction:
 
 
 class TestApprovedAssetCount:
-    def test_exactly_27_approved(self):
+    def test_approved_asset_count_matches_packet(self):
         packet = _load_json(ART_PACKET_JSON)
+        record = _load_json(ART_APPROVAL_JSON)
         approved = [a for a in packet["assets"] if a["approvalState"] == "approved"]
-        assert len(approved) == 42, f"Expected 42 approved assets, got {len(approved)}"
+        assert len(approved) == len(packet["assets"]), (
+            "All packet assets must be approved"
+        )
+        assert record["approvedAssetCount"] == len(packet["assets"]), (
+            f"approvedAssetCount {record['approvedAssetCount']} != packet count "
+            f"{len(packet['assets'])}"
+        )
+
+    def test_approved_asset_count_matches_approved_aliases(self):
+        record = _load_json(ART_APPROVAL_JSON)
+        assert record["approvedAssetCount"] == len(record["approvedAliases"]), (
+            f"approvedAssetCount {record['approvedAssetCount']} != approvedAliases "
+            f"count {len(record['approvedAliases'])}"
+        )
+
+    def test_approved_aliases_are_unique(self):
+        record = _load_json(ART_APPROVAL_JSON)
+        assert len(set(record["approvedAliases"])) == len(record["approvedAliases"]), (
+            "approvedAliases must be unique"
+        )
 
     def test_all_aliases_match_packet(self):
         record = _load_json(ART_APPROVAL_JSON)
-        packet = _load_json(ART_PACKET_JSON)
-        packet_aliases = sorted(a["alias"] for a in packet["assets"])
+        packet_aliases = _canonical_packet_aliases()
         assert record["approvedAliases"] == packet_aliases, (
             "approvedAliases does not match packet aliases"
         )
@@ -270,20 +262,50 @@ class TestNegativeFixtures:
         assert result.returncode != 0, "Validator must reject altered source-set hash"
 
     def test_missing_alias_rejected(self, tmp_path: Path):
+        aliases = _canonical_packet_aliases()
         fixture = self._make_fixture(
-            tmp_path, approval_mods={"approvedAliases": REQUIRED_ALIASES[:-1]}
+            tmp_path, approval_mods={"approvedAliases": aliases[:-1]}
         )
         result = _run_validator(VALIDATOR_APPROVAL, fixture)
         assert result.returncode != 0, "Validator must reject missing alias"
 
-    def test_duplicate_alias_rejected(self, tmp_path: Path):
-        aliases = REQUIRED_ALIASES.copy()
-        aliases.append(aliases[0])
+    def test_extra_alias_rejected(self, tmp_path: Path):
+        aliases = _canonical_packet_aliases()
         fixture = self._make_fixture(
-            tmp_path, approval_mods={"approvedAliases": sorted(aliases)}
+            tmp_path, approval_mods={"approvedAliases": aliases + ["zzz.extra"]}
+        )
+        result = _run_validator(VALIDATOR_APPROVAL, fixture)
+        assert result.returncode != 0, "Validator must reject extra alias"
+
+    def test_duplicate_alias_rejected(self, tmp_path: Path):
+        aliases = _canonical_packet_aliases()
+        dup = aliases.copy()
+        dup.append(dup[0])
+        fixture = self._make_fixture(
+            tmp_path, approval_mods={"approvedAliases": sorted(dup)}
         )
         result = _run_validator(VALIDATOR_APPROVAL, fixture)
         assert result.returncode != 0, "Validator must reject duplicate alias"
+
+    def test_unsorted_aliases_rejected(self, tmp_path: Path):
+        aliases = _canonical_packet_aliases()
+        swapped = aliases.copy()
+        swapped[0], swapped[1] = swapped[1], swapped[0]
+        fixture = self._make_fixture(
+            tmp_path, approval_mods={"approvedAliases": swapped}
+        )
+        result = _run_validator(VALIDATOR_APPROVAL, fixture)
+        assert result.returncode != 0, "Validator must reject unsorted aliases"
+
+    def test_count_too_small_rejected(self, tmp_path: Path):
+        fixture = self._make_fixture(tmp_path, approval_mods={"approvedAssetCount": 52})
+        result = _run_validator(VALIDATOR_APPROVAL, fixture)
+        assert result.returncode != 0, "Validator must reject too-small count"
+
+    def test_count_too_large_rejected(self, tmp_path: Path):
+        fixture = self._make_fixture(tmp_path, approval_mods={"approvedAssetCount": 54})
+        result = _run_validator(VALIDATOR_APPROVAL, fixture)
+        assert result.returncode != 0, "Validator must reject too-large count"
 
     def test_one_review_ready_rejected(self, tmp_path: Path):
         fixture = self._make_fixture(

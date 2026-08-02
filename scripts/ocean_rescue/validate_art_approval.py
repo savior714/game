@@ -69,6 +69,37 @@ def validate_aliases_sorted(record: dict) -> None:
         fail("approvedAliases must be sorted")
 
 
+def validate_approved_aliases_parity(packet: dict, record: dict) -> None:
+    packet_aliases = sorted(asset["alias"] for asset in packet["assets"])
+    approved = record.get("approvedAliases")
+    if not isinstance(approved, list):
+        fail("approvedAliases must be a list")
+
+    duplicates = sorted({a for a in approved if approved.count(a) > 1})
+    if duplicates:
+        fail(f"Duplicate approved aliases: {set(duplicates)}")
+
+    missing = set(packet_aliases) - set(approved)
+    extra = set(approved) - set(packet_aliases)
+    errors = []
+    if missing:
+        errors.append(f"Missing: {missing}")
+    if extra:
+        errors.append(f"Extra: {extra}")
+    if record.get("approvedAssetCount") != len(packet_aliases):
+        errors.append(
+            f"approvedAssetCount {record.get('approvedAssetCount')} != "
+            f"packet asset count {len(packet_aliases)}"
+        )
+    if record.get("approvedAssetCount") != len(approved):
+        errors.append(
+            f"approvedAssetCount {record.get('approvedAssetCount')} != "
+            f"approvedAliases count {len(approved)}"
+        )
+    if errors:
+        fail("Approved alias mismatch. " + ". ".join(errors))
+
+
 def validate_packet_hashes(packet: dict, record: dict, root: Path) -> None:
     packet_path = root / "art-packet.json"
     actual_packet_sha = sha256_bytes(packet_path.read_bytes())
@@ -178,6 +209,7 @@ def main() -> None:
 
     validate_approval_record(record, len(packet["assets"]))
     validate_aliases_sorted(record)
+    validate_approved_aliases_parity(packet, record)
     validate_all_approved(packet)
     validate_packet_hashes(packet, record, root)
     validate_source_set_sha(packet, record, root)

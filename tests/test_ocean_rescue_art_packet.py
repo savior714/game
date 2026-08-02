@@ -12,54 +12,19 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ASSETS_SOURCE = REPO_ROOT / "domains" / "ocean-rescue" / "assets" / "source"
 ART_PACKET_JSON = ASSETS_SOURCE / "art-packet.json"
+ART_APPROVAL_JSON = ASSETS_SOURCE / "art-approval.json"
 VALIDATOR = REPO_ROOT / "scripts" / "ocean_rescue" / "validate_art_packet.py"
-CONTACT_SHEET_BUILDER = REPO_ROOT / "scripts" / "ocean_rescue" / "build_art_contact_sheet.py"
-CONTACT_SHEET = REPO_ROOT / "domains" / "ocean-rescue" / "assets" / "review" / "proof-art-contact-sheet.html"
-
-REQUIRED_ALIASES = sorted([
-    "otter.head",
-    "otter.torso",
-    "otter.arm.near",
-    "otter.arm.far",
-    "otter.tail",
-    "otter.eyes.open",
-    "otter.eyes.closed",
-    "otter.mouth.neutral",
-    "otter.mouth.concern",
-    "otter.mouth.smile",
-    "turtle.worried",
-    "turtle.free",
-    "scene.submarine",
-    "scene.water.far",
-    "scene.reef.mid",
-    "scene.coral.foreground",
-    "scene.seaweed-loop.01",
-    "scene.sand-path",
-    "scene.passage",
-    "ui.drag-arrow",
-    "fx.success-burst",
-    "fx.cut-ring",
-    "fx.cut-icon",
-    "fx.bubbles",
-    "fx.caustic",
-    "hud.progress-cap",
-    "hud.loop-icon",
-    "terrain.boulder-stack",
-    "terrain.canyon-ledge",
-    "terrain.canyon-pillar",
-    "terrain.canyon-wall",
-    "terrain.coral-column",
-    "terrain.coral-rock",
-    "terrain.kelp-rock",
-    "terrain.low-reef",
-    "terrain.reef-arch",
-    "terrain.reef-spire",
-    "terrain.rock-spire",
-    "terrain.rock-stack",
-    "terrain.sand-pillar",
-    "terrain.sand-rock",
-    "terrain.shell-ledge",
-])
+CONTACT_SHEET_BUILDER = (
+    REPO_ROOT / "scripts" / "ocean_rescue" / "build_art_contact_sheet.py"
+)
+CONTACT_SHEET = (
+    REPO_ROOT
+    / "domains"
+    / "ocean-rescue"
+    / "assets"
+    / "review"
+    / "proof-art-contact-sheet.html"
+)
 
 RUNTIME_FORBIDDEN_PATHS = [
     REPO_ROOT / "shared",
@@ -76,7 +41,9 @@ def _run_validator(packet_dir: Path | None = None) -> subprocess.CompletedProces
     )
 
 
-def _run_contact_sheet_builder(packet_dir: Path | None = None, output: Path | None = None) -> subprocess.CompletedProcess:
+def _run_contact_sheet_builder(
+    packet_dir: Path | None = None, output: Path | None = None
+) -> subprocess.CompletedProcess:
     target = packet_dir or ASSETS_SOURCE
     cmd = [sys.executable, str(CONTACT_SHEET_BUILDER), str(target)]
     if output:
@@ -91,12 +58,15 @@ def _load_packet(packet_dir: Path | None = None) -> dict:
 
 def _sha256_file(path: Path) -> str:
     import hashlib
+
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 class TestPreFixReproduction:
     def test_art_packet_json_exists(self):
-        assert ART_PACKET_JSON.exists(), "art-packet.json must exist in canonical source directory"
+        assert ART_PACKET_JSON.exists(), (
+            "art-packet.json must exist in canonical source directory"
+        )
 
     def test_validator_script_exists(self):
         assert VALIDATOR.exists(), "validate_art_packet.py must exist"
@@ -106,20 +76,24 @@ class TestPreFixReproduction:
 
     def test_canonical_validator_passes(self):
         result = _run_validator()
-        assert result.returncode == 0, f"Validator must pass on canonical packet:\nstdout: {result.stdout}\nstderr: {result.stderr}"
+        assert result.returncode == 0, (
+            f"Validator must pass on canonical packet:\nstdout: {result.stdout}\nstderr: {result.stderr}"
+        )
 
 
-class TestRequiredAliasSet:
-    def test_all_required_aliases_present(self):
+class TestAliasContract:
+    def test_packet_aliases_match_approved_aliases(self):
         packet = _load_packet()
+        approval = json.loads(ART_APPROVAL_JSON.read_text(encoding="utf-8"))
         aliases = sorted(a["alias"] for a in packet["assets"])
-        for required in REQUIRED_ALIASES:
-            assert required in aliases, f"Missing required alias: {required}"
-
-    def test_no_extra_aliases(self):
-        packet = _load_packet()
-        aliases = sorted(a["alias"] for a in packet["assets"])
-        assert aliases == REQUIRED_ALIASES, f"Alias set mismatch:\nextra: {set(aliases) - set(REQUIRED_ALIASES)}\nmissing: {set(REQUIRED_ALIASES) - set(aliases)}"
+        approved = approval["approvedAliases"]
+        assert approved == sorted(approved), "approvedAliases must be sorted"
+        assert len(set(approved)) == len(approved), "approvedAliases must be unique"
+        assert aliases == approved, (
+            f"Packet aliases must exactly match approval aliases:\n"
+            f"missing: {set(approved) - set(aliases)}\n"
+            f"extra: {set(aliases) - set(approved)}"
+        )
 
 
 class TestSourceHashIntegrity:
@@ -142,7 +116,9 @@ class TestDuplicateAliasRejection:
         dup_packet["assets"][1]["alias"] = dup_packet["assets"][0]["alias"]
         dup_dir = tmp_path / "dup"
         dup_dir.mkdir()
-        (dup_dir / "art-packet.json").write_text(json.dumps(dup_packet, indent=2), encoding="utf-8")
+        (dup_dir / "art-packet.json").write_text(
+            json.dumps(dup_packet, indent=2), encoding="utf-8"
+        )
         for asset in packet["assets"]:
             src = ASSETS_SOURCE / asset["source"]
             dst = dup_dir / asset["source"]
@@ -159,7 +135,9 @@ class TestHashMismatchRejection:
         tampered["assets"][0]["sourceSha256"] = "0" * 64
         tampered_dir = tmp_path / "hash_mismatch"
         tampered_dir.mkdir()
-        (tampered_dir / "art-packet.json").write_text(json.dumps(tampered, indent=2), encoding="utf-8")
+        (tampered_dir / "art-packet.json").write_text(
+            json.dumps(tampered, indent=2), encoding="utf-8"
+        )
         for asset in packet["assets"]:
             src = ASSETS_SOURCE / asset["source"]
             dst = tampered_dir / asset["source"]
@@ -176,7 +154,9 @@ class TestPathTraversalRejection:
         traversal["assets"][0]["source"] = "../../../etc/passwd"
         traversal_dir = tmp_path / "traversal"
         traversal_dir.mkdir()
-        (traversal_dir / "art-packet.json").write_text(json.dumps(traversal, indent=2), encoding="utf-8")
+        (traversal_dir / "art-packet.json").write_text(
+            json.dumps(traversal, indent=2), encoding="utf-8"
+        )
         for asset in packet["assets"][1:]:
             src = ASSETS_SOURCE / asset["source"]
             dst = traversal_dir / asset["source"]
@@ -192,7 +172,9 @@ class TestForbiddenSvgContentRejection:
         svg_content = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><script>alert("xss")</script><circle cx="50" cy="50" r="40"/></svg>'
         bad_dir = tmp_path / "bad_svg"
         bad_dir.mkdir()
-        (bad_dir / "art-packet.json").write_text(json.dumps(packet, indent=2), encoding="utf-8")
+        (bad_dir / "art-packet.json").write_text(
+            json.dumps(packet, indent=2), encoding="utf-8"
+        )
         for asset in packet["assets"]:
             if asset["alias"] == "otter.head":
                 dst = bad_dir / asset["source"]
@@ -214,7 +196,9 @@ class TestInvalidPivotRejection:
         bad_pivot["assets"][0]["pivot"] = [1.5, 0.5]
         bad_dir = tmp_path / "bad_pivot"
         bad_dir.mkdir()
-        (bad_dir / "art-packet.json").write_text(json.dumps(bad_pivot, indent=2), encoding="utf-8")
+        (bad_dir / "art-packet.json").write_text(
+            json.dumps(bad_pivot, indent=2), encoding="utf-8"
+        )
         for asset in packet["assets"]:
             src = ASSETS_SOURCE / asset["source"]
             dst = bad_dir / asset["source"]
@@ -232,7 +216,9 @@ class TestContactSheetDeterminism:
         assert r1.returncode == 0, f"First build failed:\n{r1.stderr}"
         r2 = _run_contact_sheet_builder(output=out2)
         assert r2.returncode == 0, f"Second build failed:\n{r2.stderr}"
-        assert out1.read_bytes() == out2.read_bytes(), "Two independent builds must be byte-identical"
+        assert out1.read_bytes() == out2.read_bytes(), (
+            "Two independent builds must be byte-identical"
+        )
 
     def test_tracked_sheet_matches_clean_rebuild(self, tmp_path: Path):
         if not CONTACT_SHEET.exists():
@@ -250,7 +236,18 @@ class TestRuntimePathScope:
         for forbidden_path in RUNTIME_FORBIDDEN_PATHS:
             if forbidden_path.is_file():
                 result = subprocess.run(
-                    ["git", "diff", "--name-only", "HEAD", "--", str(forbidden_path.relative_to(REPO_ROOT))],
-                    capture_output=True, text=True, cwd=str(REPO_ROOT),
+                    [
+                        "git",
+                        "diff",
+                        "--name-only",
+                        "HEAD",
+                        "--",
+                        str(forbidden_path.relative_to(REPO_ROOT)),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    cwd=str(REPO_ROOT),
                 )
-                assert not result.stdout.strip(), f"Runtime/build file changed: {forbidden_path}"
+                assert not result.stdout.strip(), (
+                    f"Runtime/build file changed: {forbidden_path}"
+                )

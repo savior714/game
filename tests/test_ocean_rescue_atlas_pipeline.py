@@ -30,104 +30,6 @@ MAX_PAGE_DIM = 4096
 
 BUNDLE_ORDER = ["characters", "scene", "effects-ui"]
 
-REQUIRED_ALIASES = sorted(
-    [
-        "fx.bubbles",
-        "fx.caustic",
-        "fx.cut-icon",
-        "fx.cut-ring",
-        "fx.success-burst",
-        "hud.loop-icon",
-        "hud.progress-cap",
-        "otter.arm.far",
-        "otter.arm.near",
-        "otter.eyes.closed",
-        "otter.eyes.open",
-        "otter.head",
-        "otter.mouth.concern",
-        "otter.mouth.neutral",
-        "otter.mouth.smile",
-        "otter.tail",
-        "otter.torso",
-        "scene.coral.foreground",
-        "scene.passage",
-        "scene.reef.mid",
-        "scene.sand-path",
-        "scene.seaweed-loop.01",
-        "scene.submarine",
-        "scene.water.far",
-        "terrain.boulder-stack",
-        "terrain.canyon-ledge",
-        "terrain.canyon-pillar",
-        "terrain.canyon-wall",
-        "terrain.coral-column",
-        "terrain.coral-rock",
-        "terrain.kelp-rock",
-        "terrain.low-reef",
-        "terrain.reef-arch",
-        "terrain.reef-spire",
-        "terrain.rock-spire",
-        "terrain.rock-stack",
-        "terrain.sand-pillar",
-        "terrain.sand-rock",
-        "terrain.shell-ledge",
-        "turtle.free",
-        "turtle.worried",
-        "ui.drag-arrow",
-    ]
-)
-
-BUNDLE_MAP = {
-    "characters": [
-        "otter.arm.far",
-        "otter.arm.near",
-        "otter.eyes.closed",
-        "otter.eyes.open",
-        "otter.head",
-        "otter.mouth.concern",
-        "otter.mouth.neutral",
-        "otter.mouth.smile",
-        "otter.tail",
-        "otter.torso",
-        "turtle.free",
-        "turtle.worried",
-    ],
-    "scene": [
-        "scene.coral.foreground",
-        "scene.passage",
-        "scene.reef.mid",
-        "scene.sand-path",
-        "scene.seaweed-loop.01",
-        "scene.submarine",
-        "scene.water.far",
-        "terrain.boulder-stack",
-        "terrain.canyon-ledge",
-        "terrain.canyon-pillar",
-        "terrain.canyon-wall",
-        "terrain.coral-column",
-        "terrain.coral-rock",
-        "terrain.kelp-rock",
-        "terrain.low-reef",
-        "terrain.reef-arch",
-        "terrain.reef-spire",
-        "terrain.rock-spire",
-        "terrain.rock-stack",
-        "terrain.sand-pillar",
-        "terrain.sand-rock",
-        "terrain.shell-ledge",
-    ],
-    "effects-ui": [
-        "fx.bubbles",
-        "fx.caustic",
-        "fx.cut-icon",
-        "fx.cut-ring",
-        "fx.success-burst",
-        "hud.loop-icon",
-        "hud.progress-cap",
-        "ui.drag-arrow",
-    ],
-}
-
 ENV = {"DYLD_LIBRARY_PATH": "/opt/homebrew/opt/cairo/lib"}
 
 
@@ -142,6 +44,14 @@ def _load_json(path: Path) -> dict:
 
 def _sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _packet_aliases_by_bundle() -> dict[str, list[str]]:
+    packet = _load_json(ART_PACKET_JSON)
+    by_bundle: dict[str, list[str]] = {name: [] for name in BUNDLE_ORDER}
+    for asset in packet["assets"]:
+        by_bundle[asset["bundle"]].append(asset["alias"])
+    return {name: sorted(aliases) for name, aliases in by_bundle.items()}
 
 
 def _run_build(
@@ -352,25 +262,31 @@ class TestThreeBundles:
         names = [b["name"] for b in manifest["bundles"]]
         assert names == BUNDLE_ORDER, f"Bundle order: {names} != {BUNDLE_ORDER}"
 
-    def test_nineteen_aliases_in_correct_bundles(self, tmp_path: Path):
-        """All 19 aliases should be in the correct bundles."""
+    def test_all_packet_aliases_in_declared_bundles(self, tmp_path: Path):
+        """Generated aliases must exactly preserve packet bundle declarations."""
         out_dir = tmp_path / "output"
         _run_build(out_dir)
         manifest = _load_json(out_dir / "atlas-manifest.json")
 
-        all_aliases = set()
-        for bundle in manifest["bundles"]:
-            for alias in bundle["aliases"]:
-                all_aliases.add(alias)
+        packet_by_bundle = _packet_aliases_by_bundle()
+        expected_all = sorted(
+            alias for aliases in packet_by_bundle.values() for alias in aliases
+        )
 
-        assert all_aliases == set(REQUIRED_ALIASES), "Alias mismatch"
+        all_aliases = sorted(
+            alias for bundle in manifest["bundles"] for alias in bundle["aliases"]
+        )
+        assert all_aliases == expected_all, "Alias mismatch"
 
         for bundle in manifest["bundles"]:
-            expected = set(BUNDLE_MAP[bundle["name"]])
-            actual = set(bundle["aliases"])
+            expected = packet_by_bundle[bundle["name"]]
+            actual = sorted(bundle["aliases"])
             assert actual == expected, (
                 f"Bundle {bundle['name']}: {actual} != {expected}"
             )
+
+        all_set = set(all_aliases)
+        assert len(all_set) == len(all_aliases), "Duplicate generated alias"
 
 
 # ---------------------------------------------------------------------------

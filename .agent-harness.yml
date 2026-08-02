@@ -1,0 +1,23 @@
+schema_version: 1
+template_generation: v2-foundation
+
+project:
+  name: "AidenGame"
+  slug: "game"
+  package_tool: "uv"
+
+git:
+  canonical_branch: "main"
+  main_only: true
+  write_concurrency: 1
+  remote_advance_policy: overlap-based
+
+capabilities:
+  runtime_visual: false
+  database: false
+  content_provenance: false
+  regulated_domain: false
+
+context:
+  max_additional_documents: 3
+  task_prompt_max_lines: 700

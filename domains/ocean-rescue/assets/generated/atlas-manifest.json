@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "sourcePacketSha256": "5a3e2f8cf2ee1bdd62ebdacae7836907baa222966822553817aa4ffc74d2542f",
-  "approvalRecordSha256": "39cda1702e89d99cb35021cef9ee55a45bd2edcf86730773b499d17dd3b9a2cd",
-  "sourceSetSha256": "e45009b2953a3f6321afc3cab5a20b2f3588f1fdda03b0d1244db17514e87588",
+  "sourcePacketSha256": "320b6f6dae13e161e00ea9e1ba79e837096b9cfd1e2e443af0b1c20882796ea8",
+  "approvalRecordSha256": "7921e21e25098a36593117a5e3cabb525726cd4afc07364a040d9f834250ddd4",
+  "sourceSetSha256": "f32e7a5d40d366ebd0a4af89515e753f0436a9b44b8cdb2a2ecf7b149ae38713",
   "toolchain": {
     "cairosvg": "2.9.0",
     "pillow": "12.3.0",
@@ -44,10 +44,10 @@
           "index": 0,
           "image": "characters-0.png",
           "spritesheet": "characters-0.json",
-          "width": 3134,
+          "width": 3188,
           "height": 354,
-          "imageSha256": "7caf377fedcbae0b05d89d42ab72ff3d469e655994d4d4990cbfdd8cf6abd35a",
-          "spritesheetSha256": "e3a84a4d74ce667c376870797234faea38cfc93f3557210fa5df0cf92681a64f",
+          "imageSha256": "0118213c5ba4bf3da4310b6d954fe990a5317d27b37400f0106a72caf55396d4",
+          "spritesheetSha256": "9c75969c3cbc6b037604dfbef6d81da28c76a26b2242f7070182c0aeb2bfadd9",
           "aliases": [
             "crab.free",
             "crab.trapped",
@@ -66,7 +66,7 @@
           ]
         }
       ],
-      "bundleSha256": "1f14fa715dc439a3fca70366c30d4e7aafe7225d80928abee4dc048964cce7fb"
+      "bundleSha256": "30f00f975818a0ebe86383cbf58bb4d01178363c6414eb627a3d95a6132f1126"
     },
     {
       "name": "scene",
@@ -190,8 +190,8 @@
     }
   ],
   "files": {
-    "characters/characters-0.json": "e3a84a4d74ce667c376870797234faea38cfc93f3557210fa5df0cf92681a64f",
-    "characters/characters-0.png": "7caf377fedcbae0b05d89d42ab72ff3d469e655994d4d4990cbfdd8cf6abd35a",
+    "characters/characters-0.json": "9c75969c3cbc6b037604dfbef6d81da28c76a26b2242f7070182c0aeb2bfadd9",
+    "characters/characters-0.png": "0118213c5ba4bf3da4310b6d954fe990a5317d27b37400f0106a72caf55396d4",
     "effects-ui/effects-ui-0.json": "d27ee6522bcb61eef70a7ab42de7d6694ae92d1fd9db4a6bfe7a723c5d8ee3bc",
     "effects-ui/effects-ui-0.png": "abd12921a225a28d225a57d0a4b25aaadbf9c2497b586b190ff94958a64c7687",
     "pixi-assets-manifest.json": "6a289c5b258880597e129260ce86a5c3c1f89e82df46f337ce6177df668a8dad",

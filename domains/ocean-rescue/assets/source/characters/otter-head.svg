@@ -1,15 +1,203 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
   <g id="otter-head">
-    <ellipse cx="100" cy="110" rx="70" ry="65" fill="#8B6F47" stroke="#5C4A2E" stroke-width="3"/>
-    <ellipse cx="100" cy="115" rx="50" ry="45" fill="#C4A265" stroke="#5C4A2E" stroke-width="2"/>
-    <ellipse cx="65" cy="90" rx="18" ry="22" fill="#8B6F47" stroke="#5C4A2E" stroke-width="2"/>
-    <ellipse cx="135" cy="90" rx="18" ry="22" fill="#8B6F47" stroke="#5C4A2E" stroke-width="2"/>
-    <ellipse cx="65" cy="85" rx="10" ry="13" fill="#C4A265"/>
-    <ellipse cx="135" cy="85" rx="10" ry="13" fill="#C4A265"/>
-    <circle cx="100" cy="105" r="8" fill="#3D2B1F" stroke="#2A1A0E" stroke-width="1.5"/>
-    <ellipse cx="100" cy="103" rx="3" ry="2" fill="#6B4F3A"/>
-    <ellipse cx="80" cy="120" rx="12" ry="8" fill="#E8B4B8" opacity="0.6"/>
-    <ellipse cx="120" cy="120" rx="12" ry="8" fill="#E8B4B8" opacity="0.6"/>
-    <path d="M88 128 Q100 138 112 128" fill="none" stroke="#5C4A2E" stroke-width="2.5" stroke-linecap="round"/>
+    <g id="otter-head-ears">
+      <path
+        d="M53 72
+           C35 72 23 61 24 47
+           C25 32 39 21 55 24
+           C68 27 76 39 73 53
+           C71 64 64 70 53 72Z"
+        fill="#765037"
+        stroke="#243746"
+        stroke-width="5"
+        stroke-linejoin="round"
+      />
+      <path
+        d="M147 72
+           C165 72 177 61 176 47
+           C175 32 161 21 145 24
+           C132 27 124 39 127 53
+           C129 64 136 70 147 72Z"
+        fill="#765037"
+        stroke="#243746"
+        stroke-width="5"
+        stroke-linejoin="round"
+      />
+      <path
+        d="M52 58
+           C43 58 37 53 38 46
+           C39 39 45 35 52 36
+           C59 37 63 43 61 50
+           C60 55 57 58 52 58Z"
+        fill="#D89987"
+      />
+      <path
+        d="M148 58
+           C157 58 163 53 162 46
+           C161 39 155 35 148 36
+           C141 37 137 43 139 50
+           C140 55 143 58 148 58Z"
+        fill="#D89987"
+      />
+    </g>
+
+    <g id="otter-head-silhouette">
+      <path
+        d="M100 27
+           C130 27 157 40 171 64
+           C186 89 185 124 171 151
+           C157 176 131 187 100 187
+           C69 187 43 176 29 151
+           C15 124 14 89 29 64
+           C43 40 70 27 100 27Z"
+        fill="#8A6246"
+        stroke="#243746"
+        stroke-width="6"
+        stroke-linejoin="round"
+      />
+
+      <path
+        d="M51 75
+           C57 48 77 36 100 36
+           C123 36 143 48 149 75
+           C137 65 120 60 100 60
+           C80 60 63 65 51 75Z"
+        fill="#A97854"
+      />
+
+      <path
+        d="M34 112
+           C35 142 53 166 79 177
+           C59 172 44 161 34 146
+           C25 132 22 115 24 98
+           C26 103 29 108 34 112Z"
+        fill="#704B36"
+        opacity="0.72"
+      />
+
+      <path
+        d="M166 112
+           C165 142 147 166 121 177
+           C141 172 156 161 166 146
+           C175 132 178 115 176 98
+           C174 103 171 108 166 112Z"
+        fill="#704B36"
+        opacity="0.72"
+      />
+    </g>
+
+    <g id="otter-head-muzzle">
+      <ellipse
+        cx="77"
+        cy="127"
+        rx="37"
+        ry="32"
+        fill="#E6C994"
+        stroke="#243746"
+        stroke-width="3"
+      />
+      <ellipse
+        cx="123"
+        cy="127"
+        rx="37"
+        ry="32"
+        fill="#E6C994"
+        stroke="#243746"
+        stroke-width="3"
+      />
+      <ellipse
+        cx="100"
+        cy="147"
+        rx="42"
+        ry="27"
+        fill="#EED7A8"
+      />
+
+      <path
+        d="M88 107
+           C91 100 97 97 100 97
+           C103 97 109 100 112 107
+           C113 114 108 121 100 123
+           C92 121 87 114 88 107Z"
+        fill="#2D3037"
+        stroke="#172631"
+        stroke-width="3"
+        stroke-linejoin="round"
+      />
+
+      <ellipse
+        cx="96"
+        cy="104"
+        rx="4"
+        ry="2.5"
+        fill="#FFFFFF"
+        opacity="0.58"
+      />
+    </g>
+
+    <g id="otter-head-details">
+      <circle cx="67" cy="130" r="2.3" fill="#5E4636"/>
+      <circle cx="74" cy="136" r="2.1" fill="#5E4636"/>
+      <circle cx="61" cy="139" r="1.9" fill="#5E4636"/>
+
+      <circle cx="133" cy="130" r="2.3" fill="#5E4636"/>
+      <circle cx="126" cy="136" r="2.1" fill="#5E4636"/>
+      <circle cx="139" cy="139" r="1.9" fill="#5E4636"/>
+
+      <path
+        d="M58 132 C45 128 35 128 25 131"
+        fill="none"
+        stroke="#344955"
+        stroke-width="2.5"
+        stroke-linecap="round"
+      />
+      <path
+        d="M59 140 C45 140 34 144 25 149"
+        fill="none"
+        stroke="#344955"
+        stroke-width="2.5"
+        stroke-linecap="round"
+      />
+      <path
+        d="M142 132 C155 128 165 128 175 131"
+        fill="none"
+        stroke="#344955"
+        stroke-width="2.5"
+        stroke-linecap="round"
+      />
+      <path
+        d="M141 140 C155 140 166 144 175 149"
+        fill="none"
+        stroke="#344955"
+        stroke-width="2.5"
+        stroke-linecap="round"
+      />
+
+      <ellipse
+        cx="50"
+        cy="120"
+        rx="12"
+        ry="7"
+        fill="#E7948B"
+        opacity="0.22"
+      />
+      <ellipse
+        cx="150"
+        cy="120"
+        rx="12"
+        ry="7"
+        fill="#E7948B"
+        opacity="0.22"
+      />
+
+      <path
+        d="M74 48 C82 41 91 38 100 38"
+        fill="none"
+        stroke="#C18D65"
+        stroke-width="4"
+        stroke-linecap="round"
+        opacity="0.55"
+      />
+    </g>
   </g>
 </svg>

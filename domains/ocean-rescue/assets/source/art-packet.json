@@ -22,10 +22,10 @@
         0.5,
         0.55
       ],
-      "authoringMethod": "manual-vector",
+      "authoringMethod": "frontier-svg-human-approved",
       "approvalState": "approved",
-      "revisionNote": "Initial proof-art packet: sea otter head with ears, eyes area, nose, cheeks, and mouth",
-      "sourceSha256": "8ac99242439cbbe400cf154349cc5729b409ca11b4177ea92e6e4eed67713dbb"
+      "revisionNote": "Human-approved frontier SVG handoff: readable sea-otter ears, silhouette, cream muzzle and nose at the production face-rig size; preserves separate live eye and mouth overlays.",
+      "sourceSha256": "87e6b35d67e0d856d389570614bb47abef9f6271402e881660f98f400e40c5ec"
     },
     {
       "id": "otter-torso-01",

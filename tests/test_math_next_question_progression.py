@@ -1,4 +1,4 @@
-"""Focused browser contract for the math next-question control."""
+"""Focused browser contracts for math progression and static controls."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import threading
 from pathlib import Path
 
 import pytest
-from playwright.sync_api import Page, expect, sync_playwright
+from playwright.sync_api import Dialog, Page, expect, sync_playwright
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -79,4 +79,93 @@ def test_next_button_advances_exactly_one_question(
     expect(count).to_have_text("2")
     expect(next_button).to_be_hidden()
     assert question.inner_text().strip() != first_question
+    assert page_errors == []
+
+
+@pytest.mark.browser
+def test_stats_controls_open_close_reset_and_backdrop(
+    math_page: tuple[Page, list[str]],
+) -> None:
+    page, page_errors = math_page
+    modal = page.locator("#stats-modal")
+    attempts = page.locator("#stats-tbody tr").first.locator("td").nth(1)
+
+    page.evaluate(
+        """
+        stats = emptyStats();
+        stats['+'].levels[0].attempts = 3;
+        stats['+'].levels[0].correct = 2;
+        stats['+'].levels[0].totalTime = 9;
+        saveStats();
+        bindStaticControls();
+        """
+    )
+
+    expect(page.locator("#stats-btn")).to_have_attribute(
+        "data-math-control-bound", "true"
+    )
+    page.locator("#stats-btn").click()
+    expect(modal).to_be_visible()
+    expect(page.locator("#stats-tbody tr")).to_have_count(3)
+    expect(attempts).to_have_text("3")
+
+    page.locator("#close-stats-btn").click()
+    expect(modal).to_be_hidden()
+
+    page.locator("#stats-btn").click()
+    expect(modal).to_be_visible()
+    modal.click(position={"x": 5, "y": 5})
+    expect(modal).to_be_hidden()
+
+    page.locator("#stats-btn").click()
+    expect(modal).to_be_visible()
+
+    dialog_messages: list[str] = []
+
+    def accept_reset(dialog: Dialog) -> None:
+        dialog_messages.append(dialog.message)
+        dialog.accept()
+
+    page.once("dialog", accept_reset)
+    page.locator("#reset-stats-btn").click()
+
+    expect(attempts).to_have_text("0")
+    assert dialog_messages == ["누적 기록을 모두 지울까요?"]
+    stored_attempts = page.evaluate(
+        "JSON.parse(localStorage.getItem(STATS_KEY))['+'].levels[0].attempts"
+    )
+    assert stored_attempts == 0
+    assert page_errors == []
+
+
+@pytest.mark.browser
+def test_restart_button_starts_a_fresh_session(
+    math_page: tuple[Page, list[str]],
+) -> None:
+    page, page_errors = math_page
+    game_area = page.locator("#game-area")
+    result_screen = page.locator("#result-screen")
+
+    page.evaluate(
+        """
+        score = 7;
+        document.getElementById('q-score').textContent = '7';
+        showResult();
+        bindStaticControls();
+        """
+    )
+
+    expect(game_area).to_be_hidden()
+    expect(result_screen).to_be_visible()
+    expect(page.locator("#restart-btn")).to_have_attribute(
+        "data-math-control-bound", "true"
+    )
+
+    page.locator("#restart-btn").click()
+
+    expect(result_screen).to_be_hidden()
+    expect(game_area).to_be_visible()
+    expect(page.locator("#q-count")).to_have_text("1")
+    expect(page.locator("#q-score")).to_have_text("0")
+    expect(page.locator("#next-btn")).to_be_hidden()
     assert page_errors == []

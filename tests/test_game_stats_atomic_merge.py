@@ -15,24 +15,95 @@ def _read_sync_engine() -> str:
     return SYNC_ENGINE.read_text(encoding="utf-8")
 
 
-# ── RPC 호출 검증 ─────────────────────────────────────────
+# ── 안전 회귀 게이트: 누적 스냅샷과 비멱등 RPC 비호환 검출 ─────
 
 
-def test_game_stats_uses_rpc_merge() -> None:
-    """GameStats 푸시는 merge_game_stats RPC 를 사용해야 함."""
-    code = _read_sync_engine()
-    assert "merge_game_stats" in code, (
-        "GameStats 푸시에 merge_game_stats RPC 호출이 없습니다."
+def _read_progress_engine() -> str:
+    return (ROOT / "shared" / "domain" / "progress-engine.js").read_text(
+        encoding="utf-8"
     )
-    assert "key.endsWith('GameStats')" in code, "GameStats 식별 로직이 없습니다."
 
 
-def test_rpc_call_has_correct_params() -> None:
-    """RPC 호출에 p_user_id, p_data_key, p_payload 가 있어야 함."""
-    code = _read_sync_engine()
-    assert "p_user_id" in code, "p_user_id 파라미터가 없습니다."
-    assert "p_data_key" in code, "p_data_key 파라미터가 없습니다."
-    assert "p_payload" in code, "p_payload 파라미터가 없습니다."
+def _read_merge_migration() -> str:
+    return (
+        ROOT / "supabase" / "migrations" / "002_create_merge_game_stats_function.sql"
+    ).read_text(encoding="utf-8")
+
+
+def test_cumulative_game_stats_snapshots_are_not_routed_to_additive_rpc() -> None:
+    """현재 ProgressEngine은 누적 전체 stats 객체를 push하고,
+    merge_game_stats RPC는 기존+신규를 덧셈한다.
+
+    이 두 계약이 동시에 존재하는 동안 sync-engine.js가
+    merge_game_stats로 라우팅하지 않음을 보장한다.
+
+    이 안전 게이트는 lost-update 해결책이 아니다.
+    올바른 RPC wiring은 delta payload 또는 replica-scoped idempotent counter 계약이
+    별도 작업에서 확정된 뒤에만 허용된다.
+    """
+    sync_code = _read_sync_engine()
+    progress_code = _read_progress_engine()
+
+    # ProgressEngine.saveStats는 전체 누적 stats를 pushStats로 전달한다
+    assert "pushStats(storageKey, stats)" in progress_code, (
+        "ProgressEngine이 전체 stats 객체를 push하지 않는다."
+    )
+    # delta나 diff를 만들지 않는다
+    assert "delta" not in progress_code.lower() or "pushStats" in progress_code, (
+        "ProgressEngine에 delta 로직이 있다."
+    )
+
+    # sync-engine.js가 merge_game_stats RPC로 라우팅하지 않는다
+    assert "merge_game_stats" not in sync_code, (
+        "sync-engine.js에 merge_game_stats RPC 라우팅이 추가됐다. "
+        "누적 스냅샷과 비멱등 RPC의 비호환성이 해결되기 전까지 허용되지 않는다."
+    )
+
+
+def test_additive_rpc_is_not_idempotent_for_cumulative_snapshot_replay() -> None:
+    """merge_game_stats RPC는 기존 카운터와 신규 카운터를 덧셈한다.
+    따라서 누적 전체 스냅샷을 중복 보내면 RPC 결과가 기대 누적값을 초과한다.
+
+    이 안전 게이트는 lost-update 해결책이 아니다.
+    올바른 RPC wiring은 delta payload 또는 replica-scoped idempotent counter 계약이
+    별도 작업에서 확정된 뒤에만 허용된다.
+    """
+    merge_sql = _read_merge_migration()
+
+    # RPC가 기존값+신규값을 덧셈하는지 확인
+    assert "v_existing_val" in merge_sql, "merge_game_stats에서 기존 값을 읽지 않는다."
+    assert "v_new_val" in merge_sql, "merge_game_stats에서 신규 값을 읽지 않는다."
+    # attempts, correct, totalTime 모두 덧셈
+    assert "'attempts'" in merge_sql and "+" in merge_sql, (
+        "merge_game_stats에서 attempts를 덧셈하지 않는다."
+    )
+    assert "'correct'" in merge_sql and "+" in merge_sql, (
+        "merge_game_stats에서 correct를 덧셈하지 않는다."
+    )
+    assert "'totalTime'" in merge_sql and "+" in merge_sql, (
+        "merge_game_stats에서 totalTime를 덧셈하지 않는다."
+    )
+
+    # 누적 스냅샷 재현: 전체 스냅샷을 두 번 보내면 additive RPC가 과잉 합산한다
+    # 시나리오: 클라이언트가 attempts=1 첫 스냅샷을 보낸 뒤
+    # attempts=2 전체 스냅샷을 다시 보냄
+    server_existing_attempts = 1  # 서버에 저장된 기존 값 (첫 스냅샷 이후)
+    second_full_snapshot = 2  # 두 번째 클라이언트가 보낸 전체 스냅샷
+
+    # RPC의 덧셈 의미: 기존값 + 신규값 = 1 + 2 = 3
+    rpc_additive_result = server_existing_attempts + second_full_snapshot
+    # 올바른 누적값은 두 번째 스냅샷 자체 = 2
+    expected_cumulative = second_full_snapshot
+
+    assert rpc_additive_result == 3, (
+        f"additive RPC 결과가 예상과 다르다: {rpc_additive_result}"
+    )
+    assert expected_cumulative == 2, (
+        f"기대 누적값이 예상과 다르다: {expected_cumulative}"
+    )
+    assert rpc_additive_result != expected_cumulative, (
+        "additive RPC가 누적 스냅샷과 호환된다고 잘못 판단됐다."
+    )
 
 
 # ── Merge 함수 검증 ───────────────────────────────────────

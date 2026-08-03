@@ -72,6 +72,22 @@ PRODUCTION_PATHS = (
     "scripts/ocean_rescue",
 )
 
+PLAN_DOC = (
+    REPO_ROOT / "docs" / "plans" / "PLAN_ocean_rescue_vite_esm_typescript_migration.md"
+)
+PHASE3_EVIDENCE = (
+    REPO_ROOT
+    / "docs"
+    / "evidence"
+    / "ocean-rescue"
+    / "migration"
+    / "phase-3"
+    / "shadow-production-bundle.md"
+)
+
+WP20_IMPLEMENTATION_BASE = "5b2e7c880146cec14568daef72d30a41406fc0fc"
+WP20_IMPLEMENTATION_COMMIT = "33f3d43d7e7c83bcddda9edbfdebfe2934f5f33b"
+
 
 def _load_manifest() -> dict:
     return json.loads(MANIFEST.read_text(encoding="utf-8"))
@@ -508,3 +524,24 @@ def test_production_artifacts_unchanged_by_shadow_build() -> None:
         text=True,
     )
     assert result.returncode == 0, "product path diff must be empty"
+
+
+# --- migration documentation state ---
+
+
+def test_migration_documentation_state() -> None:
+    plan = PLAN_DOC.read_text(encoding="utf-8")
+    evidence = PHASE3_EVIDENCE.read_text(encoding="utf-8")
+
+    assert "WP-20: COMPLETE" in plan
+    assert "WP-03: NOT_STARTED" in plan
+    assert "Shadow bundle state: SHADOW_BUNDLE" in plan
+    assert "Next executable work package: WP-03" in plan
+    assert "WP-21 remains blocked until WP-03 completes" in plan
+
+    assert f"Implementation base origin/main: `{WP20_IMPLEMENTATION_BASE}`" in evidence
+    assert f"WP-20 implementation commit: `{WP20_IMPLEMENTATION_COMMIT}`" in evidence
+    misleading = f"Final origin/main: {WP20_IMPLEMENTATION_BASE}"
+    assert misleading not in evidence, (
+        "evidence must not record the implementation base as Final origin/main"
+    )

@@ -7,7 +7,7 @@
 - **Scope:** Ocean Rescue development-source migration from global-namespace JavaScript to ESM/TypeScript/Vite
 - **Execution model:** sequential bounded work packages
 - **Current phase:** PHASE_4_READY_WITH_WP03_PENDING
-- **Next executable work package:** WP-21
+- **Next executable work package:** WP-03
 - **Production cutover gate:** WP-03 required before WP-21
 - **Pre-phase SSOT closure:** COMPLETE
 - **Phase 0 evidence root:** `docs/evidence/ocean-rescue/migration/phase-0/`
@@ -256,9 +256,10 @@ Closure: PASS.
 Phase 3: COMPLETE
 WP-20: COMPLETE
 Current phase: PHASE_4_READY_WITH_WP03_PENDING
-Next executable work package: WP-21
+Next executable work package: WP-03
 Shadow bundle state: SHADOW_BUNDLE
 WP-21 remains blocked until WP-03 completes
+WP-21 is the next production-cutover package only after WP-03 passes
 ```
 
 Status stays as:

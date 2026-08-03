@@ -1,8 +1,9 @@
 # Ocean Rescue Deterministic Shadow Production Bundle
 
 - Captured: 2026-08-03
-- Start origin/main: `5b2e7c880146cec14568daef72d30a41406fc0fc`
-- Final origin/main: `5b2e7c880146cec14568daef72d30a41406fc0fc`
+- Implementation base origin/main: `5b2e7c880146cec14568daef72d30a41406fc0fc`
+- WP-20 implementation commit: `33f3d43d7e7c83bcddda9edbfdebfe2934f5f33b`
+- Publication verification at WP-20 completion: local HEAD and origin/main both pointed to the WP-20 implementation commit
 - Result: PASS
 - Migration state: `SHADOW_BUNDLE`
 - Production authority: Legacy global-namespace source + Python standalone pipeline (unchanged)

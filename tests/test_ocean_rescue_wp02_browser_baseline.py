@@ -377,7 +377,7 @@ def main():
     print(f"Evidence written to: {evidence_path}")
 
     # Print summary
-    print(f"\n=== WP-02 Browser Functional Parity Summary ===")
+    print("\n=== WP-02 Browser Functional Parity Summary ===")
     print(f"Startup: renderer={evidence['startup']['rendererType']}, pixi={evidence['startup']['pixiVersion']}, canvas={evidence['startup']['canvasWidth']}x{evidence['startup']['canvasHeight']}")
     print(f"Gameplay flow: mission={evidence['gameplay_flow']['mission_selected']}, gup={evidence['gameplay_flow']['gup_selected']}, travel={evidence['gameplay_flow']['travel_started']}")
     print(f"Pause/resume: enter={evidence['pause_resume']['enter']['pauseActive']}, resume={evidence['pause_resume']['resume_complete']['pauseActive']}")
@@ -401,12 +401,12 @@ def main():
         fails.append("resume did not complete")
 
     if fails:
-        print(f"\nRESULT: FAIL")
+        print("\nRESULT: FAIL")
         for f in fails:
             print(f"  - {f}")
         sys.exit(1)
     else:
-        print(f"\nRESULT: PASS")
+        print("\nRESULT: PASS")
 
 
 if __name__ == "__main__":

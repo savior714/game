@@ -1,0 +1,99 @@
+{
+  "startup": {
+    "canvasFound": true,
+    "canvasWidth": 1280,
+    "canvasHeight": 720,
+    "rectWidth": 0,
+    "rectHeight": 0,
+    "pixiVersion": "8.19.0",
+    "rendererType": "webgl",
+    "dpr": 1,
+    "ready": "true"
+  },
+  "gameplay_flow": {
+    "profile_completed": true,
+    "mission_selected": true,
+    "gup_selected": true,
+    "travel_started": true,
+    "travel_state": {
+      "travelActive": "active",
+      "pauseActive": null
+    }
+  },
+  "pause_resume": {
+    "enter": {
+      "pauseActive": "true",
+      "overlayHidden": false,
+      "buttonHidden": true,
+      "resumeHidden": false,
+      "countdownHidden": true,
+      "countdownText": ""
+    },
+    "countdown_3": {
+      "text": "3",
+      "hidden": false
+    },
+    "resume_complete": {
+      "pauseActive": "false",
+      "overlayHidden": true
+    }
+  },
+  "pointer_mapping": {
+    "canvas_rect": {
+      "left": 0,
+      "top": 0,
+      "w": 1280,
+      "h": 720
+    },
+    "viewport_center": {
+      "client_x": 640.0,
+      "client_y": 360.0,
+      "logical_x": 640.0,
+      "logical_y": 360.0
+    },
+    "top_left": {
+      "client_x": 10,
+      "client_y": 10,
+      "logical_x": 10.0,
+      "logical_y": 10.0
+    },
+    "bottom_right": {
+      "client_x": 1270,
+      "client_y": 710,
+      "logical_x": 1270.0,
+      "logical_y": 710.0
+    },
+    "center_click_dispatch": {
+      "dragging": false
+    },
+    "logical_contract": {
+      "expected_width": 1280,
+      "expected_height": 720,
+      "actual_width": 1280,
+      "actual_height": 720,
+      "mapping_correct": true
+    }
+  },
+  "network": {
+    "total": 1,
+    "local": 1,
+    "external": 0,
+    "external_details": [],
+    "all_urls": [
+      "http://127.0.0.1:18771/ocean-rescue/index.html"
+    ]
+  },
+  "console": {
+    "page_errors": [],
+    "console_errors": [],
+    "console_warnings": [
+      "[.WebGL-0x10c00516000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+      "[.WebGL-0x10c00516000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+      "[.WebGL-0x10c00516000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+      "[.WebGL-0x10c00516000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+    ],
+    "page_error_count": 0,
+    "console_error_count": 0,
+    "console_warning_count": 4
+  }
+}

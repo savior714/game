@@ -5,7 +5,7 @@
 - **Created:** 2026-08-03
 - **Scope:** Ocean Rescue development source migration from global-namespace JS to ESM/TypeScript/Vite
 - **Execution model:** sequential bounded work packages
-- **Current phase:** NOT_STARTED
+- **Current phase:** PHASE_0_TARGET_DEVICE_PENDING
 
 ---
 
@@ -26,7 +26,7 @@
 
 ## 2. Phase 0 — Baseline and parity evidence
 
-- **Status:** NOT_STARTED
+- **Status:** PARTIAL_COMPLETE (WP-01 PASS, WP-02 PASS, WP-03 NOT_STARTED)
 - **Objective:** Capture immutable evidence of current working state before any changes
 - **Included requirements:**
   - Production artifact baseline (byte-level hash of `ocean-rescue/index.html`)
@@ -39,7 +39,7 @@
   - Pointer mapping evidence (logical 1280x720)
   - Artifact hash (SHA-256 of tracked HTML)
   - Build determinism (two independent builds produce byte-identical output)
-  - Performance baseline (frame timing on target device)
+  - Performance baseline (frame timing on target device) — **WP-03 NOT_STARTED**
 - **Depends on:** nothing
 - **Authoritative path before:** `build-manifest.json` ordered scripts → `build_single_html.py`
 - **Authoritative path after:** unchanged

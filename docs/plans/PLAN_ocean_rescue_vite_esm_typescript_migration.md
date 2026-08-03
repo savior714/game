@@ -6,11 +6,12 @@
 - **Updated:** 2026-08-03
 - **Scope:** Ocean Rescue development-source migration from global-namespace JavaScript to ESM/TypeScript/Vite
 - **Execution model:** sequential bounded work packages
-- **Current phase:** PHASE_1_READY_WITH_WP03_PENDING
-- **Next executable work package:** WP-10
+- **Current phase:** PHASE_2_READY_WITH_WP03_PENDING
+- **Next executable work package:** WP-11
 - **Production cutover gate:** WP-03 required before WP-21
 - **Pre-phase SSOT closure:** COMPLETE
 - **Phase 0 evidence root:** `docs/evidence/ocean-rescue/migration/phase-0/`
+- **Phase 1 evidence root:** `docs/evidence/ocean-rescue/migration/phase-1/`
 
 ---
 
@@ -145,7 +146,7 @@ Dependency rule:
 
 ## 3. Phase 1 — Package and Node tooling boundary
 
-- **Status:** NOT_STARTED
+- **Status:** COMPLETE
 - **Work package:** WP-10
 - **Objective:** Establish the pnpm, Node, Vite, and TypeScript build-time boundary without changing application source.
 - **Included requirements:**
@@ -167,6 +168,26 @@ Dependency rule:
 - **Verification bundle:** frozen install, tool versions, existing repository checks, unchanged Ocean Rescue artifact
 - **Stop conditions:** reproducible package boundary exists and legacy production output is unchanged
 - **Rollback boundary:** remove package/version files and related command additions
+
+Closure: PASS.
+
+```text
+Phase 1: COMPLETE
+WP-10: COMPLETE
+Current phase: PHASE_2_READY_WITH_WP03_PENDING
+Next executable work package: WP-11
+Package state: PACKAGE_BOUNDARY_READY
+```
+
+Status stays as:
+
+```text
+WP-01: COMPLETE
+WP-02: COMPLETE
+WP-03: NOT_STARTED
+Phase 0: PARTIAL_COMPLETE
+WP-03 required before WP-21
+```
 
 ---
 
@@ -383,6 +404,12 @@ Rollback boundary: revert the affected controller group to the previous orchestr
 - **Verification bundle:** package/version evidence, renderer backends, browser scenes, network, deterministic bundle, artifact drift
 - **Stop conditions:** package import and typed render runtime are production-authoritative with rollback retained
 - **Rollback boundary:** restore global vendored runtime path
+
+Note (recorded by WP-10): the `pixi.js` dependency metadata already exists as
+an exact `8.19.0` pin under `domains/ocean-rescue`. WP-40 owns the source
+import, the typed render-runtime cutover, the production authority switch, and
+the vendored rollback handling. The package-metadata pin added by WP-10 is not
+the import/production cutover itself.
 
 ---
 

@@ -1,6 +1,6 @@
 # AidenGame Ocean Rescue — Development Architecture
 
-- **Version:** 1.1
+- **Version:** 1.2
 - **Date:** 2026-08-03
 - **Status:** CANONICAL
 - **Owner:** Ocean Rescue development tooling
@@ -14,9 +14,26 @@
 - **Development module system:** ESM (PLANNED)
 - **Development language:** TypeScript (PLANNED)
 - **Development bundler:** Vite (PLANNED)
-- **Package manager:** pnpm (PLANNED)
+- **Package manager:** pnpm
 - **Deployment artifact:** single standalone HTML file
 - **Last external status verification:** 2026-08-03
+
+### Current package and Node tooling boundary
+
+- **Package boundary:** `domains/ocean-rescue`
+- **Node:** 24.18.0
+- **pnpm:** 11.17.0
+- **Vite:** 8.1.5
+- **TypeScript:** 7.0.2
+- **Pixi package metadata:** 8.19.0
+- **Lockfile:** `domains/ocean-rescue/pnpm-lock.yaml`
+- **State:** `PACKAGE_BOUNDARY_READY`
+
+Pixi boundary:
+
+> `pixi.js` is pinned in package metadata.
+> Production rendering still uses the vendored UMD path.
+> WP-40 remains responsible for import and production cutover.
 
 ---
 
@@ -391,11 +408,11 @@ Two different comparisons must not be conflated:
 
 | Tool | Repository state | Official observation | Architecture decision |
 |---|---|---|---|
-| Vite | Not installed | Official release policy lists `vite@8.1` as the regular-patch line; Vite 8.1 was announced 2026-06-23 | Select and lock an exact supported 8.1.x version during the package-boundary work package |
-| PixiJS | Vendored 8.19.0 | Official June 2026 post publishes 8.19.0, while the official versions page still labels 8.18.1 as stable | Keep 8.19.0; record the official metadata inconsistency and reconcile package metadata during package-import cutover |
-| TypeScript | Not installed | Version selection is implementation-time and lockfile-controlled | Select an officially supported exact version during the package-boundary work package |
-| pnpm | Not installed | Active package manager; exact version not yet pinned | Pin one exact version during the package-boundary work package |
-| Node.js | No repository pin | Build-time runtime must use an active supported line | Select and pin an active LTS line during the package-boundary work package |
+| Vite | Installed as exact devDependency `8.1.5` under `domains/ocean-rescue` | Official release policy lists `vite@8.1` as the regular-patch line; Vite 8.1 was announced 2026-06-23 | Locked to exact 8.1.5 in package metadata; dev server implementation remains WP-11 |
+| PixiJS | Vendored 8.19.0; package metadata pins exact 8.19.0 | Official June 2026 post publishes 8.19.0, while the official versions page still labels 8.18.1 as stable | Keep 8.19.0; import and production cutover is WP-40 |
+| TypeScript | Installed as exact devDependency `7.0.2` | Version selection is implementation-time and lockfile-controlled | Locked to exact 7.0.2; `checkJs: false` baseline only |
+| pnpm | Pinned `packageManager` `11.17.0`; `pnpm-lock.yaml` authority | Active package manager; exact version now pinned | Exact pin enforced via corepack |
+| Node.js | Pinned `.node-version` `24.18.0` | Build-time runtime must use an active supported line | Pinned exact 24.18.0 for build-time only |
 
 Official references:
 
@@ -430,7 +447,7 @@ LEGACY_GLOBAL
 | State | Authoritative source | Production path | Entry condition |
 |---|---|---|---|
 | `LEGACY_GLOBAL` | Global JavaScript source | Ordered manifest scripts | Initial state |
-| `PACKAGE_BOUNDARY_READY` | Package files plus legacy source | Legacy production pipeline | Phase 1 complete |
+| `PACKAGE_BOUNDARY_READY` (**current**) | Package files plus legacy source | Legacy production pipeline | Phase 1 complete |
 | `DEV_SERVER_COMPAT` | Legacy source plus dev entry | Legacy production pipeline | Phase 2 complete |
 | `SHADOW_BUNDLE` | Vite shadow configuration plus legacy source | Legacy path remains authoritative | Phase 3 complete |
 | `PRODUCTION_BUNDLE` | Vite application bundle | Standalone builder consumes temporary bundle packaging | Phase 4 complete |

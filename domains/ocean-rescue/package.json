@@ -3,7 +3,21 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "description": "Build-time tooling for the AidenGame Ocean Rescue browser game.",
+  "packageManager": "pnpm@11.17.0",
+  "engines": {
+    "node": "24.18.0",
+    "pnpm": "11.17.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "check:versions": "node --version && pnpm --version && vite --version && tsc --version"
+  },
   "dependencies": {
     "pixi.js": "8.19.0"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "vite": "8.1.5"
   }
 }

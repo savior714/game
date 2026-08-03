@@ -93,6 +93,58 @@ check-ocean-rescue-render-package:
         tests/test_ocean_rescue_render_packaging.py \
         tests/test_ocean_rescue_artifact_drift.py
 
+# --- Ocean Rescue Node & build-tooling boundary (WP-10) ---
+
+# Verify the active Node is exactly domains/ocean-rescue/.node-version
+check-ocean-rescue-node-version:
+    @expected="$(cat domains/ocean-rescue/.node-version)"; \
+    actual="$(node -p 'process.versions.node')"; \
+    if [ "$expected" != "$actual" ]; then \
+        echo "❌ Node version mismatch: expected=$expected actual=$actual"; \
+        exit 1; \
+    fi; \
+    echo "✅ Node $actual matches .node-version"
+
+# Verify project pnpm (corepack) is exactly the packageManager pin
+check-ocean-rescue-pnpm-version:
+    @expected="$(python3 -c 'import json; print(json.load(open("domains/ocean-rescue/package.json"))["packageManager"].split("+")[0].split("@")[1])')"; \
+    actual="$(cd domains/ocean-rescue && corepack pnpm --version)"; \
+    if [ "$expected" != "$actual" ]; then \
+        echo "❌ pnpm version mismatch: expected=$expected actual=$actual"; \
+        exit 1; \
+    fi; \
+    echo "✅ project pnpm $actual matches packageManager"
+
+# Sync Ocean Rescue Node dependencies from the frozen lockfile
+sync-ocean-rescue-node:
+    @just check-ocean-rescue-node-version
+    @just check-ocean-rescue-pnpm-version
+    @cd domains/ocean-rescue && corepack pnpm install --frozen-lockfile
+
+# Run the Ocean Rescue TypeScript baseline (no source emit)
+typecheck-ocean-rescue:
+    @just check-ocean-rescue-node-version
+    @just check-ocean-rescue-pnpm-version
+    @cd domains/ocean-rescue && corepack pnpm exec tsc --project tsconfig.json --noEmit
+
+# Verify the Ocean Rescue build-tooling boundary end to end
+check-ocean-rescue-toolchain:
+    @just check-ocean-rescue-node-version
+    @just check-ocean-rescue-pnpm-version
+    @cd domains/ocean-rescue && corepack pnpm install --frozen-lockfile
+    @vite_actual="$(cd domains/ocean-rescue && corepack pnpm exec vite --version)"; \
+    tsc_actual="$(cd domains/ocean-rescue && corepack pnpm exec tsc --version)"; \
+    case "$vite_actual" in \
+        vite/8.1.5*) echo "✅ Vite $vite_actual" ;; \
+        *) echo "❌ Vite version mismatch: expected=vite/8.1.5 actual=$vite_actual"; exit 1 ;; \
+    esac; \
+    if [ "$tsc_actual" != "Version 7.0.2" ]; then \
+        echo "❌ TypeScript version mismatch: expected=Version 7.0.2 actual=$tsc_actual"; \
+        exit 1; \
+    fi; \
+    echo "✅ TypeScript $tsc_actual"
+    @just typecheck-ocean-rescue
+
 # --- Commit Gate ---
 
 # hard gate: security checks only; --no-verify is prohibited

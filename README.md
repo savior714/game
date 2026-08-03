@@ -41,6 +41,23 @@
 bash ./verify.sh
 ```
 
+## 🎮 Ocean Rescue 개발 toolchain
+
+Ocean Rescue에는 도메인 로컬 build-time Node 경계가 존재합니다.
+
+- **Package boundary:** `domains/ocean-rescue`
+- **Node pin:** `domains/ocean-rescue/.node-version`
+- **Project pnpm:** `packageManager` + `corepack pnpm` (예: `corepack pnpm install`)
+- **Sync:** `just sync-ocean-rescue-node`
+- **Toolchain check:** `just check-ocean-rescue-toolchain`
+- **Typecheck:** `just typecheck-ocean-rescue`
+
+제약:
+
+- Node는 **build-time 전용**입니다. 전체 browser runtime은 Node를 요구하지 않습니다.
+- Production artifact는 기존 `just build-ocean-rescue-render-package` Python pipeline이 생성합니다.
+- Vite dev server는 아직 구현되지 않습니다 (WP-11).
+
 ## ✅ 검증 체계
 
 - 테스트: `tests/`

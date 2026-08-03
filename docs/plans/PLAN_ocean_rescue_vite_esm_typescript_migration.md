@@ -6,9 +6,11 @@
 - **Updated:** 2026-08-03
 - **Scope:** Ocean Rescue development-source migration from global-namespace JavaScript to ESM/TypeScript/Vite
 - **Execution model:** sequential bounded work packages
-- **Current phase:** PHASE_4_READY_WITH_WP03_PENDING
-- **Next executable work package:** WP-03
-- **Production cutover gate:** WP-03 required before WP-21
+- **Current phase:** PHASE_4_READY
+- **Next executable work package:** WP-21
+- **Production cutover gate:** SATISFIED by WP-02 functional parity and WP-20 deterministic shadow-bundle parity
+- **Target-device release gate:** WP-03A must pass before MVP release, but it does not block WP-21
+- **Automated performance harness:** WP-03B is non-blocking follow-up work, triggered by an observed regression or post-MVP stabilization need
 - **Pre-phase SSOT closure:** COMPLETE
 - **Phase 0 evidence root:** `docs/evidence/ocean-rescue/migration/phase-0/`
 - **Phase 1 evidence root:** `docs/evidence/ocean-rescue/migration/phase-1/`
@@ -31,12 +33,16 @@
 - Strongly coupled defects may be added only after scope and verification are updated.
 - Product cutover and obsolete-path cleanup may be separate packages.
 - Generated artifacts are never repaired by direct editing.
+- A physical target-device smoke check is mandatory before MVP release, but unavailable hardware does not block a rollback-safe packaging cutover.
+- Numeric performance thresholds become release gates only after they are measured, reviewed, and adopted as product contracts.
 
 ### Work-package map
 
-| Phase | Work package(s) |
+| Track | Work package(s) |
 |---|---|
-| Phase 0 | WP-01, WP-02, WP-03 |
+| Phase 0 | WP-01, WP-02 |
+| Release readiness | WP-03A target-device smoke |
+| Conditional performance follow-up | WP-03B reproducible performance harness |
 | Phase 1 | WP-10 |
 | Phase 2 | WP-11 |
 | Phase 3 | WP-20 |
@@ -56,8 +62,8 @@
 
 ## 2. Phase 0 — Baseline and parity evidence
 
-- **Status:** PARTIAL_COMPLETE (WP-01 PASS, WP-02 PASS, WP-03 NOT_STARTED)
-- **Objective:** Capture the current production and runtime baseline before toolchain or source changes.
+- **Status:** COMPLETE (WP-01 PASS, WP-02 PASS)
+- **Objective:** Capture the current production artifact and representative browser behavior before toolchain or source changes.
 - **Depends on:** Pre-phase SSOT closure
 - **Authoritative path before:** ordered manifest scripts and Python standalone builder
 - **Authoritative path after:** unchanged
@@ -122,27 +128,59 @@ Closure: PASS. The focused pytest harness collects one test and verifies the
 full representative sea-turtle mission flow, pause/resume countdown, pointer
 mapping, actual drag state changes, runtime errors, and network requests.
 
-### WP-03 — Target-device performance baseline
+### WP-03A — Target-device release smoke
+
+- **Status:** NOT_STARTED — waiting for an authorized physical Android tablet
+- **Role:** MVP release gate; not a WP-21 production-packaging cutover prerequisite
+- **Target:** Galaxy Tab S10-class landscape device or an explicitly accepted equivalent
 
 Included requirements:
 
-- Galaxy Tab S10-class landscape device;
-- DPR upper-bound confirmation;
-- touch/pointer interaction;
-- frame timing and sustained-run stability;
-- renderer backend observation;
-- performance evidence appropriate for later cutover comparison.
+- tracked production artifact opens on the physical device in landscape;
+- WebGL or WebGL2 is selected;
+- effective renderer DPR is numeric and no greater than 2;
+- the representative sea-turtle mission can be entered and completed;
+- actual touch interaction performs the rope drag;
+- pause and resume work without leaving the scene frozen or advancing while paused;
+- no page crash, WebGL context loss, external runtime dependency, or visibly sustained freeze occurs;
+- one short diagnostic capture may be retained when practical, but a bespoke automated harness is not required.
+
+Stop conditions:
+
+- a short, reproducible checklist records the device model, Android/browser versions, artifact SHA-256, renderer backend, DPR, touch result, pause/resume result, and overall verdict;
+- WP-03A must pass before the MVP is declared release-ready;
+- an unavailable device leaves the release gate pending but does not block WP-21 or subsequent rollback-safe migration work.
+
+No canonical numeric frame-time or FPS SLA is defined at this stage. The previous
+proposal for two automated 120-second runs and fixed percentile thresholds is
+withdrawn as a cutover gate because those numbers were not derived from an
+accepted Ocean Rescue product baseline.
+
+### WP-03B — Reproducible target-device performance harness
+
+- **Status:** BACKLOG_NON_BLOCKING
+- **Trigger:** an observed device-performance regression, repeated manual-testing burden, or post-MVP stabilization decision
+- **Role:** longitudinal regression measurement; not an MVP packaging-cutover prerequisite
+
+Possible scope when triggered:
+
+- automated physical-browser connection and provenance;
+- repeatable touch injection;
+- sustained frame-timing capture;
+- percentile and long-stall analysis;
+- structured evidence suitable for before/after comparisons;
+- thresholds adopted only after baseline review.
 
 Dependency rule:
 
 - WP-01: COMPLETE.
 - WP-02: COMPLETE.
-- WP-03: NOT_STARTED.
-- Phase 1 entry condition: SATISFIED after WP-01 and WP-02 pass.
-- Phase 0 remains `PARTIAL_COMPLETE` until WP-03 passes.
-- Phase 1 may begin after WP-01 and WP-02 pass.
-- WP-03 must pass before Phase 4 production cutover.
-- WP-03 is not a prerequisite for WP-10; it is a prerequisite for WP-21.
+- Phase 0: COMPLETE.
+- Phase 1 entry condition: SATISFIED.
+- WP-03A: pending release-readiness work.
+- WP-03B: non-blocking backlog.
+- WP-21 may begin after WP-20 because functional parity, deterministic shadow bundling, and rollback boundaries are already established.
+- MVP release remains blocked until WP-03A passes.
 
 ---
 
@@ -173,6 +211,8 @@ Dependency rule:
 
 Closure: PASS.
 
+Historical status at Phase 1 completion; superseded for current scheduling:
+
 ```text
 Phase 1: COMPLETE
 WP-10: COMPLETE
@@ -181,7 +221,7 @@ Next executable work package: WP-11
 Package state: PACKAGE_BOUNDARY_READY
 ```
 
-Status stays as:
+Historical status carried at that time; superseded by the WP-03 scope decision:
 
 ```text
 WP-01: COMPLETE
@@ -216,6 +256,8 @@ WP-03 required before WP-21
 - **Rollback boundary:** remove dev entry/configuration/command
 
 Closure: PASS.
+
+Historical status at Phase 2 completion; superseded for current scheduling:
 
 ```text
 Phase 2: COMPLETE
@@ -252,6 +294,8 @@ Evidence: `docs/evidence/ocean-rescue/migration/phase-2/development-server-compa
 
 Closure: PASS.
 
+Historical WP-20 closure snapshot; retained as provenance and superseded for current scheduling:
+
 ```text
 Phase 3: COMPLETE
 WP-20: COMPLETE
@@ -262,7 +306,7 @@ WP-21 remains blocked until WP-03 completes
 WP-21 is the next production-cutover package only after WP-03 passes
 ```
 
-Status stays as:
+Historical status carried at WP-20 completion; superseded by the WP-03 scope decision:
 
 ```text
 WP-01: COMPLETE
@@ -270,6 +314,20 @@ WP-02: COMPLETE
 WP-03: NOT_STARTED
 Phase 0: PARTIAL_COMPLETE
 WP-03 required before WP-21
+```
+
+Current scheduling authority:
+
+```text
+Phase 0: COMPLETE
+Phase 3: COMPLETE
+WP-20: COMPLETE
+Current phase: PHASE_4_READY
+Next executable work package: WP-21
+Shadow bundle state: SHADOW_BUNDLE
+WP-21 production cutover gate: SATISFIED
+WP-03A target-device smoke: REQUIRED_BEFORE_MVP_RELEASE
+WP-03B automated performance harness: BACKLOG_NON_BLOCKING
 ```
 
 Evidence: `docs/evidence/ocean-rescue/migration/phase-3/shadow-production-bundle.md`
@@ -288,17 +346,19 @@ Evidence: `docs/evidence/ocean-rescue/migration/phase-3/shadow-production-bundle
   - browser functional parity;
   - artifact drift contract updated to the new path;
   - source-map and external-asset behavior explicitly controlled.
-- **Depends on:** WP-20 and WP-03
+- **Depends on:** WP-20 and WP-02
+- **Release constraint:** WP-03A remains mandatory before MVP release, but does not block this rollback-safe packaging cutover
 - **Authoritative path before:** ordered application scripts
 - **Authoritative path after:** Vite application bundle through temporary standalone packaging
 - **Expected change scope:** standalone builder or packaging adapter, manifest, Vite config, focused tests
-- **Explicit exclusions:** global namespace removal, TypeScript module conversion, Pixi package import, legacy cleanup
+- **Explicit exclusions:** global namespace removal, TypeScript module conversion, Pixi package import, legacy cleanup, WP-03B performance-harness implementation
 - **Verification bundle:**
   - legacy output versus new output: functional/runtime equivalence;
   - packaging differences reviewed and documented;
   - new build A versus new build B: byte-identical deterministic output;
   - browser representative flow;
-  - renderer backend, pause/resume, pointer, network, drift evidence.
+  - renderer backend, pause/resume, pointer, network, drift evidence;
+  - explicit rollback verification to the legacy ordered-script path.
 - **Stop conditions:** new production ownership works and rollback to legacy ordering is verified
 - **Rollback boundary:** restore legacy manifest ordering and previous builder input
 
@@ -558,11 +618,13 @@ Rollback boundary: restore the affected scene module to its prior implementation
   - pointer and pause/resume parity;
   - WebGL and Canvas evidence;
   - zero runtime external requests;
+  - WP-03A physical target-device release smoke completed before MVP release;
+  - any adopted performance thresholds are backed by recorded baseline evidence;
   - legacy application-global graph removed;
   - current documentation aligned.
 - **Expected change scope:** final verification evidence, plan/spec/current-state documentation
 - **Explicit exclusions:** new features and unrelated improvements
-- **Verification bundle:** full repository suite, TypeScript, Vite build, standalone determinism, browser walkthrough, target-device comparison, documentation assertions
+- **Verification bundle:** full repository suite, TypeScript, Vite build, standalone determinism, browser walkthrough, target-device smoke/comparison where available, documentation assertions
 - **Stop conditions:** every closeout item is evidenced; otherwise reopen the phase that owns the failed contract
 - **Rollback boundary:** revert closeout status and documentation only; earlier implementation phases retain their own rollback procedures
 
@@ -577,6 +639,10 @@ Rollback boundary: restore the affected scene module to its prior implementation
 - Do not replace browser verification with unit-test success.
 - Do not resolve artifact drift by editing generated HTML.
 - Do not hide performance regression by removing unrelated visuals.
+- Do not invent or lower a numeric performance SLA to obtain PASS; establish and review a baseline first.
+- Do not treat unavailable physical hardware as a blocker for WP-21 when the cutover remains bounded, reversible, and covered by browser parity.
+- Do not declare the MVP release-ready before WP-03A passes on an accepted physical target device.
+- Trigger WP-03B only when its regression value justifies the harness cost.
 - Do not upgrade or downgrade PixiJS solely because official pages disagree; reconcile package metadata in WP-40.
 - Split a package when context stability or rollback boundaries require it.
 - Do not force independent defects into current scope.

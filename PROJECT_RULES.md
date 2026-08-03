@@ -36,6 +36,8 @@ AidenGame은 어린이를 위한 정적 웹 기반 학습 게임 플랫폼이다
 - 실험 기능은 안정화되기 전까지 `experiments/`에 격리한다.
 - 빈 `src/` 디렉터리를 새로운 런타임 SSOT로 사용하지 않는다.
 - 현재 범위에 Next.js, Tauri, 별도 백엔드 API를 추가하지 않는다.
+- 생성된 배포 산출물과 authoring source를 구분한다.
+- Ocean Rescue의 상세 개발 아키텍처는 `docs/specs/technical/AIDENGAME_OCEAN_RESCUE_DEVELOPMENT_ARCHITECTURE.md`를 따른다.
 
 ---
 
@@ -45,8 +47,9 @@ AidenGame은 어린이를 위한 정적 웹 기반 학습 게임 플랫폼이다
 
 - 브라우저 런타임: HTML, CSS, JavaScript
 - 배포: `vercel.json`을 사용하는 정적 호스팅
+- 서버 또는 Node 런타임 의존성 없음
 
-### 3.2 검증·도구
+### 3.2 공통 검증·도구
 
 - 검증·도구: Python
 - 환경·패키지: `uv`
@@ -56,14 +59,18 @@ AidenGame은 어린이를 위한 정적 웹 기반 학습 게임 플랫폼이다
 
 ### 3.3 Ocean Rescue 개발/build 도구 (PLANNED)
 
-- TypeScript 타겟 소스
-- ESM 모듈 시스템
-- Vite development server + bundling
-- pnpm 패키지 관리
-- Node 런타임: build-time 전용
-- 기존 Python 에셋 및 패키징 도구 유지
+- TypeScript target source
+- ESM module system
+- Vite development server and application bundling
+- pnpm package management
+- Node: build-time only
+- 기존 Python asset validation, atlas, registry, standalone packaging tooling 유지
 
-도구 버전은 `pyproject.toml`, lockfile, pre-commit 설정 사이에서 가능한 한 하나의 계약을 유지한다. 서로 다른 실행 경로가 다른 판정을 내리면 별도 atomic failure domain으로 수정한다.
+이 도구들은 Ocean Rescue 개발 경로에 한정된다.
+다른 domain에 Vite, TypeScript 또는 pnpm을 자동으로 강제하지 않는다.
+
+도구의 exact version은 해당 lockfile과 version pin이 authority다.
+서로 다른 실행 경로가 다른 판정을 내리면 관련 도구, 설정, 검증을 하나의 coherent reconciliation work package로 다룬다.
 
 ---
 
@@ -75,27 +82,35 @@ AidenGame은 어린이를 위한 정적 웹 기반 학습 게임 플랫폼이다
 - force push는 금지한다.
 - 배포 설정 변경은 제품 런타임 경로와 함께 검증한다.
 - 원격 상태나 필수 검증이 불명확하면 publish하지 않는다.
+- generated artifact는 직접 편집하지 않고 canonical source와 build pipeline을 통해 갱신한다.
 
 ---
 
 ## 5. 품질 정책
 
-### 5.1 Atomic 변경
+### 5.1 Coherent work package
 
-모든 변경은 하나의 failure domain, 하나의 가설, 하나의 판정 기준으로 제한한다.
-강하게 결합된 requirements, callers, types, tests, configuration은 함께 변경할 수 있다.
-변경의 완결성과 개발 속도를 고려하여 그룹핑한다.
-여러 실패를 한 번에 수정할 수 있으나 관계가 명확해야 한다.
-unrelated cleanup을 끼워 넣지 않는다.
+모든 변경은 하나의 coherent development objective를 중심으로 구성한다.
+
+- 강하게 결합된 requirements, callers, types, tests, configuration은 함께 변경할 수 있다.
+- 허용 범위, 명시적 제외 범위, verification bundle, stop conditions, rollback boundary를 정한다.
+- 여러 오류를 함께 수정할 수 있으나 같은 목적과 변경 경계를 공유해야 한다.
+- scope가 로컬 모델의 안정적인 컨텍스트를 넘거나 rollback 경계가 다르면 child work package로 분할한다.
+- unrelated cleanup은 끼워 넣지 않는다.
+- 단일 failure domain, 단일 가설 또는 단일 binary criterion을 모든 작업에 형식적으로 강제하지 않는다.
+- 조사형 작업에서 직접 가설이 유용하면 사용할 수 있으나 필수 형식은 아니다.
 
 ### 5.2 검증
 
-- 수정 전 현재 동작을 재현한다.
-- 수정 후 해당 가설만 targeted verification한다.
+- 수정 전 현재 동작, 실패 또는 변경 필요성을 재현하거나 관찰 가능한 근거로 확인한다.
+- 수정 후 정의된 verification bundle과 acceptance checklist를 실행한다.
 - 실제 위험에 비례하지 않는 중복 게이트를 추가하지 않는다.
 - 기존 테스트가 충분하면 새 검증 스크립트를 만들지 않는다.
 - 필수 도구가 없거나 검증이 실행되지 않았으면 PASS로 처리하지 않는다.
-- full-suite는 변경 범위 또는 회귀 위험이 요구할 때만 실행한다.
+- 여러 변경을 수행했더라도 full-suite 결과 하나만으로 각 계약을 대신 판정하지 않는다.
+- full-suite는 변경 범위, cutover 성격 또는 회귀 위험이 요구할 때 실행한다.
+- 강하게 결합된 추가 문제를 현재 work package에 포함할 때는 scope와 verification bundle을 함께 갱신한다.
+- 독립적인 문제는 remaining work로 분리한다.
 
 대표 명령:
 
@@ -106,6 +121,9 @@ just typecheck
 just test
 just ci
 ```
+
+모든 작업에 모든 명령을 강제하지 않는다.
+현재 work package의 위험과 계약에 필요한 최소 검증 묶음을 선택한다.
 
 ### 5.3 과거 Plan 도구
 
@@ -119,7 +137,7 @@ just ci
 - Linear 동기화
 - Plan archive 갱신
 
-이 도구들의 정리 또는 삭제는 별도 failure domain에서 실제 참조와 회귀 위험을 확인한 뒤 수행한다.
+이 도구들의 정리 또는 삭제는 실제 참조, rollback 경계, 회귀 위험을 확인한 별도 cleanup work package에서 수행한다.
 
 ---
 
@@ -156,6 +174,8 @@ just ci
 | 요구사항과 회귀 계약 | `tests/` |
 | 배포 경로 | `vercel.json`과 실제 엔트리 파일 |
 | Ocean Rescue 개발 아키텍처 | `docs/specs/technical/AIDENGAME_OCEAN_RESCUE_DEVELOPMENT_ARCHITECTURE.md` |
+| Ocean Rescue migration 상태 | `docs/plans/PLAN_ocean_rescue_vite_esm_typescript_migration.md` |
 | 기능 설계 | 대상 기능에 가장 가까운 `docs/` 문서 |
 
-문서와 실제 런타임이 충돌하면 코드를 무조건 문서에 맞추지 않는다. 먼저 현재 의도와 동작을 재현하고, 어느 쪽이 canonical인지 단일 가설로 판정한다.
+문서와 실제 런타임이 충돌하면 코드를 무조건 문서에 맞추지 않는다.
+현재 의도, 실제 동작, executable contract를 먼저 확인하고 어느 쪽이 canonical인지 근거로 판정한다.

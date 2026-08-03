@@ -14,6 +14,7 @@
 ## 🧭 현재 엔트리/라우팅 (SSOT)
 
 - 메인 허브: `index.html`
+- 보호자 관리: `domains/reward/guardian/index.html`
 - 우주 탐험 페이지: `experiments/space-explorer/index.html`
 - 우주 탐험 모듈 엔트리: `experiments/space-explorer/main.js`
 - 배포 라우팅 설정: `vercel.json`
@@ -25,9 +26,10 @@
 | 구분 | 경로 | 상태 | 용도 |
 | --- | --- | --- | --- |
 | 메인 운영 엔트리 | `index.html` | 운영중 | 과목 선택 허브 및 공용 진입점 |
-| 우주 탐험 실험 페이지 | `experiments/space-explorer/index.html` | 운영중(실험) | 2D/3D 우주 시뮬레이션 및 터치 제스처 실험 |
 | 과목별 페이지 | `domains/{math,english,korean,science}/index.html` | 운영중 | 학습 루프 본편 |
-| 보호자/관리 페이지 | `guardian/index.html`, `admin/index.html` | 운영중(권한/설정 필요) | 보상 관리 및 운영 도구 |
+| 보호자 관리 페이지 | `domains/reward/guardian/index.html` | 운영중 | 난이도, 주간 영단어, 보상 상점 및 성장 요약 관리 |
+| 우주 탐험 실험 페이지 | `experiments/space-explorer/index.html` | 운영중(실험) | 2D/3D 우주 시뮬레이션 및 터치 제스처 실험 |
+| 과거 보호자/관리 alias | `guardian/index.html`, `admin/index.html` | 없음 | rewrite가 없으므로 사용하지 않음 |
 | 과거 우주 탐험 alias | `/space-explorer.html` | 없음 | `vercel.json` rewrite가 없으므로 사용하지 않음 |
 
 ## 🛠️ 로컬 개발

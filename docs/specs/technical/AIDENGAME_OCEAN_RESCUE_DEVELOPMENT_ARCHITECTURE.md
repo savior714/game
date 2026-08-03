@@ -1,6 +1,6 @@
 # AidenGame Ocean Rescue — Development Architecture
 
-- **Version:** 1.0
+- **Version:** 1.1
 - **Date:** 2026-08-03
 - **Status:** CANONICAL
 - **Owner:** Ocean Rescue development tooling
@@ -10,217 +10,211 @@
 - **Related migration plan:** `../../plans/PLAN_ocean_rescue_vite_esm_typescript_migration.md`
 - **Applies to:** Ocean Rescue development source, build pipeline, and deployment artifact
 - **Browser runtime:** HTML, CSS, JavaScript, locally bundled PixiJS
-- **Renderer:** PixiJS v8 WebGL → Canvas fallback
+- **Renderer:** PixiJS v8, WebGL priority with Canvas fallback
 - **Development module system:** ESM (PLANNED)
 - **Development language:** TypeScript (PLANNED)
 - **Development bundler:** Vite (PLANNED)
 - **Package manager:** pnpm (PLANNED)
 - **Deployment artifact:** single standalone HTML file
+- **Last external status verification:** 2026-08-03
 
 ---
 
 ## 1. Purpose
 
-This document defines the long-term development architecture for Ocean Rescue. It closes the authority gap between the current global-namespace JavaScript authoring model and the target TypeScript/ESM/Vite development model.
+This document defines the long-term development architecture for Ocean Rescue.
+It closes the authority gap between the current global-namespace JavaScript authoring model and the target TypeScript/ESM/Vite development model.
 
 This document does not:
 
-- deprecate or replace the standalone HTML deployment artifact
-- redesign gameplay, progression, input, missions, or rendering contracts
-- serve as a gameplay, visual design, or mission design specification
-- authorize immediate migration execution
+- deprecate or replace the standalone HTML deployment artifact;
+- redesign gameplay, progression, input, missions, or rendering contracts;
+- serve as a gameplay, visual-design, or mission-design specification;
+- authorize immediate migration execution;
+- require other AidenGame domains to adopt this toolchain.
 
-The core decision is: **keep the browser/PixiJS game as-is and improve the authoring experience by introducing ESM, TypeScript, and Vite as development tooling while preserving the standalone HTML deployment artifact.**
+The core decision is:
+
+> Keep the browser/PixiJS game and its standalone deployment contract, while replacing the inefficient authoring and module workflow with ESM, TypeScript, Vite, and pnpm through bounded migration work packages.
 
 ---
 
 ## 2. Authority and precedence
 
 1. User requests and explicit constraints
-2. Product and gameplay specifications (`AIDENGAME_OCEAN_RESCUE_MVP_PRD.md`)
-3. Rendering MVP (`AIDENGAME_OCEAN_RESCUE_RENDERING_MVP.md`)
-4. **This document** — development architecture canonical specification
-5. Manual SVG Asset Handoff SSOT (`AIDENGAME_OCEAN_RESCUE_MANUAL_SVG_ASSET_HANDOFF.md`)
-6. Executable tests and build contracts (`tests/`)
-7. Migration plan (`PLAN_ocean_rescue_vite_esm_typescript_migration.md`)
+2. Product and gameplay specification
+3. Rendering MVP
+4. **This development architecture specification**
+5. Manual SVG Asset Handoff SSOT
+6. Executable tests and build contracts
+7. Migration plan
 8. Historical plans and reports
 
 Rules:
 
-- This architecture spec is the authority for long-term development technology decisions.
-- The migration plan manages execution order and state; it cannot alter architecture decisions.
+- This document is authoritative for long-term development technology and source/build boundaries.
+- The migration plan manages execution order, work-package boundaries, and status; it cannot silently change architecture decisions.
 - The generated standalone HTML is a deployment artifact, not an authoring source.
-- If tests and documentation conflict, the source code is not immediately modified to match documentation. The conflict root cause and canonical authority are investigated first.
+- Tests and executable build contracts remain authoritative evidence of actual behavior.
+- If code, tests, and documentation conflict, do not immediately force code to match prose. Investigate the current intent and actual contract first.
+- Ordinary implementation details may evolve without revising this spec when they remain inside the boundaries defined here.
 
 ---
 
 ## 3. Decision summary
 
-### 3.1 Maintained
+### 3.1 Maintained contracts
 
-| Decision | Rationale |
+| Decision | Contract |
 |---|---|
-| Browser platform | Deployment constraint from product PRD |
-| PixiJS v8 renderer family | Current implementation baseline, stable |
-| WebGL priority with Canvas fallback | Performance + resilience |
-| Logical 1280x720 coordinate system | Cross-device consistency |
-| DPR upper bound of 2 | Performance guardrail |
-| Gameplay state authority in domain modules | Separation of concerns |
-| Pointer normalization at single boundary | Consistent input handling |
-| Canonical asset pipeline (SVG → raster atlas) | Proven deterministic build |
-| Generated asset registry | Embedded in single HTML |
-| Final standalone HTML deployment artifact | Product PRD constraint |
-| Zero runtime external requests | Security and reliability |
-| Static hosting | Deployment model |
-| Existing Python asset and packaging tooling | Stable, proven |
+| Platform | Browser-based static web game |
+| Renderer family | PixiJS v8 |
+| Renderer preference | WebGL first, Canvas fallback |
+| Logical coordinates | 1280×720 |
+| Renderer DPR | Upper bound of 2 |
+| Gameplay authority | Domain state modules, never Pixi display objects |
+| Pointer normalization | One browser-to-logical coordinate boundary |
+| Visual source | Approved canonical SVG/high-resolution source |
+| Runtime visual form | Deterministic raster atlases and generated registry |
+| Deployment | One standalone `ocean-rescue/index.html` |
+| Runtime network | No renderer CDN, module CDN, or external asset request |
+| Hosting | Static hosting |
+| Existing build tooling | Python validation, atlas, registry, packaging, drift checks |
 
-### 3.2 Introduced (target state)
+### 3.2 Target development contracts
 
 | Decision | Purpose |
 |---|---|
-| ESM application source | Explicit module imports, tree-shaking |
-| TypeScript for new and migrated modules | Type safety, IDE support, refactoring confidence |
-| Vite development server | Fast HMR feedback loop |
-| Vite application bundling | Deterministic production bundles |
-| pnpm package management | Disk-efficient, strict dependency resolution |
-| Explicit module imports | Remove global namespace dependency resolution |
-| Source-level type checking | Catch errors before runtime |
-| Bounded controller ownership | Each module owns specific lifecycle concerns |
-| Reproducible Node toolchain | Consistent development environment |
+| ESM application source | Explicit module graph instead of implicit global ordering |
+| TypeScript for new and migrated modules | Source diagnostics and safer refactoring |
+| Vite development server | Fast HMR or reload feedback without mutating the production artifact |
+| Vite application bundle | Reproducible application bundling before standalone packaging |
+| pnpm | One strict package-management and lockfile authority |
+| Canonical application entry | One explicit startup entry |
+| Bounded controllers | Clear lifecycle, timer, input, and scene ownership |
+| Reproducible Node toolchain | Stable build-time environment only |
 
-### 3.3 Not introduced
+### 3.3 Explicit exclusions
 
-| Exclusion | Reason |
-|---|---|
-| React | Unnecessary framework overhead for game UI |
-| Next.js | Static HTML deployment, no SSR needed |
-| Phaser | PixiJS v8 is already the renderer |
-| Godot / Unity | Browser deployment constraint |
-| Tauri | Browser deployment, no desktop app needed |
-| Backend API | Client-side game, no server logic |
-| Node runtime dependency | Build-time only; zero runtime network |
-| Runtime CDN imports | Standalone HTML contract forbids external requests |
-| Runtime code splitting requiring network | Standalone HTML contract |
-| Multiple-file deployment replacing standalone HTML | Product PRD constraint |
-| Whole-project framework migration | Incremental migration only |
+- React
+- Next.js
+- Phaser
+- Godot
+- Unity
+- Tauri
+- backend API or server runtime
+- runtime Node dependency
+- runtime CDN imports
+- network-dependent code splitting
+- replacing standalone HTML with a multi-file deployment
+- whole-project framework migration
+- all-at-once TypeScript conversion
 
 ---
 
 ## 4. Current architecture baseline
 
-### 4.1 Source structure
+### 4.1 Current source layout
 
 ```text
 domains/ocean-rescue/src/
-├─ build-manifest.json       (script ordering + dependency graph)
-├─ index.template.html       (HTML skeleton with CSS/Script markers)
-├─ style.css                 (game styles)
-├─ vendor/
-│  └─ pixi-8.19.0.min.js    (vendored PixiJS UMD)
-├─ render-assets.generated.js (embedded atlas registry)
-├─ render-runtime.js         (PixiJS bootstrap, atlas loading, rendering)
-├─ state.js                  (phase state machine)
-├─ profile.js                (localStorage persistence)
-├─ missions.js               (mission catalog)
-├─ gups.js                   (GUP catalog)
-├─ launch.js                 (launch sequence content)
-├─ travel.js                 (auto-forward loop)
-├─ terrain.js                (obstacle system)
-├─ travel-scene.js           (PixiJS travel scene)
-├─ rescue.js                 (rescue arrival logic)
-├─ sea-turtle.js             (mission 1 domain)
-├─ sea-turtle-scene.js       (mission 1 PixiJS scene)
-├─ crab.js                   (mission 2 domain)
-├─ crab-scene.js             (mission 2 PixiJS scene)
-├─ young-whale.js            (mission 3 domain)
-├─ mission-success.js        (completion flow)
-└─ app.js                    (orchestration hub)
+├─ build-manifest.json
+├─ index.template.html
+├─ style.css
+├─ vendor/pixi-8.19.0.min.js
+├─ render-assets.generated.js
+├─ render-runtime.js
+├─ state.js
+├─ profile.js
+├─ missions.js
+├─ gups.js
+├─ launch.js
+├─ travel.js
+├─ terrain.js
+├─ travel-scene.js
+├─ rescue.js
+├─ sea-turtle.js
+├─ sea-turtle-scene.js
+├─ crab.js
+├─ crab-scene.js
+├─ young-whale.js
+├─ mission-success.js
+└─ app.js
 ```
 
-### 4.2 Source graph
+### 4.2 Current source graph
 
-Total script entries: 19 (1 vendor, 1 generated-assets, 17 application)
+`build-manifest.json` currently contains 19 ordered script entries:
 
-**Vendor entries (1):**
+- 1 vendor entry: `PIXI`
+- 1 generated-assets entry: `OceanRescue.RenderAssets`
+- 17 application entries under `window.OceanRescue.*`
 
-| Namespace | File | Dependencies |
-|---|---|---|
-| `PIXI` | `vendor/pixi-8.19.0.min.js` | none |
+The manifest duplicates information that a standard module graph would normally own:
 
-**Generated-asset entries (1):**
+- script file order;
+- namespace identity;
+- direct dependencies;
+- vendor and generated-asset integrity hashes.
 
-| Namespace | File | Dependencies |
-|---|---|---|
-| `OceanRescue.RenderAssets` | `render-assets.generated.js` | none |
+`app.js` directly coordinates most application subsystems and is the current orchestration hub.
 
-**Application entries (17):**
-
-| Namespace | File | Direct dependencies |
-|---|---|---|
-| `OceanRescue.RenderRuntime` | `render-runtime.js` | `PIXI`, `OceanRescue.RenderAssets` |
-| `OceanRescue.State` | `state.js` | none |
-| `OceanRescue.Profile` | `profile.js` | none |
-| `OceanRescue.Missions` | `missions.js` | none |
-| `OceanRescue.Gups` | `gups.js` | none |
-| `OceanRescue.Launch` | `launch.js` | none |
-| `OceanRescue.Travel` | `travel.js` | none |
-| `OceanRescue.Terrain` | `terrain.js` | none |
-| `OceanRescue.TravelScene` | `travel-scene.js` | `OceanRescue.RenderRuntime` |
-| `OceanRescue.Rescue` | `rescue.js` | none |
-| `OceanRescue.SeaTurtle` | `sea-turtle.js` | none |
-| `OceanRescue.SeaTurtleScene` | `sea-turtle-scene.js` | `OceanRescue.RenderRuntime`, `OceanRescue.SeaTurtle` |
-| `OceanRescue.Crab` | `crab.js` | none |
-| `OceanRescue.CrabScene` | `crab-scene.js` | `OceanRescue.RenderRuntime`, `OceanRescue.Crab` |
-| `OceanRescue.YoungWhale` | `young-whale.js` | none |
-| `OceanRescue.MissionSuccess` | `mission-success.js` | none |
-| `OceanRescue.App` | `app.js` | `State`, `RenderRuntime`, `Profile`, `Missions`, `Gups`, `Launch`, `Travel`, `Terrain`, `Rescue`, `SeaTurtle`, `SeaTurtleScene`, `TravelScene`, `Crab`, `YoungWhale`, `MissionSuccess` |
-
-**Namespaces total:** 19
-
-### 4.3 Build graph
+### 4.3 Current build graph
 
 ```text
-canonical visual source (SVG/high-res raster)
-→ atlas build (scripts/ocean_rescue/build_atlases.py)
-→ atlas validation (scripts/ocean_rescue/validate_atlases.py)
-→ generated asset registry (scripts/ocean_rescue/build_render_assets_registry.py)
-→ application source inclusion (render-assets.generated.js)
-→ HTML template (index.template.html)
-→ single-HTML builder (scripts/ocean_rescue/build_single_html.py)
-→ tracked deploy artifact (ocean-rescue/index.html)
-→ artifact drift verification (tests/test_ocean_rescue_artifact_drift.py)
+approved canonical visual source
+→ atlas build
+→ atlas validation
+→ generated asset registry
+→ ordered JavaScript inclusion
+→ HTML template
+→ Python standalone builder
+→ tracked ocean-rescue/index.html
+→ artifact drift verification
 ```
 
-Commands:
+Current representative commands:
 
 ```bash
-just build-ocean-rescue          # full build
-just check-ocean-rescue-drift    # artifact drift check
-just build-ocean-rescue-atlases  # atlas build only
-just build-ocean-rescue-render-package  # vendor + registry + HTML
-just check-ocean-rescue-render-package  # render package integrity
+just build-ocean-rescue
+just check-ocean-rescue-drift
+just build-ocean-rescue-atlases
+just check-ocean-rescue-atlases
+just build-ocean-rescue-render-package
+just check-ocean-rescue-render-package
 ```
 
-### 4.4 Runtime ownership
+### 4.4 Current orchestration concentration
 
-`app.js` is the central orchestration hub. It owns:
+The current application hub owns or coordinates:
 
-| Responsibility | Description |
-|---|---|
-| Phase routing | `State.beginTransition` / `completeTransition` for all phase changes |
-| DOM screen lifecycle | Show/hide mission-select, GUP-select, launch, stage, rescue, success sections |
-| Pixi scene lifecycle | Mount/unmount TravelScene, SeaTurtleScene, CrabScene |
-| Launch sequence | Timer-based briefing with skip support |
-| Travel frame loop | `requestAnimationFrame` loop with delta-time stepping |
-| Rescue site transition | Timer-based transition with auto-complete |
-| Tutorial lifecycle | Timer-based tutorial with skip support |
-| Mission-specific input | SeaTurtle rope input, Crab hold-and-drag, YoungWhale tow-line |
-| Pointer capture | Single-pointer ownership, pointer-capture API |
-| Timer ownership | Pauseable timer registry with freeze/rearm |
-| Pause/resume | Full pause overlay with countdown resume |
-| Mission completion | Success sequence, narration, Continue/Replay |
-| Profile persistence | Animal selection, localStorage |
-| Progression persistence | Mission completion, unlock, `New!` state |
+- phase routing;
+- DOM screen lifecycle;
+- Pixi scene mount/unmount;
+- launch sequence;
+- travel animation frame;
+- rescue-site transition and tutorial;
+- mission-specific input;
+- pointer capture;
+- timer registry;
+- pause/resume;
+- mission success and replay/continue;
+- profile persistence;
+- progression persistence.
+
+This concentration is not itself proof of a gameplay defect. It is a development and refactoring risk that the migration must reduce without changing semantics.
+
+### 4.5 Sources of development friction
+
+The main friction is not “using HTML.” It is the combination of:
+
+- global namespace dependency resolution;
+- manually duplicated manifest ordering;
+- missing compile-time module and type information;
+- authoring source and generated deploy artifact being operationally close;
+- concentrated orchestration ownership;
+- tests carrying part of the burden normally handled by a compiler and bundler;
+- rebuild-heavy feedback for ordinary browser changes.
 
 ---
 
@@ -230,52 +224,36 @@ just check-ocean-rescue-render-package  # render package integrity
 
 ```text
 TypeScript / ESM application source
-→ Vite development server (fast HMR)
-→ Vite deterministic application bundle
-→ existing generated atlas registry injection
+→ Vite development server for local feedback
+→ deterministic Vite application bundle
+→ existing generated atlas registry
 → standalone packaging boundary
 → tracked ocean-rescue/index.html
 ```
 
-### 5.2 Target structure (proposed, not final)
+### 5.2 Proposed source shape
+
+The exact final paths are decided by migration work packages after inspecting the then-current repository.
+The target conceptual boundaries are:
 
 ```text
 domains/ocean-rescue/
 ├─ src/
-│  ├─ main.ts                  (canonical ESM entry)
+│  ├─ main.ts
 │  ├─ app/
-│  │  ├─ orchestrator.ts
-│  │  ├─ phase-router.ts
-│  │  ├─ pause.ts
-│  │  └─ input.ts
 │  ├─ core/
-│  │  ├─ state.ts
-│  │  ├─ timer.ts
-│  │  └─ pointer.ts
 │  ├─ profile/
-│  │  ├─ profile.ts
-│  │  └─ persistence.ts
 │  ├─ missions/
-│  │  ├─ catalog.ts
-│  │  ├─ sea-turtle.ts
-│  │  ├─ crab.ts
-│  │  └─ young-whale.ts
 │  ├─ scenes/
-│  │  ├─ render-runtime.ts
-│  │  ├─ travel-scene.ts
-│  │  ├─ sea-turtle-scene.ts
-│  │  └─ crab-scene.ts
 │  ├─ rendering/
-│  │  └─ renderer-adapter.ts
 │  └─ styles/
-│     └─ game.css
-├─ index.dev.html              (Vite dev entry)
-├─ vite.config.ts              (PLANNED)
-├─ tsconfig.json               (PLANNED)
+├─ index.dev.html
+├─ vite.config.ts
+├─ tsconfig.json
 └─ package boundary
 ```
 
-Final paths are determined at each migration work package after verifying the current repository.
+This diagram is directional, not permission to move every file in one work package.
 
 ---
 
@@ -283,20 +261,21 @@ Final paths are determined at each migration work package after verifying the cu
 
 | Concern | Canonical authoring source | Derived/output |
 |---|---|---|
-| Gameplay state | Domain modules (state.js, missions.js, etc.) | Renderer snapshot |
-| Application source | TS/ESM modules (PLANNED) | Bundled JS |
-| Styles | Source CSS | Inlined CSS in HTML |
-| Visual source | Approved canonical assets (SVG/raster) | Raster atlases |
-| Asset metadata | art-packet.json + art-approval.json | Generated registry |
+| Gameplay state | Domain modules | Renderer snapshots |
+| Application source | TS/ESM modules (target) | Vite application bundle |
+| Styles | Source CSS | Bundled/inlined CSS |
+| Visual source | Approved canonical SVG/raster source | Raster atlases |
+| Asset metadata | `art-packet.json` and approval data | Generated registry |
 | Renderer state | Gameplay-derived adapter state | Pixi display tree |
 | Deployment | Packaging contract | Standalone HTML |
-| Verification | Test harness source | Reports/screenshots |
+| Verification | Tests and harness source | Reports, hashes, screenshots |
 
 Authority rules:
 
-- `ocean-rescue/index.html` is a tracked deployment artifact. It is never edited directly.
+- `ocean-rescue/index.html` is a tracked deployment artifact and is never edited directly.
 - Artifact changes originate from canonical source and the build pipeline.
-- PixiJS display objects are not gameplay state. They are derived renderer state.
+- Pixi display objects are not gameplay state.
+- Shadow or compatibility paths must not independently mutate gameplay state.
 
 ---
 
@@ -315,236 +294,247 @@ Authority rules:
 | Backend requirement | None |
 | Development server requirement | None |
 
-### 7.2 Node build tooling (PLANNED)
+### 7.2 Node build tooling (target)
 
-| Tool | Role |
+| Tool | Responsibility |
 |---|---|
-| pnpm | Package management |
-| Vite | Development server + application bundling |
-| TypeScript | Source-level type checking |
-| Application module graph | ES module imports |
-| Development server | Fast HMR feedback loop |
-| Application bundling | Deterministic production output |
-| Source-level type checking | Error detection before runtime |
+| pnpm | Package and lockfile authority |
+| Vite | Development server and application bundling |
+| TypeScript | Source diagnostics and type checking |
+| ESM graph | Application dependency authority |
 
-### 7.3 Python build tooling (existing)
+Node tooling is build-time only and must not become a production runtime dependency.
 
-| Tool | Role |
+### 7.3 Python build tooling (maintained)
+
+| Responsibility | Current owner |
 |---|---|
-| Atlas validation | SVG/source validation, rasterization, atlas generation |
+| Canonical asset validation | Existing Ocean Rescue scripts |
+| SVG/raster/atlas processing | Existing atlas pipeline |
 | Generated asset registry | `build_render_assets_registry.py` |
-| Single-HTML builder | `build_single_html.py` |
-| Artifact drift checks | `test_ocean_rescue_artifact_drift.py` |
+| Standalone packaging | `build_single_html.py` or its explicit successor |
+| Artifact drift | Existing focused tests |
 
 ### 7.4 Repository command layer
 
-`just` remains the repository command entrypoint. Actual commands are documented in the Justfile. New development commands (Vite dev server, TypeScript checking) are added only by the corresponding migration work packages.
+`just` remains the repository-level command entrypoint.
+New Node commands become current documentation only after their implementation work package publishes them.
 
 ---
 
-## 8. Module rules
-
-Normative rules for migration:
+## 8. Module and ownership rules
 
 1. New production code must not expand `window.OceanRescue.*` usage.
-2. Temporary compatibility adapters are permitted only in explicitly declared migration states.
-3. Static ESM imports are the default for new code.
+2. Temporary global adapters are allowed only in declared migration states.
+3. Static ESM imports are the target default.
 4. Circular dependencies are forbidden.
-5. The renderer must not change or own gameplay state.
-6. Scene modules must not redefine success, progression, save semantics, or pause behavior.
-7. DOM lifecycle and Pixi scene lifecycle owners must be clearly separated.
-8. Timer and animation frame owners must be clearly separated.
-9. Pointer coordinate normalization occurs at a single boundary.
-10. Module imports must not create unnecessary side effects.
-11. Leaf modules are migrated first (profile, missions, GUPs, terrain, etc.).
-12. Strongly coupled controllers, types, callers, and focused tests may be grouped in one work package.
-13. Large-scale simultaneous conversion of multiple mission subsystems is separated when it exceeds bounded context.
+5. Renderer modules must not own or redefine gameplay state.
+6. Scene modules must not redefine success, progression, save, or pause semantics.
+7. DOM lifecycle and Pixi scene lifecycle owners must be explicit.
+8. Timer and animation-frame owners must be explicit.
+9. Browser pointer coordinates are normalized once into logical coordinates.
+10. Imports should avoid unnecessary side effects.
+11. Leaf modules are migrated before high-coupling orchestration where practical.
+12. Strongly coupled source, callers, types, tests, and configuration may be grouped in one coherent work package.
+13. Independent mission subsystems are not converted together when the context or rollback boundary becomes unstable.
+14. Cutover and cleanup may be separate work packages.
 
 ---
 
-## 9. Build contract
+## 9. Build contracts
 
-### 9.1 Development (PLANNED)
+### 9.1 Development path
 
-| Contract | Detail |
-|---|---|
-| Fast feedback | Vite HMR, sub-second reload |
-| Deterministic startup entry | `main.ts` canonical entry |
-| No production artifact mutation | Dev server does not modify tracked HTML |
-| Explicit browser entry | `index.dev.html` |
-| Source-level diagnostics | TypeScript compiler errors |
-| Gameplay flow parity | Current game works identically |
+- The dev server provides fast HMR or reload feedback.
+- Ordinary dev-server use does not modify tracked production artifacts.
+- The browser starts through an explicit development entry.
+- Source diagnostics are available before production packaging.
+- Representative gameplay behavior remains equivalent to the current production path.
 
-### 9.2 Production
+No numeric reload-time SLA is defined until measured evidence exists.
 
-| Contract | Detail |
-|---|---|
-| Pinned dependency graph | Lockfile |
-| Deterministic bundle | Vite production build |
-| Atlas validation before packaging | Existing Python pipeline |
-| Generated registry drift detection | Existing test suite |
-| Standalone HTML generation | `build_single_html.py` |
-| Deploy artifact drift detection | `test_ocean_rescue_artifact_drift.py` |
-| No external runtime requests | Existing build validation |
-| Fail-closed build | Existing error handling |
-| Source map policy | Decided per work package |
-| Stable entrypoint | `main.ts` |
-| Reproducible command path | `just build-ocean-rescue` |
+### 9.2 Production path
+
+- Exact dependency versions are locked.
+- Vite output is deterministic within the same environment and inputs.
+- Atlas validation runs before final packaging.
+- Generated registry drift remains detectable.
+- Final output remains one standalone HTML file.
+- Runtime network primitives and external resource references remain rejected.
+- Build failures fail closed.
+- Source-map handling is explicitly decided before production cutover.
+- The stable repository command remains reproducible.
+
+### 9.3 Equivalence and determinism
+
+Two different comparisons must not be conflated:
+
+- **Legacy output vs new output:** functional/runtime equivalence is required; byte identity is not expected after bundling changes.
+- **New build run A vs new build run B:** byte-identical output is required for the same inputs and environment.
 
 ---
 
-## 10. Toolchain policy
+## 10. Toolchain policy and verified external status
 
-| Rule | Detail |
-|---|---|
-| Package manager | pnpm only |
-| Lockfile conflict | npm/yarn/pnpm lockfiles must not coexist |
-| Version authority | Lockfile is authoritative for exact versions |
-| Documentation | Supported line and compatibility policy documented |
-| Plugin adoption | Added only when a work package has clear need |
-| Single-file plugin | Not a prerequisite |
-| Dev vs runtime deps | Explicitly separated |
-| Upgrade vs cutover | Not forced into the same work package |
-| Pin vs official stable | Reconciliation performed first if they differ |
-| Toolchain selection | Does not change existing PixiJS/atlas/gameplay contracts |
+### 10.1 Policy
 
-### External toolchain status
+- pnpm is the only target package manager for Ocean Rescue.
+- npm, yarn, and pnpm lockfiles must not coexist as competing authorities.
+- The lockfile is authoritative for exact dependency versions.
+- Plugins are added only for a concrete work-package requirement.
+- A single-file bundling plugin is not assumed in advance.
+- Development dependencies and browser runtime dependencies are distinguished.
+- A package upgrade and an architecture cutover are grouped only when they share the same objective and rollback boundary.
+- Toolchain changes must not alter gameplay, atlas, or standalone deployment contracts.
 
-| Tool | Repository pin | Official stable/supported | Compatibility note | Decision |
-|---|---|---|---|---|
-| PixiJS | 8.19.0 | v8.x current | Pin is current stable | Maintain pin, reconcile at Phase 10 |
-| Vite | ABSENT | 8.2.0 (Jul 2026) | Not yet installed | Install at Phase 1 |
-| TypeScript | ABSENT | 7.0 | Not yet installed | Install at Phase 1 |
-| pnpm | ABSENT | Active, current | Not yet installed | Install at Phase 1 |
-| Node.js | ABSENT (.nvmrc) | LTS | No version pin | Pin at Phase 1 |
+### 10.2 External status verified on 2026-08-03
 
-Toolchain exact versions are locked by lockfile at implementation time. This specification does not force specific versions.
+| Tool | Repository state | Official observation | Architecture decision |
+|---|---|---|---|
+| Vite | Not installed | Official release policy lists `vite@8.1` as the regular-patch line; Vite 8.1 was announced 2026-06-23 | Select and lock an exact supported 8.1.x version during the package-boundary work package |
+| PixiJS | Vendored 8.19.0 | Official June 2026 post publishes 8.19.0, while the official versions page still labels 8.18.1 as stable | Keep 8.19.0; record the official metadata inconsistency and reconcile package metadata during package-import cutover |
+| TypeScript | Not installed | Version selection is implementation-time and lockfile-controlled | Select an officially supported exact version during the package-boundary work package |
+| pnpm | Not installed | Active package manager; exact version not yet pinned | Pin one exact version during the package-boundary work package |
+| Node.js | No repository pin | Build-time runtime must use an active supported line | Select and pin an active LTS line during the package-boundary work package |
+
+Official references:
+
+- Vite releases: `https://vite.dev/releases`
+- Vite 8.1 announcement: `https://vite.dev/blog/announcing-vite8-1`
+- PixiJS June 2026 update: `https://pixijs.com/blog/june-2026`
+- PixiJS versions page: `https://pixijs.com/versions`
+
+This table is evidence for migration planning, not a permanently live “latest version” tracker.
 
 ---
 
 ## 11. Migration states
 
-### 11.1 State definitions
+State progression follows the implementation plan:
 
 ```text
-LEGACY_GLOBAL          — Current state: window.OceanRescue global namespaces
-DEV_SERVER_COMPAT      — Existing source runs on Vite dev server
-PACKAGE_BOUNDARY_READY — pnpm package boundary established
-SHADOW_BUNDLE          — Vite production bundle built alongside legacy
-PRODUCTION_BUNDLE      — Standalone builder consumes Vite bundle
-ESM_ENTRY              — Canonical main.ts entry with explicit imports
-TYPED_MODULES          — TypeScript applied to leaf modules
-TYPED_CONTROLLERS      — TypeScript applied to orchestration modules
-PACKAGE_PIXI           — PixiJS loaded as package dependency
-LEGACY_GRAPH_REMOVED   — Legacy global namespace graph removed
-MIGRATION_COMPLETE     — All targets achieved
+LEGACY_GLOBAL
+→ PACKAGE_BOUNDARY_READY
+→ DEV_SERVER_COMPAT
+→ SHADOW_BUNDLE
+→ PRODUCTION_BUNDLE
+→ ESM_ENTRY
+→ TYPED_MODULES
+→ TYPED_CONTROLLERS
+→ PACKAGE_PIXI
+→ TYPED_SCENES
+→ LEGACY_GRAPH_REMOVED
+→ MIGRATION_COMPLETE
 ```
 
-### 11.2 State details
-
-| State | Authoritative source | Production path | Compatibility | Allowed overlap | Forbidden mutation | Entry condition |
-|---|---|---|---|---|---|---|
-| LEGACY_GLOBAL | `src/*.js` global namespaces | `build-manifest.json` ordered scripts | Full legacy | None | None | Initial |
-| DEV_SERVER_COMPAT | `src/*.js` globals + dev entry | Legacy build pipeline | Dev-only HTML entry | Legacy + dev paths | Production bundle changes | Phase 0 complete |
-| PACKAGE_BOUNDARY_READY | `package.json` + lockfile | Legacy build pipeline | None | None | Source ESM conversion | pnpm + Vite installed |
-| SHADOW_BUNDLE | Vite config + `src/*.js` | Legacy + shadow bundle | Shadow only | Legacy + shadow paths | Legacy manifest changes | Vite builds successfully |
-| PRODUCTION_BUNDLE | Vite config + legacy manifest | Standalone builder consumes bundle | Builder adapted | Legacy + new paths | Legacy script ordering | Parity verified |
-| ESM_ENTRY | `main.ts` | Vite entry | None | None | Legacy global expansion | Explicit imports working |
-| TYPED_MODULES | `*.ts` leaf modules | Vite entry | None | None | Untyped module expansion | Types pass for leaves |
-| TYPED_CONTROLLERS | `*.ts` controllers | Vite entry | None | None | Controller changes | Types pass for controllers |
-| PACKAGE_PIXI | `package.json` pixi.js | Vite entry | None | None | Vendored UMD removal before rollback proof | Package import verified |
-| LEGACY_GRAPH_REMOVED | ESM modules only | Vite entry | None | None | Global namespace revival | All references to globals = 0 |
-| MIGRATION_COMPLETE | TS/ESM modules | Standalone HTML via Vite | None | None | Migration regression | All acceptance criteria met |
+| State | Authoritative source | Production path | Entry condition |
+|---|---|---|---|
+| `LEGACY_GLOBAL` | Global JavaScript source | Ordered manifest scripts | Initial state |
+| `PACKAGE_BOUNDARY_READY` | Package files plus legacy source | Legacy production pipeline | Phase 1 complete |
+| `DEV_SERVER_COMPAT` | Legacy source plus dev entry | Legacy production pipeline | Phase 2 complete |
+| `SHADOW_BUNDLE` | Vite shadow configuration plus legacy source | Legacy path remains authoritative | Phase 3 complete |
+| `PRODUCTION_BUNDLE` | Vite application bundle | Standalone builder consumes temporary bundle packaging | Phase 4 complete |
+| `ESM_ENTRY` | Canonical ESM entry and import graph | Vite bundle | Phase 5 complete |
+| `TYPED_MODULES` | Typed leaf/domain modules | Vite bundle | Phases 6–7 relevant contracts complete |
+| `TYPED_CONTROLLERS` | Typed bounded controllers | Vite bundle | Phase 8 complete |
+| `PACKAGE_PIXI` | `pixi.js` package import and typed render runtime | Vite bundle | Phase 9 complete |
+| `TYPED_SCENES` | Typed ESM scene modules | Vite bundle | Phase 10 complete |
+| `LEGACY_GRAPH_REMOVED` | TS/ESM application graph | Finalized standalone packaging | Required Phases 11–13 cleanup complete |
+| `MIGRATION_COMPLETE` | Canonical TS/ESM application source | Deterministic standalone HTML | Phase 14 complete |
 
 ---
 
 ## 12. Dual-path rules
 
-During migration when old and new paths coexist:
+When legacy and new paths coexist:
 
-1. One authoritative path is designated. The shadow path must not independently change gameplay state.
+1. Exactly one production-authoritative path is declared.
 2. Shadow paths exist only for parity verification.
-3. Silent fallback between old/new is forbidden.
-4. Parity failure is not treated as success.
-5. Production cutover is performed as a single ownership switch.
-6. Cutover and legacy cleanup may be separated.
-7. Rollback path is not removed until zero references are proven.
+3. A shadow path must not independently mutate gameplay state.
+4. Silent fallback between old and new paths is forbidden.
+5. Parity failure is not converted into success by fallback.
+6. Production cutover is one explicit ownership switch.
+7. Legacy cleanup may follow later.
+8. A rollback path is not removed before zero-reference and rollback-need evidence exists.
 
 ---
 
 ## 13. Cutover and rollback
 
-Each cutover work package must include:
+Every cutover work package records:
 
-- Baseline evidence (hashes, screenshots, test results)
-- Changed ownership description
-- Affected paths
-- Parity checks performed
-- Artifact comparison results
-- Browser verification evidence
-- Rollback procedure
-- Legacy path retention or removal decision
-- Remaining cleanup items
+- baseline hashes and runtime evidence;
+- changed ownership;
+- affected paths;
+- verification bundle;
+- legacy/new functional-equivalence results;
+- new-build determinism results;
+- browser evidence;
+- rollback procedure;
+- retained compatibility path;
+- remaining cleanup.
 
-Strongly coupled changes with the same rollback boundary may be performed together. Changes with different rollback boundaries are separated into follow-up work packages.
+Strongly coupled changes with the same rollback boundary may be grouped.
+Changes with different rollback boundaries are separated.
 
 ---
 
 ## 14. Verification architecture
 
-Minimum verification layers (applied per work package based on risk):
+Verification layers are selected according to work-package risk:
 
-| Layer | Description |
+| Layer | Purpose |
 |---|---|
-| Package/lock integrity | pnpm install, lockfile consistency |
-| TypeScript diagnostics | `tsc --noEmit` or equivalent |
-| Module graph validation | Import resolution, circular dependency check |
-| Focused domain tests | Existing Python tests for Ocean Rescue |
-| Controller lifecycle tests | Phase transitions, pause/resume |
-| Scene contract tests | Scene mount/unmount, sync |
-| Browser startup smoke | Chrome headless verification |
-| Representative gameplay flow | Travel → rescue → completion |
-| Pointer mapping parity | Logical coordinate mapping |
-| Pause/resume parity | Timer freeze/rearm |
-| Renderer backend evidence | WebGL vs Canvas detection |
-| Zero external request evidence | Network pattern validation |
-| Deterministic application bundle | Byte-identical rebuilds |
-| Deterministic atlas outputs | Atlas rebuild determinism |
-| Standalone artifact drift | Tracked artifact matches rebuild |
-| Performance evidence | Frame rate, memory (where affected) |
+| Package/lock integrity | Reproducible dependency graph |
+| TypeScript diagnostics | Source contract validation |
+| Module graph validation | Import resolution and cycle prevention |
+| Focused domain tests | Gameplay/domain behavior |
+| Controller lifecycle tests | Phase, timer, pause, and ownership behavior |
+| Scene contract tests | Mount, unmount, sync, and pointer intents |
+| Browser startup smoke | Real browser startup |
+| Representative gameplay flow | Launch, travel, rescue, completion |
+| Pointer parity | Browser-to-logical mapping |
+| Pause/resume parity | Timer freeze and rearm |
+| Renderer backend evidence | WebGL and Canvas behavior |
+| Runtime network evidence | No external request |
+| Application-bundle determinism | Repeatable Vite output |
+| Atlas determinism | Existing asset pipeline stability |
+| Standalone artifact drift | Tracked output matches rebuild |
+| Target-device performance | Measured only where relevant |
+
+A full suite does not replace the focused verification needed for each changed contract.
 
 ---
 
 ## 15. Non-goals
 
-- Engine replacement (PixiJS is retained)
-- Gameplay redesign
-- New missions
-- Visual redesign
-- Atlas pipeline rewrite
-- All-JavaScript-at-once TypeScript conversion
-- Whole `app.js` rewrite
-- React introduction
-- Backend introduction
-- Runtime network imports
-- Standalone artifact removal
-- Generated artifact manual editing
-- Unrelated code cleanup
-- Migration phase entire execution in one task
+- engine replacement;
+- gameplay redesign;
+- new missions;
+- visual redesign;
+- atlas pipeline rewrite;
+- all-JavaScript-at-once conversion;
+- whole `app.js` rewrite;
+- backend introduction;
+- runtime network imports;
+- standalone artifact removal;
+- direct editing of generated artifacts;
+- unrelated cleanup;
+- executing the entire migration in one work package.
 
 ---
 
 ## 16. Change control
 
-The following changes require architecture specification revision:
+The following changes require revision of this architecture specification:
 
-- Renderer family replacement (e.g., PixiJS to Three.js)
-- Standalone artifact deprecation
-- Backend or runtime network introduction
-- Package manager replacement (e.g., pnpm to yarn)
-- Asset representation change (e.g., atlas to runtime SVG)
-- Gameplay authority ownership change
-- TypeScript/ESM strategy reversal
-- Fundamental Python/Node responsibility boundary change
+- renderer-family replacement;
+- standalone artifact deprecation;
+- backend or runtime-network introduction;
+- package-manager replacement;
+- asset-representation change;
+- gameplay-authority ownership change;
+- TypeScript/ESM strategy reversal;
+- fundamental reassignment of Node and Python responsibilities.
 
-Ordinary module migration follows the migration plan without requiring architecture revision.
+Ordinary module migration and bounded controller extraction follow the migration plan without requiring a spec revision.

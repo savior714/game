@@ -571,14 +571,38 @@ function renderWeeklyWords() {
     </div>
   `).join('');
 }
+function resolveWeeklyWord(rawInput, wordsCatalog) {
+  if (typeof rawInput !== 'string') return null;
+  var normalized = rawInput.trim().normalize('NFKC').toLowerCase();
+  if (!normalized) return null;
+  if (!/^[a-z]+(?:[-'][a-z]+)*$/.test(normalized)) return null;
+  var categories = Object.keys(wordsCatalog);
+  for (var c = 0; c < categories.length; c++) {
+    var words = wordsCatalog[categories[c]].words;
+    for (var i = 0; i < words.length; i++) {
+      if (words[i][0] === normalized) {
+        return { en: words[i][0], ko: words[i][1], icon: words[i][2] };
+      }
+    }
+  }
+  return null;
+}
 function addWeeklyWord() {
-  const en = document.getElementById('ww-en').value.trim();
-  const ko = document.getElementById('ww-ko').value.trim();
-  const icon = document.getElementById('ww-icon').value.trim();
-  if (!en || !ko) { alert('영단어와 뜻을 모두 입력해주세요.'); return; }
-  weeklyWords.push({ en, ko, icon });
+  var rawEn = document.getElementById('ww-en').value;
+  var resolved = resolveWeeklyWord(rawEn, window.WORDS || {});
+  if (!resolved) {
+    alert('게임 단어 사전에 없는 단어입니다.');
+    return;
+  }
+  var normalized = resolved.en;
+  var isDuplicate = weeklyWords.some(function(w) { return w.en === normalized; });
+  if (isDuplicate) {
+    alert('이미 등록된 단어입니다.');
+    return;
+  }
+  weeklyWords.push({ en: resolved.en, ko: resolved.ko, icon: resolved.icon });
   saveWeeklyWords(); renderWeeklyWords();
-  document.getElementById('ww-en').value = ''; document.getElementById('ww-ko').value = '';
+  document.getElementById('ww-en').value = '';
 }
 function deleteWeeklyWord(idx) {
   if (confirm('이 단어를 주간 시험 목록에서 삭제할까요?')) {

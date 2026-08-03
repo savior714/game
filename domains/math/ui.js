@@ -149,11 +149,11 @@ function onModalBackdrop(e) {
 }
 
 function renderStatsTable() {
-  const OP_LABELS = { '+': '덧셈 (+)', '-': '뺼셈 (-)', '×': '곱셈 (×)' };
+  const OP_LABELS = { '+': '덧셈 (+)', '-': '뺼셈 (-)', '\xD7': '곱셈 (\xD7)' };
   const tbody = document.getElementById('stats-tbody');
   tbody.innerHTML = '';
 
-  for (const op of ['+', '-', '×']) {
+  for (const op of ['+', '-', '\xD7']) {
     const s = stats[op];
     let totalAttempts = 0, totalCorrect = 0, totalTime = 0;
     Object.values(s.levels).forEach(lv => {

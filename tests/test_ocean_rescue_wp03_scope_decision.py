@@ -4,7 +4,12 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-PLAN = REPO_ROOT / "docs" / "plans" / "PLAN_ocean_rescue_vite_esm_typescript_migration.md"
+PLAN = (
+    REPO_ROOT
+    / "docs"
+    / "plans"
+    / "PLAN_ocean_rescue_vite_esm_typescript_migration.md"
+)
 
 
 def test_current_schedule_allows_wp21_before_physical_device_smoke() -> None:
@@ -14,7 +19,10 @@ def test_current_schedule_allows_wp21_before_physical_device_smoke() -> None:
     assert "**Current phase:** PHASE_4_READY" in header
     assert "**Next executable work package:** WP-21" in header
     assert "**Production cutover gate:** SATISFIED" in header
-    assert "WP-03A must pass before MVP release, but it does not block WP-21" in header
+    assert (
+        "WP-03A must pass before MVP release, but it does not block WP-21"
+        in header
+    )
     assert "WP-03B is non-blocking follow-up work" in header
 
     assert "PHASE_4_READY_WITH_WP03_PENDING" not in header
@@ -26,7 +34,10 @@ def test_wp03_is_split_into_release_smoke_and_non_blocking_harness() -> None:
     plan = PLAN.read_text(encoding="utf-8")
 
     assert "### WP-03A — Target-device release smoke" in plan
-    assert "MVP release gate; not a WP-21 production-packaging cutover prerequisite" in plan
+    assert (
+        "MVP release gate; not a WP-21 production-packaging cutover prerequisite"
+        in plan
+    )
     assert "No canonical numeric frame-time or FPS SLA is defined" in plan
 
     assert "### WP-03B — Reproducible target-device performance harness" in plan
@@ -44,12 +55,13 @@ def test_superseded_wp03_blocking_language_is_historical_only() -> None:
         "Historical WP-20 closure snapshot; retained as provenance "
         "and superseded for current scheduling:"
     )
+    blocked_marker = "WP-21 remains blocked until WP-03"
     current_marker = "Current scheduling authority:"
 
     assert historical_marker in plan
     assert current_marker in plan
-    assert plan.index(historical_marker) < plan.index("WP-21 remains blocked until WP-03")
-    assert plan.index("WP-21 remains blocked until WP-03") < plan.index(current_marker)
+    assert plan.index(historical_marker) < plan.index(blocked_marker)
+    assert plan.index(blocked_marker) < plan.index(current_marker)
 
     current = plan[plan.index(current_marker) :]
     assert "Next executable work package: WP-21" in current

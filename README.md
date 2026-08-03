@@ -51,12 +51,14 @@ Ocean Rescue에는 도메인 로컬 build-time Node 경계가 존재합니다.
 - **Sync:** `just sync-ocean-rescue-node`
 - **Toolchain check:** `just check-ocean-rescue-toolchain`
 - **Typecheck:** `just typecheck-ocean-rescue`
+- **Development server:** `just dev-ocean-rescue` (개발 전용, `http://127.0.0.1:5173/index.dev.html`)
+- **Dev-server check:** `just check-ocean-rescue-dev-server`
 
 제약:
 
 - Node는 **build-time 전용**입니다. 전체 browser runtime은 Node를 요구하지 않습니다.
 - Production artifact는 기존 `just build-ocean-rescue-render-package` Python pipeline이 생성합니다.
-- Vite dev server는 아직 구현되지 않습니다 (WP-11).
+- Vite dev server는 **개발 전용**입니다. 실행 중에는 현재 global-namespace 소스를 `index.dev.html` + `vite.config.ts`를 통해 그대로 제공합니다 (WP-11). Production pipeline은 변경되지 않습니다.
 
 ## ✅ 검증 체계
 

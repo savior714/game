@@ -81,7 +81,9 @@ def _root_attributes(page: Page) -> dict[str, str | None]:
     )
 
 
-def _map_client(rect: dict[str, float], client_x: float, client_y: float) -> dict[str, float]:
+def _map_client(
+    rect: dict[str, float], client_x: float, client_y: float
+) -> dict[str, float]:
     return {
         "client_x": client_x,
         "client_y": client_y,
@@ -148,7 +150,9 @@ def _install_pointer_observer(page: Page) -> None:
     )
 
 
-def _drag_rope(page: Page, rect: dict[str, float], rope: dict[str, object]) -> dict[str, object]:
+def _drag_rope(
+    page: Page, rect: dict[str, float], rope: dict[str, object]
+) -> dict[str, object]:
     start = rope["start"]
     end = rope["end"]
     start_client = (
@@ -223,8 +227,12 @@ def _drag_rope(page: Page, rect: dict[str, float], rope: dict[str, object]) -> d
         "complete_after": after["complete"],
         "feedback_after": after["feedback"],
         "pointer_events": events,
-        "pointer_down_dispatched": any(event["type"] == "pointerdown" for event in events),
-        "pointer_move_dispatched": any(event["type"] == "pointermove" for event in events),
+        "pointer_down_dispatched": any(
+            event["type"] == "pointerdown" for event in events
+        ),
+        "pointer_move_dispatched": any(
+            event["type"] == "pointermove" for event in events
+        ),
         "pointer_up_dispatched": any(event["type"] == "pointerup" for event in events),
         "domain_state_changed": after["completed"] > before["completed"],
         "snapshot_after_down": after_down,
@@ -234,7 +242,83 @@ def _drag_rope(page: Page, rect: dict[str, float], rope: dict[str, object]) -> d
     }
 
 
-def collect_evidence(page: Page, base_url: str, browser_info: dict[str, str]) -> dict[str, object]:
+def classify_network(
+    requests: list[dict[str, str]],
+    base_url: str,
+) -> dict[str, object]:
+    """Classify recorded requests into local/same-origin, external, and API sets.
+
+    Same-origin requests (including Vite dev-server client, stylesheets, classic
+    scripts, and WebSocket/HMR transport on the same origin) are classified as
+    local and are not treated as external.
+    """
+    origin = urlsplit(base_url).netloc
+    local_requests = [
+        request for request in requests if urlsplit(request["url"]).netloc == origin
+    ]
+    external_requests = [
+        request
+        for request in requests
+        if urlsplit(request["url"]).netloc not in {origin, ""}
+    ]
+    external_scripts = [
+        request for request in external_requests if request["resource_type"] == "script"
+    ]
+    external_stylesheets = [
+        request
+        for request in external_requests
+        if request["resource_type"] == "stylesheet"
+    ]
+    external_assets = [
+        request
+        for request in external_requests
+        if request["resource_type"] in {"image", "media", "font"}
+    ]
+    api_requests = [
+        request for request in requests if request["resource_type"] in {"fetch", "xhr"}
+    ]
+    dynamic_module_requests = [
+        request
+        for request in requests
+        if request["resource_type"] == "script" and request["url"].startswith("http")
+    ]
+    return {
+        "total": len(requests),
+        "local_same_origin": len(local_requests),
+        "external": len(external_requests),
+        "external_javascript": len(external_scripts),
+        "external_stylesheet": len(external_stylesheets),
+        "external_image_audio_font": len(external_assets),
+        "renderer_cdn": len(external_scripts),
+        "api_requests": len(api_requests),
+        "dynamic_module_requests": len(dynamic_module_requests),
+        "request_failures": [],
+        "external_details": external_requests,
+        "all_requests": requests,
+    }
+
+
+def classify_console(console_warnings: list[str]) -> dict[str, object]:
+    unexpected_warnings = [
+        warning for warning in console_warnings if BENIGN_WEBGL_WARNING not in warning
+    ]
+    return {
+        "warning_classification": {
+            "benign_webgl_gpu_stall": sum(
+                BENIGN_WEBGL_WARNING in warning for warning in console_warnings
+            ),
+            "unexpected": unexpected_warnings,
+        },
+        "console_warning_count": len(console_warnings),
+    }
+
+
+def collect_evidence(
+    page: Page,
+    base_url: str,
+    browser_info: dict[str, str],
+    entry_path: str = "/ocean-rescue/index.html",
+) -> dict[str, object]:
     page_errors: list[str] = []
     console_errors: list[str] = []
     console_warnings: list[str] = []
@@ -264,8 +348,10 @@ def collect_evidence(page: Page, base_url: str, browser_info: dict[str, str]) ->
     )
     page.on("requestfailed", lambda request: request_failures.append(request.url))
 
-    page.goto(f"{base_url}/ocean-rescue/index.html")
-    page.wait_for_selector("#ocean-rescue-root[data-ocean-rescue-ready=true]", timeout=30000)
+    page.goto(f"{base_url}{entry_path}")
+    page.wait_for_selector(
+        "#ocean-rescue-root[data-ocean-rescue-ready=true]", timeout=30000
+    )
     startup = page.evaluate(
         """() => {
           const canvas = document.getElementById('ocean-rescue-canvas');
@@ -380,10 +466,13 @@ def collect_evidence(page: Page, base_url: str, browser_info: dict[str, str]) ->
         timeout=5000,
     )
     arrival_state = _root_attributes(page)
-    flow["rescue_arrival_completed"] = (
-        arrival_state["data-rescue-sequence"] == "active"
-        and arrival_state["data-rescue-phase"] in {"site-transition", "tutorial", "active"}
-    )
+    flow["rescue_arrival_completed"] = arrival_state[
+        "data-rescue-sequence"
+    ] == "active" and arrival_state["data-rescue-phase"] in {
+        "site-transition",
+        "tutorial",
+        "active",
+    }
     flow["phase_sequence"].append("RESCUE_ARRIVAL")
     page.wait_for_function(
         "() => document.getElementById('ocean-rescue-root').getAttribute('data-rescue-phase') === 'tutorial'"
@@ -417,8 +506,18 @@ def collect_evidence(page: Page, base_url: str, browser_info: dict[str, str]) ->
         _mapping_point(rect_raw, "logical_center", 640, 360),
         _mapping_point(rect_raw, "top_left_safe", 10, 10),
         _mapping_point(rect_raw, "bottom_right_safe", 1270, 710),
-        _mapping_point(rect_raw, "sea_turtle_rope_1_start", ropes[0]["start"]["x"], ropes[0]["start"]["y"]),
-        _mapping_point(rect_raw, "sea_turtle_rope_1_end", ropes[0]["end"]["x"], ropes[0]["end"]["y"]),
+        _mapping_point(
+            rect_raw,
+            "sea_turtle_rope_1_start",
+            ropes[0]["start"]["x"],
+            ropes[0]["start"]["y"],
+        ),
+        _mapping_point(
+            rect_raw,
+            "sea_turtle_rope_1_end",
+            ropes[0]["end"]["x"],
+            ropes[0]["end"]["y"],
+        ),
     ]
     drag_results = [_drag_rope(page, rect_raw, rope) for rope in ropes]
     flow["loops_released"] = page.evaluate(
@@ -460,26 +559,13 @@ def collect_evidence(page: Page, base_url: str, browser_info: dict[str, str]) ->
     )
     flow["mission_completed"] = success_state["completion_recorded"] == "true"
     flow["mission_success_visible"] = (
-        success_state["section_hidden"] is False and success_state["card_hidden"] is False
+        success_state["section_hidden"] is False
+        and success_state["card_hidden"] is False
     )
 
-    origin = urlsplit(base_url).netloc
-    local_requests = [request for request in requests if urlsplit(request["url"]).netloc == origin]
-    external_requests = [request for request in requests if urlsplit(request["url"]).netloc not in {origin, ""}]
-    external_scripts = [request for request in external_requests if request["resource_type"] == "script"]
-    external_stylesheets = [request for request in external_requests if request["resource_type"] == "stylesheet"]
-    external_assets = [
-        request
-        for request in external_requests
-        if request["resource_type"] in {"image", "media", "font"}
-    ]
-    api_requests = [request for request in requests if request["resource_type"] in {"fetch", "xhr"}]
-    dynamic_module_requests = [
-        request for request in requests if request["resource_type"] == "script" and request["url"].startswith("http")
-    ]
-    unexpected_warnings = [
-        warning for warning in console_warnings if BENIGN_WEBGL_WARNING not in warning
-    ]
+    network = classify_network(requests, base_url)
+    network["request_failures"] = request_failures
+    console_classification = classify_console(console_warnings)
 
     evidence: dict[str, object] = {
         "startup": {
@@ -505,43 +591,33 @@ def collect_evidence(page: Page, base_url: str, browser_info: dict[str, str]) ->
             "logical_height": LOGICAL_HEIGHT,
             "tolerance": MAPPING_TOLERANCE,
             "points": mapping_points,
-            "numerical_assertions_passed": all(point["within_tolerance"] for point in mapping_points),
-            "interactive_drag_passed": all(result["domain_state_changed"] for result in drag_results),
+            "numerical_assertions_passed": all(
+                point["within_tolerance"] for point in mapping_points
+            ),
+            "interactive_drag_passed": all(
+                result["domain_state_changed"] for result in drag_results
+            ),
             "drag_results": drag_results,
         },
         "mission_success": success_state,
-        "network": {
-            "total": len(requests),
-            "local_same_origin": len(local_requests),
-            "external": len(external_requests),
-            "external_javascript": len(external_scripts),
-            "external_stylesheet": len(external_stylesheets),
-            "external_image_audio_font": len(external_assets),
-            "renderer_cdn": len(external_scripts),
-            "api_requests": len(api_requests),
-            "dynamic_module_requests": len(dynamic_module_requests),
-            "request_failures": request_failures,
-            "external_details": external_requests,
-            "all_requests": requests,
-        },
+        "network": network,
         "console": {
             "page_errors": page_errors,
             "console_errors": console_errors,
             "console_warnings": console_warnings,
-            "warning_classification": {
-                "benign_webgl_gpu_stall": sum(BENIGN_WEBGL_WARNING in warning for warning in console_warnings),
-                "unexpected": unexpected_warnings,
-            },
+            "warning_classification": console_classification["warning_classification"],
             "page_error_count": len(page_errors),
             "console_error_count": len(console_errors),
-            "console_warning_count": len(console_warnings),
+            "console_warning_count": console_classification["console_warning_count"],
         },
         "verdict": "UNASSESSED",
     }
     return evidence
 
 
-def run_browser_evidence() -> dict[str, object]:
+def run_browser_evidence(
+    entry_path: str = "/ocean-rescue/index.html",
+) -> dict[str, object]:
     server = HTTPServerFixture()
     base_url = server.start()
     try:
@@ -563,7 +639,11 @@ def run_browser_evidence() -> dict[str, object]:
                         return collect_evidence(
                             page,
                             base_url,
-                            {"engine": "Playwright Chromium", "version": browser.version},
+                            {
+                                "engine": "Playwright Chromium",
+                                "version": browser.version,
+                            },
+                            entry_path=entry_path,
                         )
                     finally:
                         page.close()
@@ -575,23 +655,39 @@ def run_browser_evidence() -> dict[str, object]:
         server.stop()
 
 
-def assert_evidence(evidence: dict[str, object]) -> None:
+def assert_evidence(
+    evidence: dict[str, object], network_mode: str = "standalone"
+) -> None:
     startup = evidence["startup"]
     flow = evidence["gameplay_flow"]
     pause = evidence["pause_resume"]
     pointer = evidence["pointer_mapping"]
     network = evidence["network"]
     console = evidence["console"]
+    # Both the standalone baseline and the Vite dev-server lane must reject any
+    # external-origin runtime request and any API/fetch/XHR request. Same-origin
+    # requests (dev-server client, stylesheets, classic scripts, HMR transport)
+    # are classified as local and are allowed.
+    assert network_mode in {"standalone", "dev"}
     assert startup["ready"] == "true"
     assert startup["canvas_found"] is True
     assert startup["canvas_width"] == LOGICAL_WIDTH
     assert startup["canvas_height"] == LOGICAL_HEIGHT
     assert startup["renderer_backend"] in {"webgl", "canvas"}
-    assert all(flow[key] is True for key in (
-        "profile_completed", "mission_selected", "gup_selected", "launch_completed",
-        "travel_started", "rescue_arrival_completed", "sea_turtle_scene_active",
-        "mission_completed", "mission_success_visible"
-    ))
+    assert all(
+        flow[key] is True
+        for key in (
+            "profile_completed",
+            "mission_selected",
+            "gup_selected",
+            "launch_completed",
+            "travel_started",
+            "rescue_arrival_completed",
+            "sea_turtle_scene_active",
+            "mission_completed",
+            "mission_success_visible",
+        )
+    )
     assert flow["loops_released"] == 3
     assert pause["pause_activated"] is True
     assert pause["observed_sequence"] == ["3", "2", "1", "Go!"]
@@ -613,7 +709,11 @@ def assert_evidence(evidence: dict[str, object]) -> None:
     assert network["external_image_audio_font"] == 0
     assert network["renderer_cdn"] == 0
     assert network["api_requests"] == 0
-    assert network["dynamic_module_requests"] == 0
+    if network_mode == "standalone":
+        # In the standalone artifact all scripts are inlined, so any http-loaded
+        # script is forbidden. In the Vite dev lane the classic scripts are
+        # served over the same origin by design; external origin is still zero.
+        assert network["dynamic_module_requests"] == 0
     assert network["request_failures"] == []
     assert console["page_error_count"] == 0
     assert console["console_error_count"] == 0

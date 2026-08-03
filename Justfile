@@ -145,6 +145,17 @@ check-ocean-rescue-toolchain:
     echo "✅ TypeScript $tsc_actual"
     @just typecheck-ocean-rescue
 
+# Run the Ocean Rescue Vite development server (development-only; production pipeline untouched)
+dev-ocean-rescue host="127.0.0.1" port="5173":
+    @just check-ocean-rescue-node-version
+    @just check-ocean-rescue-pnpm-version
+    @echo "🧪 Starting Ocean Rescue Vite dev server on http://{{host}}:{{port}}/index.dev.html"
+    @cd domains/ocean-rescue && corepack pnpm exec vite --config vite.config.ts --host "{{host}}" --port "{{port}}" --strictPort
+
+# Run the focused WP-11 dev-server static and browser contract (self-managed ephemeral port)
+check-ocean-rescue-dev-server:
+    uv run pytest tests/test_ocean_rescue_wp11_dev_server.py -q
+
 # --- Commit Gate ---
 
 # hard gate: security checks only; --no-verify is prohibited

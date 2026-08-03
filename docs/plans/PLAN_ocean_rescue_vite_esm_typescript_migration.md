@@ -6,12 +6,13 @@
 - **Updated:** 2026-08-03
 - **Scope:** Ocean Rescue development-source migration from global-namespace JavaScript to ESM/TypeScript/Vite
 - **Execution model:** sequential bounded work packages
-- **Current phase:** PHASE_2_READY_WITH_WP03_PENDING
-- **Next executable work package:** WP-11
+- **Current phase:** PHASE_3_READY_WITH_WP03_PENDING
+- **Next executable work package:** WP-20
 - **Production cutover gate:** WP-03 required before WP-21
 - **Pre-phase SSOT closure:** COMPLETE
 - **Phase 0 evidence root:** `docs/evidence/ocean-rescue/migration/phase-0/`
 - **Phase 1 evidence root:** `docs/evidence/ocean-rescue/migration/phase-1/`
+- **Phase 2 evidence root:** `docs/evidence/ocean-rescue/migration/phase-2/`
 
 ---
 
@@ -193,7 +194,7 @@ WP-03 required before WP-21
 
 ## 4. Phase 2 — Development-server compatibility lane
 
-- **Status:** NOT_STARTED
+- **Status:** COMPLETE
 - **Work package:** WP-11
 - **Objective:** Run the existing global-namespace source through Vite development serving without changing the production pipeline.
 - **Included requirements:**
@@ -212,6 +213,18 @@ WP-03 required before WP-21
 - **Verification bundle:** Vite startup, browser flow, pause/resume, console, network, legacy artifact drift
 - **Stop conditions:** current game is usable through the dev server and the production path is unchanged
 - **Rollback boundary:** remove dev entry/configuration/command
+
+Closure: PASS.
+
+```text
+Phase 2: COMPLETE
+WP-11: COMPLETE
+Current phase: PHASE_3_READY_WITH_WP03_PENDING
+Next executable work package: WP-20
+Dev-server state: DEV_SERVER_COMPAT
+```
+
+Evidence: `docs/evidence/ocean-rescue/migration/phase-2/development-server-compatibility.md`
 
 ---
 

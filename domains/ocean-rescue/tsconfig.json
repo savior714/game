@@ -15,7 +15,8 @@
     "skipLibCheck": true
   },
   "include": [
-    "src/**/*.js"
+    "src/**/*.js",
+    "vite.config.ts"
   ],
   "exclude": [
     "src/vendor/**",

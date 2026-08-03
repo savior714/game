@@ -149,11 +149,11 @@ function onModalBackdrop(e) {
 }
 
 function renderStatsTable() {
-  const OP_LABELS = { '+': '덧셈 (+)', '-': '뺼셈 (-)', '\xD7': '곱셈 (\xD7)' };
+  const OP_LABELS = { '+': '덧셈 (+)', '-': '뺼셈 (-)', '×': '곱셈 (×)' };
   const tbody = document.getElementById('stats-tbody');
   tbody.innerHTML = '';
 
-  for (const op of ['+', '-', '\xD7']) {
+  for (const op of ['+', '-', '×']) {
     const s = stats[op];
     let totalAttempts = 0, totalCorrect = 0, totalTime = 0;
     Object.values(s.levels).forEach(lv => {
@@ -216,9 +216,35 @@ function bindProgressionControl() {
   nextButton.dataset.progressionBound = 'true';
 }
 
+function bindStaticControls() {
+  const controls = [
+    ['stats-btn', openStats],
+    ['close-stats-btn', closeStats],
+    ['reset-stats-btn', confirmResetStats],
+    ['restart-btn', startGame],
+  ];
+
+  for (const [id, handler] of controls) {
+    const button = document.getElementById(id);
+    if (!button) throw new Error(`Math control is missing: ${id}`);
+    if (button.dataset.mathControlBound === 'true') continue;
+
+    button.addEventListener('click', handler);
+    button.dataset.mathControlBound = 'true';
+  }
+
+  const statsModal = document.getElementById('stats-modal');
+  if (!statsModal) throw new Error('Math stats modal is missing.');
+  if (statsModal.dataset.mathBackdropBound !== 'true') {
+    statsModal.addEventListener('click', onModalBackdrop);
+    statsModal.dataset.mathBackdropBound = 'true';
+  }
+}
+
 /* ═══════════════════════════════════
    시작
 ═══════════════════════════════════ */
 bindProgressionControl();
+bindStaticControls();
 initRocketPanel();
 startGame();

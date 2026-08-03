@@ -3,12 +3,12 @@
 - **Status:** ACTIVE
 - **Architecture SSOT:** `docs/specs/technical/AIDENGAME_OCEAN_RESCUE_DEVELOPMENT_ARCHITECTURE.md`
 - **Created:** 2026-08-03
-- **Updated:** 2026-08-03
+- **Updated:** 2026-08-04
 - **Scope:** Ocean Rescue development-source migration from global-namespace JavaScript to ESM/TypeScript/Vite
 - **Execution model:** sequential bounded work packages
-- **Current phase:** PHASE_4_READY
-- **Next executable work package:** WP-21
-- **Production cutover gate:** SATISFIED by WP-02 functional parity and WP-20 deterministic shadow-bundle parity
+- **Current phase:** PHASE_5_READY
+- **Next executable work package:** WP-30
+- **Production cutover gate:** SATISFIED by WP-02 functional parity, WP-20 deterministic shadow-bundle parity, and WP-21 production application-bundle cutover
 - **Target-device release gate:** WP-03A must pass before MVP release, but it does not block WP-21
 - **Automated performance harness:** WP-03B is non-blocking follow-up work, triggered by an observed regression or post-MVP stabilization need
 - **Pre-phase SSOT closure:** COMPLETE
@@ -16,6 +16,7 @@
 - **Phase 1 evidence root:** `docs/evidence/ocean-rescue/migration/phase-1/`
 - **Phase 2 evidence root:** `docs/evidence/ocean-rescue/migration/phase-2/`
 - **Phase 3 evidence root:** `docs/evidence/ocean-rescue/migration/phase-3/`
+- **Phase 4 evidence root:** `docs/evidence/ocean-rescue/migration/phase-4/`
 
 ---
 
@@ -321,11 +322,12 @@ Current scheduling authority:
 ```text
 Phase 0: COMPLETE
 Phase 3: COMPLETE
+Phase 4: COMPLETE
 WP-20: COMPLETE
-Current phase: PHASE_4_READY
-Next executable work package: WP-21
-Shadow bundle state: SHADOW_BUNDLE
-WP-21 production cutover gate: SATISFIED
+WP-21: COMPLETE
+Current phase: PHASE_5_READY
+Next executable work package: WP-30
+Production bundle state: PRODUCTION_APP_BUNDLE
 WP-03A target-device smoke: REQUIRED_BEFORE_MVP_RELEASE
 WP-03B automated performance harness: BACKLOG_NON_BLOCKING
 ```
@@ -336,7 +338,7 @@ Evidence: `docs/evidence/ocean-rescue/migration/phase-3/shadow-production-bundle
 
 ## 6. Phase 4 — Production application-bundle cutover
 
-- **Status:** NOT_STARTED
+- **Status:** COMPLETE (WP-21 PASS)
 - **Work package:** WP-21
 - **Objective:** Switch standalone production packaging from ordered application scripts to the Vite application bundle through a temporary compatibility packaging boundary.
 - **Included requirements:**
@@ -361,6 +363,17 @@ Evidence: `docs/evidence/ocean-rescue/migration/phase-3/shadow-production-bundle
   - explicit rollback verification to the legacy ordered-script path.
 - **Stop conditions:** new production ownership works and rollback to legacy ordering is verified
 - **Rollback boundary:** restore legacy manifest ordering and previous builder input
+
+Closure: PASS. The standalone builder now consumes a single deterministic Vite
+IIFE application bundle (vendored Pixi stays external) produced by a dedicated
+production Vite config. Production ownership has one explicit switch
+(`--mode production`); the `--mode legacy` path reproduces the ordered-script
+artifact for rollback. Determinism, drift, artifact shape, static contract,
+browser functional parity, forbidden-network, and legacy rollback are verified
+by `tests/test_ocean_rescue_wp21_production_bundle_cutover.py` together with
+the reconciled drift/render-packaging/shadow-bundle/scaffold suites.
+
+Evidence: `docs/evidence/ocean-rescue/migration/phase-4/production-app-bundle-cutover.md`
 
 ---
 

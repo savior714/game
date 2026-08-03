@@ -31,6 +31,11 @@ SUPPORTED_ASSETS = {
 MARKER_CSS = "<!-- OCEAN_RESCUE_CSS -->"
 MARKER_SCRIPTS = "<!-- OCEAN_RESCUE_SCRIPTS -->"
 
+# Canonical Vite production application-bundle boundary (WP-21).
+PRODUCTION_BUNDLE_FILE = "ocean-rescue-app.js"
+PRODUCTION_METADATA_FILE = "production-bundle-metadata.json"
+PRODUCTION_METADATA_STATE = "PRODUCTION_BUNDLE"
+
 ASSET_REF_RE = re.compile(r"asset://([a-zA-Z0-9_-]+)")
 
 VALID_KINDS = {"app", "vendor", "generated-assets"}
@@ -554,17 +559,329 @@ def build(manifest_path, output_path):
             os.unlink(tmp_path)
 
 
+def atomic_write(output_path, content):
+    """Atomically replace the output file with the given text content."""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_path = tempfile.mkstemp(
+        dir=str(output_path.parent),
+        prefix=".build_",
+        suffix=".tmp",
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(content)
+        os.replace(tmp_path, output_path)
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+
+def _load_vendor_content(manifest_base, manifest_data):
+    """Load, safety-check and SHA-verify the single vendored Pixi entry."""
+    vendor_entries = [
+        entry
+        for entry in manifest_data["scripts"]
+        if entry.get("kind") == "vendor"
+    ]
+    if len(vendor_entries) != 1:
+        raise BuildError(
+            "Production build requires exactly one kind=vendor entry, "
+            f"found {len(vendor_entries)}"
+        )
+    vendor = vendor_entries[0]
+    script_path = resolve_manifest_path(manifest_base, vendor["file"])
+    content = script_path.read_text(encoding="utf-8")
+    validate_js_source(script_path, content, "vendor")
+    actual_sha = sha256_hex(content.encode("utf-8"))
+    expected_sha = vendor.get("sha256")
+    if actual_sha != expected_sha:
+        raise BuildError(
+            f"Vendor '{vendor['namespace']}' hash mismatch: "
+            f"expected {expected_sha}, got {actual_sha}"
+        )
+    return content
+
+
+def _validate_generated_assets_hash(manifest_base, manifest_data):
+    """SHA-verify every generated-assets entry declared in the manifest."""
+    for entry in manifest_data["scripts"]:
+        if entry.get("kind") != "generated-assets":
+            continue
+        script_path = resolve_manifest_path(manifest_base, entry["file"])
+        content = script_path.read_text(encoding="utf-8")
+        actual_sha = sha256_hex(content.encode("utf-8"))
+        expected_sha = entry.get("sha256")
+        if actual_sha != expected_sha:
+            raise BuildError(
+                f"Generated assets script '{entry['namespace']}' hash mismatch: "
+                f"expected {expected_sha}, got {actual_sha}"
+            )
+
+
+def _load_production_metadata(metadata_path):
+    """Load and structurally validate the production bundle metadata."""
+    if not metadata_path.exists():
+        raise BuildError(f"Production bundle metadata not found: {metadata_path}")
+    try:
+        data = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as e:
+        raise BuildError(f"Invalid production bundle metadata JSON: {e}")
+    if not isinstance(data, dict):
+        raise BuildError("Production bundle metadata must be a JSON object")
+    return data
+
+
+def _validate_bundle_boundary(manifest_data, bundle_path, metadata):
+    """Fail closed unless the bundle is cryptographically bound to the manifest.
+
+    Rejects missing bundles, altered bundles/metadata, membership drift,
+    sourcemap or extra-chunk declarations, dynamic imports, and any vendor
+    boundary violation.
+    """
+    required_keys = {
+        "schema_version",
+        "state",
+        "format",
+        "target",
+        "minifier",
+        "sourcemap",
+        "bundle_file",
+        "bundle_bytes",
+        "bundle_sha256",
+        "vendor",
+        "application_script_count",
+        "application_scripts",
+        "expected_namespaces",
+        "actual_module_files",
+        "dynamic_import_count",
+        "output_files",
+    }
+    missing = required_keys - set(metadata.keys())
+    if missing:
+        raise BuildError(
+            "Production bundle metadata missing key(s): "
+            + ", ".join(sorted(missing))
+        )
+
+    if metadata.get("state") != PRODUCTION_METADATA_STATE:
+        raise BuildError(
+            "Production bundle metadata state must be "
+            f"{PRODUCTION_METADATA_STATE}, got {metadata.get('state')!r}"
+        )
+    if metadata.get("format") != "iife":
+        raise BuildError(
+            f"Production bundle format must be iife, got {metadata.get('format')!r}"
+        )
+    if metadata.get("minifier") != "oxc":
+        raise BuildError(
+            f"Production bundle minifier must be oxc, got {metadata.get('minifier')!r}"
+        )
+    if metadata.get("sourcemap") is not False:
+        raise BuildError("Production bundle sourcemap must be disabled")
+    if metadata.get("dynamic_import_count") != 0:
+        raise BuildError(
+            "Production bundle dynamic import count must be zero, got "
+            f"{metadata.get('dynamic_import_count')!r}"
+        )
+    if metadata.get("bundle_file") != PRODUCTION_BUNDLE_FILE:
+        raise BuildError(
+            "Production bundle_file must be "
+            f"{PRODUCTION_BUNDLE_FILE}, got {metadata.get('bundle_file')!r}"
+        )
+
+    declared = set(metadata.get("output_files") or [])
+    expected_files = {PRODUCTION_BUNDLE_FILE, PRODUCTION_METADATA_FILE}
+    if declared != expected_files:
+        raise BuildError(
+            "Production bundle output_files declaration mismatch: "
+            f"expected {sorted(expected_files)}, got {sorted(declared)}"
+        )
+
+    vendor = metadata.get("vendor")
+    if not isinstance(vendor, dict) or vendor.get("external") is not True:
+        raise BuildError("Production bundle vendor must be declared external")
+    vendor_files = [
+        entry["file"]
+        for entry in manifest_data["scripts"]
+        if entry.get("kind") == "vendor"
+    ]
+    if any(vf in (metadata.get("application_scripts") or []) for vf in vendor_files):
+        raise BuildError("Vendored Pixi must not be part of the application bundle")
+
+    expected_scripts = [
+        entry["file"]
+        for entry in manifest_data["scripts"]
+        if entry.get("kind") != "vendor"
+    ]
+    if metadata.get("application_scripts") != expected_scripts:
+        raise BuildError(
+            "Production bundle application membership does not match the manifest"
+        )
+    if metadata.get("application_script_count") != len(expected_scripts):
+        raise BuildError(
+            "Production bundle application_script_count mismatch: "
+            f"expected {len(expected_scripts)}, "
+            f"got {metadata.get('application_script_count')!r}"
+        )
+    if metadata.get("actual_module_files") != expected_scripts:
+        raise BuildError(
+            "Production bundle actual_module_files do not match the manifest"
+        )
+
+    if not bundle_path.exists():
+        raise BuildError(f"Production bundle not found: {bundle_path}")
+    bundle_bytes = bundle_path.read_bytes()
+    actual_sha = sha256_hex(bundle_bytes)
+    if actual_sha != metadata.get("bundle_sha256"):
+        raise BuildError("Production bundle SHA-256 does not match its metadata")
+    if len(bundle_bytes) != metadata.get("bundle_bytes"):
+        raise BuildError("Production bundle byte size does not match its metadata")
+    return bundle_bytes.decode("utf-8")
+
+
+def _validate_bundle_content(content, name):
+    """Validate the minified application bundle content directly."""
+    for pattern, desc in JS_SAFETY_PATTERNS:
+        if pattern.search(content):
+            raise BuildError(f"Application bundle {name} {desc}")
+    for pattern, desc in JS_FORBIDDEN_PATTERNS:
+        if pattern.search(content):
+            raise BuildError(
+                f"Application bundle {name} contains forbidden {desc}"
+            )
+    for pattern, desc in RUNTIME_NETWORK_PATTERNS:
+        if pattern.search(content):
+            raise BuildError(f"Application bundle {name} contains {desc}")
+    if ASSET_REF_RE.search(content):
+        raise BuildError(
+            f"Application bundle {name} contains an asset:// reference"
+        )
+    if "sourceMappingURL" in content:
+        raise BuildError(f"Application bundle {name} references a source map")
+
+
+def validate_production_document(output):
+    """Validate the final production standalone document shape."""
+    ext_script = re.compile(r"<script\s+[^>]*src\s*=", re.IGNORECASE)
+    if ext_script.search(output):
+        raise BuildError("Generated output contains external <script src>")
+    module_script = re.compile(
+        r'<script\b[^>]*type\s*=\s*["\']module["\']', re.IGNORECASE
+    )
+    if module_script.search(output):
+        raise BuildError("Generated output contains a module <script>")
+    script_re = re.compile(r"<script>(.*?)</script>", re.IGNORECASE | re.DOTALL)
+    blocks = script_re.findall(output)
+    if len(blocks) != 2:
+        raise BuildError(
+            "Generated output must contain exactly two inline script blocks, "
+            f"found {len(blocks)}"
+        )
+    validate_no_runtime_network(output)
+
+
+def build_production(manifest_path, output_path, bundle_path, metadata_path):
+    """Package vendor + validated Vite bundle + CSS + template into one HTML."""
+    manifest_base = manifest_path.parent.resolve()
+    manifest_data = load_manifest(manifest_path)
+
+    template_rel = manifest_data["template"]
+    template_path = resolve_manifest_path(manifest_base, template_rel)
+    template_content = validate_template(template_path)
+
+    validate_dependencies(manifest_data["scripts"])
+
+    vendor_content = _load_vendor_content(manifest_base, manifest_data)
+    _validate_generated_assets_hash(manifest_base, manifest_data)
+
+    metadata = _load_production_metadata(metadata_path)
+    bundle_content = _validate_bundle_boundary(
+        manifest_data, bundle_path, metadata
+    )
+    _validate_bundle_content(bundle_content, bundle_path.name)
+
+    css_contents = []
+    used_assets = set()
+    for match in ASSET_REF_RE.finditer(template_content):
+        used_assets.add(match.group(1))
+    for style_rel in manifest_data["styles"]:
+        style_path = resolve_manifest_path(manifest_base, style_rel)
+        css_raw = style_path.read_text(encoding="utf-8")
+        for match in ASSET_REF_RE.finditer(css_raw):
+            used_assets.add(match.group(1))
+        css_contents.append(css_raw)
+
+    declared_assets = {}
+    for entry in manifest_data.get("assets", []):
+        declared_assets[entry["id"]] = entry
+    for asset_id in used_assets:
+        if asset_id not in declared_assets:
+            raise BuildError(f"Referenced but undeclared asset: {asset_id}")
+    for asset_id in declared_assets:
+        if asset_id not in used_assets:
+            raise BuildError(f"Declared but unused asset: {asset_id}")
+
+    assets = collect_assets(manifest_data, manifest_base)
+    template_content = resolve_asset_references(template_content, assets, "template")
+
+    resolved_css = []
+    for css_content in css_contents:
+        resolved_css.append(resolve_asset_references(css_content, assets, "css"))
+
+    css_html = ""
+    if resolved_css:
+        css_html = "<style>\n" + "\n".join(resolved_css) + "\n</style>"
+
+    scripts_html = (
+        "<script>\n" + vendor_content + "\n</script>\n"
+        "<script>\n" + bundle_content + "\n</script>"
+    )
+
+    output = template_content.replace(MARKER_CSS, css_html)
+    output = output.replace(MARKER_SCRIPTS, scripts_html)
+
+    validate_production_document(output)
+
+    atomic_write(output_path, output)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Ocean Rescue single-HTML builder")
+    parser.add_argument(
+        "--mode",
+        required=True,
+        choices=["production", "legacy"],
+        help="Packaging mode: production (Vite bundle) or legacy (ordered scripts)",
+    )
     parser.add_argument("--manifest", required=True, help="Path to build manifest JSON")
     parser.add_argument("--output", required=True, help="Path to output HTML file")
+    parser.add_argument(
+        "--bundle",
+        help="Path to Vite application bundle (required in production mode)",
+    )
+    parser.add_argument(
+        "--metadata",
+        help="Path to Vite bundle metadata (required in production mode)",
+    )
     args = parser.parse_args()
 
     manifest_path = Path(args.manifest)
     output_path = Path(args.output)
 
     try:
-        build(manifest_path, output_path)
+        if args.mode == "production":
+            if not args.bundle:
+                die("--bundle is required in production mode")
+            if not args.metadata:
+                die("--metadata is required in production mode")
+            build_production(
+                manifest_path,
+                output_path,
+                Path(args.bundle),
+                Path(args.metadata),
+            )
+        else:
+            build(manifest_path, output_path)
     except BuildError as e:
         die(str(e))
     except Exception as e:

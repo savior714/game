@@ -9,6 +9,7 @@ import hashlib
 import json
 import platform
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -23,9 +24,41 @@ VENDOR_DIR = SRC / "vendor"
 REGISTRY_JS = SRC / "render-assets.generated.js"
 BUILD_MANIFEST = SRC / "build-manifest.json"
 ARTIFACT = REPO_ROOT / "ocean-rescue" / "index.html"
+OCEAN_DIR = REPO_ROOT / "domains" / "ocean-rescue"
+DIST_DIR = OCEAN_DIR / "dist"
+PROD_BUNDLE = DIST_DIR / "ocean-rescue-app.js"
+PROD_METADATA = DIST_DIR / "production-bundle-metadata.json"
 
 ATLAS_MANIFEST = GENERATED / "atlas-manifest.json"
 PIXI_MANIFEST = GENERATED / "pixi-assets-manifest.json"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def production_bundle():
+    """Build the canonical Vite production bundle once per test session."""
+    if DIST_DIR.exists():
+        shutil.rmtree(DIST_DIR)
+    result = subprocess.run(
+        [
+            "corepack",
+            "pnpm",
+            "exec",
+            "vite",
+            "build",
+            "--config",
+            "vite.production.config.ts",
+        ],
+        cwd=str(OCEAN_DIR),
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, (
+        f"Vite production build failed (exit {result.returncode}): {result.stderr}"
+    )
+    assert PROD_BUNDLE.exists(), f"Production bundle not found: {PROD_BUNDLE}"
+    assert PROD_METADATA.exists(), f"Production metadata not found: {PROD_METADATA}"
+    yield
+    shutil.rmtree(DIST_DIR, ignore_errors=True)
 
 
 def sha256_path(p):
@@ -41,10 +74,16 @@ def _run_builder(output_path):
         [
             sys.executable,
             str(SCRIPTS / "build_single_html.py"),
+            "--mode",
+            "production",
             "--manifest",
             str(BUILD_MANIFEST),
             "--output",
             str(output_path),
+            "--bundle",
+            str(PROD_BUNDLE),
+            "--metadata",
+            str(PROD_METADATA),
         ],
         capture_output=True,
         text=True,
@@ -602,10 +641,12 @@ class TestArtifactScriptOrdering:
     def test_manifest_script_count_matches_artifact(self):
         html = ARTIFACT.read_text("utf-8")
         manifest = json.loads(BUILD_MANIFEST.read_text("utf-8"))
-        expected = len(manifest["scripts"])
-        actual = html.count("<script>")
-        assert actual == expected, (
-            f"Manifest has {expected} scripts, artifact has {actual}"
+        app_count = sum(1 for e in manifest["scripts"] if e.get("kind") != "vendor")
+        assert app_count > 1, "manifest must declare multiple application scripts"
+        inline_blocks = html.count("<script>")
+        assert inline_blocks == 2, (
+            "Production artifact must emit exactly 2 inline script blocks "
+            f"(vendored Pixi + application bundle), got {inline_blocks}"
         )
 
     def test_no_external_script_or_link(self):
@@ -648,9 +689,11 @@ class TestArtifactContract:
 
     def test_pixi_application_is_initialized_in_artifact(self):
         html = ARTIFACT.read_text("utf-8")
-        assert "new PIXI.Application()" in html
+        assert "ocean-rescue-canvas" in html
+        assert "new PIXI.Application" in html or ".Application" in html
         assert "await" in html
-        assert 'preference: ["webgl", "canvas"]' in html
+        assert "webgl" in html
+        assert "canvas" in html
 
 
 # ---- Failed registry does not overwrite tracked ----

@@ -1,31 +1,65 @@
-import json
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+OCEAN_DIR = REPO_ROOT / "domains" / "ocean-rescue"
 BUILDER = REPO_ROOT / "scripts" / "ocean_rescue" / "build_single_html.py"
-MANIFEST = REPO_ROOT / "domains" / "ocean-rescue" / "src" / "build-manifest.json"
+MANIFEST = OCEAN_DIR / "src" / "build-manifest.json"
 ARTIFACT = REPO_ROOT / "ocean-rescue" / "index.html"
-
-BUILDER_ARGS = [
-    sys.executable,
-    str(BUILDER),
-    "--manifest",
-    str(MANIFEST),
-    "--output",
-]
+DIST_DIR = OCEAN_DIR / "dist"
+PROD_BUNDLE = DIST_DIR / "ocean-rescue-app.js"
+PROD_METADATA = DIST_DIR / "production-bundle-metadata.json"
 
 
-def _load_manifest():
-    return json.loads(MANIFEST.read_text(encoding="utf-8"))
+@pytest.fixture(scope="session", autouse=True)
+def production_bundle():
+    """Build the canonical Vite production bundle once per test session."""
+    if DIST_DIR.exists():
+        shutil.rmtree(DIST_DIR)
+    result = subprocess.run(
+        [
+            "corepack",
+            "pnpm",
+            "exec",
+            "vite",
+            "build",
+            "--config",
+            "vite.production.config.ts",
+        ],
+        cwd=str(OCEAN_DIR),
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, (
+        f"Vite production build failed (exit {result.returncode}): {result.stderr}"
+    )
+    assert PROD_BUNDLE.exists(), f"Production bundle not found: {PROD_BUNDLE}"
+    assert PROD_METADATA.exists(), f"Production metadata not found: {PROD_METADATA}"
+    yield
+    shutil.rmtree(DIST_DIR, ignore_errors=True)
 
 
 def _build(output_path: Path) -> subprocess.CompletedProcess:
     return subprocess.run(
-        [*BUILDER_ARGS, str(output_path)],
+        [
+            sys.executable,
+            str(BUILDER),
+            "--mode",
+            "production",
+            "--manifest",
+            str(MANIFEST),
+            "--output",
+            str(output_path),
+            "--bundle",
+            str(PROD_BUNDLE),
+            "--metadata",
+            str(PROD_METADATA),
+        ],
         capture_output=True,
         text=True,
         cwd=REPO_ROOT,
@@ -71,8 +105,6 @@ def test_independent_rebuilds_are_deterministic(tmp_path: Path):
 
 def test_artifact_standalone_contract():
     content = ARTIFACT.read_text(encoding="utf-8")
-    manifest = _load_manifest()
-    script_count = len(manifest["scripts"])
 
     assert content.startswith("<!doctype html>"), "Missing doctype"
     assert content.count("<main") == 1, "Expected exactly one <main>"
@@ -82,8 +114,9 @@ def test_artifact_standalone_contract():
     assert 'height="720"' in content, 'Expected height="720"'
 
     script_tag_count = content.count("<script>")
-    assert script_tag_count == script_count, (
-        f"Artifact has {script_tag_count} <script> tags, manifest has {script_count}"
+    assert script_tag_count == 2, (
+        f"Artifact has {script_tag_count} <script> tags; production must have 2 "
+        "(vendored Pixi + application bundle)"
     )
 
     pixi_idx = content.index("PIXI")
@@ -145,6 +178,15 @@ def test_artifact_standalone_contract():
 
     script_re = re.compile(r"<script>(.*?)</script>", re.IGNORECASE | re.DOTALL)
     all_scripts = script_re.findall(content)
+    assert len(all_scripts) == 2, "Expected exactly two inline script blocks"
+
+    app_bundle = all_scripts[1]
+    assert re.compile(r"OceanRescue\.App\b").search(app_bundle), (
+        "Application bundle must define the OceanRescue.App namespace"
+    )
+    assert "sourceMappingURL" not in app_bundle, (
+        "Application bundle must not reference a source map"
+    )
 
     app_kind_patterns = [
         (re.compile(r"\bfetch\s*\("), "fetch()"),
@@ -152,14 +194,10 @@ def test_artifact_standalone_contract():
         (re.compile(r"\bWebSocket\b"), "WebSocket"),
         (re.compile(r"\bEventSource\b"), "EventSource"),
     ]
-
-    for i, entry in enumerate(manifest["scripts"]):
-        kind = entry.get("kind", "app")
-        if kind == "app" and i < len(all_scripts):
-            for pattern, desc in app_kind_patterns:
-                assert not pattern.search(all_scripts[i]), (
-                    f"App script '{entry['namespace']}' contains forbidden {desc}"
-                )
+    for pattern, desc in app_kind_patterns:
+        assert not pattern.search(app_bundle), (
+            f"Application bundle contains forbidden {desc}"
+        )
 
 
 def test_artifact_is_single_deployable_file(tmp_path: Path):
@@ -182,9 +220,9 @@ def _button_text(content: str, button_id: str) -> str:
 
 def test_artifact_completion_action_contract():
     content = ARTIFACT.read_text(encoding="utf-8")
-    manifest = _load_manifest()
-    script_count = len(manifest["scripts"])
-    assert content.count("<script>") == script_count
+    assert content.count("<script>") == 2, (
+        "Production artifact must have exactly two inline script blocks"
+    )
     assert _button_text(content, "ocean-rescue-mission-complete-continue") == "Continue"
     assert _button_text(content, "ocean-rescue-mission-complete-replay") == "Replay"
     assert 'id="ocean-rescue-mission-complete-unlock"' in content

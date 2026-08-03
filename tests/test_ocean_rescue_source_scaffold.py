@@ -488,6 +488,8 @@ class TestBuild:
             [
                 sys.executable,
                 str(BUILDER),
+                "--mode",
+                "legacy",
                 "--manifest",
                 str(MANIFEST),
                 "--output",
@@ -567,6 +569,8 @@ class TestBuild:
             [
                 sys.executable,
                 str(BUILDER),
+                "--mode",
+                "legacy",
                 "--manifest",
                 str(MANIFEST),
                 "--output",
@@ -579,6 +583,8 @@ class TestBuild:
             [
                 sys.executable,
                 str(BUILDER),
+                "--mode",
+                "legacy",
                 "--manifest",
                 str(MANIFEST),
                 "--output",

@@ -44,8 +44,30 @@ typecheck:
 test:
     uv run pytest tests
 
-# Rebuild the tracked Ocean Rescue standalone artifact
+# Rebuild the canonical Ocean Rescue standalone artifact (Vite production bundle)
 build-ocean-rescue:
+    @just check-ocean-rescue-node-version
+    @just check-ocean-rescue-pnpm-version
+    uv run python scripts/ocean_rescue/validate_pixi_vendor.py
+    uv run python scripts/ocean_rescue/validate_atlases.py \
+        --packet domains/ocean-rescue/assets/source/art-packet.json \
+        --approval domains/ocean-rescue/assets/source/art-approval.json \
+        --generated-dir domains/ocean-rescue/assets/generated
+    uv run python scripts/ocean_rescue/build_render_assets_registry.py \
+        --atlas-dir domains/ocean-rescue/assets/generated \
+        --output domains/ocean-rescue/src/render-assets.generated.js
+    @cd domains/ocean-rescue && corepack pnpm exec vite build --config vite.production.config.ts
+    uv run python scripts/ocean_rescue/build_single_html.py \
+        --mode production \
+        --manifest domains/ocean-rescue/src/build-manifest.json \
+        --output ocean-rescue/index.html \
+        --bundle domains/ocean-rescue/dist/ocean-rescue-app.js \
+        --metadata domains/ocean-rescue/dist/production-bundle-metadata.json
+
+# Rollback path: rebuild the tracked artifact with the legacy ordered-script pipeline
+build-ocean-rescue-legacy-rollback:
+    @just check-ocean-rescue-node-version
+    @just check-ocean-rescue-pnpm-version
     uv run python scripts/ocean_rescue/validate_pixi_vendor.py
     uv run python scripts/ocean_rescue/validate_atlases.py \
         --packet domains/ocean-rescue/assets/source/art-packet.json \
@@ -55,12 +77,17 @@ build-ocean-rescue:
         --atlas-dir domains/ocean-rescue/assets/generated \
         --output domains/ocean-rescue/src/render-assets.generated.js
     uv run python scripts/ocean_rescue/build_single_html.py \
+        --mode legacy \
         --manifest domains/ocean-rescue/src/build-manifest.json \
-        --output ocean-rescue/index.html
+        --output domains/ocean-rescue/dist/legacy-rollback.html
 
-# Verify that the tracked Ocean Rescue artifact matches a clean rebuild
+# Verify that the tracked Ocean Rescue artifact matches a clean production rebuild
 check-ocean-rescue-drift:
     uv run pytest tests/test_ocean_rescue_artifact_drift.py -q
+
+# Verify the legacy-rollback rebuild matches the pre-WP-21 artifact shape
+check-ocean-rescue-legacy-rollback:
+    uv run pytest tests/test_ocean_rescue_wp21_production_bundle_cutover.py::test_legacy_rollback_produces_ordered_scripts -q
 
 # Build Ocean Rescue deterministic 2× atlas pipeline
 build-ocean-rescue-atlases:
@@ -73,8 +100,10 @@ build-ocean-rescue-atlases:
 check-ocean-rescue-atlases:
     uv run pytest -q tests/test_ocean_rescue_atlas_pipeline.py
 
-# Build render package (vendor + atlas registry + single HTML)
+# Build render package (vendor + Vite bundle + atlas registry + single HTML)
 build-ocean-rescue-render-package:
+    @just check-ocean-rescue-node-version
+    @just check-ocean-rescue-pnpm-version
     uv run python scripts/ocean_rescue/validate_pixi_vendor.py
     uv run python scripts/ocean_rescue/validate_atlases.py \
         --packet domains/ocean-rescue/assets/source/art-packet.json \
@@ -83,9 +112,13 @@ build-ocean-rescue-render-package:
     uv run python scripts/ocean_rescue/build_render_assets_registry.py \
         --atlas-dir domains/ocean-rescue/assets/generated \
         --output domains/ocean-rescue/src/render-assets.generated.js
+    @cd domains/ocean-rescue && corepack pnpm exec vite build --config vite.production.config.ts
     uv run python scripts/ocean_rescue/build_single_html.py \
+        --mode production \
         --manifest domains/ocean-rescue/src/build-manifest.json \
-        --output ocean-rescue/index.html
+        --output ocean-rescue/index.html \
+        --bundle domains/ocean-rescue/dist/ocean-rescue-app.js \
+        --metadata domains/ocean-rescue/dist/production-bundle-metadata.json
 
 # Check render package integrity
 check-ocean-rescue-render-package:

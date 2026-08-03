@@ -114,7 +114,7 @@ def test_stats_controls_open_close_reset_and_backdrop(
 
     page.locator("#stats-btn").click()
     expect(modal).to_be_visible()
-    modal.click(position={"x": 5, "y": 5})
+    modal.click(position={"x": 5, "y": 200})
     expect(modal).to_be_hidden()
 
     page.locator("#stats-btn").click()

@@ -6,9 +6,9 @@
 - **Updated:** 2026-08-04
 - **Scope:** Ocean Rescue development-source migration from global-namespace JavaScript to ESM/TypeScript/Vite
 - **Execution model:** sequential bounded work packages
-- **Current phase:** PHASE_5_READY
-- **Next executable work package:** WP-30
-- **Production cutover gate:** SATISFIED by WP-02 functional parity, WP-20 deterministic shadow-bundle parity, and WP-21 production application-bundle cutover
+- **Current phase:** PHASE_6_READY
+- **Next executable work package:** WP-31A
+- **Production cutover gate:** SATISFIED by WP-02 functional parity, WP-20 deterministic shadow-bundle parity, WP-21 production application-bundle cutover, and WP-30 canonical ESM entry
 - **Target-device release gate:** WP-03A must pass before MVP release, but it does not block WP-21
 - **Automated performance harness:** WP-03B is non-blocking follow-up work, triggered by an observed regression or post-MVP stabilization need
 - **Pre-phase SSOT closure:** COMPLETE
@@ -323,11 +323,15 @@ Current scheduling authority:
 Phase 0: COMPLETE
 Phase 3: COMPLETE
 Phase 4: COMPLETE
+Phase 5: COMPLETE
 WP-20: COMPLETE
 WP-21: COMPLETE
-Current phase: PHASE_5_READY
-Next executable work package: WP-30
+WP-30: COMPLETE
+Current phase: PHASE_6_READY
+Next executable work package: WP-31A
 Production bundle state: PRODUCTION_APP_BUNDLE
+ESM entry state: CANONICAL_MAIN_JS
+Manifest state: CONTRACTED_CANONICAL_PLUS_LEGACY_ROLLBACK
 WP-03A target-device smoke: REQUIRED_BEFORE_MVP_RELEASE
 WP-03B automated performance harness: BACKLOG_NON_BLOCKING
 ```
@@ -387,7 +391,7 @@ Evidence: `docs/evidence/ocean-rescue/migration/phase-4/production-app-bundle-cu
 
 ## 7. Phase 5 — Canonical ESM entry and module graph
 
-- **Status:** NOT_STARTED
+- **Status:** COMPLETE (WP-30 PASS)
 - **Work package:** WP-30
 - **Objective:** Establish one canonical ESM application entry and make imports authoritative for application dependencies.
 - **Included requirements:** canonical entry, explicit imports, temporary compatibility adapters, application-manifest contraction, focused module-graph validation
@@ -399,6 +403,19 @@ Evidence: `docs/evidence/ocean-rescue/migration/phase-4/production-app-bundle-cu
 - **Verification bundle:** import resolution, cycle evidence, production build, browser parity, deterministic packaging
 - **Stop conditions:** import graph owns application dependency order
 - **Rollback boundary:** restore legacy bootstrap and manifest graph
+
+Closure: PASS. `src/main.js` is the single canonical entry importing `./esm/app.js`;
+`src/esm/*` compatibility adapters import their direct dependencies explicitly,
+side-effect-load exactly one legacy implementation each, and export the
+`window.OceanRescue.*` namespace. The ordered application list was removed from
+`build-manifest.json` (now contracted to template/styles/vendor/generated/entry/
+assets) and preserved as `build-manifest.legacy.json` for rollback. Production
+and dev lanes both start from `src/main.js`; the dev server serves one classic
+vendored Pixi script plus one module `main.js`. The module-graph validator
+(`tests/test_ocean_rescue_wp30_esm_entry_module_graph.py`) proves single-root,
+acyclic, exactly-once legacy coverage, and static relative imports only.
+
+Evidence: `docs/evidence/ocean-rescue/migration/phase-5/canonical-esm-entry-module-graph.md`
 
 ---
 

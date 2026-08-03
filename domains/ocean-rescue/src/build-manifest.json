@@ -3,133 +3,16 @@
   "styles": [
     "style.css"
   ],
-  "scripts": [
-    {
-      "file": "vendor/pixi-8.19.0.min.js",
-      "namespace": "PIXI",
-      "depends_on": [],
-      "kind": "vendor",
-      "sha256": "83b2d7edf27bb77460f5f5f5e25cd73c91b77a53f44c80ac63096d6c0b5cfda7"
-    },
-    {
-      "file": "render-assets.generated.js",
-      "namespace": "OceanRescue.RenderAssets",
-      "depends_on": [],
-      "kind": "generated-assets",
-      "sha256": "092673c6784fff9dc4b851fa636c54b5e5f4694ff245539cf1b446ad8228819e"
-    },
-    {
-      "file": "render-runtime.js",
-      "namespace": "OceanRescue.RenderRuntime",
-      "depends_on": [
-        "PIXI",
-        "OceanRescue.RenderAssets"
-      ]
-    },
-    {
-      "file": "state.js",
-      "namespace": "OceanRescue.State",
-      "depends_on": []
-    },
-    {
-      "file": "profile.js",
-      "namespace": "OceanRescue.Profile",
-      "depends_on": []
-    },
-    {
-      "file": "missions.js",
-      "namespace": "OceanRescue.Missions",
-      "depends_on": []
-    },
-    {
-      "file": "gups.js",
-      "namespace": "OceanRescue.Gups",
-      "depends_on": []
-    },
-    {
-      "file": "launch.js",
-      "namespace": "OceanRescue.Launch",
-      "depends_on": []
-    },
-    {
-      "file": "travel.js",
-      "namespace": "OceanRescue.Travel",
-      "depends_on": []
-    },
-    {
-      "file": "terrain.js",
-      "namespace": "OceanRescue.Terrain",
-      "depends_on": []
-    },
-    {
-      "file": "travel-scene.js",
-      "namespace": "OceanRescue.TravelScene",
-      "depends_on": [
-        "OceanRescue.RenderRuntime"
-      ]
-    },
-    {
-      "file": "rescue.js",
-      "namespace": "OceanRescue.Rescue",
-      "depends_on": []
-    },
-    {
-      "file": "sea-turtle.js",
-      "namespace": "OceanRescue.SeaTurtle",
-      "depends_on": []
-    },
-    {
-      "file": "sea-turtle-scene.js",
-      "namespace": "OceanRescue.SeaTurtleScene",
-      "depends_on": [
-        "OceanRescue.RenderRuntime",
-        "OceanRescue.SeaTurtle"
-      ]
-    },
-    {
-      "file": "crab.js",
-      "namespace": "OceanRescue.Crab",
-      "depends_on": []
-    },
-    {
-      "file": "crab-scene.js",
-      "namespace": "OceanRescue.CrabScene",
-      "depends_on": [
-        "OceanRescue.RenderRuntime",
-        "OceanRescue.Crab"
-      ]
-    },
-    {
-      "file": "young-whale.js",
-      "namespace": "OceanRescue.YoungWhale",
-      "depends_on": []
-    },
-    {
-      "file": "mission-success.js",
-      "namespace": "OceanRescue.MissionSuccess",
-      "depends_on": []
-    },
-    {
-      "file": "app.js",
-      "namespace": "OceanRescue.App",
-      "depends_on": [
-        "OceanRescue.State",
-        "OceanRescue.RenderRuntime",
-        "OceanRescue.Profile",
-        "OceanRescue.Missions",
-        "OceanRescue.Gups",
-        "OceanRescue.Launch",
-        "OceanRescue.Travel",
-        "OceanRescue.Terrain",
-        "OceanRescue.Rescue",
-        "OceanRescue.SeaTurtle",
-        "OceanRescue.SeaTurtleScene",
-        "OceanRescue.TravelScene",
-        "OceanRescue.Crab",
-        "OceanRescue.YoungWhale",
-        "OceanRescue.MissionSuccess"
-      ]
-    }
-  ],
+  "vendor": {
+    "file": "vendor/pixi-8.19.0.min.js",
+    "namespace": "PIXI",
+    "kind": "vendor",
+    "sha256": "83b2d7edf27bb77460f5f5f5e25cd73c91b77a53f44c80ac63096d6c0b5cfda7"
+  },
+  "generated": {
+    "file": "render-assets.generated.js",
+    "sha256": "092673c6784fff9dc4b851fa636c54b5e5f4694ff245539cf1b446ad8228819e"
+  },
+  "entry": "main.js",
   "assets": []
 }

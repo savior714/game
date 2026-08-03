@@ -78,7 +78,7 @@ build-ocean-rescue-legacy-proof:
         --output domains/ocean-rescue/src/render-assets.generated.js
     uv run python scripts/ocean_rescue/build_single_html.py \
         --mode legacy \
-        --manifest domains/ocean-rescue/src/build-manifest.json \
+        --manifest domains/ocean-rescue/src/build-manifest.legacy.json \
         --output domains/ocean-rescue/dist/legacy-rollback.html
 
 # Verify the proof-only legacy artifact matches the pre-WP-21 artifact shape
@@ -103,7 +103,7 @@ rollback-ocean-rescue-to-legacy:
         --output domains/ocean-rescue/src/render-assets.generated.js
     uv run python scripts/ocean_rescue/build_single_html.py \
         --mode legacy \
-        --manifest domains/ocean-rescue/src/build-manifest.json \
+        --manifest domains/ocean-rescue/src/build-manifest.legacy.json \
         --output ocean-rescue/index.html
 
 # Verify the operational rollback/restore state transition (canonical artifact switches both directions)

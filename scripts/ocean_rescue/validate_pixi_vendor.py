@@ -160,6 +160,16 @@ def validate_build_manifest_entry(vendor_dir):
     except (json.JSONDecodeError, OSError):
         return
 
+    # Contracted canonical schema (WP-30): vendor is a single object.
+    vendor = data.get("vendor")
+    if isinstance(vendor, dict):
+        if "sha256" not in vendor:
+            raise VendorError(
+                "Vendor entry in build-manifest.json missing required 'sha256'"
+            )
+        return
+
+    # Legacy rollback schema: vendor entries live in the ordered scripts array.
     scripts = data.get("scripts", [])
     for entry in scripts:
         if entry.get("kind") == "vendor":

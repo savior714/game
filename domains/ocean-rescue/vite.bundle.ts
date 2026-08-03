@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
-import { mkdirSync, writeFileSync, readFileSync, realpathSync } from "node:fs";
-import { join, relative, resolve, sep } from "node:path";
-import { tmpdir } from "node:os";
+import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { type Plugin, type UserConfig } from "vite";
@@ -9,13 +8,11 @@ import { type Plugin, type UserConfig } from "vite";
 const ROOT = fileURLToPath(new URL(".", import.meta.url));
 const SRC_ROOT = resolve(ROOT, "src");
 const MANIFEST_PATH = resolve(SRC_ROOT, "build-manifest.json");
+const LEGACY_MANIFEST_PATH = resolve(SRC_ROOT, "build-manifest.legacy.json");
 const TEMPLATE_PATH = resolve(SRC_ROOT, "index.template.html");
+const DEFAULT_ENTRY = "main.js";
 
 const SCHEMA_VERSION = 1;
-
-// Non-tracked deterministic entry, generated at build time from the manifest.
-// Use the real tmpdir path so the module id is canonical (macOS /var -> /private/var).
-const TMPDIR_ROOT = realpathSync(tmpdir());
 
 const CSS_MARKER = "<!-- OCEAN_RESCUE_CSS -->";
 const SCRIPTS_MARKER = "<!-- OCEAN_RESCUE_SCRIPTS -->";
@@ -30,7 +27,7 @@ const PIXI_CONTRACT = {
 /**
  * Bundle-lane parameters. The shadow lane preserves the proven WP-20 output;
  * the production lane emits the canonical application bundle consumed by the
- * standalone packaging adapter. Both lanes share the same manifest-derived
+ * standalone packaging adapter. Both lanes share the same canonical-entry
  * boundary validation and IIFE bundling logic.
  */
 export interface BundleLaneOptions {
@@ -39,7 +36,6 @@ export interface BundleLaneOptions {
   htmlFile: string | null;
   metadataFile: string;
   globalName: string;
-  entryName: string;
   metadataState: string;
   target: string;
 }
@@ -74,15 +70,12 @@ interface BundleChunk {
   modules: BundleModuleRecord | undefined;
 }
 
-interface BundleOutputRecord {
-  [fileName: string]: { type: "chunk" | "asset" } | BundleChunk;
-}
-
 interface Boundary {
   template: string;
   styleAbsolutePath: string;
+  entryAbsolutePath: string;
   vendor: OrderedEntry;
-  appScripts: OrderedEntry[];
+  legacyScripts: OrderedEntry[];
   namespaces: string[];
 }
 
@@ -112,11 +105,36 @@ function assertSrcPath(raw: string, label: string): string {
   return candidate;
 }
 
+/** Read an ordered script entry from the legacy manifest. */
+function readLegacyScript(entry: unknown, index: number, label: string): OrderedEntry {
+  if (typeof entry !== "object" || entry === null) {
+    fail(`${label}[${index}] must be an object`);
+  }
+  const e = entry as { file?: unknown; namespace?: unknown; kind?: unknown };
+  if (typeof e.file !== "string") {
+    fail(`${label}[${index}].file must be a string`);
+  }
+  if (typeof e.namespace !== "string") {
+    fail(`${label}[${index}].namespace must be a string`);
+  }
+  const kind = typeof e.kind === "string" ? e.kind : "app";
+  return {
+    raw: e.file,
+    namespace: e.namespace,
+    kind,
+    absolutePath: assertSrcPath(e.file, `${label}[${index}].file`),
+  };
+}
+
 function loadBoundary(): Boundary {
   const manifest = JSON.parse(readFileSync(MANIFEST_PATH, "utf-8")) as Record<
     string,
     unknown
   >;
+  const legacy = JSON.parse(
+    readFileSync(LEGACY_MANIFEST_PATH, "utf-8"),
+  ) as Record<string, unknown>;
+
   if (typeof manifest.template !== "string") fail("manifest.template must be a string");
   const templateAbs = assertSrcPath(manifest.template, "manifest.template");
   if (resolve(templateAbs) !== TEMPLATE_PATH) {
@@ -133,77 +151,97 @@ function loadBoundary(): Boundary {
     manifest.styles[0] as string,
     "manifest.styles[0]",
   );
-  if (!Array.isArray(manifest.scripts) || manifest.scripts.length < 2) {
-    fail("manifest.scripts must be a non-empty array");
-  }
-  const scripts = manifest.scripts.map((entry, index) => {
-    if (typeof entry !== "object" || entry === null) {
-      fail(`manifest.scripts[${index}] must be an object`);
-    }
-    const e = entry as { file?: unknown; namespace?: unknown; kind?: unknown };
-    if (typeof e.file !== "string") {
-      fail(`manifest.scripts[${index}].file must be a string`);
-    }
-    if (typeof e.namespace !== "string") {
-      fail(`manifest.scripts[${index}].namespace must be a string`);
-    }
-    const kind = typeof e.kind === "string" ? e.kind : "app";
-    return {
-      raw: e.file,
-      namespace: e.namespace,
-      kind,
-      absolutePath: assertSrcPath(e.file, `manifest.scripts[${index}].file`),
-    };
-  });
 
-  const vendor = scripts[0];
-  if (vendor.kind !== "vendor") fail("first script must be the vendor entry");
+  const vendorRaw = manifest.vendor;
+  if (typeof vendorRaw !== "object" || vendorRaw === null) {
+    fail("manifest.vendor must be an object");
+  }
+  const vendor = readLegacyScript(vendorRaw, 0, "manifest.vendor");
+  if (vendor.kind !== "vendor") fail("manifest.vendor.kind must be vendor");
   if (vendor.absolutePath !== resolve(SRC_ROOT, PIXI_CONTRACT.file)) {
     fail(`vendor file must be ${PIXI_CONTRACT.file}`);
   }
   if (vendor.namespace !== PIXI_CONTRACT.namespace) {
     fail(`vendor namespace must be ${PIXI_CONTRACT.namespace}`);
   }
-  if (scripts.filter((s) => s.kind === "vendor").length !== 1) {
-    fail("exactly one kind=vendor entry is required");
+
+  const entry = manifest.entry;
+  if (typeof entry !== "string") fail("manifest.entry must be a string");
+  const entryAbsolutePath = assertSrcPath(entry, "manifest.entry");
+  if (resolve(entryAbsolutePath) !== resolve(SRC_ROOT, DEFAULT_ENTRY)) {
+    fail(`manifest.entry must resolve to ${DEFAULT_ENTRY}`);
   }
 
-  const appScripts = scripts.slice(1);
+  if (!Array.isArray(legacy.scripts) || legacy.scripts.length < 1) {
+    fail("build-manifest.legacy.json must contain a non-empty scripts array");
+  }
+  const legacyScripts = legacy.scripts.map((entryItem, index) =>
+    readLegacyScript(entryItem, index, "legacy.scripts"),
+  );
+  if (legacyScripts[0].kind !== "vendor") {
+    fail("legacy.scripts[0] must be the vendor entry");
+  }
+  if (legacyScripts.filter((s) => s.kind === "vendor").length !== 1) {
+    fail("legacy manifest must declare exactly one kind=vendor entry");
+  }
+  const appScripts = legacyScripts.slice(1);
   if (appScripts[appScripts.length - 1].raw !== "app.js") {
-    fail("app.js must be the last non-vendor script");
+    fail("app.js must be the last legacy application script");
   }
   const files = new Set<string>();
   const namespaces = new Set<string>();
   for (const s of appScripts) {
-    if (files.has(s.raw)) fail(`duplicate application file: ${s.raw}`);
+    if (files.has(s.raw)) fail(`duplicate legacy application file: ${s.raw}`);
     files.add(s.raw);
     if (namespaces.has(s.namespace)) {
-      fail(`duplicate application namespace: ${s.namespace}`);
+      fail(`duplicate legacy application namespace: ${s.namespace}`);
     }
     namespaces.add(s.namespace);
-    const normalized = normalizePath(s.absolutePath);
-    if (normalized.includes("/node_modules/pixi.js/")) {
-      fail(`application script resolves inside node_modules/pixi.js: ${s.raw}`);
-    }
   }
 
   return {
     template: readFileSync(TEMPLATE_PATH, "utf-8"),
     styleAbsolutePath,
+    entryAbsolutePath,
     vendor,
-    appScripts,
+    legacyScripts: appScripts,
     namespaces: appScripts.map((s) => s.namespace),
   };
 }
 
-function virtualEntrySource(appScripts: OrderedEntry[]): string {
-  // Side-effect imports in canonical manifest order. Each script attaches its
-  // global namespace and references previously loaded globals (PIXI and earlier
-  // OceanRescue.* namespaces) during its own execution, so order is preserved.
-  const imports = appScripts
-    .map((script) => `import ${JSON.stringify(normalizePath(script.absolutePath))};`)
-    .join("\n");
-  return `${imports}\n`;
+const STATIC_IMPORT_RE = /^import\s+["']([^"']+)["']\s*;?/gm;
+
+/** Walk the static relative import graph from the canonical entry. */
+function collectImportGraph(entryAbsolutePath: string): Set<string> {
+  const seen = new Set<string>();
+  const stack = [entryAbsolutePath];
+  while (stack.length > 0) {
+    const current = stack.pop()!;
+    const normalized = normalizePath(current);
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    const source = readFileSync(current, "utf-8");
+    for (const match of source.matchAll(STATIC_IMPORT_RE)) {
+      const spec = match[1];
+      if (URL_SCHEME_RE.test(spec)) {
+        fail(`entry graph contains a non-relative import: ${spec}`);
+      }
+      if (!spec.startsWith(".")) {
+        fail(`entry graph contains a bare import: ${spec}`);
+      }
+      const target = resolve(dirname(current), spec);
+      if (!target.startsWith(SRC_ROOT + "/")) {
+        fail(`entry graph escapes src root: ${spec}`);
+      }
+      try {
+        readFileSync(target);
+      } catch {
+        fail(`entry graph references a missing file: ${spec}`);
+      }
+      stack.push(target);
+    }
+  }
+  return seen;
 }
 
 function deriveDocument(boundary: Boundary, outFile: string): string {
@@ -240,20 +278,18 @@ function oceanRescueBundlePlugin(
   boundary: Boundary,
   options: BundleLaneOptions,
 ): Plugin {
-  const entryFile = join(TMPDIR_ROOT, options.entryName);
-  const expectedModules = new Map<string, string>();
-  for (const script of boundary.appScripts) {
-    expectedModules.set(normalizePath(script.absolutePath), script.raw);
-  }
-  const entryNormalized = normalizePath(entryFile);
+  const graphModules = collectImportGraph(boundary.entryAbsolutePath);
+  const entryNormalized = normalizePath(boundary.entryAbsolutePath);
+  const expectedModuleFiles = Array.from(graphModules)
+    .filter((key) => key !== entryNormalized)
+    .map((key) => relative(SRC_ROOT, key).split(sep).join("/"))
+    .sort();
+
+  const legacyRaws = new Set(boundary.legacyScripts.map((s) => s.raw));
+  const applicationScripts = boundary.legacyScripts.map((s) => s.raw);
 
   return {
     name: `ocean-rescue-${options.lane}-bundle`,
-    buildStart() {
-      // Regenerate the non-tracked entry after any prior dist empty-out.
-      mkdirSync(join(entryFile, ".."), { recursive: true });
-      writeFileSync(entryFile, virtualEntrySource(boundary.appScripts), "utf-8");
-    },
     generateBundle(_options, bundle) {
       const chunks = Object.values(bundle).filter(
         (item) => (item as { type?: string }).type === "chunk",
@@ -272,18 +308,22 @@ function oceanRescueBundlePlugin(
 
       const moduleKeys = Object.keys(entryChunk.modules ?? {});
       const normalizedModules = new Set(moduleKeys.map((key) => sourcePath(key)));
-      for (const [normalized, raw] of expectedModules) {
-        if (!normalizedModules.has(normalized)) {
-          fail(`expected application module missing from bundle: ${raw}`);
-        }
+      if (!normalizedModules.has(boundary.entryAbsolutePath)) {
+        fail("canonical entry module missing from the bundle");
       }
       for (const key of moduleKeys) {
         const normalized = sourcePath(key);
         if (normalized === entryNormalized) {
           continue;
         }
-        if (!expectedModules.has(normalized)) {
+        if (!normalized.startsWith(SRC_ROOT + "/")) {
           fail(`unexpected module entered the application chunk: ${key}`);
+        }
+      }
+      for (const normalized of graphModules) {
+        if (normalized === entryNormalized) continue;
+        if (!normalizedModules.has(normalized)) {
+          fail(`entry-graph module missing from the bundle: ${normalized}`);
         }
       }
       const vendorNormalized = normalizePath(boundary.vendor.absolutePath);
@@ -295,12 +335,13 @@ function oceanRescueBundlePlugin(
           fail(`pixi.js package module entered the bundle: ${key}`);
         }
       }
-      for (const [expectedNormalized, raw] of expectedModules) {
+      for (const normalized of graphModules) {
+        if (normalized === entryNormalized) continue;
         const occurrences = moduleKeys.filter(
-          (key) => sourcePath(key) === expectedNormalized,
+          (key) => sourcePath(key) === normalized,
         );
         if (occurrences.length !== 1) {
-          fail(`application module must occur exactly once: ${raw}`);
+          fail(`entry-graph module must occur exactly once: ${normalized}`);
         }
       }
 
@@ -333,15 +374,16 @@ function oceanRescueBundlePlugin(
         bundle_file: options.outFile,
         bundle_bytes: bundleBytes,
         bundle_sha256: bundleSha256,
+        entry: relative(SRC_ROOT, boundary.entryAbsolutePath).split(sep).join("/"),
         vendor: {
           file: boundary.vendor.raw,
           namespace: boundary.vendor.namespace,
           external: true,
         },
-        application_script_count: boundary.appScripts.length,
-        application_scripts: boundary.appScripts.map((s) => s.raw),
+        legacy_script_count: applicationScripts.length,
+        application_scripts: applicationScripts,
         expected_namespaces: boundary.namespaces.slice(),
-        actual_module_files: boundary.appScripts.map((s) => s.raw),
+        actual_module_files: expectedModuleFiles,
         dynamic_import_count: dynamicImportCount,
         output_files: emittedFiles,
       };
@@ -358,12 +400,13 @@ function oceanRescueBundlePlugin(
  * Create the deterministic IIFE application-bundle configuration for one lane.
  *
  * Both the WP-20 shadow lane and the WP-21 production lane share this single
- * manifest-to-bundle algorithm; only output naming, metadata state, and the
- * shadow document emission differ.
+ * canonical-entry algorithm: the real ``src/main.js`` ESM entry owns the
+ * application import graph, and the ordered legacy manifest is retained only
+ * as the rollback authority. Output naming, metadata state, and the shadow
+ * document emission differ per lane.
  */
 export function createBundleLaneConfig(options: BundleLaneOptions): UserConfig {
   const boundary = loadBoundary();
-  const entryFile = join(TMPDIR_ROOT, options.entryName);
 
   return {
     root: ROOT,
@@ -379,7 +422,7 @@ export function createBundleLaneConfig(options: BundleLaneOptions): UserConfig {
       cssCodeSplit: false,
       modulePreload: false,
       lib: {
-        entry: entryFile,
+        entry: boundary.entryAbsolutePath,
         name: options.globalName,
         formats: ["iife"],
         fileName: () => options.outFile,

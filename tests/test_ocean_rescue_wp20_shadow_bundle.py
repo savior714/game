@@ -47,6 +47,7 @@ DOMAIN_DIR = REPO_ROOT / "domains" / "ocean-rescue"
 SRC_DIR = DOMAIN_DIR / "src"
 DIST_DIR = DOMAIN_DIR / "dist"
 MANIFEST = SRC_DIR / "build-manifest.json"
+LEGACY_MANIFEST = SRC_DIR / "build-manifest.legacy.json"
 TEMPLATE = SRC_DIR / "index.template.html"
 VITE_CONFIG = DOMAIN_DIR / "vite.config.ts"
 SHADOW_CONFIG = DOMAIN_DIR / "vite.shadow.config.ts"
@@ -64,6 +65,7 @@ EXPECTED_VENDOR_FILE = "vendor/pixi-8.19.0.min.js"
 EXPECTED_VENDOR_NAMESPACE = "PIXI"
 EXPECTED_APP_COUNT = 18
 EXPECTED_SCHEMA_VERSION = 1
+CANONICAL_ENTRY = "main.js"
 
 PRODUCTION_PATHS = (
     "domains/ocean-rescue/src",
@@ -91,6 +93,10 @@ WP20_IMPLEMENTATION_COMMIT = "33f3d43d7e7c83bcddda9edbfdebfe2934f5f33b"
 
 def _load_manifest() -> dict:
     return json.loads(MANIFEST.read_text(encoding="utf-8"))
+
+
+def _load_legacy_manifest() -> dict:
+    return json.loads(LEGACY_MANIFEST.read_text(encoding="utf-8"))
 
 
 def _load_package() -> dict:
@@ -187,7 +193,9 @@ def test_shadow_config_reads_canonical_manifest_and_template() -> None:
 
 def test_shadow_config_uses_rolldown_options() -> None:
     bundle_text = (DOMAIN_DIR / "vite.bundle.ts").read_text(encoding="utf-8")
-    assert "rolldownOptions" in bundle_text, "shared config must use build.rolldownOptions"
+    assert "rolldownOptions" in bundle_text, (
+        "shared config must use build.rolldownOptions"
+    )
 
 
 def test_shadow_config_does_not_import_pixi_package() -> None:
@@ -231,11 +239,15 @@ def test_production_paths_outside_write_scope() -> None:
     allowed = {
         "ocean-rescue/index.html",
         "scripts/ocean_rescue/build_single_html.py",
+        "domains/ocean-rescue/src/build-manifest.json",
+        "domains/ocean-rescue/src/build-manifest.legacy.json",
+        "scripts/ocean_rescue/validate_pixi_vendor.py",
     }
     changed = {line for line in diff.splitlines() if line}
     assert changed <= allowed, (
         "shadow work must only reconcile the production cutover paths "
-        f"(artifact + builder); unexpected diff: {sorted(changed - allowed)}"
+        f"(artifact + builder + WP-30 manifest split); unexpected diff: "
+        f"{sorted(changed - allowed)}"
     )
 
 
@@ -268,8 +280,9 @@ def test_shadow_metadata_is_valid_and_complete() -> None:
         "bundle_file",
         "bundle_bytes",
         "bundle_sha256",
+        "entry",
         "vendor",
-        "application_script_count",
+        "legacy_script_count",
         "application_scripts",
         "expected_namespaces",
         "actual_module_files",
@@ -287,18 +300,19 @@ def test_shadow_metadata_is_valid_and_complete() -> None:
     assert metadata["sourcemap"] is False
     assert metadata["bundle_file"] == BUNDLE_FILE
     assert metadata["dynamic_import_count"] == 0
+    assert metadata["entry"] == CANONICAL_ENTRY
     raw = (DIST_DIR / METADATA_FILE).read_text(encoding="utf-8")
     assert raw.endswith("\n"), "metadata must end with a trailing newline"
 
 
-def test_metadata_application_scripts_match_manifest_order() -> None:
+def test_metadata_application_scripts_match_legacy_manifest() -> None:
     _clean_shadow_build()
-    manifest = _load_manifest()
-    expected = [entry["file"] for entry in _non_vendor_scripts(manifest)]
+    legacy = _load_legacy_manifest()
+    expected = [entry["file"] for entry in _non_vendor_scripts(legacy)]
     assert len(expected) == EXPECTED_APP_COUNT
     metadata = json.loads((DIST_DIR / METADATA_FILE).read_text(encoding="utf-8"))
     assert metadata["application_scripts"] == expected
-    assert metadata["application_script_count"] == EXPECTED_APP_COUNT
+    assert metadata["legacy_script_count"] == EXPECTED_APP_COUNT
 
 
 def test_metadata_vendor_boundary_external() -> None:
@@ -312,12 +326,17 @@ def test_metadata_vendor_boundary_external() -> None:
 
 def test_metadata_actual_module_membership() -> None:
     _clean_shadow_build()
+    legacy = _load_legacy_manifest()
+    expected = [entry["file"] for entry in _non_vendor_scripts(legacy)]
     metadata = json.loads((DIST_DIR / METADATA_FILE).read_text(encoding="utf-8"))
-    assert metadata["actual_module_files"] == metadata["application_scripts"]
     assert metadata["expected_namespaces"] == [
-        entry["namespace"] for entry in _non_vendor_scripts(_load_manifest())
+        entry["namespace"] for entry in _non_vendor_scripts(legacy)
     ]
     assert EXPECTED_VENDOR_FILE not in metadata["actual_module_files"]
+    for raw in metadata["actual_module_files"]:
+        assert raw == CANONICAL_ENTRY or raw.startswith("esm/") or raw in expected, (
+            f"unexpected module file recorded: {raw}"
+        )
 
 
 def test_bundle_bytes_and_sha256_match_metadata() -> None:
@@ -332,7 +351,7 @@ def test_bundle_is_nonempty_and_inspectable() -> None:
     _clean_shadow_build()
     text = (DIST_DIR / BUNDLE_FILE).read_text(encoding="utf-8")
     assert len(text) > 0, "bundle must not be empty"
-    for entry in _non_vendor_scripts(_load_manifest()):
+    for entry in _non_vendor_scripts(_load_legacy_manifest()):
         assert f"OceanRescue.{entry['namespace'].split('.')[-1]}" in text, (
             f"bundle must reference namespace {entry['namespace']}"
         )
@@ -485,7 +504,7 @@ def test_shadow_browser_parity() -> None:
     assert doc["pixi_version"] == "8.19.0", "PIXI must be the pinned 8.19.0"
     assert doc["has_app"] is True, "OceanRescue.App must be present"
     assert doc["has_render_assets"] is True, "OceanRescue.RenderAssets must be present"
-    for entry in _non_vendor_scripts(_load_manifest()):
+    for entry in _non_vendor_scripts(_load_legacy_manifest()):
         key = entry["namespace"].split(".")[-1]
         assert key in doc["namespaces"], (
             f"missing runtime namespace {entry['namespace']}"

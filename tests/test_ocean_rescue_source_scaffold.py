@@ -11,6 +11,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 SOURCE_ROOT = REPO_ROOT / "domains" / "ocean-rescue" / "src"
 BUILDER = REPO_ROOT / "scripts" / "ocean_rescue" / "build_single_html.py"
 MANIFEST = SOURCE_ROOT / "build-manifest.json"
+LEGACY_MANIFEST = SOURCE_ROOT / "build-manifest.legacy.json"
 TEMPLATE = SOURCE_ROOT / "index.template.html"
 STYLE = SOURCE_ROOT / "style.css"
 STATE_JS = SOURCE_ROOT / "state.js"
@@ -61,7 +62,7 @@ def test_canonical_source_files_exist():
 
 class TestManifest:
     def test_manifest_is_canonical(self):
-        expected_scripts = [
+        expected_legacy_scripts = [
             {
                 "file": "vendor/pixi-8.19.0.min.js",
                 "namespace": "PIXI",
@@ -179,26 +180,45 @@ class TestManifest:
         ]
 
         data = json.loads(MANIFEST.read_text(encoding="utf-8"))
-        assert set(data.keys()) == {"template", "styles", "scripts", "assets"}
+        assert set(data.keys()) == {
+            "template",
+            "styles",
+            "vendor",
+            "generated",
+            "entry",
+            "assets",
+        }
         assert data["template"] == "index.template.html"
         assert data["styles"] == ["style.css"]
-        assert len(data["scripts"]) == 19
+        assert data["entry"] == "main.js"
+        assert data["assets"] == []
 
+        assert data["vendor"]["file"] == "vendor/pixi-8.19.0.min.js"
+        assert data["vendor"]["namespace"] == "PIXI"
+        assert data["vendor"]["kind"] == "vendor"
+        assert isinstance(data["vendor"]["sha256"], str)
+        assert data["generated"]["file"] == "render-assets.generated.js"
+        assert isinstance(data["generated"]["sha256"], str)
+
+        legacy = json.loads(
+            (SOURCE_ROOT / "build-manifest.legacy.json").read_text(encoding="utf-8")
+        )
+        assert set(legacy.keys()) == {"template", "styles", "scripts", "assets"}
+        assert len(legacy["scripts"]) == 19
         actual_scripts = [
             {
                 "file": entry["file"],
                 "namespace": entry["namespace"],
                 "depends_on": entry["depends_on"],
             }
-            for entry in data["scripts"]
+            for entry in legacy["scripts"]
         ]
-        assert actual_scripts == expected_scripts
-
-        assert data["scripts"][0]["kind"] == "vendor"
-        assert data["scripts"][1]["kind"] == "generated-assets"
-        for entry in (data["scripts"][0], data["scripts"][1]):
+        assert actual_scripts == expected_legacy_scripts
+        assert legacy["scripts"][0]["kind"] == "vendor"
+        assert legacy["scripts"][1]["kind"] == "generated-assets"
+        for entry in (legacy["scripts"][0], legacy["scripts"][1]):
             assert isinstance(entry["sha256"], str)
-        assert data["assets"] == []
+        assert legacy["assets"] == []
 
 
 class TestTemplate:
@@ -491,7 +511,7 @@ class TestBuild:
                 "--mode",
                 "legacy",
                 "--manifest",
-                str(MANIFEST),
+                str(LEGACY_MANIFEST),
                 "--output",
                 str(output),
             ],
@@ -503,8 +523,8 @@ class TestBuild:
         assert output.stat().st_size > 0, "Build output is empty"
 
         html = output.read_text(encoding="utf-8")
-        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-        script_count = len(manifest["scripts"])
+        legacy = json.loads(LEGACY_MANIFEST.read_text(encoding="utf-8"))
+        script_count = len(legacy["scripts"])
 
         assert "<!-- OCEAN_RESCUE_CSS -->" not in html
         assert "<!-- OCEAN_RESCUE_SCRIPTS -->" not in html
@@ -524,9 +544,7 @@ class TestBuild:
         young_whale_pos = html.index("OceanRescue.YoungWhale")
         mission_success_pos = html.index("OceanRescue.MissionSuccess")
         app_pos = html.index("OceanRescue.App")
-        assert state_pos < profile_pos, (
-            "State script must appear before Profile script"
-        )
+        assert state_pos < profile_pos, "State script must appear before Profile script"
         assert profile_pos < missions_pos, (
             "Profile script must appear before Missions script"
         )
@@ -572,7 +590,7 @@ class TestBuild:
                 "--mode",
                 "legacy",
                 "--manifest",
-                str(MANIFEST),
+                str(LEGACY_MANIFEST),
                 "--output",
                 str(out1),
             ],
@@ -586,7 +604,7 @@ class TestBuild:
                 "--mode",
                 "legacy",
                 "--manifest",
-                str(MANIFEST),
+                str(LEGACY_MANIFEST),
                 "--output",
                 str(out2),
             ],

@@ -60,41 +60,47 @@ function pathSep(): string {
   return "/";
 }
 
-interface OrderedSources {
+interface DevSources {
   styles: string[];
-  scripts: string[];
+  vendorSrc: string;
+  entrySrc: string;
 }
 
-function loadOrderedSources(): OrderedSources {
+function loadDevSources(): DevSources {
   const manifest = JSON.parse(readFileSync(MANIFEST_PATH, "utf-8")) as {
     template?: unknown;
     styles?: unknown;
-    scripts?: unknown;
+    vendor?: unknown;
+    entry?: unknown;
   };
   const template = manifest.template;
   const styles = manifest.styles;
-  const scripts = manifest.scripts;
+  const vendor = manifest.vendor;
+  const entry = manifest.entry;
   if (typeof template !== "string") fail("manifest.template must be a string");
   if (!Array.isArray(styles)) fail("manifest.styles must be an array");
-  if (!Array.isArray(scripts)) fail("manifest.scripts must be an array");
+  if (typeof vendor !== "object" || vendor === null) {
+    fail("manifest.vendor must be an object");
+  }
+  if (typeof entry !== "string") fail("manifest.entry must be a string");
+  const vendorEntry = vendor as { file?: unknown };
   const templateAbs = assertSrcPath(template, "manifest.template");
   if (resolve(templateAbs) !== TEMPLATE_PATH) {
     fail("manifest.template must resolve to the canonical template");
   }
-  const stylePaths = styles.map((entry, index) =>
-    assertSrcPath(entry, `manifest.styles[${index}]`),
+  if (typeof vendorEntry.file !== "string") {
+    fail("manifest.vendor.file must be a string");
+  }
+  const vendorAbs = assertSrcPath(vendorEntry.file, "manifest.vendor.file");
+  const entryAbs = assertSrcPath(entry, "manifest.entry");
+  const stylePaths = styles.map((item, index) =>
+    assertSrcPath(item, `manifest.styles[${index}]`),
   );
-  const scriptPaths = scripts.map((entry, index) => {
-    if (typeof entry !== "object" || entry === null) {
-      fail(`manifest.scripts[${index}] must be an object`);
-    }
-    const file = (entry as { file?: unknown }).file;
-    if (typeof file !== "string") {
-      fail(`manifest.scripts[${index}].file must be a string`);
-    }
-    return assertSrcPath(file, `manifest.scripts[${index}].file`);
-  });
-  return { styles: stylePaths, scripts: scriptPaths };
+  return {
+    styles: stylePaths,
+    vendorSrc: publicUrl(vendorAbs),
+    entrySrc: publicUrl(entryAbs),
+  };
 }
 
 function deriveDocument(): string {
@@ -106,15 +112,16 @@ function deriveDocument(): string {
     fail(`template must contain exactly one ${SCRIPTS_MARKER}`);
   }
 
-  const { styles, scripts } = loadOrderedSources();
+  const { styles, vendorSrc, entrySrc } = loadDevSources();
 
   const styleTags = styles
     .map((absolutePath) => `<link rel="stylesheet" href="${publicUrl(absolutePath)}">`)
     .join("\n  ");
 
-  const scriptTags = scripts
-    .map((absolutePath) => `<script src="${publicUrl(absolutePath)}"></script>`)
-    .join("\n");
+  const scriptTags = [
+    `<script src="${vendorSrc}"></script>`,
+    `<script type="module" src="${entrySrc}"></script>`,
+  ].join("\n  ");
 
   return template.replace(CSS_MARKER, styleTags).replace(SCRIPTS_MARKER, scriptTags);
 }
@@ -138,9 +145,9 @@ function oceanRescueDevTemplatePlugin(): Plugin {
   return {
     name: "ocean-rescue-dev-template",
     configureServer(server) {
-      // The legacy classic scripts are served as plain scripts and therefore do
+      // The vendored Pixi classic script is served as a plain script and does
       // not belong to Vite's ESM HMR module graph. Vite therefore does not call
-      // the `handleHotUpdate` hook for changes to them. To keep the dev lane
+      // the `handleHotUpdate` hook for changes to it. To keep the dev lane
       // responsive, we register our own listener on Vite's file watcher and
       // explicitly send a full reload for any relevant source change.
       server.watcher.on("all", (_event, file) => {

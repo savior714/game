@@ -22,17 +22,16 @@ def _runtime():
 
 
 def test_manifest_places_runtime_between_assets_and_state_and_app_depends_on_it():
-    entries = _manifest()["scripts"]
-    namespaces = [entry["namespace"] for entry in entries]
-    assert namespaces.index("PIXI") < namespaces.index("OceanRescue.RenderAssets")
-    assert namespaces.index("OceanRescue.RenderAssets") < namespaces.index(
-        "OceanRescue.RenderRuntime"
+    """WP-30: ordering authority lives in the ESM adapter graph."""
+    adapters = SRC / "esm"
+    runtime_adapter = (adapters / "render-runtime.js").read_text(encoding="utf-8")
+    assert 'import "./render-assets.js";' in runtime_adapter, (
+        "render-runtime adapter must import render-assets"
     )
-    assert namespaces.index("OceanRescue.RenderRuntime") < namespaces.index(
-        "OceanRescue.State"
+    app_adapter = (adapters / "app.js").read_text(encoding="utf-8")
+    assert 'import "./render-runtime.js";' in app_adapter, (
+        "app adapter must import render-runtime"
     )
-    app = next(entry for entry in entries if entry["namespace"] == "OceanRescue.App")
-    assert "OceanRescue.RenderRuntime" in app["depends_on"]
 
 
 def test_application_contract_is_explicit_and_reuses_visible_canvas():

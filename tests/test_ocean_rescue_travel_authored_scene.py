@@ -12,14 +12,20 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DOMAIN_SRC = REPO_ROOT / "domains" / "ocean-rescue" / "src"
 GENERATED_JS = DOMAIN_SRC / "render-assets.generated.js"
 BUILD_MANIFEST = DOMAIN_SRC / "build-manifest.json"
+LEGACY_MANIFEST = DOMAIN_SRC / "build-manifest.legacy.json"
 APP_JS = DOMAIN_SRC / "app.js"
 TRAVEL_SCENE_JS = DOMAIN_SRC / "travel-scene.js"
+ESM_DIR = DOMAIN_SRC / "esm"
 ARTIFACT = REPO_ROOT / "ocean-rescue" / "index.html"
 BUILDER = REPO_ROOT / "scripts" / "ocean_rescue" / "build_single_html.py"
 
 
 def _load_manifest():
     return json.loads(BUILD_MANIFEST.read_text(encoding="utf-8"))
+
+
+def _load_legacy_manifest():
+    return json.loads(LEGACY_MANIFEST.read_text(encoding="utf-8"))
 
 
 def _load_app_js():
@@ -49,25 +55,32 @@ def _legacy_primitive_functions():
 
 
 def test_travel_scene_module_exists_and_is_loaded():
-    """travel-scene.js must exist and be declared in the build manifest."""
+    """travel-scene.js must exist and be declared in the legacy manifest."""
     assert TRAVEL_SCENE_JS.exists(), f"Missing travel-scene.js at {TRAVEL_SCENE_JS}"
-    manifest = _load_manifest()
-    files = {entry["file"] for entry in manifest.get("scripts", [])}
+    legacy = _load_legacy_manifest()
+    files = {entry["file"] for entry in legacy.get("scripts", [])}
     assert "travel-scene.js" in files, (
-        "build-manifest.json does not declare travel-scene.js"
+        "legacy manifest does not declare travel-scene.js"
     )
+    adapter = ESM_DIR / "travel-scene.js"
+    assert adapter.exists(), "Missing esm/travel-scene.js adapter"
+    adapter_src = adapter.read_text(encoding="utf-8")
+    assert 'import "./terrain.js";' in adapter_src, (
+        "travel-scene adapter must import terrain"
+    )
+    assert 'import "./gups.js";' in adapter_src, "travel-scene adapter must import gups"
 
 
 def test_travel_scene_namespace_is_registered():
     """OceanRescue.TravelScene must be the declared namespace."""
-    manifest = _load_manifest()
-    for entry in manifest.get("scripts", []):
+    legacy = _load_legacy_manifest()
+    for entry in legacy.get("scripts", []):
         if entry["file"] == "travel-scene.js":
             assert entry.get("namespace") == "OceanRescue.TravelScene", (
                 "travel-scene.js must register OceanRescue.TravelScene"
             )
             return
-    raise AssertionError("travel-scene.js entry missing from manifest")
+    raise AssertionError("travel-scene.js entry missing from legacy manifest")
 
 
 def test_travel_scene_requires_required_aliases():
@@ -228,17 +241,10 @@ def test_travel_scene_provides_diagnostics():
 
 
 def test_build_manifest_depends_on_order():
-    """app.js must depend on TravelScene in the build manifest."""
-    manifest = _load_manifest()
-    app_entry = None
-    for entry in manifest.get("scripts", []):
-        if entry["file"] == "app.js":
-            app_entry = entry
-            break
-    assert app_entry is not None, "app.js missing from build manifest"
-    deps = app_entry.get("depends_on", [])
-    assert "OceanRescue.TravelScene" in deps, (
-        "app.js does not declare OceanRescue.TravelScene as a dependency"
+    """app.js must depend on TravelScene through the ESM adapter graph."""
+    app_adapter = (ESM_DIR / "app.js").read_text(encoding="utf-8")
+    assert 'import "./travel-scene.js";' in app_adapter, (
+        "app adapter must import the travel-scene adapter"
     )
 
 

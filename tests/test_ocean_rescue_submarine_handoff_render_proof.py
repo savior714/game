@@ -524,7 +524,27 @@ class TestManifestWorkflowRecord:
             tmp_path / "src" / "render-assets.generated.js", "window.OceanRescue = {};"
         )
         _write(tmp_path / "ocean-rescue" / "index.html", "<html></html>")
-        _write(tmp_path / "src" / "build-manifest.json", json.dumps({"scripts": []}))
+        _write(
+            tmp_path / "src" / "build-manifest.json",
+            json.dumps(
+                {
+                    "template": "index.template.html",
+                    "styles": ["style.css"],
+                    "vendor": {
+                        "file": "vendor/pixi-8.19.0.min.js",
+                        "namespace": "PIXI",
+                        "kind": "vendor",
+                        "sha256": "0" * 64,
+                    },
+                    "generated": {
+                        "file": "render-assets.generated.js",
+                        "sha256": "0" * 64,
+                    },
+                    "entry": "main.js",
+                    "assets": [],
+                }
+            ),
+        )
 
         lineage = PROOF.compute_lineage(tmp_path, args)
         isolated = {

@@ -158,7 +158,8 @@ def test_manifest_and_template_placeholders() -> None:
     manifest = _load_manifest()
     template = TEMPLATE.read_text(encoding="utf-8")
     assert isinstance(manifest["styles"], list) and manifest["styles"]
-    assert isinstance(manifest["scripts"], list) and manifest["scripts"]
+    assert isinstance(manifest["vendor"], dict)
+    assert manifest["entry"] == "main.js"
     assert template.count(MARKER_CSS) == 1, "template must have exactly one CSS marker"
     assert template.count(MARKER_SCRIPTS) == 1, (
         "template must have exactly one SCRIPTS marker"
@@ -271,7 +272,7 @@ class ViteServerFixture:
 
 
 def _derive_script_order(html: str) -> list[str]:
-    return re.findall(r'<script src="([^"]+)"></script>', html)
+    return re.findall(r'<script[^>]*src="([^"]+)"[^>]*></script>', html)
 
 
 def _assert_live_derivation(server: ViteServerFixture) -> None:
@@ -279,18 +280,23 @@ def _assert_live_derivation(server: ViteServerFixture) -> None:
     body = server.fetch_then_return_body(f"{server.base_url}/index.dev.html")
     assert "ocean-rescue-root" in body, "served HTML must contain the game root"
     assert '<link rel="stylesheet" href="/src/style.css">' in body, "missing stylesheet"
-    script_tags = _derive_script_order(body)
-    expected = [f"/src/{entry['file']}" for entry in manifest["scripts"]]
-    assert script_tags == expected, f"script order mismatch:\n{script_tags}\n{expected}"
+    script_tags = [
+        tag for tag in _derive_script_order(body) if "@vite/client" not in tag
+    ]
+    vendor_file = manifest["vendor"]["file"]
+    expected = [f"/src/{vendor_file}", f"/src/{manifest['entry']}"]
+    assert script_tags == expected, f"script tags mismatch:\n{script_tags}\n{expected}"
     assert "src/build-manifest.json" not in body, (
         "served document must not fetch the manifest at runtime"
     )
-    src_open_tags = re.findall(r"<script\b[^>]*\bsrc=\"/src/[^\"]+\"[^>]*>", body)
-    assert len(src_open_tags) == len(manifest["scripts"]), (
-        "expected exactly the manifest classic script tags"
+    module_tags = re.findall(r'<script[^>]*type="module"[^>]*src="([^"]+)"', body)
+    assert f"/src/{manifest['entry']}" in module_tags, (
+        "module scripts must include the canonical ESM entry"
     )
-    assert all('type="module"' not in tag for tag in src_open_tags), (
-        "legacy scripts must remain classic (no type=module)"
+    classic_tags = re.findall(r'<script(?! type="module")[^>]*src="([^"]+)"', body)
+    classic_tags = [tag for tag in classic_tags if "@vite/client" not in tag]
+    assert classic_tags == [f"/src/{vendor_file}"], (
+        "exactly one classic script (vendored Pixi) must be present"
     )
 
 

@@ -1,6 +1,5 @@
 """Static contract tests for the authored sea-turtle Pixi scene adapter."""
 
-import json
 import re
 from pathlib import Path
 
@@ -54,19 +53,19 @@ def test_scene_module_exists_and_exports_namespace():
 
 
 def test_manifest_orders_scene_after_runtime_and_sea_turtle_before_app():
-    entries = json.loads(text(MANIFEST))["scripts"]
-    namespaces = [entry["namespace"] for entry in entries]
-    assert namespaces.index("OceanRescue.RenderRuntime") < namespaces.index(
-        "OceanRescue.SeaTurtleScene"
+    """WP-30: dependency ordering is owned by the ESM adapter graph."""
+    adapters = SRC / "esm"
+    scene_adapter = (adapters / "sea-turtle-scene.js").read_text(encoding="utf-8")
+    assert 'import "./render-runtime.js";' in scene_adapter, (
+        "sea-turtle-scene adapter must import render-runtime"
     )
-    assert namespaces.index("OceanRescue.SeaTurtle") < namespaces.index(
-        "OceanRescue.SeaTurtleScene"
+    assert 'import "./sea-turtle.js";' in scene_adapter, (
+        "sea-turtle-scene adapter must import sea-turtle"
     )
-    assert namespaces.index("OceanRescue.SeaTurtleScene") < namespaces.index(
-        "OceanRescue.App"
+    app_adapter = (adapters / "app.js").read_text(encoding="utf-8")
+    assert 'import "./sea-turtle-scene.js";' in app_adapter, (
+        "app adapter must import sea-turtle-scene"
     )
-    app = next(entry for entry in entries if entry["namespace"] == "OceanRescue.App")
-    assert "OceanRescue.SeaTurtleScene" in app["depends_on"]
 
 
 def test_scene_declares_exact_required_alias_set():

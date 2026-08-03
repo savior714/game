@@ -10,7 +10,6 @@ export default createBundleLaneConfig({
   htmlFile: "index.shadow.html",
   metadataFile: "shadow-bundle-metadata.json",
   globalName: "OceanRescueShadowBundle",
-  entryName: "ocean-rescue-shadow-entry.mjs",
   metadataState: "SHADOW_BUNDLE",
   target: "baseline-widely-available",
 });

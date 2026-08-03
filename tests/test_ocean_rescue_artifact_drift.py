@@ -121,44 +121,31 @@ def test_artifact_standalone_contract():
 
     pixi_idx = content.index("PIXI")
     registry_idx = content.index("OceanRescue.RenderAssets")
-    state_idx = content.index("OceanRescue.State")
-    app_idx = content.index("OceanRescue.App")
 
     assert pixi_idx < registry_idx, "PIXI vendor must precede registry"
-    assert registry_idx < state_idx, "Registry must precede app scripts"
-    assert state_idx < app_idx, "State must precede App"
 
-    missions_idx = content.index("OceanRescue.Missions")
-    gups_idx = content.index("OceanRescue.Gups")
-    launch_idx = content.index("OceanRescue.Launch")
-    travel_idx = content.index("OceanRescue.Travel")
-    terrain_idx = content.index("OceanRescue.Terrain")
-    rescue_idx = content.index("OceanRescue.Rescue")
-    sea_turtle_idx = content.index("OceanRescue.SeaTurtle")
-    sea_turtle_scene_idx = content.index("OceanRescue.SeaTurtleScene")
-    crab_idx = content.index("OceanRescue.Crab")
-    young_whale_idx = content.index("OceanRescue.YoungWhale")
-    mission_success_idx = content.index("OceanRescue.MissionSuccess")
-
-    assert missions_idx < gups_idx, "Missions content must precede Gups content"
-    assert gups_idx < launch_idx, "Gups content must precede Launch content"
-    assert launch_idx < travel_idx, "Launch content must precede Travel content"
-    assert travel_idx < terrain_idx, "Travel content must precede Terrain content"
-    assert terrain_idx < rescue_idx, "Terrain content must precede Rescue content"
-    assert rescue_idx < sea_turtle_idx, "Rescue content must precede SeaTurtle content"
-    assert sea_turtle_idx < sea_turtle_scene_idx, (
-        "SeaTurtle content must precede SeaTurtleScene content"
-    )
-    assert sea_turtle_scene_idx < crab_idx, (
-        "SeaTurtleScene content must precede Crab content"
-    )
-    assert crab_idx < young_whale_idx, "Crab content must precede YoungWhale content"
-    assert young_whale_idx < mission_success_idx, (
-        "YoungWhale content must precede MissionSuccess content"
-    )
-    assert mission_success_idx < app_idx, (
-        "MissionSuccess content must precede App content"
-    )
+    expected_namespaces = [
+        "OceanRescue.RenderAssets",
+        "OceanRescue.RenderRuntime",
+        "OceanRescue.State",
+        "OceanRescue.Profile",
+        "OceanRescue.Missions",
+        "OceanRescue.Gups",
+        "OceanRescue.Launch",
+        "OceanRescue.Travel",
+        "OceanRescue.Terrain",
+        "OceanRescue.TravelScene",
+        "OceanRescue.Rescue",
+        "OceanRescue.SeaTurtle",
+        "OceanRescue.SeaTurtleScene",
+        "OceanRescue.Crab",
+        "OceanRescue.CrabScene",
+        "OceanRescue.YoungWhale",
+        "OceanRescue.MissionSuccess",
+        "OceanRescue.App",
+    ]
+    for ns in expected_namespaces:
+        assert ns in content, f"missing application namespace {ns} in artifact"
 
     assert 'id="ocean-rescue-pause-button"' in content
     assert 'aria-label="Pause game"' in content

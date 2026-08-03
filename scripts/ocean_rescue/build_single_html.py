@@ -4,6 +4,15 @@
 Consumes a JSON build manifest, an HTML template, CSS and JS source files,
 and binary assets, then produces a standalone HTML file with all content
 inlined as data URIs.
+
+Two manifest authorities exist (WP-30):
+
+- ``build-manifest.json`` is the contracted canonical manifest: template,
+  styles, a single vendored Pixi entry, the generated-assets pin, the ESM
+  entry file, and assets. Production packaging consumes this.
+- ``build-manifest.legacy.json`` is the immutable ordered-script rollback
+  manifest. ``--mode legacy`` consumes this to reproduce the pre-cutover
+  ordered-script artifact.
 """
 
 import argparse
@@ -35,6 +44,9 @@ MARKER_SCRIPTS = "<!-- OCEAN_RESCUE_SCRIPTS -->"
 PRODUCTION_BUNDLE_FILE = "ocean-rescue-app.js"
 PRODUCTION_METADATA_FILE = "production-bundle-metadata.json"
 PRODUCTION_METADATA_STATE = "PRODUCTION_BUNDLE"
+
+# Default rollback manifest next to the canonical manifest (WP-30).
+LEGACY_MANIFEST_FILE = "build-manifest.legacy.json"
 
 ASSET_REF_RE = re.compile(r"asset://([a-zA-Z0-9_-]+)")
 
@@ -86,7 +98,14 @@ def die(message, exit_code=1):
 
 
 def load_manifest(path):
-    """Load and validate the build manifest."""
+    """Load and validate a build manifest.
+
+    Accepts both authorities:
+
+    - contracted canonical (WP-30): ``template``, ``styles``, ``vendor``,
+      ``generated``, ``entry``, ``assets``;
+    - ordered legacy rollback: ``template``, ``styles``, ``scripts``, ``assets``.
+    """
     if not path.exists():
         raise BuildError(f"Manifest not found: {path}")
 
@@ -98,7 +117,7 @@ def load_manifest(path):
     if not isinstance(data, dict):
         raise BuildError("Manifest must be a JSON object")
 
-    allowed_keys = {"template", "styles", "scripts", "assets"}
+    allowed_keys = {"template", "styles", "scripts", "vendor", "generated", "entry", "assets"}
     unknown = set(data.keys()) - allowed_keys
     if unknown:
         raise BuildError(f"Unknown manifest key(s): {', '.join(sorted(unknown))}")
@@ -107,16 +126,75 @@ def load_manifest(path):
         raise BuildError("Missing required manifest key: template")
     if "styles" not in data:
         raise BuildError("Missing required manifest key: styles")
-    if "scripts" not in data:
-        raise BuildError("Missing required manifest key: scripts")
+    if "assets" not in data:
+        data = dict(data)
+        data["assets"] = []
+
+    has_scripts = "scripts" in data
+    has_entry = "entry" in data
+    has_vendor = "vendor" in data
+    if has_scripts == has_entry:
+        raise BuildError(
+            "Manifest must declare exactly one of 'scripts' (legacy) or "
+            "'entry' (canonical), found scripts=%s entry=%s"
+            % (has_scripts, has_entry)
+        )
+    if has_entry and not has_vendor:
+        raise BuildError("Canonical manifest requires a 'vendor' entry")
+    if has_scripts and (has_vendor or "generated" in data):
+        raise BuildError(
+            "Legacy manifest must not carry canonical 'vendor'/'generated' keys"
+        )
+    if has_entry:
+        if "generated" not in data:
+            raise BuildError("Canonical manifest requires a 'generated' pin")
 
     _validate_manifest_types(data)
 
     _validate_styles(data)
-    _validate_scripts(data)
+    if has_scripts:
+        _validate_scripts(data)
+    if has_vendor:
+        _validate_vendor(data)
     _validate_manifest_assets(data)
 
     return data
+
+
+def _validate_vendor(data):
+    vendor = data["vendor"]
+    if not isinstance(vendor, dict):
+        raise BuildError("manifest.vendor must be an object")
+    allowed = {"file", "namespace", "kind", "sha256"}
+    unknown = set(vendor.keys()) - allowed
+    if unknown:
+        raise BuildError(
+            f"manifest.vendor unknown key(s): {', '.join(sorted(unknown))}"
+        )
+    for key in ("file", "namespace", "kind", "sha256"):
+        if key not in vendor:
+            raise BuildError(f"manifest.vendor missing required key: {key}")
+        if not isinstance(vendor[key], str):
+            raise BuildError(f"manifest.vendor.{key} must be a string")
+    if vendor["kind"] != "vendor":
+        raise BuildError("manifest.vendor.kind must be 'vendor'")
+    if len(vendor["sha256"]) != 64:
+        raise BuildError("manifest.vendor.sha256 must be 64 hex chars")
+
+    generated = data.get("generated")
+    if not isinstance(generated, dict):
+        raise BuildError("manifest.generated must be an object")
+    for key in ("file", "sha256"):
+        if key not in generated:
+            raise BuildError(f"manifest.generated missing required key: {key}")
+        if not isinstance(generated[key], str):
+            raise BuildError(f"manifest.generated.{key} must be a string")
+    if len(generated["sha256"]) != 64:
+        raise BuildError("manifest.generated.sha256 must be 64 hex chars")
+
+    entry = data.get("entry")
+    if not isinstance(entry, str) or not entry:
+        raise BuildError("manifest.entry must be a non-empty string")
 
 
 def _validate_manifest_types(data):
@@ -128,12 +206,13 @@ def _validate_manifest_types(data):
     for i, s in enumerate(styles):
         if not isinstance(s, str):
             raise BuildError(f"manifest.styles[{i}] must be a string")
-    scripts = data["scripts"]
-    if not isinstance(scripts, list):
-        raise BuildError("manifest.scripts must be an array")
-    for i, entry in enumerate(scripts):
-        if not isinstance(entry, dict):
-            raise BuildError(f"manifest.scripts[{i}] must be an object")
+    if "scripts" in data:
+        scripts = data["scripts"]
+        if not isinstance(scripts, list):
+            raise BuildError("manifest.scripts must be an array")
+        for i, entry in enumerate(scripts):
+            if not isinstance(entry, dict):
+                raise BuildError(f"manifest.scripts[{i}] must be an object")
     if "assets" in data:
         if not isinstance(data["assets"], list):
             raise BuildError("manifest.assets must be an array")
@@ -576,19 +655,24 @@ def atomic_write(output_path, content):
             os.unlink(tmp_path)
 
 
+def _load_legacy_manifest(manifest_path):
+    """Load the ordered-script rollback manifest beside the canonical manifest."""
+    legacy_path = manifest_path.parent / LEGACY_MANIFEST_FILE
+    if not legacy_path.exists():
+        raise BuildError(f"Legacy rollback manifest not found: {legacy_path}")
+    return load_manifest(legacy_path)
+
+
 def _load_vendor_content(manifest_base, manifest_data):
     """Load, safety-check and SHA-verify the single vendored Pixi entry."""
-    vendor_entries = [
-        entry
-        for entry in manifest_data["scripts"]
-        if entry.get("kind") == "vendor"
-    ]
-    if len(vendor_entries) != 1:
-        raise BuildError(
-            "Production build requires exactly one kind=vendor entry, "
-            f"found {len(vendor_entries)}"
-        )
-    vendor = vendor_entries[0]
+    vendor = manifest_data.get("vendor")
+    if not isinstance(vendor, dict):
+        raise BuildError("Production manifest requires a single 'vendor' object")
+    if vendor.get("kind") != "vendor":
+        raise BuildError("Production manifest 'vendor.kind' must be 'vendor'")
+    for key in ("file", "namespace", "sha256"):
+        if key not in vendor:
+            raise BuildError(f"Production manifest vendor missing '{key}'")
     script_path = resolve_manifest_path(manifest_base, vendor["file"])
     content = script_path.read_text(encoding="utf-8")
     validate_js_source(script_path, content, "vendor")
@@ -603,19 +687,27 @@ def _load_vendor_content(manifest_base, manifest_data):
 
 
 def _validate_generated_assets_hash(manifest_base, manifest_data):
-    """SHA-verify every generated-assets entry declared in the manifest."""
-    for entry in manifest_data["scripts"]:
-        if entry.get("kind") != "generated-assets":
-            continue
-        script_path = resolve_manifest_path(manifest_base, entry["file"])
-        content = script_path.read_text(encoding="utf-8")
-        actual_sha = sha256_hex(content.encode("utf-8"))
-        expected_sha = entry.get("sha256")
-        if actual_sha != expected_sha:
-            raise BuildError(
-                f"Generated assets script '{entry['namespace']}' hash mismatch: "
-                f"expected {expected_sha}, got {actual_sha}"
-            )
+    """SHA-verify the single generated-assets pin declared in the manifest."""
+    generated = manifest_data.get("generated")
+    if generated is None:
+        raise BuildError(
+            "Production manifest requires a 'generated' generated-assets pin"
+        )
+    if not isinstance(generated, dict):
+        raise BuildError("Production manifest 'generated' must be an object")
+    if "file" not in generated or "sha256" not in generated:
+        raise BuildError(
+            "Production manifest 'generated' requires 'file' and 'sha256'"
+        )
+    script_path = resolve_manifest_path(manifest_base, generated["file"])
+    content = script_path.read_text(encoding="utf-8")
+    actual_sha = sha256_hex(content.encode("utf-8"))
+    expected_sha = generated.get("sha256")
+    if actual_sha != expected_sha:
+        raise BuildError(
+            f"Generated assets script '{generated['file']}' hash mismatch: "
+            f"expected {expected_sha}, got {actual_sha}"
+        )
 
 
 def _load_production_metadata(metadata_path):
@@ -631,12 +723,14 @@ def _load_production_metadata(metadata_path):
     return data
 
 
-def _validate_bundle_boundary(manifest_data, bundle_path, metadata):
+def _validate_bundle_boundary(manifest_base, manifest_data, bundle_path, metadata, legacy_data):
     """Fail closed unless the bundle is cryptographically bound to the manifest.
 
-    Rejects missing bundles, altered bundles/metadata, membership drift,
-    sourcemap or extra-chunk declarations, dynamic imports, and any vendor
-    boundary violation.
+    Rejects missing bundles, altered bundles/metadata, membership drift against
+    the ordered legacy manifest, sourcemap or extra-chunk declarations, dynamic
+    imports, and any vendor boundary violation. The canonical ESM entry drives
+    the bundle; the legacy manifest records the expected application script
+    membership for rollback-boundary validation.
     """
     required_keys = {
         "schema_version",
@@ -648,8 +742,9 @@ def _validate_bundle_boundary(manifest_data, bundle_path, metadata):
         "bundle_file",
         "bundle_bytes",
         "bundle_sha256",
+        "entry",
         "vendor",
-        "application_script_count",
+        "legacy_script_count",
         "application_scripts",
         "expected_namespaces",
         "actual_module_files",
@@ -688,6 +783,11 @@ def _validate_bundle_boundary(manifest_data, bundle_path, metadata):
             "Production bundle_file must be "
             f"{PRODUCTION_BUNDLE_FILE}, got {metadata.get('bundle_file')!r}"
         )
+    if metadata.get("entry") != "main.js":
+        raise BuildError(
+            "Production bundle entry must be 'main.js', "
+            f"got {metadata.get('entry')!r}"
+        )
 
     declared = set(metadata.get("output_files") or [])
     expected_files = {PRODUCTION_BUNDLE_FILE, PRODUCTION_METADATA_FILE}
@@ -700,33 +800,49 @@ def _validate_bundle_boundary(manifest_data, bundle_path, metadata):
     vendor = metadata.get("vendor")
     if not isinstance(vendor, dict) or vendor.get("external") is not True:
         raise BuildError("Production bundle vendor must be declared external")
-    vendor_files = [
-        entry["file"]
-        for entry in manifest_data["scripts"]
-        if entry.get("kind") == "vendor"
-    ]
+
+    manifest_vendor = manifest_data.get("vendor") or {}
+    vendor_files = [manifest_vendor.get("file")] if manifest_vendor.get("file") else []
     if any(vf in (metadata.get("application_scripts") or []) for vf in vendor_files):
         raise BuildError("Vendored Pixi must not be part of the application bundle")
 
-    expected_scripts = [
+    legacy_app_scripts = [
         entry["file"]
-        for entry in manifest_data["scripts"]
+        for entry in legacy_data.get("scripts", [])
         if entry.get("kind") != "vendor"
     ]
-    if metadata.get("application_scripts") != expected_scripts:
+    if metadata.get("application_scripts") != legacy_app_scripts:
         raise BuildError(
-            "Production bundle application membership does not match the manifest"
+            "Production bundle application membership does not match the "
+            "ordered legacy manifest"
         )
-    if metadata.get("application_script_count") != len(expected_scripts):
+    if metadata.get("legacy_script_count") != len(legacy_app_scripts):
         raise BuildError(
-            "Production bundle application_script_count mismatch: "
-            f"expected {len(expected_scripts)}, "
-            f"got {metadata.get('application_script_count')!r}"
+            "Production bundle legacy_script_count mismatch: "
+            f"expected {len(legacy_app_scripts)}, "
+            f"got {metadata.get('legacy_script_count')!r}"
         )
-    if metadata.get("actual_module_files") != expected_scripts:
+    if metadata.get("expected_namespaces") != [
+        entry["namespace"]
+        for entry in legacy_data.get("scripts", [])
+        if entry.get("kind") != "vendor"
+    ]:
         raise BuildError(
-            "Production bundle actual_module_files do not match the manifest"
+            "Production bundle expected_namespaces do not match the legacy manifest"
         )
+    actual_modules = metadata.get("actual_module_files") or []
+    if not actual_modules:
+        raise BuildError("Production bundle actual_module_files must be non-empty")
+    for raw in actual_modules:
+        if ".." in raw.split("/"):
+            raise BuildError(f"Module file escapes src root: {raw}")
+        candidate = (manifest_base / raw).resolve()
+        try:
+            candidate.relative_to(manifest_base.resolve())
+        except ValueError:
+            raise BuildError(f"Module file escapes src root: {raw}")
+    if any(vf in actual_modules for vf in vendor_files):
+        raise BuildError("Vendored Pixi must not be part of actual_module_files")
 
     if not bundle_path.exists():
         raise BuildError(f"Production bundle not found: {bundle_path}")
@@ -785,18 +901,24 @@ def build_production(manifest_path, output_path, bundle_path, metadata_path):
     manifest_base = manifest_path.parent.resolve()
     manifest_data = load_manifest(manifest_path)
 
+    entry_rel = manifest_data.get("entry")
+    if entry_rel != "main.js":
+        raise BuildError(
+            f"Production manifest entry must be 'main.js', got {entry_rel!r}"
+        )
+
     template_rel = manifest_data["template"]
     template_path = resolve_manifest_path(manifest_base, template_rel)
     template_content = validate_template(template_path)
 
-    validate_dependencies(manifest_data["scripts"])
+    legacy_data = _load_legacy_manifest(manifest_path)
 
     vendor_content = _load_vendor_content(manifest_base, manifest_data)
     _validate_generated_assets_hash(manifest_base, manifest_data)
 
     metadata = _load_production_metadata(metadata_path)
     bundle_content = _validate_bundle_boundary(
-        manifest_data, bundle_path, metadata
+        manifest_base, manifest_data, bundle_path, metadata, legacy_data
     )
     _validate_bundle_content(bundle_content, bundle_path.name)
 

@@ -47,6 +47,7 @@ OCEAN_DIR = REPO_ROOT / "domains" / "ocean-rescue"
 SRC_DIR = OCEAN_DIR / "src"
 DIST_DIR = OCEAN_DIR / "dist"
 MANIFEST = SRC_DIR / "build-manifest.json"
+LEGACY_MANIFEST = SRC_DIR / "build-manifest.legacy.json"
 BUNDLE_CONFIG = OCEAN_DIR / "vite.bundle.ts"
 PROD_CONFIG = OCEAN_DIR / "vite.production.config.ts"
 SHADOW_CONFIG = OCEAN_DIR / "vite.shadow.config.ts"
@@ -64,6 +65,7 @@ LEGACY_SCRIPT_COUNT = 19
 NON_VENDOR_COUNT = 18
 PIXI_VENDOR_FILE = "vendor/pixi-8.19.0.min.js"
 PIXI_NAMESPACE = "PIXI"
+CANONICAL_ENTRY = "main.js"
 TARGET = "baseline-widely-available"
 MINIFIER = "oxc"
 
@@ -79,6 +81,10 @@ PLAN_DOC = (
 
 def _load_manifest() -> dict:
     return json.loads(MANIFEST.read_text(encoding="utf-8"))
+
+
+def _load_legacy_manifest() -> dict:
+    return json.loads(LEGACY_MANIFEST.read_text(encoding="utf-8"))
 
 
 def _load_package() -> dict:
@@ -160,7 +166,7 @@ def _build_legacy(output: Path) -> subprocess.CompletedProcess[str]:
             "--mode",
             "legacy",
             "--manifest",
-            str(MANIFEST),
+            str(LEGACY_MANIFEST),
             "--output",
             str(output),
         ],
@@ -179,7 +185,7 @@ def _build_legacy_canonical() -> subprocess.CompletedProcess[str]:
             "--mode",
             "legacy",
             "--manifest",
-            str(MANIFEST),
+            str(LEGACY_MANIFEST),
             "--output",
             str(ARTIFACT),
         ],
@@ -269,8 +275,9 @@ def test_metadata_is_valid_and_complete() -> None:
         "bundle_file",
         "bundle_bytes",
         "bundle_sha256",
+        "entry",
         "vendor",
-        "application_script_count",
+        "legacy_script_count",
         "application_scripts",
         "expected_namespaces",
         "actual_module_files",
@@ -287,20 +294,24 @@ def test_metadata_is_valid_and_complete() -> None:
     assert metadata["sourcemap"] is False
     assert metadata["bundle_file"] == BUNDLE_FILE
     assert metadata["dynamic_import_count"] == 0
-    assert metadata["application_script_count"] == NON_VENDOR_COUNT
+    assert metadata["entry"] == CANONICAL_ENTRY
+    assert metadata["legacy_script_count"] == NON_VENDOR_COUNT
     assert {p.name for p in DIST_DIR.iterdir() if p.is_file()} == PROD_FILES
 
 
-def test_metadata_membership_matches_manifest_order() -> None:
-    manifest = _load_manifest()
-    expected = [e["file"] for e in _non_vendor_scripts(manifest)]
+def test_metadata_membership_matches_legacy_manifest() -> None:
+    legacy = _load_legacy_manifest()
+    expected = [e["file"] for e in _non_vendor_scripts(legacy)]
     assert len(expected) == NON_VENDOR_COUNT
     metadata = json.loads((DIST_DIR / METADATA_FILE).read_text(encoding="utf-8"))
     assert metadata["application_scripts"] == expected
-    assert metadata["actual_module_files"] == expected
     assert metadata["expected_namespaces"] == [
-        e["namespace"] for e in _non_vendor_scripts(manifest)
+        e["namespace"] for e in _non_vendor_scripts(legacy)
     ]
+    for raw in metadata["actual_module_files"]:
+        assert raw == "main.js" or raw.startswith("esm/") or raw in expected, (
+            f"unexpected module file recorded: {raw}"
+        )
 
 
 def test_vendor_boundary_external() -> None:
@@ -459,14 +470,14 @@ def test_operational_rollback_restores_legacy_and_bundle(tmp_path: Path) -> None
 
 
 def _assert_legacy_manifest_order(html: str) -> None:
-    """Vendored Pixi first, then the 18 application scripts in manifest order."""
+    """Vendored Pixi first, then the 18 application scripts in legacy order."""
     script_re = re.compile(r"<script>(.*?)</script>", re.IGNORECASE | re.DOTALL)
     blocks = script_re.findall(html)
     assert len(blocks) == LEGACY_SCRIPT_COUNT
 
-    manifest = _load_manifest()
-    assert len(manifest["scripts"]) == LEGACY_SCRIPT_COUNT
-    for block, entry in zip(blocks, manifest["scripts"]):
+    legacy = _load_legacy_manifest()
+    assert len(legacy["scripts"]) == LEGACY_SCRIPT_COUNT
+    for block, entry in zip(blocks, legacy["scripts"]):
         src_path = SRC_DIR / entry["file"]
         src = src_path.read_text(encoding="utf-8")
         assert block == "\n" + src + "\n", (
@@ -537,7 +548,7 @@ def test_production_artifact_browser_parity() -> None:
     assert doc["has_pixi"] is True
     assert doc["pixi_version"] == "8.19.0"
     assert doc["has_app"] is True
-    for entry in _non_vendor_scripts(_load_manifest()):
+    for entry in _non_vendor_scripts(_load_legacy_manifest()):
         leaf = entry["namespace"].split(".")[-1]
         if leaf == "App":
             continue
@@ -560,7 +571,7 @@ def test_production_artifact_browser_parity() -> None:
 def test_migration_documentation_state() -> None:
     plan = PLAN_DOC.read_text(encoding="utf-8")
     assert "WP-21: COMPLETE" in plan
-    assert "Current phase: PHASE_5_READY" in plan
-    assert "Next executable work package: WP-30" in plan
+    assert "Current phase: PHASE_6_READY" in plan
+    assert "Next executable work package: WP-31A" in plan
     assert "Authoritative path before:" in plan
     assert "Vite application bundle through temporary standalone packaging" in plan

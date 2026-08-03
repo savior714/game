@@ -34,11 +34,11 @@ def test_crab_scene_module_exists():
 
 def test_crab_scene_in_build_manifest():
     manifest_path = (
-        REPO_ROOT / "domains" / "ocean-rescue" / "src" / "build-manifest.json"
+        REPO_ROOT / "domains" / "ocean-rescue" / "src" / "build-manifest.legacy.json"
     )
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     files = [entry["file"] for entry in manifest["scripts"]]
-    assert "crab-scene.js" in files, "crab-scene.js missing from build-manifest.json"
+    assert "crab-scene.js" in files, "crab-scene.js missing from legacy manifest"
     crab_index = files.index("crab.js")
     crab_scene_index = files.index("crab-scene.js")
     young_whale_index = files.index("young-whale.js")
@@ -46,16 +46,18 @@ def test_crab_scene_in_build_manifest():
 
 
 def test_crab_scene_dependency_order():
-    manifest_path = (
-        REPO_ROOT / "domains" / "ocean-rescue" / "src" / "build-manifest.json"
+    esm = REPO_ROOT / "domains" / "ocean-rescue" / "src" / "esm"
+    crab_scene_adapter = (esm / "crab-scene.js").read_text(encoding="utf-8")
+    assert 'import "./render-runtime.js";' in crab_scene_adapter, (
+        "crab-scene adapter must import render-runtime"
     )
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    for entry in manifest["scripts"]:
-        if entry["file"] == "crab-scene.js":
-            deps = entry.get("depends_on", [])
-            assert "OceanRescue.RenderRuntime" in deps
-            assert "OceanRescue.Crab" in deps
-            break
+    assert 'import "./crab.js";' in crab_scene_adapter, (
+        "crab-scene adapter must import crab"
+    )
+    app_adapter = (esm / "app.js").read_text(encoding="utf-8")
+    assert 'import "./crab-scene.js";' in app_adapter, (
+        "app adapter must import crab-scene"
+    )
 
 
 def test_required_crab_aliases_in_generated_assets():

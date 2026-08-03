@@ -33,6 +33,30 @@ _MISSIONS_BOOTSTRAP = textwrap.dedent(
       return sandbox.window.OceanRescue.Missions;
     }
 
+    function makeStorage(seed) {
+      const store = Object.assign({}, seed || {});
+      return {
+        getItem(key) {
+          return Object.prototype.hasOwnProperty.call(store, key)
+            ? store[key]
+            : null;
+        },
+        setItem(key, value) {
+          store[key] = String(value);
+        },
+        removeItem(key) {
+          delete store[key];
+        },
+      };
+    }
+
+    function freshMissionsWithStorage(storage) {
+      const sandbox = { window: { localStorage: storage } };
+      vm.createContext(sandbox);
+      vm.runInContext(MISSIONS_SOURCE, sandbox, { filename: "missions.js" });
+      return sandbox.window.OceanRescue.Missions;
+    }
+
     function plain(value) {
       return JSON.parse(JSON.stringify(value));
     }
@@ -266,6 +290,216 @@ def test_mission_catalog_and_public_contract() -> None:
         assert.strictEqual(Missions.isUnlocked(null), false);
         assert.strictEqual(Missions.isUnlocked({}), false);
         assert.strictEqual(Missions.isUnlocked(1), false);
+        """
+    )
+    _assert_node_ok(_run_node(harness))
+
+
+def test_completed_mission_and_unlock_restore_across_reload() -> None:
+    harness = _MISSIONS_BOOTSTRAP + textwrap.dedent(
+        """\
+        const storage = makeStorage();
+
+        const MissionsA = freshMissionsWithStorage(storage);
+        const result = MissionsA.completeMission("sea-turtle");
+        assert.strictEqual(result.changed, true);
+        assert.strictEqual(result.newlyUnlockedMissionId, "crab");
+
+        const MissionsB = freshMissionsWithStorage(storage);
+        assert.deepStrictEqual(plain(MissionsB.getSnapshot()), {
+          selectedMissionId: null,
+          unlockedMissionIds: ["sea-turtle", "crab"],
+          completedMissionIds: ["sea-turtle"],
+          newMissionIds: ["crab"],
+        });
+        assert.strictEqual(MissionsB.isUnlocked("crab"), true);
+        assert.strictEqual(MissionsB.isUnlocked("young-whale"), false);
+        """
+    )
+    _assert_node_ok(_run_node(harness))
+
+
+def test_selected_mission_state_is_not_persisted() -> None:
+    harness = _MISSIONS_BOOTSTRAP + textwrap.dedent(
+        """\
+        const storage = makeStorage();
+
+        const MissionsA = freshMissionsWithStorage(storage);
+        assert.strictEqual(MissionsA.selectMission("sea-turtle"), true);
+        assert.strictEqual(MissionsA.getSnapshot().selectedMissionId, "sea-turtle");
+
+        const MissionsB = freshMissionsWithStorage(storage);
+        assert.strictEqual(MissionsB.getSnapshot().selectedMissionId, null);
+        assert.deepStrictEqual(plain(MissionsB.getSnapshot().unlockedMissionIds), ["sea-turtle"]);
+        """
+    )
+    _assert_node_ok(_run_node(harness))
+
+
+def test_new_marker_removal_restores_across_reload() -> None:
+    harness = _MISSIONS_BOOTSTRAP + textwrap.dedent(
+        """\
+        const storage = makeStorage();
+
+        const MissionsA = freshMissionsWithStorage(storage);
+        MissionsA.completeMission("sea-turtle");
+        assert.strictEqual(MissionsA.markMissionViewed("crab"), true);
+        assert.deepStrictEqual(plain(MissionsA.getSnapshot().newMissionIds), []);
+
+        const MissionsB = freshMissionsWithStorage(storage);
+        const snapshot = MissionsB.getSnapshot();
+        assert.deepStrictEqual(plain(snapshot.newMissionIds), []);
+        assert.deepStrictEqual(plain(snapshot.unlockedMissionIds), ["sea-turtle", "crab"]);
+        assert.deepStrictEqual(plain(snapshot.completedMissionIds), ["sea-turtle"]);
+        """
+    )
+    _assert_node_ok(_run_node(harness))
+
+
+def test_canonical_three_stage_progression_restores_across_reload() -> None:
+    harness = _MISSIONS_BOOTSTRAP + textwrap.dedent(
+        """\
+        const storage = makeStorage();
+
+        const MissionsA = freshMissionsWithStorage(storage);
+        MissionsA.completeMission("sea-turtle");
+        MissionsA.completeMission("crab");
+
+        const MissionsB = freshMissionsWithStorage(storage);
+        const snapshot = MissionsB.getSnapshot();
+        assert.deepStrictEqual(plain(snapshot.unlockedMissionIds), [
+          "sea-turtle",
+          "crab",
+          "young-whale",
+        ]);
+        assert.deepStrictEqual(plain(snapshot.completedMissionIds), [
+          "sea-turtle",
+          "crab",
+        ]);
+        assert.strictEqual(MissionsB.isUnlocked("young-whale"), true);
+        """
+    )
+    _assert_node_ok(_run_node(harness))
+
+
+def test_corrupt_stored_payload_falls_back_to_initial_state() -> None:
+    harness = _MISSIONS_BOOTSTRAP + textwrap.dedent(
+        """\
+        const KEY = "aidengame.oceanRescue.progression";
+        const cases = [
+          { name: "invalid json", seed: { [KEY]: "{not json" } },
+          { name: "null payload", seed: { [KEY]: "null" } },
+          { name: "array payload", seed: { [KEY]: "[1, 2, 3]" } },
+          {
+            name: "future schemaVersion",
+            seed: {
+              [KEY]: JSON.stringify({
+                schemaVersion: 999,
+                completedMissionIds: ["sea-turtle"],
+                newMissionIds: ["crab"],
+              }),
+            },
+          },
+          {
+            name: "unknown mission id",
+            seed: {
+              [KEY]: JSON.stringify({
+                schemaVersion: 1,
+                completedMissionIds: ["dolphin"],
+                newMissionIds: [],
+              }),
+            },
+          },
+          {
+            name: "out-of-order completion",
+            seed: {
+              [KEY]: JSON.stringify({
+                schemaVersion: 1,
+                completedMissionIds: ["crab"],
+                newMissionIds: [],
+              }),
+            },
+          },
+        ];
+        const expectedInitial = {
+          selectedMissionId: null,
+          unlockedMissionIds: ["sea-turtle"],
+          completedMissionIds: [],
+          newMissionIds: [],
+        };
+        for (const c of cases) {
+          const storage = makeStorage(c.seed);
+          const Missions = freshMissionsWithStorage(storage);
+          assert.deepStrictEqual(
+            plain(Missions.getSnapshot()),
+            expectedInitial,
+            "case: " + c.name
+          );
+        }
+        """
+    )
+    _assert_node_ok(_run_node(harness))
+
+
+def test_storage_exception_isolation() -> None:
+    harness = _MISSIONS_BOOTSTRAP + textwrap.dedent(
+        """\
+        const expectedInitial = {
+          selectedMissionId: null,
+          unlockedMissionIds: ["sea-turtle"],
+          completedMissionIds: [],
+          newMissionIds: [],
+        };
+
+        {
+          const throwingGet = {
+            getItem() {
+              throw new Error("getItem failed");
+            },
+            setItem() {},
+            removeItem() {},
+          };
+          const Missions = freshMissionsWithStorage(throwingGet);
+          assert.deepStrictEqual(plain(Missions.getSnapshot()), expectedInitial);
+          assert.strictEqual(Missions.completeMission("sea-turtle").changed, true);
+        }
+
+        {
+          const throwingSet = {
+            getItem() {
+              return null;
+            },
+            setItem() {
+              throw new Error("setItem failed");
+            },
+            removeItem() {},
+          };
+          const Missions = freshMissionsWithStorage(throwingSet);
+          const result = Missions.completeMission("sea-turtle");
+          assert.strictEqual(result.changed, true);
+          assert.deepStrictEqual(
+            plain(Missions.getSnapshot().completedMissionIds),
+            ["sea-turtle"]
+          );
+          assert.deepStrictEqual(
+            plain(Missions.getSnapshot().unlockedMissionIds),
+            ["sea-turtle", "crab"]
+          );
+        }
+
+        {
+          const throwingRemove = {
+            getItem() {
+              return "{not json";
+            },
+            setItem() {},
+            removeItem() {
+              throw new Error("removeItem failed");
+            },
+          };
+          const Missions = freshMissionsWithStorage(throwingRemove);
+          assert.deepStrictEqual(plain(Missions.getSnapshot()), expectedInitial);
+        }
         """
     )
     _assert_node_ok(_run_node(harness))

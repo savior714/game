@@ -17,6 +17,8 @@
 - **Implementation strategy:** representative final-quality assets and production pipeline are implemented together
 - **Primary device:** Galaxy Tab S10-class landscape tablet
 - **Build constraint:** final deployable remains a single HTML artifact
+- **Development architecture SSOT:** `../technical/AIDENGAME_OCEAN_RESCUE_DEVELOPMENT_ARCHITECTURE.md`
+- **Related migration plan:** `../../plans/PLAN_ocean_rescue_vite_esm_typescript_migration.md`
 
 ---
 
@@ -596,3 +598,28 @@ All product-level decisions required to begin the rendering MVP are closed:
 Remaining matters are implementation details and evidence gathering. They should be resolved through bounded technical tasks rather than further product Grill-me questions.
 
 A new user decision is required only when implementation evidence exposes a genuine product trade-off that cannot be resolved within this specification.
+
+---
+
+## 17. Development architecture relationship
+
+This Rendering MVP specification defines visual rendering quality and contracts. It does not define the development tooling, module system, or build-time authoring model.
+
+The Development Architecture SSOT (`../technical/AIDENGAME_OCEAN_RESCUE_DEVELOPMENT_ARCHITECTURE.md`) defines:
+
+- TypeScript/ESM authoring source (PLANNED)
+- Vite development server and bundling (PLANNED)
+- pnpm package management (PLANNED)
+- Browser runtime vs build-time tooling boundary
+- Migration plan and states
+
+The single-HTML deployment artifact is a **deployment constraint** from the product PRD. It is not the authoring source. The development architecture spec is the authority for how source code is authored, while this Rendering MVP is the authority for how the visual layer is rendered.
+
+During migration, the development authoring source may change (JS globals → ESM/TS), but the rendering contracts in this document (PixiJS v8, WebGL/Canvas fallback, 1280×720 coordinates, atlas pipeline, standalone HTML) remain unchanged.
+
+The Vite/TypeScript migration does not affect:
+- Gameplay state authority
+- Rendering architecture
+- Atlas pipeline
+- Asset handoff workflow
+- Acceptance criteria

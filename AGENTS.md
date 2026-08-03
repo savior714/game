@@ -31,39 +31,45 @@
 
 ---
 
-## 3. Atomic 작업 계약
+## 3. 작업 계약
 
 모든 개발·디버깅 작업은 다음 경계를 기본으로 한다.
 
 ```text
-ONE TASK
-= ONE FAILURE DOMAIN
-= ONE TESTABLE HYPOTHESIS
-= ONE VERDICT CRITERION
+ONE WORK PACKAGE
+= ONE COHERENT DEVELOPMENT OBJECTIVE
+= EXPLICIT CHANGE SCOPE
+= EXPLICIT VERIFICATION BUNDLE
+= EXPLICIT STOP AND ROLLBACK CONDITIONS
 ```
+
+강하게 결합된 requirements, callers, types, tests, configuration은 함께 변경할 수 있다.
+변경의 완결성과 개발 속도를 고려하여 그룹핑한다.
+여러 오류를 함께 처리할 수 있으나 관계가 명확해야 한다.
 
 ### 3.1 수정 전
 
 1. 현재 실패 또는 마찰을 재현한다.
-2. 단일 failure domain을 한 문장으로 정의한다.
-3. 직접 검증 가능한 가설 하나를 정의한다.
-4. PASS/FAIL을 가르는 판정 기준 하나를 정한다.
-5. 수정 대상 경로를 최소 범위로 고정한다.
+2. work package의 coherent development objective를 정의한다.
+3. 허용 변경 범위를 명시한다.
+4. 검증 묶음을 정의한다.
+5. 중단 조건과 rollback 경계를 정한다.
 
 재현되지 않거나 근거가 사라진 가설은 `REJECTED`로 닫고 코드를 수정하지 않는다.
 
 ### 3.2 수정
 
-- 가설을 검증하는 최소 변경만 한다.
+- 명시된 검증 묶지를 검증하는 최소 변경만 한다.
 - unrelated refactor, 대규모 정리, 새 프레임워크 도입을 묶지 않는다.
-- 여러 문제가 보여도 현재 failure domain 밖의 문제는 기록만 하고 수정하지 않는다.
+- 여러 문제가 보여도 현재 work package 범위 밖의 문제는 기록만 하고 수정하지 않는다.
 - workaround, fail-open fallback, 검증 우회로 문제를 숨기지 않는다.
 - 삭제·데이터 변경·배포 등 비가역성이 큰 작업은 현재 요청 범위를 벗어나면 중단한다.
+- 범위가 너무 크거나 rollback 경계가 다르면 별도 work package로 분할한다.
 
 ### 3.3 수정 후
 
-1. 현재 가설만 targeted verification으로 독립 검증한다.
-2. 판정 기준을 충족하면 해당 작업을 닫는다.
+1. 명시된 검증 묶지만 targeted verification으로 독립 검증한다.
+2. acceptance checklist를 충족하면 해당 작업을 닫는다.
 3. 다른 실패가 남으면 별도 failure domain으로 분리한다.
 4. full-suite는 변경 위험이나 저장소 계약상 필요할 때만 추가한다.
 
@@ -193,6 +199,8 @@ REMAINING_SEPARATE_FAILURES
 | 아키텍처·스택·품질 정책 | `PROJECT_RULES.md` |
 | 실행 가능한 요구사항 | `tests/` |
 | 통합 검증 | `verify.sh`, `Justfile` |
+| Ocean Rescue 개발 아키텍처 | `docs/specs/technical/AIDENGAME_OCEAN_RESCUE_DEVELOPMENT_ARCHITECTURE.md` |
+| Ocean Rescue Vite/ESM/TS 마이그레이션 | `docs/plans/PLAN_ocean_rescue_vite_esm_typescript_migration.md` |
 | 기능별 설계 | 대상 기능과 가장 가까운 `docs/` 문서 |
 
 과거 Plan/Blueprint 자료는 역사적 참고 자료이며 현재 실행 규약의 상위 SSOT가 아니다.

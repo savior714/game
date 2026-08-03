@@ -32,16 +32,19 @@ CANONICAL_SOURCE_FILES = [
     "build-manifest.json",
     "style.css",
     "render-assets.generated.js",
+    "render-runtime.js",
     "state.js",
     "missions.js",
     "gups.js",
     "launch.js",
     "travel.js",
     "terrain.js",
+    "travel-scene.js",
     "rescue.js",
     "sea-turtle.js",
     "sea-turtle-scene.js",
     "crab.js",
+    "crab-scene.js",
     "young-whale.js",
     "mission-success.js",
     "app.js",
@@ -56,78 +59,137 @@ def test_canonical_source_files_exist():
 
 class TestManifest:
     def test_manifest_is_canonical(self):
+        expected_scripts = [
+            {
+                "file": "vendor/pixi-8.19.0.min.js",
+                "namespace": "PIXI",
+                "depends_on": [],
+            },
+            {
+                "file": "render-assets.generated.js",
+                "namespace": "OceanRescue.RenderAssets",
+                "depends_on": [],
+            },
+            {
+                "file": "render-runtime.js",
+                "namespace": "OceanRescue.RenderRuntime",
+                "depends_on": ["PIXI", "OceanRescue.RenderAssets"],
+            },
+            {
+                "file": "state.js",
+                "namespace": "OceanRescue.State",
+                "depends_on": [],
+            },
+            {
+                "file": "missions.js",
+                "namespace": "OceanRescue.Missions",
+                "depends_on": [],
+            },
+            {
+                "file": "gups.js",
+                "namespace": "OceanRescue.Gups",
+                "depends_on": [],
+            },
+            {
+                "file": "launch.js",
+                "namespace": "OceanRescue.Launch",
+                "depends_on": [],
+            },
+            {
+                "file": "travel.js",
+                "namespace": "OceanRescue.Travel",
+                "depends_on": [],
+            },
+            {
+                "file": "terrain.js",
+                "namespace": "OceanRescue.Terrain",
+                "depends_on": [],
+            },
+            {
+                "file": "travel-scene.js",
+                "namespace": "OceanRescue.TravelScene",
+                "depends_on": ["OceanRescue.RenderRuntime"],
+            },
+            {
+                "file": "rescue.js",
+                "namespace": "OceanRescue.Rescue",
+                "depends_on": [],
+            },
+            {
+                "file": "sea-turtle.js",
+                "namespace": "OceanRescue.SeaTurtle",
+                "depends_on": [],
+            },
+            {
+                "file": "sea-turtle-scene.js",
+                "namespace": "OceanRescue.SeaTurtleScene",
+                "depends_on": [
+                    "OceanRescue.RenderRuntime",
+                    "OceanRescue.SeaTurtle",
+                ],
+            },
+            {
+                "file": "crab.js",
+                "namespace": "OceanRescue.Crab",
+                "depends_on": [],
+            },
+            {
+                "file": "crab-scene.js",
+                "namespace": "OceanRescue.CrabScene",
+                "depends_on": ["OceanRescue.RenderRuntime", "OceanRescue.Crab"],
+            },
+            {
+                "file": "young-whale.js",
+                "namespace": "OceanRescue.YoungWhale",
+                "depends_on": [],
+            },
+            {
+                "file": "mission-success.js",
+                "namespace": "OceanRescue.MissionSuccess",
+                "depends_on": [],
+            },
+            {
+                "file": "app.js",
+                "namespace": "OceanRescue.App",
+                "depends_on": [
+                    "OceanRescue.State",
+                    "OceanRescue.RenderRuntime",
+                    "OceanRescue.Missions",
+                    "OceanRescue.Gups",
+                    "OceanRescue.Launch",
+                    "OceanRescue.Travel",
+                    "OceanRescue.Terrain",
+                    "OceanRescue.Rescue",
+                    "OceanRescue.SeaTurtle",
+                    "OceanRescue.SeaTurtleScene",
+                    "OceanRescue.TravelScene",
+                    "OceanRescue.Crab",
+                    "OceanRescue.YoungWhale",
+                    "OceanRescue.MissionSuccess",
+                ],
+            },
+        ]
+
         data = json.loads(MANIFEST.read_text(encoding="utf-8"))
         assert set(data.keys()) == {"template", "styles", "scripts", "assets"}
         assert data["template"] == "index.template.html"
         assert data["styles"] == ["style.css"]
-        assert len(data["scripts"]) == 16
+        assert len(data["scripts"]) == 18
 
-        assert data["scripts"][0]["file"] == "vendor/pixi-8.19.0.min.js"
-        assert data["scripts"][0]["namespace"] == "PIXI"
+        actual_scripts = [
+            {
+                "file": entry["file"],
+                "namespace": entry["namespace"],
+                "depends_on": entry["depends_on"],
+            }
+            for entry in data["scripts"]
+        ]
+        assert actual_scripts == expected_scripts
+
         assert data["scripts"][0]["kind"] == "vendor"
-
-        assert data["scripts"][1]["file"] == "render-assets.generated.js"
-        assert data["scripts"][1]["namespace"] == "OceanRescue.RenderAssets"
         assert data["scripts"][1]["kind"] == "generated-assets"
-
-        assert data["scripts"][2]["file"] == "render-runtime.js"
-        assert data["scripts"][2]["namespace"] == "OceanRescue.RenderRuntime"
-        assert data["scripts"][3]["file"] == "state.js"
-        assert data["scripts"][3]["namespace"] == "OceanRescue.State"
-        assert data["scripts"][3]["depends_on"] == []
-        assert data["scripts"][4]["file"] == "missions.js"
-        assert data["scripts"][4]["namespace"] == "OceanRescue.Missions"
-        assert data["scripts"][4]["depends_on"] == []
-        assert data["scripts"][5]["file"] == "gups.js"
-        assert data["scripts"][5]["namespace"] == "OceanRescue.Gups"
-        assert data["scripts"][5]["depends_on"] == []
-        assert data["scripts"][6]["file"] == "launch.js"
-        assert data["scripts"][6]["namespace"] == "OceanRescue.Launch"
-        assert data["scripts"][6]["depends_on"] == []
-        assert data["scripts"][7]["file"] == "travel.js"
-        assert data["scripts"][7]["namespace"] == "OceanRescue.Travel"
-        assert data["scripts"][7]["depends_on"] == []
-        assert data["scripts"][8]["file"] == "terrain.js"
-        assert data["scripts"][8]["namespace"] == "OceanRescue.Terrain"
-        assert data["scripts"][8]["depends_on"] == []
-        assert data["scripts"][9]["file"] == "rescue.js"
-        assert data["scripts"][9]["namespace"] == "OceanRescue.Rescue"
-        assert data["scripts"][9]["depends_on"] == []
-        assert data["scripts"][10]["file"] == "sea-turtle.js"
-        assert data["scripts"][10]["namespace"] == "OceanRescue.SeaTurtle"
-        assert data["scripts"][10]["depends_on"] == []
-        assert data["scripts"][11]["file"] == "sea-turtle-scene.js"
-        assert data["scripts"][11]["namespace"] == "OceanRescue.SeaTurtleScene"
-        assert data["scripts"][11]["depends_on"] == [
-            "OceanRescue.RenderRuntime",
-            "OceanRescue.SeaTurtle",
-        ]
-        assert data["scripts"][12]["file"] == "crab.js"
-        assert data["scripts"][12]["namespace"] == "OceanRescue.Crab"
-        assert data["scripts"][12]["depends_on"] == []
-        assert data["scripts"][13]["file"] == "young-whale.js"
-        assert data["scripts"][13]["namespace"] == "OceanRescue.YoungWhale"
-        assert data["scripts"][13]["depends_on"] == []
-        assert data["scripts"][14]["file"] == "mission-success.js"
-        assert data["scripts"][14]["namespace"] == "OceanRescue.MissionSuccess"
-        assert data["scripts"][14]["depends_on"] == []
-        assert data["scripts"][15]["file"] == "app.js"
-        assert data["scripts"][15]["namespace"] == "OceanRescue.App"
-        assert data["scripts"][15]["depends_on"] == [
-            "OceanRescue.State",
-            "OceanRescue.RenderRuntime",
-            "OceanRescue.Missions",
-            "OceanRescue.Gups",
-            "OceanRescue.Launch",
-            "OceanRescue.Travel",
-            "OceanRescue.Terrain",
-            "OceanRescue.Rescue",
-            "OceanRescue.SeaTurtle",
-            "OceanRescue.SeaTurtleScene",
-            "OceanRescue.Crab",
-            "OceanRescue.YoungWhale",
-            "OceanRescue.MissionSuccess",
-        ]
+        for entry in (data["scripts"][0], data["scripts"][1]):
+            assert isinstance(entry["sha256"], str)
         assert data["assets"] == []
 
 

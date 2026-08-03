@@ -134,16 +134,10 @@
         
         <div class="flex flex-col gap-3 bg-blue-50 p-4 rounded-xl mb-6 border border-blue-100">
           <div class="flex gap-2">
-            <input type="text" id="ww-en" placeholder="영단어 (예: apple)" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <input type="text" id="ww-ko" placeholder="뜻 (예: 사과)" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="text" id="ww-en" placeholder="영단어만 입력하세요 (예: apple)" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <button data-action="add-weekly-word" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-blue-700 transition shrink-0">단어 추가</button>
           </div>
-          <div class="flex gap-2 items-center justify-between">
-            <div class="flex gap-2 min-w-0">
-               <input type="text" id="ww-icon" placeholder="아이콘" class="w-16 px-1 py-2 border border-blue-200 rounded-lg text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="">
-               <button data-action="add-weekly-word" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-blue-700 transition shrink-0">단어 추가</button>
-            </div>
-            <p class="text-[10px] text-gray-400">아이콘 미입력 시 숨김</p>
-          </div>
+          <p class="text-[10px] text-gray-500">영단어만 입력하면 게임 단어 사전에서 뜻과 이모지를 자동으로 가져옵니다.</p>
         </div>
 
         <div id="ww-list" class="space-y-2">
@@ -211,6 +205,7 @@
 
   <script src="../../../shared/domain/progress-engine.js"></script>
   <script src="../../../domains/sync/sync-engine.js"></script>
+  <script src="../../../domains/english/words.js"></script>
   <script src="../../../shared/domain/growth-visualizer.js"></script>
   <script src="guardian.js"></script>
 </body>

@@ -32,6 +32,11 @@
       "depends_on": []
     },
     {
+      "file": "profile.js",
+      "namespace": "OceanRescue.Profile",
+      "depends_on": []
+    },
+    {
       "file": "missions.js",
       "namespace": "OceanRescue.Missions",
       "depends_on": []
@@ -110,6 +115,7 @@
       "depends_on": [
         "OceanRescue.State",
         "OceanRescue.RenderRuntime",
+        "OceanRescue.Profile",
         "OceanRescue.Missions",
         "OceanRescue.Gups",
         "OceanRescue.Launch",

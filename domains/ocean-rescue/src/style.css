@@ -158,6 +158,123 @@ body {
   text-align: right;
 }
 
+#ocean-rescue-profile-choice {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 16px;
+  background: rgba(18, 32, 46, 0.94);
+  color: #eef5fb;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  text-align: center;
+}
+
+#ocean-rescue-profile-choice h2 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+#ocean-rescue-profile-choice > p {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #c6d8ea;
+}
+
+#ocean-rescue-profile-player-name {
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffd166;
+}
+
+#ocean-rescue-profile-animal-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  align-items: stretch;
+  margin-bottom: 16px;
+}
+
+#ocean-rescue-profile-animal-list button {
+  flex: 1 1 180px;
+  max-width: 240px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border: 3px solid #3b6ea5;
+  border-radius: 14px;
+  background: #14304a;
+  color: #eef5fb;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+
+#ocean-rescue-profile-animal-list button[aria-pressed="true"] {
+  border-color: #ffd166;
+  background: #1d4063;
+  transform: scale(1.04);
+}
+
+#ocean-rescue-profile-animal-list button:not(:disabled):hover {
+  border-color: #7fb3e8;
+  background: #1d4063;
+}
+
+#ocean-rescue-profile-animal-list button:not(:disabled):focus-visible {
+  outline: 3px solid #ffd166;
+  outline-offset: 2px;
+}
+
+#ocean-rescue-profile-continue {
+  min-height: 48px;
+  min-width: 160px;
+  box-sizing: border-box;
+  padding: 12px 24px;
+  border: 2px solid #3b6ea5;
+  border-radius: 12px;
+  background: #14304a;
+  color: #eef5fb;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#ocean-rescue-profile-continue:disabled {
+  cursor: default;
+  opacity: 0.55;
+  border-color: #31465c;
+  background: #22303e;
+  color: #9fb3c7;
+}
+
+#ocean-rescue-profile-continue:not(:disabled):hover {
+  border-color: #7fb3e8;
+  background: #1d4063;
+}
+
+#ocean-rescue-profile-continue:not(:disabled):focus-visible {
+  outline: 3px solid #ffd166;
+  outline-offset: 2px;
+}
+
 #ocean-rescue-mission-select {
   display: none;
   position: absolute;

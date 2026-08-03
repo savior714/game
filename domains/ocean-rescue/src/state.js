@@ -7,6 +7,7 @@
 
   var Phases = freeze({
     BOOT: "BOOT",
+    PROFILE_CHOICE: "PROFILE_CHOICE",
     MISSION_SELECT: "MISSION_SELECT",
     GUP_SELECT: "GUP_SELECT",
     LAUNCH: "LAUNCH",
@@ -19,7 +20,8 @@
   });
 
   var transitions = freeze({
-    BOOT: freeze([Phases.MISSION_SELECT]),
+    BOOT: freeze([Phases.PROFILE_CHOICE, Phases.MISSION_SELECT]),
+    PROFILE_CHOICE: freeze([Phases.MISSION_SELECT]),
     MISSION_SELECT: freeze([Phases.GUP_SELECT]),
     GUP_SELECT: freeze([Phases.MISSION_SELECT, Phases.LAUNCH]),
     LAUNCH: freeze([Phases.TRAVEL]),

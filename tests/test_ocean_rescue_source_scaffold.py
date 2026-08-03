@@ -25,6 +25,7 @@ SEA_TURTLE_SCENE_JS = SOURCE_ROOT / "sea-turtle-scene.js"
 CRAB_JS = SOURCE_ROOT / "crab.js"
 YOUNG_WHALE_JS = SOURCE_ROOT / "young-whale.js"
 MISSION_SUCCESS_JS = SOURCE_ROOT / "mission-success.js"
+PROFILE_JS = SOURCE_ROOT / "profile.js"
 APP_JS = SOURCE_ROOT / "app.js"
 
 CANONICAL_SOURCE_FILES = [
@@ -34,6 +35,7 @@ CANONICAL_SOURCE_FILES = [
     "render-assets.generated.js",
     "render-runtime.js",
     "state.js",
+    "profile.js",
     "missions.js",
     "gups.js",
     "launch.js",
@@ -78,6 +80,11 @@ class TestManifest:
             {
                 "file": "state.js",
                 "namespace": "OceanRescue.State",
+                "depends_on": [],
+            },
+            {
+                "file": "profile.js",
+                "namespace": "OceanRescue.Profile",
                 "depends_on": [],
             },
             {
@@ -154,6 +161,7 @@ class TestManifest:
                 "depends_on": [
                     "OceanRescue.State",
                     "OceanRescue.RenderRuntime",
+                    "OceanRescue.Profile",
                     "OceanRescue.Missions",
                     "OceanRescue.Gups",
                     "OceanRescue.Launch",
@@ -174,7 +182,7 @@ class TestManifest:
         assert set(data.keys()) == {"template", "styles", "scripts", "assets"}
         assert data["template"] == "index.template.html"
         assert data["styles"] == ["style.css"]
-        assert len(data["scripts"]) == 18
+        assert len(data["scripts"]) == 19
 
         actual_scripts = [
             {
@@ -272,6 +280,11 @@ class TestJavaScript:
         assert (
             "root.MissionSuccess" in content or "OceanRescue.MissionSuccess" in content
         )
+
+    def test_profile_defines_namespace(self):
+        content = PROFILE_JS.read_text(encoding="utf-8")
+        assert "window.OceanRescue" in content
+        assert "root.Profile" in content or "OceanRescue.Profile" in content
 
     def test_app_defines_namespace_and_references_state(self):
         content = APP_JS.read_text(encoding="utf-8")
@@ -426,6 +439,17 @@ class TestJavaScript:
                     "EventSource",
                 ],
             ),
+            (
+                PROFILE_JS,
+                [
+                    "import",
+                    "export",
+                    "fetch(",
+                    "XMLHttpRequest",
+                    "WebSocket",
+                    "EventSource",
+                ],
+            ),
         ],
     )
     def test_forbidden_tokens_absent(self, path, forbidden):
@@ -448,6 +472,7 @@ class TestJavaScript:
             CRAB_JS,
             YOUNG_WHALE_JS,
             MISSION_SUCCESS_JS,
+            PROFILE_JS,
             APP_JS,
         ],
     )
@@ -484,6 +509,7 @@ class TestBuild:
         assert html.count("<script") == script_count
         assert "asset://" not in html
         state_pos = html.index("OceanRescue.State")
+        profile_pos = html.index("OceanRescue.Profile")
         missions_pos = html.index("OceanRescue.Missions")
         gups_pos = html.index("OceanRescue.Gups")
         launch_pos = html.index("OceanRescue.Launch")
@@ -496,8 +522,11 @@ class TestBuild:
         young_whale_pos = html.index("OceanRescue.YoungWhale")
         mission_success_pos = html.index("OceanRescue.MissionSuccess")
         app_pos = html.index("OceanRescue.App")
-        assert state_pos < missions_pos, (
-            "State script must appear before Missions script"
+        assert state_pos < profile_pos, (
+            "State script must appear before Profile script"
+        )
+        assert profile_pos < missions_pos, (
+            "Profile script must appear before Missions script"
         )
         assert missions_pos < gups_pos, "Missions script must appear before Gups script"
         assert gups_pos < launch_pos, "Gups script must appear before Launch script"

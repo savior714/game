@@ -1,6 +1,7 @@
 (function () {
   var State = window.OceanRescue.State;
   var RenderRuntime = window.OceanRescue.RenderRuntime || null;
+  var Profile = window.OceanRescue.Profile || null;
   var Missions = window.OceanRescue.Missions;
   var Gups = window.OceanRescue.Gups;
   var Launch = window.OceanRescue.Launch;
@@ -5419,6 +5420,105 @@
     controlsBound = true;
   }
 
+  function renderProfileChoice() {
+    var section = document.getElementById("ocean-rescue-profile-choice");
+    var playerNameEl = document.getElementById("ocean-rescue-profile-player-name");
+    var animalList = document.getElementById("ocean-rescue-profile-animal-list");
+    var continueBtn = document.getElementById("ocean-rescue-profile-continue");
+    if (!section || !playerNameEl || !animalList || !continueBtn) {
+      return false;
+    }
+    playerNameEl.textContent = Profile.getSnapshot().playerName;
+    animalList.innerHTML = "";
+    var catalog = Profile.Catalog;
+    for (var i = 0; i < catalog.length; i += 1) {
+      var animal = catalog[i];
+      var button = document.createElement("button");
+      button.type = "button";
+      button.setAttribute("data-profile-animal-id", animal.id);
+      button.setAttribute("aria-pressed", "false");
+
+      var name = document.createElement("span");
+      name.textContent = animal.name;
+      button.appendChild(name);
+
+      if (typeof button.addEventListener === "function") {
+        button.addEventListener("click", (function (id) {
+          return function () {
+            selectProfileAnimal(id);
+          };
+        })(animal.id));
+      }
+      animalList.appendChild(button);
+    }
+    continueBtn.disabled = true;
+    if (typeof continueBtn.addEventListener === "function") {
+      continueBtn.addEventListener("click", function () {
+        confirmProfileSelection();
+      });
+    }
+    section.style.display = "block";
+    var missionSection = document.getElementById("ocean-rescue-mission-select");
+    if (missionSection) {
+      missionSection.style.display = "none";
+    }
+    return true;
+  }
+
+  function selectProfileAnimal(animalId) {
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.PROFILE_CHOICE) {
+      return false;
+    }
+    if (!Profile || !Profile.selectAnimal(animalId)) {
+      return false;
+    }
+    var animalList = document.getElementById("ocean-rescue-profile-animal-list");
+    if (animalList) {
+      var buttons = animalList.querySelectorAll("button");
+      for (var i = 0; i < buttons.length; i += 1) {
+        var id = buttons[i].getAttribute("data-profile-animal-id");
+        buttons[i].setAttribute(
+          "aria-pressed",
+          id === animalId ? "true" : "false"
+        );
+      }
+    }
+    var continueBtn = document.getElementById("ocean-rescue-profile-continue");
+    if (continueBtn) {
+      continueBtn.disabled = false;
+    }
+    return true;
+  }
+
+  function confirmProfileSelection() {
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.PROFILE_CHOICE) {
+      return false;
+    }
+    if (!Profile || !Profile.confirmSelection()) {
+      return false;
+    }
+    var token = State.beginTransition(State.Phases.MISSION_SELECT);
+    if (token === null) {
+      return false;
+    }
+    if (!State.completeTransition(token)) {
+      return false;
+    }
+    var section = document.getElementById("ocean-rescue-profile-choice");
+    if (section) {
+      section.style.display = "none";
+    }
+    var missionSection = document.getElementById("ocean-rescue-mission-select");
+    var list = document.getElementById("ocean-rescue-mission-list");
+    if (missionSection && list) {
+      missionSection.style.display = "block";
+      renderMissionSelect();
+    }
+    return true;
+  }
+
   var App = {
     boot: function () {
       var root = document.getElementById("ocean-rescue-root");
@@ -5432,21 +5532,42 @@
       }
       var snapshot = State.getSnapshot();
       if (snapshot.phase === State.Phases.BOOT) {
-        var token = State.beginTransition(State.Phases.MISSION_SELECT);
-        if (token === null) {
-          return false;
-        }
-        if (!State.completeTransition(token)) {
-          return false;
+        var hasProfile = Profile && Profile.getSnapshot().complete;
+        if (hasProfile) {
+          var token = State.beginTransition(State.Phases.MISSION_SELECT);
+          if (token === null) {
+            return false;
+          }
+          if (!State.completeTransition(token)) {
+            return false;
+          }
+        } else {
+          var token2 = State.beginTransition(State.Phases.PROFILE_CHOICE);
+          if (token2 === null) {
+            return false;
+          }
+          if (!State.completeTransition(token2)) {
+            return false;
+          }
         }
       }
       State.markReady();
       root.setAttribute("data-ocean-rescue-ready", "true");
       status.textContent = "Ocean Rescue ready";
-      var section = document.getElementById("ocean-rescue-mission-select");
-      var list = document.getElementById("ocean-rescue-mission-list");
-      if (section && list) {
-        renderMissionSelect();
+      var currentPhase = State.getSnapshot().phase;
+      if (currentPhase === State.Phases.PROFILE_CHOICE) {
+        renderProfileChoice();
+      } else {
+        var profileSection = document.getElementById("ocean-rescue-profile-choice");
+        if (profileSection) {
+          profileSection.style.display = "none";
+        }
+        var section = document.getElementById("ocean-rescue-mission-select");
+        var list = document.getElementById("ocean-rescue-mission-list");
+        if (section && list) {
+          section.style.display = "block";
+          renderMissionSelect();
+        }
       }
       bindStaticControls();
       syncPauseButton();

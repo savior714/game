@@ -168,6 +168,123 @@ body {
   text-align: right;
 }
 
+#ocean-rescue-profile-choice {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 16px;
+  background: rgba(18, 32, 46, 0.94);
+  color: #eef5fb;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  text-align: center;
+}
+
+#ocean-rescue-profile-choice h2 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+#ocean-rescue-profile-choice > p {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #c6d8ea;
+}
+
+#ocean-rescue-profile-player-name {
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffd166;
+}
+
+#ocean-rescue-profile-animal-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  align-items: stretch;
+  margin-bottom: 16px;
+}
+
+#ocean-rescue-profile-animal-list button {
+  flex: 1 1 180px;
+  max-width: 240px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border: 3px solid #3b6ea5;
+  border-radius: 14px;
+  background: #14304a;
+  color: #eef5fb;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+
+#ocean-rescue-profile-animal-list button[aria-pressed="true"] {
+  border-color: #ffd166;
+  background: #1d4063;
+  transform: scale(1.04);
+}
+
+#ocean-rescue-profile-animal-list button:not(:disabled):hover {
+  border-color: #7fb3e8;
+  background: #1d4063;
+}
+
+#ocean-rescue-profile-animal-list button:not(:disabled):focus-visible {
+  outline: 3px solid #ffd166;
+  outline-offset: 2px;
+}
+
+#ocean-rescue-profile-continue {
+  min-height: 48px;
+  min-width: 160px;
+  box-sizing: border-box;
+  padding: 12px 24px;
+  border: 2px solid #3b6ea5;
+  border-radius: 12px;
+  background: #14304a;
+  color: #eef5fb;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#ocean-rescue-profile-continue:disabled {
+  cursor: default;
+  opacity: 0.55;
+  border-color: #31465c;
+  background: #22303e;
+  color: #9fb3c7;
+}
+
+#ocean-rescue-profile-continue:not(:disabled):hover {
+  border-color: #7fb3e8;
+  background: #1d4063;
+}
+
+#ocean-rescue-profile-continue:not(:disabled):focus-visible {
+  outline: 3px solid #ffd166;
+  outline-offset: 2px;
+}
+
 #ocean-rescue-mission-select {
   display: none;
   position: absolute;
@@ -1387,6 +1504,30 @@ body {
       aria-live="polite"
       aria-atomic="true"
     ></p>
+
+    <section
+      id="ocean-rescue-profile-choice"
+      aria-labelledby="ocean-rescue-profile-choice-title"
+      style="display:none"
+    >
+      <h2 id="ocean-rescue-profile-choice-title">Choose your Octonaut</h2>
+
+      <p
+        id="ocean-rescue-profile-player-name"
+      ></p>
+
+      <div
+        id="ocean-rescue-profile-animal-list"
+        aria-label="Animal choices"
+      ></div>
+
+      <button
+        id="ocean-rescue-profile-continue"
+        type="button"
+      >
+        Continue
+      </button>
+    </section>
 
     <section
       id="ocean-rescue-mission-select"
@@ -4887,6 +5028,7 @@ fn mainFragment(
 
   var Phases = freeze({
     BOOT: "BOOT",
+    PROFILE_CHOICE: "PROFILE_CHOICE",
     MISSION_SELECT: "MISSION_SELECT",
     GUP_SELECT: "GUP_SELECT",
     LAUNCH: "LAUNCH",
@@ -4899,7 +5041,8 @@ fn mainFragment(
   });
 
   var transitions = freeze({
-    BOOT: freeze([Phases.MISSION_SELECT]),
+    BOOT: freeze([Phases.PROFILE_CHOICE, Phases.MISSION_SELECT]),
+    PROFILE_CHOICE: freeze([Phases.MISSION_SELECT]),
     MISSION_SELECT: freeze([Phases.GUP_SELECT]),
     GUP_SELECT: freeze([Phases.MISSION_SELECT, Phases.LAUNCH]),
     LAUNCH: freeze([Phases.TRAVEL]),
@@ -5026,6 +5169,199 @@ fn mainFragment(
     beginTransition: beginTransition,
     completeTransition: completeTransition,
     forcePhase: forcePhase
+  });
+})();
+
+</script>
+<script>
+(function () {
+  var root = window.OceanRescue = window.OceanRescue || {};
+
+  function freeze(value) {
+    return Object.freeze(value);
+  }
+
+  var STORAGE_KEY = "aidengame.oceanRescue.profile";
+  var SCHEMA_VERSION = 1;
+  var PLAYER_NAME = "Aiden";
+
+  var CATALOG = freeze([
+    freeze({ id: "arctic-fox", name: "Arctic fox" }),
+    freeze({ id: "beaver", name: "Beaver" }),
+    freeze({ id: "red-panda", name: "Red panda" })
+  ]);
+
+  var validAnimalIds = {};
+  for (var i = 0; i < CATALOG.length; i += 1) {
+    validAnimalIds[CATALOG[i].id] = true;
+  }
+
+  var state = {
+    selectedAnimalId: null,
+    chosenAnimalId: null,
+    complete: false
+  };
+
+  var confirmedCount = 0;
+  var persistCount = 0;
+
+  function resolveStorage() {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    var storage = window.localStorage;
+    if (!storage) {
+      return null;
+    }
+    if (typeof storage.getItem !== "function") {
+      return null;
+    }
+    if (typeof storage.setItem !== "function") {
+      return null;
+    }
+    return storage;
+  }
+
+  function bestEffortRemoveStoredPayload() {
+    var storage = resolveStorage();
+    if (storage === null) {
+      return;
+    }
+    try {
+      if (typeof storage.removeItem === "function") {
+        storage.removeItem(STORAGE_KEY);
+      }
+    } catch (error) {
+      return;
+    }
+  }
+
+  function isValidAnimalId(animalId) {
+    if (typeof animalId !== "string") {
+      return false;
+    }
+    return validAnimalIds[animalId] === true;
+  }
+
+  function sanitizeStoredPayload(payload) {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return null;
+    }
+    if (payload.schemaVersion !== SCHEMA_VERSION) {
+      return null;
+    }
+    if (payload.playerName !== PLAYER_NAME) {
+      return null;
+    }
+    if (!isValidAnimalId(payload.animalId)) {
+      return null;
+    }
+    return {
+      playerName: payload.playerName,
+      animalId: payload.animalId
+    };
+  }
+
+  function readStoredPayload() {
+    var storage = resolveStorage();
+    if (storage === null) {
+      return null;
+    }
+    var raw;
+    try {
+      raw = storage.getItem(STORAGE_KEY);
+    } catch (error) {
+      return null;
+    }
+    if (typeof raw !== "string" || raw === "") {
+      return null;
+    }
+    var parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (error) {
+      bestEffortRemoveStoredPayload();
+      return null;
+    }
+    var sanitized = sanitizeStoredPayload(parsed);
+    if (sanitized === null) {
+      bestEffortRemoveStoredPayload();
+      return null;
+    }
+    return sanitized;
+  }
+
+  function persist() {
+    var storage = resolveStorage();
+    if (storage === null) {
+      return false;
+    }
+    if (!isValidAnimalId(state.chosenAnimalId)) {
+      return false;
+    }
+    var payload = {
+      schemaVersion: SCHEMA_VERSION,
+      playerName: PLAYER_NAME,
+      animalId: state.chosenAnimalId
+    };
+    try {
+      storage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      persistCount += 1;
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function hydrate() {
+    var stored = readStoredPayload();
+    if (stored === null) {
+      return;
+    }
+    state.chosenAnimalId = stored.animalId;
+    state.complete = true;
+  }
+
+  function getSnapshot() {
+    return freeze({
+      playerName: PLAYER_NAME,
+      selectedAnimalId: state.selectedAnimalId,
+      chosenAnimalId: state.chosenAnimalId,
+      complete: state.complete
+    });
+  }
+
+  function selectAnimal(animalId) {
+    if (!isValidAnimalId(animalId)) {
+      return false;
+    }
+    state.selectedAnimalId = animalId;
+    return true;
+  }
+
+  function confirmSelection() {
+    if (state.complete) {
+      return false;
+    }
+    if (!isValidAnimalId(state.selectedAnimalId)) {
+      return false;
+    }
+    state.chosenAnimalId = state.selectedAnimalId;
+    var persisted = persist();
+    if (persisted) {
+      state.complete = true;
+      confirmedCount += 1;
+    }
+    return true;
+  }
+
+  hydrate();
+
+  root.Profile = freeze({
+    Catalog: CATALOG,
+    getSnapshot: getSnapshot,
+    selectAnimal: selectAnimal,
+    confirmSelection: confirmSelection
   });
 })();
 
@@ -10773,6 +11109,7 @@ fn mainFragment(
 (function () {
   var State = window.OceanRescue.State;
   var RenderRuntime = window.OceanRescue.RenderRuntime || null;
+  var Profile = window.OceanRescue.Profile || null;
   var Missions = window.OceanRescue.Missions;
   var Gups = window.OceanRescue.Gups;
   var Launch = window.OceanRescue.Launch;
@@ -16191,6 +16528,105 @@ fn mainFragment(
     controlsBound = true;
   }
 
+  function renderProfileChoice() {
+    var section = document.getElementById("ocean-rescue-profile-choice");
+    var playerNameEl = document.getElementById("ocean-rescue-profile-player-name");
+    var animalList = document.getElementById("ocean-rescue-profile-animal-list");
+    var continueBtn = document.getElementById("ocean-rescue-profile-continue");
+    if (!section || !playerNameEl || !animalList || !continueBtn) {
+      return false;
+    }
+    playerNameEl.textContent = Profile.getSnapshot().playerName;
+    animalList.innerHTML = "";
+    var catalog = Profile.Catalog;
+    for (var i = 0; i < catalog.length; i += 1) {
+      var animal = catalog[i];
+      var button = document.createElement("button");
+      button.type = "button";
+      button.setAttribute("data-profile-animal-id", animal.id);
+      button.setAttribute("aria-pressed", "false");
+
+      var name = document.createElement("span");
+      name.textContent = animal.name;
+      button.appendChild(name);
+
+      if (typeof button.addEventListener === "function") {
+        button.addEventListener("click", (function (id) {
+          return function () {
+            selectProfileAnimal(id);
+          };
+        })(animal.id));
+      }
+      animalList.appendChild(button);
+    }
+    continueBtn.disabled = true;
+    if (typeof continueBtn.addEventListener === "function") {
+      continueBtn.addEventListener("click", function () {
+        confirmProfileSelection();
+      });
+    }
+    section.style.display = "block";
+    var missionSection = document.getElementById("ocean-rescue-mission-select");
+    if (missionSection) {
+      missionSection.style.display = "none";
+    }
+    return true;
+  }
+
+  function selectProfileAnimal(animalId) {
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.PROFILE_CHOICE) {
+      return false;
+    }
+    if (!Profile || !Profile.selectAnimal(animalId)) {
+      return false;
+    }
+    var animalList = document.getElementById("ocean-rescue-profile-animal-list");
+    if (animalList) {
+      var buttons = animalList.querySelectorAll("button");
+      for (var i = 0; i < buttons.length; i += 1) {
+        var id = buttons[i].getAttribute("data-profile-animal-id");
+        buttons[i].setAttribute(
+          "aria-pressed",
+          id === animalId ? "true" : "false"
+        );
+      }
+    }
+    var continueBtn = document.getElementById("ocean-rescue-profile-continue");
+    if (continueBtn) {
+      continueBtn.disabled = false;
+    }
+    return true;
+  }
+
+  function confirmProfileSelection() {
+    var snapshot = State.getSnapshot();
+    if (snapshot.phase !== State.Phases.PROFILE_CHOICE) {
+      return false;
+    }
+    if (!Profile || !Profile.confirmSelection()) {
+      return false;
+    }
+    var token = State.beginTransition(State.Phases.MISSION_SELECT);
+    if (token === null) {
+      return false;
+    }
+    if (!State.completeTransition(token)) {
+      return false;
+    }
+    var section = document.getElementById("ocean-rescue-profile-choice");
+    if (section) {
+      section.style.display = "none";
+    }
+    var missionSection = document.getElementById("ocean-rescue-mission-select");
+    var list = document.getElementById("ocean-rescue-mission-list");
+    if (missionSection && list) {
+      missionSection.style.display = "block";
+      renderMissionSelect();
+    }
+    return true;
+  }
+
   var App = {
     boot: function () {
       var root = document.getElementById("ocean-rescue-root");
@@ -16204,21 +16640,42 @@ fn mainFragment(
       }
       var snapshot = State.getSnapshot();
       if (snapshot.phase === State.Phases.BOOT) {
-        var token = State.beginTransition(State.Phases.MISSION_SELECT);
-        if (token === null) {
-          return false;
-        }
-        if (!State.completeTransition(token)) {
-          return false;
+        var hasProfile = Profile && Profile.getSnapshot().complete;
+        if (hasProfile) {
+          var token = State.beginTransition(State.Phases.MISSION_SELECT);
+          if (token === null) {
+            return false;
+          }
+          if (!State.completeTransition(token)) {
+            return false;
+          }
+        } else {
+          var token2 = State.beginTransition(State.Phases.PROFILE_CHOICE);
+          if (token2 === null) {
+            return false;
+          }
+          if (!State.completeTransition(token2)) {
+            return false;
+          }
         }
       }
       State.markReady();
       root.setAttribute("data-ocean-rescue-ready", "true");
       status.textContent = "Ocean Rescue ready";
-      var section = document.getElementById("ocean-rescue-mission-select");
-      var list = document.getElementById("ocean-rescue-mission-list");
-      if (section && list) {
-        renderMissionSelect();
+      var currentPhase = State.getSnapshot().phase;
+      if (currentPhase === State.Phases.PROFILE_CHOICE) {
+        renderProfileChoice();
+      } else {
+        var profileSection = document.getElementById("ocean-rescue-profile-choice");
+        if (profileSection) {
+          profileSection.style.display = "none";
+        }
+        var section = document.getElementById("ocean-rescue-mission-select");
+        var list = document.getElementById("ocean-rescue-mission-list");
+        if (section && list) {
+          section.style.display = "block";
+          renderMissionSelect();
+        }
       }
       bindStaticControls();
       syncPauseButton();

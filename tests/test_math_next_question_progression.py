@@ -59,7 +59,9 @@ def math_page(static_server: str):
 
 
 @pytest.mark.browser
-def test_next_button_advances_exactly_one_question(math_page: tuple[Page, list[str]]) -> None:
+def test_next_button_advances_exactly_one_question(
+    math_page: tuple[Page, list[str]],
+) -> None:
     page, page_errors = math_page
     question = page.locator("#question")
     count = page.locator("#q-count")

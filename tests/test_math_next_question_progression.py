@@ -169,3 +169,80 @@ def test_restart_button_starts_a_fresh_session(
     expect(page.locator("#q-score")).to_have_text("0")
     expect(page.locator("#next-btn")).to_be_hidden()
     assert page_errors == []
+
+
+@pytest.mark.browser
+def test_full_ten_question_session_reaches_perfect_result(
+    math_page: tuple[Page, list[str]],
+) -> None:
+    page, page_errors = math_page
+    game_area = page.locator("#game-area")
+    result_screen = page.locator("#result-screen")
+    count = page.locator("#q-count")
+    score = page.locator("#q-score")
+    next_button = page.locator("#next-btn")
+    answer_buttons = page.locator(".answer-btn")
+
+    expect(game_area).to_be_visible()
+    expect(result_screen).to_be_hidden()
+    expect(count).to_have_text("1")
+    expect(score).to_have_text("0")
+    expect(next_button).to_be_hidden()
+    expect(answer_buttons).to_have_count(4)
+
+    for question_number in range(1, 11):
+        expect(count).to_have_text(str(question_number))
+
+        answer = page.evaluate("answer")
+        correct_button = page.locator(f".answer-btn:text-is('{answer}')")
+        expect(correct_button).to_have_count(1)
+        correct_button.click()
+
+        expect(score).to_have_text(str(question_number))
+        expect(next_button).to_be_visible()
+
+        if question_number < 10:
+            expect(result_screen).to_be_hidden()
+            next_button.click()
+            expect(count).to_have_text(str(question_number + 1))
+            expect(next_button).to_be_hidden()
+            expect(game_area).to_be_visible()
+
+    expect(count).to_have_text("10")
+    expect(score).to_have_text("10")
+    expect(result_screen).to_be_hidden()
+    expect(game_area).to_be_visible()
+    next_button.click()
+
+    expect(game_area).to_be_hidden()
+    expect(result_screen).to_be_visible()
+    expect(count).to_have_text("10")
+    expect(score).to_have_text("10")
+    expect(page.locator("#stars")).to_have_text("⭐⭐⭐")
+    expect(page.locator("#result-title")).to_have_text("완벽해요!")
+    expect(page.locator("#result-msg")).to_have_text(
+        "10문제 모두 맞혔어요! 정말 대단해요! 🎊"
+    )
+    expect(page.locator("#restart-btn")).to_be_visible()
+    expect(answer_buttons).to_have_count(4)
+
+    persisted = page.evaluate(
+        """
+        () => {
+          const stats = JSON.parse(localStorage.getItem(STATS_KEY));
+          let attempts = 0;
+          let correct = 0;
+          for (const op of Object.keys(stats)) {
+            if (op === '_updated_at') continue;
+            for (const level of Object.values(stats[op].levels)) {
+              attempts += level.attempts;
+              correct += level.correct;
+            }
+          }
+          return { attempts, correct };
+        }
+        """
+    )
+    assert persisted["attempts"] == 10
+    assert persisted["correct"] == 10
+    assert page_errors == []

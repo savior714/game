@@ -67,11 +67,13 @@ PIXI_NAMESPACE = "PIXI"
 TARGET = "baseline-widely-available"
 MINIFIER = "oxc"
 
+# Pre-WP-21 canonical legacy artifact captured at 07ee6a0 (deployment baseline).
+PRE_WP21_LEGACY_BASELINE_SHA = (
+    "cfd991d83524db6c7ad225da11ef7a9421300bdf588c4b905bf4e5556f776582"
+)
+
 PLAN_DOC = (
-    REPO_ROOT
-    / "docs"
-    / "plans"
-    / "PLAN_ocean_rescue_vite_esm_typescript_migration.md"
+    REPO_ROOT / "docs" / "plans" / "PLAN_ocean_rescue_vite_esm_typescript_migration.md"
 )
 
 
@@ -145,6 +147,11 @@ def _build_artifact(output: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
+def _restore_canonical() -> subprocess.CompletedProcess[str]:
+    """Restore the tracked canonical artifact via the production packaging lane."""
+    return _build_artifact(ARTIFACT)
+
+
 def _build_legacy(output: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [
@@ -156,6 +163,25 @@ def _build_legacy(output: Path) -> subprocess.CompletedProcess[str]:
             str(MANIFEST),
             "--output",
             str(output),
+        ],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+    )
+
+
+def _build_legacy_canonical() -> subprocess.CompletedProcess[str]:
+    """Invoke the operational rollback contract: legacy mode to the canonical path."""
+    return subprocess.run(
+        [
+            sys.executable,
+            str(BUILDER),
+            "--mode",
+            "legacy",
+            "--manifest",
+            str(MANIFEST),
+            "--output",
+            str(ARTIFACT),
         ],
         capture_output=True,
         text=True,
@@ -198,12 +224,28 @@ def test_tsconfig_includes_production_config_and_bundle() -> None:
     assert "vite.bundle.ts" in include
 
 
-def test_justfile_has_production_and_legacy_recipes() -> None:
+def test_justfile_has_distinct_production_proof_and_rollback_recipes() -> None:
     text = JUSTFILE.read_text(encoding="utf-8")
     assert "--mode production" in text
     assert "--mode legacy" in text
-    assert "build-ocean-rescue-legacy-rollback:" in text
-    assert "check-ocean-rescue-legacy-rollback:" in text
+    assert "build-ocean-rescue:" in text, "canonical production build recipe missing"
+    assert "build-ocean-rescue-legacy-proof:" in text, (
+        "proof-only legacy recipe missing"
+    )
+    assert "rollback-ocean-rescue-to-legacy:" in text, (
+        "operational rollback recipe missing"
+    )
+    assert "dist/legacy-rollback.html" in text, (
+        "proof-only recipe must write a dist proof artifact"
+    )
+    assert (
+        "dist/legacy-rollback.html"
+        not in text.split("rollback-ocean-rescue-to-legacy:")[1]
+    ), "operational rollback must not be redirected to dist/"
+    rollback_recipe = text.split("rollback-ocean-rescue-to-legacy:")[1]
+    assert "--output ocean-rescue/index.html" in rollback_recipe, (
+        "operational rollback must write the canonical artifact path"
+    )
 
 
 def test_dev_config_remains_development_only() -> None:
@@ -363,6 +405,73 @@ def test_legacy_rollback_produces_ordered_scripts(tmp_path: Path) -> None:
         "legacy rollback must reproduce the ordered-set output"
     )
     assert re.search(r"<script\s+[^>]*src\s*=", html) is None
+
+
+def test_operational_rollback_restores_legacy_and_bundle(tmp_path: Path) -> None:
+    """The canonical artifact must transition bundle -> legacy -> bundle.
+
+    The operational rollback writes the tracked ``ocean-rescue/index.html`` to
+    the exact pre-WP-21 legacy ordered-script artifact, and the production lane
+    must restore the bundle-owned artifact. Cleanup restores bundle-owned state
+    even if an intermediate rollback assertion fails.
+    """
+    _clean_production_bundle()
+    assert _restore_canonical().returncode == 0, "production restore failed"
+    bundle_canonical = ARTIFACT.read_bytes()
+
+    legacy_tmp = tmp_path / "legacy-expected.html"
+    assert _build_legacy(legacy_tmp).returncode == 0, "legacy build failed"
+    expected_legacy = legacy_tmp.read_bytes()
+
+    try:
+        result = _build_legacy_canonical()
+        assert result.returncode == 0, (
+            f"operational rollback failed (exit {result.returncode}): {result.stderr}"
+        )
+        rollback_canonical = ARTIFACT.read_bytes()
+        assert rollback_canonical == expected_legacy, (
+            "operational rollback must write the exact legacy artifact"
+        )
+        assert _sha256_bytes(rollback_canonical) == PRE_WP21_LEGACY_BASELINE_SHA, (
+            "rollback canonical artifact must be byte-identical to the "
+            "pre-WP-21 legacy baseline"
+        )
+        html = rollback_canonical.decode("utf-8")
+        assert html.count("<script>") == LEGACY_SCRIPT_COUNT, (
+            "legacy canonical HTML must have 19 inline classic scripts"
+        )
+        assert re.search(r"<script\s+[^>]*src\s*=", html) is None
+        assert re.search(r'type\s*=\s*["\']module["\']', html) is None
+        _assert_legacy_manifest_order(html)
+    finally:
+        assert _restore_canonical().returncode == 0, (
+            "cleanup restore to bundle-owned artifact failed"
+        )
+        restored = ARTIFACT.read_bytes()
+        assert restored == bundle_canonical, (
+            "restored canonical artifact must equal the original bundle-owned bytes"
+        )
+        restored_html = restored.decode("utf-8")
+        assert restored_html.count("<script>") == 2, (
+            "restored canonical HTML must have exactly two inline classic scripts"
+        )
+        assert re.search(r'type\s*=\s*["\']module["\']', restored_html) is None
+
+
+def _assert_legacy_manifest_order(html: str) -> None:
+    """Vendored Pixi first, then the 18 application scripts in manifest order."""
+    script_re = re.compile(r"<script>(.*?)</script>", re.IGNORECASE | re.DOTALL)
+    blocks = script_re.findall(html)
+    assert len(blocks) == LEGACY_SCRIPT_COUNT
+
+    manifest = _load_manifest()
+    assert len(manifest["scripts"]) == LEGACY_SCRIPT_COUNT
+    for block, entry in zip(blocks, manifest["scripts"]):
+        src_path = SRC_DIR / entry["file"]
+        src = src_path.read_text(encoding="utf-8")
+        assert block == "\n" + src + "\n", (
+            f"script block {entry['namespace']} must match its manifest source in order"
+        )
 
 
 # --- browser functional parity ---

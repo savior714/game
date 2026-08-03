@@ -373,6 +373,14 @@ browser functional parity, forbidden-network, and legacy rollback are verified
 by `tests/test_ocean_rescue_wp21_production_bundle_cutover.py` together with
 the reconciled drift/render-packaging/shadow-bundle/scaffold suites.
 
+Operational rollback closure: the tracked canonical deployment artifact
+`ocean-rescue/index.html` transitions bundle -> legacy -> bundle. `just
+rollback-ocean-rescue-to-legacy` atomically rewrites that canonical file to the
+exact pre-WP-21 legacy artifact (byte-identical baseline
+`cfd991d8...`), and `just build-ocean-rescue` restores the bundle-owned
+artifact. `just build-ocean-rescue-legacy-proof` writes only a proof artifact to
+`dist/legacy-rollback.html`; it does not touch the canonical artifact.
+
 Evidence: `docs/evidence/ocean-rescue/migration/phase-4/production-app-bundle-cutover.md`
 
 ---

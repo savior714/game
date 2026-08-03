@@ -64,8 +64,8 @@ build-ocean-rescue:
         --bundle domains/ocean-rescue/dist/ocean-rescue-app.js \
         --metadata domains/ocean-rescue/dist/production-bundle-metadata.json
 
-# Rollback path: rebuild the tracked artifact with the legacy ordered-script pipeline
-build-ocean-rescue-legacy-rollback:
+# Proof-only: rebuild the pre-WP-21 legacy ordered-script artifact to dist/ (no canonical rewrite)
+build-ocean-rescue-legacy-proof:
     @just check-ocean-rescue-node-version
     @just check-ocean-rescue-pnpm-version
     uv run python scripts/ocean_rescue/validate_pixi_vendor.py
@@ -81,13 +81,34 @@ build-ocean-rescue-legacy-rollback:
         --manifest domains/ocean-rescue/src/build-manifest.json \
         --output domains/ocean-rescue/dist/legacy-rollback.html
 
+# Verify the proof-only legacy artifact matches the pre-WP-21 artifact shape
+check-ocean-rescue-legacy-proof:
+    uv run pytest tests/test_ocean_rescue_wp21_production_bundle_cutover.py::test_legacy_rollback_produces_ordered_scripts -q
+
 # Verify that the tracked Ocean Rescue artifact matches a clean production rebuild
 check-ocean-rescue-drift:
     uv run pytest tests/test_ocean_rescue_artifact_drift.py -q
 
-# Verify the legacy-rollback rebuild matches the pre-WP-21 artifact shape
-check-ocean-rescue-legacy-rollback:
-    uv run pytest tests/test_ocean_rescue_wp21_production_bundle_cutover.py::test_legacy_rollback_produces_ordered_scripts -q
+# OPERATIONAL ROLLBACK: rebuild canonical ocean-rescue/index.html with the legacy ordered-script pipeline (rewrites tracked artifact)
+rollback-ocean-rescue-to-legacy:
+    @just check-ocean-rescue-node-version
+    @just check-ocean-rescue-pnpm-version
+    uv run python scripts/ocean_rescue/validate_pixi_vendor.py
+    uv run python scripts/ocean_rescue/validate_atlases.py \
+        --packet domains/ocean-rescue/assets/source/art-packet.json \
+        --approval domains/ocean-rescue/assets/source/art-approval.json \
+        --generated-dir domains/ocean-rescue/assets/generated
+    uv run python scripts/ocean_rescue/build_render_assets_registry.py \
+        --atlas-dir domains/ocean-rescue/assets/generated \
+        --output domains/ocean-rescue/src/render-assets.generated.js
+    uv run python scripts/ocean_rescue/build_single_html.py \
+        --mode legacy \
+        --manifest domains/ocean-rescue/src/build-manifest.json \
+        --output ocean-rescue/index.html
+
+# Verify the operational rollback/restore state transition (canonical artifact switches both directions)
+check-ocean-rescue-rollback:
+    uv run pytest tests/test_ocean_rescue_wp21_production_bundle_cutover.py::test_operational_rollback_restores_legacy_and_bundle -q
 
 # Build Ocean Rescue deterministic 2× atlas pipeline
 build-ocean-rescue-atlases:

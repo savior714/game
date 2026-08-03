@@ -59,9 +59,11 @@ Ocean Rescue에는 도메인 로컬 build-time Node 경계가 존재합니다.
 제약:
 
 - Node는 **build-time 전용**입니다. 전체 browser runtime은 Node를 요구하지 않습니다.
-- Production artifact는 기존 `just build-ocean-rescue-render-package` Python pipeline이 생성합니다.
+- Canonical production build: `just build-ocean-rescue` (Vite IIFE bundle + vendored Pixi, `ocean-rescue/index.html` 생성). `just build-ocean-rescue-render-package`도 동일 pipeline입니다.
+- Operational rollback: `just rollback-ocean-rescue-to-legacy` (배포 캐노니컬 아티팩트 `ocean-rescue/index.html`을 legacy ordered-script 형태로 복원).
+- Proof-only legacy artifact: `just build-ocean-rescue-legacy-proof` (`dist/legacy-rollback.html` 생성, 캐노니컬 아티팩트 미변경).
 - Vite dev server는 **개발 전용**입니다. 실행 중에는 현재 global-namespace 소스를 `index.dev.html` + `vite.config.ts`를 통해 그대로 제공합니다 (WP-11). Production pipeline은 변경되지 않습니다.
-- Shadow bundle은 **검증 전용**입니다. 18개 비-vendor 스크립트를 하나의 결정적 IIFE 번들로 결합하며(WP-20), vendored Pixi는 별도 prerequisite script로 유지됩니다. Production 소유권은 기존 legacy pipeline에 그대로 있습니다.
+- Shadow bundle은 **검증 전용**입니다. 18개 비-vendor 스크립트를 하나의 결정적 IIFE 번들로 결합하며(WP-20), vendored Pixi는 별도 prerequisite script로 유지됩니다. Production 소유권은 WP-21부터 Vite bundle pipeline에 있습니다.
 
 ## ✅ 검증 체계
 

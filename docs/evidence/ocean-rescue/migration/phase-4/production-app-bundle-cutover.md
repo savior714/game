@@ -6,6 +6,10 @@
 - Result: PASS
 - Migration state: `PRODUCTION_APP_BUNDLE`
 - Production authority: Vite IIFE application bundle (`--mode production`), vendored Pixi still external
+- Operational rollback: `just rollback-ocean-rescue-to-legacy` rewrites the tracked
+  `ocean-rescue/index.html` to the exact pre-WP-21 ordered artifact
+- Proof-only legacy artifact: `just build-ocean-rescue-legacy-proof` writes `dist/legacy-rollback.html`
+  (verification only; does NOT touch the canonical artifact)
 - Rollback path: builder `--mode legacy` reproduces the ordered 18-script artifact byte-for-byte
 - Excluded work: ESM/TypeScript source conversion, manifest contraction, `pixi.js` package import, vendored Pixi removal (WP-30/WP-40)
 
@@ -42,10 +46,16 @@ uv run python scripts/ocean_rescue/build_single_html.py --mode production \
   minifier, sourcemap, dynamic-import count, target, output files,
   vendor-external contract, module membership, bundle SHA, size).
 - `--mode legacy` reads the manifest in the original ordered-script way and is
-  never selected silently; it reproduced the pre-cutover artifact byte-for-byte.
+  never selected silently; it reproduces the pre-cutover artifact byte-for-byte.
 - `just build-ocean-rescue` and `just build-ocean-rescue-render-package` run the
-  Vite production build and then the builder in production mode.
-- `just build-ocean-rescue-legacy-rollback` exercises the legacy path explicitly.
+  Vite production build and then the builder in production mode, writing the
+  canonical `ocean-rescue/index.html`.
+- `just build-ocean-rescue-legacy-proof` rebuilds the proof-only legacy artifact
+  to `dist/legacy-rollback.html` (never the tracked canonical file).
+- `just rollback-ocean-rescue-to-legacy` (OPERATIONAL) runs the same vendor,
+  atlas, and generated-asset validations as production, then runs the builder in
+  `--mode legacy` and atomically writes the result to the tracked
+  `ocean-rescue/index.html`. This intentionally rewrites the deployed artifact.
 
 ## Bundle boundary
 
@@ -138,9 +148,29 @@ Runtime `window.OceanRescue` keys observed: `RenderAssets`, `RenderRuntime`,
 ## Legacy rollback verification
 
 The `--mode legacy` path is verified to reproduce the pre-cutover ordered
-artifact. Legacy output (18 ordered script blocks) is built and compared against
-the production output to prove the rollback boundary restores the previous
-authoritative path.
+artifact byte-for-byte. Legacy output (1 vendored Pixi + 18 ordered app script
+blocks) is built and compared against the production output to prove the
+rollback boundary restores the previous authoritative path.
+
+### Operational rollback sequence (canonical artifact state transition)
+
+The focused WP-21 rollback closure proves the deployed canonical artifact
+`ocean-rescue/index.html` itself transitions, not only a `dist/` proof file:
+
+1. `just build-ocean-rescue` — canonical production build; `ocean-rescue/index.html`
+   is bundle-owned (SHA-256 `03496d35fee11ad6821c0e5cbf2b6b149eaab543b1d819e64c6dafbfefbc6d7c`,
+   2,466,564 bytes, exactly 2 inline classic scripts).
+2. `just rollback-ocean-rescue-to-legacy` — the tracked canonical file is
+   atomically rewritten to the legacy artifact
+   (SHA-256 `cfd991d83524db6c7ad225da11ef7a9421300bdf588c4b905bf4e5556f776582`,
+   2,669,052 bytes, 19 inline classic scripts; vendored Pixi first, then the 18
+   application scripts in manifest order; no `src`; no module scripts).
+3. `just build-ocean-rescue` — restores the canonical file to the exact
+   bundle-owned artifact (byte-identical to step 1).
+
+A proof-only legacy artifact can additionally be rebuilt without touching the
+canonical file via `just build-ocean-rescue-legacy-proof` (writes
+`dist/legacy-rollback.html`).
 
 ## Network / console evidence
 
@@ -159,7 +189,7 @@ authoritative path.
 | `scripts/ocean_rescue/build_single_html.py` | `--mode production/legacy`, atomic write, fail-closed boundary validation |
 | `domains/ocean-rescue/package.json`, `tsconfig.json`, `vite.shadow.config.ts` | production build wired |
 | `domains/ocean-rescue/vite.bundle.ts`, `vite.production.config.ts` | shared bundle algorithm + narrow production config (new) |
-| `Justfile` | `build-ocean-rescue` / render-package in production mode; legacy-rollback recipes; drift in production mode |
+| `Justfile` | `build-ocean-rescue` / render-package in production mode; `build-ocean-rescue-legacy-proof` proof-only recipe; `rollback-ocean-rescue-to-legacy` operational recipe; drift in production mode |
 
 Untouched: `domains/ocean-rescue/src/build-manifest.json`,
 `domains/ocean-rescue/src/index.template.html`,
@@ -170,6 +200,8 @@ Untouched: `domains/ocean-rescue/src/build-manifest.json`,
 
 - `just build-ocean-rescue`: PASS (toolchain, pixi vendor, atlases, registry,
   Vite production build, packaging)
+- `just rollback-ocean-rescue-to-legacy` then `just build-ocean-rescue`: PASS
+  (canonical artifact transitions bundle -> legacy -> bundle, byte-identical)
 - `uv run pytest -q tests/test_ocean_rescue_wp21_production_bundle_cutover.py`: PASS
 - `uv run pytest -q tests/test_ocean_rescue_wp03_scope_decision.py`: PASS
 - `uv run pytest -q tests/test_ocean_rescue_artifact_drift.py`: PASS
@@ -182,10 +214,19 @@ Untouched: `domains/ocean-rescue/src/build-manifest.json`,
 
 ## Rollback boundary
 
-Restore the legacy ordered-script manifest ordering and previous builder input:
-run the builder with `--mode legacy` (reproduced byte-for-byte), or revert this
-worktree (production paths plus builder). `dist/` is ignored/untracked and never
-published. The legacy path remains available via `--mode legacy`.
+Three clearly distinguished commands:
+
+| Command | Purpose | Writes |
+|---|---|---|
+| `just build-ocean-rescue` | canonical production build (bundle-owned artifact) | `ocean-rescue/index.html` |
+| `just rollback-ocean-rescue-to-legacy` | OPERATIONAL rollback: restore the deployed canonical artifact to the legacy ordered-script pipeline | `ocean-rescue/index.html` |
+| `just build-ocean-rescue-legacy-proof` | proof-only legacy artifact reconstruction (verification only) | `dist/legacy-rollback.html` |
+
+The operational rollback intentionally rewrites the tracked canonical artifact;
+this is the restore path for a deployment whose canonical artifact is
+`ocean-rescue/index.html`. Generating only a file under `dist/` does NOT restore
+production and is not a rollback. `dist/` remains ignored/untracked and never
+published.
 
 ## Remaining work
 

@@ -165,7 +165,9 @@ HARNESS = r"""
 def _node() -> str:
     node = shutil.which("node")
     if not node:
-        raise RuntimeError("node 실행 파일을 찾을 수 없습니다. production JS를 직접 실행할 수 없습니다.")
+        raise RuntimeError(
+            "node 실행 파일을 찾을 수 없습니다. production JS를 직접 실행할 수 없습니다."
+        )
     return node
 
 
@@ -179,7 +181,9 @@ def _run_report() -> dict:
     sources.append(HARNESS)
     combined = "\n".join(sources)
 
-    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as f:
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".js", delete=False, encoding="utf-8"
+    ) as f:
         f.write(combined)
         script_path = f.name
     try:
@@ -234,7 +238,9 @@ def test_weekly_question_bound_at_every_level(report: dict) -> None:
     entries = report["case2"]
     assert len(entries) == 21, f"예상 21개(레벨당 3개), 실제 {len(entries)}"
     levels_checked = {entry["level"] for entry in entries}
-    assert levels_checked == set(range(7)), f"레벨 커버리지 부족: {sorted(levels_checked)}"
+    assert levels_checked == set(range(7)), (
+        f"레벨 커버리지 부족: {sorted(levels_checked)}"
+    )
     for entry in entries:
         _assert_weekly_contract(entry["q"], WEEKLY_WORD)
 
@@ -246,7 +252,9 @@ def test_weekly_type_rotation_never_shopping_dialogue(report: dict) -> None:
     for q in questions:
         _assert_weekly_contract(q, WEEKLY_WORD)
         types.add(q["type"])
-    assert types == ALLOWED_WEEKLY_TYPES, f"주간 유형 순환이 허용 집합을 벗어남: {types}"
+    assert types == ALLOWED_WEEKLY_TYPES, (
+        f"주간 유형 순환이 허용 집합을 벗어남: {types}"
+    )
 
 
 def test_weekly_wrongpattern_reinforcement_bound_to_keyword(report: dict) -> None:

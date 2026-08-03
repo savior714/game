@@ -291,9 +291,15 @@ def _run_scenario(pg, backend, run_index, base_url, screenshot_path):
     rim_count = int(diag["data-travel-scene-visible-obstacle-rim-count"] or "0")
     total_count = int(diag["data-travel-scene-visible-obstacle-count"] or "0")
     assert body_count > 0, "must have visible body obstacles"
-    assert body_count == rim_count, f"body count ({body_count}) must equal rim count ({rim_count})"
-    assert body_count == outer_count, f"body count ({body_count}) must equal outer count ({outer_count})"
-    assert body_count == total_count, f"body count ({body_count}) must equal total count ({total_count})"
+    assert body_count == rim_count, (
+        f"body count ({body_count}) must equal rim count ({rim_count})"
+    )
+    assert body_count == outer_count, (
+        f"body count ({body_count}) must equal outer count ({outer_count})"
+    )
+    assert body_count == total_count, (
+        f"body count ({body_count}) must equal total count ({total_count})"
+    )
 
     # Live PIXI.Container groups with 3 layers in gameplayWorld.
     assert len(groups) == 5, f"expected 5 obstacle groups, got {len(groups)}"
@@ -306,33 +312,53 @@ def _run_scenario(pg, backend, run_index, base_url, screenshot_path):
     # Verify layer structure: outer, rim, body.
     layers = first["layers"]
     assert len(layers) == 3
-    assert "outer" in layers[0]["label"], f"first layer must be outer, got {layers[0]['label']}"
-    assert "rim" in layers[1]["label"], f"second layer must be rim, got {layers[1]['label']}"
-    assert layers[2]["label"] == "travel-obstacle-0", f"third layer must be body, got {layers[2]['label']}"
+    assert "outer" in layers[0]["label"], (
+        f"first layer must be outer, got {layers[0]['label']}"
+    )
+    assert "rim" in layers[1]["label"], (
+        f"second layer must be rim, got {layers[1]['label']}"
+    )
+    assert layers[2]["label"] == "travel-obstacle-0", (
+        f"third layer must be body, got {layers[2]['label']}"
+    )
 
     # All layers are sprites with atlas-backed textures.
     for layer in layers:
         assert layer["isSprite"] is True, f"layer {layer['label']} must be a Sprite"
         assert layer["hasFrame"] is True, f"layer {layer['label']} must have a frame"
-        assert layer["eventMode"] == "none", f"layer {layer['label']} eventMode must be none"
+        assert layer["eventMode"] == "none", (
+            f"layer {layer['label']} eventMode must be none"
+        )
         assert layer["visible"] is True
 
     # Body tint is white (0xFFFFFF = 16777215).
     body_layer = layers[2]
-    assert body_layer["tint"] == 0xFFFFFF, f"body tint must be 0xFFFFFF, got {body_layer['tint']}"
-    assert body_layer["alpha"] == 1.0, f"body alpha must be 1.0, got {body_layer['alpha']}"
+    assert body_layer["tint"] == 0xFFFFFF, (
+        f"body tint must be 0xFFFFFF, got {body_layer['tint']}"
+    )
+    assert body_layer["alpha"] == 1.0, (
+        f"body alpha must be 1.0, got {body_layer['alpha']}"
+    )
 
     # Inner rim tint is warm-white (0xFFF7D6 = 16825430).
     rim_layer = layers[1]
-    assert rim_layer["tint"] == 0xFFF7D6, f"rim tint must be 0xFFF7D6, got {rim_layer['tint']}"
+    assert rim_layer["tint"] == 0xFFF7D6, (
+        f"rim tint must be 0xFFF7D6, got {rim_layer['tint']}"
+    )
 
     # Outer boundary tint is deep-ocean (0x04151F = 267551).
     outer_layer = layers[0]
-    assert outer_layer["tint"] == 0x04151F, f"outer tint must be 0x04151F, got {outer_layer['tint']}"
+    assert outer_layer["tint"] == 0x04151F, (
+        f"outer tint must be 0x04151F, got {outer_layer['tint']}"
+    )
 
     # Scale hierarchy: outer > rim > body (absolute scales).
-    assert outer_layer["scale"]["x"] > rim_layer["scale"]["x"], "outer absolute scale must be > rim"
-    assert rim_layer["scale"]["x"] > body_layer["scale"]["x"], "rim absolute scale must be > body"
+    assert outer_layer["scale"]["x"] > rim_layer["scale"]["x"], (
+        "outer absolute scale must be > rim"
+    )
+    assert rim_layer["scale"]["x"] > body_layer["scale"]["x"], (
+        "rim absolute scale must be > body"
+    )
 
     # All layers share the same texture.
     textures = [layer["hasFrame"] for layer in layers]
@@ -479,7 +505,12 @@ class TestTravelObstacleBrowserAcceptance:
                             "childCount": readiness["groups"][0]["childCount"],
                             "visible": readiness["groups"][0]["visible"],
                             "layers": [
-                                {"label": layer["label"], "isSprite": layer["isSprite"], "visible": layer["visible"], "hasFrame": layer["hasFrame"]}
+                                {
+                                    "label": layer["label"],
+                                    "isSprite": layer["isSprite"],
+                                    "visible": layer["visible"],
+                                    "hasFrame": layer["hasFrame"],
+                                }
                                 for layer in readiness["groups"][0]["layers"]
                             ],
                         },

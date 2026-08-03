@@ -24,9 +24,7 @@ def test_game_stats_uses_rpc_merge() -> None:
     assert "merge_game_stats" in code, (
         "GameStats 푸시에 merge_game_stats RPC 호출이 없습니다."
     )
-    assert "key.endsWith('GameStats')" in code, (
-        "GameStats 식별 로직이 없습니다."
-    )
+    assert "key.endsWith('GameStats')" in code, "GameStats 식별 로직이 없습니다."
 
 
 def test_rpc_call_has_correct_params() -> None:
@@ -94,35 +92,34 @@ def test_merge_sums_attempts_correctly() -> None:
     """Merge 시 attempts 가 합산되어야 함."""
     existing = {
         "math": {
-            "levels": {
-                "0": {"attempts": 5, "correct": 3, "totalTime": 100}
-            },
-            "weaknesses": {}
+            "levels": {"0": {"attempts": 5, "correct": 3, "totalTime": 100}},
+            "weaknesses": {},
         }
     }
     newStats = {
         "math": {
-            "levels": {
-                "0": {"attempts": 3, "correct": 2, "totalTime": 50}
-            },
-            "weaknesses": {}
+            "levels": {"0": {"attempts": 3, "correct": 2, "totalTime": 50}},
+            "weaknesses": {},
         }
     }
     expected_attempts = 8  # 5 + 3
-    expected_correct = 5   # 3 + 2
-    expected_time = 150    # 100 + 50
+    expected_correct = 5  # 3 + 2
+    expected_time = 150  # 100 + 50
 
     # Simulate merge
     merged = {
         "math": {
             "levels": {
                 "0": {
-                    "attempts": existing["math"]["levels"]["0"]["attempts"] + newStats["math"]["levels"]["0"]["attempts"],
-                    "correct": existing["math"]["levels"]["0"]["correct"] + newStats["math"]["levels"]["0"]["correct"],
-                    "totalTime": existing["math"]["levels"]["0"]["totalTime"] + newStats["math"]["levels"]["0"]["totalTime"]
+                    "attempts": existing["math"]["levels"]["0"]["attempts"]
+                    + newStats["math"]["levels"]["0"]["attempts"],
+                    "correct": existing["math"]["levels"]["0"]["correct"]
+                    + newStats["math"]["levels"]["0"]["correct"],
+                    "totalTime": existing["math"]["levels"]["0"]["totalTime"]
+                    + newStats["math"]["levels"]["0"]["totalTime"],
                 }
             },
-            "weaknesses": {}
+            "weaknesses": {},
         }
     }
 
@@ -143,18 +140,10 @@ def test_merge_handles_new_levels() -> None:
     merged = {
         "math": {
             "levels": {
-                "0": {
-                    "attempts": 5 + 3,
-                    "correct": 3 + 2,
-                    "totalTime": 100 + 50
-                },
-                "1": {
-                    "attempts": 0 + 2,
-                    "correct": 0 + 1,
-                    "totalTime": 0 + 30
-                }
+                "0": {"attempts": 5 + 3, "correct": 3 + 2, "totalTime": 100 + 50},
+                "1": {"attempts": 0 + 2, "correct": 0 + 1, "totalTime": 0 + 30},
             },
-            "weaknesses": {}
+            "weaknesses": {},
         }
     }
 
@@ -167,24 +156,16 @@ def test_merge_handles_multiple_domains() -> None:
     merged = {
         "math": {
             "levels": {
-                "0": {
-                    "attempts": 5 + 3,
-                    "correct": 3 + 2,
-                    "totalTime": 100 + 50
-                }
+                "0": {"attempts": 5 + 3, "correct": 3 + 2, "totalTime": 100 + 50}
             },
-            "weaknesses": {}
+            "weaknesses": {},
         },
         "english": {
             "levels": {
-                "0": {
-                    "attempts": 4 + 2,
-                    "correct": 2 + 1,
-                    "totalTime": 80 + 40
-                }
+                "0": {"attempts": 4 + 2, "correct": 2 + 1, "totalTime": 80 + 40}
             },
-            "weaknesses": {}
-        }
+            "weaknesses": {},
+        },
     }
 
     assert merged["math"]["levels"]["0"]["attempts"] == 8, "math 합산 실패"
@@ -205,7 +186,12 @@ def test_lost_update_scenario_without_atomic_merge() -> None:
     - 서버가 기존 값과 새 값을 합산하므로 5+3+2=10 으로 유지
     """
     # Client B pushes (overwrites A's changes)
-    client_b_push = {"math": {"levels": {"0": {"attempts": 7, "correct": 4, "totalTime": 130}}, "weaknesses": {}}}
+    client_b_push = {
+        "math": {
+            "levels": {"0": {"attempts": 7, "correct": 4, "totalTime": 130}},
+            "weaknesses": {},
+        }
+    }
 
     # Non-atomic upsert result (B overwrites A)
     non_atomic_result = client_b_push
@@ -222,10 +208,10 @@ def test_lost_update_scenario_without_atomic_merge() -> None:
                 "0": {
                     "attempts": 5 + 3 + 2,  # base + A + B
                     "correct": 3 + 2 + 1,
-                    "totalTime": 100 + 50 + 30
+                    "totalTime": 100 + 50 + 30,
                 }
             },
-            "weaknesses": {}
+            "weaknesses": {},
         }
     }
 
@@ -246,22 +232,28 @@ def test_concurrent_push_data_integrity() -> None:
         "math": {
             "levels": {
                 "0": {"attempts": 10 + 3, "correct": 8 + 2, "totalTime": 200 + 60},
-                "1": {"attempts": 0 + 5, "correct": 0 + 4, "totalTime": 0 + 100}
+                "1": {"attempts": 0 + 5, "correct": 0 + 4, "totalTime": 0 + 100},
             },
-            "weaknesses": {
-                "fractions": {"attempts": 5 + 2, "correct": 2 + 1}
-            }
+            "weaknesses": {"fractions": {"attempts": 5 + 2, "correct": 2 + 1}},
         },
         "science": {
             "levels": {
                 "1": {"attempts": 7 + 4, "correct": 5 + 3, "totalTime": 150 + 80}
             },
-            "weaknesses": {}
-        }
+            "weaknesses": {},
+        },
     }
 
     # Verify all data preserved
-    assert merged["math"]["levels"]["0"]["attempts"] == 13, "Client1 math level 0 합산 실패"
-    assert merged["math"]["levels"]["1"]["attempts"] == 5, "Client2 math level 1 합산 실패"
-    assert merged["science"]["levels"]["1"]["attempts"] == 11, "Client3 science level 1 합산 실패"
-    assert merged["math"]["weaknesses"]["fractions"]["attempts"] == 7, "Client2 weakness 합산 실패"
+    assert merged["math"]["levels"]["0"]["attempts"] == 13, (
+        "Client1 math level 0 합산 실패"
+    )
+    assert merged["math"]["levels"]["1"]["attempts"] == 5, (
+        "Client2 math level 1 합산 실패"
+    )
+    assert merged["science"]["levels"]["1"]["attempts"] == 11, (
+        "Client3 science level 1 합산 실패"
+    )
+    assert merged["math"]["weaknesses"]["fractions"]["attempts"] == 7, (
+        "Client2 weakness 합산 실패"
+    )

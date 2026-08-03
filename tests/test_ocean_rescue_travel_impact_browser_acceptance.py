@@ -340,8 +340,12 @@ class TestTravelImpactBrowserAcceptance:
         assert diag["data-travel-scene-impact-obstacle-id"] == "coral-column-1", diag
         contact_x = float(diag["data-travel-scene-impact-contact-x"])
         contact_y = float(diag["data-travel-scene-impact-contact-y"])
-        assert contact_x >= 0 and contact_x <= 1280, f"contact x out of range: {contact_x}"
-        assert contact_y >= 0 and contact_y <= 720, f"contact y out of range: {contact_y}"
+        assert contact_x >= 0 and contact_x <= 1280, (
+            f"contact x out of range: {contact_x}"
+        )
+        assert contact_y >= 0 and contact_y <= 720, (
+            f"contact y out of range: {contact_y}"
+        )
         assert contact_x > 261, (
             f"contact x must not be the fixed legacy 260, got {contact_x}"
         )
@@ -363,7 +367,9 @@ class TestTravelImpactBrowserAcceptance:
                 "burst must stay hidden under reduced motion (static cue)"
             )
         else:
-            assert burst is not None and burst["visible"] is True, "burst must be visible"
+            assert burst is not None and burst["visible"] is True, (
+                "burst must be visible"
+            )
             assert abs(burst["x"] - contact_x) <= 1.0, (
                 f"burst must be anchored at contact x: {burst['x']} vs {contact_x}"
             )
@@ -384,9 +390,7 @@ class TestTravelImpactBrowserAcceptance:
         assert target is not None, "target obstacle group missing"
 
         if reduced_motion:
-            assert not rays_visible, (
-                "rays must stay hidden under reduced motion"
-            )
+            assert not rays_visible, "rays must stay hidden under reduced motion"
             peak_target_scale = max(
                 (
                     next(

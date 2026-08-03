@@ -39,9 +39,23 @@ import re
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[1]
 
-SCRIPT_PATH = REPO_ROOT / "scripts" / "ocean-rescue" / "capture-authored-scene-visual-packet.py"
-HTML_PATH = REPO_ROOT / "tests" / "ocean-rescue" / "rendering-acceptance" / "authored-scene-visual-packet.html"
-MJS_PATH = REPO_ROOT / "tests" / "ocean-rescue" / "rendering-acceptance" / "authored-scene-visual-packet.mjs"
+SCRIPT_PATH = (
+    REPO_ROOT / "scripts" / "ocean-rescue" / "capture-authored-scene-visual-packet.py"
+)
+HTML_PATH = (
+    REPO_ROOT
+    / "tests"
+    / "ocean-rescue"
+    / "rendering-acceptance"
+    / "authored-scene-visual-packet.html"
+)
+MJS_PATH = (
+    REPO_ROOT
+    / "tests"
+    / "ocean-rescue"
+    / "rendering-acceptance"
+    / "authored-scene-visual-packet.mjs"
+)
 
 EXPECTED_STATES = ["worried", "relief-1", "relief-2", "free"]
 EXPECTED_WIDTH = 1280
@@ -73,13 +87,28 @@ class TestPythonImports:
             if line.strip().startswith("import ") or line.strip().startswith("from ")
         ]
         third_party = [
-            line for line in import_lines
+            line
+            for line in import_lines
             if not any(
                 stdlib in line
                 for stdlib in [
-                    "os", "sys", "json", "pathlib", "subprocess", "tempfile",
-                    "shutil", "socket", "threading", "hashlib", "struct",
-                    "http", "argparse", "importlib", "base64", "zlib", "time",
+                    "os",
+                    "sys",
+                    "json",
+                    "pathlib",
+                    "subprocess",
+                    "tempfile",
+                    "shutil",
+                    "socket",
+                    "threading",
+                    "hashlib",
+                    "struct",
+                    "http",
+                    "argparse",
+                    "importlib",
+                    "base64",
+                    "zlib",
+                    "time",
                 ]
             )
         ]
@@ -115,25 +144,32 @@ class TestViewportAndScale:
 
     def test_no_disable_webgl(self):
         content = read_file(SCRIPT_PATH)
-        assert "--disable-webgl" not in content, "--disable-webgl flag found (forbidden)"
+        assert "--disable-webgl" not in content, (
+            "--disable-webgl flag found (forbidden)"
+        )
 
 
 class TestBackendContract:
     def test_backend_webgl_assertion(self):
         content = read_file(SCRIPT_PATH)
-        assert '"webgl"' in content or "'webgl'" in content, "Backend webgl assertion missing"
+        assert '"webgl"' in content or "'webgl'" in content, (
+            "Backend webgl assertion missing"
+        )
 
     def test_backend_exact_check(self):
         content = read_file(SCRIPT_PATH)
-        assert '!= "webgl"' in content or '!= \'webgl\'' in content, "Backend exact check missing"
+        assert '!= "webgl"' in content or "!= 'webgl'" in content, (
+            "Backend exact check missing"
+        )
 
 
 class TestStateOrder:
     def test_four_states(self):
         content = read_file(SCRIPT_PATH)
         for state in EXPECTED_STATES:
-            assert '"{}"'.format(state) in content or "'{}'".format(state) in content, \
+            assert '"{}"'.format(state) in content or "'{}'".format(state) in content, (
                 "State {} not found in script".format(state)
+            )
 
     def test_state_order(self):
         content = read_file(SCRIPT_PATH)
@@ -148,14 +184,17 @@ class TestStateOrder:
 class TestRopeCoordinates:
     def test_uses_sea_turtle_ropes(self):
         mjs_content = read_file(MJS_PATH)
-        assert "SeaTurtle.Ropes" in mjs_content or "turtle.Ropes" in mjs_content, \
+        assert "SeaTurtle.Ropes" in mjs_content or "turtle.Ropes" in mjs_content, (
             "SeaTurtle.Ropes or turtle.Ropes not used in MJS"
+        )
 
     def test_no_hardcoded_endpoint_numbers(self):
         mjs_content = read_file(MJS_PATH)
         hardcoded_pattern = re.compile(r"\b(?:760|1040|750|1050|770|1030)\b")
         matches = hardcoded_pattern.findall(mjs_content)
-        assert matches == [], "Hardcoded rope endpoint numbers found: {}".format(matches)
+        assert matches == [], "Hardcoded rope endpoint numbers found: {}".format(
+            matches
+        )
 
 
 class TestStateAssertions:
@@ -176,8 +215,9 @@ class TestStateAssertions:
 class TestSceneLifecycle:
     def test_pause_called(self):
         mjs_content = read_file(MJS_PATH)
-        assert "scene.pause()" in mjs_content or "Scene.pause()" in mjs_content, \
+        assert "scene.pause()" in mjs_content or "Scene.pause()" in mjs_content, (
             "scene.pause() not called"
+        )
 
     def test_animation_stopped(self):
         content = read_file(SCRIPT_PATH)
@@ -193,11 +233,15 @@ class TestLegacyBridge:
 class TestNetworkAndErrorCounters:
     def test_external_request_counter(self):
         content = read_file(SCRIPT_PATH)
-        assert "externalOriginRequestCount" in content, "externalOriginRequestCount missing"
+        assert "externalOriginRequestCount" in content, (
+            "externalOriginRequestCount missing"
+        )
 
     def test_reference_request_counter(self):
         content = read_file(SCRIPT_PATH)
-        assert "referenceImageRequestCount" in content, "referenceImageRequestCount missing"
+        assert "referenceImageRequestCount" in content, (
+            "referenceImageRequestCount missing"
+        )
 
     def test_uncaught_error_counter(self):
         content = read_file(SCRIPT_PATH)
@@ -205,13 +249,17 @@ class TestNetworkAndErrorCounters:
 
     def test_csp_counter(self):
         content = read_file(SCRIPT_PATH)
-        assert "securityPolicyViolationCount" in content, "securityPolicyViolationCount missing"
+        assert "securityPolicyViolationCount" in content, (
+            "securityPolicyViolationCount missing"
+        )
 
 
 class TestPngValidation:
     def test_png_signature_check(self):
         content = read_file(SCRIPT_PATH)
-        assert "PNG" in content or "signature" in content.lower(), "PNG signature check missing"
+        assert "PNG" in content or "signature" in content.lower(), (
+            "PNG signature check missing"
+        )
 
     def test_ihdr_parser(self):
         content = read_file(SCRIPT_PATH)
@@ -220,12 +268,15 @@ class TestPngValidation:
     def test_png_filter_support(self):
         content = read_file(SCRIPT_PATH)
         for filter_num in ["0", "1", "2", "3", "4"]:
-            assert filter_num in content, "PNG filter {} support missing".format(filter_num)
+            assert filter_num in content, "PNG filter {} support missing".format(
+                filter_num
+            )
 
     def test_normalized_pixel_digest(self):
         content = read_file(SCRIPT_PATH)
-        assert "rgba" in content.lower() or "pixel_sha256" in content, \
+        assert "rgba" in content.lower() or "pixel_sha256" in content, (
             "Normalized RGBA pixel digest missing"
+        )
 
     def test_dimension_assertion(self):
         content = read_file(SCRIPT_PATH)
@@ -235,8 +286,9 @@ class TestPngValidation:
 class TestManifestContract:
     def test_schema_version_two(self):
         content = read_file(SCRIPT_PATH)
-        assert '"schemaVersion": 2' in content or "'schemaVersion': 2" in content, \
+        assert '"schemaVersion": 2' in content or "'schemaVersion': 2" in content, (
             "schemaVersion=2 not found"
+        )
 
     def test_sha256_in_manifest(self):
         content = read_file(SCRIPT_PATH)
@@ -245,35 +297,45 @@ class TestManifestContract:
     def test_no_timestamp(self):
         content = read_file(SCRIPT_PATH)
         assert "datetime" not in content, "datetime import found (forbidden)"
-        assert '"timestamp"' not in content and "'timestamp'" not in content, \
+        assert '"timestamp"' not in content and "'timestamp'" not in content, (
             "Timestamp field found in manifest (forbidden)"
+        )
 
     def test_no_absolute_paths_in_manifest(self):
         content = read_file(SCRIPT_PATH)
-        assert "os.getcwd" not in content and "pathlib.Path.cwd" not in content, \
+        assert "os.getcwd" not in content and "pathlib.Path.cwd" not in content, (
             "Absolute path generation found"
+        )
 
     def test_counters_from_diagnostics(self):
         content = read_file(SCRIPT_PATH)
-        assert "diagnostics" in content.lower(), "Counters should be derived from diagnostics"
-        assert '.get("externalOriginRequestCount"' in content or \
-               ".get('externalOriginRequestCount'" in content, \
-            "Counters should be read from diagnostics, not hardcoded"
+        assert "diagnostics" in content.lower(), (
+            "Counters should be derived from diagnostics"
+        )
+        assert (
+            '.get("externalOriginRequestCount"' in content
+            or ".get('externalOriginRequestCount'" in content
+        ), "Counters should be read from diagnostics, not hardcoded"
 
 
 class TestOutputPolicy:
     def test_temporary_output(self):
         content = read_file(SCRIPT_PATH)
-        assert "tempfile" in content or "mkdtemp" in content, "Temporary output not used"
+        assert "tempfile" in content or "mkdtemp" in content, (
+            "Temporary output not used"
+        )
 
     def test_atomic_replace(self):
         content = read_file(SCRIPT_PATH)
-        assert "shutil.move" in content or "os.rename" in content, "Atomic replace not used"
+        assert "shutil.move" in content or "os.rename" in content, (
+            "Atomic replace not used"
+        )
 
     def test_production_byte_guard(self):
         content = read_file(SCRIPT_PATH)
-        assert "before_hashes" in content and "after_hashes" in content, \
+        assert "before_hashes" in content and "after_hashes" in content, (
             "Production byte guard missing"
+        )
 
     def test_no_production_write(self):
         content = read_file(SCRIPT_PATH)
@@ -282,8 +344,9 @@ class TestOutputPolicy:
             "domains/ocean-rescue/src/",
         ]
         for prod_path in prod_paths:
-            assert prod_path not in content or "artifacts" in content, \
+            assert prod_path not in content or "artifacts" in content, (
                 "Potential production write to {}".format(prod_path)
+            )
 
 
 class TestCdpArchitecture:
@@ -305,28 +368,33 @@ class TestCdpArchitecture:
 
     def test_device_metrics_override(self):
         content = read_file(SCRIPT_PATH)
-        assert "Emulation.setDeviceMetricsOverride" in content, \
+        assert "Emulation.setDeviceMetricsOverride" in content, (
             "Emulation.setDeviceMetricsOverride not found"
+        )
 
     def test_single_process_per_state(self):
         content = read_file(SCRIPT_PATH)
-        assert "launch_chrome_with_cdp" in content, \
+        assert "launch_chrome_with_cdp" in content, (
             "Single Chrome process per state pattern not found"
+        )
 
     def test_no_proceed_after_diagnostics_failure(self):
         content = read_file(SCRIPT_PATH)
-        assert "WARNING" not in content or "Proceeding" not in content, \
+        assert "WARNING" not in content or "Proceeding" not in content, (
             "Script proceeds after diagnostics failure (forbidden)"
+        )
 
     def test_ready_marker_on_document_element(self):
         mjs_content = read_file(MJS_PATH)
-        assert "document.documentElement.dataset.visualPacketReady" in mjs_content, \
+        assert "document.documentElement.dataset.visualPacketReady" in mjs_content, (
             "Ready marker not on document.documentElement"
+        )
 
     def test_compositor_settle(self):
         mjs_content = read_file(MJS_PATH)
-        assert "requestAnimationFrame" in mjs_content, \
+        assert "requestAnimationFrame" in mjs_content, (
             "Compositor settle via requestAnimationFrame not found"
+        )
 
     def test_no_window_stop(self):
         mjs_content = read_file(MJS_PATH)
@@ -334,8 +402,9 @@ class TestCdpArchitecture:
 
     def test_render_scene_frame_called(self):
         mjs_content = read_file(MJS_PATH)
-        assert "renderSceneFrame" in mjs_content, \
+        assert "renderSceneFrame" in mjs_content, (
             "RenderRuntime.renderSceneFrame() not called before screenshot"
+        )
 
 
 class TestHtmlFixture:
@@ -354,23 +423,27 @@ class TestHtmlFixture:
 
     def test_diagnostics_offscreen(self):
         content = read_file(HTML_PATH)
-        assert "-9999px" in content or "hidden" in content, \
+        assert "-9999px" in content or "hidden" in content, (
             "Diagnostics not positioned offscreen"
+        )
 
 
 class TestMjsFixture:
     def test_state_query_param(self):
         content = read_file(MJS_PATH)
-        assert "state" in content and "URLSearchParams" in content, \
+        assert "state" in content and "URLSearchParams" in content, (
             "State query param not read"
+        )
 
     def test_allowed_states(self):
         content = read_file(MJS_PATH)
         for state in EXPECTED_STATES:
-            assert "'{}'".format(state) in content or '"{}"'.format(state) in content, \
+            assert "'{}'".format(state) in content or '"{}"'.format(state) in content, (
                 "Allowed state {} not in MJS".format(state)
+            )
 
     def test_fail_closed_unknown_state(self):
         content = read_file(MJS_PATH)
-        assert "Unknown state" in content or "fail" in content.lower(), \
+        assert "Unknown state" in content or "fail" in content.lower(), (
             "Fail-closed for unknown state not implemented"
+        )

@@ -9,7 +9,9 @@ RENDER_DIR = REPO_ROOT / "tests/ocean-rescue/rendering-acceptance"
 HTML_PATH = RENDER_DIR / "authored-scene-runtime.html"
 MJS_PATH = RENDER_DIR / "authored-scene-runtime.mjs"
 RUNNER_PATH = REPO_ROOT / "scripts/ocean-rescue/verify-authored-scene-runtime.py"
-STATIC_TEST_PATH = REPO_ROOT / "tests/test_ocean_rescue_authored_scene_runtime_acceptance.py"
+STATIC_TEST_PATH = (
+    REPO_ROOT / "tests/test_ocean_rescue_authored_scene_runtime_acceptance.py"
+)
 
 CDN_HOSTNAMES = [
     "cdn.jsdelivr.net",
@@ -70,7 +72,9 @@ def test_harness_does_not_require_production_changes():
 
 
 def test_harness_uses_production_single_html_iframe():
-    assert 'src="/ocean-rescue/index.html"' in _html(), "iframe does not load production HTML"
+    assert 'src="/ocean-rescue/index.html"' in _html(), (
+        "iframe does not load production HTML"
+    )
     assert "/ocean-rescue/index.html" in _mjs(), "MJS iframe source literal missing"
 
 
@@ -133,7 +137,9 @@ def test_initial_worried_assertion_exists():
     assert '"worried"' in runner, "worried assertion missing"
     assert "initial.reliefStage" in runner, "initial reliefStage assertion missing"
     assert "initial.activeRopeId" in runner, "initial activeRopeId assertion missing"
-    assert "initial.completedCount" in runner, "initial completedCount assertion missing"
+    assert "initial.completedCount" in runner, (
+        "initial completedCount assertion missing"
+    )
 
 
 def test_relief_one_assertion_exists():
@@ -147,18 +153,26 @@ def test_rope_two_assertion_exists():
 def test_legacy_bridge_transition_assertions_exist():
     runner = _runner()
     assert "initial.legacyBridgeVisible" in runner, "initial bridge assertion missing"
-    assert "afterRelease.legacyBridgeVisible" in runner, "release bridge assertion missing"
+    assert "afterRelease.legacyBridgeVisible" in runner, (
+        "release bridge assertion missing"
+    )
     assert "afterExit.legacyBridgeVisible" in runner, "exit bridge assertion missing"
 
 
 def test_external_origin_assertion_exists():
     assert "externalOriginRequestCount" in _mjs(), "external origin collection missing"
-    assert "externalOriginRequestCount" in _runner(), "external origin assertion missing"
+    assert "externalOriginRequestCount" in _runner(), (
+        "external origin assertion missing"
+    )
 
 
 def test_reference_request_assertion_exists():
-    assert "referenceImageRequestCount" in _mjs(), "reference request collection missing"
-    assert "referenceImageRequestCount" in _runner(), "reference request assertion missing"
+    assert "referenceImageRequestCount" in _mjs(), (
+        "reference request collection missing"
+    )
+    assert "referenceImageRequestCount" in _runner(), (
+        "reference request assertion missing"
+    )
 
 
 def test_error_rejection_collection_exists():
@@ -193,7 +207,9 @@ def test_harness_loads_local_test_module():
 def test_runner_imports_backend_verifier_without_modifying():
     runner = _runner()
     assert "verify-pixi-backends.py" in runner, "existing verifier not reused"
-    assert "spec_from_file_location" in runner, "existing verifier not imported via spec"
+    assert "spec_from_file_location" in runner, (
+        "existing verifier not imported via spec"
+    )
     assert '"w"' not in runner, "runner writes files"
     assert '"wb"' not in runner, "runner writes files"
 
@@ -280,7 +296,9 @@ def test_webgl_disable_flag_only_in_canvas_mode():
     assert 'backend_mode == "canvas"' in runner, "flag not guarded by canvas mode"
     assert "--disable-gpu" not in runner, "disable-gpu added"
     assert "--disable-software-rasterizer" not in runner, "software rasterizer disabled"
-    assert "--disable-webgl" not in runner, "webgl disable flag leaked into default path"
+    assert "--disable-webgl" not in runner, (
+        "webgl disable flag leaked into default path"
+    )
 
 
 def test_complete_flow_query_passed_to_harness():
@@ -300,9 +318,18 @@ def test_complete_flow_reads_endpoints_from_canonical_ropes():
     for token in ("rope.start.x", "rope.start.y", "rope.end.x", "rope.end.y"):
         assert token in mjs, f"rope endpoint token {token} missing"
     for literal in (
-        "760", "1040", "300", "330",
-        "750", "1050", "420", "440",
-        "770", "1030", "540", "570",
+        "760",
+        "1040",
+        "300",
+        "330",
+        "750",
+        "1050",
+        "420",
+        "440",
+        "770",
+        "1030",
+        "540",
+        "570",
     ):
         assert literal not in mjs, f"hardcoded rope coordinate {literal} found"
 
@@ -338,7 +365,9 @@ def test_pause_domain_equality_assertion_exists():
     assert "domainDuringPause" in mjs, "during-pause snapshot missing"
     assert "domainAfterResume" in mjs, "post-resume snapshot missing"
     runner = _runner()
-    assert "pauseCycle.domainUnchanged" in runner, "pause domain equality assertion missing"
+    assert "pauseCycle.domainUnchanged" in runner, (
+        "pause domain equality assertion missing"
+    )
 
 
 def test_final_domain_assertions_exist():
@@ -347,7 +376,9 @@ def test_final_domain_assertions_exist():
     assert "finalDomain.active" in runner, "final active=false assertion missing"
     assert "finalDomain.activeRopeId" in runner, "final activeRopeId assertion missing"
     assert "beforeExit.reliefStage" in runner, "beforeExit relief assertion missing"
-    assert "afterExit.legacyBridgeVisible" in runner, "legacy bridge restoration assertion missing"
+    assert "afterExit.legacyBridgeVisible" in runner, (
+        "legacy bridge restoration assertion missing"
+    )
 
 
 def test_existing_first_rope_contract_preserved():

@@ -545,7 +545,9 @@ class TestPacking:
                         for dy in range(min(h, 10)):
                             px, py = x0 - 1, y0 + dy
                             if 0 <= px < img.width and 0 <= py < img.height:
-                                _, _, _, a = cast(tuple[int, int, int, int], img.getpixel((px, py)))
+                                _, _, _, a = cast(
+                                    tuple[int, int, int, int], img.getpixel((px, py))
+                                )
                                 assert a == 0, f"Padding violation (left) for {alias}"
 
                     # Check right padding
@@ -554,7 +556,9 @@ class TestPacking:
                         for dy in range(min(h, 10)):
                             px, py = x1, y0 + dy
                             if 0 <= px < img.width and 0 <= py < img.height:
-                                _, _, _, a = cast(tuple[int, int, int, int], img.getpixel((px, py)))
+                                _, _, _, a = cast(
+                                    tuple[int, int, int, int], img.getpixel((px, py))
+                                )
                                 assert a == 0, f"Padding violation (right) for {alias}"
 
     def test_no_rotation(self, tmp_path: Path):

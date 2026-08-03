@@ -30,11 +30,15 @@ import pathlib
 import re
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
-PROOF_SCRIPT = REPO_ROOT / "scripts" / "ocean-rescue" / "capture-submarine-handoff-render-proof.py"
+PROOF_SCRIPT = (
+    REPO_ROOT / "scripts" / "ocean-rescue" / "capture-submarine-handoff-render-proof.py"
+)
 
 
 def _load_proof():
-    spec = importlib.util.spec_from_file_location("ocean_rescue_submarine_render_proof", PROOF_SCRIPT)
+    spec = importlib.util.spec_from_file_location(
+        "ocean_rescue_submarine_render_proof", PROOF_SCRIPT
+    )
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load proof script {PROOF_SCRIPT}")
     module = importlib.util.module_from_spec(spec)
@@ -105,16 +109,26 @@ def _make_input_fixture(tmp_path: pathlib.Path, svg: str | None = None):
         "verdict": "STRUCTURE_PASS",
     }
     structure_path = _write(
-        tmp_path / "review" / "handoff-intake" / "scene-submarine-01" / "structure-report.json",
+        tmp_path
+        / "review"
+        / "handoff-intake"
+        / "scene-submarine-01"
+        / "structure-report.json",
         json.dumps(structure),
     )
     packet = {
         "assets": [
-            {"alias": ALIAS, "source": "scene/submarine.svg", "sourceSha256": _sha256_bytes(svg.encode("utf-8"))}
+            {
+                "alias": ALIAS,
+                "source": "scene/submarine.svg",
+                "sourceSha256": _sha256_bytes(svg.encode("utf-8")),
+            }
         ]
     }
     packet_path = _write(tmp_path / "source" / "art-packet.json", json.dumps(packet))
-    manifest_path = _write(tmp_path / "generated" / "atlas-manifest.json", json.dumps({"files": {}}))
+    manifest_path = _write(
+        tmp_path / "generated" / "atlas-manifest.json", json.dumps({"files": {}})
+    )
     single_html = _write(tmp_path / "ocean-rescue" / "index.html", "<html></html>")
     return {
         "brief": str(brief),
@@ -129,7 +143,9 @@ def _make_input_fixture(tmp_path: pathlib.Path, svg: str | None = None):
 
 
 class TestInputGate:
-    def test_structure_report_svg_sha_mismatch_rejects_before_browser_launch(self, tmp_path):
+    def test_structure_report_svg_sha_mismatch_rejects_before_browser_launch(
+        self, tmp_path
+    ):
         fixture = _make_input_fixture(tmp_path)
         args = type("Args", (), fixture)()
         ok, code = PROOF.run_input_gate(tmp_path, args)
@@ -147,7 +163,9 @@ class TestInputGate:
 
     def test_missing_structure_report_rejects(self, tmp_path):
         fixture = _make_input_fixture(tmp_path)
-        fixture["structure_report"] = str(tmp_path / "missing" / "structure-report.json")
+        fixture["structure_report"] = str(
+            tmp_path / "missing" / "structure-report.json"
+        )
         args = type("Args", (), fixture)()
         ok, code = PROOF.run_input_gate(tmp_path, args)
         assert ok is False
@@ -175,27 +193,45 @@ class TestHashLineage:
             "svgSha256": _sha256_bytes(svg_bytes),
         }
         structure_path = _write(
-            tmp_path / "review" / "handoff-intake" / "scene-submarine-01" / "structure-report.json",
+            tmp_path
+            / "review"
+            / "handoff-intake"
+            / "scene-submarine-01"
+            / "structure-report.json",
             json.dumps(structure),
         )
         packet = {
             "assets": [
-                {"alias": ALIAS, "source": "scene/submarine.svg", "sourceSha256": _sha256_bytes(svg_bytes)}
+                {
+                    "alias": ALIAS,
+                    "source": "scene/submarine.svg",
+                    "sourceSha256": _sha256_bytes(svg_bytes),
+                }
             ]
         }
-        packet_path = _write(tmp_path / "source" / "art-packet.json", json.dumps(packet))
+        packet_path = _write(
+            tmp_path / "source" / "art-packet.json", json.dumps(packet)
+        )
         approval = {"artPacketSha256": None, "sourceSetSha256": None}
-        approval_path = _write(tmp_path / "source" / "art-approval.json", json.dumps(approval))
+        approval_path = _write(
+            tmp_path / "source" / "art-approval.json", json.dumps(approval)
+        )
         manifest = {
             "sourcePacketSha256": None,
             "approvalRecordSha256": None,
             "sourceSetSha256": None,
             "files": {"scene/scene-0.json": "0" * 64, "scene/scene-0.png": "0" * 64},
         }
-        manifest_path = _write(tmp_path / "generated" / "atlas-manifest.json", json.dumps(manifest))
+        manifest_path = _write(
+            tmp_path / "generated" / "atlas-manifest.json", json.dumps(manifest)
+        )
         scene_json = _write(tmp_path / "generated" / "scene" / "scene-0.json", "{}")
-        scene_png = _write(tmp_path / "generated" / "scene" / "scene-0.png", b"\x89PNG\r\n\x1a\n")
-        render_assets = _write(tmp_path / "src" / "render-assets.generated.js", "window.OceanRescue = {};")
+        scene_png = _write(
+            tmp_path / "generated" / "scene" / "scene-0.png", b"\x89PNG\r\n\x1a\n"
+        )
+        render_assets = _write(
+            tmp_path / "src" / "render-assets.generated.js", "window.OceanRescue = {};"
+        )
         single_html = _write(tmp_path / "ocean-rescue" / "index.html", "<html></html>")
         return {
             "svg": str(inbox),
@@ -209,7 +245,12 @@ class TestHashLineage:
             "scene_atlas_png": str(scene_png),
             "render_assets": str(render_assets),
             "single_html": str(single_html),
-            "build_manifest": str(_write(tmp_path / "src" / "build-manifest.json", json.dumps({"scripts": []}))),
+            "build_manifest": str(
+                _write(
+                    tmp_path / "src" / "build-manifest.json",
+                    json.dumps({"scripts": []}),
+                )
+            ),
         }
 
     def test_candidate_canonical_mismatch_blocks(self, tmp_path):
@@ -227,7 +268,9 @@ class TestHashLineage:
         canonical_path.write_text(MINIMAL_SVG + "<!-- tampered -->", encoding="utf-8")
         lineage = PROOF.compute_lineage(tmp_path, args)
         checks = PROOF.lineage_checks(lineage)
-        candidate_check = next(c for c in checks if c["name"] == "candidateStructureCanonicalPacket")
+        candidate_check = next(
+            c for c in checks if c["name"] == "candidateStructureCanonicalPacket"
+        )
         assert candidate_check["ok"] is False
 
     def test_art_packet_source_sha_mismatch_blocks(self, tmp_path):
@@ -239,7 +282,9 @@ class TestHashLineage:
         packet_path.write_text(json.dumps(packet), encoding="utf-8")
         lineage = PROOF.compute_lineage(tmp_path, args)
         checks = PROOF.lineage_checks(lineage)
-        candidate_check = next(c for c in checks if c["name"] == "candidateStructureCanonicalPacket")
+        candidate_check = next(
+            c for c in checks if c["name"] == "candidateStructureCanonicalPacket"
+        )
         assert candidate_check["ok"] is False
 
 
@@ -294,7 +339,14 @@ def _sprite(label="travel-submarine", is_sprite=True, texture_label=ALIAS, **ove
     texture = {
         "label": texture_label,
         "exists": True,
-        "frame": {"x": 2, "y": 2, "w": 271.5, "h": 160, "finite": True, "nonzero": True},
+        "frame": {
+            "x": 2,
+            "y": 2,
+            "w": 271.5,
+            "h": 160,
+            "finite": True,
+            "nonzero": True,
+        },
         "orig": {"w": 320, "h": 200, "finite": True, "nonzero": True},
         "sourceSize": {"w": 2016, "h": 1263},
         "resolution": 2,
@@ -443,33 +495,84 @@ class TestManifestWorkflowRecord:
         )
         _write(tmp_path / "briefs" / "scene-submarine-01.md", "brief")
         _write(tmp_path / "inbox" / "scene-submarine-01.svg", MINIMAL_SVG)
-        _write(tmp_path / "review" / "structure-report.json", json.dumps({"svgSha256": "0" * 64}))
+        _write(
+            tmp_path / "review" / "structure-report.json",
+            json.dumps({"svgSha256": "0" * 64}),
+        )
         _write(tmp_path / CANONICAL_TARGET, MINIMAL_SVG)
         _write(
             tmp_path / "source" / "art-packet.json",
-            json.dumps({"assets": [{"alias": ALIAS, "source": "scene/submarine.svg", "sourceSha256": "0" * 64}]}),
+            json.dumps(
+                {
+                    "assets": [
+                        {
+                            "alias": ALIAS,
+                            "source": "scene/submarine.svg",
+                            "sourceSha256": "0" * 64,
+                        }
+                    ]
+                }
+            ),
         )
         _write(tmp_path / "source" / "art-approval.json", json.dumps({}))
-        _write(tmp_path / "generated" / "atlas-manifest.json", json.dumps({"files": {}}))
+        _write(
+            tmp_path / "generated" / "atlas-manifest.json", json.dumps({"files": {}})
+        )
         _write(tmp_path / "generated" / "scene" / "scene-0.json", "{}")
         _write(tmp_path / "generated" / "scene" / "scene-0.png", b"\x89PNG\r\n\x1a\n")
-        _write(tmp_path / "src" / "render-assets.generated.js", "window.OceanRescue = {};")
+        _write(
+            tmp_path / "src" / "render-assets.generated.js", "window.OceanRescue = {};"
+        )
         _write(tmp_path / "ocean-rescue" / "index.html", "<html></html>")
         _write(tmp_path / "src" / "build-manifest.json", json.dumps({"scripts": []}))
 
         lineage = PROOF.compute_lineage(tmp_path, args)
         isolated = {
-            "1x": {"fileSha256": "0" * 64, "pixelSha256": "0" * 64, "byteSize": 1, "width": 320, "height": 200, "alphaPresent": True, "visibleAlphaBounds": {"x": 0, "y": 0, "width": 320, "height": 200}},
-            "2x": {"fileSha256": "0" * 64, "pixelSha256": "0" * 64, "byteSize": 1, "width": 640, "height": 400, "alphaPresent": True, "visibleAlphaBounds": {"x": 0, "y": 0, "width": 640, "height": 400}},
+            "1x": {
+                "fileSha256": "0" * 64,
+                "pixelSha256": "0" * 64,
+                "byteSize": 1,
+                "width": 320,
+                "height": 200,
+                "alphaPresent": True,
+                "visibleAlphaBounds": {"x": 0, "y": 0, "width": 320, "height": 200},
+            },
+            "2x": {
+                "fileSha256": "0" * 64,
+                "pixelSha256": "0" * 64,
+                "byteSize": 1,
+                "width": 640,
+                "height": 400,
+                "alphaPresent": True,
+                "visibleAlphaBounds": {"x": 0, "y": 0, "width": 640, "height": 400},
+            },
         }
         runs = [
             {
                 "rendererBackend": "webgl",
                 "logicalViewport": [1280, 720],
                 "deviceScaleFactor": 1,
-                "sprite": {"label": "travel-submarine", "isSprite": True, "anchor": {"x": 0.5, "y": 0.55}, "scaleX": 1.1, "scaleY": 1.1, "x": 260, "y": 360},
+                "sprite": {
+                    "label": "travel-submarine",
+                    "isSprite": True,
+                    "anchor": {"x": 0.5, "y": 0.55},
+                    "scaleX": 1.1,
+                    "scaleY": 1.1,
+                    "x": 260,
+                    "y": 360,
+                },
                 "texture": {"label": ALIAS, "frame": {}, "orig": {}, "resolution": 2},
-                "diag": {"data-travel-scene": "active", "data-travel-scene-animation": "paused", "data-travel-scene-impact-active": "false", "data-travel-scene-impact-phase": "idle", "data-travel-scene-obstacle-renderer": "sprite", "data-travel-scene-obstacle-boundary-mode": "dual-silhouette", "data-travel-scene-placeholder-obstacle-count": "0", "data-travel-scene-nonfinite-obstacle-count": "0", "data-travel-scene-impact-mode": "contact-burst-v1"},
+                "diag": {
+                    "data-travel-scene": "active",
+                    "data-travel-scene-animation": "paused",
+                    "data-travel-scene-impact-active": "false",
+                    "data-travel-scene-impact-phase": "idle",
+                    "data-travel-scene-obstacle-renderer": "sprite",
+                    "data-travel-scene-obstacle-boundary-mode": "dual-silhouette",
+                    "data-travel-scene-placeholder-obstacle-count": "0",
+                    "data-travel-scene-nonfinite-obstacle-count": "0",
+                    "data-travel-scene-impact-mode": "contact-burst-v1",
+                },
                 "terrain": {"collisionCount": 0, "collisionActive": False},
                 "impactRootVisible": False,
                 "overlayVisible": False,
@@ -479,12 +582,23 @@ class TestManifestWorkflowRecord:
                 "consoleErrorCount": 0,
                 "unhandledRejectionCount": 0,
                 "securityPolicyViolationCount": 0,
-                "screenshot": {"fileSha256": "0" * 64, "pixelSha256": "0" * 64, "byteSize": 1, "width": 1280, "height": 720},
+                "screenshot": {
+                    "fileSha256": "0" * 64,
+                    "pixelSha256": "0" * 64,
+                    "byteSize": 1,
+                    "width": 1280,
+                    "height": 720,
+                },
             }
         ]
-        manifest = PROOF.build_manifest(args, tmp_path, lineage, True, isolated, runs, "RENDER_PROOF_READY", [])
+        manifest = PROOF.build_manifest(
+            args, tmp_path, lineage, True, isolated, runs, "RENDER_PROOF_READY", []
+        )
         assert manifest["workflowOrderViolation"] is True
-        assert manifest["preexistingCanonicalizationCommit"] == PROOF.PREEXISTING_CANONICALIZATION_COMMIT
+        assert (
+            manifest["preexistingCanonicalizationCommit"]
+            == PROOF.PREEXISTING_CANONICALIZATION_COMMIT
+        )
         assert manifest["candidateWasCanonicalBeforeStructureProof"] is True
         assert manifest["humanVisualDecisionAfterThisProofRequired"] is True
         assert manifest["verdict"] == "RENDER_PROOF_READY"
@@ -509,7 +623,12 @@ class TestForbiddenProductionMutation:
         assert write_calls, "expected write calls in the harness"
 
         # No direct writes to production paths may exist.
-        for prefix in ("domains/ocean-rescue/assets/source", "domains/ocean-rescue/assets/generated", "domains/ocean-rescue/src", "ocean-rescue/index.html"):
+        for prefix in (
+            "domains/ocean-rescue/assets/source",
+            "domains/ocean-rescue/assets/generated",
+            "domains/ocean-rescue/src",
+            "ocean-rescue/index.html",
+        ):
             assert not re.search(
                 r'(?:write_text|write_bytes|open)\(\s*[^)]*["\']' + re.escape(prefix),
                 source,
@@ -517,5 +636,7 @@ class TestForbiddenProductionMutation:
 
     def test_production_files_guard_list(self):
         for rel in PROOF.PRODUCTION_FILES:
-            assert not rel.startswith("domains/ocean-rescue/assets/review/handoff-proof/")
+            assert not rel.startswith(
+                "domains/ocean-rescue/assets/review/handoff-proof/"
+            )
             assert (REPO_ROOT / rel).is_file(), "missing production file {}".format(rel)

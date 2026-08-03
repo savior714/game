@@ -55,7 +55,9 @@ def test_main_fails_closed_when_trufflehog_exits_without_findings(
     def scannable_paths(_staged_files: list[str]) -> list[str]:
         return ["safe.txt"]
 
-    def failed_scan(*_args: object, **_kwargs: object) -> subprocess.CompletedProcess[str]:
+    def failed_scan(
+        *_args: object, **_kwargs: object
+    ) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(
             args=["trufflehog"],
             returncode=2,

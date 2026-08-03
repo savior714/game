@@ -50,9 +50,7 @@ def _legacy_primitive_functions():
 
 def test_travel_scene_module_exists_and_is_loaded():
     """travel-scene.js must exist and be declared in the build manifest."""
-    assert TRAVEL_SCENE_JS.exists(), (
-        f"Missing travel-scene.js at {TRAVEL_SCENE_JS}"
-    )
+    assert TRAVEL_SCENE_JS.exists(), f"Missing travel-scene.js at {TRAVEL_SCENE_JS}"
     manifest = _load_manifest()
     files = {entry["file"] for entry in manifest.get("scripts", [])}
     assert "travel-scene.js" in files, (
@@ -75,9 +73,7 @@ def test_travel_scene_namespace_is_registered():
 def test_travel_scene_requires_required_aliases():
     """TravelScene must declare required texture aliases that exist in the asset package."""
     source = _load_travel_scene_js()
-    match = re.search(
-        r"var\s+REQUIRED_ALIASES\s*=\s*\[([^\]]+)\]", source
-    )
+    match = re.search(r"var\s+REQUIRED_ALIASES\s*=\s*\[([^\]]+)\]", source)
     assert match is not None, "REQUIRED_ALIASES not found in travel-scene.js"
     aliases_raw = match.group(1)
     aliases = re.findall(r'"([^"]+)"', aliases_raw)
@@ -107,12 +103,8 @@ def test_travel_scene_requires_required_aliases():
 def test_app_js_routes_travel_through_travel_scene():
     """app.js must prepare/activate TravelScene during travel start."""
     source = _load_app_js()
-    assert "TravelScene" in source, (
-        "app.js does not reference TravelScene at all"
-    )
-    assert "TravelScene.prepare" in source, (
-        "app.js does not call TravelScene.prepare()"
-    )
+    assert "TravelScene" in source, "app.js does not reference TravelScene at all"
+    assert "TravelScene.prepare" in source, "app.js does not call TravelScene.prepare()"
     assert "TravelScene.activate" in source, (
         "app.js does not call TravelScene.activate()"
     )
@@ -184,9 +176,7 @@ def test_travel_scene_lifecycle_is_complete():
         "isMounted",
         "getDiagnostics",
     ]:
-        assert method in source, (
-            f"TravelScene missing lifecycle method: {method}"
-        )
+        assert method in source, f"TravelScene missing lifecycle method: {method}"
 
 
 def test_travel_scene_uses_atlas_textures_not_primitives():
@@ -195,9 +185,7 @@ def test_travel_scene_uses_atlas_textures_not_primitives():
     assert "RenderRuntime.getTexture" in source, (
         "TravelScene does not read textures from RenderRuntime"
     )
-    assert "new PIXI.Sprite" in source, (
-        "TravelScene does not create Pixi Sprites"
-    )
+    assert "new PIXI.Sprite" in source, "TravelScene does not create Pixi Sprites"
     for forbidden in ["fillRect", "fillText", 'getContext("2d")']:
         assert forbidden not in source, (
             f"TravelScene uses forbidden primitive: {forbidden}"
@@ -215,12 +203,8 @@ def test_travel_scene_hides_legacy_bridge_on_activate():
 def test_travel_scene_shows_owned_nodes_and_hides_on_exit():
     """TravelScene must show owned nodes on activate and hide them on exit."""
     source = _load_travel_scene_js()
-    assert "showOwnedNodes" in source, (
-        "TravelScene missing showOwnedNodes"
-    )
-    assert "hideOwnedNodes" in source, (
-        "TravelScene missing hideOwnedNodes"
-    )
+    assert "showOwnedNodes" in source, "TravelScene missing showOwnedNodes"
+    assert "hideOwnedNodes" in source, "TravelScene missing hideOwnedNodes"
 
 
 def test_travel_scene_provides_diagnostics():

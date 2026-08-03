@@ -41,18 +41,38 @@ def _assert_ok(result: subprocess.CompletedProcess[str]) -> None:
 
 def _make_harness(script_body: str) -> str:
     required_aliases = [
-        "scene.water.far", "scene.reef.mid", "scene.coral.foreground",
-        "scene.submarine", "scene.seaweed-loop.01", "scene.sand-path",
-        "scene.passage", "fx.bubbles", "fx.caustic",
-        "terrain.coral-column", "terrain.coral-rock", "terrain.reef-arch",
-        "terrain.reef-spire", "terrain.kelp-rock", "terrain.sand-rock",
-        "terrain.shell-ledge", "terrain.low-reef", "terrain.rock-stack",
-        "terrain.sand-pillar", "terrain.canyon-wall", "terrain.canyon-ledge",
-        "terrain.canyon-pillar", "terrain.boulder-stack", "terrain.rock-spire",
+        "scene.water.far",
+        "scene.reef.mid",
+        "scene.coral.foreground",
+        "scene.submarine",
+        "scene.seaweed-loop.01",
+        "scene.sand-path",
+        "scene.passage",
+        "fx.bubbles",
+        "fx.caustic",
+        "terrain.coral-column",
+        "terrain.coral-rock",
+        "terrain.reef-arch",
+        "terrain.reef-spire",
+        "terrain.kelp-rock",
+        "terrain.sand-rock",
+        "terrain.shell-ledge",
+        "terrain.low-reef",
+        "terrain.rock-stack",
+        "terrain.sand-pillar",
+        "terrain.canyon-wall",
+        "terrain.canyon-ledge",
+        "terrain.canyon-pillar",
+        "terrain.boulder-stack",
+        "terrain.rock-spire",
     ]
     container_names = [
-        "farBackground", "midground", "gameplayWorld",
-        "submarine", "foreground", "effects"
+        "farBackground",
+        "midground",
+        "gameplayWorld",
+        "submarine",
+        "foreground",
+        "effects",
     ]
 
     alias_init = "\n".join(

@@ -115,9 +115,7 @@ def test_lockfile_root_dependency_exact() -> None:
 
 def test_lockfile_installed_version_exact() -> None:
     lock = _load_package_lock()
-    pixi_entry = (
-        lock.get("packages", {}).get("node_modules/pixi.js", {})
-    )
+    pixi_entry = lock.get("packages", {}).get("node_modules/pixi.js", {})
     assert pixi_entry.get("version") == PIXI_EXACT, (
         f"installed pixi.js version must be {PIXI_EXACT}, "
         f"got {pixi_entry.get('version')}"
@@ -126,9 +124,7 @@ def test_lockfile_installed_version_exact() -> None:
 
 def test_lockfile_resolved_present() -> None:
     lock = _load_package_lock()
-    pixi_entry = (
-        lock.get("packages", {}).get("node_modules/pixi.js", {})
-    )
+    pixi_entry = lock.get("packages", {}).get("node_modules/pixi.js", {})
     resolved = pixi_entry.get("resolved", "")
     assert resolved, "pixi.js resolved field must be non-empty"
     assert resolved.startswith("https://"), (
@@ -138,9 +134,7 @@ def test_lockfile_resolved_present() -> None:
 
 def test_lockfile_integrity_present() -> None:
     lock = _load_package_lock()
-    pixi_entry = (
-        lock.get("packages", {}).get("node_modules/pixi.js", {})
-    )
+    pixi_entry = lock.get("packages", {}).get("node_modules/pixi.js", {})
     integrity = pixi_entry.get("integrity", "")
     assert integrity, "pixi.js integrity field must be non-empty"
     assert integrity.startswith("sha"), (

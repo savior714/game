@@ -329,7 +329,10 @@ class TestHandoffSvgValidatorFaceBase:
         assert proc.returncode != 0
         report = _load_report(tmp_path)
         assert report["verdict"] == "STRUCTURE_REJECTED"
-        assert any("baked-mouth" in item for item in report["faceBaseContract"]["fixedFeatureIds"])
+        assert any(
+            "baked-mouth" in item
+            for item in report["faceBaseContract"]["fixedFeatureIds"]
+        )
 
     def test_absent_face_contract_skips_face_base_check(self, tmp_path: Path):
         brief = _write_brief(tmp_path)

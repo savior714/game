@@ -48,18 +48,38 @@ def _assert_ok(result: subprocess.CompletedProcess[str]) -> None:
 
 def _make_harness(script_body: str) -> str:
     required_aliases = [
-        "scene.water.far", "scene.reef.mid", "scene.coral.foreground",
-        "scene.submarine", "scene.seaweed-loop.01", "scene.sand-path",
-        "scene.passage", "fx.bubbles", "fx.caustic",
-        "terrain.coral-column", "terrain.coral-rock", "terrain.reef-arch",
-        "terrain.reef-spire", "terrain.kelp-rock", "terrain.sand-rock",
-        "terrain.shell-ledge", "terrain.low-reef", "terrain.rock-stack",
-        "terrain.sand-pillar", "terrain.canyon-wall", "terrain.canyon-ledge",
-        "terrain.canyon-pillar", "terrain.boulder-stack", "terrain.rock-spire",
+        "scene.water.far",
+        "scene.reef.mid",
+        "scene.coral.foreground",
+        "scene.submarine",
+        "scene.seaweed-loop.01",
+        "scene.sand-path",
+        "scene.passage",
+        "fx.bubbles",
+        "fx.caustic",
+        "terrain.coral-column",
+        "terrain.coral-rock",
+        "terrain.reef-arch",
+        "terrain.reef-spire",
+        "terrain.kelp-rock",
+        "terrain.sand-rock",
+        "terrain.shell-ledge",
+        "terrain.low-reef",
+        "terrain.rock-stack",
+        "terrain.sand-pillar",
+        "terrain.canyon-wall",
+        "terrain.canyon-ledge",
+        "terrain.canyon-pillar",
+        "terrain.boulder-stack",
+        "terrain.rock-spire",
     ]
     container_names = [
-        "farBackground", "midground", "gameplayWorld",
-        "submarine", "foreground", "effects"
+        "farBackground",
+        "midground",
+        "gameplayWorld",
+        "submarine",
+        "foreground",
+        "effects",
     ]
 
     alias_init = "\n".join(
@@ -264,7 +284,9 @@ BODY_TINT = 0xFFFFFF
 
 
 @pytest.mark.parametrize("env_name,env_hex", list(ENVIRONMENT_PALETTES.items()))
-def test_outer_boundary_contrast_against_environment(env_name: str, env_hex: int) -> None:
+def test_outer_boundary_contrast_against_environment(
+    env_name: str, env_hex: int
+) -> None:
     """Outer boundary must contrast each environment palette at >= 3:1."""
     ratio = _contrast_ratio(OUTER_BOUNDARY_COLOR, env_hex)
     assert ratio >= 3.0, (
@@ -275,12 +297,26 @@ def test_outer_boundary_contrast_against_environment(env_name: str, env_hex: int
 
 def _obstacle_harness(obstacles, extra_checks=""):
     """Build a harness with given obstacles and optional extra assertions."""
-    obs_json = "[" + ", ".join(
-        '{ id: "' + o["id"] + '", kind: "' + o["kind"] +
-        '", worldX: ' + str(o["worldX"]) + ', y: ' + str(o["y"]) +
-        ', width: ' + str(o["width"]) + ', height: ' + str(o["height"]) + " }"
-        for o in obstacles
-    ) + "]"
+    obs_json = (
+        "["
+        + ", ".join(
+            '{ id: "'
+            + o["id"]
+            + '", kind: "'
+            + o["kind"]
+            + '", worldX: '
+            + str(o["worldX"])
+            + ", y: "
+            + str(o["y"])
+            + ", width: "
+            + str(o["width"])
+            + ", height: "
+            + str(o["height"])
+            + " }"
+            for o in obstacles
+        )
+        + "]"
+    )
     return textwrap.dedent(
         f"""\
         assert.strictEqual(TravelScene.prepare(), true);
@@ -322,10 +358,24 @@ def test_obstacle_group_has_three_layers() -> None:
     harness = _make_harness(
         _obstacle_harness(
             [
-                {"id": "coral-column-1", "kind": "coral-column", "worldX": 600, "y": 350, "width": 64, "height": 64},
-                {"id": "reef-arch-2", "kind": "reef-arch", "worldX": 900, "y": 400, "width": 64, "height": 64},
+                {
+                    "id": "coral-column-1",
+                    "kind": "coral-column",
+                    "worldX": 600,
+                    "y": 350,
+                    "width": 64,
+                    "height": 64,
+                },
+                {
+                    "id": "reef-arch-2",
+                    "kind": "reef-arch",
+                    "worldX": 900,
+                    "y": 400,
+                    "width": 64,
+                    "height": 64,
+                },
             ],
-            'assert.strictEqual(group.children.length, 3, `group ${group.label} must have exactly 3 children`);'
+            "assert.strictEqual(group.children.length, 3, `group ${group.label} must have exactly 3 children`);",
         )
     )
     _assert_ok(_run_node(harness))
@@ -335,7 +385,16 @@ def test_obstacle_render_order_outer_rim_body() -> None:
     """Layer render order must be outer boundary, inner rim, body."""
     harness = _make_harness(
         _obstacle_harness(
-            [{"id": "coral-column-1", "kind": "coral-column", "worldX": 600, "y": 350, "width": 64, "height": 64}],
+            [
+                {
+                    "id": "coral-column-1",
+                    "kind": "coral-column",
+                    "worldX": 600,
+                    "y": 350,
+                    "width": 64,
+                    "height": 64,
+                }
+            ],
             textwrap.dedent(
                 """\
                 const labels = group.children.map(c => c.label || "");
@@ -346,7 +405,7 @@ def test_obstacle_render_order_outer_rim_body() -> None:
                 assert.strictEqual(labels[2], "travel-obstacle-0",
                   `third child must be body, got "${labels[2]}"`);
                 """
-            )
+            ),
         )
     )
     _assert_ok(_run_node(harness))
@@ -356,14 +415,23 @@ def test_obstacle_layers_share_same_texture() -> None:
     """All three layers must use the same authored texture."""
     harness = _make_harness(
         _obstacle_harness(
-            [{"id": "coral-column-1", "kind": "coral-column", "worldX": 600, "y": 350, "width": 64, "height": 64}],
+            [
+                {
+                    "id": "coral-column-1",
+                    "kind": "coral-column",
+                    "worldX": 600,
+                    "y": 350,
+                    "width": 64,
+                    "height": 64,
+                }
+            ],
             textwrap.dedent(
                 """\
                 const textures = group.children.map(c => c.texture);
                 const sameTex = textures.every(t => t === textures[0]);
                 assert.ok(sameTex, "all three layers must share the same texture");
                 """
-            )
+            ),
         )
     )
     _assert_ok(_run_node(harness))
@@ -373,14 +441,23 @@ def test_obstacle_layers_have_matching_anchor() -> None:
     """All three layers must have the same anchor point."""
     harness = _make_harness(
         _obstacle_harness(
-            [{"id": "coral-column-1", "kind": "coral-column", "worldX": 600, "y": 350, "width": 64, "height": 64}],
+            [
+                {
+                    "id": "coral-column-1",
+                    "kind": "coral-column",
+                    "worldX": 600,
+                    "y": 350,
+                    "width": 64,
+                    "height": 64,
+                }
+            ],
             textwrap.dedent(
                 """\
                 const anchors = group.children.map(c => ({ x: c.anchor.x, y: c.anchor.y }));
                 const sameAnchor = anchors.every(a => a.x === anchors[0].x && a.y === anchors[0].y);
                 assert.ok(sameAnchor, "all three layers must have matching anchor");
                 """
-            )
+            ),
         )
     )
     _assert_ok(_run_node(harness))
@@ -390,7 +467,16 @@ def test_body_tint_is_white() -> None:
     """Body sprite must have tint 0xFFFFFF (authored natural color)."""
     harness = _make_harness(
         _obstacle_harness(
-            [{"id": "coral-column-1", "kind": "coral-column", "worldX": 600, "y": 350, "width": 64, "height": 64}],
+            [
+                {
+                    "id": "coral-column-1",
+                    "kind": "coral-column",
+                    "worldX": 600,
+                    "y": 350,
+                    "width": 64,
+                    "height": 64,
+                }
+            ],
             textwrap.dedent(
                 """\
                 const body = group.children[2];
@@ -398,7 +484,7 @@ def test_body_tint_is_white() -> None:
                 assert.strictEqual(body.tint, 0xFFFFFF,
                   `body tint must be 0xFFFFFF, got ${body.tint.toString(16)}`);
                 """
-            )
+            ),
         )
     )
     _assert_ok(_run_node(harness))
@@ -408,7 +494,16 @@ def test_inner_rim_tint_is_warm_white() -> None:
     """Inner rim sprite must have the canonical warm-white tint."""
     harness = _make_harness(
         _obstacle_harness(
-            [{"id": "coral-column-1", "kind": "coral-column", "worldX": 600, "y": 350, "width": 64, "height": 64}],
+            [
+                {
+                    "id": "coral-column-1",
+                    "kind": "coral-column",
+                    "worldX": 600,
+                    "y": 350,
+                    "width": 64,
+                    "height": 64,
+                }
+            ],
             textwrap.dedent(
                 """\
                 const rim = group.children[1];
@@ -416,7 +511,7 @@ def test_inner_rim_tint_is_warm_white() -> None:
                 assert.strictEqual(rim.tint, 0xFFF7D6,
                   `inner rim tint must be 0xFFF7D6, got ${rim.tint.toString(16)}`);
                 """
-            )
+            ),
         )
     )
     _assert_ok(_run_node(harness))
@@ -426,7 +521,16 @@ def test_outer_tint_is_deep_ocean() -> None:
     """Outer boundary sprite must have the canonical deep-ocean tint."""
     harness = _make_harness(
         _obstacle_harness(
-            [{"id": "coral-column-1", "kind": "coral-column", "worldX": 600, "y": 350, "width": 64, "height": 64}],
+            [
+                {
+                    "id": "coral-column-1",
+                    "kind": "coral-column",
+                    "worldX": 600,
+                    "y": 350,
+                    "width": 64,
+                    "height": 64,
+                }
+            ],
             textwrap.dedent(
                 """\
                 const outer = group.children[0];
@@ -434,7 +538,7 @@ def test_outer_tint_is_deep_ocean() -> None:
                 assert.strictEqual(outer.tint, 0x04151F,
                   `outer boundary tint must be 0x04151F, got ${outer.tint.toString(16)}`);
                 """
-            )
+            ),
         )
     )
     _assert_ok(_run_node(harness))
@@ -444,7 +548,16 @@ def test_obstacle_relative_scales_outer_gt_rim_gt_body() -> None:
     """Outer scale must be > rim scale > body scale."""
     harness = _make_harness(
         _obstacle_harness(
-            [{"id": "coral-column-1", "kind": "coral-column", "worldX": 600, "y": 350, "width": 64, "height": 64}],
+            [
+                {
+                    "id": "coral-column-1",
+                    "kind": "coral-column",
+                    "worldX": 600,
+                    "y": 350,
+                    "width": 64,
+                    "height": 64,
+                }
+            ],
             textwrap.dedent(
                 """\
                 const outerScale = group.children[0].scale.x;
@@ -453,7 +566,7 @@ def test_obstacle_relative_scales_outer_gt_rim_gt_body() -> None:
                 assert.ok(outerScale > rimScale, `outer scale (${outerScale}) must be > rim scale (${rimScale})`);
                 assert.ok(rimScale > bodyScale, `rim scale (${rimScale}) must be > body scale (${bodyScale})`);
                 """
-            )
+            ),
         )
     )
     _assert_ok(_run_node(harness))
@@ -624,7 +737,16 @@ def test_obstacle_event_mode_none_on_all_layers() -> None:
     """All three layers must have eventMode set to none."""
     harness = _make_harness(
         _obstacle_harness(
-            [{"id": "coral-column-1", "kind": "coral-column", "worldX": 600, "y": 350, "width": 64, "height": 64}],
+            [
+                {
+                    "id": "coral-column-1",
+                    "kind": "coral-column",
+                    "worldX": 600,
+                    "y": 350,
+                    "width": 64,
+                    "height": 64,
+                }
+            ],
             textwrap.dedent(
                 """\
                 for (const layer of group.children) {
@@ -632,7 +754,7 @@ def test_obstacle_event_mode_none_on_all_layers() -> None:
                     `layer ${layer.label} eventMode must be "none", got "${layer.eventMode}"`);
                 }
                 """
-            )
+            ),
         )
     )
     _assert_ok(_run_node(harness))
@@ -711,7 +833,16 @@ def test_obstacle_alpha_values() -> None:
     """Body alpha must be 1.0, rim alpha in 0.72-0.92, outer alpha in 0.82-0.95."""
     harness = _make_harness(
         _obstacle_harness(
-            [{"id": "coral-column-1", "kind": "coral-column", "worldX": 600, "y": 350, "width": 64, "height": 64}],
+            [
+                {
+                    "id": "coral-column-1",
+                    "kind": "coral-column",
+                    "worldX": 600,
+                    "y": 350,
+                    "width": 64,
+                    "height": 64,
+                }
+            ],
             textwrap.dedent(
                 """\
                 const body = group.children[2];
@@ -724,7 +855,7 @@ def test_obstacle_alpha_values() -> None:
                 assert.ok(outer.alpha >= 0.82 && outer.alpha <= 0.95,
                   `outer alpha ${outer.alpha} must be in [0.82, 0.95]`);
                 """
-            )
+            ),
         )
     )
     _assert_ok(_run_node(harness))
@@ -734,7 +865,16 @@ def test_obstacle_scale_ratios_in_recommended_range() -> None:
     """Outer and rim must be proportionally larger than body."""
     harness = _make_harness(
         _obstacle_harness(
-            [{"id": "coral-column-1", "kind": "coral-column", "worldX": 600, "y": 350, "width": 64, "height": 64}],
+            [
+                {
+                    "id": "coral-column-1",
+                    "kind": "coral-column",
+                    "worldX": 600,
+                    "y": 350,
+                    "width": 64,
+                    "height": 64,
+                }
+            ],
             textwrap.dedent(
                 """\
                 const outerScale = group.children[0].scale.x;
@@ -746,7 +886,7 @@ def test_obstacle_scale_ratios_in_recommended_range() -> None:
                 assert.ok(outerScale / bodyScale >= 1.10 && outerScale / bodyScale <= 1.14,
                   `outer/body ratio ${outerScale / bodyScale} must be in [1.10, 1.14]`);
                 """
-            )
+            ),
         )
     )
     _assert_ok(_run_node(harness))

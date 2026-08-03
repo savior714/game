@@ -33,9 +33,9 @@ lint:
 typecheck:
     @targets="scripts/verify_korean_text.py scripts/verify_korean_js.py scripts/verify/lint_dotenv.py scripts/verify/staged_secret_gate.py tools/mcp_call_wrapper.py"; \
     if command -v ty >/dev/null 2>&1; then \
-        ty check $$targets; \
+        ty check $targets; \
     elif command -v pyright >/dev/null 2>&1; then \
-        pyright $$targets; \
+        pyright $targets; \
     else \
         echo "❌ required type checker unavailable: install ty or pyright"; \
         exit 1; \
@@ -99,10 +99,10 @@ check-ocean-rescue-render-package:
 commit-gate-hard:
     @echo "🔒 Hard commit gate (security)..."
     @dotenv_files=""; \
-    if [ -f .env.example ]; then dotenv_files="$$dotenv_files .env.example"; fi; \
-    if [ -f .env ]; then dotenv_files="$$dotenv_files .env"; fi; \
-    if [ -n "$$dotenv_files" ]; then \
-        uv run python scripts/verify/lint_dotenv.py $$dotenv_files || { echo "❌ dotenv lint 실패"; exit 1; }; \
+    if [ -f .env.example ]; then dotenv_files="$dotenv_files .env.example"; fi; \
+    if [ -f .env ]; then dotenv_files="$dotenv_files .env"; fi; \
+    if [ -n "$dotenv_files" ]; then \
+        uv run python scripts/verify/lint_dotenv.py $dotenv_files || { echo "❌ dotenv lint 실패"; exit 1; }; \
     else \
         echo "[skip] .env.example/.env 없음 — dotenv lint 건너뜀."; \
     fi

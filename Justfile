@@ -156,6 +156,16 @@ dev-ocean-rescue host="127.0.0.1" port="5173":
 check-ocean-rescue-dev-server:
     uv run pytest tests/test_ocean_rescue_wp11_dev_server.py -q
 
+# Build the deterministic Ocean Rescue shadow application bundle (shadow-only; production untouched)
+build-ocean-rescue-shadow-bundle:
+    @just check-ocean-rescue-node-version
+    @just check-ocean-rescue-pnpm-version
+    @cd domains/ocean-rescue && corepack pnpm exec vite build --config vite.shadow.config.ts
+
+# Verify the Ocean Rescue shadow bundle (focused WP-20 static/build/browser contracts)
+check-ocean-rescue-shadow-bundle:
+    uv run pytest tests/test_ocean_rescue_wp20_shadow_bundle.py -q
+
 # --- Commit Gate ---
 
 # hard gate: security checks only; --no-verify is prohibited

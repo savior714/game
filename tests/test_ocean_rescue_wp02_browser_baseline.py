@@ -664,11 +664,12 @@ def assert_evidence(
     pointer = evidence["pointer_mapping"]
     network = evidence["network"]
     console = evidence["console"]
-    # Both the standalone baseline and the Vite dev-server lane must reject any
-    # external-origin runtime request and any API/fetch/XHR request. Same-origin
-    # requests (dev-server client, stylesheets, classic scripts, HMR transport)
-    # are classified as local and are allowed.
-    assert network_mode in {"standalone", "dev"}
+    # The standalone baseline, the Vite dev-server lane, and the shadow-bundle
+    # lane all reject any external-origin runtime request and any API/fetch/XHR
+    # request. Same-origin requests (dev-server client, stylesheets, classic
+    # scripts, the shadow bundle, HMR transport) are classified as local and are
+    # allowed.
+    assert network_mode in {"standalone", "dev", "shadow"}
     assert startup["ready"] == "true"
     assert startup["canvas_found"] is True
     assert startup["canvas_width"] == LOGICAL_WIDTH
@@ -711,8 +712,9 @@ def assert_evidence(
     assert network["api_requests"] == 0
     if network_mode == "standalone":
         # In the standalone artifact all scripts are inlined, so any http-loaded
-        # script is forbidden. In the Vite dev lane the classic scripts are
-        # served over the same origin by design; external origin is still zero.
+        # script is forbidden. In the Vite dev and shadow lanes the classic
+        # scripts / shadow bundle are served over the same origin by design;
+        # external origin is still zero.
         assert network["dynamic_module_requests"] == 0
     assert network["request_failures"] == []
     assert console["page_error_count"] == 0

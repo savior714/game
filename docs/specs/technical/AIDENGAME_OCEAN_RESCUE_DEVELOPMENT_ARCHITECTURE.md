@@ -1,6 +1,6 @@
 # AidenGame Ocean Rescue — Development Architecture
 
-- **Version:** 1.3
+- **Version:** 1.4
 - **Date:** 2026-08-03
 - **Status:** CANONICAL
 - **Owner:** Ocean Rescue development tooling
@@ -28,7 +28,8 @@
 - **Pixi package metadata:** 8.19.0
 - **Lockfile:** `domains/ocean-rescue/pnpm-lock.yaml`
 - **Development server:** `index.dev.html` + `vite.config.ts`, `just dev-ocean-rescue`
-- **State:** `DEV_SERVER_COMPAT`
+- **Shadow application bundle:** `vite.shadow.config.ts`, `just build-ocean-rescue-shadow-bundle`
+- **State:** `SHADOW_BUNDLE`
 
 Pixi boundary:
 
@@ -449,8 +450,8 @@ LEGACY_GLOBAL
 |---|---|---|---|
 | `LEGACY_GLOBAL` | Global JavaScript source | Ordered manifest scripts | Initial state |
 | `PACKAGE_BOUNDARY_READY` | Package files plus legacy source | Legacy production pipeline | Phase 1 complete |
-| `DEV_SERVER_COMPAT` (**current**) | Legacy source plus dev entry | Legacy production pipeline | Phase 2 complete |
-| `SHADOW_BUNDLE` | Vite shadow configuration plus legacy source | Legacy path remains authoritative | Phase 3 complete |
+| `DEV_SERVER_COMPAT` | Legacy source plus dev entry | Legacy production pipeline | Phase 2 complete |
+| `SHADOW_BUNDLE` (**current**) | Vite shadow configuration plus legacy source | Legacy path remains authoritative | Phase 3 complete |
 | `PRODUCTION_BUNDLE` | Vite application bundle | Standalone builder consumes temporary bundle packaging | Phase 4 complete |
 | `ESM_ENTRY` | Canonical ESM entry and import graph | Vite bundle | Phase 5 complete |
 | `TYPED_MODULES` | Typed leaf/domain modules | Vite bundle | Phases 6–7 relevant contracts complete |

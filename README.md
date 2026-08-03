@@ -53,12 +53,15 @@ Ocean Rescue에는 도메인 로컬 build-time Node 경계가 존재합니다.
 - **Typecheck:** `just typecheck-ocean-rescue`
 - **Development server:** `just dev-ocean-rescue` (개발 전용, `http://127.0.0.1:5173/index.dev.html`)
 - **Dev-server check:** `just check-ocean-rescue-dev-server`
+- **Shadow bundle build:** `just build-ocean-rescue-shadow-bundle` (결정적 IIFE 번들, `dist/ocean-rescue-app.shadow.js`)
+- **Shadow bundle check:** `just check-ocean-rescue-shadow-bundle`
 
 제약:
 
 - Node는 **build-time 전용**입니다. 전체 browser runtime은 Node를 요구하지 않습니다.
 - Production artifact는 기존 `just build-ocean-rescue-render-package` Python pipeline이 생성합니다.
 - Vite dev server는 **개발 전용**입니다. 실행 중에는 현재 global-namespace 소스를 `index.dev.html` + `vite.config.ts`를 통해 그대로 제공합니다 (WP-11). Production pipeline은 변경되지 않습니다.
+- Shadow bundle은 **검증 전용**입니다. 18개 비-vendor 스크립트를 하나의 결정적 IIFE 번들로 결합하며(WP-20), vendored Pixi는 별도 prerequisite script로 유지됩니다. Production 소유권은 기존 legacy pipeline에 그대로 있습니다.
 
 ## ✅ 검증 체계
 

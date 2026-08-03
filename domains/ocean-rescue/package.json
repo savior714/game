@@ -11,6 +11,7 @@
   },
   "scripts": {
     "dev": "vite --config vite.config.ts --host 127.0.0.1 --port 5173 --strictPort",
+    "build:shadow": "vite build --config vite.shadow.config.ts",
     "typecheck": "tsc --project tsconfig.json --noEmit",
     "check:versions": "node --version && pnpm --version && vite --version && tsc --version"
   },

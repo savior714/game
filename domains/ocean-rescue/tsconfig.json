@@ -16,7 +16,8 @@
   },
   "include": [
     "src/**/*.js",
-    "vite.config.ts"
+    "vite.config.ts",
+    "vite.shadow.config.ts"
   ],
   "exclude": [
     "src/vendor/**",

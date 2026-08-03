@@ -207,8 +207,18 @@ function spawnConfetti() {
   }
 }
 
+function bindProgressionControl() {
+  const nextButton = document.getElementById('next-btn');
+  if (!nextButton) throw new Error('Math next button is missing.');
+  if (nextButton.dataset.progressionBound === 'true') return;
+
+  nextButton.addEventListener('click', nextQuestion);
+  nextButton.dataset.progressionBound = 'true';
+}
+
 /* ═══════════════════════════════════
    시작
 ═══════════════════════════════════ */
+bindProgressionControl();
 initRocketPanel();
 startGame();

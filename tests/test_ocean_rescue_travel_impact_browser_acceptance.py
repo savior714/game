@@ -82,6 +82,9 @@ def _go_through_normal_flow(pg, base_url):
     pg.wait_for_selector(
         "#ocean-rescue-root[data-ocean-rescue-ready=true]", timeout=20000
     )
+    if pg.locator("#ocean-rescue-profile-choice").is_visible():
+        pg.click('[data-profile-animal-id="arctic-fox"]')
+        pg.click("#ocean-rescue-profile-continue")
     pg.click("#ocean-rescue-mission-list [data-mission-id=sea-turtle]")
     pg.wait_for_selector("#ocean-rescue-gup-select:not([hidden])", timeout=10000)
     pg.click("#ocean-rescue-gup-list [data-gup-id=gup-x]")

@@ -107,6 +107,7 @@ def test_state_machine_public_contract() -> None:
 
         const expectedPhases = {
           BOOT: "BOOT",
+          PROFILE_CHOICE: "PROFILE_CHOICE",
           MISSION_SELECT: "MISSION_SELECT",
           GUP_SELECT: "GUP_SELECT",
           LAUNCH: "LAUNCH",

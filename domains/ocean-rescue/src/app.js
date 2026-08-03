@@ -5533,7 +5533,7 @@
       var snapshot = State.getSnapshot();
       if (snapshot.phase === State.Phases.BOOT) {
         var hasProfile = Profile && Profile.getSnapshot().complete;
-        if (hasProfile) {
+        if (hasProfile || !Profile) {
           var token = State.beginTransition(State.Phases.MISSION_SELECT);
           if (token === null) {
             return false;

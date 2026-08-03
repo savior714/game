@@ -181,6 +181,17 @@ typecheck-ocean-rescue:
     @just check-ocean-rescue-pnpm-version
     @cd domains/ocean-rescue && corepack pnpm exec tsc --project tsconfig.json --noEmit
 
+# Run the focused WP-31A typed profile verification bundle
+check-ocean-rescue-typed-profile:
+    @just check-ocean-rescue-toolchain
+    uv run pytest tests/test_ocean_rescue_wp31a_typed_profile.py -q
+    uv run pytest tests/test_ocean_rescue_wp30_esm_entry_module_graph.py -q
+    uv run pytest tests/test_ocean_rescue_profile_choice.py -q
+    uv run pytest tests/test_ocean_rescue_wp21_production_bundle_cutover.py -q
+    just check-ocean-rescue-rollback
+    uv run pytest tests/test_ocean_rescue_wp11_dev_server.py -q
+    uv run pytest tests/test_ocean_rescue_wp03_scope_decision.py -q
+
 # Verify the Ocean Rescue build-tooling boundary end to end
 check-ocean-rescue-toolchain:
     @just check-ocean-rescue-node-version

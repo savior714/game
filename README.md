@@ -55,6 +55,7 @@ Ocean Rescue에는 도메인 로컬 build-time Node 경계가 존재합니다.
 - **Dev-server check:** `just check-ocean-rescue-dev-server`
 - **Shadow bundle build:** `just build-ocean-rescue-shadow-bundle` (결정적 IIFE 번들, `dist/ocean-rescue-app.shadow.js`)
 - **Shadow bundle check:** `just check-ocean-rescue-shadow-bundle`
+- **Typed profile check:** `just check-ocean-rescue-typed-profile` (WP-31A 프로파일 모델 수직 슬라이스 검증 번들)
 
 제약:
 
@@ -64,6 +65,7 @@ Ocean Rescue에는 도메인 로컬 build-time Node 경계가 존재합니다.
 - Proof-only legacy artifact: `just build-ocean-rescue-legacy-proof` (`dist/legacy-rollback.html` 생성, 캐노니컬 아티팩트 미변경).
 - Vite dev server는 **개발 전용**입니다. 실행 중에는 현재 global-namespace 소스를 `index.dev.html` + `vite.config.ts`를 통해 그대로 제공합니다 (WP-11). Production pipeline은 변경되지 않습니다.
 - Shadow bundle은 **검증 전용**입니다. 18개 비-vendor 스크립트를 하나의 결정적 IIFE 번들로 결합하며(WP-20), vendored Pixi는 별도 prerequisite script로 유지됩니다. Production 소유권은 WP-21부터 Vite bundle pipeline에 있습니다.
+- 프로파일 모델은 WP-31A부터 canonical ESM 그래프에서 `src/esm/profile.js` → `src/profile/profile.ts`(strict TypeScript)를 사용합니다. `src/profile.js`는 변경 없이 legacy rollback 전용으로 유지됩니다.
 
 ## ✅ 검증 체계
 

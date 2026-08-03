@@ -6,8 +6,8 @@
 - **Updated:** 2026-08-04
 - **Scope:** Ocean Rescue development-source migration from global-namespace JavaScript to ESM/TypeScript/Vite
 - **Execution model:** sequential bounded work packages
-- **Current phase:** PHASE_6_READY
-- **Next executable work package:** WP-31A
+- **Current phase:** PHASE_6_IN_PROGRESS
+- **Next executable work package:** WP-31B
 - **Production cutover gate:** SATISFIED by WP-02 functional parity, WP-20 deterministic shadow-bundle parity, WP-21 production application-bundle cutover, and WP-30 canonical ESM entry
 - **Target-device release gate:** WP-03A must pass before MVP release, but it does not block WP-21
 - **Automated performance harness:** WP-03B is non-blocking follow-up work, triggered by an observed regression or post-MVP stabilization need
@@ -327,11 +327,14 @@ Phase 5: COMPLETE
 WP-20: COMPLETE
 WP-21: COMPLETE
 WP-30: COMPLETE
-Current phase: PHASE_6_READY
-Next executable work package: WP-31A
+WP-31A: COMPLETE
+Current phase: PHASE_6_IN_PROGRESS
+Next executable work package: WP-31B
 Production bundle state: PRODUCTION_APP_BUNDLE
 ESM entry state: CANONICAL_MAIN_JS
 Manifest state: CONTRACTED_CANONICAL_PLUS_LEGACY_ROLLBACK
+Profile module state: TYPED_CANONICAL
+Legacy profile.js: ROLLBACK_ONLY
 WP-03A target-device smoke: REQUIRED_BEFORE_MVP_RELEASE
 WP-03B automated performance harness: BACKLOG_NON_BLOCKING
 ```
@@ -421,7 +424,7 @@ Evidence: `docs/evidence/ocean-rescue/migration/phase-5/canonical-esm-entry-modu
 
 ## 8. Phase 6 — Typed leaf and domain modules
 
-- **Status:** NOT_STARTED
+- **Status:** IN_PROGRESS (WP-31A PASS)
 - **Objective:** Convert bounded modules to TypeScript without decomposing application orchestration.
 - **Depends on:** WP-30
 - **Authoritative path before:** JavaScript domain modules
@@ -430,11 +433,27 @@ Evidence: `docs/evidence/ocean-rescue/migration/phase-5/canonical-esm-entry-modu
 
 ### WP-31A — Profile vertical slice
 
-- profile model;
-- persistence schema and validation;
-- direct callers;
-- backward-compatible storage behavior;
-- focused tests.
+- **Status:** COMPLETE (WP-31A PASS)
+- **Objective:** Migrate the profile model, persistence schema, storage validation, and exported API to a strictly typed TypeScript module while retaining the legacy `src/profile.js` unchanged as the rollback authority.
+- **Typed module:** `domains/ocean-rescue/src/profile/profile.ts`
+- **Compatibility adapter:** `domains/ocean-rescue/src/esm/profile.js` imports and re-exports the typed module, validates the temporary `window.OceanRescue.Profile` global ABI, and no longer side-effect-imports `../profile.js`.
+- **Ownership after:**
+  - canonical ESM production/dev graph: `src/main.js → src/esm/app.js → src/esm/profile.js → src/profile/profile.ts`
+  - legacy rollback graph: `build-manifest.legacy.json → src/profile.js`
+- **Verified:** strict `tsc --noEmit`; typed behavioral matrix; legacy-versus-typed parity; WP-30 module graph; production module membership (typed module in, rollback `profile.js` out); deterministic production build; profile browser flow (first visit, selection, stored payload, reload hydration, invalid-payload cleanup); operational legacy rollback byte-identical to baseline.
+
+Closure status after WP-31A; superseded for current scheduling:
+
+```text
+Phase 5: COMPLETE
+Phase 6: IN_PROGRESS
+WP-31A: COMPLETE
+Profile module state: TYPED_CANONICAL
+Legacy profile.js: ROLLBACK_ONLY
+Next executable work package: WP-31B
+```
+
+Evidence: `docs/evidence/ocean-rescue/migration/phase-6/typed-profile-vertical-slice.md`
 
 ### WP-31B — Static catalog group
 

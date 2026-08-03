@@ -16,6 +16,7 @@
   },
   "include": [
     "src/**/*.js",
+    "src/**/*.ts",
     "vite.config.ts",
     "vite.shadow.config.ts",
     "vite.production.config.ts",

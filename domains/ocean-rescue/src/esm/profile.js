@@ -1,9 +1,13 @@
-import "../profile.js";
+import { Profile } from "../profile/profile";
 
-const Profile = window.OceanRescue?.Profile;
+const registered = window.OceanRescue?.Profile;
 
-if (!Profile) {
+if (!registered) {
   throw new Error("OceanRescue.Profile was not registered");
+}
+
+if (registered !== Profile) {
+  throw new Error("OceanRescue.Profile global must reference the typed profile API");
 }
 
 export { Profile };

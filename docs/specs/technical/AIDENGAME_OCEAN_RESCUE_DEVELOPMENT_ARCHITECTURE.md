@@ -138,13 +138,15 @@ Rules:
 ```text
 domains/ocean-rescue/src/
 ├─ build-manifest.json
+├─ build-manifest.legacy.json
 ├─ index.template.html
 ├─ style.css
 ├─ vendor/pixi-8.19.0.min.js
 ├─ render-assets.generated.js
 ├─ render-runtime.js
 ├─ state.js
-├─ profile.js
+├─ profile.js            (rollback-only since WP-31A)
+├─ profile/profile.ts    (typed canonical profile module, WP-31A)
 ├─ missions.js
 ├─ gups.js
 ├─ launch.js
@@ -160,6 +162,13 @@ domains/ocean-rescue/src/
 ├─ mission-success.js
 └─ app.js
 ```
+
+Since WP-30, the canonical ESM graph is authoritative: `src/main.js` imports
+`src/esm/app.js`, which imports the `src/esm/*` compatibility adapters. Since
+WP-31A, the profile adapter `src/esm/profile.js` imports and re-exports the
+typed canonical module `src/profile/profile.ts` (which also registers the
+temporary `window.OceanRescue.Profile` ABI); `src/profile.js` is unchanged and
+is referenced only by the legacy rollback graph (`build-manifest.legacy.json`).
 
 ### 4.2 Current source graph
 

@@ -7,13 +7,19 @@ temporary compatibility adapter graph:
 
 - ``src/main.js`` is the single canonical entry, importing only ``./esm/app.js``;
 - every ``src/esm/*.js`` adapter is a bounded compatibility shim that uses only
-  static relative imports, imports its direct application dependency adapters
-  explicitly, side-effect-imports exactly one legacy implementation file, reads
-  ``window.OceanRescue.<Name>``, throws when the namespace is absent, and
-  exports that namespace;
+  static relative imports and exports one application namespace;
+- unmigrated adapters import their direct application dependency adapters
+  explicitly, side-effect-import exactly one legacy implementation file, read
+  ``window.OceanRescue.<Name>``, throw when the namespace is absent, and export
+  that namespace;
+- migrated typed adapters import or re-export one canonical typed
+  implementation, retain the temporary global ABI assertion, and must not
+  import the rollback-only legacy implementation (WP-31A: only ``profile.js``);
 - the module graph reachable from ``src/main.js`` is acyclic, single-rooted,
   uses only relative static imports, and covers every legacy implementation
   exactly once (nothing omitted, nothing imported twice);
+- the canonical graph reaches the typed profile implementation and excludes the
+  rollback-only ``src/profile.js``;
 - legacy implementation files themselves import no modules (IIFE globals);
 - the legacy ordered manifest is preserved as the rollback authority.
 
@@ -59,12 +65,11 @@ ADAPTER_NAMESPACES: Dict[str, str] = {
     "app.js": "App",
 }
 
-# Adapter file -> legacy implementation file it side-effect imports.
+# Unmigrated adapter file -> legacy implementation file it side-effect imports.
 ADAPTER_LEGACY_FILE: Dict[str, str] = {
     "render-assets.js": "render-assets.generated.js",
     "render-runtime.js": "render-runtime.js",
     "state.js": "state.js",
-    "profile.js": "profile.js",
     "missions.js": "missions.js",
     "gups.js": "gups.js",
     "launch.js": "launch.js",
@@ -80,6 +85,16 @@ ADAPTER_LEGACY_FILE: Dict[str, str] = {
     "mission-success.js": "mission-success.js",
     "app.js": "app.js",
 }
+
+# Migrated typed adapter file -> canonical typed implementation it re-exports.
+# WP-31A migrates only the profile module; the typed implementation must not
+# import the rollback-only legacy `src/profile.js`.
+MIGRATED_ADAPTER_TYPED_FILE: Dict[str, str] = {
+    "profile.js": "profile/profile.ts",
+}
+
+# Rollback-only legacy implementation retained for the legacy manifest graph.
+LEGACY_ROLLBACK_PROFILE_FILE = "profile.js"
 
 # Adapter file -> set of adapter dependency files it must import explicitly.
 ADAPTER_DEPS: Dict[str, Set[str]] = {
@@ -127,18 +142,32 @@ def _rel(path: Path) -> str:
     return path.resolve().relative_to(SRC_DIR).as_posix()
 
 
+# Matches both side-effect imports (`import "x";`) and named imports
+# (`import { A } from "x";`) with static string specifiers.
+_IMPORT_SPECIFIER_RE = re.compile(
+    r"^import\s+(?:\{[^}]*\}\s*from\s+)?[\"']([^\"']+)[\"']\s*;?\s*$"
+)
+
+
 def _static_imports(path: Path) -> List[Tuple[int, str]]:
     """Return (line_number, specifier) for pure static string imports."""
     out: List[Tuple[int, str]] = []
     for lineno, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-        m = re.match(r'^import\s+"([^"]+)"\s*;\s*$', raw.strip())
+        m = _IMPORT_SPECIFIER_RE.match(raw.strip())
         if m:
             out.append((lineno, m.group(1)))
     return out
 
 
 def _resolve(root_file: Path, spec: str) -> Path:
-    return (root_file.parent / spec).resolve()
+    base = (root_file.parent / spec).resolve()
+    if base.is_file():
+        return base
+    for ext in (".ts", ".js"):
+        candidate = Path(str(base) + ext)
+        if candidate.is_file():
+            return candidate
+    return base
 
 
 def _basename(key: str) -> str:
@@ -187,14 +216,14 @@ def test_adapter_directory_matches_expected_set() -> None:
     )
 
 
-def test_adapters_use_only_static_side_effect_imports() -> None:
+def test_adapters_use_only_static_relative_imports() -> None:
     for name in sorted(ADAPTER_NAMESPACES):
         lines = (ESM_DIR / name).read_text(encoding="utf-8").splitlines()
         for lineno, raw in enumerate(lines, 1):
             stripped = raw.strip()
             if not stripped.startswith("import"):
                 continue
-            m = re.match(r'^import\s+"([^"]+)"\s*;\s*$', stripped)
+            m = _IMPORT_SPECIFIER_RE.match(stripped)
             assert m, f"{name}:{lineno} invalid import: {stripped!r}"
             spec = m.group(1)
             assert spec.startswith(("./", "../")), (
@@ -203,7 +232,7 @@ def test_adapters_use_only_static_side_effect_imports() -> None:
             assert not spec.startswith("/"), f"{name}:{lineno} absolute import {spec!r}"
 
 
-def test_each_adapter_imports_its_legacy_implementation_exactly_once() -> None:
+def test_unmigrated_adapters_import_their_legacy_implementation_exactly_once() -> None:
     for name, legacy in ADAPTER_LEGACY_FILE.items():
         specs = [spec for _, spec in _static_imports(ESM_DIR / name)]
         legacy_resolved = _rel(SRC_DIR / legacy)
@@ -216,6 +245,23 @@ def test_each_adapter_imports_its_legacy_implementation_exactly_once() -> None:
         )
 
 
+def test_migrated_adapters_import_one_typed_implementation_only() -> None:
+    legacy_resolved = {
+        _rel(SRC_DIR / legacy) for legacy in ADAPTER_LEGACY_FILE.values()
+    }
+    for name, typed in MIGRATED_ADAPTER_TYPED_FILE.items():
+        specs = [spec for _, spec in _static_imports(ESM_DIR / name)]
+        resolved = [_rel(_resolve(ESM_DIR / name, s)) for s in specs]
+        typed_resolved = _rel(SRC_DIR / typed)
+        assert resolved.count(typed_resolved) == 1, (
+            f"{name} must import the typed implementation exactly once "
+            f"({typed}), got {resolved}"
+        )
+        assert not (set(resolved) & legacy_resolved), (
+            f"{name} must not import a rollback-only legacy implementation"
+        )
+
+
 def test_each_adapter_has_namespace_guard_and_export() -> None:
     for name, leaf in ADAPTER_NAMESPACES.items():
         text = (ESM_DIR / name).read_text(encoding="utf-8")
@@ -225,10 +271,25 @@ def test_each_adapter_has_namespace_guard_and_export() -> None:
         assert reader, f"{name} must read window.OceanRescue?.{leaf}"
         var, read_leaf = reader.group(1), reader.group(2)
         assert read_leaf == leaf, f"{name}: expected namespace {leaf}, read {read_leaf}"
-        assert f"export {{ {var} }};" in text, f"{name}: missing named export {var}"
         assert f'throw new Error("OceanRescue.{leaf} was not registered")' in text, (
             f"{name}: missing absent-namespace throw guard"
         )
+        if name in MIGRATED_ADAPTER_TYPED_FILE:
+            import_match = re.search(
+                r"^import\s+\{\s*(\w+)\s*\}\s*from\s+[\"']([^\"']+)[\"']\s*;\s*$",
+                text,
+                re.MULTILINE,
+            )
+            assert import_match, f"{name}: missing typed implementation import"
+            export_name = import_match.group(1)
+            assert f"export {{ {export_name} }};" in text, (
+                f"{name}: missing named re-export {export_name}"
+            )
+            assert (
+                f"{export_name} !== {var}" in text or f"{var} !== {export_name}" in text
+            ), f"{name}: missing global ABI identity assertion"
+        else:
+            assert f"export {{ {var} }};" in text, f"{name}: missing named export {var}"
 
 
 # --- adapter dependency edges ---
@@ -296,12 +357,33 @@ def test_graph_uses_only_static_relative_imports() -> None:
             )
 
 
-def test_legacy_implementation_files_import_nothing() -> None:
+def test_implementation_modules_import_nothing() -> None:
+    """Neither legacy implementations nor typed leaf modules import modules."""
     nodes, edges = _build_graph()
     for key, deps in sorted(edges.items()):
         if key.startswith("esm/") or key == "main.js":
             continue
-        assert not deps, f"legacy module {key} must not import modules: {sorted(deps)}"
+        assert not deps, f"implementation module {key} must not import: {sorted(deps)}"
+
+
+def test_canonical_graph_reaches_typed_profile_implementation() -> None:
+    nodes, edges = _build_graph()
+    for name, typed in MIGRATED_ADAPTER_TYPED_FILE.items():
+        typed_key = _rel(SRC_DIR / typed)
+        assert typed_key in nodes, f"{typed} is not reachable from main.js"
+        adapter_key = f"esm/{name}"
+        assert typed_key in edges.get(adapter_key, set()), (
+            f"{name} adapter must reach {typed}"
+        )
+        assert edges.get(typed_key) == set(), "typed profile module must be a leaf"
+
+
+def test_canonical_graph_excludes_rollback_profile_js() -> None:
+    nodes, _ = _build_graph()
+    rollback_key = _rel(SRC_DIR / LEGACY_ROLLBACK_PROFILE_FILE)
+    assert rollback_key not in nodes, (
+        "rollback-only legacy profile.js must not be in the canonical graph"
+    )
 
 
 # --- exactly-once coverage ---
@@ -383,9 +465,12 @@ def test_legacy_manifest_preserved_as_full_ordered_set() -> None:
 def test_canonical_scripts_are_all_recorded_in_legacy_manifest() -> None:
     data = json.loads(LEGACY_MANIFEST.read_text(encoding="utf-8"))
     legacy_files = {e["file"] for e in data["scripts"]}
-    expected_legacy = set(ADAPTER_LEGACY_FILE.values())
+    expected_legacy = set(ADAPTER_LEGACY_FILE.values()) | {LEGACY_ROLLBACK_PROFILE_FILE}
     for raw in expected_legacy:
         assert raw in legacy_files, f"legacy manifest missing implementation file {raw}"
     assert "main.js" not in legacy_files, (
         "legacy manifest must not reference the ESM entry main.js"
+    )
+    assert LEGACY_ROLLBACK_PROFILE_FILE in legacy_files, (
+        "legacy manifest must retain the rollback-only profile.js entry"
     )

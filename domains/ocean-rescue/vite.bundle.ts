@@ -1,5 +1,10 @@
 import { createHash } from "node:crypto";
-import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+} from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -209,7 +214,27 @@ function loadBoundary(): Boundary {
   };
 }
 
-const STATIC_IMPORT_RE = /^import\s+["']([^"']+)["']\s*;?/gm;
+const STATIC_IMPORT_RE =
+  /^import\s+(?:\{[^}]*\}\s*from\s+)?["']([^"']+)["']\s*;?/gm;
+
+/**
+ * Resolve a static relative specifier to its on-disk module. Bundler-style
+ * extension resolution is used so both legacy ``.js`` files and migrated
+ * ``.ts`` modules resolve deterministically without ambiguous specifiers.
+ */
+function resolveModuleTarget(current: string, spec: string): string {
+  const base = resolve(dirname(current), spec);
+  if (existsSync(base)) {
+    return base;
+  }
+  for (const ext of [".ts", ".tsx", ".js", ".jsx"]) {
+    const candidate = base + ext;
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  fail(`entry graph references a missing file: ${spec}`);
+}
 
 /** Walk the static relative import graph from the canonical entry. */
 function collectImportGraph(entryAbsolutePath: string): Set<string> {
@@ -229,14 +254,9 @@ function collectImportGraph(entryAbsolutePath: string): Set<string> {
       if (!spec.startsWith(".")) {
         fail(`entry graph contains a bare import: ${spec}`);
       }
-      const target = resolve(dirname(current), spec);
+      const target = resolveModuleTarget(current, spec);
       if (!target.startsWith(SRC_ROOT + "/")) {
         fail(`entry graph escapes src root: ${spec}`);
-      }
-      try {
-        readFileSync(target);
-      } catch {
-        fail(`entry graph references a missing file: ${spec}`);
       }
       stack.push(target);
     }
@@ -333,6 +353,12 @@ function oceanRescueBundlePlugin(
       for (const key of moduleKeys) {
         if (key.includes("/node_modules/pixi.js/")) {
           fail(`pixi.js package module entered the bundle: ${key}`);
+        }
+      }
+      const rollbackOnlyProfile = resolve(SRC_ROOT, "profile.js");
+      for (const key of moduleKeys) {
+        if (sourcePath(key) === rollbackOnlyProfile) {
+          fail("rollback-only legacy profile.js must not enter the bundle");
         }
       }
       for (const normalized of graphModules) {

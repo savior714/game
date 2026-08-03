@@ -242,12 +242,18 @@ def test_production_paths_outside_write_scope() -> None:
         "domains/ocean-rescue/src/build-manifest.json",
         "domains/ocean-rescue/src/build-manifest.legacy.json",
         "scripts/ocean_rescue/validate_pixi_vendor.py",
+        # WP-31A typed profile vertical slice: the compatibility adapter and
+        # the typed canonical module are legitimate production cutover paths.
+        "domains/ocean-rescue/src/esm/profile.js",
+        "domains/ocean-rescue/src/profile/profile.ts",
+        "domains/ocean-rescue/tsconfig.json",
+        "domains/ocean-rescue/vite.bundle.ts",
     }
     changed = {line for line in diff.splitlines() if line}
     assert changed <= allowed, (
         "shadow work must only reconcile the production cutover paths "
-        f"(artifact + builder + WP-30 manifest split); unexpected diff: "
-        f"{sorted(changed - allowed)}"
+        f"(artifact + builder + WP-30 manifest split + WP-31A typed profile); "
+        f"unexpected diff: {sorted(changed - allowed)}"
     )
 
 
@@ -334,9 +340,20 @@ def test_metadata_actual_module_membership() -> None:
     ]
     assert EXPECTED_VENDOR_FILE not in metadata["actual_module_files"]
     for raw in metadata["actual_module_files"]:
-        assert raw == CANONICAL_ENTRY or raw.startswith("esm/") or raw in expected, (
-            f"unexpected module file recorded: {raw}"
-        )
+        assert (
+            raw == CANONICAL_ENTRY
+            or raw.startswith("esm/")
+            or raw.endswith(".ts")
+            or raw in expected
+        ), f"unexpected module file recorded: {raw}"
+    # WP-31A: the shadow lane shares the canonical graph and therefore owns the
+    # typed profile implementation while excluding the rollback-only legacy.
+    assert "profile/profile.ts" in metadata["actual_module_files"], (
+        "typed profile implementation missing from shadow membership"
+    )
+    assert "profile.js" not in metadata["actual_module_files"], (
+        "rollback-only legacy profile.js must not be in shadow membership"
+    )
 
 
 def test_bundle_bytes_and_sha256_match_metadata() -> None:

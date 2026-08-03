@@ -309,9 +309,20 @@ def test_metadata_membership_matches_legacy_manifest() -> None:
         e["namespace"] for e in _non_vendor_scripts(legacy)
     ]
     for raw in metadata["actual_module_files"]:
-        assert raw == "main.js" or raw.startswith("esm/") or raw in expected, (
-            f"unexpected module file recorded: {raw}"
-        )
+        assert (
+            raw == "main.js"
+            or raw.startswith("esm/")
+            or raw.endswith(".ts")
+            or raw in expected
+        ), f"unexpected module file recorded: {raw}"
+    # WP-31A: the canonical graph owns the typed profile implementation and
+    # excludes the rollback-only legacy profile.js.
+    assert "profile/profile.ts" in metadata["actual_module_files"], (
+        "typed profile implementation missing from production membership"
+    )
+    assert "profile.js" not in metadata["actual_module_files"], (
+        "rollback-only legacy profile.js must not be in production membership"
+    )
 
 
 def test_vendor_boundary_external() -> None:
@@ -571,7 +582,10 @@ def test_production_artifact_browser_parity() -> None:
 def test_migration_documentation_state() -> None:
     plan = PLAN_DOC.read_text(encoding="utf-8")
     assert "WP-21: COMPLETE" in plan
-    assert "Current phase: PHASE_6_READY" in plan
-    assert "Next executable work package: WP-31A" in plan
+    assert "Current phase: PHASE_6_IN_PROGRESS" in plan
+    assert "Next executable work package: WP-31B" in plan
     assert "Authoritative path before:" in plan
     assert "Vite application bundle through temporary standalone packaging" in plan
+    assert "WP-31A: COMPLETE" in plan
+    assert "Profile module state: TYPED_CANONICAL" in plan
+    assert "Legacy profile.js: ROLLBACK_ONLY" in plan

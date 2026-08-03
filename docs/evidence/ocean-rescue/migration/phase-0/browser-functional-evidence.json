@@ -1,42 +1,79 @@
 {
   "startup": {
-    "canvasFound": true,
-    "canvasWidth": 1280,
-    "canvasHeight": 720,
-    "rectWidth": 0,
-    "rectHeight": 0,
-    "pixiVersion": "8.19.0",
-    "rendererType": "webgl",
+    "browser": {
+      "engine": "Playwright Chromium",
+      "version": "151.0.7922.34"
+    },
+    "canvas_found": true,
+    "canvas_width": 1280,
+    "canvas_height": 720,
+    "canvas_rect": {
+      "left": 0,
+      "top": 0,
+      "width": 1280,
+      "height": 720
+    },
     "dpr": 1,
+    "pixi_version": "8.19.0",
+    "renderer_backend": "webgl",
+    "renderer_runtime": "ready",
+    "logical_width": "1280",
+    "logical_height": "720",
     "ready": "true"
   },
   "gameplay_flow": {
     "profile_completed": true,
     "mission_selected": true,
     "gup_selected": true,
+    "launch_completed": true,
     "travel_started": true,
-    "travel_state": {
-      "travelActive": "active",
-      "pauseActive": null
-    }
+    "rescue_arrival_completed": true,
+    "sea_turtle_scene_active": true,
+    "loops_released": 3,
+    "mission_completed": true,
+    "mission_success_visible": true,
+    "phase_sequence": [
+      "PROFILE",
+      "MISSION_SELECT",
+      "GUP_SELECT",
+      "LAUNCH",
+      "TRAVEL",
+      "RESCUE_ARRIVAL",
+      "SEA_TURTLE_RESCUE",
+      "MISSION_SUCCESS"
+    ],
+    "success_presentation_reached": true
+  },
+  "travel_arrival": {
+    "before": {
+      "active": true,
+      "distance": 53.89199999999998,
+      "y": 360,
+      "tapTargetY": null,
+      "dragging": false,
+      "pointerId": null
+    },
+    "after": {
+      "active": true,
+      "distance": 6005.892,
+      "y": 360,
+      "tapTargetY": null,
+      "dragging": false,
+      "pointerId": null
+    },
+    "step_calls": 992
   },
   "pause_resume": {
-    "enter": {
-      "pauseActive": "true",
-      "overlayHidden": false,
-      "buttonHidden": true,
-      "resumeHidden": false,
-      "countdownHidden": true,
-      "countdownText": ""
-    },
-    "countdown_3": {
-      "text": "3",
-      "hidden": false
-    },
-    "resume_complete": {
-      "pauseActive": "false",
-      "overlayHidden": true
-    }
+    "pause_activated": true,
+    "pause_overlay_visible": true,
+    "observed_sequence": [
+      "3",
+      "2",
+      "1",
+      "Go!"
+    ],
+    "resume_completed": true,
+    "final_pause_active": "false"
   },
   "pointer_mapping": {
     "canvas_rect": {
@@ -45,55 +82,426 @@
       "w": 1280,
       "h": 720
     },
-    "viewport_center": {
-      "client_x": 640.0,
-      "client_y": 360.0,
-      "logical_x": 640.0,
-      "logical_y": 360.0
-    },
-    "top_left": {
-      "client_x": 10,
-      "client_y": 10,
-      "logical_x": 10.0,
-      "logical_y": 10.0
-    },
-    "bottom_right": {
-      "client_x": 1270,
-      "client_y": 710,
-      "logical_x": 1270.0,
-      "logical_y": 710.0
-    },
-    "center_click_dispatch": {
-      "dragging": false
-    },
-    "logical_contract": {
-      "expected_width": 1280,
-      "expected_height": 720,
-      "actual_width": 1280,
-      "actual_height": 720,
-      "mapping_correct": true
-    }
+    "logical_width": 1280,
+    "logical_height": 720,
+    "tolerance": 0.5,
+    "points": [
+      {
+        "client_x": 640.0,
+        "client_y": 360.0,
+        "logical_x": 640.0,
+        "logical_y": 360.0,
+        "label": "logical_center",
+        "expected_x": 640,
+        "expected_y": 360,
+        "within_tolerance": true
+      },
+      {
+        "client_x": 10.0,
+        "client_y": 10.0,
+        "logical_x": 10.0,
+        "logical_y": 10.0,
+        "label": "top_left_safe",
+        "expected_x": 10,
+        "expected_y": 10,
+        "within_tolerance": true
+      },
+      {
+        "client_x": 1270.0,
+        "client_y": 710.0,
+        "logical_x": 1270.0,
+        "logical_y": 710.0,
+        "label": "bottom_right_safe",
+        "expected_x": 1270,
+        "expected_y": 710,
+        "within_tolerance": true
+      },
+      {
+        "client_x": 760.0,
+        "client_y": 300.0,
+        "logical_x": 760.0,
+        "logical_y": 300.0,
+        "label": "sea_turtle_rope_1_start",
+        "expected_x": 760,
+        "expected_y": 300,
+        "within_tolerance": true
+      },
+      {
+        "client_x": 1040.0,
+        "client_y": 330.0,
+        "logical_x": 1040.0,
+        "logical_y": 330.0,
+        "label": "sea_turtle_rope_1_end",
+        "expected_x": 1040,
+        "expected_y": 330,
+        "within_tolerance": true
+      }
+    ],
+    "numerical_assertions_passed": true,
+    "interactive_drag_passed": true,
+    "drag_results": [
+      {
+        "rope_id": "rope-1",
+        "active_rope_before": "rope-1",
+        "active_rope_after": "rope-2",
+        "completed_count_after": 1,
+        "complete_after": false,
+        "feedback_after": "none",
+        "pointer_events": [
+          {
+            "type": "pointermove",
+            "pointerId": 1,
+            "clientX": 760,
+            "clientY": 300,
+            "isPrimary": true
+          },
+          {
+            "type": "pointerdown",
+            "pointerId": 1,
+            "clientX": 760,
+            "clientY": 300,
+            "isPrimary": true
+          },
+          {
+            "type": "pointermove",
+            "pointerId": 1,
+            "clientX": 816,
+            "clientY": 306,
+            "isPrimary": true
+          },
+          {
+            "type": "pointermove",
+            "pointerId": 1,
+            "clientX": 872,
+            "clientY": 312,
+            "isPrimary": true
+          },
+          {
+            "type": "pointermove",
+            "pointerId": 1,
+            "clientX": 928,
+            "clientY": 318,
+            "isPrimary": true
+          },
+          {
+            "type": "pointermove",
+            "pointerId": 1,
+            "clientX": 984,
+            "clientY": 324,
+            "isPrimary": true
+          },
+          {
+            "type": "pointermove",
+            "pointerId": 1,
+            "clientX": 1040,
+            "clientY": 330,
+            "isPrimary": true
+          },
+          {
+            "type": "pointerup",
+            "pointerId": 1,
+            "clientX": 1040,
+            "clientY": 330,
+            "isPrimary": true
+          }
+        ],
+        "pointer_down_dispatched": true,
+        "pointer_move_dispatched": true,
+        "pointer_up_dispatched": true,
+        "domain_state_changed": true,
+        "snapshot_after_down": {
+          "active": true,
+          "activeRopeId": "rope-1",
+          "completedRopeIds": [],
+          "failureCount": 0,
+          "helpLevel": 0,
+          "tapStartArmed": false,
+          "pointerActive": true,
+          "inputLocked": false,
+          "feedback": null,
+          "complete": false
+        },
+        "snapshot_after_moves": {
+          "active": true,
+          "activeRopeId": "rope-1",
+          "completedRopeIds": [],
+          "failureCount": 0,
+          "helpLevel": 0,
+          "tapStartArmed": false,
+          "pointerActive": true,
+          "inputLocked": false,
+          "feedback": null,
+          "complete": false
+        },
+        "client_start": {
+          "x": 760.0,
+          "y": 300.0
+        },
+        "client_end": {
+          "x": 1040.0,
+          "y": 330.0
+        }
+      },
+      {
+        "rope_id": "rope-2",
+        "active_rope_before": "rope-2",
+        "active_rope_after": "rope-3",
+        "completed_count_after": 2,
+        "complete_after": false,
+        "feedback_after": "none",
+        "pointer_events": [
+          {
+            "type": "pointermove",
+            "pointerId": 1,
+            "clientX": 750,
+            "clientY": 420,
+            "isPrimary": true
+          },
+          {
+            "type": "pointerdown",
+            "pointerId": 1,
+            "clientX": 750,
+            "clientY": 420,
+            "isPrimary": true
+          },
+          {
+            "type": "pointermove",
+            "pointerId": 1,
+            "clientX": 810,
+            "clientY": 424,
+            "isPrimary": true
+          },
+          {
+            "type": "pointermove",
+            "pointerId": 1,
+            "clientX": 870,
+            "clientY": 428,
+            "isPrimary": true
+          },
+          {
+            "type": "pointermove",
+            "pointerId": 1,
+            "clientX": 930,
+            "clientY": 432,
+            "isPrimary": true
+          },
+          {
+            "type": "pointermove",
+            "pointerId": 1,
+            "clientX": 990,
+            "clientY": 436,
+            "isPrimary": true
+          },
+          {
+            "type": "pointermove",
+            "pointerId": 1,
+            "clientX": 1050,
+            "clientY": 440,
+            "isPrimary": true
+          },
+          {
+            "type": "pointerup",
+            "pointerId": 1,
+            "clientX": 1050,
+            "clientY": 440,
+            "isPrimary": true
+          }
+        ],
+        "pointer_down_dispatched": true,
+        "pointer_move_dispatched": true,
+        "pointer_up_dispatched": true,
+        "domain_state_changed": true,
+        "snapshot_after_down": {
+          "active": true,
+          "activeRopeId": "rope-2",
+          "completedRopeIds": [
+            "rope-1"
+          ],
+          "failureCount": 0,
+          "helpLevel": 0,
+          "tapStartArmed": false,
+          "pointerActive": true,
+          "inputLocked": false,
+          "feedback": null,
+          "complete": false
+        },
+        "snapshot_after_moves": {
+          "active": true,
+          "activeRopeId": "rope-2",
+          "completedRopeIds": [
+            "rope-1"
+          ],
+          "failureCount": 0,
+          "helpLevel": 0,
+          "tapStartArmed": false,
+          "pointerActive": true,
+          "inputLocked": false,
+          "feedback": null,
+          "complete": false
+        },
+        "client_start": {
+          "x": 750.0,
+          "y": 420.0
+        },
+        "client_end": {
+          "x": 1050.0,
+          "y": 440.00000000000006
+        }
+      },
+      {
+        "rope_id": "rope-3",
+        "active_rope_before": "rope-3",
+        "active_rope_after": "",
+        "completed_count_after": 3,
+        "complete_after": true,
+        "feedback_after": "none",
+        "pointer_events": [
+          {
+            "type": "pointermove",
+            "pointerId": 1,
+            "clientX": 770,
+            "clientY": 540,
+            "isPrimary": true
+          },
+          {
+            "type": "pointerdown",
+            "pointerId": 1,
+            "clientX": 770,
+            "clientY": 540,
+            "isPrimary": true
+          },
+          {
+            "type": "pointermove",
+            "pointerId": 1,
+            "clientX": 822,
+            "clientY": 546,
+            "isPrimary": true
+          },
+          {
+            "type": "pointermove",
+            "pointerId": 1,
+            "clientX": 874,
+            "clientY": 552,
+            "isPrimary": true
+          },
+          {
+            "type": "pointermove",
+            "pointerId": 1,
+            "clientX": 926,
+            "clientY": 558,
+            "isPrimary": true
+          },
+          {
+            "type": "pointermove",
+            "pointerId": 1,
+            "clientX": 978,
+            "clientY": 564,
+            "isPrimary": true
+          },
+          {
+            "type": "pointermove",
+            "pointerId": 1,
+            "clientX": 1030,
+            "clientY": 570,
+            "isPrimary": true
+          },
+          {
+            "type": "pointerup",
+            "pointerId": 1,
+            "clientX": 1030,
+            "clientY": 570,
+            "isPrimary": true
+          }
+        ],
+        "pointer_down_dispatched": true,
+        "pointer_move_dispatched": true,
+        "pointer_up_dispatched": true,
+        "domain_state_changed": true,
+        "snapshot_after_down": {
+          "active": true,
+          "activeRopeId": "rope-3",
+          "completedRopeIds": [
+            "rope-1",
+            "rope-2"
+          ],
+          "failureCount": 0,
+          "helpLevel": 0,
+          "tapStartArmed": false,
+          "pointerActive": true,
+          "inputLocked": false,
+          "feedback": null,
+          "complete": false
+        },
+        "snapshot_after_moves": {
+          "active": true,
+          "activeRopeId": "rope-3",
+          "completedRopeIds": [
+            "rope-1",
+            "rope-2"
+          ],
+          "failureCount": 0,
+          "helpLevel": 0,
+          "tapStartArmed": false,
+          "pointerActive": true,
+          "inputLocked": false,
+          "feedback": null,
+          "complete": false
+        },
+        "client_start": {
+          "x": 770.0,
+          "y": 540.0
+        },
+        "client_end": {
+          "x": 1030.0,
+          "y": 570.0
+        }
+      }
+    ]
+  },
+  "mission_success": {
+    "phase": "mission-complete",
+    "stage": "complete",
+    "completion_recorded": "true",
+    "section_hidden": false,
+    "card_hidden": false,
+    "title": "Sea Turtle Rescue"
   },
   "network": {
     "total": 1,
-    "local": 1,
+    "local_same_origin": 1,
     "external": 0,
+    "external_javascript": 0,
+    "external_stylesheet": 0,
+    "external_image_audio_font": 0,
+    "renderer_cdn": 0,
+    "api_requests": 0,
+    "dynamic_module_requests": 0,
+    "request_failures": [],
     "external_details": [],
-    "all_urls": [
-      "http://127.0.0.1:18771/ocean-rescue/index.html"
+    "all_requests": [
+      {
+        "url": "http://127.0.0.1:52007/ocean-rescue/index.html",
+        "resource_type": "document",
+        "method": "GET"
+      }
     ]
   },
   "console": {
     "page_errors": [],
     "console_errors": [],
     "console_warnings": [
-      "[.WebGL-0x10c00516000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
-      "[.WebGL-0x10c00516000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
-      "[.WebGL-0x10c00516000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
-      "[.WebGL-0x10c00516000]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
+      "[.WebGL-0x134004f7800]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+      "[.WebGL-0x134004f7800]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+      "[.WebGL-0x134004f7800]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+      "[.WebGL-0x134004f7800]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)"
     ],
+    "warning_classification": {
+      "benign_webgl_gpu_stall": 4,
+      "unexpected": []
+    },
     "page_error_count": 0,
     "console_error_count": 0,
     "console_warning_count": 4
-  }
+  },
+  "verdict": "PASS"
 }

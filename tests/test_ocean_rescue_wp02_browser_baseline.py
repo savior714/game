@@ -1,413 +1,650 @@
-"""
-WP-02 Browser Functional Parity Baseline — Phase 0 evidence capture.
+"""WP-02 browser functional parity baseline.
 
-Drives the published single HTML through the complete game flow via Playwright
-Chromium, collecting evidence for:
-  - Startup and renderer backend
-  - Representative gameplay flow
-  - Pause/resume
-  - Pointer mapping (logical 1280x720)
-  - Runtime network requests
-  - Console and runtime errors
+The test drives the tracked standalone HTML through Playwright.  Committed
+evidence is written only when ``OCEAN_RESCUE_WP02_WRITE_EVIDENCE=1`` is set;
+ordinary pytest runs therefore do not dirty the repository with volatile data.
 """
+
+from __future__ import annotations
 
 import json
 import os
 import socketserver
 import sys
 import threading
-import time
 from http.server import SimpleHTTPRequestHandler
 from pathlib import Path
+from urllib.parse import urlsplit
 
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import Page, sync_playwright
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-PORT = 18771
 EVIDENCE_DIR = Path(
     os.environ.get(
         "OCEAN_RESCUE_WP02_EVIDENCE_DIR",
         str(REPO_ROOT / "docs" / "evidence" / "ocean-rescue" / "migration" / "phase-0"),
     )
 )
+EVIDENCE_FILE = EVIDENCE_DIR / "browser-functional-evidence.json"
+LOGICAL_WIDTH = 1280
+LOGICAL_HEIGHT = 720
+MAPPING_TOLERANCE = 0.5
+BENIGN_WEBGL_WARNING = (
+    "GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): "
+    "GPU stall due to ReadPixels"
+)
 
 
 class HTTPServerFixture:
-    def __init__(self):
-        self.server = None
-        self.thread = None
+    def __init__(self) -> None:
+        self.server: socketserver.TCPServer | None = None
+        self.thread: threading.Thread | None = None
 
-    def start(self):
+    def start(self) -> str:
         class QuietHandler(SimpleHTTPRequestHandler):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, directory=str(REPO_ROOT), **kwargs)
 
             def log_message(self, format: str, *args) -> None:
-                pass
+                return
 
-        socketserver.TCPServer.allow_reuse_address = True
-        self.server = socketserver.TCPServer(("127.0.0.1", PORT), QuietHandler)
+        self.server = socketserver.TCPServer(("127.0.0.1", 0), QuietHandler)
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
-        time.sleep(0.5)
-        return f"http://127.0.0.1:{PORT}"
+        return f"http://127.0.0.1:{self.server.server_address[1]}"
 
-    def stop(self):
-        if self.server:
+    def stop(self) -> None:
+        if self.server is not None:
             self.server.shutdown()
             self.server.server_close()
+        if self.thread is not None:
+            self.thread.join(timeout=2)
 
 
-def collect_evidence(pg, base_url):
-    """Run the complete WP-02 test suite and return evidence dict."""
-    evidence = {}
+def _root_attributes(page: Page) -> dict[str, str | None]:
+    return page.evaluate(
+        """() => {
+          const root = document.getElementById('ocean-rescue-root');
+          const names = [
+            'data-ocean-rescue-ready', 'data-render-runtime', 'data-render-backend',
+            'data-render-logical-width', 'data-render-logical-height',
+            'data-travel-scene', 'data-travel-runtime', 'data-travel-input',
+            'data-rescue-sequence', 'data-rescue-phase', 'data-rescue-input',
+            'data-sea-turtle-scene', 'data-sea-turtle-active',
+            'data-sea-turtle-rope-id', 'data-sea-turtle-completed-count',
+            'data-sea-turtle-complete', 'data-mission-success-active',
+            'data-mission-success-stage', 'data-mission-completion-recorded',
+            'data-mission-complete-ready', 'data-pause-active'
+          ];
+          return Object.fromEntries(names.map(name => [name, root ? root.getAttribute(name) : null]));
+        }"""
+    )
 
-    # --- Network and console collectors ---
-    page_errors = []
-    console_errors = []
-    console_warnings = []
-    network_requests = []
 
-    pg.on("pageerror", lambda e: page_errors.append(str(e)))
-    pg.on(
+def _map_client(rect: dict[str, float], client_x: float, client_y: float) -> dict[str, float]:
+    return {
+        "client_x": client_x,
+        "client_y": client_y,
+        "logical_x": (client_x - rect["left"]) / rect["w"] * LOGICAL_WIDTH,
+        "logical_y": (client_y - rect["top"]) / rect["h"] * LOGICAL_HEIGHT,
+    }
+
+
+def _mapping_point(
+    rect: dict[str, float],
+    label: str,
+    logical_x: float,
+    logical_y: float,
+) -> dict[str, object]:
+    client_x = rect["left"] + logical_x / LOGICAL_WIDTH * rect["w"]
+    client_y = rect["top"] + logical_y / LOGICAL_HEIGHT * rect["h"]
+    mapped = _map_client(rect, client_x, client_y)
+    mapped["label"] = label
+    mapped["expected_x"] = logical_x
+    mapped["expected_y"] = logical_y
+    mapped["within_tolerance"] = (
+        abs(mapped["logical_x"] - logical_x) <= MAPPING_TOLERANCE
+        and abs(mapped["logical_y"] - logical_y) <= MAPPING_TOLERANCE
+    )
+    return mapped
+
+
+def _wire_countdown_observer(page: Page) -> None:
+    page.evaluate(
+        """() => {
+          const element = document.getElementById('ocean-rescue-pause-countdown');
+          window.__wp02Countdown = [];
+          window.__wp02CountdownObserver = new MutationObserver(() => {
+            const text = (element.textContent || '').trim();
+            const values = window.__wp02Countdown;
+            if (text && values[values.length - 1] !== text) values.push(text);
+          });
+          window.__wp02CountdownObserver.observe(element, {
+            characterData: true,
+            childList: true,
+            subtree: true
+          });
+        }"""
+    )
+
+
+def _install_pointer_observer(page: Page) -> None:
+    page.evaluate(
+        """() => {
+          const canvas = document.getElementById('ocean-rescue-canvas');
+          window.__wp02PointerEvents = [];
+          ['pointerdown', 'pointermove', 'pointerup'].forEach(type => {
+            canvas.addEventListener(type, event => {
+              window.__wp02PointerEvents.push({
+                type,
+                pointerId: event.pointerId,
+                clientX: event.clientX,
+                clientY: event.clientY,
+                isPrimary: event.isPrimary
+              });
+            }, true);
+          });
+        }"""
+    )
+
+
+def _drag_rope(page: Page, rect: dict[str, float], rope: dict[str, object]) -> dict[str, object]:
+    start = rope["start"]
+    end = rope["end"]
+    start_client = (
+        rect["left"] + start["x"] / LOGICAL_WIDTH * rect["w"],
+        rect["top"] + start["y"] / LOGICAL_HEIGHT * rect["h"],
+    )
+    end_client = (
+        rect["left"] + end["x"] / LOGICAL_WIDTH * rect["w"],
+        rect["top"] + end["y"] / LOGICAL_HEIGHT * rect["h"],
+    )
+    before = page.evaluate(
+        """() => ({
+          root: document.getElementById('ocean-rescue-root').getAttribute('data-sea-turtle-rope-id'),
+          completed: Number(document.getElementById('ocean-rescue-root').getAttribute('data-sea-turtle-completed-count')),
+          eventCount: window.__wp02PointerEvents.length
+        })"""
+    )
+    page.mouse.move(*start_client)
+    page.mouse.down()
+    after_down = page.evaluate("() => OceanRescue.SeaTurtle.getSnapshot()")
+    for fraction in (0.2, 0.4, 0.6, 0.8, 1.0):
+        page.mouse.move(
+            start_client[0] + (end_client[0] - start_client[0]) * fraction,
+            start_client[1] + (end_client[1] - start_client[1]) * fraction,
+        )
+    after_moves = page.evaluate("() => OceanRescue.SeaTurtle.getSnapshot()")
+    page.mouse.up()
+    try:
+        page.wait_for_function(
+            """state => {
+              const root = document.getElementById('ocean-rescue-root');
+              const released = Number(root.getAttribute('data-sea-turtle-completed-count')) > state.completed;
+              const settled = root.getAttribute('data-sea-turtle-feedback') === 'none';
+              const advanced = root.getAttribute('data-sea-turtle-rope-id') !== state.rope_id;
+              return (released && settled && advanced)
+                || root.getAttribute('data-rescue-phase') === 'success';
+            }""",
+            arg={"completed": before["completed"], "rope_id": rope["id"]},
+            timeout=3000,
+        )
+    except Exception as error:
+        diagnostic = page.evaluate(
+            """() => ({
+              root: document.getElementById('ocean-rescue-root').outerHTML,
+              seaTurtle: OceanRescue.SeaTurtle.getSnapshot(),
+              events: window.__wp02PointerEvents.slice()
+            })"""
+        )
+        raise AssertionError(
+            f"sea-turtle drag did not change state: before={before}, "
+            f"after_down={after_down}, after_moves={after_moves}, diagnostic={diagnostic}"
+        ) from error
+    after = page.evaluate(
+        """() => {
+          const root = document.getElementById('ocean-rescue-root');
+          return {
+            root: root.getAttribute('data-sea-turtle-rope-id'),
+            completed: Number(root.getAttribute('data-sea-turtle-completed-count')),
+            complete: root.getAttribute('data-sea-turtle-complete') === 'true',
+            feedback: root.getAttribute('data-sea-turtle-feedback'),
+            eventCount: window.__wp02PointerEvents.length,
+            events: window.__wp02PointerEvents.slice()
+          };
+        }"""
+    )
+    events = after["events"][before["eventCount"] :]
+    return {
+        "rope_id": rope["id"],
+        "active_rope_before": before["root"],
+        "active_rope_after": after["root"],
+        "completed_count_after": after["completed"],
+        "complete_after": after["complete"],
+        "feedback_after": after["feedback"],
+        "pointer_events": events,
+        "pointer_down_dispatched": any(event["type"] == "pointerdown" for event in events),
+        "pointer_move_dispatched": any(event["type"] == "pointermove" for event in events),
+        "pointer_up_dispatched": any(event["type"] == "pointerup" for event in events),
+        "domain_state_changed": after["completed"] > before["completed"],
+        "snapshot_after_down": after_down,
+        "snapshot_after_moves": after_moves,
+        "client_start": {"x": start_client[0], "y": start_client[1]},
+        "client_end": {"x": end_client[0], "y": end_client[1]},
+    }
+
+
+def collect_evidence(page: Page, base_url: str, browser_info: dict[str, str]) -> dict[str, object]:
+    page_errors: list[str] = []
+    console_errors: list[str] = []
+    console_warnings: list[str] = []
+    requests: list[dict[str, str]] = []
+    request_failures: list[str] = []
+
+    page.on("pageerror", lambda error: page_errors.append(str(error)))
+    page.on(
         "console",
-        lambda m: (
-            console_errors.append(m.text)
-            if m.type == "error"
-            else console_warnings.append(m.text)
-            if m.type == "warning"
+        lambda message: (
+            console_errors.append(message.text)
+            if message.type == "error"
+            else console_warnings.append(message.text)
+            if message.type == "warning"
             else None
         ),
     )
-    pg.on(
+    page.on(
         "request",
-        lambda r: network_requests.append(
+        lambda request: requests.append(
             {
-                "url": r.url,
-                "resourceType": r.resource_type,
-                "method": r.method,
+                "url": request.url,
+                "resource_type": request.resource_type,
+                "method": request.method,
             }
         ),
     )
+    page.on("requestfailed", lambda request: request_failures.append(request.url))
 
-    # --- 1. Startup and renderer backend ---
-    pg.goto(f"{base_url}/ocean-rescue/index.html")
-    try:
-        pg.wait_for_selector(
-            "#ocean-rescue-root[data-ocean-rescue-ready=true]", timeout=30000
-        )
-    except Exception:
-        # Capture diagnostic state if ready attribute never set
-        diag = pg.evaluate(
-            """() => {
-            const root = document.getElementById('ocean-rescue-root');
-            const canvas = document.getElementById('ocean-rescue-canvas');
-            return {
-                rootExists: !!root,
-                rootReady: root ? root.getAttribute('data-ocean-rescue-ready') : null,
-                rootHTML: root ? root.outerHTML.substring(0, 500) : null,
-                canvasExists: !!canvas,
-                bodyHTML: document.body ? document.body.innerHTML.substring(0, 1000) : null,
-            };
+    page.goto(f"{base_url}/ocean-rescue/index.html")
+    page.wait_for_selector("#ocean-rescue-root[data-ocean-rescue-ready=true]", timeout=30000)
+    startup = page.evaluate(
+        """() => {
+          const canvas = document.getElementById('ocean-rescue-canvas');
+          const root = document.getElementById('ocean-rescue-root');
+          const rect = canvas.getBoundingClientRect();
+          return {
+            canvas_found: !!canvas,
+            canvas_width: canvas.width,
+            canvas_height: canvas.height,
+            rect: {left: rect.left, top: rect.top, width: rect.width, height: rect.height},
+            dpr: window.devicePixelRatio || 1,
+            pixi_version: typeof PIXI === 'undefined' ? 'unknown' : PIXI.VERSION,
+            renderer_backend: root.getAttribute('data-render-backend'),
+            renderer_runtime: root.getAttribute('data-render-runtime'),
+            logical_width: root.getAttribute('data-render-logical-width'),
+            logical_height: root.getAttribute('data-render-logical-height'),
+            ready: root.getAttribute('data-ocean-rescue-ready')
+          };
         }"""
-        )
-        print(f"DIAG: {json.dumps(diag, indent=2)}")
-        raise
+    )
 
-    startup = pg.evaluate(
+    flow: dict[str, object] = {
+        "profile_completed": False,
+        "mission_selected": False,
+        "gup_selected": False,
+        "launch_completed": False,
+        "travel_started": False,
+        "rescue_arrival_completed": False,
+        "sea_turtle_scene_active": False,
+        "loops_released": 0,
+        "mission_completed": False,
+        "mission_success_visible": False,
+        "phase_sequence": [],
+    }
+    profile_visible = page.evaluate(
         """() => {
-        const canvas = document.getElementById('ocean-rescue-canvas');
-        const rect = canvas ? canvas.getBoundingClientRect() : null;
-        const root = document.getElementById('ocean-rescue-root');
-        const pixiVersion = typeof PIXI !== 'undefined' ? PIXI.VERSION : 'unknown';
-        const dpr = window.devicePixelRatio || 1;
-        // Detect renderer backend
-        const gl = canvas ? (canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl')) : null;
-        const hasLegacyCanvas = typeof OceanRescue !== 'undefined'
-            && OceanRescue.RenderRuntime
-            && typeof OceanRescue.RenderRuntime.getLegacyCanvas === 'function';
-        const rendererType = gl ? 'webgl' : (hasLegacyCanvas ? 'canvas' : 'unknown');
-        return {
-            canvasFound: !!canvas,
-            canvasWidth: canvas ? canvas.width : 0,
-            canvasHeight: canvas ? canvas.height : 0,
-            rectWidth: rect ? rect.width : 0,
-            rectHeight: rect ? rect.height : 0,
-            pixiVersion: pixiVersion,
-            rendererType: rendererType,
-            dpr: dpr,
-            ready: root ? root.getAttribute('data-ocean-rescue-ready') : null,
-        };
-    }"""
+          const el = document.getElementById('ocean-rescue-profile-choice');
+          return !!el && !el.hidden && getComputedStyle(el).display !== 'none';
+        }"""
     )
-    evidence["startup"] = startup
-
-    # --- 2. Representative gameplay flow ---
-    flow_result = {}
-
-    # Complete profile choice if visible
-    profile_choice = pg.evaluate(
+    if profile_visible:
+        page.click('[data-profile-animal-id="arctic-fox"]')
+        page.click("#ocean-rescue-profile-continue")
+        flow["profile_completed"] = True
+        flow["phase_sequence"].append("PROFILE")
+    page.wait_for_selector("#ocean-rescue-mission-list [data-mission-id=sea-turtle]")
+    page.click("#ocean-rescue-mission-list [data-mission-id=sea-turtle]")
+    page.wait_for_selector("#ocean-rescue-gup-select:not([hidden])")
+    flow["mission_selected"] = True
+    flow["phase_sequence"].append("MISSION_SELECT")
+    page.click("#ocean-rescue-gup-list [data-gup-id=gup-x]")
+    page.click("#ocean-rescue-gup-launch")
+    page.wait_for_selector("#ocean-rescue-launch:not([hidden])")
+    flow["gup_selected"] = True
+    flow["phase_sequence"].append("GUP_SELECT")
+    page.click("#ocean-rescue-launch-skip")
+    page.wait_for_selector("#ocean-rescue-root[data-travel-runtime=active]")
+    startup["rect"] = page.evaluate(
         """() => {
-        const el = document.getElementById('ocean-rescue-profile-choice');
-        return el ? !el.hidden : false;
-    }"""
+          const rect = document.getElementById('ocean-rescue-canvas').getBoundingClientRect();
+          return {left: rect.left, top: rect.top, width: rect.width, height: rect.height};
+        }"""
     )
-    if profile_choice:
-        pg.click('[data-profile-animal-id="arctic-fox"]')
-        time.sleep(0.3)
-        pg.click("#ocean-rescue-profile-continue")
-        time.sleep(0.5)
-        flow_result["profile_completed"] = True
-    else:
-        flow_result["profile_completed"] = "not_required"
+    flow["launch_completed"] = True
+    flow["travel_started"] = True
+    flow["phase_sequence"].extend(["LAUNCH", "TRAVEL"])
 
-    # Profile/mission selection
-    pg.click("#ocean-rescue-mission-list [data-mission-id=sea-turtle]")
-    pg.wait_for_selector("#ocean-rescue-gup-select:not([hidden])", timeout=10000)
-    flow_result["mission_selected"] = True
-
-    # GUP selection
-    pg.click("#ocean-rescue-gup-list [data-gup-id=gup-x]")
-    pg.click("#ocean-rescue-gup-launch")
-    pg.wait_for_selector("#ocean-rescue-launch:not([hidden])", timeout=10000)
-    flow_result["gup_selected"] = True
-
-    # Launch skip
-    pg.click("#ocean-rescue-launch-skip")
-    pg.wait_for_selector(
-        "#ocean-rescue-root[data-travel-scene=active]", timeout=15000
+    page.click("#ocean-rescue-pause-button")
+    page.wait_for_function(
+        "() => document.getElementById('ocean-rescue-root').getAttribute('data-pause-active') === 'true'"
     )
-    flow_result["travel_started"] = True
-
-    # Verify travel state
-    travel_state = pg.evaluate(
+    pause_enter = page.evaluate(
         """() => {
-        const root = document.getElementById('ocean-rescue-root');
-        return {
-            travelActive: root.getAttribute('data-travel-scene'),
-            pauseActive: root.getAttribute('data-pause-active'),
-        };
-    }"""
+          const root = document.getElementById('ocean-rescue-root');
+          const overlay = document.getElementById('ocean-rescue-pause-overlay');
+          return {active: root.getAttribute('data-pause-active'), overlay_hidden: overlay.hidden};
+        }"""
     )
-    flow_result["travel_state"] = travel_state
-    evidence["gameplay_flow"] = flow_result
-
-    # --- 3. Pause/resume ---
-    pause_result = {}
-
-    # Enter pause
-    pg.click("#ocean-rescue-pause-button")
-    time.sleep(0.3)
-    pause_enter = pg.evaluate(
-        """() => {
-        const root = document.getElementById('ocean-rescue-root');
-        const overlay = document.getElementById('ocean-rescue-pause-overlay');
-        const button = document.getElementById('ocean-rescue-pause-button');
-        const resume = document.getElementById('ocean-rescue-pause-resume');
-        const countdown = document.getElementById('ocean-rescue-pause-countdown');
-        return {
-            pauseActive: root.getAttribute('data-pause-active'),
-            overlayHidden: overlay.hidden,
-            buttonHidden: button.hidden,
-            resumeHidden: resume.hidden,
-            countdownHidden: countdown.hidden,
-            countdownText: countdown.textContent,
-        };
-    }"""
+    _wire_countdown_observer(page)
+    page.click("#ocean-rescue-pause-resume")
+    page.wait_for_function(
+        "() => Array.isArray(window.__wp02Countdown) && window.__wp02Countdown.includes('Go!')",
+        timeout=7000,
     )
-    pause_result["enter"] = pause_enter
-
-    # Resume with countdown
-    pg.click("#ocean-rescue-pause-resume")
-    time.sleep(0.2)
-    countdown_3 = pg.evaluate(
-        """() => {
-        const countdown = document.getElementById('ocean-rescue-pause-countdown');
-        return { text: countdown.textContent, hidden: countdown.hidden };
-    }"""
+    page.wait_for_function(
+        "() => document.getElementById('ocean-rescue-root').getAttribute('data-pause-active') === 'false'",
+        timeout=7000,
     )
-    pause_result["countdown_3"] = countdown_3
-
-    # Wait for countdown to complete
-    time.sleep(4)
-    resume_complete = pg.evaluate(
-        """() => {
-        const root = document.getElementById('ocean-rescue-root');
-        const overlay = document.getElementById('ocean-rescue-pause-overlay');
-        return {
-            pauseActive: root.getAttribute('data-pause-active'),
-            overlayHidden: overlay.hidden,
-        };
-    }"""
-    )
-    pause_result["resume_complete"] = resume_complete
-    evidence["pause_resume"] = pause_result
-
-    # --- 4. Pointer mapping ---
-    pointer_result = {}
-
-    # Get canvas rect
-    rect = pg.evaluate(
-        """() => {
-        const c = document.getElementById('ocean-rescue-canvas');
-        const r = c.getBoundingClientRect();
-        return { left: r.left, top: r.top, w: r.width, h: r.height };
-    }"""
-    )
-    pointer_result["canvas_rect"] = rect
-
-    # Map viewport center
-    center_client_x = rect["left"] + rect["w"] / 2
-    center_client_y = rect["top"] + rect["h"] / 2
-    center_logical_x = (center_client_x - rect["left"]) / rect["w"] * 1280
-    center_logical_y = (center_client_y - rect["top"]) / rect["h"] * 720
-    pointer_result["viewport_center"] = {
-        "client_x": center_client_x,
-        "client_y": center_client_y,
-        "logical_x": center_logical_x,
-        "logical_y": center_logical_y,
+    pause_resume = {
+        "pause_activated": pause_enter["active"] == "true",
+        "pause_overlay_visible": pause_enter["overlay_hidden"] is False,
+        "observed_sequence": page.evaluate("() => window.__wp02Countdown.slice()"),
+        "resume_completed": True,
+        "final_pause_active": _root_attributes(page)["data-pause-active"],
     }
 
-    # Map top-left (safe edge)
-    topleft_client_x = rect["left"] + 10
-    topleft_client_y = rect["top"] + 10
-    topleft_logical_x = (topleft_client_x - rect["left"]) / rect["w"] * 1280
-    topleft_logical_y = (topleft_client_y - rect["top"]) / rect["h"] * 720
-    pointer_result["top_left"] = {
-        "client_x": topleft_client_x,
-        "client_y": topleft_client_y,
-        "logical_x": topleft_logical_x,
-        "logical_y": topleft_logical_y,
-    }
-
-    # Map bottom-right (stage boundary)
-    br_client_x = rect["left"] + rect["w"] - 10
-    br_client_y = rect["top"] + rect["h"] - 10
-    br_logical_x = (br_client_x - rect["left"]) / rect["w"] * 1280
-    br_logical_y = (br_client_y - rect["top"]) / rect["h"] * 720
-    pointer_result["bottom_right"] = {
-        "client_x": br_client_x,
-        "client_y": br_client_y,
-        "logical_x": br_logical_x,
-        "logical_y": br_logical_y,
-    }
-
-    # Dispatch a pointer event and verify it registers
-    pg.mouse.click(center_client_x, center_client_y)
-    time.sleep(0.2)
-    pointer_active = pg.evaluate(
+    travel_step = page.evaluate(
         """() => {
-        const travel = typeof OceanRescue !== 'undefined' && OceanRescue.Travel
-            ? OceanRescue.Travel.getSnapshot()
-            : null;
-        return {
-            dragging: travel ? travel.dragging : null,
-        };
-    }"""
+          const travel = OceanRescue.Travel;
+          const before = travel.getSnapshot();
+          let calls = 0;
+          while (travel.getSnapshot().distance < OceanRescue.Rescue.ArrivalDistance && calls < 2000) {
+            if (!travel.step(50, 1)) throw new Error('public Travel.step rejected deterministic step');
+            calls += 1;
+          }
+          return {before, after: travel.getSnapshot(), step_calls: calls};
+        }"""
     )
-    pointer_result["center_click_dispatch"] = pointer_active
+    page.wait_for_function(
+        """() => ['site-transition', 'tutorial', 'active'].includes(
+          document.getElementById('ocean-rescue-root').getAttribute('data-rescue-phase'))""",
+        timeout=5000,
+    )
+    arrival_state = _root_attributes(page)
+    flow["rescue_arrival_completed"] = (
+        arrival_state["data-rescue-sequence"] == "active"
+        and arrival_state["data-rescue-phase"] in {"site-transition", "tutorial", "active"}
+    )
+    flow["phase_sequence"].append("RESCUE_ARRIVAL")
+    page.wait_for_function(
+        "() => document.getElementById('ocean-rescue-root').getAttribute('data-rescue-phase') === 'tutorial'"
+    )
+    page.mouse.click(640, 360)
+    page.wait_for_function(
+        "() => document.getElementById('ocean-rescue-root').getAttribute('data-rescue-phase') === 'active'"
+    )
+    _install_pointer_observer(page)
+    scene_state = _root_attributes(page)
+    flow["sea_turtle_scene_active"] = (
+        scene_state["data-sea-turtle-scene"] == "active"
+        and scene_state["data-sea-turtle-active"] == "true"
+    )
+    flow["phase_sequence"].append("SEA_TURTLE_RESCUE")
 
-    # Verify logical coordinate contract (1280x720)
-    pointer_result["logical_contract"] = {
-        "expected_width": 1280,
-        "expected_height": 720,
-        "actual_width": rect["w"],
-        "actual_height": rect["h"],
-        "mapping_correct": abs(rect["w"] - 1280) < 1 or True,  # CSS pixels vs device pixels
+    rect_raw = page.evaluate(
+        """() => {
+          const r = document.getElementById('ocean-rescue-canvas').getBoundingClientRect();
+          return {left: r.left, top: r.top, w: r.width, h: r.height};
+        }"""
+    )
+    ropes = page.evaluate(
+        """() => OceanRescue.SeaTurtle.Ropes.map(rope => ({
+          id: rope.id,
+          start: {x: rope.start.x, y: rope.start.y},
+          end: {x: rope.end.x, y: rope.end.y}
+        }))"""
+    )
+    mapping_points = [
+        _mapping_point(rect_raw, "logical_center", 640, 360),
+        _mapping_point(rect_raw, "top_left_safe", 10, 10),
+        _mapping_point(rect_raw, "bottom_right_safe", 1270, 710),
+        _mapping_point(rect_raw, "sea_turtle_rope_1_start", ropes[0]["start"]["x"], ropes[0]["start"]["y"]),
+        _mapping_point(rect_raw, "sea_turtle_rope_1_end", ropes[0]["end"]["x"], ropes[0]["end"]["y"]),
+    ]
+    drag_results = [_drag_rope(page, rect_raw, rope) for rope in ropes]
+    flow["loops_released"] = page.evaluate(
+        """() => Number(document.getElementById('ocean-rescue-root').getAttribute('data-sea-turtle-completed-count'))"""
+    )
+    flow["phase_sequence"].append("MISSION_SUCCESS")
+    page.wait_for_function(
+        "() => document.getElementById('ocean-rescue-root').getAttribute('data-mission-success-active') === 'true'",
+        timeout=5000,
+    )
+    flow["success_presentation_reached"] = True
+    page.wait_for_function(
+        "() => document.getElementById('ocean-rescue-root').getAttribute('data-mission-success-stage') === 'narration-1'",
+        timeout=10000,
+    )
+    page.mouse.click(640, 360)
+    page.wait_for_function(
+        "() => document.getElementById('ocean-rescue-root').getAttribute('data-mission-success-stage') === 'narration-2'"
+    )
+    page.mouse.click(640, 360)
+    page.wait_for_function(
+        "() => document.getElementById('ocean-rescue-root').getAttribute('data-mission-completion-recorded') === 'true'",
+        timeout=5000,
+    )
+    success_state = page.evaluate(
+        """() => {
+          const root = document.getElementById('ocean-rescue-root');
+          const section = document.getElementById('ocean-rescue-mission-success');
+          const card = document.getElementById('ocean-rescue-mission-complete-card');
+          return {
+            phase: root.getAttribute('data-rescue-phase'),
+            stage: root.getAttribute('data-mission-success-stage'),
+            completion_recorded: root.getAttribute('data-mission-completion-recorded'),
+            section_hidden: section.hidden,
+            card_hidden: card.hidden,
+            title: document.getElementById('ocean-rescue-mission-complete-name').textContent
+          };
+        }"""
+    )
+    flow["mission_completed"] = success_state["completion_recorded"] == "true"
+    flow["mission_success_visible"] = (
+        success_state["section_hidden"] is False and success_state["card_hidden"] is False
+    )
+
+    origin = urlsplit(base_url).netloc
+    local_requests = [request for request in requests if urlsplit(request["url"]).netloc == origin]
+    external_requests = [request for request in requests if urlsplit(request["url"]).netloc not in {origin, ""}]
+    external_scripts = [request for request in external_requests if request["resource_type"] == "script"]
+    external_stylesheets = [request for request in external_requests if request["resource_type"] == "stylesheet"]
+    external_assets = [
+        request
+        for request in external_requests
+        if request["resource_type"] in {"image", "media", "font"}
+    ]
+    api_requests = [request for request in requests if request["resource_type"] in {"fetch", "xhr"}]
+    dynamic_module_requests = [
+        request for request in requests if request["resource_type"] == "script" and request["url"].startswith("http")
+    ]
+    unexpected_warnings = [
+        warning for warning in console_warnings if BENIGN_WEBGL_WARNING not in warning
+    ]
+
+    evidence: dict[str, object] = {
+        "startup": {
+            "browser": browser_info,
+            "canvas_found": startup["canvas_found"],
+            "canvas_width": startup["canvas_width"],
+            "canvas_height": startup["canvas_height"],
+            "canvas_rect": startup["rect"],
+            "dpr": startup["dpr"],
+            "pixi_version": startup["pixi_version"],
+            "renderer_backend": startup["renderer_backend"],
+            "renderer_runtime": startup["renderer_runtime"],
+            "logical_width": startup["logical_width"],
+            "logical_height": startup["logical_height"],
+            "ready": startup["ready"],
+        },
+        "gameplay_flow": flow,
+        "travel_arrival": travel_step,
+        "pause_resume": pause_resume,
+        "pointer_mapping": {
+            "canvas_rect": rect_raw,
+            "logical_width": LOGICAL_WIDTH,
+            "logical_height": LOGICAL_HEIGHT,
+            "tolerance": MAPPING_TOLERANCE,
+            "points": mapping_points,
+            "numerical_assertions_passed": all(point["within_tolerance"] for point in mapping_points),
+            "interactive_drag_passed": all(result["domain_state_changed"] for result in drag_results),
+            "drag_results": drag_results,
+        },
+        "mission_success": success_state,
+        "network": {
+            "total": len(requests),
+            "local_same_origin": len(local_requests),
+            "external": len(external_requests),
+            "external_javascript": len(external_scripts),
+            "external_stylesheet": len(external_stylesheets),
+            "external_image_audio_font": len(external_assets),
+            "renderer_cdn": len(external_scripts),
+            "api_requests": len(api_requests),
+            "dynamic_module_requests": len(dynamic_module_requests),
+            "request_failures": request_failures,
+            "external_details": external_requests,
+            "all_requests": requests,
+        },
+        "console": {
+            "page_errors": page_errors,
+            "console_errors": console_errors,
+            "console_warnings": console_warnings,
+            "warning_classification": {
+                "benign_webgl_gpu_stall": sum(BENIGN_WEBGL_WARNING in warning for warning in console_warnings),
+                "unexpected": unexpected_warnings,
+            },
+            "page_error_count": len(page_errors),
+            "console_error_count": len(console_errors),
+            "console_warning_count": len(console_warnings),
+        },
+        "verdict": "UNASSESSED",
     }
-
-    evidence["pointer_mapping"] = pointer_result
-
-    # --- 5. Runtime network requests ---
-    base = f"{base_url}/"
-    local_requests = [r for r in network_requests if r["url"].startswith(base)]
-    external_requests = [r for r in network_requests if not r["url"].startswith(base)]
-    evidence["network"] = {
-        "total": len(network_requests),
-        "local": len(local_requests),
-        "external": len(external_requests),
-        "external_details": external_requests,
-        "all_urls": [r["url"] for r in network_requests],
-    }
-
-    # --- 6. Console and runtime errors ---
-    evidence["console"] = {
-        "page_errors": page_errors,
-        "console_errors": console_errors,
-        "console_warnings": console_warnings,
-        "page_error_count": len(page_errors),
-        "console_error_count": len(console_errors),
-        "console_warning_count": len(console_warnings),
-    }
-
     return evidence
 
 
-def main():
-    srv = HTTPServerFixture()
-    base_url = srv.start()
-
+def run_browser_evidence() -> dict[str, object]:
+    server = HTTPServerFixture()
+    base_url = server.start()
     try:
-        with sync_playwright() as p:
-            browser = p.chromium.launch(
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(
                 headless=True,
                 args=["--disable-background-networking", "--disable-component-update"],
             )
-            context = browser.new_context(
-                viewport={"width": 1280, "height": 720},
-                locale="ko-KR",
-                timezone_id="Asia/Seoul",
-            )
-            context.add_init_script(
-                "window.__cspViolations = [];"
-                "document.addEventListener('securitypolicyviolation',"
-                "  function (e) { window.__cspViolations.push(e.blockedURI); });"
-            )
-            pg = context.new_page()
-            evidence = collect_evidence(pg, base_url)
-            context.close()
-            browser.close()
+            try:
+                context = browser.new_context(
+                    viewport={"width": 1280, "height": 720},
+                    locale="ko-KR",
+                    timezone_id="Asia/Seoul",
+                )
+                context.add_init_script("window.localStorage.clear();")
+                try:
+                    page = context.new_page()
+                    try:
+                        return collect_evidence(
+                            page,
+                            base_url,
+                            {"engine": "Playwright Chromium", "version": browser.version},
+                        )
+                    finally:
+                        page.close()
+                finally:
+                    context.close()
+            finally:
+                browser.close()
     finally:
-        srv.stop()
+        server.stop()
 
-    # Write evidence
+
+def assert_evidence(evidence: dict[str, object]) -> None:
+    startup = evidence["startup"]
+    flow = evidence["gameplay_flow"]
+    pause = evidence["pause_resume"]
+    pointer = evidence["pointer_mapping"]
+    network = evidence["network"]
+    console = evidence["console"]
+    assert startup["ready"] == "true"
+    assert startup["canvas_found"] is True
+    assert startup["canvas_width"] == LOGICAL_WIDTH
+    assert startup["canvas_height"] == LOGICAL_HEIGHT
+    assert startup["renderer_backend"] in {"webgl", "canvas"}
+    assert all(flow[key] is True for key in (
+        "profile_completed", "mission_selected", "gup_selected", "launch_completed",
+        "travel_started", "rescue_arrival_completed", "sea_turtle_scene_active",
+        "mission_completed", "mission_success_visible"
+    ))
+    assert flow["loops_released"] == 3
+    assert pause["pause_activated"] is True
+    assert pause["observed_sequence"] == ["3", "2", "1", "Go!"]
+    assert pause["resume_completed"] is True
+    assert pause["final_pause_active"] == "false"
+    assert pointer["numerical_assertions_passed"] is True
+    assert pointer["interactive_drag_passed"] is True
+    assert all(
+        result["pointer_down_dispatched"]
+        and result["pointer_move_dispatched"]
+        and result["pointer_up_dispatched"]
+        and result["domain_state_changed"]
+        for result in pointer["drag_results"]
+    )
+    assert network["local_same_origin"] >= 1
+    assert network["external"] == 0
+    assert network["external_javascript"] == 0
+    assert network["external_stylesheet"] == 0
+    assert network["external_image_audio_font"] == 0
+    assert network["renderer_cdn"] == 0
+    assert network["api_requests"] == 0
+    assert network["dynamic_module_requests"] == 0
+    assert network["request_failures"] == []
+    assert console["page_error_count"] == 0
+    assert console["console_error_count"] == 0
+    assert console["warning_classification"]["unexpected"] == []
+    evidence["verdict"] = "PASS"
+
+
+def write_evidence(evidence: dict[str, object]) -> None:
     EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
-    evidence_path = EVIDENCE_DIR / "browser-functional-evidence.json"
-    evidence_path.write_text(json.dumps(evidence, indent=2, ensure_ascii=False) + "\n")
-    print(f"Evidence written to: {evidence_path}")
+    EVIDENCE_FILE.write_text(json.dumps(evidence, indent=2, ensure_ascii=False) + "\n")
+    print(f"Evidence written to: {EVIDENCE_FILE}")
 
-    # Print summary
-    print("\n=== WP-02 Browser Functional Parity Summary ===")
-    print(f"Startup: renderer={evidence['startup']['rendererType']}, pixi={evidence['startup']['pixiVersion']}, canvas={evidence['startup']['canvasWidth']}x{evidence['startup']['canvasHeight']}")
-    print(f"Gameplay flow: mission={evidence['gameplay_flow']['mission_selected']}, gup={evidence['gameplay_flow']['gup_selected']}, travel={evidence['gameplay_flow']['travel_started']}")
-    print(f"Pause/resume: enter={evidence['pause_resume']['enter']['pauseActive']}, resume={evidence['pause_resume']['resume_complete']['pauseActive']}")
-    print(f"Pointer: center_logical=({evidence['pointer_mapping']['viewport_center']['logical_x']:.1f},{evidence['pointer_mapping']['viewport_center']['logical_y']:.1f})")
-    print(f"Network: external={evidence['network']['external']}")
-    print(f"Console: errors={evidence['console']['console_error_count']}, page_errors={evidence['console']['page_error_count']}, warnings={evidence['console']['console_warning_count']}")
 
-    # Verdict
-    fails = []
-    if evidence["network"]["external"] > 0:
-        fails.append(f"external network requests: {evidence['network']['external']}")
-    if evidence["console"]["console_error_count"] > 0:
-        fails.append(f"console errors: {evidence['console']['console_errors']}")
-    if evidence["console"]["page_error_count"] > 0:
-        fails.append(f"page errors: {evidence['console']['page_errors']}")
-    if not evidence["gameplay_flow"]["travel_started"]:
-        fails.append("travel did not start")
-    if evidence["pause_resume"]["enter"]["pauseActive"] != "true":
-        fails.append("pause did not activate")
-    if evidence["pause_resume"]["resume_complete"]["pauseActive"] != "false":
-        fails.append("resume did not complete")
+def test_ocean_rescue_wp02_browser_baseline() -> None:
+    evidence = run_browser_evidence()
+    assert_evidence(evidence)
+    if os.environ.get("OCEAN_RESCUE_WP02_WRITE_EVIDENCE") == "1":
+        write_evidence(evidence)
 
-    if fails:
-        print("\nRESULT: FAIL")
-        for f in fails:
-            print(f"  - {f}")
-        sys.exit(1)
-    else:
-        print("\nRESULT: PASS")
+
+def main() -> None:
+    evidence = run_browser_evidence()
+    assert_evidence(evidence)
+    if os.environ.get("OCEAN_RESCUE_WP02_WRITE_EVIDENCE") == "1":
+        write_evidence(evidence)
+    print("RESULT: PASS")
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except AssertionError:
+        print("RESULT: BLOCKED", file=sys.stderr)
+        raise

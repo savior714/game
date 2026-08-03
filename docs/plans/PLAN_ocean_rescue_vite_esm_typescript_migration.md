@@ -6,7 +6,9 @@
 - **Updated:** 2026-08-03
 - **Scope:** Ocean Rescue development-source migration from global-namespace JavaScript to ESM/TypeScript/Vite
 - **Execution model:** sequential bounded work packages
-- **Current phase:** PHASE_0_TARGET_DEVICE_PENDING
+- **Current phase:** PHASE_1_READY_WITH_WP03_PENDING
+- **Next executable work package:** WP-10
+- **Production cutover gate:** WP-03 required before WP-21
 - **Pre-phase SSOT closure:** COMPLETE
 - **Phase 0 evidence root:** `docs/evidence/ocean-rescue/migration/phase-0/`
 
@@ -91,6 +93,10 @@ Stop conditions:
 
 ### WP-02 — Browser functional parity baseline
 
+- **Status:** COMPLETE
+- **Evidence:** `docs/evidence/ocean-rescue/migration/phase-0/browser-functional-baseline.md`
+- **Structured evidence:** `docs/evidence/ocean-rescue/migration/phase-0/browser-functional-evidence.json`
+
 Included requirements:
 
 - browser startup smoke;
@@ -109,6 +115,10 @@ Stop conditions:
 - no external runtime requests;
 - evidence is reproducible by an existing or focused harness.
 
+Closure: PASS. The focused pytest harness collects one test and verifies the
+full representative sea-turtle mission flow, pause/resume countdown, pointer
+mapping, actual drag state changes, runtime errors, and network requests.
+
 ### WP-03 — Target-device performance baseline
 
 Included requirements:
@@ -122,9 +132,14 @@ Included requirements:
 
 Dependency rule:
 
+- WP-01: COMPLETE.
+- WP-02: COMPLETE.
+- WP-03: NOT_STARTED.
+- Phase 1 entry condition: SATISFIED after WP-01 and WP-02 pass.
+- Phase 0 remains `PARTIAL_COMPLETE` until WP-03 passes.
 - Phase 1 may begin after WP-01 and WP-02 pass.
 - WP-03 must pass before Phase 4 production cutover.
-- Phase 0 remains partially open until WP-03 passes.
+- WP-03 is not a prerequisite for WP-10; it is a prerequisite for WP-21.
 
 ---
 

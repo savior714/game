@@ -43,37 +43,40 @@ ONE WORK PACKAGE
 = EXPLICIT STOP AND ROLLBACK CONDITIONS
 ```
 
-강하게 결합된 requirements, callers, types, tests, configuration은 함께 변경할 수 있다.
+강하게 결합된 requirements, callers, types, tests, configuration은 하나의 work package로 함께 변경할 수 있다.
 변경의 완결성과 개발 속도를 고려하여 그룹핑한다.
-여러 오류를 함께 처리할 수 있으나 관계가 명확해야 한다.
+여러 오류를 함께 처리할 수 있으나, 같은 목적과 rollback 경계를 공유하는 관계가 명확해야 한다.
 
 ### 3.1 수정 전
 
-1. 현재 실패 또는 마찰을 재현한다.
+1. 현재 실패, 마찰 또는 변경 필요성을 재현하거나 관찰 가능한 근거로 확인한다.
 2. work package의 coherent development objective를 정의한다.
-3. 허용 변경 범위를 명시한다.
-4. 검증 묶음을 정의한다.
+3. 허용 변경 범위와 명시적 제외 범위를 정한다.
+4. 검증 묶음과 acceptance checklist를 정의한다.
 5. 중단 조건과 rollback 경계를 정한다.
 
-재현되지 않거나 근거가 사라진 가설은 `REJECTED`로 닫고 코드를 수정하지 않는다.
+재현되지 않거나 근거가 사라진 후보는 수정하지 않고 `REJECTED`, `OBSOLETE` 또는 별도 조사 필요 상태로 기록한다.
 
 ### 3.2 수정
 
-- 명시된 검증 묶지를 검증하는 최소 변경만 한다.
-- unrelated refactor, 대규모 정리, 새 프레임워크 도입을 묶지 않는다.
-- 여러 문제가 보여도 현재 work package 범위 밖의 문제는 기록만 하고 수정하지 않는다.
+- 명시된 objective와 acceptance checklist를 충족하는 데 필요한 최소 완결 변경을 한다.
+- 강하게 결합된 source, caller, type, test, configuration은 함께 수정할 수 있다.
+- unrelated refactor, 대규모 정리, 현재 목적과 무관한 프레임워크 도입을 끼워 넣지 않는다.
+- 작업 중 새 문제가 발견되면 현재 목적과의 결합도와 rollback 경계를 판정한다.
+- 강하게 결합된 문제를 포함할 때는 허용 범위와 검증 묶음을 명시적으로 갱신한다.
+- 독립적인 문제는 remaining work 또는 별도 work package로 남긴다.
 - workaround, fail-open fallback, 검증 우회로 문제를 숨기지 않는다.
 - 삭제·데이터 변경·배포 등 비가역성이 큰 작업은 현재 요청 범위를 벗어나면 중단한다.
-- 범위가 너무 크거나 rollback 경계가 다르면 별도 work package로 분할한다.
+- 범위가 로컬 모델의 안정적인 컨텍스트를 넘거나 rollback 경계가 다르면 child work package로 분할한다.
 
 ### 3.3 수정 후
 
-1. 명시된 검증 묶지만 targeted verification으로 독립 검증한다.
-2. acceptance checklist를 충족하면 해당 작업을 닫는다.
-3. 다른 실패가 남으면 별도 failure domain으로 분리한다.
-4. full-suite는 변경 위험이나 저장소 계약상 필요할 때만 추가한다.
-
-한 번에 여러 원인을 수정한 뒤 full-suite 결과 하나로 모두를 판정하지 않는다.
+1. 정의한 verification bundle을 실행한다.
+2. acceptance checklist의 각 항목을 실제 근거로 판정한다.
+3. 검증 실패는 다른 성공 결과로 덮지 않는다.
+4. full-suite는 변경 위험, 저장소 계약 또는 cutover 성격상 필요할 때만 추가한다.
+5. 여러 변경을 수행했더라도 full-suite 결과 하나만으로 모든 계약을 뭉뚱그려 판정하지 않는다.
+6. 남은 독립 문제와 후속 작업을 분리해 기록한다.
 
 ---
 
@@ -81,7 +84,7 @@ ONE WORK PACKAGE
 
 ### 4.1 기본값
 
-일반 작업은 별도 Plan 또는 Blueprint 없이 바로 atomic 계약으로 시작한다.
+일반 작업은 별도 Plan 또는 Blueprint 없이 bounded work package로 바로 시작한다.
 
 다음 항목은 **필수 선행 게이트가 아니다**.
 
@@ -97,13 +100,16 @@ ONE WORK PACKAGE
 
 ### 4.2 계획 문서가 필요한 경우
 
-다음 조건 중 하나에 해당할 때만 짧은 SSOT 문서를 추가한다.
+다음 조건 중 하나에 해당할 때만 짧은 SSOT 또는 migration plan을 추가한다.
 
 - 여러 세션에 걸친 장기 작업
-- 독립적인 atomic task가 3개 이상이며 순서 의존성이 있음
-- 제품·데이터·배포 계약을 장기간 추적해야 함
+- 순서 의존적인 bounded work package가 3개 이상인 작업
+- 제품·데이터·배포 계약을 장기간 추적해야 하는 작업
+- 여러 cutover와 rollback 경계를 단계적으로 관리해야 하는 작업
 
-계획 문서를 만들더라도 각 실행 항목은 여전히 하나의 failure domain으로 분리한다. 계획 문서 자체의 완성도가 제품 변경보다 우선하지 않는다.
+계획 문서는 장기 기술 결정과 실행 상태를 구분한다.
+각 실행 항목은 목적, 범위, 검증, 중단 조건, rollback 경계를 가져야 한다.
+계획 문서 자체의 완성도가 제품 변경보다 우선하지 않는다.
 
 ---
 
@@ -112,7 +118,8 @@ ONE WORK PACKAGE
 검증은 실제 위험, 변경 범위, 회귀 가능성, 계약 경계에 비례해야 한다.
 
 - 기존 테스트·정적 분석·런타임 계약으로 충분하면 새 게이트를 추가하지 않는다.
-- 새 검증은 잡아낼 구체적 failure mode와 단일 판정 기준이 있을 때만 추가한다.
+- 새 검증은 잡아낼 구체적인 실패 모드와 판정 방법이 있을 때만 추가한다.
+- acceptance checklist 또는 verification matrix를 사용할 수 있다.
 - 동일 사실을 반복 확인하는 스크립트, 체크리스트, 중복 게이트를 늘리지 않는다.
 - 필수 검증 도구가 없으면 성공으로 처리하지 말고 fail-closed한다.
 - 문서 전용 변경은 문서 계약만 검증한다.
@@ -128,7 +135,7 @@ just test
 just ci
 ```
 
-모든 작업에 모든 명령을 실행하는 것이 아니라, 현재 failure domain에 필요한 최소 명령을 선택한다.
+모든 작업에 모든 명령을 실행하는 것이 아니라, 현재 work package의 위험과 계약에 필요한 최소 검증 묶음을 선택한다.
 
 ---
 
@@ -158,12 +165,14 @@ just ci
 
 ## 8. 로컬 에이전트 위임
 
-로컬 LLM에 위임할 때는 하나의 프롬프트에 하나의 atomic task만 담는다.
+로컬 LLM에 위임할 때는 하나의 프롬프트에 하나의 bounded work package를 담는다.
 
 - 단일 프롬프트는 최대 700줄로 제한한다.
-- 입력에는 failure domain, hypothesis, verdict criterion, allowed paths, targeted verification을 명시한다.
+- 입력에는 objective, included scope, excluded scope, allowed paths, verification bundle, stop conditions, rollback boundary를 명시한다.
+- 단일 가설, 단일 failure domain 또는 단일 binary criterion을 형식적으로 만들도록 강제하지 않는다.
+- 강하게 결합된 source, caller, type, test, configuration은 같은 프롬프트에 포함할 수 있다.
 - 과거 계획 전체를 반복 삽입하지 않고 현재 작업에 필요한 delta만 전달한다.
-- 독립 작업은 순차 실행하며 이전 결과를 확인한 뒤 다음 failure domain을 선택한다.
+- 컨텍스트가 커지면 phase 또는 child work package로 나누고 이전 결과를 확인한 뒤 다음 작업을 진행한다.
 
 ---
 
@@ -177,16 +186,19 @@ RESULT
 VERDICT
 CONFIDENCE
 BLOCKER
-FAILURE_DOMAIN
-HYPOTHESIS
-HYPOTHESIS_VERDICT
+WORK_PACKAGE_OBJECTIVE
+INCLUDED_SCOPE
+EXCLUDED_SCOPE
+ACCEPTANCE_CHECKLIST
 VERIFICATION
 CHANGED_PATHS
 GIT / PUBLICATION STATUS
-REMAINING_SEPARATE_FAILURES
+REMAINING_WORK
 ```
 
-보고는 실제 실행 근거만 포함한다. 과거 Blueprint의 Status/Conclusion 필드를 갱신하는 것은 일반 완료 조건이 아니다.
+가설 기반 조사에서는 `HYPOTHESIS`와 `HYPOTHESIS_VERDICT`를 추가할 수 있으나 모든 작업의 필수 필드는 아니다.
+보고는 실제 실행 근거만 포함한다.
+과거 Blueprint의 Status/Conclusion 필드를 갱신하는 것은 일반 완료 조건이 아니다.
 
 ---
 

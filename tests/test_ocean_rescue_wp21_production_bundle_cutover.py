@@ -61,8 +61,8 @@ BUNDLE_FILE = "ocean-rescue-app.js"
 METADATA_FILE = "production-bundle-metadata.json"
 PROD_FILES = {BUNDLE_FILE, METADATA_FILE}
 
-LEGACY_SCRIPT_COUNT = 19
-NON_VENDOR_COUNT = 18
+LEGACY_SCRIPT_COUNT = 20
+NON_VENDOR_COUNT = 19
 PIXI_VENDOR_FILE = "vendor/pixi-8.19.0.min.js"
 PIXI_NAMESPACE = "PIXI"
 CANONICAL_ENTRY = "main.js"
@@ -660,8 +660,8 @@ def test_production_artifact_browser_parity() -> None:
 def test_migration_documentation_state() -> None:
     plan = PLAN_DOC.read_text(encoding="utf-8")
     assert "WP-21: COMPLETE" in plan
-    assert "Current phase: PHASE_7_IN_PROGRESS" in plan
-    assert "Next executable work package: WP-32B" in plan
+    assert "Current phase: PHASE_8_READY" in plan
+    assert "Next executable work package: WP-33A" in plan
     assert "Authoritative path before:" in plan
     assert "Vite application bundle through temporary standalone packaging" in plan
     assert "WP-31A: COMPLETE" in plan
@@ -671,7 +671,7 @@ def test_migration_documentation_state() -> None:
     assert "Shared mission ID state: TYPE_AUTHORITY" in plan
     assert "Global OceanRescue ABI state: TYPED_SHARED" in plan
     assert "Typed module ESM adapter state: CHECKED_JS" in plan
-    assert "Runtime output state: BYTE_IDENTICAL" in plan
+    assert "Runtime output state: DETERMINISTIC" in plan
     assert "Profile module state: TYPED_CANONICAL" in plan
     assert "Mission catalog state: TYPED_CANONICAL" in plan
     assert "GUP catalog state: TYPED_CANONICAL" in plan

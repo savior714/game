@@ -17,6 +17,13 @@ import type {
   MissionCatalog,
   MissionId,
 } from "../missions/catalog";
+import type {
+  LogicalPoint,
+  PointerInputApi,
+  RenderCoordinateMapperApi,
+  RenderMappedPoint,
+  PointerIntent,
+} from "./pointer-input";
 import type { ProfileApi } from "../profile/profile";
 import type { StateApi } from "../state/state";
 import type { TravelApi } from "../travel/travel";
@@ -30,6 +37,11 @@ export type {
   GupCatalog,
   MissionId,
   GupId,
+  LogicalPoint,
+  RenderMappedPoint,
+  RenderCoordinateMapperApi,
+  PointerIntent,
+  PointerInputApi,
 };
 
 export interface MissionProgressionSnapshot {
@@ -74,4 +86,6 @@ export interface OceanRescueNamespace {
   Launch?: LaunchApi;
   State?: StateApi;
   Travel?: TravelApi;
+  RenderRuntime?: RenderCoordinateMapperApi;
+  PointerInput?: PointerInputApi;
 }

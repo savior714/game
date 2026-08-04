@@ -264,8 +264,8 @@ def test_legacy_rollback_manifest_keeps_state_and_travel_ownership() -> None:
     files = {e["file"] for e in data["scripts"]}
     assert "state.js" in files, "legacy rollback manifest must reference state.js"
     assert "travel.js" in files, "legacy rollback manifest must reference travel.js"
-    assert len(data["scripts"]) == 19, (
-        "legacy manifest must keep the 19 ordered entries"
+    assert len(data["scripts"]) == 20, (
+        "legacy manifest must keep the 20 ordered entries"
     )
 
 
@@ -1205,7 +1205,7 @@ def test_legacy_rollback_references_sources(tmp_path: Path) -> None:
         f"legacy rollback build failed (exit {result.returncode}): {result.stderr}"
     )
     html = output.read_text(encoding="utf-8")
-    assert html.count("<script>") == 19
+    assert html.count("<script>") == 20
     assert re.search(r"<script\s+[^>]*src\s*=", html) is None
 
 

@@ -237,6 +237,24 @@ check-ocean-rescue-shared-runtime-abi-types:
     uv run pytest tests/test_ocean_rescue_artifact_drift.py -q
     uv run pytest tests/test_ocean_rescue_wp03_scope_decision.py -q
 
+# Run the focused WP-32B pointer coordinate / renderer adapter verification bundle
+check-ocean-rescue-pointer-renderer-boundary:
+    @just check-ocean-rescue-toolchain
+    uv run pytest tests/test_ocean_rescue_wp32b_pointer_renderer_boundary.py -q
+    uv run pytest tests/test_ocean_rescue_travel_movement.py -q
+    uv run pytest tests/test_ocean_rescue_render_runtime.py -q
+    uv run pytest tests/test_ocean_rescue_sea_turtle_interaction.py -q
+    uv run pytest tests/test_ocean_rescue_crab_interaction.py -q
+    uv run pytest tests/test_ocean_rescue_pause_lifecycle.py -q
+    uv run pytest tests/test_ocean_rescue_wp32a_shared_runtime_abi_types.py -q
+    uv run pytest tests/test_ocean_rescue_wp31c_typed_core_state_travel.py -q
+    uv run pytest tests/test_ocean_rescue_wp30_esm_entry_module_graph.py -q
+    uv run pytest tests/test_ocean_rescue_wp21_production_bundle_cutover.py -q
+    uv run pytest tests/test_ocean_rescue_wp20_shadow_bundle.py -q
+    just check-ocean-rescue-rollback
+    uv run pytest tests/test_ocean_rescue_artifact_drift.py -q
+    uv run pytest tests/test_ocean_rescue_wp03_scope_decision.py -q
+
 # Verify the Ocean Rescue build-tooling boundary end to end
 check-ocean-rescue-toolchain:
     @just check-ocean-rescue-node-version

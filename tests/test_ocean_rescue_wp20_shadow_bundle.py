@@ -63,7 +63,7 @@ SHADOW_FILES = {BUNDLE_FILE, HTML_FILE, METADATA_FILE}
 
 EXPECTED_VENDOR_FILE = "vendor/pixi-8.19.0.min.js"
 EXPECTED_VENDOR_NAMESPACE = "PIXI"
-EXPECTED_APP_COUNT = 18
+EXPECTED_APP_COUNT = 19
 EXPECTED_SCHEMA_VERSION = 1
 CANONICAL_ENTRY = "main.js"
 
@@ -268,6 +268,14 @@ def test_production_paths_outside_write_scope() -> None:
         "domains/ocean-rescue/src/launch/launch.ts",
         "domains/ocean-rescue/src/state/state.ts",
         "domains/ocean-rescue/src/travel/travel.ts",
+        # WP-32B pointer coordinate / renderer adapter boundary: the app
+        # delegation, the shared runtime ABI slots, and the canonical ESM
+        # adapter cutover paths are legitimate production cutover paths. The
+        # new pointer contract/implementation/adapter are untracked additions.
+        "domains/ocean-rescue/src/app.js",
+        "domains/ocean-rescue/src/contracts/runtime-abi.ts",
+        "domains/ocean-rescue/src/esm/app.js",
+        "domains/ocean-rescue/src/esm/render-runtime.js",
     }
     changed = {line for line in diff.splitlines() if line}
     assert changed <= allowed, (

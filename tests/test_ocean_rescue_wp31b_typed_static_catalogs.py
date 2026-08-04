@@ -1125,7 +1125,7 @@ def test_legacy_rollback_references_all_sources(tmp_path: Path) -> None:
         f"legacy rollback build failed (exit {result.returncode}): {result.stderr}"
     )
     html = output.read_text(encoding="utf-8")
-    assert html.count("<script>") == 19
+    assert html.count("<script>") == 20
     assert re.search(r"<script\s+[^>]*src\s*=", html) is None
 
 

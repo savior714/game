@@ -35,6 +35,7 @@ CANONICAL_SOURCE_FILES = [
     "style.css",
     "render-assets.generated.js",
     "render-runtime.js",
+    "pointer-input.js",
     "state.js",
     "profile.js",
     "missions.js",
@@ -77,6 +78,11 @@ class TestManifest:
                 "file": "render-runtime.js",
                 "namespace": "OceanRescue.RenderRuntime",
                 "depends_on": ["PIXI", "OceanRescue.RenderAssets"],
+            },
+            {
+                "file": "pointer-input.js",
+                "namespace": "OceanRescue.PointerInput",
+                "depends_on": ["OceanRescue.RenderRuntime"],
             },
             {
                 "file": "state.js",
@@ -162,6 +168,7 @@ class TestManifest:
                 "depends_on": [
                     "OceanRescue.State",
                     "OceanRescue.RenderRuntime",
+                    "OceanRescue.PointerInput",
                     "OceanRescue.Profile",
                     "OceanRescue.Missions",
                     "OceanRescue.Gups",
@@ -204,7 +211,7 @@ class TestManifest:
             (SOURCE_ROOT / "build-manifest.legacy.json").read_text(encoding="utf-8")
         )
         assert set(legacy.keys()) == {"template", "styles", "scripts", "assets"}
-        assert len(legacy["scripts"]) == 19
+        assert len(legacy["scripts"]) == 20
         actual_scripts = [
             {
                 "file": entry["file"],

@@ -1,5 +1,6 @@
 import "./state.js";
 import "./render-runtime.js";
+import "./pointer-input.js";
 import "./profile.js";
 import "./missions.js";
 import "./gups.js";

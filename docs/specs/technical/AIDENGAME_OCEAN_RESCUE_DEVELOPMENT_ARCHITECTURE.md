@@ -144,6 +144,7 @@ domains/ocean-rescue/src/
 ├─ vendor/pixi-8.19.0.min.js
 ├─ render-assets.generated.js
 ├─ render-runtime.js
+├─ pointer-input.js        (shared checked-JS pointer coordinate boundary, WP-32B)
 ├─ state.js              (rollback-only since WP-31C)
 ├─ state/state.ts        (typed canonical core state machine, WP-31C)
 ├─ profile.js            (rollback-only since WP-31A)
@@ -156,6 +157,11 @@ domains/ocean-rescue/src/
 ├─ launch/launch.ts      (typed canonical launch API, WP-31B)
 ├─ travel.js             (rollback-only since WP-31C)
 ├─ travel/travel.ts      (typed canonical travel runtime contract, WP-31C)
+├─ contracts/
+│  ├─ mission.ts            (shared MissionId authority, type-only, WP-32A)
+│  ├─ runtime-abi.ts        (shared runtime ABI types, type-only, WP-32A)
+│  ├─ pointer-input.ts      (pointer boundary types, type-only, WP-32B)
+│  └─ ocean-rescue-global.d.ts
 ├─ terrain.js
 ├─ travel-scene.js
 ├─ rescue.js
@@ -217,19 +223,54 @@ typed boundary:
   controller method references.
 
 The shared contract modules are type-only and never enter the production
-bundle. `src/app.js` is still the legacy JavaScript orchestration hub;
-normalized pointer intents and renderer-adapter contracts remain WP-32B
-targets.
+bundle.
+
+Since WP-32B, the pointer coordinate boundary is a real runtime module shared
+by both lanes:
+
+- `src/contracts/pointer-input.ts` is the type-only pointer boundary contract
+  (`LogicalPoint`, `RenderMappedPoint`, `RenderCoordinateMapperApi`,
+  `ActivePointerIntent`, `InactivePointerIntent`, `PointerIntent`,
+  `ClientCoordinateCarrier`, `BoundingRect`, `RectProvider`,
+  `PointerInputApi`); it types only the coordinate-mapping subset of the
+  renderer, never the full RenderRuntime API or the Pixi display-object model.
+- `src/pointer-input.js` is the strict checked-JS implementation that owns the
+  exact travel stage-Y mapping, the rescue `{ x, y }` mapping, and the
+  active/inactive scene pointer-intent constructors, registered as the frozen
+  `OceanRescue.PointerInput` global. Both the canonical ESM lane and the legacy
+  ordered-script lane execute this same file; it depends only on the minimal
+  `RenderRuntime` coordinate-mapper subset (`isReady()` + `mapClientToLogical`).
+- `src/esm/pointer-input.js` is the canonical adapter that side-effect imports
+  the shared implementation and fail-closes on the contract. `src/esm/app.js`
+  registers PointerInput after RenderRuntime and before the legacy `app.js`;
+  `src/esm/render-runtime.js` gains `@ts-check` and an existence guard for the
+  coordinate-mapper subset.
+- `src/app.js` delegates `mapClientYToStage` and `mapRescueCoordinates` to the
+  boundary and passes `PointerInput.activeIntent`/`PointerInput.inactiveIntent`
+  to the authored Sea Turtle and Crab scenes; `build-manifest.legacy.json`
+  inserts `pointer-input.js` once after `render-runtime.js` and before
+  `app.js`.
+
+The scene consumers (`src/sea-turtle-scene.js`, `src/crab-scene.js`) remain
+legacy JavaScript and continue to normalize the received `PointerIntent` as
+before; their implementation typing is deferred to the WP-41 family, and the
+full RenderRuntime API typing is WP-40. `src/app.js` is still the legacy
+JavaScript orchestration hub; app orchestration decomposition is WP-33.
 
 ### 4.2 Current source graph
 
-`build-manifest.json` currently contains 19 ordered script entries:
+The canonical `build-manifest.json` is contracted to `template`, `styles`,
+`vendor`, `generated`, `entry`, and `assets`; application module ordering is
+owned by the canonical ESM graph (`src/main.js` -> `src/esm/*`). The legacy
+rollback manifest `build-manifest.legacy.json` retains the ordered-script
+graph with 20 entries:
 
 - 1 vendor entry: `PIXI`
 - 1 generated-assets entry: `OceanRescue.RenderAssets`
-- 17 application entries under `window.OceanRescue.*`
+- 18 application entries under `window.OceanRescue.*` (including
+  `OceanRescue.PointerInput` since WP-32B)
 
-The manifest duplicates information that a standard module graph would normally own:
+The legacy manifest duplicates information that a standard module graph would normally own:
 
 - script file order;
 - namespace identity;

@@ -109,7 +109,21 @@ def test_app_separates_visible_input_from_paint_surface_and_gates_production_boo
     assert "function resolvePaintCanvas" in source
     assert "function resolvePaintContext" in source
     assert "function presentPaintFrame" in source
-    assert "RenderRuntime.mapClientToLogical" in source
+    assert "function mapClientYToStage" in source
+    assert "function mapRescueCoordinates" in source
     assert "RenderRuntime.boot()" in source
     assert "RenderRuntime.showCompatibilityFailure()" in source
     assert "travelPaintCanvas" in source
+    pointer_source = (SRC / "pointer-input.js").read_text(encoding="utf-8")
+    assert "RenderRuntime.mapClientToLogical" in pointer_source, (
+        "pointer module must own the renderer coordinate-mapper call"
+    )
+    assert "PointerInput.mapTravelStageY(event, travelCanvas)" in source, (
+        "app must delegate travel mapping to the pointer boundary"
+    )
+    assert (
+        "PointerInput.mapRescuePoint(event, resolveVisibleInputCanvas())" in source
+    ), "app must delegate rescue mapping to the pointer boundary"
+    assert "function mapTravelStageY" in pointer_source
+    assert "function mapRescuePoint" in pointer_source
+    assert "window.OceanRescue.PointerInput" in pointer_source

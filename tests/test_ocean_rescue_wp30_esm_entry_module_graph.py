@@ -55,6 +55,7 @@ LEGACY_MANIFEST = SRC_DIR / "build-manifest.legacy.json"
 ADAPTER_NAMESPACES: Dict[str, str] = {
     "render-assets.js": "RenderAssets",
     "render-runtime.js": "RenderRuntime",
+    "pointer-input.js": "PointerInput",
     "state.js": "State",
     "profile.js": "Profile",
     "missions.js": "Missions",
@@ -82,6 +83,7 @@ ADAPTER_NAMESPACES: Dict[str, str] = {
 ADAPTER_LEGACY_FILE: Dict[str, str] = {
     "render-assets.js": "render-assets.generated.js",
     "render-runtime.js": "render-runtime.js",
+    "pointer-input.js": "pointer-input.js",
     "terrain.js": "terrain.js",
     "travel-scene.js": "travel-scene.js",
     "rescue.js": "rescue.js",
@@ -133,6 +135,7 @@ LEGACY_ROLLBACK_ONLY_FILES = {
 ADAPTER_DEPS: Dict[str, Set[str]] = {
     "render-assets.js": set(),
     "render-runtime.js": {"render-assets.js"},
+    "pointer-input.js": set(),
     "state.js": set(),
     "profile.js": set(),
     "missions.js": set(),
@@ -151,6 +154,7 @@ ADAPTER_DEPS: Dict[str, Set[str]] = {
     "app.js": {
         "state.js",
         "render-runtime.js",
+        "pointer-input.js",
         "profile.js",
         "missions.js",
         "gups.js",
@@ -548,8 +552,8 @@ def test_legacy_manifest_preserved_as_full_ordered_set() -> None:
     )
     for key in ("entry", "generated"):
         assert key not in data, f"legacy manifest must not carry '{key}'"
-    assert len(data["scripts"]) == 19, (
-        "legacy manifest must keep the 19 ordered entries"
+    assert len(data["scripts"]) == 20, (
+        "legacy manifest must keep the 20 ordered entries"
     )
     assert data["scripts"][-1]["file"] == "app.js", (
         "legacy manifest must end with app.js in canonical order"

@@ -27,6 +27,13 @@
       ]
     },
     {
+      "file": "pointer-input.js",
+      "namespace": "OceanRescue.PointerInput",
+      "depends_on": [
+        "OceanRescue.RenderRuntime"
+      ]
+    },
+    {
       "file": "state.js",
       "namespace": "OceanRescue.State",
       "depends_on": []
@@ -115,6 +122,7 @@
       "depends_on": [
         "OceanRescue.State",
         "OceanRescue.RenderRuntime",
+        "OceanRescue.PointerInput",
         "OceanRescue.Profile",
         "OceanRescue.Missions",
         "OceanRescue.Gups",

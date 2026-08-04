@@ -34,6 +34,7 @@ _BOOTSTRAP = textwrap.dedent(
     const TERRAIN_SOURCE = fs.readFileSync("domains/ocean-rescue/src/terrain.js", "utf8");
     const RESCUE_SOURCE = fs.readFileSync("domains/ocean-rescue/src/rescue.js", "utf8");
     const SEA_TURTLE_SOURCE = fs.readFileSync("domains/ocean-rescue/src/sea-turtle.js", "utf8");
+    const POINTER_INPUT_SOURCE = fs.readFileSync("domains/ocean-rescue/src/pointer-input.js", "utf8");
     const APP_SOURCE = fs.readFileSync("domains/ocean-rescue/src/app.js", "utf8");
 
     function plain(value) {
@@ -503,6 +504,7 @@ _BOOTSTRAP = textwrap.dedent(
       if (!opts.skipSeaTurtle) {
         vm.runInContext(SEA_TURTLE_SOURCE, sandbox, { filename: "sea-turtle.js" });
       }
+      vm.runInContext(POINTER_INPUT_SOURCE, sandbox, { filename: "pointer-input.js" });
       vm.runInContext(APP_SOURCE, sandbox, { filename: "app.js" });
       const OceanRescue = sandbox.window.OceanRescue;
       return {

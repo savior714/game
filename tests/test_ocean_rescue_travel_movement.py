@@ -30,6 +30,7 @@ _TRAVEL_BOOTSTRAP = textwrap.dedent(
     const GUPS_SOURCE = fs.readFileSync("domains/ocean-rescue/src/gups.js", "utf8");
     const LAUNCH_SOURCE = fs.readFileSync("domains/ocean-rescue/src/launch.js", "utf8");
     const TRAVEL_SOURCE = fs.readFileSync("domains/ocean-rescue/src/travel.js", "utf8");
+    const POINTER_INPUT_SOURCE = fs.readFileSync("domains/ocean-rescue/src/pointer-input.js", "utf8");
     const APP_SOURCE = fs.readFileSync("domains/ocean-rescue/src/app.js", "utf8");
 
     function plain(value) {
@@ -396,6 +397,7 @@ _TRAVEL_BOOTSTRAP = textwrap.dedent(
       vm.runInContext(GUPS_SOURCE, sandbox, { filename: "gups.js" });
       vm.runInContext(LAUNCH_SOURCE, sandbox, { filename: "launch.js" });
       vm.runInContext(TRAVEL_SOURCE, sandbox, { filename: "travel.js" });
+      vm.runInContext(POINTER_INPUT_SOURCE, sandbox, { filename: "pointer-input.js" });
       vm.runInContext(APP_SOURCE, sandbox, { filename: "app.js" });
       return {
         sandbox,

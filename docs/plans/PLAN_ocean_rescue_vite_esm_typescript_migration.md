@@ -6,8 +6,8 @@
 - **Updated:** 2026-08-04
 - **Scope:** Ocean Rescue development-source migration from global-namespace JavaScript to ESM/TypeScript/Vite
 - **Execution model:** sequential bounded work packages
-- **Current phase:** PHASE_7_IN_PROGRESS
-- **Next executable work package:** WP-32B
+- **Current phase:** PHASE_8_READY
+- **Next executable work package:** WP-33A
 - **Production cutover gate:** SATISFIED by WP-02 functional parity, WP-20 deterministic shadow-bundle parity, WP-21 production application-bundle cutover, and WP-30 canonical ESM entry
 - **Target-device release gate:** WP-03A must pass before MVP release, but it does not block WP-21
 - **Automated performance harness:** WP-03B is non-blocking follow-up work, triggered by an observed regression or post-MVP stabilization need
@@ -325,6 +325,7 @@ Phase 3: COMPLETE
 Phase 4: COMPLETE
 Phase 5: COMPLETE
 Phase 6: COMPLETE
+Phase 7: COMPLETE
 WP-20: COMPLETE
 WP-21: COMPLETE
 WP-30: COMPLETE
@@ -332,8 +333,9 @@ WP-31A: COMPLETE
 WP-31B: COMPLETE
 WP-31C: COMPLETE
 WP-32A: COMPLETE
-Current phase: PHASE_7_IN_PROGRESS
-Next executable work package: WP-32B
+WP-32B: COMPLETE
+Current phase: PHASE_8_READY
+Next executable work package: WP-33A
 Production bundle state: PRODUCTION_APP_BUNDLE
 ESM entry state: CANONICAL_MAIN_JS
 Manifest state: CONTRACTED_CANONICAL_PLUS_LEGACY_ROLLBACK
@@ -352,7 +354,10 @@ Legacy travel.js: ROLLBACK_ONLY
 Shared mission ID state: TYPE_AUTHORITY
 Global OceanRescue ABI state: TYPED_SHARED
 Typed module ESM adapter state: CHECKED_JS
-Runtime output state: BYTE_IDENTICAL
+Pointer coordinate boundary state: CHECKED_RUNTIME
+Scene pointer intent state: NORMALIZED_SHARED
+Render coordinate adapter state: TYPED_MINIMAL
+Runtime output state: DETERMINISTIC
 WP-03A target-device smoke: REQUIRED_BEFORE_MVP_RELEASE
 WP-03B automated performance harness: BACKLOG_NON_BLOCKING
 ```
@@ -599,8 +604,8 @@ Evidence: `docs/evidence/ocean-rescue/migration/phase-6/typed-core-state-travel-
 
 ## 9. Phase 7 — Shared boundary types
 
-- **Status:** IN_PROGRESS
-- **Work packages:** WP-32A (COMPLETE), WP-32B (next)
+- **Status:** COMPLETE
+- **Work packages:** WP-32A (COMPLETE), WP-32B (COMPLETE)
 - **Objective:** Type actual cross-module contracts after enough concrete modules exist.
 - **Included requirements:** gameplay snapshots, phase IDs, normalized pointer intents, renderer-adapter contracts, persistence schemas where shared
 - **Depends on:** WP-31A, WP-31B, WP-31C as applicable
@@ -654,19 +659,66 @@ Evidence: `docs/evidence/ocean-rescue/migration/phase-7/shared-typed-runtime-abi
 
 ### WP-32B — Pointer intent and renderer-adapter contracts
 
-Not implemented in this work package. The following principles are recorded for
-the next package only:
+- **Status:** COMPLETE (WP-32B PASS)
+- **Objective:** Extract the pointer coordinate transformations and scene
+  pointer-intent generation that were embedded ad hoc in `src/app.js` into one
+  real runtime boundary shared by the canonical ESM lane and the legacy
+  ordered-script lane.
+- **Pointer coordinate boundary state:** `CHECKED_RUNTIME`
+- **Scene pointer intent state:** `NORMALIZED_SHARED`
+- **Render coordinate adapter state:** `TYPED_MINIMAL`
+- **Shared type module:**
+  - `domains/ocean-rescue/src/contracts/pointer-input.ts` (type-only:
+    `LogicalPoint`, `RenderMappedPoint`, `RenderCoordinateMapperApi`,
+    `ActivePointerIntent`, `InactivePointerIntent`, `PointerIntent`,
+    `ClientCoordinateCarrier`, `BoundingRect`, `RectProvider`,
+    `PointerInputApi`).
+- **Shared checked-JS runtime:**
+  - `domains/ocean-rescue/src/pointer-input.js` owns the exact travel stage-Y
+    mapping, rescue `{ x, y }` mapping, and the active/inactive
+    pointer-intent constructors, registered as the frozen
+    `OceanRescue.PointerInput` global; it is executed unchanged by both lanes
+    and depends only on the minimal `RenderRuntime` coordinate-mapper subset
+    (`isReady()` + `mapClientToLogical`).
+- **Canonical adapter and cutover:**
+  - `domains/ocean-rescue/src/esm/pointer-input.js` imports the shared
+    implementation and fail-closes on the contract;
+  - `domains/ocean-rescue/src/esm/render-runtime.js` gains `@ts-check` and an
+    existence guard for the coordinate-mapper subset;
+  - `domains/ocean-rescue/src/esm/app.js` registers PointerInput after
+    RenderRuntime and before the legacy `app.js`;
+  - `src/app.js` delegates `mapClientYToStage`/`mapRescueCoordinates` to the
+    boundary and replaces every inline scene pointer-intent literal with
+    `PointerInput.activeIntent`/`PointerInput.inactiveIntent`;
+  - `build-manifest.legacy.json` inserts `pointer-input.js` once after
+    `render-runtime.js` and before `app.js` and records the
+    `OceanRescue.PointerInput` dependency on `OceanRescue.App`.
+- **Owned subset:** WP-32B owns only the coordinate/pointer subset. Full
+  RenderRuntime API typing is WP-40; authored scene implementation typing is
+  the WP-41 family; app orchestration decomposition is WP-33.
+- **Verified:** strict `tsc --noEmit`; standalone checked-JS diagnostics for
+  the pointer runtime, pointer adapter, and render adapter; the real
+  `pointer-input.js` travel/rescue/intent matrix plus exact behavioral parity
+  with the pre-extraction `app.js` formulas; app delegation and orchestration
+  markers; canonical graph membership (pointer modules in, type-only contracts
+  out); two clean production builds byte-identical; two standalone HTML builds
+  byte-identical; tracked artifact matches a clean rebuild; legacy rollback
+  with the inserted `pointer-input.js`; operational bundle -> legacy -> bundle
+  transition; and focused browser parity for travel tap/drag, pause blocking,
+  sea-turtle pointer interaction, and crab pointer interaction.
+- **Status snapshot:**
+  - Pointer coordinate boundary: `CHECKED_RUNTIME`
+  - Scene pointer intent: `NORMALIZED_SHARED`
+  - Render coordinate adapter: `TYPED_MINIMAL`
+  - Runtime output: `DETERMINISTIC`
 
-- identify the actual current pointer-intent producers and consumers first;
-- no declaration-only speculative types without a direct caller;
-- no renderer-owned gameplay model;
-- no app-orchestration decomposition.
+Evidence: `docs/evidence/ocean-rescue/migration/phase-7/pointer-coordinate-renderer-boundary.md`
 
 ---
 
 ## 10. Phase 8 — Application orchestration decomposition
 
-- **Status:** NOT_STARTED
+- **Status:** READY (WP-32B complete)
 - **Objective:** Replace monolithic orchestration with bounded controller ownership.
 - **Depends on:** WP-32A and WP-32B
 - **Authoritative path before:** central `app.js` orchestration

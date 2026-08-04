@@ -323,6 +323,22 @@ def test_metadata_membership_matches_legacy_manifest() -> None:
     assert "profile.js" not in metadata["actual_module_files"], (
         "rollback-only legacy profile.js must not be in production membership"
     )
+    # WP-31B: the canonical graph owns the typed mission/GUP/launch static
+    # modules, retains the mission/GUP controllers, and excludes the
+    # rollback-only legacy launch.js.
+    for typed in ("missions/catalog.ts", "gups/catalog.ts", "launch/launch.ts"):
+        assert typed in metadata["actual_module_files"], (
+            f"typed static module {typed} missing from production membership"
+        )
+    assert "missions.js" in metadata["actual_module_files"], (
+        "legacy missions controller must stay in production membership"
+    )
+    assert "gups.js" in metadata["actual_module_files"], (
+        "legacy gups controller must stay in production membership"
+    )
+    assert "launch.js" not in metadata["actual_module_files"], (
+        "rollback-only legacy launch.js must not be in production membership"
+    )
 
 
 def test_vendor_boundary_external() -> None:
@@ -583,9 +599,16 @@ def test_migration_documentation_state() -> None:
     plan = PLAN_DOC.read_text(encoding="utf-8")
     assert "WP-21: COMPLETE" in plan
     assert "Current phase: PHASE_6_IN_PROGRESS" in plan
-    assert "Next executable work package: WP-31B" in plan
+    assert "Next executable work package: WP-31C" in plan
     assert "Authoritative path before:" in plan
     assert "Vite application bundle through temporary standalone packaging" in plan
     assert "WP-31A: COMPLETE" in plan
+    assert "WP-31B: COMPLETE" in plan
     assert "Profile module state: TYPED_CANONICAL" in plan
+    assert "Mission catalog state: TYPED_CANONICAL" in plan
+    assert "GUP catalog state: TYPED_CANONICAL" in plan
+    assert "Launch module state: TYPED_CANONICAL" in plan
     assert "Legacy profile.js: ROLLBACK_ONLY" in plan
+    assert "Legacy missions.js: CONTROLLER_CANONICAL_PLUS_ROLLBACK" in plan
+    assert "Legacy gups.js: CONTROLLER_CANONICAL_PLUS_ROLLBACK" in plan
+    assert "Legacy launch.js: ROLLBACK_ONLY" in plan

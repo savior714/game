@@ -1,9 +1,13 @@
-import "../launch.js";
+import { Launch } from "../launch/launch";
 
-const Launch = window.OceanRescue?.Launch;
+const registered = window.OceanRescue?.Launch;
 
-if (!Launch) {
+if (!registered) {
   throw new Error("OceanRescue.Launch was not registered");
+}
+
+if (registered !== Launch) {
+  throw new Error("OceanRescue.Launch global must reference the typed launch API");
 }
 
 export { Launch };

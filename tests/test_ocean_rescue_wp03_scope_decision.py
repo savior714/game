@@ -14,7 +14,7 @@ def test_current_schedule_allows_wp30_before_physical_device_smoke() -> None:
     header = plan.split("\n---\n", maxsplit=1)[0]
 
     assert "**Current phase:** PHASE_6_IN_PROGRESS" in header
-    assert "**Next executable work package:** WP-31B" in header
+    assert "**Next executable work package:** WP-31C" in header
     assert "**Production cutover gate:** SATISFIED" in header
     assert "WP-03A must pass before MVP release, but it does not block WP-21" in header
     assert "WP-03B is non-blocking follow-up work" in header
@@ -58,10 +58,17 @@ def test_superseded_wp03_blocking_language_is_historical_only() -> None:
     assert plan.index(blocked_marker) < plan.index(current_marker)
 
     current = plan[plan.index(current_marker) :]
-    assert "Next executable work package: WP-31B" in current
+    assert "Next executable work package: WP-31C" in current
     assert "WP-21: COMPLETE" in current
     assert "WP-30: COMPLETE" in current
     assert "WP-31A: COMPLETE" in current
+    assert "WP-31B: COMPLETE" in current
     assert "Profile module state: TYPED_CANONICAL" in current
+    assert "Mission catalog state: TYPED_CANONICAL" in current
+    assert "GUP catalog state: TYPED_CANONICAL" in current
+    assert "Launch module state: TYPED_CANONICAL" in current
     assert "Legacy profile.js: ROLLBACK_ONLY" in current
+    assert "Legacy missions.js: CONTROLLER_CANONICAL_PLUS_ROLLBACK" in current
+    assert "Legacy gups.js: CONTROLLER_CANONICAL_PLUS_ROLLBACK" in current
+    assert "Legacy launch.js: ROLLBACK_ONLY" in current
     assert "WP-03B automated performance harness: BACKLOG_NON_BLOCKING" in current

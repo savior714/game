@@ -248,11 +248,18 @@ def test_production_paths_outside_write_scope() -> None:
         "domains/ocean-rescue/src/profile/profile.ts",
         "domains/ocean-rescue/tsconfig.json",
         "domains/ocean-rescue/vite.bundle.ts",
+        # WP-31B typed static catalog group: the mission/GUP facade adapters and
+        # the fully migrated launch adapter are legitimate production cutover
+        # paths. The new typed catalog/launch modules are untracked additions.
+        "domains/ocean-rescue/src/esm/missions.js",
+        "domains/ocean-rescue/src/esm/gups.js",
+        "domains/ocean-rescue/src/esm/launch.js",
     }
     changed = {line for line in diff.splitlines() if line}
     assert changed <= allowed, (
         "shadow work must only reconcile the production cutover paths "
-        f"(artifact + builder + WP-30 manifest split + WP-31A typed profile); "
+        f"(artifact + builder + WP-30 manifest split + WP-31A typed profile + "
+        f"WP-31B typed static catalogs); "
         f"unexpected diff: {sorted(changed - allowed)}"
     )
 
@@ -353,6 +360,21 @@ def test_metadata_actual_module_membership() -> None:
     )
     assert "profile.js" not in metadata["actual_module_files"], (
         "rollback-only legacy profile.js must not be in shadow membership"
+    )
+    # WP-31B: the shadow lane shares the typed static-catalog modules, retains
+    # the mission/GUP controllers, and excludes the rollback-only launch.js.
+    for typed in ("missions/catalog.ts", "gups/catalog.ts", "launch/launch.ts"):
+        assert typed in metadata["actual_module_files"], (
+            f"typed static module {typed} missing from shadow membership"
+        )
+    assert "missions.js" in metadata["actual_module_files"], (
+        "legacy missions controller must stay in shadow membership"
+    )
+    assert "gups.js" in metadata["actual_module_files"], (
+        "legacy gups controller must stay in shadow membership"
+    )
+    assert "launch.js" not in metadata["actual_module_files"], (
+        "rollback-only legacy launch.js must not be in shadow membership"
     )
 
 

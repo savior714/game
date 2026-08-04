@@ -147,9 +147,12 @@ domains/ocean-rescue/src/
 ├─ state.js
 ├─ profile.js            (rollback-only since WP-31A)
 ├─ profile/profile.ts    (typed canonical profile module, WP-31A)
-├─ missions.js
-├─ gups.js
-├─ launch.js
+├─ missions.js           (unchanged mutable controller; canonical + rollback since WP-31B)
+├─ missions/catalog.ts   (typed canonical mission catalog, WP-31B)
+├─ gups.js               (unchanged mutable controller; canonical + rollback since WP-31B)
+├─ gups/catalog.ts       (typed canonical GUP catalog, WP-31B)
+├─ launch.js             (rollback-only since WP-31B)
+├─ launch/launch.ts      (typed canonical launch API, WP-31B)
 ├─ travel.js
 ├─ terrain.js
 ├─ travel-scene.js
@@ -169,6 +172,16 @@ WP-31A, the profile adapter `src/esm/profile.js` imports and re-exports the
 typed canonical module `src/profile/profile.ts` (which also registers the
 temporary `window.OceanRescue.Profile` ABI); `src/profile.js` is unchanged and
 is referenced only by the legacy rollback graph (`build-manifest.legacy.json`).
+
+Since WP-31B, the mission and GUP adapters (`src/esm/missions.js`,
+`src/esm/gups.js`) own the typed static-data catalogs
+(`src/missions/catalog.ts`, `src/gups/catalog.ts`) and build one frozen facade
+each whose `Catalog` is the typed catalog and whose methods are the unchanged
+legacy controller methods from `src/missions.js` and `src/gups.js`; those two
+legacy controllers remain in the canonical graph for their still-unmigrated
+mutable state. The launch adapter `src/esm/launch.js` imports and re-exports
+the complete typed launch API `src/launch/launch.ts`; `src/launch.js` is
+unchanged and is referenced only by the legacy rollback graph.
 
 ### 4.2 Current source graph
 

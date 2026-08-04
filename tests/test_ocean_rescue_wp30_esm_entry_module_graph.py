@@ -14,12 +14,19 @@ temporary compatibility adapter graph:
   that namespace;
 - migrated typed adapters import or re-export one canonical typed
   implementation, retain the temporary global ABI assertion, and must not
-  import the rollback-only legacy implementation (WP-31A: only ``profile.js``);
+  import the rollback-only legacy implementation (WP-31A: ``profile.js``;
+  WP-31B: ``launch.js``);
+- controller adapters (WP-31B: ``missions.js``, ``gups.js``) retain exactly one
+  unchanged legacy controller import, own the typed static-data catalog import,
+  build one frozen facade whose ``Catalog`` is the typed catalog and whose
+  methods are the unchanged controller method references, assign that facade to
+  ``window.OceanRescue.<Name>``, and export the facade and the typed catalog;
 - the module graph reachable from ``src/main.js`` is acyclic, single-rooted,
   uses only relative static imports, and covers every legacy implementation
   exactly once (nothing omitted, nothing imported twice);
-- the canonical graph reaches the typed profile implementation and excludes the
-  rollback-only ``src/profile.js``;
+- the canonical graph reaches the typed profile, mission catalog, GUP catalog,
+  and launch implementations and excludes the rollback-only ``src/profile.js``
+  and ``src/launch.js``;
 - legacy implementation files themselves import no modules (IIFE globals);
 - the legacy ordered manifest is preserved as the rollback authority.
 
@@ -66,13 +73,13 @@ ADAPTER_NAMESPACES: Dict[str, str] = {
 }
 
 # Unmigrated adapter file -> legacy implementation file it side-effect imports.
+# WP-31B removes missions.js, gups.js, and launch.js from this pure-legacy set:
+# missions.js and gups.js become controller adapters (typed catalog + legacy
+# controller) and launch.js becomes a fully migrated typed adapter.
 ADAPTER_LEGACY_FILE: Dict[str, str] = {
     "render-assets.js": "render-assets.generated.js",
     "render-runtime.js": "render-runtime.js",
     "state.js": "state.js",
-    "missions.js": "missions.js",
-    "gups.js": "gups.js",
-    "launch.js": "launch.js",
     "travel.js": "travel.js",
     "terrain.js": "terrain.js",
     "travel-scene.js": "travel-scene.js",
@@ -86,15 +93,31 @@ ADAPTER_LEGACY_FILE: Dict[str, str] = {
     "app.js": "app.js",
 }
 
-# Migrated typed adapter file -> canonical typed implementation it re-exports.
-# WP-31A migrates only the profile module; the typed implementation must not
-# import the rollback-only legacy `src/profile.js`.
-MIGRATED_ADAPTER_TYPED_FILE: Dict[str, str] = {
-    "profile.js": "profile/profile.ts",
+# Controller adapter file -> unchanged legacy controller it side-effect imports
+# while owning the typed static-data catalog (WP-31B).
+CONTROLLER_ADAPTER_LEGACY_FILE: Dict[str, str] = {
+    "missions.js": "missions.js",
+    "gups.js": "gups.js",
 }
 
-# Rollback-only legacy implementation retained for the legacy manifest graph.
-LEGACY_ROLLBACK_PROFILE_FILE = "profile.js"
+# Migrated typed adapter file -> canonical typed implementation it re-exports.
+# WP-31A migrates the profile module; WP-31B migrates the static launch module.
+# Migrated typed implementations must not import the rollback-only legacy
+# `src/profile.js` or `src/launch.js`.
+MIGRATED_ADAPTER_TYPED_FILE: Dict[str, str] = {
+    "profile.js": "profile/profile.ts",
+    "launch.js": "launch/launch.ts",
+}
+
+# Controller adapter file -> typed static-data catalog it owns (WP-31B).
+CONTROLLER_ADAPTER_TYPED_FILE: Dict[str, str] = {
+    "missions.js": "missions/catalog.ts",
+    "gups.js": "gups/catalog.ts",
+}
+
+# Rollback-only legacy implementation files retained for the legacy manifest
+# graph but excluded from the canonical graph.
+LEGACY_ROLLBACK_ONLY_FILES = {"profile.js", "launch.js"}
 
 # Adapter file -> set of adapter dependency files it must import explicitly.
 ADAPTER_DEPS: Dict[str, Set[str]] = {
@@ -247,7 +270,9 @@ def test_unmigrated_adapters_import_their_legacy_implementation_exactly_once() -
 
 def test_migrated_adapters_import_one_typed_implementation_only() -> None:
     legacy_resolved = {
-        _rel(SRC_DIR / legacy) for legacy in ADAPTER_LEGACY_FILE.values()
+        _rel(SRC_DIR / legacy)
+        for legacy in set(ADAPTER_LEGACY_FILE.values())
+        | set(CONTROLLER_ADAPTER_LEGACY_FILE.values())
     }
     for name, typed in MIGRATED_ADAPTER_TYPED_FILE.items():
         specs = [spec for _, spec in _static_imports(ESM_DIR / name)]
@@ -259,6 +284,30 @@ def test_migrated_adapters_import_one_typed_implementation_only() -> None:
         )
         assert not (set(resolved) & legacy_resolved), (
             f"{name} must not import a rollback-only legacy implementation"
+        )
+
+
+def test_controller_adapters_import_legacy_controller_and_typed_catalog_once() -> None:
+    legacy_resolved = {
+        _rel(SRC_DIR / legacy)
+        for legacy in set(ADAPTER_LEGACY_FILE.values())
+        | set(CONTROLLER_ADAPTER_LEGACY_FILE.values())
+    }
+    for name in CONTROLLER_ADAPTER_TYPED_FILE:
+        specs = [spec for _, spec in _static_imports(ESM_DIR / name)]
+        resolved = [_rel(_resolve(ESM_DIR / name, s)) for s in specs]
+        controller_resolved = _rel(SRC_DIR / CONTROLLER_ADAPTER_LEGACY_FILE[name])
+        typed_resolved = _rel(SRC_DIR / CONTROLLER_ADAPTER_TYPED_FILE[name])
+        assert resolved.count(controller_resolved) == 1, (
+            f"{name} must import its unchanged legacy controller exactly once "
+            f"({CONTROLLER_ADAPTER_LEGACY_FILE[name]}), got {resolved}"
+        )
+        assert resolved.count(typed_resolved) == 1, (
+            f"{name} must import its typed catalog exactly once "
+            f"({CONTROLLER_ADAPTER_TYPED_FILE[name]}), got {resolved}"
+        )
+        assert not (set(resolved) & legacy_resolved - {controller_resolved}), (
+            f"{name} must not import any other legacy implementation"
         )
 
 
@@ -288,6 +337,23 @@ def test_each_adapter_has_namespace_guard_and_export() -> None:
             assert (
                 f"{export_name} !== {var}" in text or f"{var} !== {export_name}" in text
             ), f"{name}: missing global ABI identity assertion"
+        elif name in CONTROLLER_ADAPTER_TYPED_FILE:
+            assert "Object.freeze(" in text, f"{name}: controller facade must be frozen"
+            exports = re.findall(
+                r"^export\s+\{\s*(\w+)\s*\}\s*;\s*$", text, re.MULTILINE
+            )
+            assert leaf in exports, (
+                f"{name}: missing named facade export {leaf}, got {exports}"
+            )
+            assert "Catalog" in exports, (
+                f"{name}: missing typed catalog export, got {exports}"
+            )
+            assert f"window.OceanRescue.{leaf} = {leaf};" in text, (
+                f"{name}: facade must replace the temporary global ABI"
+            )
+            assert "Catalog: Catalog," in text, (
+                f"{name}: facade must own the typed catalog"
+            )
         else:
             assert f"export {{ {var} }};" in text, f"{name}: missing named export {var}"
 
@@ -366,24 +432,47 @@ def test_implementation_modules_import_nothing() -> None:
         assert not deps, f"implementation module {key} must not import: {sorted(deps)}"
 
 
-def test_canonical_graph_reaches_typed_profile_implementation() -> None:
+def test_canonical_graph_reaches_typed_implementations() -> None:
     nodes, edges = _build_graph()
-    for name, typed in MIGRATED_ADAPTER_TYPED_FILE.items():
+    typed_targets = dict(MIGRATED_ADAPTER_TYPED_FILE)
+    typed_targets.update(CONTROLLER_ADAPTER_TYPED_FILE)
+    for name, typed in typed_targets.items():
         typed_key = _rel(SRC_DIR / typed)
         assert typed_key in nodes, f"{typed} is not reachable from main.js"
         adapter_key = f"esm/{name}"
         assert typed_key in edges.get(adapter_key, set()), (
             f"{name} adapter must reach {typed}"
         )
-        assert edges.get(typed_key) == set(), "typed profile module must be a leaf"
+        assert edges.get(typed_key) == set(), "typed leaf module must import nothing"
 
 
 def test_canonical_graph_excludes_rollback_profile_js() -> None:
     nodes, _ = _build_graph()
-    rollback_key = _rel(SRC_DIR / LEGACY_ROLLBACK_PROFILE_FILE)
+    rollback_key = _rel(SRC_DIR / "profile.js")
     assert rollback_key not in nodes, (
         "rollback-only legacy profile.js must not be in the canonical graph"
     )
+
+
+def test_canonical_graph_excludes_rollback_launch_js() -> None:
+    nodes, _ = _build_graph()
+    rollback_key = _rel(SRC_DIR / "launch.js")
+    assert rollback_key not in nodes, (
+        "rollback-only legacy launch.js must not be in the canonical graph"
+    )
+
+
+def test_canonical_graph_retains_mission_and_gup_controllers() -> None:
+    nodes, edges = _build_graph()
+    for name, legacy in CONTROLLER_ADAPTER_LEGACY_FILE.items():
+        legacy_key = _rel(SRC_DIR / legacy)
+        assert legacy_key in nodes, (
+            f"unchanged legacy {legacy} must stay in the canonical graph"
+        )
+        adapter_key = f"esm/{name}"
+        assert legacy_key in edges.get(adapter_key, set()), (
+            f"{name} adapter must reach its legacy controller {legacy}"
+        )
 
 
 # --- exactly-once coverage ---
@@ -391,7 +480,9 @@ def test_canonical_graph_excludes_rollback_profile_js() -> None:
 
 def test_every_legacy_implementation_covered_exactly_once() -> None:
     nodes, edges = _build_graph()
-    legacy_targets = set(ADAPTER_LEGACY_FILE.values())
+    legacy_targets = set(ADAPTER_LEGACY_FILE.values()) | set(
+        CONTROLLER_ADAPTER_LEGACY_FILE.values()
+    )
     count: Counter = Counter()
     for src, deps in edges.items():
         for dep in deps:
@@ -465,12 +556,17 @@ def test_legacy_manifest_preserved_as_full_ordered_set() -> None:
 def test_canonical_scripts_are_all_recorded_in_legacy_manifest() -> None:
     data = json.loads(LEGACY_MANIFEST.read_text(encoding="utf-8"))
     legacy_files = {e["file"] for e in data["scripts"]}
-    expected_legacy = set(ADAPTER_LEGACY_FILE.values()) | {LEGACY_ROLLBACK_PROFILE_FILE}
+    expected_legacy = (
+        set(ADAPTER_LEGACY_FILE.values())
+        | set(CONTROLLER_ADAPTER_LEGACY_FILE.values())
+        | set(LEGACY_ROLLBACK_ONLY_FILES)
+    )
     for raw in expected_legacy:
         assert raw in legacy_files, f"legacy manifest missing implementation file {raw}"
     assert "main.js" not in legacy_files, (
         "legacy manifest must not reference the ESM entry main.js"
     )
-    assert LEGACY_ROLLBACK_PROFILE_FILE in legacy_files, (
-        "legacy manifest must retain the rollback-only profile.js entry"
-    )
+    for rollback_only in LEGACY_ROLLBACK_ONLY_FILES:
+        assert rollback_only in legacy_files, (
+            f"legacy manifest must retain the rollback-only {rollback_only} entry"
+        )

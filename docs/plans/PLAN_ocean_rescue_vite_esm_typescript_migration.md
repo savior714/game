@@ -7,7 +7,7 @@
 - **Scope:** Ocean Rescue development-source migration from global-namespace JavaScript to ESM/TypeScript/Vite
 - **Execution model:** sequential bounded work packages
 - **Current phase:** PHASE_6_IN_PROGRESS
-- **Next executable work package:** WP-31B
+- **Next executable work package:** WP-31C
 - **Production cutover gate:** SATISFIED by WP-02 functional parity, WP-20 deterministic shadow-bundle parity, WP-21 production application-bundle cutover, and WP-30 canonical ESM entry
 - **Target-device release gate:** WP-03A must pass before MVP release, but it does not block WP-21
 - **Automated performance harness:** WP-03B is non-blocking follow-up work, triggered by an observed regression or post-MVP stabilization need
@@ -328,13 +328,20 @@ WP-20: COMPLETE
 WP-21: COMPLETE
 WP-30: COMPLETE
 WP-31A: COMPLETE
+WP-31B: COMPLETE
 Current phase: PHASE_6_IN_PROGRESS
-Next executable work package: WP-31B
+Next executable work package: WP-31C
 Production bundle state: PRODUCTION_APP_BUNDLE
 ESM entry state: CANONICAL_MAIN_JS
 Manifest state: CONTRACTED_CANONICAL_PLUS_LEGACY_ROLLBACK
 Profile module state: TYPED_CANONICAL
+Mission catalog state: TYPED_CANONICAL
+GUP catalog state: TYPED_CANONICAL
+Launch module state: TYPED_CANONICAL
 Legacy profile.js: ROLLBACK_ONLY
+Legacy missions.js: CONTROLLER_CANONICAL_PLUS_ROLLBACK
+Legacy gups.js: CONTROLLER_CANONICAL_PLUS_ROLLBACK
+Legacy launch.js: ROLLBACK_ONLY
 WP-03A target-device smoke: REQUIRED_BEFORE_MVP_RELEASE
 WP-03B automated performance harness: BACKLOG_NON_BLOCKING
 ```
@@ -424,7 +431,7 @@ Evidence: `docs/evidence/ocean-rescue/migration/phase-5/canonical-esm-entry-modu
 
 ## 8. Phase 6 — Typed leaf and domain modules
 
-- **Status:** IN_PROGRESS (WP-31A PASS)
+- **Status:** IN_PROGRESS (WP-31B PASS)
 - **Objective:** Convert bounded modules to TypeScript without decomposing application orchestration.
 - **Depends on:** WP-30
 - **Authoritative path before:** JavaScript domain modules
@@ -457,10 +464,64 @@ Evidence: `docs/evidence/ocean-rescue/migration/phase-6/typed-profile-vertical-s
 
 ### WP-31B — Static catalog group
 
-- mission catalog;
-- GUP catalog;
-- launch/content data that is demonstrably static;
-- direct callers and focused tests.
+- **Status:** COMPLETE (WP-31B PASS)
+- **Objective:** Migrate the mission catalog, GUP catalog, and the demonstrably
+  static launch content to strictly typed canonical TypeScript modules while
+  preserving all runtime values, ordering, immutability, mutable controller
+  behavior, browser behavior, deterministic packaging, and the byte-identical
+  legacy rollback sources.
+- **Typed modules:**
+  - `domains/ocean-rescue/src/missions/catalog.ts` (typed canonical mission
+    catalog);
+  - `domains/ocean-rescue/src/gups/catalog.ts` (typed canonical GUP catalog);
+  - `domains/ocean-rescue/src/launch/launch.ts` (complete typed launch API:
+    frozen launch catalog, `DurationMs`, `GoalDurationMs`, typed
+    `getMissionContent()`, frozen `Launch` API, temporary global ABI).
+- **Compatibility adapters:**
+  - `src/esm/missions.js` side-effect imports the unchanged legacy controller
+    `../missions.js`, validates the legacy API and catalog parity, and builds
+    one frozen facade whose `Catalog` is the typed catalog and whose methods
+    are the unchanged controller method references; the facade replaces the
+    temporary `window.OceanRescue.Missions` ABI and is exported with the typed
+    catalog.
+  - `src/esm/gups.js` applies the same bounded pattern for GUP.
+  - `src/esm/launch.js` imports and re-exports the typed launch module and no
+    longer side-effect-imports `../launch.js`.
+- **Ownership after:**
+  - canonical ESM production/dev graph:
+    `src/main.js → src/esm/app.js → src/esm/{missions,gups,launch}.js`; the
+    mission/GUP adapters reach both their typed catalog and their unchanged
+    legacy controller; the launch adapter reaches the typed launch module only;
+  - legacy rollback graph: `build-manifest.legacy.json → missions.js, gups.js,
+    launch.js` (all unchanged); `launch.js` is rollback-only.
+- **Verified:** strict `tsc --noEmit`; typed static-catalog behavioral matrix;
+  legacy-versus-typed parity for mission and GUP controllers; launch content and
+  lookup parity; runtime identity and immutability on the real
+  compiled/transformed modules; WP-30 module graph (typed modules in, rollback
+  `launch.js`/`profile.js` out, controllers retained); production/shadow module
+  membership; deterministic production bundle + standalone HTML; tracked-artifact
+  match; browser static-catalog flow (mission cards, GUP cards, launch
+  briefing/goal/timing) with clean page/console/network quality; operational
+  legacy rollback byte-identical to the pre-WP-31B baseline; legacy sources
+  byte-identical.
+
+Closure status after WP-31B; superseded for current scheduling:
+
+```text
+Phase 5: COMPLETE
+Phase 6: IN_PROGRESS
+WP-31A: COMPLETE
+WP-31B: COMPLETE
+Mission catalog state: TYPED_CANONICAL
+GUP catalog state: TYPED_CANONICAL
+Launch module state: TYPED_CANONICAL
+Legacy missions.js: CONTROLLER_CANONICAL_PLUS_ROLLBACK
+Legacy gups.js: CONTROLLER_CANONICAL_PLUS_ROLLBACK
+Legacy launch.js: ROLLBACK_ONLY
+Next executable work package: WP-31C
+```
+
+Evidence: `docs/evidence/ocean-rescue/migration/phase-6/typed-static-catalog-group.md`
 
 ### WP-31C — Core state and tightly coupled travel contracts
 

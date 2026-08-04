@@ -78,11 +78,17 @@ AidenGame은 어린이를 위한 정적 웹 기반 학습 게임 플랫폼이다
 
 - canonical branch는 `origin/main`이다.
 - 기본 개발 방식은 `main` 직접 수정과 fast-forward push다.
-- PR, feature branch, worktree는 사용자가 요청한 경우에만 사용한다.
+- PR과 feature branch는 사용자가 요청한 경우에만 사용한다.
+- 병렬 세션은 isolated worktree 또는 동등한 격리 작업공간을 사용한다.
 - force push는 금지한다.
 - 배포 설정 변경은 제품 런타임 경로와 함께 검증한다.
 - 원격 상태나 필수 검증이 불명확하면 publish하지 않는다.
 - generated artifact는 직접 편집하지 않고 canonical source와 build pipeline을 통해 갱신한다.
+- 저장소 전체 전역 single-writer 잠금은 사용하지 않는다. 동일·중복·overlap work package에만 owner 한 세션을 둔다.
+- mutation, commit·push, shared runner·contract 변경과 장시간 canonical 실행은 `agents/workflows/work-package-claim.md`에 따라 GitHub Issue #1에서 owner를 확정한 뒤 수행한다.
+- `PARENT_KEY`는 상위 제품축 grouping이며 잠금이 아니다. 충돌하지 않는 서로 다른 `TASK_KEY`에는 여러 owner를 허용한다.
+- 웹 GPT 세션은 owner claim을 로컬 agent 한 세션에 위임할 수 있으며, claim이 없는 상태에서는 실행 프롬프트를 발급하지 않는다.
+- 동적 claim은 저장소 파일에 기록하지 않는다. Issue #1 comments가 owner·lease·release 상태의 SSOT다.
 
 ---
 
@@ -171,6 +177,8 @@ just ci
 | 프로젝트 개요와 실행 방법 | `README.md` |
 | 작업 실행 규약 | `AGENTS.md` |
 | 프로젝트 정책 | `PROJECT_RULES.md` |
+| 병렬 실행·프롬프트 발급 claim | `agents/workflows/work-package-claim.md` + GitHub Issue #1 comments |
+| Git·publish 절차 | `agents/workflows/git.md` |
 | 요구사항과 회귀 계약 | `tests/` |
 | 배포 경로 | `vercel.json`과 실제 엔트리 파일 |
 | Ocean Rescue 개발 아키텍처 | `docs/specs/technical/AIDENGAME_OCEAN_RESCUE_DEVELOPMENT_ARCHITECTURE.md` |

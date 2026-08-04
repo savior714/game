@@ -23,11 +23,35 @@
 
 - canonical branch는 `origin/main`이다.
 - 1인 개발 기본값은 `main` 직접 수정과 fast-forward push다.
-- PR, feature branch, worktree, Linear 연동은 사용자가 요청한 경우에만 사용한다.
+- PR과 feature branch는 사용자가 요청한 경우에만 사용한다.
+- 병렬 세션은 서로 다른 isolated worktree 또는 동등한 격리 작업공간을 사용한다.
 - force push와 `--no-verify`는 금지한다.
 - 작업 전 `origin/main`과 현재 HEAD를 확인한다.
 - unrelated dirty state가 있으면 보존하고 대상 경로와 섞지 않는다.
 - 원격이 작업 중 선행되면 재확인하고, 안전한 fast-forward가 불가능하면 publish를 중단한다.
+
+### 2.1 병렬 세션과 work-package claim
+
+AidenGame은 프로젝트 전체를 한 세션만 수정하는 전역 single-writer 모델을 사용하지 않는다.
+대신 **동일하거나 충돌하는 work package마다 owner 한 세션**을 둔다.
+
+```text
+PARENT_KEY
+= 상위 제품 축 또는 closure group
+= 병렬 작업을 묶는 식별자
+= 잠금이 아님
+
+TASK_KEY
+= 독립적으로 검증 가능한 bounded work package
+= 이 단위마다 owner 한 세션
+```
+
+- 같은 `PARENT_KEY` 아래에서도 `TASK_KEY`, `WRITE_SCOPE`, `EXCLUSIVE_RESOURCES`, `DEPENDS_ON`이 충돌하지 않으면 여러 owner가 병렬 실행할 수 있다.
+- mutation, commit·push, 공통 runner·contract 변경 또는 장시간 canonical browser/release/evidence 실행 전에는 `agents/workflows/work-package-claim.md`를 따른다.
+- 동적 owner 상태는 GitHub Issue #1 `[Coordination] Active Work-Package Claims`의 comments가 소유한다.
+- read-only 분석, 코드 경로 확인, work-package 분해와 병렬 가능성 판정에는 claim이 필요하지 않다.
+- 작업 지명이나 다음 작업 추천은 실행 권한이 아니다. claim-required 작업은 claim owner가 된 뒤에만 실행하거나 로컬 실행 프롬프트로 위임한다.
+- claim은 isolated worktree, 최신 `origin/main` overlap 검사, focused verification, exact artifact identity 확인과 fast-forward publish 안전성을 대체하지 않는다.
 
 ---
 
@@ -54,6 +78,7 @@ ONE WORK PACKAGE
 3. 허용 변경 범위와 명시적 제외 범위를 정한다.
 4. 검증 묶음과 acceptance checklist를 정의한다.
 5. 중단 조건과 rollback 경계를 정한다.
+6. claim-required 작업이면 `PARENT_KEY`, `TASK_KEY`, `WRITE_SCOPE`, `EXCLUSIVE_RESOURCES`, `DEPENDS_ON`을 정의하고 owner를 확정한다.
 
 재현되지 않거나 근거가 사라진 후보는 수정하지 않고 `REJECTED`, `OBSOLETE` 또는 별도 조사 필요 상태로 기록한다.
 
@@ -65,6 +90,7 @@ ONE WORK PACKAGE
 - 작업 중 새 문제가 발견되면 현재 목적과의 결합도와 rollback 경계를 판정한다.
 - 강하게 결합된 문제를 포함할 때는 허용 범위와 검증 묶음을 명시적으로 갱신한다.
 - 독립적인 문제는 remaining work 또는 별도 work package로 남긴다.
+- claim의 declared write/resource scope를 임의로 확대하지 않는다. 확대가 필요하면 기존 claim을 release하고 새 경계로 다시 arbitration한다.
 - workaround, fail-open fallback, 검증 우회로 문제를 숨기지 않는다.
 - 삭제·데이터 변경·배포 등 비가역성이 큰 작업은 현재 요청 범위를 벗어나면 중단한다.
 - 범위가 로컬 모델의 안정적인 컨텍스트를 넘거나 rollback 경계가 다르면 child work package로 분할한다.
@@ -77,6 +103,7 @@ ONE WORK PACKAGE
 4. full-suite는 변경 위험, 저장소 계약 또는 cutover 성격상 필요할 때만 추가한다.
 5. 여러 변경을 수행했더라도 full-suite 결과 하나만으로 모든 계약을 뭉뚱그려 판정하지 않는다.
 6. 남은 독립 문제와 후속 작업을 분리해 기록한다.
+7. claim-required 작업은 완료·차단·포기 여부와 관계없이 Issue #1에 `RELEASE`를 게시한다.
 
 ---
 
@@ -173,6 +200,12 @@ just ci
 - 강하게 결합된 source, caller, type, test, configuration은 같은 프롬프트에 포함할 수 있다.
 - 과거 계획 전체를 반복 삽입하지 않고 현재 작업에 필요한 delta만 전달한다.
 - 컨텍스트가 커지면 phase 또는 child work package로 나누고 이전 결과를 확인한 뒤 다음 작업을 진행한다.
+- claim-required 실행 프롬프트는 웹 GPT 세션이 Issue #1에서 package claim owner가 된 뒤에만 발급한다.
+- 웹 세션은 획득한 claim을 로컬 에이전트 **한 세션**에 delegated executor로 위임할 수 있다.
+- 프롬프트에는 `PARENT_KEY`, `TASK_KEY`, `CLAIM_ID`, `OWNER_LABEL`, `WRITE_SCOPE`, `EXCLUSIVE_RESOURCES`, `DEPENDS_ON`, lease와 재확인·release 책임을 포함한다.
+- 같은 `CLAIM_ID`를 여러 로컬 executor에 동시에 위임하지 않는다.
+- 위임받은 로컬 executor는 별도 중복 claim을 게시하지 않는다. Issue 접근이 없으면 coordinating 웹 세션이 claim 재확인과 `RELEASE` 게시를 책임진다.
+- owner가 아니거나 coordination board에 접근할 수 없는 웹 세션은 claim-required 실행 프롬프트를 제공하지 않고 read-only coordination 결과만 보고한다.
 
 ---
 
@@ -196,6 +229,19 @@ GIT / PUBLICATION STATUS
 REMAINING_WORK
 ```
 
+claim-required 작업은 다음을 추가한다.
+
+```text
+PARENT_KEY
+TASK_KEY
+CLAIM_ID
+CLAIM_STATUS
+OWNER_LABEL
+WRITE_SCOPE
+EXCLUSIVE_RESOURCES
+RELEASE_POSTED
+```
+
 가설 기반 조사에서는 `HYPOTHESIS`와 `HYPOTHESIS_VERDICT`를 추가할 수 있으나 모든 작업의 필수 필드는 아니다.
 보고는 실제 실행 근거만 포함한다.
 과거 Blueprint의 Status/Conclusion 필드를 갱신하는 것은 일반 완료 조건이 아니다.
@@ -209,6 +255,8 @@ REMAINING_WORK
 | 프로젝트 개요 | `README.md` |
 | 실행 규약 | `AGENTS.md` |
 | 아키텍처·스택·품질 정책 | `PROJECT_RULES.md` |
+| 병렬 실행·프롬프트 발급 claim | `agents/workflows/work-package-claim.md` + GitHub Issue #1 comments |
+| Git·publish 절차 | `agents/workflows/git.md` |
 | 실행 가능한 요구사항 | `tests/` |
 | 통합 검증 | `verify.sh`, `Justfile` |
 | Ocean Rescue 개발 아키텍처 | `docs/specs/technical/AIDENGAME_OCEAN_RESCUE_DEVELOPMENT_ARCHITECTURE.md` |

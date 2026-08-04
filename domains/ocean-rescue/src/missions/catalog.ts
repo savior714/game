@@ -14,7 +14,9 @@
  * behavior because unlock progression uses catalog position.
  */
 
-export type MissionId = "sea-turtle" | "crab" | "young-whale";
+import type { MissionId as SharedMissionId } from "../contracts/mission";
+
+export type MissionId = SharedMissionId;
 
 export interface MissionCatalogEntry {
   readonly id: MissionId;

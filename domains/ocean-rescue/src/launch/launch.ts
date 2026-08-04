@@ -14,10 +14,13 @@
  * `window.OceanRescue.Launch` compatibility ABI consumed by `src/app.js`.
  */
 
-export type LaunchMissionId = "sea-turtle" | "crab" | "young-whale";
+import type { MissionId } from "../contracts/mission";
+import type { OceanRescueNamespace } from "../contracts/runtime-abi";
+
+export type LaunchMissionId = MissionId;
 
 export interface LaunchCatalogEntry {
-  readonly missionId: LaunchMissionId;
+  readonly missionId: MissionId;
   readonly briefing: string;
   readonly goal: string;
 }
@@ -29,13 +32,6 @@ export interface LaunchApi {
   readonly DurationMs: number;
   readonly GoalDurationMs: number;
   readonly getMissionContent: (missionId: unknown) => LaunchCatalogEntry | null;
-}
-
-/** Temporary global compatibility slot until WP-32 shares boundary types. */
-interface OceanRescueGlobalNamespace {
-  OceanRescue?: {
-    Launch?: unknown;
-  };
 }
 
 function freeze<T>(value: T): Readonly<T> {
@@ -84,7 +80,7 @@ export const Launch: LaunchApi = freeze({
   getMissionContent,
 });
 
-const win = window as OceanRescueGlobalNamespace;
+const win = window as Window & { OceanRescue?: OceanRescueNamespace };
 const root = win.OceanRescue || {};
 win.OceanRescue = root;
 root.Launch = Launch;

@@ -145,14 +145,14 @@ def test_adapters_import_typed_modules_and_required_legacy_only() -> None:
     assert 'import "../missions.js";' in missions
     assert "getSnapshot" in missions and "completeMission" in missions
     assert "markMissionViewed" in missions
-    assert "window.OceanRescue.Missions = Missions;" in missions
+    assert "OceanRescue.Missions = Missions;" in missions
     assert "export { Missions };" in missions and "export { Catalog };" in missions
 
     gups = (ESM_DIR / "gups.js").read_text(encoding="utf-8")
     assert 'import { Catalog } from "../gups/catalog";' in gups
     assert 'import "../gups.js";' in gups
     assert "prepareSelection" in gups and "confirmSelection" in gups
-    assert "window.OceanRescue.Gups = Gups;" in gups
+    assert "OceanRescue.Gups = Gups;" in gups
     assert "export { Gups };" in gups and "export { Catalog };" in gups
 
     launch = (ESM_DIR / "launch.js").read_text(encoding="utf-8")

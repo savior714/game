@@ -358,9 +358,12 @@ def test_each_adapter_has_namespace_guard_and_export() -> None:
             assert "Catalog" in exports, (
                 f"{name}: missing typed catalog export, got {exports}"
             )
-            assert f"window.OceanRescue.{leaf} = {leaf};" in text, (
-                f"{name}: facade must replace the temporary global ABI"
-            )
+            # WP-32A: the facade replaces the temporary global ABI slot. The
+            # assignment carries a JSDoc type assertion on `window`, so the
+            # leading identifier may be parenthesized.
+            assert re.search(
+                rf"\(?window\)?\.OceanRescue\.{leaf}\s*=\s*{leaf}\s*;", text
+            ), f"{name}: facade must replace the temporary global ABI"
             assert "Catalog: Catalog," in text, (
                 f"{name}: facade must own the typed catalog"
             )

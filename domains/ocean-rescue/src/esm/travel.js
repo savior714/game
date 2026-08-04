@@ -1,3 +1,5 @@
+// @ts-check
+/// <reference path="../contracts/ocean-rescue-global.d.ts" />
 import { Travel } from "../travel/travel";
 
 const registered = window.OceanRescue?.Travel;

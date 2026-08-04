@@ -16,6 +16,8 @@
  * `src/app.js`.
  */
 
+import type { OceanRescueNamespace } from "../contracts/runtime-abi";
+
 export type Phase =
   | "BOOT"
   | "PROFILE_CHOICE"
@@ -68,13 +70,6 @@ export interface StateApi {
   readonly beginTransition: (nextPhase: unknown) => TransitionToken | null;
   readonly completeTransition: (token: unknown) => boolean;
   readonly forcePhase: (phase: unknown) => boolean;
-}
-
-/** Temporary global compatibility slot until WP-32 shares boundary types. */
-interface OceanRescueGlobalNamespace {
-  OceanRescue?: {
-    State?: unknown;
-  };
 }
 
 function freeze<T>(value: T): Readonly<T> {
@@ -236,7 +231,7 @@ const State: StateApi = freeze({
   forcePhase: forcePhase,
 });
 
-const win = window as OceanRescueGlobalNamespace;
+const win = window as Window & { OceanRescue?: OceanRescueNamespace };
 const root = win.OceanRescue || {};
 win.OceanRescue = root;
 root.State = State;

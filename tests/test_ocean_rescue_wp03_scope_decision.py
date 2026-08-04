@@ -13,8 +13,8 @@ def test_current_schedule_allows_wp30_before_physical_device_smoke() -> None:
     plan = PLAN.read_text(encoding="utf-8")
     header = plan.split("\n---\n", maxsplit=1)[0]
 
-    assert "**Current phase:** PHASE_7_READY" in header
-    assert "**Next executable work package:** WP-32" in header
+    assert "**Current phase:** PHASE_7_IN_PROGRESS" in header
+    assert "**Next executable work package:** WP-32B" in header
     assert "**Production cutover gate:** SATISFIED" in header
     assert "WP-03A must pass before MVP release, but it does not block WP-21" in header
     assert "WP-03B is non-blocking follow-up work" in header
@@ -58,12 +58,13 @@ def test_superseded_wp03_blocking_language_is_historical_only() -> None:
     assert plan.index(blocked_marker) < plan.index(current_marker)
 
     current = plan[plan.index(current_marker) :]
-    assert "Next executable work package: WP-32" in current
+    assert "Next executable work package: WP-32B" in current
     assert "WP-21: COMPLETE" in current
     assert "WP-30: COMPLETE" in current
     assert "WP-31A: COMPLETE" in current
     assert "WP-31B: COMPLETE" in current
     assert "WP-31C: COMPLETE" in current
+    assert "WP-32A: COMPLETE" in current
     assert "Profile module state: TYPED_CANONICAL" in current
     assert "Mission catalog state: TYPED_CANONICAL" in current
     assert "GUP catalog state: TYPED_CANONICAL" in current

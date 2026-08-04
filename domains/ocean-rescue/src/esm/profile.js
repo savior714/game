@@ -1,3 +1,5 @@
+// @ts-check
+/// <reference path="../contracts/ocean-rescue-global.d.ts" />
 import { Profile } from "../profile/profile";
 
 const registered = window.OceanRescue?.Profile;

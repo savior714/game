@@ -14,6 +14,8 @@
  * `src/app.js`.
  */
 
+import type { OceanRescueNamespace } from "../contracts/runtime-abi";
+
 export type ProfileAnimalId = "arctic-fox" | "beaver" | "red-panda";
 
 export interface ProfileAnimal {
@@ -51,13 +53,6 @@ export interface ProfileApi {
   readonly getSnapshot: () => ProfileSnapshot;
   readonly selectAnimal: (animalId: unknown) => boolean;
   readonly confirmSelection: () => boolean;
-}
-
-/** Temporary global compatibility slot until WP-32 shares boundary types. */
-interface OceanRescueGlobalNamespace {
-  OceanRescue?: {
-    Profile?: unknown;
-  };
 }
 
 const STORAGE_KEY = "aidengame.oceanRescue.profile";
@@ -256,7 +251,7 @@ const Profile: ProfileApi = freeze({
   confirmSelection,
 });
 
-const win = window as OceanRescueGlobalNamespace;
+const win = window as Window & { OceanRescue?: OceanRescueNamespace };
 const root = win.OceanRescue || {};
 win.OceanRescue = root;
 root.Profile = Profile;

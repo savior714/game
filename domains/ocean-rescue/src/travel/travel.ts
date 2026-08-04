@@ -17,6 +17,8 @@
  * compatibility ABI consumed by `src/app.js`.
  */
 
+import type { OceanRescueNamespace } from "../contracts/runtime-abi";
+
 export interface TravelBounds {
   readonly minY: number;
   readonly maxY: number;
@@ -44,13 +46,6 @@ export interface TravelApi {
   readonly moveDrag: (pointerId: unknown, stageY: unknown) => boolean;
   readonly endDrag: (pointerId: unknown) => boolean;
   readonly tapTo: (stageY: unknown) => boolean;
-}
-
-/** Temporary global compatibility slot until WP-32 shares boundary types. */
-interface OceanRescueGlobalNamespace {
-  OceanRescue?: {
-    Travel?: unknown;
-  };
 }
 
 function freeze<T>(value: T): Readonly<T> {
@@ -262,7 +257,7 @@ const Travel: TravelApi = freeze({
   tapTo: tapTo,
 });
 
-const win = window as OceanRescueGlobalNamespace;
+const win = window as Window & { OceanRescue?: OceanRescueNamespace };
 const root = win.OceanRescue || {};
 win.OceanRescue = root;
 root.Travel = Travel;

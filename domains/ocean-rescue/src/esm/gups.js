@@ -1,3 +1,5 @@
+// @ts-check
+/// <reference path="../contracts/ocean-rescue-global.d.ts" />
 import { Catalog } from "../gups/catalog";
 import "../gups.js";
 
@@ -57,7 +59,8 @@ const Gups = Object.freeze({
   confirmSelection: registered.confirmSelection
 });
 
-window.OceanRescue.Gups = Gups;
+/** @type {Window & { OceanRescue: import("../contracts/runtime-abi").OceanRescueNamespace }} */
+(window).OceanRescue.Gups = Gups;
 
 export { Catalog };
 export { Gups };

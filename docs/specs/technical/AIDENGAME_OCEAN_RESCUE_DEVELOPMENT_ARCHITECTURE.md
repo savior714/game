@@ -191,8 +191,35 @@ Since WP-31C, the core state adapter `src/esm/state.js` and the travel adapter
 runtime contract); the unchanged `src/state.js` and `src/travel.js` are
 referenced only by the legacy rollback graph. `src/app.js` still consumes the
 temporary globals (`window.OceanRescue.State`, `window.OceanRescue.Travel`) and
-remains the legacy JavaScript orchestration hub; shared boundary types are
-planned for WP-32.
+remains the legacy JavaScript orchestration hub.
+
+Since WP-32A, the temporary `window.OceanRescue` compatibility ABI has a single
+typed boundary:
+
+- `src/contracts/mission.ts` is the shared mission identifier authority
+  (`MissionId = "sea-turtle" | "crab" | "young-whale"`); the typed mission
+  catalog (`src/missions/catalog.ts`) and the typed launch catalog
+  (`src/launch/launch.ts`) both consume it, keeping compatibility aliases
+  (`MissionId`, `LaunchMissionId`).
+- `src/contracts/runtime-abi.ts` is the type-only runtime ABI module composing
+  the actual exported API types (`ProfileApi`, `LaunchApi`, `StateApi`,
+  `TravelApi`, `MissionCatalog`, `GupCatalog`, `MissionId`, `GupId`) plus the
+  mission/GUP controller facade types (`MissionsApi`, `GupsApi`,
+  `MissionProgressionSnapshot`, `MissionCompletionResult`,
+  `GupSelectionSnapshot`) and the `OceanRescueNamespace` slots.
+- `src/contracts/ocean-rescue-global.d.ts` is the single optional
+  `Window.OceanRescue` global declaration; it emits no runtime code.
+- The typed modules `profile.ts`, `launch.ts`, `state.ts`, and `travel.ts` no
+  longer duplicate a local namespace interface and register their ABI slots
+  through the shared namespace type.
+- All six `src/esm/*.js` adapters are `@ts-check`ed against the shared
+  declaration; the mission/GUP facades keep the exact unchanged legacy
+  controller method references.
+
+The shared contract modules are type-only and never enter the production
+bundle. `src/app.js` is still the legacy JavaScript orchestration hub;
+normalized pointer intents and renderer-adapter contracts remain WP-32B
+targets.
 
 ### 4.2 Current source graph
 

@@ -223,6 +223,20 @@ check-ocean-rescue-typed-core-state-travel:
     uv run pytest tests/test_ocean_rescue_wp11_dev_server.py -q
     uv run pytest tests/test_ocean_rescue_wp03_scope_decision.py -q
 
+# Run the focused WP-32A shared typed runtime ABI verification bundle
+check-ocean-rescue-shared-runtime-abi-types:
+    @just check-ocean-rescue-toolchain
+    uv run pytest tests/test_ocean_rescue_wp32a_shared_runtime_abi_types.py -q
+    uv run pytest tests/test_ocean_rescue_wp31c_typed_core_state_travel.py -q
+    uv run pytest tests/test_ocean_rescue_wp31b_typed_static_catalogs.py -q
+    uv run pytest tests/test_ocean_rescue_wp31a_typed_profile.py -q
+    uv run pytest tests/test_ocean_rescue_wp30_esm_entry_module_graph.py -q
+    uv run pytest tests/test_ocean_rescue_wp21_production_bundle_cutover.py -q
+    uv run pytest tests/test_ocean_rescue_wp20_shadow_bundle.py -q
+    just check-ocean-rescue-rollback
+    uv run pytest tests/test_ocean_rescue_artifact_drift.py -q
+    uv run pytest tests/test_ocean_rescue_wp03_scope_decision.py -q
+
 # Verify the Ocean Rescue build-tooling boundary end to end
 check-ocean-rescue-toolchain:
     @just check-ocean-rescue-node-version

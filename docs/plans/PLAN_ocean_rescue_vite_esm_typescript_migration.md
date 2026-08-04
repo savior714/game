@@ -6,8 +6,8 @@
 - **Updated:** 2026-08-04
 - **Scope:** Ocean Rescue development-source migration from global-namespace JavaScript to ESM/TypeScript/Vite
 - **Execution model:** sequential bounded work packages
-- **Current phase:** PHASE_7_READY
-- **Next executable work package:** WP-32
+- **Current phase:** PHASE_7_IN_PROGRESS
+- **Next executable work package:** WP-32B
 - **Production cutover gate:** SATISFIED by WP-02 functional parity, WP-20 deterministic shadow-bundle parity, WP-21 production application-bundle cutover, and WP-30 canonical ESM entry
 - **Target-device release gate:** WP-03A must pass before MVP release, but it does not block WP-21
 - **Automated performance harness:** WP-03B is non-blocking follow-up work, triggered by an observed regression or post-MVP stabilization need
@@ -50,7 +50,7 @@
 | Phase 4 | WP-21 |
 | Phase 5 | WP-30 |
 | Phase 6 | WP-31A, WP-31B, WP-31C |
-| Phase 7 | WP-32 |
+| Phase 7 | WP-32A, WP-32B |
 | Phase 8 | WP-33A through WP-33H |
 | Phase 9 | WP-40 |
 | Phase 10 | WP-41A, WP-41B, WP-41C |
@@ -331,8 +331,9 @@ WP-30: COMPLETE
 WP-31A: COMPLETE
 WP-31B: COMPLETE
 WP-31C: COMPLETE
-Current phase: PHASE_7_READY
-Next executable work package: WP-32
+WP-32A: COMPLETE
+Current phase: PHASE_7_IN_PROGRESS
+Next executable work package: WP-32B
 Production bundle state: PRODUCTION_APP_BUNDLE
 ESM entry state: CANONICAL_MAIN_JS
 Manifest state: CONTRACTED_CANONICAL_PLUS_LEGACY_ROLLBACK
@@ -348,6 +349,10 @@ Legacy gups.js: CONTROLLER_CANONICAL_PLUS_ROLLBACK
 Legacy launch.js: ROLLBACK_ONLY
 Legacy state.js: ROLLBACK_ONLY
 Legacy travel.js: ROLLBACK_ONLY
+Shared mission ID state: TYPE_AUTHORITY
+Global OceanRescue ABI state: TYPED_SHARED
+Typed module ESM adapter state: CHECKED_JS
+Runtime output state: BYTE_IDENTICAL
 WP-03A target-device smoke: REQUIRED_BEFORE_MVP_RELEASE
 WP-03B automated performance harness: BACKLOG_NON_BLOCKING
 ```
@@ -592,8 +597,8 @@ Evidence: `docs/evidence/ocean-rescue/migration/phase-6/typed-core-state-travel-
 
 ## 9. Phase 7 — Shared boundary types
 
-- **Status:** NOT_STARTED
-- **Work package:** WP-32
+- **Status:** IN_PROGRESS
+- **Work packages:** WP-32A (COMPLETE), WP-32B (next)
 - **Objective:** Type actual cross-module contracts after enough concrete modules exist.
 - **Included requirements:** gameplay snapshots, phase IDs, normalized pointer intents, renderer-adapter contracts, persistence schemas where shared
 - **Depends on:** WP-31A, WP-31B, WP-31C as applicable
@@ -605,13 +610,63 @@ Evidence: `docs/evidence/ocean-rescue/migration/phase-6/typed-core-state-travel-
 - **Stop conditions:** current cross-module boundaries are typed without speculative abstraction
 - **Rollback boundary:** remove shared types and revert affected signatures
 
+### WP-32A — Shared typed runtime ABI
+
+- **Status:** COMPLETE (WP-32A PASS)
+- **Objective:** Establish one minimal shared type boundary between the typed
+  canonical modules and the ESM compatibility adapters without changing any
+  runtime statement: the mission identifier authority, the runtime ABI type
+  module, the single global `window.OceanRescue` declaration, and checked-JS
+  ESM adapters.
+- **Shared type modules:**
+  - `domains/ocean-rescue/src/contracts/mission.ts` (shared `MissionId`:
+    `"sea-turtle" | "crab" | "young-whale"`);
+  - `domains/ocean-rescue/src/contracts/runtime-abi.ts` (composes
+    `ProfileApi`, `LaunchApi`, `StateApi`, `TravelApi`, `MissionCatalog`,
+    `GupCatalog`, `MissionId`, `GupId` and defines `MissionProgressionSnapshot`,
+    `MissionCompletionResult`, `MissionsApi`, `GupSelectionSnapshot`, `GupsApi`,
+    `OceanRescueNamespace`);
+  - `domains/ocean-rescue/src/contracts/ocean-rescue-global.d.ts` (single
+    optional `Window.OceanRescue` declaration).
+- **Typed module changes:** `missions/catalog.ts` and `launch/launch.ts` consume
+  the shared `MissionId` (compatibility aliases retained); `profile.ts`,
+  `launch.ts`, `state.ts`, and `travel.ts` drop their duplicated local
+  `OceanRescueGlobalNamespace` interfaces and use the shared namespace type.
+- **ESM adapters:** all six `src/esm/*.js` adapters gain `// @ts-check` plus the
+  shared global declaration reference and minimal JSDoc type annotations; the
+  mission/GUP facades keep the exact legacy controller method references.
+- **Verified:** strict `tsc --noEmit`; standalone adapter typecheck with zero
+  diagnostics; shared identifier authority used by both catalogs; single global
+  declaration with no index signature and no `any`; local namespace interfaces
+  removed; production bundle, metadata, standalone HTML, and legacy rollback
+  artifact byte-identical to the pre-WP-32A baseline; shared contracts never
+  enter the production bundle; WP-31A/B/C, WP-30, WP-21, WP-20, rollback,
+  artifact-drift, and WP-03 focused bundles all PASS.
+- **Status snapshot:**
+  - Shared mission ID: `TYPE_AUTHORITY`
+  - Global OceanRescue ABI: `TYPED_SHARED`
+  - Typed module ESM adapters: `CHECKED_JS`
+  - Runtime output: `BYTE_IDENTICAL`
+
+Evidence: `docs/evidence/ocean-rescue/migration/phase-7/shared-typed-runtime-abi.md`
+
+### WP-32B — Pointer intent and renderer-adapter contracts
+
+Not implemented in this work package. The following principles are recorded for
+the next package only:
+
+- identify the actual current pointer-intent producers and consumers first;
+- no declaration-only speculative types without a direct caller;
+- no renderer-owned gameplay model;
+- no app-orchestration decomposition.
+
 ---
 
 ## 10. Phase 8 — Application orchestration decomposition
 
 - **Status:** NOT_STARTED
 - **Objective:** Replace monolithic orchestration with bounded controller ownership.
-- **Depends on:** WP-32
+- **Depends on:** WP-32A and WP-32B
 - **Authoritative path before:** central `app.js` orchestration
 - **Authoritative path after:** typed bounded controllers
 - **Explicit exclusions:** all controller groups in one package; gameplay or visual redesign

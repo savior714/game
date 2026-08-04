@@ -259,12 +259,21 @@ def test_production_paths_outside_write_scope() -> None:
         # modules are untracked additions.
         "domains/ocean-rescue/src/esm/state.js",
         "domains/ocean-rescue/src/esm/travel.js",
+        # WP-32A shared typed runtime ABI: the type-only shared contracts are
+        # untracked additions, and the typed canonical modules that now consume
+        # the shared mission identifier / namespace are legitimate production
+        # cutover paths.
+        "domains/ocean-rescue/src/missions/catalog.ts",
+        "domains/ocean-rescue/src/gups/catalog.ts",
+        "domains/ocean-rescue/src/launch/launch.ts",
+        "domains/ocean-rescue/src/state/state.ts",
+        "domains/ocean-rescue/src/travel/travel.ts",
     }
     changed = {line for line in diff.splitlines() if line}
     assert changed <= allowed, (
         "shadow work must only reconcile the production cutover paths "
         f"(artifact + builder + WP-30 manifest split + WP-31A typed profile + "
-        f"WP-31B typed static catalogs); "
+        f"WP-31B typed static catalogs + WP-32A shared runtime ABI); "
         f"unexpected diff: {sorted(changed - allowed)}"
     )
 

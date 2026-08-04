@@ -165,7 +165,10 @@ _BEHAVIOR_HARNESS = textwrap.dedent(
           `"${path.join(SRC, "profile", "profile.ts")}"`,
         { stdio: "pipe" }
       );
-      TYPED_SOURCE = fs.readFileSync(path.join(emitDir, "profile.js"), "utf8");
+      TYPED_SOURCE = fs.readFileSync(
+        path.join(emitDir, "profile", "profile.js"),
+        "utf8"
+      );
     } finally {
       fs.rmSync(emitDir, { recursive: true, force: true });
     }

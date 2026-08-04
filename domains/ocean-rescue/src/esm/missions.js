@@ -1,3 +1,5 @@
+// @ts-check
+/// <reference path="../contracts/ocean-rescue-global.d.ts" />
 import { Catalog } from "../missions/catalog";
 import "../missions.js";
 
@@ -59,7 +61,8 @@ const Missions = Object.freeze({
   markMissionViewed: registered.markMissionViewed
 });
 
-window.OceanRescue.Missions = Missions;
+/** @type {Window & { OceanRescue: import("../contracts/runtime-abi").OceanRescueNamespace }} */
+(window).OceanRescue.Missions = Missions;
 
 export { Catalog };
 export { Missions };

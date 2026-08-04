@@ -611,13 +611,18 @@ def test_production_artifact_browser_parity() -> None:
 def test_migration_documentation_state() -> None:
     plan = PLAN_DOC.read_text(encoding="utf-8")
     assert "WP-21: COMPLETE" in plan
-    assert "Current phase: PHASE_7_READY" in plan
-    assert "Next executable work package: WP-32" in plan
+    assert "Current phase: PHASE_7_IN_PROGRESS" in plan
+    assert "Next executable work package: WP-32B" in plan
     assert "Authoritative path before:" in plan
     assert "Vite application bundle through temporary standalone packaging" in plan
     assert "WP-31A: COMPLETE" in plan
     assert "WP-31B: COMPLETE" in plan
     assert "WP-31C: COMPLETE" in plan
+    assert "WP-32A: COMPLETE" in plan
+    assert "Shared mission ID state: TYPE_AUTHORITY" in plan
+    assert "Global OceanRescue ABI state: TYPED_SHARED" in plan
+    assert "Typed module ESM adapter state: CHECKED_JS" in plan
+    assert "Runtime output state: BYTE_IDENTICAL" in plan
     assert "Profile module state: TYPED_CANONICAL" in plan
     assert "Mission catalog state: TYPED_CANONICAL" in plan
     assert "GUP catalog state: TYPED_CANONICAL" in plan

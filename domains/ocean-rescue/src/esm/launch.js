@@ -1,3 +1,5 @@
+// @ts-check
+/// <reference path="../contracts/ocean-rescue-global.d.ts" />
 import { Launch } from "../launch/launch";
 
 const registered = window.OceanRescue?.Launch;

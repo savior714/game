@@ -273,6 +273,12 @@ check-ocean-rescue-toolchain:
     echo "✅ TypeScript $tsc_actual"
     @just typecheck-ocean-rescue
 
+# Prove the full Young Whale three-debris rescue session in a real browser against the production artifact
+check-ocean-rescue-young-whale-browser-session:
+    @just check-ocean-rescue-toolchain
+    uv run pytest tests/test_ocean_rescue_young_whale_browser_session.py -q
+    uv run pytest tests/test_ocean_rescue_young_whale_interaction.py -q
+
 # Run the Ocean Rescue Vite development server (development-only; production pipeline untouched)
 dev-ocean-rescue host="127.0.0.1" port="5173":
     @just check-ocean-rescue-node-version

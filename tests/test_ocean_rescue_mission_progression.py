@@ -94,6 +94,9 @@ _APP_BOOTSTRAP = textwrap.dedent(
             ? this.attributes[name]
             : null;
         },
+        removeAttribute(name) {
+          delete this.attributes[name];
+        },
         querySelectorAll(selector) {
           if (selector === "button") {
             return this.children.filter((child) => child.tagName === "button");

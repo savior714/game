@@ -70,8 +70,11 @@ TARGET = "baseline-widely-available"
 MINIFIER = "oxc"
 
 # Pre-WP-21 canonical legacy artifact captured at 07ee6a0 (deployment baseline).
+# Rebased by UX-01 because the rollback artifact embeds the shared
+# template/styles, which that work legitimately updated; the legacy sources and
+# manifest are unchanged.
 PRE_WP21_LEGACY_BASELINE_SHA = (
-    "cfd991d83524db6c7ad225da11ef7a9421300bdf588c4b905bf4e5556f776582"
+    "9562d991a64852da59531e830742d6936c759eb8792179a1ce993a8cd49a2729"
 )
 
 PLAN_DOC = (

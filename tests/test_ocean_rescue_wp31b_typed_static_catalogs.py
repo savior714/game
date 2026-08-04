@@ -84,9 +84,11 @@ METADATA_FILE = "production-bundle-metadata.json"
 PROG_KEY = "aidengame.oceanRescue.progression"
 
 # Pre-WP-21 canonical legacy artifact baseline; the rollback build reads only
-# unchanged legacy sources and must stay byte-identical.
+# unchanged legacy sources and must stay byte-identical. Rebased by UX-01
+# because the rollback artifact embeds the shared template/styles, which that
+# work legitimately updated; the legacy sources and manifest are unchanged.
 LEGACY_ROLLBACK_BASELINE_SHA = (
-    "cfd991d83524db6c7ad225da11ef7a9421300bdf588c4b905bf4e5556f776582"
+    "9562d991a64852da59531e830742d6936c759eb8792179a1ce993a8cd49a2729"
 )
 
 LEGACY_SOURCE_SHA256 = {

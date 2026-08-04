@@ -254,6 +254,10 @@
       var button = document.createElement("button");
       button.type = "button";
       button.setAttribute("data-mission-id", mission.id);
+      button.setAttribute(
+        "aria-pressed",
+        progression.selectedMissionId === mission.id ? "true" : "false"
+      );
       button.disabled = !unlocked;
 
       var title = document.createElement("span");
@@ -305,6 +309,14 @@
       }
     }
     section.style.display = "block";
+    if (progression.selectedMissionId === null) {
+      section.removeAttribute("data-selected-mission-id");
+    } else {
+      section.setAttribute(
+        "data-selected-mission-id",
+        progression.selectedMissionId
+      );
+    }
     if (focusCard && typeof focusCard.scrollIntoView === "function") {
       focusCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
@@ -433,10 +445,6 @@
       root.removeAttribute("data-launch-mission-id");
       root.removeAttribute("data-launch-gup-id");
       root.removeAttribute("data-launch-ready");
-    }
-    var missionSection = document.getElementById("ocean-rescue-mission-select");
-    if (missionSection) {
-      missionSection.removeAttribute("data-selected-mission-id");
     }
     var status = document.getElementById("ocean-rescue-status");
     if (status) {

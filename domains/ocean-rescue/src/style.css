@@ -158,6 +158,65 @@ body {
   text-align: right;
 }
 
+[data-selection-step] {
+  --ocean-rescue-selection-accent: #eef5fb;
+}
+
+[data-selection-step="profile"] {
+  --ocean-rescue-selection-accent: #ffd166;
+}
+
+[data-selection-step="mission"] {
+  --ocean-rescue-selection-accent: #3ddad7;
+}
+
+[data-selection-step="gup"] {
+  --ocean-rescue-selection-accent: #ff9f80;
+}
+
+.ocean-rescue-selection-step {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 0 12px;
+}
+
+.ocean-rescue-selection-step-number,
+.ocean-rescue-selection-step-glyph,
+.ocean-rescue-selection-step-label {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.2;
+}
+
+.ocean-rescue-selection-step-number {
+  min-width: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border-radius: 50%;
+  background: var(--ocean-rescue-selection-accent);
+  color: #12202e;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.ocean-rescue-selection-step-glyph {
+  font-size: 18px;
+  color: var(--ocean-rescue-selection-accent);
+}
+
+.ocean-rescue-selection-step-label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ocean-rescue-selection-accent);
+}
+
 #ocean-rescue-profile-choice {
   display: none;
   position: absolute;
@@ -169,6 +228,7 @@ body {
   overflow: auto;
   box-sizing: border-box;
   padding: 16px;
+  border-top: 4px solid var(--ocean-rescue-selection-accent);
   background: rgba(18, 32, 46, 0.94);
   color: #eef5fb;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -286,6 +346,7 @@ body {
   overflow: auto;
   box-sizing: border-box;
   padding: 16px;
+  border-top: 4px solid var(--ocean-rescue-selection-accent);
   background: rgba(18, 32, 46, 0.94);
   color: #eef5fb;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -341,6 +402,12 @@ body {
   color: #9fb3c7;
 }
 
+#ocean-rescue-mission-list button[aria-pressed="true"] {
+  border-color: var(--ocean-rescue-selection-accent);
+  background: #173b4e;
+  box-shadow: inset 0 0 0 2px var(--ocean-rescue-selection-accent);
+}
+
 #ocean-rescue-mission-list button:not(:disabled):hover {
   border-color: #7fb3e8;
   background: #1d4063;
@@ -394,6 +461,7 @@ body {
   overflow: auto;
   box-sizing: border-box;
   padding: 16px;
+  border-top: 4px solid var(--ocean-rescue-selection-accent);
   background: rgba(18, 32, 46, 0.94);
   color: #eef5fb;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;

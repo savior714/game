@@ -255,6 +255,19 @@ check-ocean-rescue-pointer-renderer-boundary:
     uv run pytest tests/test_ocean_rescue_artifact_drift.py -q
     uv run pytest tests/test_ocean_rescue_wp03_scope_decision.py -q
 
+# Run the focused WP-33A typed profile/mission controller verification bundle
+check-ocean-rescue-profile-mission-controller:
+    @just check-ocean-rescue-toolchain
+    uv run pytest tests/test_ocean_rescue_wp33a_profile_mission_controller.py -q
+    uv run pytest tests/test_ocean_rescue_profile_choice.py -q
+    uv run pytest tests/test_ocean_rescue_mission_progression.py -q
+    uv run pytest tests/test_ocean_rescue_gup_selection.py -q
+    uv run pytest tests/test_ocean_rescue_wp30_esm_entry_module_graph.py -q
+    uv run pytest tests/test_ocean_rescue_wp21_production_bundle_cutover.py -q
+    uv run pytest tests/test_ocean_rescue_artifact_drift.py -q
+    just check-ocean-rescue-rollback
+    uv run pytest tests/test_ocean_rescue_wp03_scope_decision.py -q
+
 # Verify the Ocean Rescue build-tooling boundary end to end
 check-ocean-rescue-toolchain:
     @just check-ocean-rescue-node-version

@@ -121,6 +121,13 @@ CONTROLLER_ADAPTER_TYPED_FILE: Dict[str, str] = {
     "gups.js": "gups/catalog.ts",
 }
 
+# App adapter file -> typed controller it installs (WP-33A).
+# The app adapter reads the legacy App, installs a typed controller, and
+# exports the controlled version under a different name.
+APP_ADAPTER_CONTROLLER_FILE: Dict[str, str] = {
+    "app.js": "controllers/profile-mission-selection.ts",
+}
+
 # Rollback-only legacy implementation files retained for the legacy manifest
 # graph but excluded from the canonical graph. WP-31C adds state.js and
 # travel.js.
@@ -371,6 +378,16 @@ def test_each_adapter_has_namespace_guard_and_export() -> None:
             assert "Catalog: Catalog," in text, (
                 f"{name}: facade must own the typed catalog"
             )
+        elif name in APP_ADAPTER_CONTROLLER_FILE:
+            # WP-33A: the app adapter reads the legacy App, installs a typed
+            # controller, and exports the controlled version.
+            assert "installProfileMissionSelectionController" in text, (
+                f"{name}: missing controller installation"
+            )
+            exports = re.findall(
+                r"^export\s+\{\s*(\w+)\s*\}\s*;\s*$", text, re.MULTILINE
+            )
+            assert "App" in exports, f"{name}: missing named export App, got {exports}"
         else:
             assert f"export {{ {var} }};" in text, f"{name}: missing named export {var}"
 
@@ -384,7 +401,8 @@ def test_each_adapter_imports_all_direct_dependencies() -> None:
         adapter_imports = {
             _basename(_rel(_resolve(ESM_DIR / name, s)))
             for s in specs
-            if s.startswith("./") and s != "./" + name
+            if s.startswith("./")
+            and _basename(_rel(_resolve(ESM_DIR / name, s))) != name
         }
         assert adapter_imports == expected, (
             f"{name}: adapter dependency mismatch, expected {sorted(expected)}, "
@@ -398,6 +416,14 @@ def test_no_adapter_duplicate_or_bare_imports() -> None:
         assert len(specs) == len(set(specs)), f"{name}: duplicate imports"
         for spec in specs:
             assert spec.startswith(("./", "../")), f"{name}: bare import {spec!r}"
+
+
+def test_app_adapter_imports_profile_mission_selection_controller() -> None:
+    specs = [s for _, s in _static_imports(ESM_DIR / "app.js")]
+    resolved = {_rel(_resolve(ESM_DIR / "app.js", s)) for s in specs}
+    assert "controllers/profile-mission-selection.ts" in resolved, (
+        "app.js must import the typed profile-mission-selection controller"
+    )
 
 
 # --- import-graph properties ---
@@ -446,6 +472,8 @@ def test_implementation_modules_import_nothing() -> None:
     for key, deps in sorted(edges.items()):
         if key.startswith("esm/") or key == "main.js":
             continue
+        if key.endswith(".ts"):
+            continue
         assert not deps, f"implementation module {key} must not import: {sorted(deps)}"
 
 
@@ -453,6 +481,7 @@ def test_canonical_graph_reaches_typed_implementations() -> None:
     nodes, edges = _build_graph()
     typed_targets = dict(MIGRATED_ADAPTER_TYPED_FILE)
     typed_targets.update(CONTROLLER_ADAPTER_TYPED_FILE)
+    typed_targets.update(APP_ADAPTER_CONTROLLER_FILE)
     for name, typed in typed_targets.items():
         typed_key = _rel(SRC_DIR / typed)
         assert typed_key in nodes, f"{typed} is not reachable from main.js"

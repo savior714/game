@@ -296,6 +296,7 @@ class TestYoungWhaleNativePointerCapture:
             page_errors = []
             console_errors = []
             requests_log = []
+            request_failures = []
 
             pg.on("pageerror", lambda e: page_errors.append(str(e)))
             pg.on(
@@ -303,6 +304,10 @@ class TestYoungWhaleNativePointerCapture:
                 lambda m: console_errors.append(m.text) if m.type == "error" else None,
             )
             pg.on("request", lambda r: requests_log.append(r.url))
+            pg.on(
+                "requestfailed",
+                lambda r: request_failures.append({"url": r.url, "failure": r.failure}),
+            )
 
             _go_to_young_whale_rescue_active(pg, server)
             _install_canvas_event_observers(pg)
@@ -391,6 +396,8 @@ class TestYoungWhaleNativePointerCapture:
             # ── Quality gates ──
             assert len(page_errors) == 0, f"page errors: {page_errors}"
             assert len(console_errors) == 0, f"console errors: {console_errors}"
+
+            assert request_failures == [], f"request failures: {request_failures}"
 
             external = [
                 u

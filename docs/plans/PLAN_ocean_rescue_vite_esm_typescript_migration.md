@@ -720,7 +720,7 @@ Evidence: `docs/evidence/ocean-rescue/migration/phase-7/pointer-coordinate-rende
 
 ## 10. Phase 8 — Application orchestration decomposition
 
-- **Status:** READY (WP-32B complete)
+- **Status:** IN_PROGRESS (WP-33A and WP-33B COMPLETE)
 - **Objective:** Replace monolithic orchestration with bounded controller ownership.
 - **Depends on:** WP-32A and WP-32B
 - **Authoritative path before:** central `app.js` orchestration

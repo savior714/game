@@ -1,25 +1,19 @@
-schema_version: 1
-template_generation: v2-foundation
-
 project:
-  name: "AidenGame"
-  slug: "game"
-  package_tool: "uv"
+  name: AidenGame
 
 git:
   canonical_branch: "main"
   main_only: true
   write_concurrency: 4
-  write_concurrency_policy: "claim-gated-non-overlapping"
+  write_concurrency_policy: "minimal-path-resource-lock"
   claim_board: "github-issue-1"
   remote_advance_policy: overlap-based
 
 capabilities:
-  runtime_visual: false
-  database: false
-  content_provenance: false
+  static_web_runtime: true
+  python_tooling: true
   regulated_domain: false
 
 context:
-  max_additional_documents: 4
+  max_additional_documents: 3
   task_prompt_max_lines: 700

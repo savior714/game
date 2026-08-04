@@ -1,3 +1,4 @@
+import { installProfileMissionSelectionController } from "../controllers/profile-mission-selection";
 import "./state.js";
 import "./render-runtime.js";
 import "./pointer-input.js";
@@ -17,10 +18,12 @@ import "./young-whale.js";
 import "./mission-success.js";
 import "../app.js";
 
-const App = window.OceanRescue?.App;
+const registeredApp = window.OceanRescue?.App;
 
-if (!App) {
+if (!registeredApp) {
   throw new Error("OceanRescue.App was not registered");
 }
+
+const App = installProfileMissionSelectionController(registeredApp);
 
 export { App };

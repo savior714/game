@@ -246,3 +246,42 @@ def test_full_ten_question_session_reaches_perfect_result(
     assert persisted["attempts"] == 10
     assert persisted["correct"] == 10
     assert page_errors == []
+
+
+@pytest.mark.browser
+def test_wrong_answer_reinforcement_replays_exact_recent_problem(
+    math_page: tuple[Page, list[str]],
+) -> None:
+    page, page_errors = math_page
+
+    replay = page.evaluate(
+        """
+        () => {
+          wrongPatterns = [
+            { op: '+', level: 0, a: 2, b: 3, tag: 'add_unit_2_3' },
+            { op: '-', level: 1, a: 9, b: 4, tag: 'sub_unit_9_4' },
+          ];
+          recentQuestions = ['2,3+'];
+
+          const originalRandom = Math.random;
+          Math.random = () => 0.4;
+          try {
+            return generateQuestion();
+          } finally {
+            Math.random = originalRandom;
+          }
+        }
+        """
+    )
+
+    assert replay == {
+        "a": 2,
+        "b": 3,
+        "op": "+",
+        "result": 5,
+        "tag": "add_unit_2_3",
+        "level": 0,
+        "isWeakness": True,
+        "isReinforcement": True,
+    }
+    assert page_errors == []

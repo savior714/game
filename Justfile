@@ -279,6 +279,12 @@ check-ocean-rescue-young-whale-browser-session:
     uv run pytest tests/test_ocean_rescue_young_whale_browser_session.py -q
     uv run pytest tests/test_ocean_rescue_young_whale_interaction.py -q
 
+# Prove native pointer capture lifecycle for Young Whale connection + towing in real Chromium
+check-ocean-rescue-young-whale-native-pointer-capture:
+    @just check-ocean-rescue-toolchain
+    uv run pytest tests/test_ocean_rescue_young_whale_native_pointer_capture.py -q
+    uv run pytest tests/test_ocean_rescue_young_whale_interaction.py -q
+
 # Run the Ocean Rescue Vite development server (development-only; production pipeline untouched)
 dev-ocean-rescue host="127.0.0.1" port="5173":
     @just check-ocean-rescue-node-version

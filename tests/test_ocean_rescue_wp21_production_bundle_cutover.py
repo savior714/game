@@ -69,12 +69,15 @@ CANONICAL_ENTRY = "main.js"
 TARGET = "baseline-widely-available"
 MINIFIER = "oxc"
 
-# Pre-WP-21 canonical legacy artifact captured at 07ee6a0 (deployment baseline).
-# Rebased by UX-01 because the rollback artifact embeds the shared
-# template/styles, which that work legitimately updated; the legacy sources and
-# manifest are unchanged.
-PRE_WP21_LEGACY_BASELINE_SHA = (
-    "9562d991a64852da59531e830742d6936c759eb8792179a1ce993a8cd49a2729"
+# Immutable historical evidence: the tracked ``ocean-rescue/index.html`` at
+# 07ee6a0 (the pre-WP-21 deployment baseline) was the ordered-script legacy
+# artifact with this SHA. It records the historical artifact identity and is
+# never a gate for current-source rollback builds; the current-source legacy
+# rollback artifact is verified dynamically by clean-build equality (see
+# test_legacy_rollback_is_deterministic and
+# test_operational_rollback_restores_legacy_and_bundle).
+HISTORICAL_PRE_WP21_LEGACY_ARTIFACT_SHA256 = (
+    "cfd991d83524db6c7ad225da11ef7a9421300bdf588c4b905bf4e5556f776582"
 )
 
 PLAN_DOC = (
@@ -458,13 +461,63 @@ def test_legacy_rollback_produces_ordered_scripts(tmp_path: Path) -> None:
     assert re.search(r"<script\s+[^>]*src\s*=", html) is None
 
 
+def test_legacy_rollback_is_deterministic(tmp_path: Path) -> None:
+    """Two clean current-source legacy builds must be byte-identical.
+
+    The legacy rollback artifact is a function of the current template, styles,
+    generated render assets, legacy manifest, and rollback-only source graph.
+    Template/style/product changes legitimately change its bytes, so the
+    current-source contract is verified by clean-build byte equality rather
+    than a hardcoded mutable SHA. The SHA is reported for diagnostics only and
+    is never stored as a source constant.
+    """
+    output_a = tmp_path / "legacy-a.html"
+    output_b = tmp_path / "legacy-b.html"
+    assert _build_legacy(output_a).returncode == 0, "legacy build A failed"
+    assert _build_legacy(output_b).returncode == 0, "legacy build B failed"
+    assert output_a.read_bytes() == output_b.read_bytes(), (
+        "two clean current-source legacy builds must be byte-identical"
+    )
+    diagnostic_sha = _sha256_bytes(output_a.read_bytes())
+    assert len(diagnostic_sha) == 64, "diagnostic SHA-256 must be 64 hex chars"
+
+
+def test_historical_pre_wp21_evidence_is_not_a_current_gate() -> None:
+    """The immutable pre-WP-21 artifact SHA is evidence, not a live baseline.
+
+    ``HISTORICAL_PRE_WP21_LEGACY_ARTIFACT_SHA256`` records the historical
+    ordered-script artifact identity at the pre-WP-21 deployment baseline
+    (07ee6a0). It must never be conflated with a mutable current-source legacy
+    build SHA, and no test may reintroduce the old mutable rollback baseline
+    constants, because template/style changes would require rebasing them.
+    """
+    assert HISTORICAL_PRE_WP21_LEGACY_ARTIFACT_SHA256 == (
+        "cfd991d83524db6c7ad225da11ef7a9421300bdf588c4b905bf4e5556f776582"
+    )
+    forbidden_names = (
+        "PRE_WP21_LEGACY_BASELINE_SHA",
+        "LEGACY_ROLLBACK_BASELINE_SHA",
+    )
+    this_file = Path(__file__).resolve()
+    for test_file in TESTS_DIR.glob("test_ocean_rescue_*.py"):
+        if test_file.resolve() == this_file:
+            continue
+        text = test_file.read_text(encoding="utf-8")
+        for name in forbidden_names:
+            assert name not in text, (
+                f"{test_file.name} must not define the mutable rollback "
+                f"baseline constant {name}"
+            )
+
+
 def test_operational_rollback_restores_legacy_and_bundle(tmp_path: Path) -> None:
     """The canonical artifact must transition bundle -> legacy -> bundle.
 
     The operational rollback writes the tracked ``ocean-rescue/index.html`` to
-    the exact pre-WP-21 legacy ordered-script artifact, and the production lane
-    must restore the bundle-owned artifact. Cleanup restores bundle-owned state
-    even if an intermediate rollback assertion fails.
+    the current-source legacy ordered-script artifact, verified byte-identical
+    to a clean current-source legacy build, and the production lane must
+    restore the bundle-owned artifact. Cleanup restores bundle-owned state even
+    if an intermediate rollback assertion fails.
     """
     _clean_production_bundle()
     assert _restore_canonical().returncode == 0, "production restore failed"
@@ -481,11 +534,7 @@ def test_operational_rollback_restores_legacy_and_bundle(tmp_path: Path) -> None
         )
         rollback_canonical = ARTIFACT.read_bytes()
         assert rollback_canonical == expected_legacy, (
-            "operational rollback must write the exact legacy artifact"
-        )
-        assert _sha256_bytes(rollback_canonical) == PRE_WP21_LEGACY_BASELINE_SHA, (
-            "rollback canonical artifact must be byte-identical to the "
-            "pre-WP-21 legacy baseline"
+            "operational rollback must write the exact current-source legacy artifact"
         )
         html = rollback_canonical.decode("utf-8")
         assert html.count("<script>") == LEGACY_SCRIPT_COUNT, (

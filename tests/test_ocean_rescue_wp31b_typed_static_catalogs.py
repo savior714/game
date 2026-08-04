@@ -83,14 +83,11 @@ METADATA_FILE = "production-bundle-metadata.json"
 
 PROG_KEY = "aidengame.oceanRescue.progression"
 
-# Pre-WP-21 canonical legacy artifact baseline; the rollback build reads only
-# unchanged legacy sources and must stay byte-identical. Rebased by UX-01
-# because the rollback artifact embeds the shared template/styles, which that
-# work legitimately updated; the legacy sources and manifest are unchanged.
-LEGACY_ROLLBACK_BASELINE_SHA = (
-    "9562d991a64852da59531e830742d6936c759eb8792179a1ce993a8cd49a2729"
-)
-
+# WP-31B must not modify the rollback-only legacy sources; their exact bytes
+# pin the legacy rollback source identity. The legacy rollback *artifact* bytes
+# depend on the shared template/styles (updated legitimately by UX-01) and are
+# verified dynamically as clean current-source build equality in the WP-21
+# rollback contract, never by a hardcoded mutable artifact SHA here.
 LEGACY_SOURCE_SHA256 = {
     "missions.js": ("f636fed0c9d0bb0b6746bcb7c7aaea19c6f9e81466096d8324aa514b24aa4d33"),
     "gups.js": ("bf10d685522bbb16d2886d2f8c73ee807295688f4f36a347f037db725172e219"),
@@ -1117,9 +1114,7 @@ def test_canonical_production_membership() -> None:
     )
 
 
-def test_legacy_rollback_references_all_sources_and_matches_baseline(
-    tmp_path: Path,
-) -> None:
+def test_legacy_rollback_references_all_sources(tmp_path: Path) -> None:
     legacy = _load_legacy_manifest()
     files = {e["file"] for e in legacy["scripts"]}
     for name in ("missions.js", "gups.js", "launch.js", "profile.js"):
@@ -1128,9 +1123,6 @@ def test_legacy_rollback_references_all_sources_and_matches_baseline(
     result = _build_legacy(output)
     assert result.returncode == 0, (
         f"legacy rollback build failed (exit {result.returncode}): {result.stderr}"
-    )
-    assert _sha256_bytes(output.read_bytes()) == LEGACY_ROLLBACK_BASELINE_SHA, (
-        "legacy rollback artifact must be byte-identical to the pre-WP-31B baseline"
     )
     html = output.read_text(encoding="utf-8")
     assert html.count("<script>") == 19

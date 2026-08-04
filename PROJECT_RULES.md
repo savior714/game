@@ -34,22 +34,24 @@ AidenGame은 어린이를 위한 정적 웹 기반 학습 게임 플랫폼이다
 - 배포: `vercel.json` 기반 정적 호스팅
 - 검증 도구: Python, `uv`, `just`, Ruff, type checker, Pytest
 - Ocean Rescue build tooling은 해당 경로의 lockfile과 spec이 authority다.
-- dependency·toolchain upgrade는 독립 failure domain으로 수행한다.
+- dependency·toolchain upgrade는 별도 coherent package로 수행한다.
 
 ## 4. 개발·배포
 
 - canonical branch는 `origin/main`이다.
 - `main` 직접 수정과 fast-forward push가 기본이다.
 - PR·feature branch는 요청 시에만 사용한다.
-- 병렬 충돌 방지는 `agents/workflows/work-package-claim.md`의 최소 path/resource lock만 사용한다.
+- 일반 작업은 isolated worktree에서 reservation 없이 병렬 실행한다.
+- hotspot·canonical runtime·generated artifact처럼 충돌 비용이 큰 자원만 `agents/workflows/work-package-claim.md`로 예약한다.
+- 게시 직전 최신 main에 재적용하고 focused verification을 다시 실행한다.
 - generated artifact는 canonical source와 build pipeline을 통해 갱신한다.
 - 원격 상태나 필수 검증이 불명확하면 publish하지 않는다.
 
 ## 5. 품질
 
-- 한 작업은 하나의 failure domain 또는 하나의 검증 가능한 가설로 제한한다.
-- 수정 전 재현 조건과 단일 criterion을 정한다.
-- 수정 후 그 criterion만 focused verification으로 판정한다.
+- work package는 coherent objective와 rollback 경계를 가진다.
+- 강하게 결합된 source, caller, test, asset, config는 함께 변경할 수 있다.
+- 하나의 failure domain·가설·binary criterion을 형식적으로 강제하지 않는다.
 - unrelated cleanup은 포함하지 않는다.
 - 새 검증은 잡아낼 구체적 failure mode가 있을 때만 추가한다.
 - full-suite는 실제 회귀 위험이나 cutover가 요구할 때만 실행한다.
@@ -84,10 +86,10 @@ just ci
 |---|---|
 | 실행 규약 | `AGENTS.md` |
 | 프로젝트 정책 | `PROJECT_RULES.md` |
-| 병렬 잠금 | `agents/workflows/work-package-claim.md` + Issue #1 |
+| exclusive reservation | `agents/workflows/work-package-claim.md` + Issue #1 |
 | Git·publish | `agents/workflows/git.md` |
 | 요구사항·회귀 | `tests/` |
 | 배포 | `vercel.json`과 실제 entry |
 | 기능 설계 | 대상 기능에 가장 가까운 `docs/` 문서 |
 
-과거 Plan·Blueprint 상태 관리가 제품 변경보다 우선하지 않는다.
+과거 Plan·Blueprint 상태 관리와 coordination 문서가 제품 변경보다 우선하지 않는다.

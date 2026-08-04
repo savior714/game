@@ -2,48 +2,52 @@
 
 ```text
 OBJECTIVE:
-<one failure domain>
+<coherent outcome>
 
-REPRODUCTION:
-<current failure or observable need>
+CURRENT_STATE:
+<current failure, need, or observable behavior>
 
-PASS_CRITERION:
-<single decision criterion>
+IN_SCOPE:
+- <source, caller, test, asset, config>
 
-ALLOWED_PATHS:
-- <path>
-
-DO_NOT_TOUCH:
-- <path or behavior>
+OUT_OF_SCOPE:
+- <unrelated behavior or path>
 
 DO:
-1. Check latest origin/main.
-2. Reproduce the issue.
-3. Apply the minimum complete change.
-4. Run focused verification.
-5. Check overlap and publish fast-forward.
+1. Fetch latest origin/main and confirm the current state.
+2. Preserve unrelated work and use an isolated worktree.
+3. Apply the minimum complete change for OBJECTIVE.
+4. Run the focused verification bundle.
+5. Before publish, fetch origin/main again.
+6. Reapply onto latest main and reverify; adapt if related code moved.
+7. Push fast-forward and retry after another session wins the push race.
 
 DO_NOT:
-- fix unrelated failures
-- update baseline/snapshot to hide failure
-- force push or modify unrelated dirty state
+- fix unrelated work
+- hide failures with baseline/snapshot changes
+- force push or overwrite competing work
+- add governance fields or validators
+
+ACCEPTANCE:
+- <criterion>
+- <criterion>
 
 VERIFY:
 - <focused command>
 
 STOP:
-- issue already resolved
-- required change exceeds allowed paths
-- validator unavailable
-- relevant origin/main change invalidates the work
+- current main already satisfies OBJECTIVE
+- required change exceeds scope or authorization
+- validator is unavailable
+- destructive/security/data decision requires user input
 
-OPTIONAL_PARALLEL_LOCK:
-CLAIM_COMMENT: <id or NONE>
+OPTIONAL_EXCLUSIVE_RESERVATION:
+RESERVATION_COMMENT: <id or NONE>
+WORK: <name or NONE>
 OWNER: <owner or NONE>
-UNTIL: <UTC or NONE>
-LOCK:
-- path:<path>
-- resource:<id>
+EXPIRES: <UTC or NONE>
+SCOPE:
+- <typed scope token or NONE>
 
 REPORT:
 RESULT: PASS | BLOCKED

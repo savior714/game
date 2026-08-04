@@ -5,9 +5,9 @@ git:
   canonical_branch: "main"
   main_only: true
   write_concurrency: 4
-  write_concurrency_policy: "minimal-path-resource-lock"
-  claim_board: "github-issue-1"
-  remote_advance_policy: overlap-based
+  write_concurrency_policy: "optimistic-parallel-exclusive-reservation"
+  reservation_board: "github-issue-1"
+  remote_advance_policy: "reapply-related-check"
 
 capabilities:
   static_web_runtime: true

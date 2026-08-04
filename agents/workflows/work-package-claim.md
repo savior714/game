@@ -3,78 +3,88 @@ scope: workflow
 status: active
 ---
 
-# Minimal Parallel Locks
+# Exclusive Reservation Workflow
 
-## 목적
+파일명은 과거 호환을 위해 유지한다. 일반 개발 claim이 아니라 충돌 비용이 큰 희소 자원만 예약한다.
 
-동시 mutation의 경로와 공유 실행 자원 충돌만 막는다. 작업 목적·dependency·검증·완료 보고는 각 work package와 프롬프트가 소유한다.
+## 기본값
 
-## 적용
+- 일반 분석·구현·focused verification은 reservation 없이 병렬 실행한다.
+- isolated worktree와 게시 전 최신 main 확인을 사용한다.
+- 같은 파일이라는 이유만으로 자동 예약하지 않는다.
+- push를 예약하지 않는다.
 
-잠금 필요:
+## Reservation 대상
 
-- 둘 이상의 mutation·commit·push 세션
-- shared browser profile, fixed port, output directory, generated artifact 또는 publication destination
-
-잠금 불필요:
-
-- read-only 분석·리뷰
-- mutation 세션이 하나뿐인 일반 작업
+- 같은 semantic hotspot/shared contract
+- 같은 canonical browser/runtime identity, fixed port, profile, output directory
+- 같은 generated bundle·atlas·registry·evidence·publication destination
+- 같은 migration/schema 자원(해당되는 경우)
 
 ## Board
 
 - Repository: `savior714/game`
 - Issue: `#1`
+- Title: `[Coordination] Exclusive Reservations`
 
-## Claim
+## 형식
 
 ```text
-CLAIM
-OWNER: <label>
-UNTIL: <ISO-8601 UTC>
-LOCK:
-- path:<repo-relative path>
-- resource:<stable id>
+RESERVE
+WORK: <short work name>
+OWNER: <short session name>
+EXPIRES: <ISO-8601 UTC>
+SCOPE:
+- path:<exact hotspot path>
+- contract:<stable contract name>
+- resource:<stable runtime id>
+- artifact:<stable output id>
+- migration:<stable schema id>
 ```
 
-GitHub comment ID가 claim 식별자다.
+GitHub comment ID가 reservation 식별자다. custom claim ID·nonce·base SHA·activation 시각을 만들지 않는다.
 
 ## 충돌
 
-- `path:`가 같거나 한쪽이 다른 쪽의 부모 경로이면 충돌한다.
-- `resource:` 값이 같으면 충돌한다.
-- active claim은 `UNTIL` 전이고 대응 `RELEASE`가 없는 claim이다.
-- 충돌 집합에서 comment ID가 가장 작은 claim만 유효하다.
-
-선행 의존성이 있으면 claim metadata를 추가하지 않고 순차 실행한다.
+- `EXPIRES` 전이고 대응 `DONE`이 없는 reservation만 active다.
+- 같은 typed scope token은 충돌한다.
+- path는 같은 파일 또는 명시적으로 예약한 디렉터리 하위에서만 충돌한다.
+- semantic overlap은 `contract:`로 명시한다.
+- 충돌 reservation 중 먼저 게시된 comment만 유효하다.
+- dependency가 있으면 metadata를 추가하지 않고 순차 실행한다.
 
 ## 실행
 
-- 첫 mutation, shared long run, publish 직전에 active lock을 확인한다.
-- lock 밖 경로나 자원이 필요하면 release 후 새 claim을 게시한다.
-- 최신 `origin/main`에서 문제가 남아 있는지 첫 mutation 전에 확인한다.
-- claim은 isolated worktree, Git overlap 검사, focused verification과 fast-forward publish를 대체하지 않는다.
+- exclusive mutation·long run 직전에만 board를 확인한다.
+- scope 밖 exclusive 자원이 필요하면 기존 reservation을 종료하고 새 reservation을 게시한다.
+- main 이동은 일반 Git preflight로 처리한다.
+- unrelated 이동은 최신 main 위에 재적용하고 focused verification을 다시 실행한다.
+- related 이동은 최신 상태에 맞게 변경을 조정한다.
 
-## Release
+## 종료
 
 ```text
-RELEASE
-CLAIM: <comment ID>
-RESULT: PASS | BLOCKED | ABANDONED
-COMMIT: <40-char SHA or NONE>
+DONE
+RESERVATION: <GitHub comment ID>
 ```
+
+완료·차단·포기 모두 자원을 해제한다.
 
 ## 로컬 위임
 
+exclusive 자원이 필요한 prompt에만 다음을 전달한다.
+
 ```text
-CLAIM_COMMENT:
+RESERVATION_COMMENT:
+WORK:
 OWNER:
-UNTIL:
-LOCK:
+EXPIRES:
+SCOPE:
 ```
 
-같은 claim을 여러 executor에 전달하거나 delegated executor가 중복 claim을 게시하지 않는다.
+일반 병렬 prompt에는 reservation block을 넣지 않는다.
 
-## Legacy
+## 전환
 
-기존 claim은 expiry/release까지 유효하다. `WRITE_SCOPE`는 `path:`, `EXCLUSIVE_RESOURCES`는 `resource:`로만 해석하고 다른 필드는 무시한다.
+이 정책 게시 전의 `CLAIM / RELEASE` comment는 역사 기록이다.
+진행 중인 일반 작업은 그대로 계속하고, reservation 대상에 해당할 때만 새 `RESERVE`를 게시한다.

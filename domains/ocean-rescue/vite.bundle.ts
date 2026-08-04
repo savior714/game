@@ -367,6 +367,18 @@ function oceanRescueBundlePlugin(
           fail("rollback-only legacy launch.js must not enter the bundle");
         }
       }
+      const rollbackOnlyState = resolve(SRC_ROOT, "state.js");
+      for (const key of moduleKeys) {
+        if (sourcePath(key) === rollbackOnlyState) {
+          fail("rollback-only legacy state.js must not enter the bundle");
+        }
+      }
+      const rollbackOnlyTravel = resolve(SRC_ROOT, "travel.js");
+      for (const key of moduleKeys) {
+        if (sourcePath(key) === rollbackOnlyTravel) {
+          fail("rollback-only legacy travel.js must not enter the bundle");
+        }
+      }
       for (const normalized of graphModules) {
         if (normalized === entryNormalized) continue;
         const occurrences = moduleKeys.filter(

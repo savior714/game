@@ -15,7 +15,7 @@ temporary compatibility adapter graph:
 - migrated typed adapters import or re-export one canonical typed
   implementation, retain the temporary global ABI assertion, and must not
   import the rollback-only legacy implementation (WP-31A: ``profile.js``;
-  WP-31B: ``launch.js``);
+  WP-31B: ``launch.js``; WP-31C: ``state.js``, ``travel.js``);
 - controller adapters (WP-31B: ``missions.js``, ``gups.js``) retain exactly one
   unchanged legacy controller import, own the typed static-data catalog import,
   build one frozen facade whose ``Catalog`` is the typed catalog and whose
@@ -25,8 +25,9 @@ temporary compatibility adapter graph:
   uses only relative static imports, and covers every legacy implementation
   exactly once (nothing omitted, nothing imported twice);
 - the canonical graph reaches the typed profile, mission catalog, GUP catalog,
-  and launch implementations and excludes the rollback-only ``src/profile.js``
-  and ``src/launch.js``;
+  launch, core state machine, and travel implementations and excludes the
+  rollback-only ``src/profile.js``, ``src/launch.js``, ``src/state.js``, and
+  ``src/travel.js``;
 - legacy implementation files themselves import no modules (IIFE globals);
 - the legacy ordered manifest is preserved as the rollback authority.
 
@@ -76,11 +77,11 @@ ADAPTER_NAMESPACES: Dict[str, str] = {
 # WP-31B removes missions.js, gups.js, and launch.js from this pure-legacy set:
 # missions.js and gups.js become controller adapters (typed catalog + legacy
 # controller) and launch.js becomes a fully migrated typed adapter.
+# WP-31C removes state.js and travel.js: both become fully migrated typed
+# adapters.
 ADAPTER_LEGACY_FILE: Dict[str, str] = {
     "render-assets.js": "render-assets.generated.js",
     "render-runtime.js": "render-runtime.js",
-    "state.js": "state.js",
-    "travel.js": "travel.js",
     "terrain.js": "terrain.js",
     "travel-scene.js": "travel-scene.js",
     "rescue.js": "rescue.js",
@@ -101,12 +102,15 @@ CONTROLLER_ADAPTER_LEGACY_FILE: Dict[str, str] = {
 }
 
 # Migrated typed adapter file -> canonical typed implementation it re-exports.
-# WP-31A migrates the profile module; WP-31B migrates the static launch module.
+# WP-31A migrates the profile module; WP-31B migrates the static launch module;
+# WP-31C migrates the core state machine and the travel runtime contract.
 # Migrated typed implementations must not import the rollback-only legacy
-# `src/profile.js` or `src/launch.js`.
+# `src/profile.js`, `src/launch.js`, `src/state.js`, or `src/travel.js`.
 MIGRATED_ADAPTER_TYPED_FILE: Dict[str, str] = {
     "profile.js": "profile/profile.ts",
     "launch.js": "launch/launch.ts",
+    "state.js": "state/state.ts",
+    "travel.js": "travel/travel.ts",
 }
 
 # Controller adapter file -> typed static-data catalog it owns (WP-31B).
@@ -116,8 +120,14 @@ CONTROLLER_ADAPTER_TYPED_FILE: Dict[str, str] = {
 }
 
 # Rollback-only legacy implementation files retained for the legacy manifest
-# graph but excluded from the canonical graph.
-LEGACY_ROLLBACK_ONLY_FILES = {"profile.js", "launch.js"}
+# graph but excluded from the canonical graph. WP-31C adds state.js and
+# travel.js.
+LEGACY_ROLLBACK_ONLY_FILES = {
+    "profile.js",
+    "launch.js",
+    "state.js",
+    "travel.js",
+}
 
 # Adapter file -> set of adapter dependency files it must import explicitly.
 ADAPTER_DEPS: Dict[str, Set[str]] = {
@@ -446,20 +456,13 @@ def test_canonical_graph_reaches_typed_implementations() -> None:
         assert edges.get(typed_key) == set(), "typed leaf module must import nothing"
 
 
-def test_canonical_graph_excludes_rollback_profile_js() -> None:
+def test_canonical_graph_excludes_all_rollback_only_sources() -> None:
     nodes, _ = _build_graph()
-    rollback_key = _rel(SRC_DIR / "profile.js")
-    assert rollback_key not in nodes, (
-        "rollback-only legacy profile.js must not be in the canonical graph"
-    )
-
-
-def test_canonical_graph_excludes_rollback_launch_js() -> None:
-    nodes, _ = _build_graph()
-    rollback_key = _rel(SRC_DIR / "launch.js")
-    assert rollback_key not in nodes, (
-        "rollback-only legacy launch.js must not be in the canonical graph"
-    )
+    for rollback in sorted(LEGACY_ROLLBACK_ONLY_FILES):
+        rollback_key = _rel(SRC_DIR / rollback)
+        assert rollback_key not in nodes, (
+            f"rollback-only legacy {rollback} must not be in the canonical graph"
+        )
 
 
 def test_canonical_graph_retains_mission_and_gup_controllers() -> None:

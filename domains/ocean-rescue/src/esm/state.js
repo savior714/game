@@ -1,9 +1,13 @@
-import "../state.js";
+import { State } from "../state/state";
 
-const State = window.OceanRescue?.State;
+const registered = window.OceanRescue?.State;
 
-if (!State) {
+if (!registered) {
   throw new Error("OceanRescue.State was not registered");
+}
+
+if (registered !== State) {
+  throw new Error("OceanRescue.State global must reference the typed state API");
 }
 
 export { State };

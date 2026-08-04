@@ -144,7 +144,8 @@ domains/ocean-rescue/src/
 ├─ vendor/pixi-8.19.0.min.js
 ├─ render-assets.generated.js
 ├─ render-runtime.js
-├─ state.js
+├─ state.js              (rollback-only since WP-31C)
+├─ state/state.ts        (typed canonical core state machine, WP-31C)
 ├─ profile.js            (rollback-only since WP-31A)
 ├─ profile/profile.ts    (typed canonical profile module, WP-31A)
 ├─ missions.js           (unchanged mutable controller; canonical + rollback since WP-31B)
@@ -153,7 +154,8 @@ domains/ocean-rescue/src/
 ├─ gups/catalog.ts       (typed canonical GUP catalog, WP-31B)
 ├─ launch.js             (rollback-only since WP-31B)
 ├─ launch/launch.ts      (typed canonical launch API, WP-31B)
-├─ travel.js
+├─ travel.js             (rollback-only since WP-31C)
+├─ travel/travel.ts      (typed canonical travel runtime contract, WP-31C)
 ├─ terrain.js
 ├─ travel-scene.js
 ├─ rescue.js
@@ -182,6 +184,15 @@ legacy controllers remain in the canonical graph for their still-unmigrated
 mutable state. The launch adapter `src/esm/launch.js` imports and re-exports
 the complete typed launch API `src/launch/launch.ts`; `src/launch.js` is
 unchanged and is referenced only by the legacy rollback graph.
+
+Since WP-31C, the core state adapter `src/esm/state.js` and the travel adapter
+`src/esm/travel.js` import and re-export the strictly typed canonical modules
+`src/state/state.ts` (core state machine) and `src/travel/travel.ts` (travel
+runtime contract); the unchanged `src/state.js` and `src/travel.js` are
+referenced only by the legacy rollback graph. `src/app.js` still consumes the
+temporary globals (`window.OceanRescue.State`, `window.OceanRescue.Travel`) and
+remains the legacy JavaScript orchestration hub; shared boundary types are
+planned for WP-32.
 
 ### 4.2 Current source graph
 

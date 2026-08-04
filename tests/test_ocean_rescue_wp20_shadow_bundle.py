@@ -254,6 +254,11 @@ def test_production_paths_outside_write_scope() -> None:
         "domains/ocean-rescue/src/esm/missions.js",
         "domains/ocean-rescue/src/esm/gups.js",
         "domains/ocean-rescue/src/esm/launch.js",
+        # WP-31C typed core state/travel group: the state/travel adapters are
+        # legitimate production cutover paths. The new typed state/travel
+        # modules are untracked additions.
+        "domains/ocean-rescue/src/esm/state.js",
+        "domains/ocean-rescue/src/esm/travel.js",
     }
     changed = {line for line in diff.splitlines() if line}
     assert changed <= allowed, (
@@ -376,6 +381,16 @@ def test_metadata_actual_module_membership() -> None:
     assert "launch.js" not in metadata["actual_module_files"], (
         "rollback-only legacy launch.js must not be in shadow membership"
     )
+    # WP-31C: the shadow lane shares the typed core state/travel implementations
+    # and excludes the rollback-only legacy state.js/travel.js.
+    for typed in ("state/state.ts", "travel/travel.ts"):
+        assert typed in metadata["actual_module_files"], (
+            f"typed core module {typed} missing from shadow membership"
+        )
+    for rollback in ("state.js", "travel.js"):
+        assert rollback not in metadata["actual_module_files"], (
+            f"rollback-only legacy {rollback} must not be in shadow membership"
+        )
 
 
 def test_bundle_bytes_and_sha256_match_metadata() -> None:

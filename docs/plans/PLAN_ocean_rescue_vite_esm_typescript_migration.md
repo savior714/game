@@ -6,8 +6,8 @@
 - **Updated:** 2026-08-04
 - **Scope:** Ocean Rescue development-source migration from global-namespace JavaScript to ESM/TypeScript/Vite
 - **Execution model:** sequential bounded work packages
-- **Current phase:** PHASE_6_IN_PROGRESS
-- **Next executable work package:** WP-31C
+- **Current phase:** PHASE_7_READY
+- **Next executable work package:** WP-32
 - **Production cutover gate:** SATISFIED by WP-02 functional parity, WP-20 deterministic shadow-bundle parity, WP-21 production application-bundle cutover, and WP-30 canonical ESM entry
 - **Target-device release gate:** WP-03A must pass before MVP release, but it does not block WP-21
 - **Automated performance harness:** WP-03B is non-blocking follow-up work, triggered by an observed regression or post-MVP stabilization need
@@ -324,13 +324,15 @@ Phase 0: COMPLETE
 Phase 3: COMPLETE
 Phase 4: COMPLETE
 Phase 5: COMPLETE
+Phase 6: COMPLETE
 WP-20: COMPLETE
 WP-21: COMPLETE
 WP-30: COMPLETE
 WP-31A: COMPLETE
 WP-31B: COMPLETE
-Current phase: PHASE_6_IN_PROGRESS
-Next executable work package: WP-31C
+WP-31C: COMPLETE
+Current phase: PHASE_7_READY
+Next executable work package: WP-32
 Production bundle state: PRODUCTION_APP_BUNDLE
 ESM entry state: CANONICAL_MAIN_JS
 Manifest state: CONTRACTED_CANONICAL_PLUS_LEGACY_ROLLBACK
@@ -338,10 +340,14 @@ Profile module state: TYPED_CANONICAL
 Mission catalog state: TYPED_CANONICAL
 GUP catalog state: TYPED_CANONICAL
 Launch module state: TYPED_CANONICAL
+State module state: TYPED_CANONICAL
+Travel module state: TYPED_CANONICAL
 Legacy profile.js: ROLLBACK_ONLY
 Legacy missions.js: CONTROLLER_CANONICAL_PLUS_ROLLBACK
 Legacy gups.js: CONTROLLER_CANONICAL_PLUS_ROLLBACK
 Legacy launch.js: ROLLBACK_ONLY
+Legacy state.js: ROLLBACK_ONLY
+Legacy travel.js: ROLLBACK_ONLY
 WP-03A target-device smoke: REQUIRED_BEFORE_MVP_RELEASE
 WP-03B automated performance harness: BACKLOG_NON_BLOCKING
 ```
@@ -431,7 +437,7 @@ Evidence: `docs/evidence/ocean-rescue/migration/phase-5/canonical-esm-entry-modu
 
 ## 8. Phase 6 — Typed leaf and domain modules
 
-- **Status:** IN_PROGRESS (WP-31B PASS)
+- **Status:** COMPLETE (WP-31C PASS)
 - **Objective:** Convert bounded modules to TypeScript without decomposing application orchestration.
 - **Depends on:** WP-30
 - **Authoritative path before:** JavaScript domain modules
@@ -525,20 +531,62 @@ Evidence: `docs/evidence/ocean-rescue/migration/phase-6/typed-static-catalog-gro
 
 ### WP-31C — Core state and tightly coupled travel contracts
 
-- state machine;
-- phase identifiers;
-- state snapshots;
-- only the travel/domain contracts that share the same rollback boundary;
-- focused transition tests.
+- **Status:** COMPLETE (WP-31C PASS)
+- **Objective:** Migrate the core state machine and the tightly coupled travel
+  runtime state to strictly typed canonical TypeScript modules while preserving
+  every observable runtime contract and the byte-identical legacy rollback
+  sources.
+- **Typed modules:**
+  - `domains/ocean-rescue/src/state/state.ts` (typed canonical core state
+    machine: `Phase`, `PhaseMap`, `TransitionMap`, `TransitionToken`,
+    `StateSnapshot`, `StateApi`; frozen `Phases`, frozen transition allow-list,
+    transition locking, monotonic transition IDs, frozen tokens, snapshots,
+    `forcePhase` cleanup, temporary `window.OceanRescue.State` ABI);
+  - `domains/ocean-rescue/src/travel/travel.ts` (typed canonical travel runtime
+    contract: `TravelBounds`, `TravelSnapshot`, `TravelApi`; frozen `Bounds`,
+    `AutoForwardSpeed === 120`, `TapSpeed === 360`, 50ms delta cap, forward
+    multiplier 0..1 with exact rejection, tap-target movement and clear timing,
+    drag pointer ownership, clamp ordering, exact invalid-input return values,
+    temporary `window.OceanRescue.Travel` ABI).
+- **Compatibility adapters:**
+  - `src/esm/state.js` imports and re-exports the typed state module and no
+    longer side-effect-imports `../state.js`;
+  - `src/esm/travel.js` imports and re-exports the typed travel module and no
+    longer side-effect-imports `../travel.js`.
+- **Ownership after:**
+  - canonical ESM production/dev graph:
+    `src/main.js → src/esm/app.js → src/esm/{state,travel}.js →
+    src/state/state.ts / src/travel/travel.ts`;
+  - legacy rollback graph: `build-manifest.legacy.json → state.js, travel.js`
+    (both unchanged); both are rollback-only.
+- **Verified:** strict `tsc --noEmit`; typed behavioral matrix (27 State
+  scenarios, 35 Travel scenarios) with legacy-versus-typed parity in strict
+  mode; runtime identity and immutability on the real compiled/transformed
+  modules; WP-30 module graph (typed state/travel in, rollback
+  state.js/travel.js out, existing typed modules/controllers retained);
+  production/shadow module membership; deterministic production bundle +
+  standalone HTML; tracked-artifact match; browser state/travel flow
+  (deterministic profile -> mission -> GUP -> launch -> TRAVEL -> distance
+  progress -> tap and drag Y reflection -> RESCUE_SITE_TRANSITION) with clean
+  page/console/network quality and no leftover transition lock; operational
+  legacy rollback byte-identical to the pre-WP-31C baseline; legacy sources
+  byte-identical.
 
-Verification bundle for each package:
+Closure status after WP-31C; superseded for current scheduling:
 
-- TypeScript diagnostics;
-- focused domain tests;
-- application and browser parity;
-- deterministic production build.
+```text
+Phase 6: COMPLETE
+WP-31A: COMPLETE
+WP-31B: COMPLETE
+WP-31C: COMPLETE
+State module state: TYPED_CANONICAL
+Travel module state: TYPED_CANONICAL
+Legacy state.js: ROLLBACK_ONLY
+Legacy travel.js: ROLLBACK_ONLY
+Next executable work package: WP-32
+```
 
-Rollback boundary: revert the affected module group to its previous source form.
+Evidence: `docs/evidence/ocean-rescue/migration/phase-6/typed-core-state-travel-contracts.md`
 
 ---
 

@@ -207,6 +207,22 @@ check-ocean-rescue-typed-static-catalogs:
     uv run pytest tests/test_ocean_rescue_wp11_dev_server.py -q
     uv run pytest tests/test_ocean_rescue_wp03_scope_decision.py -q
 
+# Run the focused WP-31C typed core state/travel verification bundle
+check-ocean-rescue-typed-core-state-travel:
+    @just check-ocean-rescue-toolchain
+    uv run pytest tests/test_ocean_rescue_wp31c_typed_core_state_travel.py -q
+    uv run pytest tests/test_ocean_rescue_state_machine.py -q
+    uv run pytest tests/test_ocean_rescue_travel_movement.py -q
+    uv run pytest tests/test_ocean_rescue_launch_presentation.py -q
+    uv run pytest tests/test_ocean_rescue_wp31b_typed_static_catalogs.py -q
+    uv run pytest tests/test_ocean_rescue_wp31a_typed_profile.py -q
+    uv run pytest tests/test_ocean_rescue_wp30_esm_entry_module_graph.py -q
+    uv run pytest tests/test_ocean_rescue_wp21_production_bundle_cutover.py -q
+    just check-ocean-rescue-rollback
+    uv run pytest tests/test_ocean_rescue_artifact_drift.py -q
+    uv run pytest tests/test_ocean_rescue_wp11_dev_server.py -q
+    uv run pytest tests/test_ocean_rescue_wp03_scope_decision.py -q
+
 # Verify the Ocean Rescue build-tooling boundary end to end
 check-ocean-rescue-toolchain:
     @just check-ocean-rescue-node-version

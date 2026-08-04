@@ -21,6 +21,7 @@ plus the tracked ``ocean-rescue/index.html`` artifact.
 
 from __future__ import annotations
 
+import ast
 import gzip
 import hashlib
 import json
@@ -79,6 +80,19 @@ MINIFIER = "oxc"
 HISTORICAL_PRE_WP21_LEGACY_ARTIFACT_SHA256 = (
     "cfd991d83524db6c7ad225da11ef7a9421300bdf588c4b905bf4e5556f776582"
 )
+
+# Assignment-aware anti-regression guard for the mutable legacy rollback
+# baseline constants. These names were removed from the current-source
+# contract because template or style changes would require rebasing a
+# hardcoded artifact SHA (see test_legacy_rollback_is_deterministic). The
+# guard inspects every Ocean Rescue test file, including this one, so a
+# reintroduced assignment cannot hide in the file that owns the guard.
+_ROLLBACK_BASELINE_FORBIDDEN_NAMES = (
+    "PRE_WP21_LEGACY_BASELINE_SHA",
+    "LEGACY_ROLLBACK_BASELINE_SHA",
+)
+_HISTORICAL_EVIDENCE_NAME = "HISTORICAL_PRE_WP21_LEGACY_ARTIFACT_SHA256"
+_SHA256_HEX_RE = re.compile(r"^[0-9a-f]{64}$")
 
 PLAN_DOC = (
     REPO_ROOT / "docs" / "plans" / "PLAN_ocean_rescue_vite_esm_typescript_migration.md"
@@ -482,32 +496,128 @@ def test_legacy_rollback_is_deterministic(tmp_path: Path) -> None:
     assert len(diagnostic_sha) == 64, "diagnostic SHA-256 must be 64 hex chars"
 
 
+def _assigned_names(target: ast.AST) -> list[str]:
+    """Collect simple names bound by an assignment target."""
+    if isinstance(target, ast.Name):
+        return [target.id]
+    if isinstance(target, (ast.Tuple, ast.List)):
+        names: list[str] = []
+        for element in target.elts:
+            names.extend(_assigned_names(element))
+        return names
+    return []
+
+
+def _is_renamed_mutable_baseline_constant(name: str) -> bool:
+    """A renamed legacy rollback/current-baseline artifact constant."""
+    if name == _HISTORICAL_EVIDENCE_NAME:
+        return False
+    if "LEGACY" not in name:
+        return False
+    return "ROLLBACK" in name or "BASELINE" in name
+
+
+def _mutable_baseline_violations(source: str, label: str) -> list[tuple[str, int]]:
+    """Return (name, lineno) for forbidden mutable baseline assignments."""
+    tree = ast.parse(source, filename=label)
+    violations: list[tuple[str, int]] = []
+    for node in ast.walk(tree):
+        value: ast.AST | None
+        targets: list[ast.AST]
+        if isinstance(node, ast.Assign):
+            targets = list(node.targets)
+            value = node.value
+        elif isinstance(node, ast.AnnAssign):
+            targets = [node.target]
+            value = node.value
+        else:
+            continue
+        literal_hex = (
+            isinstance(value, ast.Constant)
+            and isinstance(value.value, str)
+            and _SHA256_HEX_RE.match(value.value) is not None
+        )
+        for target in targets:
+            for name in _assigned_names(target):
+                if name in _ROLLBACK_BASELINE_FORBIDDEN_NAMES:
+                    violations.append((name, node.lineno))
+                elif literal_hex and _is_renamed_mutable_baseline_constant(name):
+                    violations.append((name, node.lineno))
+    return violations
+
+
+def _mutable_baseline_violations_in_files() -> list[tuple[str, str, int]]:
+    """Scan every Ocean Rescue test file, including the WP-21 file itself."""
+    violations: list[tuple[str, str, int]] = []
+    for test_file in sorted(TESTS_DIR.glob("test_ocean_rescue_*.py")):
+        for name, lineno in _mutable_baseline_violations(
+            test_file.read_text(encoding="utf-8"), str(test_file)
+        ):
+            violations.append((str(test_file), name, lineno))
+    return violations
+
+
 def test_historical_pre_wp21_evidence_is_not_a_current_gate() -> None:
     """The immutable pre-WP-21 artifact SHA is evidence, not a live baseline.
 
     ``HISTORICAL_PRE_WP21_LEGACY_ARTIFACT_SHA256`` records the historical
     ordered-script artifact identity at the pre-WP-21 deployment baseline
     (07ee6a0). It must never be conflated with a mutable current-source legacy
-    build SHA, and no test may reintroduce the old mutable rollback baseline
-    constants, because template/style changes would require rebasing them.
+    build SHA, and no Ocean Rescue test file may assign a mutable rollback
+    baseline constant, because template/style changes would require rebasing
+    them. The guard covers every ``test_ocean_rescue_*.py`` file, including
+    this file itself.
     """
     assert HISTORICAL_PRE_WP21_LEGACY_ARTIFACT_SHA256 == (
         "cfd991d83524db6c7ad225da11ef7a9421300bdf588c4b905bf4e5556f776582"
     )
-    forbidden_names = (
-        "PRE_WP21_LEGACY_BASELINE_SHA",
-        "LEGACY_ROLLBACK_BASELINE_SHA",
+    violations = _mutable_baseline_violations_in_files()
+    assert not violations, "\n".join(
+        f"{path}:{lineno}: forbidden mutable rollback baseline assignment {name}"
+        for path, name, lineno in violations
     )
-    this_file = Path(__file__).resolve()
-    for test_file in TESTS_DIR.glob("test_ocean_rescue_*.py"):
-        if test_file.resolve() == this_file:
-            continue
-        text = test_file.read_text(encoding="utf-8")
-        for name in forbidden_names:
-            assert name not in text, (
-                f"{test_file.name} must not define the mutable rollback "
-                f"baseline constant {name}"
-            )
+
+
+def test_mutable_legacy_baseline_guard_covers_wp21_self_file() -> None:
+    """The assignment-aware guard rejects forbidden baselines in WP-21 content.
+
+    Synthetic snippets labelled with the WP-21 file path prove that forbidden
+    mutable rollback baseline assignments are detected even in the file that
+    owns the guard, while the intentional historical evidence assignment and
+    prose mentioning the old names stay allowed. No tracked file is modified.
+    """
+    wp21_label = str(Path(__file__).resolve())
+    hex64 = "c" * 64
+
+    plain = f'PRE_WP21_LEGACY_BASELINE_SHA = "{hex64}"\n'
+    assert _mutable_baseline_violations(plain, wp21_label) == [
+        ("PRE_WP21_LEGACY_BASELINE_SHA", 1)
+    ]
+
+    annotated = f'LEGACY_ROLLBACK_BASELINE_SHA: str = "{hex64}"\n'
+    assert _mutable_baseline_violations(annotated, wp21_label) == [
+        ("LEGACY_ROLLBACK_BASELINE_SHA", 1)
+    ]
+
+    renamed = f'CURRENT_LEGACY_ROLLBACK_BASELINE_SHA256 = "{hex64}"\n'
+    assert _mutable_baseline_violations(renamed, wp21_label) == [
+        ("CURRENT_LEGACY_ROLLBACK_BASELINE_SHA256", 1)
+    ]
+
+    historical = f'HISTORICAL_PRE_WP21_LEGACY_ARTIFACT_SHA256 = "{hex64}"\n'
+    assert _mutable_baseline_violations(historical, wp21_label) == []
+
+    docstring = (
+        '"""Prose mentioning PRE_WP21_LEGACY_BASELINE_SHA is not an '
+        'assignment and must not be flagged."""\n'
+    )
+    assert _mutable_baseline_violations(docstring, wp21_label) == []
+
+    mention = 'label = "legacy SHA PRE_WP21_LEGACY_BASELINE_SHA in a string"\n'
+    assert _mutable_baseline_violations(mention, wp21_label) == []
+
+    legacy_dict = f'LEGACY_SOURCE_SHA256 = {{"missions.js": "{hex64}"}}\n'
+    assert _mutable_baseline_violations(legacy_dict, wp21_label) == []
 
 
 def test_operational_rollback_restores_legacy_and_bundle(tmp_path: Path) -> None:

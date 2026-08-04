@@ -13,8 +13,8 @@ const MIN_DATA           = 3;    // 난이도 조정 최소 시도 횟수(레벨
 const MATH_DIFF_OPTS     = { upThreshold: 0.85, downThreshold: 0.75 };
 const LAUNCH_STREAK      = 20;   // 연속 정답 → 로켓 발사
 const STATS_KEY          = ProgressEngine.createStatsKey('math');
-const MAX_WRONG_PATTERNS = 5;    // 기억할 최대 틀린 패턴 수
-const REINFORCE_PROB     = 0.45; // 틀린 패턴 재출제 확률
+const MAX_WRONG_PATTERNS = 5;    // 기억할 최대 틀린 문제 수
+const REINFORCE_PROB     = 0.45; // 틀린 문제 정확 재출제 확률
 const RECENT_LIMIT       = 10;    // 최근 출제 문제 기억 수
 
 const DIFF_LABELS = ['입문', '기초', '중급', '숙련', '마스터', '초월', '전설'];
@@ -47,7 +47,7 @@ var netStreak     = 0;
 var hasNet        = false;
 const NET_STREAK  = 5;
 
-// 강화학습: 틀린 패턴 기억
+// 강화학습: 틀린 문제 기억
 let wrongPatterns = [];
 let currentQData  = null; // { op, level, a, b, tag, isWeakness }
 let recentHistory = []; // 최근 5문제 정답 여부
@@ -172,19 +172,18 @@ function generateQuestion() {
   while (tries < 20) {
     const candidate = _generateCandidate();
     const key = [candidate.a, candidate.b].sort((a, b) => a - b).join(',') + candidate.op;
-    
-    // 만약 전체 가용 문제 수가 너무 적으면 (예: 10개 미만), RECENT_LIMIT을 유동적으로 조절
-    // 하지만 수학은 보통 조합이 많으므로 10개를 유지해도 무방함. 단, 아주 낮은 레벨은 예외.
-    if (!recentQuestions.includes(key)) {
+
+    // 틀린 문제 복습은 최근 출제 여부보다 우선한다. 일반 문제만 최근 중복을 피한다.
+    if (candidate.isReinforcement || !recentQuestions.includes(key)) {
       q = candidate;
       break;
     }
     tries++;
   }
-  
+
   // 20회 시도 후에도 못 찾으면 그냥 마지막 후보 사용
   if (!q) q = _generateCandidate();
-  
+
   return q;
 }
 
@@ -210,10 +209,20 @@ function _generateCandidate() {
     }
   }
 
-  // 2. 기존 틀린 패턴
+  // 2. 기존 틀린 문제를 정확히 재출제
   if (wrongPatterns.length > 0 && Math.random() < REINFORCE_PROB) {
     const p = wrongPatterns[Math.floor(Math.random() * wrongPatterns.length)];
-    return { ...generateByOpLevel(p.op, p.level), level: p.level };
+    const result = p.op === '+' ? p.a + p.b : p.op === '-' ? p.a - p.b : p.a * p.b;
+    return {
+      a: p.a,
+      b: p.b,
+      op: p.op,
+      result,
+      tag: p.tag || extractPatternTag(p.a, p.b, p.op),
+      level: p.level,
+      isWeakness: true,
+      isReinforcement: true,
+    };
   }
 
   // 3. 일반 출제
@@ -327,9 +336,15 @@ function recordResult(correct, elapsed) {
     netStreak = 0;
   }
 
-  // 틀린 패턴 기록
+  // 틀린 문제 기록
   if (!correct) {
-    wrongPatterns.unshift({ op: currentOp, level: currentQData.level, a: currentQData.a, b: currentQData.b });
+    wrongPatterns.unshift({
+      op: currentOp,
+      level: currentQData.level,
+      a: currentQData.a,
+      b: currentQData.b,
+      tag: currentQData.tag,
+    });
     if (wrongPatterns.length > MAX_WRONG_PATTERNS) wrongPatterns.pop();
   } else {
     const idx = wrongPatterns.findIndex(p => p.op === currentOp && p.a === currentQData.a && p.b === currentQData.b);

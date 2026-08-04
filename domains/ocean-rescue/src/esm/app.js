@@ -1,3 +1,4 @@
+import { installLaunchTravelController } from "../controllers/launch-travel";
 import { installProfileMissionSelectionController } from "../controllers/profile-mission-selection";
 import "./state.js";
 import "./render-runtime.js";
@@ -24,6 +25,7 @@ if (!registeredApp) {
   throw new Error("OceanRescue.App was not registered");
 }
 
-const App = installProfileMissionSelectionController(registeredApp);
+const profileMissionApp = installProfileMissionSelectionController(registeredApp);
+const App = installLaunchTravelController(profileMissionApp);
 
 export { App };

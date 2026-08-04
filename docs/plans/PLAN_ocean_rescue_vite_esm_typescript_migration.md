@@ -7,7 +7,7 @@
 - **Scope:** Ocean Rescue development-source migration from global-namespace JavaScript to ESM/TypeScript/Vite
 - **Execution model:** sequential bounded work packages
 - **Current phase:** PHASE_8_IN_PROGRESS
-- **Next executable work package:** WP-33B
+- **Next executable work package:** WP-33C
 - **Production cutover gate:** SATISFIED by WP-02 functional parity, WP-20 deterministic shadow-bundle parity, WP-21 production application-bundle cutover, and WP-30 canonical ESM entry
 - **Target-device release gate:** WP-03A must pass before MVP release, but it does not block WP-21
 - **Automated performance harness:** WP-03B is non-blocking follow-up work, triggered by an observed regression or post-MVP stabilization need
@@ -335,8 +335,9 @@ WP-31C: COMPLETE
 WP-32A: COMPLETE
 WP-32B: COMPLETE
 WP-33A: COMPLETE
+WP-33B: COMPLETE
 Current phase: PHASE_8_IN_PROGRESS
-Next executable work package: WP-33B
+Next executable work package: WP-33C
 Production bundle state: PRODUCTION_APP_BUNDLE
 ESM entry state: CANONICAL_MAIN_JS
 Manifest state: CONTRACTED_CANONICAL_PLUS_LEGACY_ROLLBACK
@@ -719,7 +720,7 @@ Evidence: `docs/evidence/ocean-rescue/migration/phase-7/pointer-coordinate-rende
 
 ## 10. Phase 8 — Application orchestration decomposition
 
-- **Status:** IN_PROGRESS (WP-33A COMPLETE)
+- **Status:** READY (WP-32B complete)
 - **Objective:** Replace monolithic orchestration with bounded controller ownership.
 - **Depends on:** WP-32A and WP-32B
 - **Authoritative path before:** central `app.js` orchestration

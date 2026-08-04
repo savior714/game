@@ -1,22 +1,10 @@
 /**
- * Shared runtime ABI boundary types for Ocean Rescue (WP-32A).
- *
- * This module is the single type-only authority for the temporary
- * `window.OceanRescue` compatibility ABI consumed by the legacy `src/app.js`
- * orchestration hub. It composes the actual exported API types from the typed
- * canonical modules and models the mission/GUP controller facades from the
- * unchanged legacy controller behavior (`src/missions.js`, `src/gups.js`).
- *
- * The module emits no runtime JavaScript: every import is type-only and every
- * export is a type. It must never appear as a runtime module in the production
- * bundle.
+ * Shared runtime ABI boundary types for Ocean Rescue (WP-32A/WP-33B).
+ * This module is type-only and must emit no runtime JavaScript.
  */
 import type { GupCatalog, GupId } from "../gups/catalog";
 import type { LaunchApi } from "../launch/launch";
-import type {
-  MissionCatalog,
-  MissionId,
-} from "../missions/catalog";
+import type { MissionCatalog, MissionId } from "../missions/catalog";
 import type {
   LogicalPoint,
   PointerInputApi,
@@ -26,13 +14,14 @@ import type {
 } from "./pointer-input";
 import type { ProfileApi } from "../profile/profile";
 import type { StateApi } from "../state/state";
-import type { TravelApi } from "../travel/travel";
+import type { TravelApi, TravelSnapshot } from "../travel/travel";
 
 export type {
   ProfileApi,
   LaunchApi,
   StateApi,
   TravelApi,
+  TravelSnapshot,
   MissionCatalog,
   GupCatalog,
   MissionId,
@@ -79,6 +68,47 @@ export interface GupsApi {
   readonly confirmSelection: () => GupId;
 }
 
+export interface TerrainSnapshot {
+  readonly active: boolean;
+  readonly missionId: MissionId | null;
+  readonly forwardSpeedMultiplier: number;
+}
+
+export interface TerrainApi {
+  readonly getSnapshot: () => TerrainSnapshot;
+  readonly start: (missionId: unknown) => boolean;
+  readonly stop: () => boolean;
+  readonly step: (deltaMs: unknown, travelSnapshot: unknown) => boolean;
+}
+
+export interface RescueApi {
+  readonly ArrivalDistance: number;
+  readonly hasArrived: (travelSnapshot: unknown) => boolean;
+}
+
+export interface TravelSceneApi {
+  readonly prepare: () => boolean;
+  readonly activate: () => boolean;
+  readonly sync: (travelSnapshot: unknown, terrainSnapshot: unknown) => boolean;
+  readonly isMounted: () => boolean;
+  readonly exit: () => void;
+}
+
+export interface RenderRuntimeTravelApi extends RenderCoordinateMapperApi {
+  readonly setLegacyBridgeVisible: (visible: boolean) => void;
+  readonly getLegacyCanvas: () => HTMLCanvasElement | null;
+  readonly getLegacyContext: () => CanvasRenderingContext2D | null;
+}
+
+export type TravelProgressResult =
+  | Readonly<{ valid: false }>
+  | Readonly<{
+      valid: true;
+      percent: number;
+      distance: number;
+      arrivalDistance: number;
+    }>;
+
 export interface OceanRescueNamespace {
   Profile?: ProfileApi;
   Missions?: MissionsApi;
@@ -86,6 +116,12 @@ export interface OceanRescueNamespace {
   Launch?: LaunchApi;
   State?: StateApi;
   Travel?: TravelApi;
-  RenderRuntime?: RenderCoordinateMapperApi;
+  Terrain?: TerrainApi;
+  Rescue?: RescueApi;
+  TravelScene?: TravelSceneApi;
+  RenderRuntime?: RenderRuntimeTravelApi;
   PointerInput?: PointerInputApi;
+  TravelProgress?: Readonly<{
+    compute: (travelSnapshot: unknown) => TravelProgressResult;
+  }>;
 }

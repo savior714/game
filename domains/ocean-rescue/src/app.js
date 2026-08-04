@@ -180,6 +180,14 @@
     return id;
   }
 
+  function cancelPauseableTimer(owner) {
+    var timerId = pauseableTimerIds[owner];
+    if (timerId !== null && typeof window.clearTimeout === "function") {
+      window.clearTimeout(timerId);
+    }
+    unregisterPauseableTimer(owner);
+  }
+
   function missionById(missionId) {
     var catalog = Missions.Catalog;
     for (var i = 0; i < catalog.length; i += 1) {
@@ -1187,6 +1195,14 @@
     };
   }
 
+  function handoffTravelArrival() {
+    if (!tryBeginRescueArrival()) {
+      return false;
+    }
+    renderRescueSiteFrame(resolvePaintCanvas(), resolvePaintContext());
+    return true;
+  }
+
   function tryBeginRescueArrival() {
     if (!Rescue) {
       return false;
@@ -1291,9 +1307,7 @@
     };
     activeRescueSequence = sequence;
 
-    if (TravelScene && TravelScene.isMounted()) {
-      TravelScene.exit();
-    }
+    App.stopTravelRuntime();
 
     if (SeaTurtle && mission.id === SeaTurtle.MissionId && RenderRuntime && RenderRuntime.isReady()) {
       if (!SeaTurtleScene) {
@@ -1322,25 +1336,6 @@
     } else if (CrabScene && CrabScene.isMounted()) {
       CrabScene.exit();
     }
-
-    activeTravelRunId = null;
-    if (
-      travelFrameId !== null &&
-      typeof window.cancelAnimationFrame === "function"
-    ) {
-      window.cancelAnimationFrame(travelFrameId);
-    }
-    travelFrameId = null;
-    travelLastTimestamp = null;
-
-    if (Travel) {
-      Travel.stop();
-    }
-    if (Terrain && Terrain.getSnapshot().active) {
-      Terrain.stop();
-    }
-    shutdownActivePointer();
-    hideTravelProgress();
 
     var root = document.getElementById("ocean-rescue-root");
     if (root) {
@@ -3545,17 +3540,9 @@
     }
     youngWhalePointerId = null;
     youngWhalePointerCaptureEl = null;
-    if (pointerActive && pointerDragging && pointerId !== null && Travel) {
-      Travel.endDrag(pointerId);
+    if (App && typeof App.pauseTravelRuntime === "function") {
+      App.pauseTravelRuntime();
     }
-    if (
-      pointerId !== null &&
-      travelCanvas &&
-      typeof travelCanvas.releasePointerCapture === "function"
-    ) {
-      travelCanvas.releasePointerCapture(pointerId);
-    }
-    resetPointerGesture();
     if (SeaTurtle && typeof SeaTurtle.pauseCancel === "function") {
       SeaTurtle.pauseCancel();
     }
@@ -3588,13 +3575,6 @@
     freezeAllPauseTimers();
     cancelPausePointerInteractions();
     clearCrabHoldTimer();
-    if (
-      travelFrameId !== null &&
-      typeof window.cancelAnimationFrame === "function"
-    ) {
-      window.cancelAnimationFrame(travelFrameId);
-    }
-    travelFrameId = null;
     setPauseRootMarkers(true);
     var overlay = document.getElementById("ocean-rescue-pause-overlay");
     var countdown = document.getElementById("ocean-rescue-pause-countdown");
@@ -3642,14 +3622,7 @@
     syncPauseButton();
     var snapshot = State.getSnapshot();
     if (snapshot.phase === State.Phases.TRAVEL) {
-      activeTravelRunId = null;
-      if (Travel) {
-        Travel.stop();
-      }
-      if (Terrain && Terrain.getSnapshot().active) {
-        Terrain.stop();
-      }
-      shutdownActivePointer();
+      App.stopTravelRuntime();
     } else if (
       snapshot.phase === State.Phases.RESCUE_SITE_TRANSITION ||
       snapshot.phase === State.Phases.RESCUE_TUTORIAL ||
@@ -3659,8 +3632,7 @@
       activeRescueSequence = null;
       shutdownRescueInteractionState();
     } else if (snapshot.phase === State.Phases.LAUNCH) {
-      activeLaunchSequence = null;
-      clearLaunchTimer();
+      App.cancelLaunchRuntime();
     }
     var root = document.getElementById("ocean-rescue-root");
     if (root) {
@@ -3780,7 +3752,7 @@
     syncPauseButton();
     var snapshot = State.getSnapshot();
     if (snapshot.phase === State.Phases.TRAVEL) {
-      startTravelResume();
+      App.resumeTravelRuntime();
     }
   }
 
@@ -3802,6 +3774,66 @@
         travelAnimationFrame(runId, timestamp);
       });
     }
+  }
+
+  function pauseTravelRuntime() {
+    var changed = activeTravelRunId !== null;
+    if (
+      travelFrameId !== null &&
+      typeof window.cancelAnimationFrame === "function"
+    ) {
+      window.cancelAnimationFrame(travelFrameId);
+    }
+    travelFrameId = null;
+    shutdownActivePointer();
+    return changed;
+  }
+
+  function resumeTravelRuntime() {
+    if (!Travel || activeTravelRunId === null || !Travel.getSnapshot().active) {
+      return false;
+    }
+    startTravelResume();
+    return true;
+  }
+
+  function stopTravelRuntime() {
+    var changed = activeTravelRunId !== null ||
+      (Travel && Travel.getSnapshot().active);
+    activeTravelRunId = null;
+    if (
+      travelFrameId !== null &&
+      typeof window.cancelAnimationFrame === "function"
+    ) {
+      window.cancelAnimationFrame(travelFrameId);
+    }
+    travelFrameId = null;
+    travelLastTimestamp = null;
+    shutdownActivePointer();
+    if (Travel && Travel.getSnapshot().active) {
+      Travel.stop();
+    }
+    if (Terrain && Terrain.getSnapshot().active) {
+      Terrain.stop();
+    }
+    if (TravelScene && TravelScene.isMounted()) {
+      TravelScene.exit();
+    }
+    hideTravelProgress();
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-travel-runtime", "stopped");
+      root.setAttribute("data-travel-input", "disabled");
+    }
+    return changed ? true : false;
+  }
+
+  function cancelLaunchRuntime() {
+    var changed = activeLaunchSequence !== null;
+    activeLaunchSequence = null;
+    clearLaunchTimer();
+    clearGoalTimer();
+    return changed;
   }
 
   function onPauseButtonClick() {
@@ -5322,19 +5354,19 @@
     var back = document.getElementById("ocean-rescue-gup-back");
     if (back && typeof back.addEventListener === "function") {
       back.addEventListener("click", function () {
-        backToMissionSelect();
+        App.backToMissionSelect();
       });
     }
     var launch = document.getElementById("ocean-rescue-gup-launch");
     if (launch && typeof launch.addEventListener === "function") {
       launch.addEventListener("click", function () {
-        launchSelectedGup();
+        App.launchSelectedGup();
       });
     }
     var launchSection = document.getElementById("ocean-rescue-launch");
     if (launchSection && typeof launchSection.addEventListener === "function") {
       launchSection.addEventListener("click", function () {
-        skipLaunch();
+        App.skipLaunch();
       });
     }
     var skipButton = document.getElementById("ocean-rescue-launch-skip");
@@ -5343,7 +5375,7 @@
         if (event && typeof event.stopPropagation === "function") {
           event.stopPropagation();
         }
-        skipLaunch();
+        App.skipLaunch();
       });
     }
     if (!rescueInputBound) {
@@ -5527,7 +5559,20 @@
     renderGupSelect: renderGupSelect,
     selectGup: selectGup,
     backToMissionSelect: backToMissionSelect,
-    launchSelectedGup: launchSelectedGup
+    launchSelectedGup: launchSelectedGup,
+    skipLaunch: skipLaunch,
+    cancelLaunchRuntime: cancelLaunchRuntime,
+    pauseTravelRuntime: pauseTravelRuntime,
+    resumeTravelRuntime: resumeTravelRuntime,
+    stopTravelRuntime: stopTravelRuntime,
+    schedulePauseableTimer: scheduleWithRegistry,
+    cancelPauseableTimer: cancelPauseableTimer,
+    isPauseActive: function () { return pauseActive; },
+    syncPauseButton: syncPauseButton,
+    handoffTravelArrival: handoffTravelArrival,
+    resolveVisibleInputCanvas: resolveVisibleInputCanvas,
+    resolvePaintCanvas: resolvePaintCanvas,
+    resolvePaintContext: resolvePaintContext
   };
 
   window.OceanRescue.App = App;

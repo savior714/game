@@ -121,11 +121,13 @@ CONTROLLER_ADAPTER_TYPED_FILE: Dict[str, str] = {
     "gups.js": "gups/catalog.ts",
 }
 
-# App adapter file -> typed controller it installs (WP-33A).
-# The app adapter reads the legacy App, installs a typed controller, and
-# exports the controlled version under a different name.
-APP_ADAPTER_CONTROLLER_FILE: Dict[str, str] = {
-    "app.js": "controllers/profile-mission-selection.ts",
+# App adapter file -> ordered typed controllers it installs.
+# WP-33A owns profile/mission selection; WP-33B then owns GUP/launch/travel.
+APP_ADAPTER_CONTROLLER_FILES: Dict[str, Tuple[str, ...]] = {
+    "app.js": (
+        "controllers/profile-mission-selection.ts",
+        "controllers/launch-travel.ts",
+    ),
 }
 
 # Rollback-only legacy implementation files retained for the legacy manifest
@@ -378,11 +380,17 @@ def test_each_adapter_has_namespace_guard_and_export() -> None:
             assert "Catalog: Catalog," in text, (
                 f"{name}: facade must own the typed catalog"
             )
-        elif name in APP_ADAPTER_CONTROLLER_FILE:
-            # WP-33A: the app adapter reads the legacy App, installs a typed
-            # controller, and exports the controlled version.
+        elif name in APP_ADAPTER_CONTROLLER_FILES:
             assert "installProfileMissionSelectionController" in text, (
-                f"{name}: missing controller installation"
+                f"{name}: missing WP-33A controller installation"
+            )
+            assert "installLaunchTravelController" in text, (
+                f"{name}: missing WP-33B controller installation"
+            )
+            assert text.index(
+                "installProfileMissionSelectionController(registeredApp)"
+            ) < text.index("installLaunchTravelController(profileMissionApp)"), (
+                f"{name}: controller installation order must be WP-33A then WP-33B"
             )
             exports = re.findall(
                 r"^export\s+\{\s*(\w+)\s*\}\s*;\s*$", text, re.MULTILINE
@@ -418,12 +426,15 @@ def test_no_adapter_duplicate_or_bare_imports() -> None:
             assert spec.startswith(("./", "../")), f"{name}: bare import {spec!r}"
 
 
-def test_app_adapter_imports_profile_mission_selection_controller() -> None:
+def test_app_adapter_imports_ordered_typed_controllers() -> None:
     specs = [s for _, s in _static_imports(ESM_DIR / "app.js")]
     resolved = {_rel(_resolve(ESM_DIR / "app.js", s)) for s in specs}
-    assert "controllers/profile-mission-selection.ts" in resolved, (
-        "app.js must import the typed profile-mission-selection controller"
-    )
+    for typed in APP_ADAPTER_CONTROLLER_FILES["app.js"]:
+        assert typed in resolved, f"app.js must import typed controller {typed}"
+    text = (ESM_DIR / "app.js").read_text(encoding="utf-8")
+    assert text.index(
+        "installProfileMissionSelectionController(registeredApp)"
+    ) < text.index("installLaunchTravelController(profileMissionApp)")
 
 
 # --- import-graph properties ---
@@ -481,7 +492,6 @@ def test_canonical_graph_reaches_typed_implementations() -> None:
     nodes, edges = _build_graph()
     typed_targets = dict(MIGRATED_ADAPTER_TYPED_FILE)
     typed_targets.update(CONTROLLER_ADAPTER_TYPED_FILE)
-    typed_targets.update(APP_ADAPTER_CONTROLLER_FILE)
     for name, typed in typed_targets.items():
         typed_key = _rel(SRC_DIR / typed)
         assert typed_key in nodes, f"{typed} is not reachable from main.js"
@@ -490,6 +500,17 @@ def test_canonical_graph_reaches_typed_implementations() -> None:
             f"{name} adapter must reach {typed}"
         )
         assert edges.get(typed_key) == set(), "typed leaf module must import nothing"
+    for name, typed_files in APP_ADAPTER_CONTROLLER_FILES.items():
+        adapter_key = f"esm/{name}"
+        for typed in typed_files:
+            typed_key = _rel(SRC_DIR / typed)
+            assert typed_key in nodes, f"{typed} is not reachable from main.js"
+            assert typed_key in edges.get(adapter_key, set()), (
+                f"{name} adapter must reach {typed}"
+            )
+            assert edges.get(typed_key) == set(), (
+                f"typed controller {typed} must have no runtime imports"
+            )
 
 
 def test_canonical_graph_excludes_all_rollback_only_sources() -> None:

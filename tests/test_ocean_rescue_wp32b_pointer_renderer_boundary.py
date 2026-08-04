@@ -270,7 +270,7 @@ def test_legacy_manifest_insertion_order_and_dependency() -> None:
 def test_runtime_abi_pointer_slots() -> None:
     text = RUNTIME_ABI.read_text(encoding="utf-8")
     namespace = text.split("export interface OceanRescueNamespace")[1]
-    assert "RenderRuntime?: RenderCoordinateMapperApi;" in namespace
+    assert "RenderRuntime?: RenderRuntimeTravelApi;" in namespace
     assert "PointerInput?: PointerInputApi;" in namespace
     for token in FORBIDDEN_TOKENS:
         assert token not in text, f"forbidden token in runtime ABI: {token}"

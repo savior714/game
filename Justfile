@@ -268,6 +268,21 @@ check-ocean-rescue-profile-mission-controller:
     just check-ocean-rescue-rollback
     uv run pytest tests/test_ocean_rescue_wp03_scope_decision.py -q
 
+# Run the focused WP-33B typed launch/travel controller verification bundle
+check-ocean-rescue-launch-travel-controller:
+    @just check-ocean-rescue-toolchain
+    uv run pytest tests/test_ocean_rescue_wp33b_launch_travel_controller.py -q
+    uv run pytest tests/test_ocean_rescue_wp33a_profile_mission_controller.py -q
+    uv run pytest tests/test_ocean_rescue_launch_presentation.py -q
+    uv run pytest tests/test_ocean_rescue_travel_movement.py -q
+    uv run pytest tests/test_ocean_rescue_pause_lifecycle.py -q
+    uv run pytest tests/test_ocean_rescue_wp32b_pointer_renderer_boundary.py -q
+    uv run pytest tests/test_ocean_rescue_wp30_esm_entry_module_graph.py -q
+    uv run pytest tests/test_ocean_rescue_wp21_production_bundle_cutover.py -q
+    uv run pytest tests/test_ocean_rescue_artifact_drift.py -q
+    just check-ocean-rescue-rollback
+    uv run pytest tests/test_ocean_rescue_wp03_scope_decision.py -q
+
 # Verify the Ocean Rescue build-tooling boundary end to end
 check-ocean-rescue-toolchain:
     @just check-ocean-rescue-node-version

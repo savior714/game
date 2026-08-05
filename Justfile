@@ -316,6 +316,12 @@ check-ocean-rescue-toolchain:
     echo "✅ TypeScript $tsc_actual"
     @just typecheck-ocean-rescue
 
+# Verify the sea-turtle controller boundary scaffold (WP-33E-A)
+check-ocean-rescue-sea-turtle-controller-boundary:
+    @just check-ocean-rescue-toolchain
+    uv run pytest tests/test_ocean_rescue_wp33e_sea_turtle_controller_boundary.py -q
+    uv run pytest tests/test_ocean_rescue_wp30_esm_entry_module_graph.py -q
+
 # Prove the full Young Whale three-debris rescue session in a real browser against the production artifact
 check-ocean-rescue-young-whale-browser-session:
     @just check-ocean-rescue-toolchain

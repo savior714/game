@@ -103,6 +103,79 @@ export interface MissionRuntimeApi {
   readonly MissionId: MissionId;
 }
 
+/**
+ * A single rope segment in the sea-turtle interaction.
+ */
+export interface SeaTurtleRope {
+  readonly id: string;
+  readonly order: number;
+  readonly start: Readonly<{ readonly x: number; readonly y: number }>;
+  readonly end: Readonly<{ readonly x: number; readonly y: number }>;
+}
+
+/**
+ * Immutable snapshot of the sea-turtle state machine.
+ */
+export interface SeaTurtleSnapshot {
+  readonly active: boolean;
+  readonly activeRopeId: string | null;
+  readonly completedRopeIds: readonly string[];
+  readonly failureCount: number;
+  readonly helpLevel: number;
+  readonly tapStartArmed: boolean;
+  readonly pointerActive: boolean;
+  readonly inputLocked: boolean;
+  readonly feedback: "success" | "failure" | null;
+  readonly complete: boolean;
+}
+
+/**
+ * Result of a pointer-up gesture on a sea-turtle rope.
+ */
+export interface SeaTurtleRopeResult {
+  readonly accepted: boolean;
+  readonly outcome: "success" | "failure" | "none";
+  readonly ropeId: string | null;
+}
+
+/**
+ * Result of calling finishFeedback() to advance past feedback.
+ */
+export interface SeaTurtleFeedbackCompletion {
+  readonly changed: boolean;
+  readonly complete: boolean;
+  readonly nextRopeId: string | null;
+}
+
+/**
+ * Typed runtime API for the sea-turtle interaction state machine.
+ */
+export interface SeaTurtleApi {
+  readonly MissionId: string;
+  readonly Ropes: readonly SeaTurtleRope[];
+  readonly getSnapshot: () => SeaTurtleSnapshot;
+  readonly start: () => boolean;
+  readonly stop: () => boolean;
+  readonly pointerDown: (pointerId: number, x: number, y: number) => boolean;
+  readonly pointerMove: (pointerId: number, x: number, y: number) => boolean;
+  readonly pointerUp: (
+    pointerId: number,
+    x: number,
+    y: number,
+  ) => SeaTurtleRopeResult;
+  readonly pointerCancel: (pointerId: number) => boolean;
+  readonly finishFeedback: () => SeaTurtleFeedbackCompletion;
+  readonly pauseCancel: () => void;
+}
+
+/**
+ * Typed scene API for the sea-turtle authored PixiJS scene.
+ */
+export interface SeaTurtleSceneApi extends RescueSceneApi {
+  readonly activate: () => boolean;
+  readonly sync: (snapshot: SeaTurtleSnapshot) => boolean;
+}
+
 export interface RescueSceneDiagnostics {
   readonly missingAliases?: readonly string[];
 }
@@ -162,8 +235,8 @@ export interface OceanRescueNamespace {
   Travel?: TravelApi;
   Terrain?: TerrainApi;
   Rescue?: RescueApi;
-  SeaTurtle?: MissionRuntimeApi;
-  SeaTurtleScene?: RescueSceneApi;
+  SeaTurtle?: SeaTurtleApi;
+  SeaTurtleScene?: SeaTurtleSceneApi;
   Crab?: MissionRuntimeApi;
   CrabScene?: RescueSceneApi;
   TravelScene?: TravelSceneApi;

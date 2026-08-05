@@ -131,6 +131,7 @@ APP_ADAPTER_CONTROLLER_FILES: Dict[str, Tuple[str, ...]] = {
         "controllers/launch-travel.ts",
         "controllers/rescue-site-tutorial.ts",
         "controllers/pause-timer-resume.ts",
+        "controllers/sea-turtle-lifecycle.ts",
     ),
 }
 
@@ -394,15 +395,41 @@ def test_each_adapter_has_namespace_guard_and_export() -> None:
             assert "installRescueSiteTutorialController" in text, (
                 f"{name}: missing WP-33C controller installation"
             )
+            assert "installPauseTimerResumeController" in text, (
+                f"{name}: missing WP-33D controller installation"
+            )
+            assert "installSeaTurtleLifecycleController" in text, (
+                f"{name}: missing WP-33E controller installation"
+            )
             assert text.index(
                 "installProfileMissionSelectionController(registeredApp)"
             ) < text.index(
                 "installLaunchTravelController(profileMissionApp)"
             ) < text.index(
                 "installRescueSiteTutorialController(launchTravelApp)"
+            ) < text.index(
+                "installPauseTimerResumeController(rescueSiteApp)"
             ), (
-                f"{name}: controller installation order must be WP-33A, WP-33B, WP-33C"
+                f"{name}: controller installation order must be "
+                f"WP-33A, WP-33B, WP-33C, WP-33D"
             )
+            positions = []
+            for func_name, var_name in (
+                ("installProfileMissionSelectionController", "profileMissionApp"),
+                ("installLaunchTravelController", "launchTravelApp"),
+                ("installRescueSiteTutorialController", "rescueSiteApp"),
+                ("installPauseTimerResumeController", "pauseTimerApp"),
+                ("installSeaTurtleLifecycleController", "App"),
+            ):
+                pattern = rf"const\s+{var_name}\s*=\s*{func_name}\s*\("
+                import re as _re
+                match = _re.search(pattern, text)
+                if match:
+                    positions.append((func_name, match.start()))
+            for i in range(len(positions) - 1):
+                assert positions[i][1] < positions[i + 1][1], (
+                    f"{name}: controller installation order must be sequential"
+                )
             exports = re.findall(
                 r"^export\s+\{\s*(\w+)\s*\}\s*;\s*$", text, re.MULTILINE
             )
@@ -448,6 +475,12 @@ def test_app_adapter_imports_ordered_typed_controllers() -> None:
     ) < text.index(
         "installLaunchTravelController(profileMissionApp)"
     ) < text.index("installRescueSiteTutorialController(launchTravelApp)")
+    assert text.index("installRescueSiteTutorialController(launchTravelApp)") < text.index(
+        "installPauseTimerResumeController("
+    )
+    assert text.index("installPauseTimerResumeController(") < text.index(
+        "installSeaTurtleLifecycleController("
+    )
 
 
 # --- import-graph properties ---

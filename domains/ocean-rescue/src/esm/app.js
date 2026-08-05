@@ -2,6 +2,7 @@ import { installLaunchTravelController } from "../controllers/launch-travel";
 import { installPauseTimerResumeController } from "../controllers/pause-timer-resume";
 import { installRescueSiteTutorialController } from "../controllers/rescue-site-tutorial";
 import { installProfileMissionSelectionController } from "../controllers/profile-mission-selection";
+import { installSeaTurtleLifecycleController } from "../controllers/sea-turtle-lifecycle";
 import "./state.js";
 import "./render-runtime.js";
 import "./pointer-input.js";
@@ -30,6 +31,7 @@ if (!registeredApp) {
 const profileMissionApp = installProfileMissionSelectionController(registeredApp);
 const launchTravelApp = installLaunchTravelController(profileMissionApp);
 const rescueSiteApp = installRescueSiteTutorialController(launchTravelApp);
-const App = installPauseTimerResumeController(rescueSiteApp);
+const pauseTimerApp = installPauseTimerResumeController(rescueSiteApp);
+const App = installSeaTurtleLifecycleController(pauseTimerApp);
 
 export { App };

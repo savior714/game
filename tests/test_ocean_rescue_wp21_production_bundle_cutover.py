@@ -771,7 +771,8 @@ def test_migration_documentation_state() -> None:
     plan = PLAN_DOC.read_text(encoding="utf-8")
     assert "WP-21: COMPLETE" in plan
     assert "Current phase: PHASE_8_IN_PROGRESS" in plan
-    assert "Next executable work package: WP-33C" in plan
+    assert "Next executable work package: WP-33D" in plan
+    assert "WP-33C: COMPLETE" in plan
     assert "Authoritative path before:" in plan
     assert "Vite application bundle through temporary standalone packaging" in plan
     assert "WP-31A: COMPLETE" in plan

@@ -122,11 +122,13 @@ CONTROLLER_ADAPTER_TYPED_FILE: Dict[str, str] = {
 }
 
 # App adapter file -> ordered typed controllers it installs.
-# WP-33A owns profile/mission selection; WP-33B then owns GUP/launch/travel.
+# WP-33A owns profile/mission selection; WP-33B owns GUP/launch/travel;
+# WP-33C then owns rescue-site transition and tutorial orchestration.
 APP_ADAPTER_CONTROLLER_FILES: Dict[str, Tuple[str, ...]] = {
     "app.js": (
         "controllers/profile-mission-selection.ts",
         "controllers/launch-travel.ts",
+        "controllers/rescue-site-tutorial.ts",
     ),
 }
 
@@ -387,10 +389,17 @@ def test_each_adapter_has_namespace_guard_and_export() -> None:
             assert "installLaunchTravelController" in text, (
                 f"{name}: missing WP-33B controller installation"
             )
+            assert "installRescueSiteTutorialController" in text, (
+                f"{name}: missing WP-33C controller installation"
+            )
             assert text.index(
                 "installProfileMissionSelectionController(registeredApp)"
-            ) < text.index("installLaunchTravelController(profileMissionApp)"), (
-                f"{name}: controller installation order must be WP-33A then WP-33B"
+            ) < text.index(
+                "installLaunchTravelController(profileMissionApp)"
+            ) < text.index(
+                "installRescueSiteTutorialController(launchTravelApp)"
+            ), (
+                f"{name}: controller installation order must be WP-33A, WP-33B, WP-33C"
             )
             exports = re.findall(
                 r"^export\s+\{\s*(\w+)\s*\}\s*;\s*$", text, re.MULTILINE
@@ -434,7 +443,9 @@ def test_app_adapter_imports_ordered_typed_controllers() -> None:
     text = (ESM_DIR / "app.js").read_text(encoding="utf-8")
     assert text.index(
         "installProfileMissionSelectionController(registeredApp)"
-    ) < text.index("installLaunchTravelController(profileMissionApp)")
+    ) < text.index(
+        "installLaunchTravelController(profileMissionApp)"
+    ) < text.index("installRescueSiteTutorialController(launchTravelApp)")
 
 
 # --- import-graph properties ---

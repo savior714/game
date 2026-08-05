@@ -1,4 +1,5 @@
 import { installLaunchTravelController } from "../controllers/launch-travel";
+import { installRescueSiteTutorialController } from "../controllers/rescue-site-tutorial";
 import { installProfileMissionSelectionController } from "../controllers/profile-mission-selection";
 import "./state.js";
 import "./render-runtime.js";
@@ -26,6 +27,7 @@ if (!registeredApp) {
 }
 
 const profileMissionApp = installProfileMissionSelectionController(registeredApp);
-const App = installLaunchTravelController(profileMissionApp);
+const launchTravelApp = installLaunchTravelController(profileMissionApp);
+const App = installRescueSiteTutorialController(launchTravelApp);
 
 export { App };

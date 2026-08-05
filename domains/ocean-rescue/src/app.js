@@ -1520,11 +1520,37 @@
     if (status) {
       status.textContent = "Rescue controls ready";
     }
-    startSeaTurtleInteraction(sequence);
-    startCrabInteraction(sequence);
-    startYoungWhaleInteraction(sequence);
+    startRescueInteraction(sequence);
     syncPauseButton();
     return true;
+  }
+
+  function startRescueInteraction(sequence) {
+    var seaTurtleStarted = startSeaTurtleInteraction(sequence);
+    var crabStarted = startCrabInteraction(sequence);
+    var youngWhaleStarted = startYoungWhaleInteraction(sequence);
+    return seaTurtleStarted || crabStarted || youngWhaleStarted;
+  }
+
+  function cancelRescueSiteRuntime() {
+    var changed = activeRescueSequence !== null;
+    if (
+      siteTransitionTimerId !== null &&
+      typeof window.clearTimeout === "function"
+    ) {
+      window.clearTimeout(siteTransitionTimerId);
+    }
+    siteTransitionTimerId = null;
+    cancelPauseableTimer("site-transition");
+    clearTutorialTimer();
+    activeRescueSequence = null;
+    if (SeaTurtleScene && SeaTurtleScene.isMounted()) {
+      SeaTurtleScene.exit();
+    }
+    if (CrabScene && CrabScene.isMounted()) {
+      CrabScene.exit();
+    }
+    return changed;
   }
 
   function clearTutorialTimer() {
@@ -3625,7 +3651,10 @@
       App.stopTravelRuntime();
     } else if (
       snapshot.phase === State.Phases.RESCUE_SITE_TRANSITION ||
-      snapshot.phase === State.Phases.RESCUE_TUTORIAL ||
+      snapshot.phase === State.Phases.RESCUE_TUTORIAL
+    ) {
+      App.cancelRescueSiteRuntime();
+    } else if (
       snapshot.phase === State.Phases.RESCUE_ACTIVE ||
       snapshot.phase === State.Phases.RESCUE_SUCCESS
     ) {
@@ -5381,7 +5410,9 @@
     if (!rescueInputBound) {
       var stage = document.getElementById("ocean-rescue-stage");
       if (stage && typeof stage.addEventListener === "function") {
-        stage.addEventListener("pointerdown", onRescueStagePointerDown);
+        stage.addEventListener("pointerdown", function (event) {
+          App.handleRescueStagePointerDown(event);
+        });
         rescueInputBound = true;
       }
     }
@@ -5570,6 +5601,15 @@
     isPauseActive: function () { return pauseActive; },
     syncPauseButton: syncPauseButton,
     handoffTravelArrival: handoffTravelArrival,
+    skipTutorial: skipTutorial,
+    cancelRescueSiteRuntime: cancelRescueSiteRuntime,
+    handleRescueStagePointerDown: onRescueStagePointerDown,
+    getActiveRescueSequence: function () { return activeRescueSequence; },
+    setActiveRescueSequence: function (sequence) {
+      activeRescueSequence = sequence;
+    },
+    renderRescueSiteFrame: renderRescueSiteFrame,
+    startRescueInteraction: startRescueInteraction,
     resolveVisibleInputCanvas: resolveVisibleInputCanvas,
     resolvePaintCanvas: resolvePaintCanvas,
     resolvePaintContext: resolvePaintContext

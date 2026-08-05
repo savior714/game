@@ -14,7 +14,7 @@ def test_current_schedule_allows_wp30_before_physical_device_smoke() -> None:
     header = plan.split("\n---\n", maxsplit=1)[0]
 
     assert "**Current phase:** PHASE_8_IN_PROGRESS" in header
-    assert "**Next executable work package:** WP-33C" in header
+    assert "**Next executable work package:** WP-33D" in header
     assert "**Production cutover gate:** SATISFIED" in header
     assert "WP-03A must pass before MVP release, but it does not block WP-21" in header
     assert "WP-03B is non-blocking follow-up work" in header
@@ -58,7 +58,7 @@ def test_superseded_wp03_blocking_language_is_historical_only() -> None:
     assert plan.index(blocked_marker) < plan.index(current_marker)
 
     current = plan[plan.index(current_marker) :]
-    assert "Next executable work package: WP-33C" in current
+    assert "Next executable work package: WP-33D" in current
     assert "WP-21: COMPLETE" in current
     assert "WP-30: COMPLETE" in current
     assert "WP-31A: COMPLETE" in current
@@ -67,6 +67,8 @@ def test_superseded_wp03_blocking_language_is_historical_only() -> None:
     assert "WP-32A: COMPLETE" in current
     assert "WP-32B: COMPLETE" in current
     assert "WP-33A: COMPLETE" in current
+    assert "WP-33B: COMPLETE" in current
+    assert "WP-33C: COMPLETE" in current
     assert "Pointer coordinate boundary state: CHECKED_RUNTIME" in current
     assert "Scene pointer intent state: NORMALIZED_SHARED" in current
     assert "Render coordinate adapter state: TYPED_MINIMAL" in current

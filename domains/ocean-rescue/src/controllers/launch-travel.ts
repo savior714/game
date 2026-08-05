@@ -28,7 +28,11 @@ import type {
 } from "../contracts/runtime-abi";
 import type { ProfileMissionSelectionAppApi } from "./profile-mission-selection";
 
-type PauseableTimerOwner = "launch" | "goal-banner";
+export type PauseableTimerOwner =
+  | "launch"
+  | "goal-banner"
+  | "site-transition"
+  | "tutorial";
 
 export interface LaunchTravelHostApi extends ProfileMissionSelectionAppApi {
   schedulePauseableTimer(

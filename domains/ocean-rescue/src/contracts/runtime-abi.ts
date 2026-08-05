@@ -1,5 +1,5 @@
 /**
- * Shared runtime ABI boundary types for Ocean Rescue (WP-32A/WP-33B).
+ * Shared runtime ABI boundary types for Ocean Rescue (WP-32A/WP-33C).
  * This module is type-only and must emit no runtime JavaScript.
  */
 import type { GupCatalog, GupId } from "../gups/catalog";
@@ -81,9 +81,37 @@ export interface TerrainApi {
   readonly step: (deltaMs: unknown, travelSnapshot: unknown) => boolean;
 }
 
+export interface RescueMissionContent {
+  readonly missionId: MissionId;
+  readonly targetLabel: string;
+  readonly toolLabel: string;
+  readonly situation: string;
+  readonly tutorial: string;
+}
+
 export interface RescueApi {
   readonly ArrivalDistance: number;
+  readonly SiteTransitionMs: number;
+  readonly TutorialDurationMs: number;
+  readonly getMissionContent: (
+    missionId: unknown,
+  ) => RescueMissionContent | null;
   readonly hasArrived: (travelSnapshot: unknown) => boolean;
+}
+
+export interface MissionRuntimeApi {
+  readonly MissionId: MissionId;
+}
+
+export interface RescueSceneDiagnostics {
+  readonly missingAliases?: readonly string[];
+}
+
+export interface RescueSceneApi {
+  readonly prepare: () => boolean;
+  readonly isMounted: () => boolean;
+  readonly exit: () => void;
+  readonly getDiagnostics?: () => RescueSceneDiagnostics;
 }
 
 export interface TravelSceneApi {
@@ -118,6 +146,10 @@ export interface OceanRescueNamespace {
   Travel?: TravelApi;
   Terrain?: TerrainApi;
   Rescue?: RescueApi;
+  SeaTurtle?: MissionRuntimeApi;
+  SeaTurtleScene?: RescueSceneApi;
+  Crab?: MissionRuntimeApi;
+  CrabScene?: RescueSceneApi;
   TravelScene?: TravelSceneApi;
   RenderRuntime?: RenderRuntimeTravelApi;
   PointerInput?: PointerInputApi;

@@ -97,6 +97,14 @@ def _assert_quality_gates(errors) -> None:
     ] == [], f"external requests: {external_requests}"
 
 
+def _open_ready_app(page: Page, base_url: str) -> None:
+    page.goto(f"{base_url}/index.dev.html")
+    page.wait_for_selector(
+        "#ocean-rescue-root[data-ocean-rescue-ready=true]",
+        timeout=20000,
+    )
+
+
 def _enter_travel(page: Page) -> None:
     page.click('[data-profile-animal-id="arctic-fox"]')
     page.click("#ocean-rescue-profile-continue")
@@ -132,8 +140,7 @@ def test_canonical_pause_resume_browser_flow() -> None:
             page = context.new_page()
             errors = _instrument(page, server.base_url)
             try:
-                page.goto(server.base_url + "/ocean-rescue/index.html")
-                page.wait_for_function("!!window.OceanRescue.App")
+                _open_ready_app(page, server.base_url)
                 _enter_travel(page)
 
                 _click_pause(page)
@@ -197,8 +204,7 @@ def test_timer_freeze_and_rearm() -> None:
             page = context.new_page()
             errors = _instrument(page, server.base_url)
             try:
-                page.goto(server.base_url + "/ocean-rescue/index.html")
-                page.wait_for_function("!!window.OceanRescue.App")
+                _open_ready_app(page, server.base_url)
                 _enter_travel(page)
 
                 goal_fired = page.evaluate(
@@ -256,8 +262,7 @@ def test_menu_return_from_pause() -> None:
             page = context.new_page()
             errors = _instrument(page, server.base_url)
             try:
-                page.goto(server.base_url + "/ocean-rescue/index.html")
-                page.wait_for_function("!!window.OceanRescue.App")
+                _open_ready_app(page, server.base_url)
                 _enter_travel(page)
 
                 _click_pause(page)
@@ -293,8 +298,7 @@ def test_repeated_boot_no_duplicate_listeners() -> None:
             page = context.new_page()
             errors = _instrument(page, server.base_url)
             try:
-                page.goto(server.base_url + "/ocean-rescue/index.html")
-                page.wait_for_function("!!window.OceanRescue.App")
+                _open_ready_app(page, server.base_url)
 
                 _enter_travel(page)
 

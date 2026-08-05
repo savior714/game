@@ -1736,25 +1736,33 @@
     if (seaTurtleRenderMarker) {
       return true;
     }
-    var canvas = resolveVisibleInputCanvas();
-    var context = resolvePaintContext();
-    var overlay = document.getElementById("ocean-rescue-rescue-overlay");
-    if (!canvas || !context || !overlay) {
+    var started = false;
+    if (typeof App.startSeaTurtleInteraction === "function") {
+      started = App.startSeaTurtleInteraction();
+    } else {
+      var canvas = resolveVisibleInputCanvas();
+      var context = resolvePaintContext();
+      var overlay = document.getElementById("ocean-rescue-rescue-overlay");
+      if (canvas && context && overlay) {
+        SeaTurtle.start();
+        if (SeaTurtleScene && RenderRuntime && RenderRuntime.isReady()) {
+          if (!SeaTurtleScene.isMounted()) {
+            var failedRoot = document.getElementById("ocean-rescue-root");
+            if (failedRoot) {
+              failedRoot.setAttribute("data-rescue-input", "disabled");
+            }
+          } else {
+            SeaTurtleScene.activate();
+          }
+        }
+        bindRescuePointerInput(canvas);
+        renderSeaTurtleFrame();
+        started = true;
+      }
+    }
+    if (!started) {
       return false;
     }
-    SeaTurtle.start();
-    if (SeaTurtleScene && RenderRuntime && RenderRuntime.isReady()) {
-      if (!SeaTurtleScene.isMounted()) {
-        var failedRoot = document.getElementById("ocean-rescue-root");
-        if (failedRoot) {
-          failedRoot.setAttribute("data-rescue-input", "disabled");
-        }
-        return false;
-      }
-      SeaTurtleScene.activate();
-    }
-    bindRescuePointerInput(canvas);
-    renderSeaTurtleFrame();
     seaTurtleRenderMarker = true;
     var progress = document.getElementById("ocean-rescue-rescue-progress");
     if (progress) {
@@ -2031,6 +2039,10 @@
   }
 
   function handleSeaTurtlePointerDown(event, mapped) {
+    if (typeof App.handleSeaTurtlePointerDown === "function") {
+      App.handleSeaTurtlePointerDown(event);
+      return;
+    }
     if (!SeaTurtle.pointerDown(event.pointerId, mapped.x, mapped.y)) {
       return;
     }
@@ -2126,9 +2138,13 @@
     }
     var missionId = activeRescueSequence.missionId;
     if (missionId === SeaTurtle.MissionId) {
-      SeaTurtle.pointerMove(event.pointerId, mapped.x, mapped.y);
-      renderSeaTurtleFrame(PointerInput.activeIntent(mapped));
-      updateSeaTurtleRootMarkers();
+      if (typeof App.handleSeaTurtlePointerMove === "function") {
+        App.handleSeaTurtlePointerMove(event);
+      } else if (isTrackedRescuePointer(event)) {
+        SeaTurtle.pointerMove(event.pointerId, mapped.x, mapped.y);
+        renderSeaTurtleFrame(PointerInput.activeIntent(mapped));
+        updateSeaTurtleRootMarkers();
+      }
     } else if (Crab && missionId === Crab.MissionId) {
       Crab.pointerMove(event.pointerId, mapped.x, mapped.y);
       if (CrabScene && CrabScene.isMounted()) {
@@ -2162,18 +2178,22 @@
     var missionId = activeRescueSequence.missionId;
     var result = null;
     if (missionId === SeaTurtle.MissionId) {
-      if (mapped !== null) {
-        result = SeaTurtle.pointerUp(event.pointerId, mapped.x, mapped.y);
+      if (typeof App.handleSeaTurtlePointerUp === "function") {
+        App.handleSeaTurtlePointerUp(event);
       } else {
-        SeaTurtle.pointerCancel(event.pointerId);
-      }
-      releaseSeaTurtlePointerCapture(event.pointerId);
-      seaTurtlePointerId = null;
-      seaTurtlePointerCaptureEl = null;
-      if (result && result.accepted) {
-        renderSeaTurtleFrame(PointerInput.inactiveIntent());
-        updateSeaTurtleRootMarkers();
-        routeRescueFeedback(result);
+        if (mapped !== null) {
+          result = SeaTurtle.pointerUp(event.pointerId, mapped.x, mapped.y);
+        } else {
+          SeaTurtle.pointerCancel(event.pointerId);
+        }
+        releaseSeaTurtlePointerCapture(event.pointerId);
+        seaTurtlePointerId = null;
+        seaTurtlePointerCaptureEl = null;
+        if (result && result.accepted) {
+          renderSeaTurtleFrame(PointerInput.inactiveIntent());
+          updateSeaTurtleRootMarkers();
+          routeRescueFeedback(result);
+        }
       }
     } else if (Crab && missionId === Crab.MissionId) {
       clearCrabHoldTimer();
@@ -2229,23 +2249,19 @@
     }
     var missionId = activeRescueSequence.missionId;
     if (missionId === SeaTurtle.MissionId) {
-      if (!SeaTurtle) {
-        return;
+      if (typeof App.handleSeaTurtlePointerCancel === "function") {
+        App.handleSeaTurtlePointerCancel(event);
+      } else if (seaTurtlePointerId !== null) {
+        if (typeof event.pointerId === "number" && isFinite(event.pointerId)) {
+          if (event.pointerId === seaTurtlePointerId) {
+            SeaTurtle.pointerCancel(event.pointerId);
+            releaseSeaTurtlePointerCapture(event.pointerId);
+            seaTurtlePointerId = null;
+            seaTurtlePointerCaptureEl = null;
+            syncSeaTurtleScene(PointerInput.inactiveIntent());
+          }
+        }
       }
-      if (seaTurtlePointerId === null) {
-        return;
-      }
-      if (typeof event.pointerId !== "number" || !isFinite(event.pointerId)) {
-        return;
-      }
-      if (event.pointerId !== seaTurtlePointerId) {
-        return;
-      }
-      SeaTurtle.pointerCancel(event.pointerId);
-      releaseSeaTurtlePointerCapture(event.pointerId);
-      seaTurtlePointerId = null;
-      seaTurtlePointerCaptureEl = null;
-      syncSeaTurtleScene(PointerInput.inactiveIntent());
       return;
     }
     if (!Crab || missionId !== Crab.MissionId) {
@@ -2305,6 +2321,10 @@
     if (result.outcome === "failure") {
       beginSeaTurtleFailureFeedback(result.ropeId);
     }
+  }
+
+  function routeSeaTurtleFeedback(result) {
+    routeRescueFeedback(result);
   }
 
   function clearSeaTurtleFeedbackTimer() {
@@ -3371,15 +3391,20 @@
     clearCrabFeedbackTimer();
     clearYoungWhaleFeedbackTimer();
     clearCrabHoldTimer();
-    if (
-      seaTurtlePointerId !== null &&
-      seaTurtlePointerCaptureEl &&
-      typeof seaTurtlePointerCaptureEl.releasePointerCapture === "function"
-    ) {
-      seaTurtlePointerCaptureEl.releasePointerCapture(seaTurtlePointerId);
+    if (typeof App.shutdownSeaTurtlePointer === "function") {
+      App.shutdownSeaTurtlePointer();
+    } else {
+      if (
+        seaTurtlePointerId !== null &&
+        seaTurtlePointerCaptureEl &&
+        typeof seaTurtlePointerCaptureEl.releasePointerCapture === "function"
+      ) {
+        seaTurtlePointerCaptureEl.releasePointerCapture(seaTurtlePointerId);
+      }
+      seaTurtlePointerId = null;
+      seaTurtlePointerCaptureEl = null;
     }
-    seaTurtlePointerId = null;
-    seaTurtlePointerCaptureEl = null;
+    seaTurtleRenderMarker = false;
     if (
       crabPointerId !== null &&
       crabPointerCaptureEl &&
@@ -3398,7 +3423,6 @@
     }
     youngWhalePointerId = null;
     youngWhalePointerCaptureEl = null;
-    seaTurtleRenderMarker = false;
   }
 
   function setMissionSuccessAnimClass(visual, active) {
@@ -3539,15 +3563,22 @@
   }
 
   function cancelPausePointerInteractions() {
-    if (
-      seaTurtlePointerId !== null &&
-      seaTurtlePointerCaptureEl &&
-      typeof seaTurtlePointerCaptureEl.releasePointerCapture === "function"
-    ) {
-      seaTurtlePointerCaptureEl.releasePointerCapture(seaTurtlePointerId);
+    if (typeof App.cancelSeaTurtlePointerForPause === "function") {
+      App.cancelSeaTurtlePointerForPause();
+    } else {
+      if (
+        seaTurtlePointerId !== null &&
+        seaTurtlePointerCaptureEl &&
+        typeof seaTurtlePointerCaptureEl.releasePointerCapture === "function"
+      ) {
+        seaTurtlePointerCaptureEl.releasePointerCapture(seaTurtlePointerId);
+      }
+      seaTurtlePointerId = null;
+      seaTurtlePointerCaptureEl = null;
+      if (SeaTurtle && typeof SeaTurtle.pauseCancel === "function") {
+        SeaTurtle.pauseCancel();
+      }
     }
-    seaTurtlePointerId = null;
-    seaTurtlePointerCaptureEl = null;
     if (
       crabPointerId !== null &&
       crabPointerCaptureEl &&
@@ -3568,15 +3599,6 @@
     youngWhalePointerCaptureEl = null;
     if (App && typeof App.pauseTravelRuntime === "function") {
       App.pauseTravelRuntime();
-    }
-    if (SeaTurtle && typeof SeaTurtle.pauseCancel === "function") {
-      SeaTurtle.pauseCancel();
-    }
-    if (Crab && typeof Crab.pauseCancel === "function") {
-      Crab.pauseCancel();
-    }
-    if (YoungWhale && typeof YoungWhale.pauseCancel === "function") {
-      YoungWhale.pauseCancel();
     }
   }
 
@@ -5628,7 +5650,13 @@
     setPauseRootMarkers: setPauseRootMarkers,
     cancelPausePointerInteractions: cancelPausePointerInteractions,
     clearPauseSensitiveHoldTimer: clearCrabHoldTimer,
-    shutdownActiveRescueForMenu: shutdownRescueInteractionState
+    shutdownActiveRescueForMenu: shutdownRescueInteractionState,
+    renderSeaTurtleFrame: renderSeaTurtleFrame,
+    updateSeaTurtleRootMarkers: updateSeaTurtleRootMarkers,
+    hideAssistHand: hideAssistHand,
+    ensureRescuePointerInputBound: bindRescuePointerInput,
+    routeSeaTurtleFeedback: routeSeaTurtleFeedback,
+    syncSeaTurtleScene: syncSeaTurtleScene
   };
 
   window.OceanRescue.App = App;

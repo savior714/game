@@ -1,4 +1,5 @@
 import { installLaunchTravelController } from "../controllers/launch-travel";
+import { installPauseTimerResumeController } from "../controllers/pause-timer-resume";
 import { installRescueSiteTutorialController } from "../controllers/rescue-site-tutorial";
 import { installProfileMissionSelectionController } from "../controllers/profile-mission-selection";
 import "./state.js";
@@ -28,6 +29,7 @@ if (!registeredApp) {
 
 const profileMissionApp = installProfileMissionSelectionController(registeredApp);
 const launchTravelApp = installLaunchTravelController(profileMissionApp);
-const App = installRescueSiteTutorialController(launchTravelApp);
+const rescueSiteApp = installRescueSiteTutorialController(launchTravelApp);
+const App = installPauseTimerResumeController(rescueSiteApp);
 
 export { App };

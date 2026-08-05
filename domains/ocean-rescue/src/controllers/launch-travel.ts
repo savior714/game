@@ -17,6 +17,7 @@ import type {
   LaunchApi,
   MissionId,
   MissionsApi,
+  PauseableTimerOwner,
   PointerInputApi,
   RescueApi,
   StateApi,
@@ -27,12 +28,6 @@ import type {
   RenderRuntimeTravelApi,
 } from "../contracts/runtime-abi";
 import type { ProfileMissionSelectionAppApi } from "./profile-mission-selection";
-
-export type PauseableTimerOwner =
-  | "launch"
-  | "goal-banner"
-  | "site-transition"
-  | "tutorial";
 
 export interface LaunchTravelHostApi extends ProfileMissionSelectionAppApi {
   schedulePauseableTimer(

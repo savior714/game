@@ -111,6 +111,8 @@ export interface RescueSceneApi {
   readonly prepare: () => boolean;
   readonly isMounted: () => boolean;
   readonly exit: () => void;
+  readonly pause: () => void;
+  readonly resume: () => void;
   readonly getDiagnostics?: () => RescueSceneDiagnostics;
 }
 
@@ -120,12 +122,16 @@ export interface TravelSceneApi {
   readonly sync: (travelSnapshot: unknown, terrainSnapshot: unknown) => boolean;
   readonly isMounted: () => boolean;
   readonly exit: () => void;
+  readonly pause: () => void;
+  readonly resume: () => void;
 }
 
 export interface RenderRuntimeTravelApi extends RenderCoordinateMapperApi {
   readonly setLegacyBridgeVisible: (visible: boolean) => void;
   readonly getLegacyCanvas: () => HTMLCanvasElement | null;
   readonly getLegacyContext: () => CanvasRenderingContext2D | null;
+  readonly pause: () => void;
+  readonly resume: () => void;
 }
 
 export type TravelProgressResult =
@@ -136,6 +142,16 @@ export type TravelProgressResult =
       distance: number;
       arrivalDistance: number;
     }>;
+
+export type PauseableTimerOwner =
+  | "launch"
+  | "goal-banner"
+  | "site-transition"
+  | "tutorial"
+  | "sea-turtle-feedback"
+  | "crab-feedback"
+  | "young-whale-feedback"
+  | "mission-success";
 
 export interface OceanRescueNamespace {
   Profile?: ProfileApi;

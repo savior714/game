@@ -123,12 +123,14 @@ CONTROLLER_ADAPTER_TYPED_FILE: Dict[str, str] = {
 
 # App adapter file -> ordered typed controllers it installs.
 # WP-33A owns profile/mission selection; WP-33B owns GUP/launch/travel;
-# WP-33C then owns rescue-site transition and tutorial orchestration.
+# WP-33C then owns rescue-site transition and tutorial orchestration;
+# WP-33D closes pause/timer/resume countdown ownership.
 APP_ADAPTER_CONTROLLER_FILES: Dict[str, Tuple[str, ...]] = {
     "app.js": (
         "controllers/profile-mission-selection.ts",
         "controllers/launch-travel.ts",
         "controllers/rescue-site-tutorial.ts",
+        "controllers/pause-timer-resume.ts",
     ),
 }
 

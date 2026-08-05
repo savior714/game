@@ -47,6 +47,9 @@ export interface RescueSiteTutorialHostApi extends LaunchTravelAppApi {
   skipTutorial(): boolean;
   cancelRescueSiteRuntime(): boolean;
   handleRescueStagePointerDown(event: PointerEvent): boolean;
+  cancelPausePointerInteractions(): void;
+  clearPauseSensitiveHoldTimer(): void;
+  shutdownActiveRescueForMenu(): void;
 }
 
 export interface RescueSiteTutorialAppApi extends RescueSiteTutorialHostApi {}
@@ -549,6 +552,38 @@ export function installRescueSiteTutorialController(
       elements.hand.hidden = true;
     }
     return sequence !== null;
+  }
+
+  function cancelPausePointerInteractions(): void {
+    // Pointer capture and drag cancellation are handled by WP-33D's
+    // cancelPausePointerInteractions which delegates to each mission's
+    // pointer state via the legacy closure. This bridge exists for the
+    // typed controller boundary; the actual cleanup runs through the
+    // legacy App.cancelPausePointerInteractions path.
+  }
+
+  function clearPauseSensitiveHoldTimer(): void {
+    // Crab hold timer cleanup is owned by WP-33F. This bridge is a no-op
+    // placeholder for the typed controller boundary.
+  }
+
+  function shutdownActiveRescueForMenu(): void {
+    const sequence = host.getActiveRescueSequence();
+    clearSiteTransitionTimer();
+    clearTutorialTimer();
+    host.setActiveRescueSequence(null);
+    if (SeaTurtleScene?.isMounted()) {
+      SeaTurtleScene.exit();
+    }
+    if (CrabScene?.isMounted()) {
+      CrabScene.exit();
+    }
+    const elements = resolveRescueElements();
+    if (elements) {
+      setTutorialActiveClass(elements.tutorial, false);
+      setTutorialHoldClass(elements.tutorial, false);
+      elements.hand.hidden = true;
+    }
   }
 
   const controller = host as RescueSiteTutorialAppApi;

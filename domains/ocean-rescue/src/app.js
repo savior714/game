@@ -717,7 +717,7 @@
     }
 
     startTravelRuntime();
-    syncPauseButton();
+    App.syncPauseButton();
 
     return true;
   }
@@ -923,7 +923,7 @@
       return;
     }
     travelFrameId = null;
-    if (pauseActive) {
+    if (App.isPauseActive()) {
       return;
     }
     var snapshot = State.getSnapshot();
@@ -1033,7 +1033,7 @@
     if (!event || typeof event !== "object") {
       return false;
     }
-    if (pauseActive) {
+    if (App.isPauseActive()) {
       return false;
     }
     var snapshot = State.getSnapshot();
@@ -1360,7 +1360,7 @@
     }
 
     scheduleSiteTransitionCompletion(sequence);
-    syncPauseButton();
+    App.syncPauseButton();
     return true;
   }
 
@@ -1521,7 +1521,7 @@
       status.textContent = "Rescue controls ready";
     }
     startRescueInteraction(sequence);
-    syncPauseButton();
+    App.syncPauseButton();
     return true;
   }
 
@@ -1600,7 +1600,7 @@
     if (!event || typeof event !== "object") {
       return;
     }
-    if (pauseActive) {
+    if (App.isPauseActive()) {
       if (typeof event.preventDefault === "function") {
         event.preventDefault();
       }
@@ -1864,7 +1864,7 @@
     if (!event || typeof event !== "object") {
       return false;
     }
-    if (pauseActive) {
+    if (App.isPauseActive()) {
       return false;
     }
     if (activeRescueSequence === null) {
@@ -2605,7 +2605,7 @@
     }
     renderSeaTurtleFrame();
     startMissionSuccessPresentation(sequence);
-    syncPauseButton();
+    App.syncPauseButton();
   }
 
   function clearCrabHoldTimer() {
@@ -2937,7 +2937,7 @@
       renderCrabFrame();
     }
     startMissionSuccessPresentation(sequence);
-    syncPauseButton();
+    App.syncPauseButton();
   }
 
   function routeYoungWhaleFeedback(result) {
@@ -3287,7 +3287,7 @@
     }
     renderYoungWhaleFrame();
     startMissionSuccessPresentation(sequence);
-    syncPauseButton();
+    App.syncPauseButton();
   }
 
   function resolveMissionSuccessElements() {
@@ -3523,7 +3523,7 @@
       return;
     }
     var snapshot = State.getSnapshot();
-    if (pauseActive) {
+    if (App.isPauseActive()) {
       btn.hidden = true;
       return;
     }
@@ -3581,7 +3581,7 @@
   }
 
   function enterPause() {
-    if (pauseActive) {
+    if (App.isPauseActive()) {
       return;
     }
     var snapshot = State.getSnapshot();
@@ -3616,7 +3616,7 @@
       resumeBtn.hidden = false;
       resumeBtn.disabled = false;
     }
-    syncPauseButton();
+    App.syncPauseButton();
   }
 
   function exitPauseToMenu() {
@@ -3645,7 +3645,7 @@
       overlay.hidden = true;
     }
     setPauseRootMarkers(false);
-    syncPauseButton();
+    App.syncPauseButton();
     var snapshot = State.getSnapshot();
     if (snapshot.phase === State.Phases.TRAVEL) {
       App.stopTravelRuntime();
@@ -3778,7 +3778,7 @@
     }
     setPauseRootMarkers(false);
     rearmAllPauseTimers();
-    syncPauseButton();
+    App.syncPauseButton();
     var snapshot = State.getSnapshot();
     if (snapshot.phase === State.Phases.TRAVEL) {
       App.resumeTravelRuntime();
@@ -5419,15 +5419,21 @@
     bindMissionCompleteActions();
     var pauseButton = document.getElementById("ocean-rescue-pause-button");
     if (pauseButton && typeof pauseButton.addEventListener === "function") {
-      pauseButton.addEventListener("click", onPauseButtonClick);
+      pauseButton.addEventListener("click", function () {
+        App.enterPause();
+      });
     }
     var pauseResume = document.getElementById("ocean-rescue-pause-resume");
     if (pauseResume && typeof pauseResume.addEventListener === "function") {
-      pauseResume.addEventListener("click", onPauseResumeClick);
+      pauseResume.addEventListener("click", function () {
+        App.enterResumeCountdown();
+      });
     }
     var pauseMenu = document.getElementById("ocean-rescue-pause-menu-button");
     if (pauseMenu && typeof pauseMenu.addEventListener === "function") {
-      pauseMenu.addEventListener("click", onPauseMenuClick);
+      pauseMenu.addEventListener("click", function () {
+        App.exitPauseToMenu();
+      });
     }
     controlsBound = true;
   }
@@ -5582,7 +5588,7 @@
         }
       }
       bindStaticControls();
-      syncPauseButton();
+      App.syncPauseButton();
       return true;
     },
     renderMissionSelect: renderMissionSelect,
@@ -5612,7 +5618,17 @@
     startRescueInteraction: startRescueInteraction,
     resolveVisibleInputCanvas: resolveVisibleInputCanvas,
     resolvePaintCanvas: resolvePaintCanvas,
-    resolvePaintContext: resolvePaintContext
+    resolvePaintContext: resolvePaintContext,
+    enterPause: enterPause,
+    enterResumeCountdown: enterResumeCountdown,
+    completeResume: completeResume,
+    exitPauseToMenu: exitPauseToMenu,
+    freezeAllPauseTimers: freezeAllPauseTimers,
+    rearmAllPauseTimers: rearmAllPauseTimers,
+    setPauseRootMarkers: setPauseRootMarkers,
+    cancelPausePointerInteractions: cancelPausePointerInteractions,
+    clearPauseSensitiveHoldTimer: clearCrabHoldTimer,
+    shutdownActiveRescueForMenu: shutdownRescueInteractionState
   };
 
   window.OceanRescue.App = App;

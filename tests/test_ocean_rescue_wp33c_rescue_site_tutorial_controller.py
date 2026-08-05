@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -333,12 +334,15 @@ def test_wp33c_complete_status_and_phase8_detail_are_asserted() -> None:
     assert "WP-33A, WP-33B, and WP-33C COMPLETE" in phase8_detail
     assert "WP-33A and WP-33B COMPLETE" not in phase8_detail
 
-    # Current scheduling authority must list WP-33C as COMPLETE and next as WP-33D.
+    # Current scheduling authority must list WP-33C as COMPLETE and next as WP-33D or later.
     authority_marker = "Current scheduling authority:"
     assert authority_marker in plan
     authority_block = plan[plan.index(authority_marker) :]
     assert "WP-33C: COMPLETE" in authority_block
-    assert "Next executable work package: WP-33D" in authority_block
+    next_wp_match = re.search(r"Next executable work package: WP-33([A-Z])", authority_block)
+    assert next_wp_match is not None, "Next executable work package must be listed"
+    next_wp_letter = next_wp_match.group(1)
+    assert next_wp_letter >= "D", f"Next work package must be WP-33D or later, got WP-33{next_wp_letter}"
 
     # Must not regress to a WP-33B-only detailed status.
     assert "WP-33A and WP-33B COMPLETE" not in authority_block

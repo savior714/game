@@ -1769,7 +1769,11 @@
       progress.textContent = "Rope 1 of 3";
     }
     hideAssistHand();
-    updateSeaTurtleRootMarkers();
+    if (typeof App.syncSeaTurtleProjection === "function") {
+      App.syncSeaTurtleProjection();
+    } else {
+      updateSeaTurtleRootMarkers();
+    }
     return true;
   }
 
@@ -2055,8 +2059,12 @@
       seaTurtlePointerCaptureEl.setPointerCapture(event.pointerId);
     }
     hideAssistHand();
-    renderSeaTurtleFrame(PointerInput.activeIntent(mapped));
-    updateSeaTurtleRootMarkers();
+    if (typeof App.syncSeaTurtleProjection === "function") {
+      App.syncSeaTurtleProjection(PointerInput.activeIntent(mapped));
+    } else {
+      renderSeaTurtleFrame(PointerInput.activeIntent(mapped));
+      updateSeaTurtleRootMarkers();
+    }
     if (typeof event.preventDefault === "function") {
       event.preventDefault();
     }
@@ -2142,8 +2150,12 @@
         App.handleSeaTurtlePointerMove(event);
       } else if (isTrackedRescuePointer(event)) {
         SeaTurtle.pointerMove(event.pointerId, mapped.x, mapped.y);
-        renderSeaTurtleFrame(PointerInput.activeIntent(mapped));
-        updateSeaTurtleRootMarkers();
+        if (typeof App.syncSeaTurtleProjection === "function") {
+          App.syncSeaTurtleProjection(PointerInput.activeIntent(mapped));
+        } else {
+          renderSeaTurtleFrame(PointerInput.activeIntent(mapped));
+          updateSeaTurtleRootMarkers();
+        }
       }
     } else if (Crab && missionId === Crab.MissionId) {
       Crab.pointerMove(event.pointerId, mapped.x, mapped.y);
@@ -2190,8 +2202,12 @@
         seaTurtlePointerId = null;
         seaTurtlePointerCaptureEl = null;
         if (result && result.accepted) {
-          renderSeaTurtleFrame(PointerInput.inactiveIntent());
-          updateSeaTurtleRootMarkers();
+          if (typeof App.syncSeaTurtleProjection === "function") {
+            App.syncSeaTurtleProjection(PointerInput.inactiveIntent());
+          } else {
+            renderSeaTurtleFrame(PointerInput.inactiveIntent());
+            updateSeaTurtleRootMarkers();
+          }
           routeRescueFeedback(result);
         }
       }
@@ -2258,7 +2274,11 @@
             releaseSeaTurtlePointerCapture(event.pointerId);
             seaTurtlePointerId = null;
             seaTurtlePointerCaptureEl = null;
-            syncSeaTurtleScene(PointerInput.inactiveIntent());
+            if (typeof App.syncSeaTurtleProjection === "function") {
+              App.syncSeaTurtleProjection(PointerInput.inactiveIntent());
+            } else {
+              syncSeaTurtleScene(PointerInput.inactiveIntent());
+            }
           }
         }
       }
@@ -2594,8 +2614,12 @@
       }
       hideAssistHand();
     }
-    updateSeaTurtleRootMarkers();
-    renderSeaTurtleFrame();
+    if (typeof App.syncSeaTurtleProjection === "function") {
+      App.syncSeaTurtleProjection();
+    } else {
+      updateSeaTurtleRootMarkers();
+      renderSeaTurtleFrame();
+    }
   }
 
   function completeSeaTurtleSuccess() {
@@ -2614,7 +2638,11 @@
       root.setAttribute("data-rescue-phase", "success");
       root.setAttribute("data-rescue-input", "disabled");
     }
-    updateSeaTurtleRootMarkers();
+    if (typeof App.syncSeaTurtleProjection === "function") {
+      App.syncSeaTurtleProjection();
+    } else {
+      updateSeaTurtleRootMarkers();
+    }
     var progress = document.getElementById("ocean-rescue-rescue-progress");
     if (progress) {
       progress.textContent = SeaTurtle.Dialogues[2];
@@ -2623,7 +2651,11 @@
     if (status) {
       status.textContent = SeaTurtle.Dialogues[2];
     }
-    renderSeaTurtleFrame();
+    if (typeof App.syncSeaTurtleProjection === "function") {
+      App.syncSeaTurtleProjection();
+    } else {
+      renderSeaTurtleFrame();
+    }
     startMissionSuccessPresentation(sequence);
     App.syncPauseButton();
   }
@@ -4617,6 +4649,29 @@
       return;
     }
     var snapshot = SeaTurtle.getSnapshot();
+    renderLegacySeaTurtleFrame(snapshot, pointerIntent);
+  }
+
+  function renderLegacySeaTurtleFrame(snapshot, _intent) {
+    var canvas = resolvePaintCanvas();
+    var context = resolvePaintContext();
+    if (!canvas || !context) {
+      return;
+    }
+    if (typeof context.clearRect !== "function") {
+      return;
+    }
+    if (activeRescueSequence === null) {
+      return;
+    }
+    if (!snapshot || typeof snapshot !== "object") {
+      return;
+    }
+    var width = canvas.width;
+    var height = canvas.height;
+    if (typeof width !== "number" || typeof height !== "number") {
+      return;
+    }
     context.clearRect(0, 0, width, height);
     var layout = null;
     if (Terrain && typeof Terrain.getLayout === "function") {

@@ -136,8 +136,7 @@ def test_start_eligibility_and_initial_projection_remain_characterized() -> None
     assert "SeaTurtle.start()" in controller
     assert "SeaTurtleScene?.isMounted()" in controller
     assert "SeaTurtleScene.activate()" in controller
-    assert "host.renderSeaTurtleFrame();" in controller
-    assert "host.updateSeaTurtleRootMarkers();" in controller
+    assert "syncSeaTurtleProjection();" in controller
     assert "function startSeaTurtleInteraction(sequence)" in app
     assert 'progress.textContent = "Rope 1 of 3";' in app
 
@@ -218,3 +217,153 @@ def test_characterization_recipe_exists_and_includes_direct_regressions() -> Non
     )
     for path in required:
         assert path in recipe
+
+
+def test_controller_exposes_sync_sea_turtle_projection() -> None:
+    text = _read(CONTROLLER)
+    assert "syncSeaTurtleProjection(intent?: PointerIntent): boolean" in text
+    assert "function syncSeaTurtleProjection(intent?: PointerIntent): boolean" in text
+
+
+def test_controller_owns_authored_scene_sync_directly() -> None:
+    text = _read(CONTROLLER)
+    assert "SeaTurtleScene.sync(snapshot, resolvedIntent)" in text
+    assert "SeaTurtleScene?.isMounted()" in text
+
+
+def test_controller_projects_six_root_markers_directly() -> None:
+    text = _read(CONTROLLER)
+    required_markers = (
+        '"data-sea-turtle-active"',
+        '"data-sea-turtle-rope-id"',
+        '"data-sea-turtle-completed-count"',
+        '"data-sea-turtle-help-level"',
+        '"data-sea-turtle-feedback"',
+        '"data-sea-turtle-complete"',
+    )
+    for marker in required_markers:
+        assert marker in text, f"missing root marker attribute: {marker}"
+
+
+def test_projection_reads_snapshot_exactly_once() -> None:
+    text = _read(CONTROLLER)
+    snapshot_calls = (
+        text.count("SeaTurtle.getSnapshot()")
+        + text.count("SeaTurtle?.getSnapshot()")
+    )
+    assert snapshot_calls == 3, (
+        f"expected exactly 3 SeaTurtle.getSnapshot() calls "
+        f"(1 in isSeaTurtleActive + 1 in getSeaTurtleSnapshot + "
+        f"1 in syncSeaTurtleProjection), "
+        f"got {snapshot_calls}"
+    )
+    projection_body = text.split("function syncSeaTurtleProjection")[1].split(
+        "function "
+    )[0]
+    assert (
+        "const snapshot = SeaTurtle.getSnapshot();" in projection_body
+    ), "syncSeaTurtleProjection must read snapshot exactly once into a local"
+
+
+def test_projection_passes_same_snapshot_to_scene_or_fallback() -> None:
+    text = _read(CONTROLLER)
+    projection_body = text.split("function syncSeaTurtleProjection")[1].split(
+        "function "
+    )[0]
+    assert "SeaTurtleScene.sync(snapshot, resolvedIntent)" in projection_body
+    assert "host.renderLegacySeaTurtleFrame(snapshot, intent)" in projection_body
+
+
+def test_legacy_host_bridge_receives_concrete_snapshot() -> None:
+    text = _read(CONTROLLER)
+    assert "snapshot: SeaTurtleSnapshot," in text
+    assert "host.renderLegacySeaTurtleFrame(" in text
+
+
+def test_production_esm_app_js_delegates_to_controller_projection() -> None:
+    text = _read(APP)
+    delegation_checks = (
+        'typeof App.syncSeaTurtleProjection === "function"',
+        "App.syncSeaTurtleProjection(PointerInput.activeIntent(mapped))",
+        "App.syncSeaTurtleProjection(PointerInput.inactiveIntent())",
+        "App.syncSeaTurtleProjection()",
+    )
+    for check in delegation_checks:
+        assert check in text, f"missing controller delegation in app.js: {check}"
+
+
+def test_ordered_script_fallback_remains_in_app_js() -> None:
+    text = _read(APP)
+    assert "renderSeaTurtleFrame();" in text
+    assert "updateSeaTurtleRootMarkers();" in text
+    assert "function renderLegacySeaTurtleFrame(snapshot, _intent)" in text
+
+
+def test_pointer_down_move_up_cancel_ownership_remains_in_app_js() -> None:
+    text = _read(APP)
+    required = (
+        "function handleSeaTurtlePointerDown(event, mapped)",
+        "function onRescuePointerMove(event)",
+        "function onRescuePointerUp(event)",
+        "function onRescuePointerCancel(event)",
+        "SeaTurtle.pointerDown(event.pointerId, mapped.x, mapped.y)",
+        "SeaTurtle.pointerMove(event.pointerId, mapped.x, mapped.y)",
+        "SeaTurtle.pointerUp(event.pointerId, mapped.x, mapped.y)",
+        "SeaTurtle.pointerCancel(event.pointerId)",
+    )
+    for token in required:
+        assert token in text
+
+
+def test_pointer_capture_release_ownership_remains_in_app_js() -> None:
+    text = _read(APP)
+    required = (
+        "seaTurtlePointerCaptureEl.setPointerCapture(event.pointerId)",
+        "seaTurtlePointerCaptureEl.releasePointerCapture(pointerId)",
+    )
+    for token in required:
+        assert token in text
+
+
+def test_feedback_scheduling_and_stale_sequence_guard_remain_in_app_js() -> None:
+    text = _read(APP)
+    required = (
+        "function beginSeaTurtleSuccessFeedback(ropeId)",
+        "function beginSeaTurtleFailureFeedback(ropeId)",
+        "function completeSeaTurtleFeedback(sequence)",
+        'scheduleWithRegistry("sea-turtle-feedback"',
+        "sequence.sequenceId !== activeRescueSequence.sequenceId",
+        "snapshot.feedback !== sequence.kind",
+        "snapshot.activeRopeId !== sequence.ropeId",
+        "SeaTurtle.finishFeedback()",
+    )
+    for token in required:
+        assert token in text
+
+
+def test_pause_menu_cleanup_and_mission_success_handoff_remain_host_owned() -> None:
+    text = _read(APP)
+    required = (
+        "function cancelPausePointerInteractions()",
+        "SeaTurtle.pauseCancel()",
+        "function shutdownRescueInteractionState()",
+        "function completeSeaTurtleSuccess()",
+        "State.beginTransition(State.Phases.RESCUE_SUCCESS)",
+        "startMissionSuccessPresentation(sequence)",
+    )
+    for token in required:
+        assert token in text
+
+
+def test_controller_has_no_dom_or_timer_ownership() -> None:
+    text = _read(CONTROLLER)
+    forbidden = (
+        "addEventListener",
+        "setTimeout",
+        "completeMission",
+        "startMissionSuccessPresentation",
+        "Crab",
+        "YoungWhale",
+    )
+    for token in forbidden:
+        assert token not in text, f"controller must not own: {token}"

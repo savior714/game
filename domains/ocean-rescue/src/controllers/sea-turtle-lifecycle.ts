@@ -8,10 +8,12 @@
  */
 
 import type {
+  PointerInputApi,
   PointerIntent,
   SeaTurtleApi,
   SeaTurtleSceneApi,
   SeaTurtleSnapshot,
+  OceanRescueNamespace,
 } from "../contracts/runtime-abi";
 
 export interface SeaTurtleSessionRef {
@@ -24,6 +26,10 @@ export interface SeaTurtleLifecycleHostApi {
   renderSeaTurtleFrame(intent?: PointerIntent): void;
   updateSeaTurtleRootMarkers(): void;
   syncSeaTurtleScene(intent?: PointerIntent): boolean;
+  renderLegacySeaTurtleFrame(
+    snapshot: SeaTurtleSnapshot,
+    intent?: PointerIntent,
+  ): void;
 }
 
 /** App methods exposed by the characterization-only controller boundary. */
@@ -31,6 +37,7 @@ export interface SeaTurtleLifecycleAppApi extends SeaTurtleLifecycleHostApi {
   isSeaTurtleActive(): boolean;
   getSeaTurtleSnapshot(): SeaTurtleSnapshot | null;
   startSeaTurtleInteraction(): boolean;
+  syncSeaTurtleProjection(intent?: PointerIntent): boolean;
 }
 
 interface ControllerDependencies {
@@ -77,8 +84,52 @@ export function installSeaTurtleLifecycleController(
       SeaTurtleScene.activate();
     }
 
-    host.renderSeaTurtleFrame();
-    host.updateSeaTurtleRootMarkers();
+    syncSeaTurtleProjection();
+    return true;
+  }
+
+  function syncSeaTurtleProjection(intent?: PointerIntent): boolean {
+    if (!SeaTurtle) {
+      return false;
+    }
+
+    const snapshot = SeaTurtle.getSnapshot();
+    const root = document.getElementById("ocean-rescue-root");
+
+    if (root) {
+      root.setAttribute(
+        "data-sea-turtle-active",
+        snapshot.active ? "true" : "false",
+      );
+      root.setAttribute(
+        "data-sea-turtle-rope-id",
+        snapshot.activeRopeId === null ? "" : snapshot.activeRopeId,
+      );
+      root.setAttribute(
+        "data-sea-turtle-completed-count",
+        String(snapshot.completedRopeIds.length),
+      );
+      root.setAttribute(
+        "data-sea-turtle-help-level",
+        String(snapshot.helpLevel),
+      );
+      root.setAttribute(
+        "data-sea-turtle-feedback",
+        snapshot.feedback === null ? "none" : snapshot.feedback,
+      );
+      root.setAttribute(
+        "data-sea-turtle-complete",
+        snapshot.complete ? "true" : "false",
+      );
+    }
+
+    if (SeaTurtleScene?.isMounted()) {
+      const PointerInput = (window.OceanRescue as OceanRescueNamespace)?.PointerInput;
+      const resolvedIntent = intent ?? (PointerInput ? PointerInput.inactiveIntent() : { active: false, x: null, y: null });
+      return SeaTurtleScene.sync(snapshot, resolvedIntent);
+    }
+
+    host.renderLegacySeaTurtleFrame(snapshot, intent);
     return true;
   }
 
@@ -86,6 +137,7 @@ export function installSeaTurtleLifecycleController(
     isSeaTurtleActive,
     getSeaTurtleSnapshot,
     startSeaTurtleInteraction,
+    syncSeaTurtleProjection,
   });
   return controller;
 }

@@ -7,108 +7,99 @@ domain: core
 ---
 <!-- Language: ko -->
 # Reporting Protocol
-본 문서는 에이전트의 보고 원칙과 형식을 규정합니다. 전 구간 간결 보고를 유지하여 토큰 효율을 극대화합니다.
----
+
+이 문서는 에이전트의 간결한 진행·완료 보고 계약을 정의한다.
+실행 규칙은 루트 `AGENTS.md`, 정적 검증 규칙은 [verification.md](verification.md)가 우선한다.
+과거의 Blueprint·Linear·장문 상태 보고 절차는 일반 작업의 완료 조건이 아니다.
+
 ## 1. Reporting Principles
-전 구간 간결 보고를 유지합니다. 중간 보고와 세션 종료 보고는 동일한 원칙을 따릅니다.
 
-### 1.0 세션 종료 체크리스트 (저장소 수정 시)
-**완료·마무리·이관** 응답 직전 순서 (에이전트 공통 SSOT):
-| 순서 | 작업 내용 | 필수 명령 / 검증 절차 | 관련 규정 |
-| :--- | :--- | :--- | :--- |
-| 1 | **문서 헤더 및 규격 검증** | `just docs-ssot-headers` | [AGENTS.md](../../AGENTS.md) §4.3 / §4.5 |
-| 2 | **Linear 원격 동기화** | `just linear-sync` | [AGENTS.md](../../AGENTS.md) §4.3 |
-| 3 | **태스크 종료 및 플랜 닫기** | `just plan-close` | [AGENTS.md](../../AGENTS.md) §2.2 / §4.3 |
-| 4 | **세션 최종 린트 및 빌드 검증** | `just lint-turn-end` | §1.5 / [verification.md](verification.md) §2.5 |
-| 5 | **다음 작업 제안 (필요 시)** | `just plans-steer` (스냅샷 갱신 제안) | §1.0 아래 설명 / [ROADMAP.md](../../docs/plans/ROADMAP.md) |
+### 1.1 기본 보고
 
-Blueprint Task **3개 이상 연속 done**·plan-close·archive 직후에는 `just plans-steer`로 README Recommended next 스냅샷 갱신을 1줄 제안한다. 방향 SSOT는 [`ROADMAP.md`](../../docs/plans/ROADMAP.md).
-`/go` 이관·`/spec-sync` 직전에도 동일. 상세: [execution.md](execution.md) §3.5 · [go.md](../workflows/go.md) §1.
+정상 완료 보고는 다음 필드만 사용한다.
 
-### 1.1 기본 보고 (Default)
-- 3~5줄 이내로 작성합니다.
-- 한 줄 요약을 포함합니다.
-- 필요 시 변경 파일 목록과 검증 결과를 한 줄로 요약합니다.
-- 잔여 이슈가 있으면 한 줄 추가합니다.
-- **Workaround Accountability**: 작업을 한 번에 끝내지 못하고 우회책(Workaround)을 사용했다면 발생 문제, 근본 원인(추정), 향후 해결 방안을 반드시 보고하고 사용자에게 결정(`AskQuestion`/`question` 병용)을 유도합니다.
+```text
+RESULT: PASS | BLOCKED
+CHANGE: <무엇을 바꿨는지 한 문장>
+VERIFY: <실행한 판정 기준과 결과 한 문장>
+```
 
-### 1.2 상세 보고 (Detailed)
-다음과 같은 경우에만 상세 보고를 수행합니다.
-- 검증 실패 시
-- 블로커(Blocker) 존재 시
-- 사용자가 명시적으로 상세 보고를 요청했을 때
+- 실제 게시 시에만 `COMMIT`을 추가한다.
+- 중단 시에만 `BLOCKER`와 `NEXT`를 추가한다.
+- claim ID, task key, lease, activation SHA, start window, dependency graph 같은 내부 조정 메타데이터를 반복하지 않는다.
+- 변경 파일 목록이나 상세 로그는 실패 원인 또는 사용자가 요청한 경우에만 추가한다.
 
-### 1.3 금지 사항 (Prohibited)
-- 장문의 템플릿 보고
-- 영문 전용(English-only) 리포트
-- `Final Completion Report`와 같은 거창한 헤더 사용
-- 증거(Evidence) 없는 "완료" 선언
-- 사용자에게 폐기된 적응형 지침 명령(예: `just update-guidelines`)을 직접 실행하라고 요구하는 것
-- 태스크 완료(`Conclusion`) 필드에 플레이스홀더 문자열(`[완료 시 기입]`, `[판정 — ...]` 등)을 남겨두는 행위 (상세: [AGENTS.md](../../AGENTS.md) §4.4)
+### 1.2 상세 보고
 
-### 1.4 제안의 책임 (Recommendation Accountability)
-- 아키텍처, 스택, 워크플로, 보안 정책 변경을 제안할 때는 반드시 아래 3개 요소를 포함해야 합니다 (단순 확인이나 사실 설명 시에는 면제).
-  1. **Rationale (근거)**: 제안의 배경과 합리적 근거
-  2. **Risk (위험)**: 예상되는 잠재적 문제점과 우회/방지 대책
-  3. **Evidence URL (출처)**: 신뢰할 수 있는 공식 문서나 RFC, 사내 스펙 문서 등의 URL
-- 추측성 제안은 절대 하지 않습니다.
-- 상세 규정: [PROJECT_RULES.md](../../PROJECT_RULES.md) §3
+다음 경우에만 필요한 근거를 추가한다.
 
-### 1.5 세션 종료 검증 (Lint / Type) — **필수**
-저장소 파일을 **생성·수정·삭제**한 뒤 **작업 완료·마무리** 응답 직전, **완료 보고(§1.1/§1.2)보다 먼저**:
-1. [verification.md](verification.md) §2.5 — `just lint-turn-end`
-2. 실패가 있으면 **내가 변경한 파일의 오류만** 최소 패치로 0으로 만든다. 이번 세션에서 건드리지 않은 파일의 기존 오류는 보고에 블로커/경고로 명시한다. PASS 전 "완료" 선언 금지.
-3. 보고에 검증 한 줄 포함 (예: `just lint-turn-end` ✅).
-4. 이번 세션에서 I등급(500줄 초과) 파일을 수정했다면, 완료 보고에 분할 Blueprint 작성 여부(`plan-lint` 결과 포함)를 한 줄로 기록한다.
-5. 플랜 태스크를 닫을 때 `Conclusion` 필드에 플레이스홀더를 남겨두지 말고, 최소 25자 이상으로 실제 검증된 결과(파일명, 테스트 성공 개수, 검증 명령 결과 등)를 기록합니다. (상세: [AGENTS.md](../../AGENTS.md) §4.4)
-> SSOT 상세: verification §2.5
-**진행 중 자가진단**: `lint-fe`(FE만) / `lint-be`(BE만) — 구현 중 확인용. 완료 선언 대체 불가.
+- 검증 실패 또는 실행 불가
+- 안전하게 해결할 수 없는 blocker
+- 게시 충돌이나 최신 main 재적용 실패
+- 사용자가 상세 보고를 명시적으로 요청
 
-### 1.6 사용자 응답 — 채팅은 행동 지시, 문서는 LLM용
-문서 양식 SSOT: [markdown.md](../domains/documentation/markdown.md) 「Documentation Audience」. **기본**: 내부 Markdown은 LLM-first; `README.md` 등 사람·외부 노출 문서만 예외.
+상세 보고도 같은 내용을 여러 필드로 반복하지 않는다.
 
-#### 1.6.0 일반 대화 톤 — 비개발자 친화 (기본)
-**채팅 전반**(설명·진행 보고·질문·완료 요약)은 **조금** 업무·임상 언어를 기본으로 한다. 정확성은 유지하고, 개발 문서처럼 읽히지 않게 한다.
-| 우선 | 채팅에서 |
-|------|----------|
-| 1 | **무엇이 달라졌는지** — 화면·업무·사용자 관점 한 줄 |
-| 2 | **다음에 할 일** — 번호 3~7개, 명령형 짧은 문장 |
-| 3 | **통과/실패** — 눈으로 볼 수 있는 기준 |
-| 4 | **개발 참고** — 파일·함수·식별자는 맨 아래에만 (사용자가 기술을 물었을 때만 위로 올림) |
-**말하기**:
-- `hook`, `refactor`, `persist`, `endpoint` 등은 **쓰지 않거나** → 「저장」, 「화면」, 「서버에 보내기」로 풀어 쓴다.
-- 제품 호칭·역할은 MSOT(`README.md`, Linear 자연어 구역)를 따른다 — 예: **진료실**, **원무**, **staff**.
-- **모호함 해소의 기본값(Interactive Refine)**: 모호한 요구사항, 태스크 분할, 의사결정 등 질문이 필요한 모든 상황에서 서술형 질문("어떻게 할까요?")을 원천 금지합니다. 대신 [principles.md](principles.md) §1.1.1 **Interactive Refine & Quick Pick**에 따라 `AskQuestion`/`question` 도구(병용)를 활용해 2~4개의 구체적 선택지와 **(권장)** 태그를 제시하는 방식을 기본 소통 방식으로 사용합니다.
-- **세션 완료 보고 시 추가 피드백/의사결정 요구 최우선**: 세션 완료 보고나 다음 세션을 위한 추가 피드백·결정이 필요할 경우에도, 서술형 질문 대신 **Quick Pick 스타일 의사결정 메뉴(AskQuestion/`question` 병용)**를 구성하여 소통하는 것을 최우선으로 한다.
-**피하기**: 열린 서술형 질문 던지기, 식별자만 나열, 긴 표·코드 블록으로 답 종료, 「명세 §n 참고」만 던지기.
-**예외 (개발 톤 허용)**: 사용자가 파일·에러·PR·테스트를 직접 언급했을 때, 디버깅·리뷰를 요청했을 때.
-**강도**: 과한 유치함·장황한 비유 금지. 사용자가 「기술적으로」라고 하면 §1.6.1 QA 형식과 병행해도 된다.
-질문 뱅크(Discuss): [plain-language-questions.md](../skills/discuss/references/plain-language-questions.md)
-**저장소 문서**(`docs/reports/qa/`, `docs/specs/`, Blueprint)와 **채팅 응답**은 역할을 나눈다.
-| 대상 | 목적 | 형식 |
-|------|------|------|
-| **Blueprint `## 📋 업무 요약 (협업용)`** | 원장·원무·기획이 **맥락만** 읽음 | `### 개요` · staff·경영 변화 · 끝났을 때 확인 — **경로·백틱·CLI 없음**. 뼈대: [TEMPLATE_blueprint_collaboration_summary.md](../../docs/templates/TEMPLATE_blueprint_collaboration_summary.md) · [plan.md](../workflows/plan.md) |
-| **문서(기술 절)** | 에이전트·회귀·명세 동기화 | ID·표·교차 링크·합격 조건 (LLM이 파싱하기 쉬움) |
-| **채팅** | 사용자가 **지금 당장** 할 일 | 명령형 짧은 문장·번호 목록·「통과 / 실패면」 한 줄 |
+### 1.3 금지 사항
 
-#### 1.6.1 QA·확인 답변 (기본)
+- 증거 없는 완료 선언
+- 실행하지 않은 criterion의 PASS 처리
+- `Final Completion Report` 같은 장문 템플릿
+- task/claim/lease/SHA 목록이 실제 변경 설명보다 커지는 보고
+- workaround를 정상 해결로 표현
+- broad ignore, baseline, snapshot, skip, mock 또는 fail-open fallback으로 만든 녹색 결과를 PASS로 보고
+- LSP·typecheck·lint 오류를 `pre-existing`, `unrelated`, `out of scope`라는 이유만으로 경고 처리하고 PASS
 
-**적용 순서**: Task `Verify`·QA·spec·Blueprint에 검증 절차 SSOT가 있는지 **먼저** 판단한다. 있으면 아래 **예외**를 따르고, 없거나 사용자가 채팅만으로 절차를 요청했을 때만 기본 3~7스텝 규칙을 쓴다.
+### 1.4 제안의 책임
 
-**예외 — 검증 SSOT가 이미 문서에 있을 때** (활성 Blueprint `PLAN_*.md` Task·`Verify`, `docs/reports/qa/`, specs·Blueprint QA 절 등에 **눈으로 확인하는 절차·통과 기준**이 이미 정의됨):
-- 채팅에 3~7스텝을 **억지로 풀어 쓰지 않아도 된다** — 해당 문서·Task가 SSOT.
-- 채팅은 **무엇을 확인하는지 한 줄** + **문서·Task 링크 1개** + **통과/실패 한 줄** (§1.1 간결 보고)로 충분하다.
-- 여전히 금지: 링크만 던지고 맥락·통과 기준을 생략하는 것, 식별자만 나열.
+아키텍처·스택·보안·workflow 정책을 변경하자는 제안에는 다음을 포함한다.
 
-**채팅에서 QA·확인을 물을 때** (위 예외에 해당하지 않거나, 사용자가 채팅만으로 절차를 요청했을 때):
-1. **문서 링크만으로 끝내지 않는다** — 맥락·통과 기준이 없이 `docs/reports/qa/...` 등만 제시하지 않음.
-2. **본문에 그대로 적는다** — 예: 「진료실 → 편집 켜기 → 카드 하나를 빈 칸에 놓기 → 겹치면 실패」
-3. **통과 기준은 눈으로 본다** — “겹치지 않음”, “놓은 칸과 비슷함”, “새로고침 후 그대로”
-4. **한 번에 3~7스텝** (예외 적용 시 §1.1·위 예외 블록 준수) — 표·GEO-ID·파일 경로는 **맨 아래 「개발 참고」**에만 (사용자가 안 물었으면 생략 가능)
-5. **질문이 좁으면 짧게** — “뭘 확인하면 돼?” → 확인 3줄 + 통과/실패만 (예외 적용 시 한 줄 맥락 + 링크 + 통과/실패)
-**피하기 (채팅)**:
-- QA-GRID-01, GEO-PAD-01, persist, compact 등 **식별자만** 나열
-- 긴 표를 채팅에 복붙
-- “명세 §8.4 참고”로 답변 종료
-**문서 작성 시**: `docs/reports/qa/`·`docs/specs/`에는 **LLM이 파싱할 표·ID·교차 링크만** 둔다. 사람용 요약·「5분 확인」절을 문서에 **중복 작성하지 않음** (컨텍스트 낭비). 에이전트는 해당 문서를 Read한 뒤, §1.6.1 **예외**에 해당하면 링크·한 줄 맥락·통과 기준으로 충분하며, 해당하지 않으면 **세션 채팅에서** 명령형으로 요약한다.
-**유지**: 사실 정확성, 커밋·PR·명세 본문은 기존 markdown 규칙.
+1. 확인된 필요성
+2. 예상 위험과 방지책
+3. 검증 가능한 근거 또는 저장소 contract
+
+추측만으로 새 governance를 추가하지 않는다.
+
+### 1.5 세션 종료 검증 — 필수
+
+저장소 파일을 생성·수정·삭제한 뒤 완료 보고 전에 [verification.md](verification.md) §2.3을 따른다.
+
+1. 안정적인 source worktree root에서 `just lint-turn-end` 또는 저장소가 요구하는 동등한 정적 게이트를 실행한다.
+2. 현재 변경으로 새로 생긴 오류와 수정 파일·직접 영향 모듈의 오류를 먼저 하나의 failure domain으로 수정한다.
+3. 같은 진단 명령으로 해당 failure domain이 사라졌는지 독립 검증한다.
+4. 다른 파일의 기존 LSP·typecheck·lint 오류가 드러나면 단순 경고로 넘기지 않는다. 다음 정적 failure domain 하나를 선택해 순차적으로 해결한다.
+5. 잘못된 workspace root, SDK/interpreter, dependency, stale cache/index, generated/vendor 오분석이 원인이면 production code를 억지로 바꾸지 말고 환경·설정을 수정한 뒤 같은 진단을 재실행한다.
+6. 오류가 남았고 안전하게 해결할 수 없다면 `RESULT: BLOCKED`로 보고하고 정확한 진단·재현 명령·차단 원인을 남긴다.
+
+다음 상태에서 `RESULT: PASS`를 금지한다.
+
+- 현재 변경 또는 직접 영향 범위의 정적 오류가 남음
+- 이번 작업에 요구되는 정적 게이트가 실패함
+- 진단을 실행하지 않았거나 exit code를 무시함
+- broad suppression이나 검사 범위 축소로만 녹색이 됨
+
+### 1.6 사용자 응답
+
+- 사용자가 개발 용어를 직접 사용하면 정확한 기술 용어로 답한다.
+- 그렇지 않으면 무엇이 달라졌는지, 어떻게 검증했는지를 먼저 설명한다.
+- 질문이 필요할 때만 결정 가능한 선택지를 제시한다.
+- 완료 후 불필요한 후속 선택지나 장기 backlog를 자동으로 나열하지 않는다.
+
+## 2. Workaround Accountability
+
+임시 우회를 사용했다면 `PASS`로 포장하지 않는다.
+
+```text
+RESULT: BLOCKED
+CHANGE: <안전하게 완료한 범위>
+VERIFY: <확인된 결과>
+BLOCKER: <근본 원인 또는 미충족 criterion>
+NEXT: <재개에 필요한 단일 조건>
+```
+
+영구 fallback이 필요하면 별도의 제품 설계와 회귀 테스트가 있어야 한다.
+
+## 3. Zero-Leak
+
+보고·터미널 출력·로그에 API key, token, cookie, password, `.env` 원문을 포함하지 않는다.
+민감값이 노출됐을 가능성이 있으면 값을 재인용하지 말고 즉시 중단·회전 절차를 따른다.

@@ -3,11 +3,11 @@
 - **Status:** ACTIVE
 - **Architecture SSOT:** `docs/specs/technical/AIDENGAME_OCEAN_RESCUE_DEVELOPMENT_ARCHITECTURE.md`
 - **Created:** 2026-08-03
-- **Updated:** 2026-08-04
+- **Updated:** 2026-08-05
 - **Scope:** Ocean Rescue development-source migration from global-namespace JavaScript to ESM/TypeScript/Vite
 - **Execution model:** sequential bounded work packages
 - **Current phase:** PHASE_8_IN_PROGRESS
-- **Next executable work package:** WP-33D
+- **Next executable work package:** WP-33E
 - **Production cutover gate:** SATISFIED by WP-02 functional parity, WP-20 deterministic shadow-bundle parity, WP-21 production application-bundle cutover, and WP-30 canonical ESM entry
 - **Target-device release gate:** WP-03A must pass before MVP release, but it does not block WP-21
 - **Automated performance harness:** WP-03B is non-blocking follow-up work, triggered by an observed regression or post-MVP stabilization need

@@ -14,7 +14,8 @@ def test_current_schedule_allows_wp30_before_physical_device_smoke() -> None:
     header = plan.split("\n---\n", maxsplit=1)[0]
 
     assert "**Current phase:** PHASE_8_IN_PROGRESS" in header
-    assert "**Next executable work package:** WP-33D" in header
+    assert "**Next executable work package:** WP-33E" in header
+    assert "**Updated:** 2026-08-05" in header
     assert "**Production cutover gate:** SATISFIED" in header
     assert "WP-03A must pass before MVP release, but it does not block WP-21" in header
     assert "WP-03B is non-blocking follow-up work" in header
@@ -22,6 +23,7 @@ def test_current_schedule_allows_wp30_before_physical_device_smoke() -> None:
     assert "PHASE_4_READY_WITH_WP03_PENDING" not in header
     assert "Next executable work package:** WP-03" not in header
     assert "WP-03 required before WP-21" not in header
+    assert "**Next executable work package:** WP-33D" not in header
 
 
 def test_wp03_is_split_into_release_smoke_and_non_blocking_harness() -> None:
@@ -58,7 +60,8 @@ def test_superseded_wp03_blocking_language_is_historical_only() -> None:
     assert plan.index(blocked_marker) < plan.index(current_marker)
 
     current = plan[plan.index(current_marker) :]
-    assert "Next executable work package: WP-33D" in current
+    assert "WP-33D: COMPLETE" in current
+    assert "Next executable work package: WP-33E" in current
     assert "WP-21: COMPLETE" in current
     assert "WP-30: COMPLETE" in current
     assert "WP-31A: COMPLETE" in current

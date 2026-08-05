@@ -10,7 +10,19 @@
 4. 대상 코드와 테스트
 5. 기타 문서와 과거 계획
 
-## 2. Git과 work package
+## 2. WP 작업 계획과 상태 관리
+
+- Ocean Rescue의 `WP-33E` 같은 work-package 이름은 대화와 실행 보고에서 사용하는 작업 라벨이다.
+- 사용자가 저장소 문서화를 명시적으로 요청하지 않는 한 WP 계획, 다음 WP, 진행 상태, 완료 상태는 대화에서만 관리한다.
+- 일반 WP 작업을 위해 `docs/plans/PLAN_ocean_rescue_wp*.md`를 생성하거나 수정하지 않는다.
+- WP 상태 기록만을 목적으로 `docs/evidence/` 문서를 생성하지 않는다. 제품 계약을 입증하는 기존 기술 문서는 필요한 경우에만 갱신한다.
+- 테스트는 제품 동작, 타입, 빌드, 배포 계약을 검증한다. `다음 WP`, `현재 WP`, `WP COMPLETE` 같은 가변 일정 상태를 `docs/plans`에서 읽어 검증하지 않는다.
+- 기존 migration plan과 과거 WP 문서는 역사적·기술적 참고 자료일 뿐 현재 일정 권위가 아니다. 후속 WP 진행을 위해 상태를 동기화하지 않는다.
+- `.agents/core/planning.md`와 `.agents/workflows/plan.md`의 Blueprint 절차는 사용자가 저장소 Blueprint를 명시적으로 요청한 경우에만 적용한다. 일반 WP 계획·재계획·다음 작업 선정에는 적용하지 않는다.
+- 로컬 에이전트 위임 프롬프트에는 WP 계획 파일 생성·수정, plan status 동기화, 상태 전용 evidence 생성을 포함하지 않는다.
+- WP 완료 보고는 기본적으로 채팅의 `RESULT / CHANGE / VERIFY / COMMIT`으로 끝낸다.
+
+## 3. Git과 work package
 
 - 통합·게시 기준 브랜치는 `origin/main`이며 기본 방식은 `main` fast-forward push다.
 - PR과 feature branch는 사용자가 요청한 경우에만 사용한다.
@@ -27,7 +39,7 @@
 - force push와 `--no-verify`는 금지한다.
 - unrelated dirty state를 보존한다.
 
-## 3. Exclusive reservation
+## 4. Exclusive reservation
 
 `agents/workflows/work-package-claim.md`는 일반 작업 claim이 아니라 희소 자원의 reservation이다.
 
@@ -42,7 +54,7 @@
 같은 파일이라는 이유만으로 자동 예약하지 않는다.
 reservation에는 `WORK / OWNER / EXPIRES / SCOPE`만 사용한다.
 
-## 4. 작업과 게시
+## 5. 작업과 게시
 
 1. 최신 `origin/main`에서 현재 상태를 확인한다.
 2. 안정적인 프로젝트 전용 경로의 isolated worktree를 만들고 그 worktree 자체를 IDE·LSP·실행 workspace root로 연다.
@@ -55,7 +67,7 @@ reservation에는 `WORK / OWNER / EXPIRES / SCOPE`만 사용한다.
 
 push를 별도 lock으로 직렬화하지 않는다. Git의 non-fast-forward 거부를 사용한다.
 
-## 5. 검증
+## 6. 검증
 
 대표 명령:
 
@@ -81,7 +93,7 @@ just ci
 workaround, fail-open fallback, baseline·snapshot 갱신, unrelated cleanup으로 실패를 숨기지 않는다.
 LSP·typecheck·lint 오류를 “pre-existing” 또는 “out of scope”라는 이유만으로 보고하고 PASS하지 않는다.
 
-## 6. 프로젝트 경계
+## 7. 프로젝트 경계
 
 - 사용자 런타임은 정적 HTML/CSS/JavaScript다.
 - 메인 허브는 `index.html`이다.
@@ -90,7 +102,7 @@ LSP·typecheck·lint 오류를 “pre-existing” 또는 “out of scope”라�
 - Next.js, Tauri, 별도 백엔드 API는 현재 범위 밖이다.
 - Ocean Rescue 세부 계약은 가장 가까운 technical spec을 따른다.
 
-## 7. 로컬 에이전트 위임
+## 8. 로컬 에이전트 위임
 
 - 웹 세션에서 가능한 작업을 먼저 완료한다.
 - 프롬프트는 최대 700줄이며 현재 package에 필요한 delta만 전달한다.
@@ -101,13 +113,14 @@ LSP·typecheck·lint 오류를 “pre-existing” 또는 “out of scope”라�
 - exclusive 자원이 있을 때만 `RESERVATION_COMMENT / WORK / OWNER / EXPIRES / SCOPE`를 추가한다.
 - 첫 mutation과 게시 직전에 최신 `origin/main`을 확인한다.
 - task/parent key, custom claim ID, activation SHA, start window, dependency graph를 만들지 않는다.
+- WP 작업 프롬프트에는 `docs/plans` 생성·수정, WP 상태 동기화, 상태 전용 evidence 생성을 금지 범위로 명시한다.
 
-## 8. 거버넌스 동결
+## 9. 거버넌스 동결
 
 실제 충돌이 반복 재현되고 worktree·고유 runtime identity·게시 전 overlap 확인으로 막을 수 없을 때만
 새 coordination 규칙을 추가한다. validator·상태 머신·완료 보고 필드는 기본적으로 추가하지 않는다.
 
-## 9. 완료 보고
+## 10. 완료 보고
 
 ```text
 RESULT: PASS | BLOCKED

@@ -32,3 +32,6 @@ build/
 
 # Node
 node_modules/
+
+# Ocean Rescue WP planning is chat-only unless explicitly requested
+/docs/plans/PLAN_ocean_rescue_wp*.md

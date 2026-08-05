@@ -1737,8 +1737,8 @@
       return true;
     }
     var started = false;
-    if (typeof App.startSeaTurtleInteraction === "function") {
-      started = App.startSeaTurtleInteraction();
+    if (typeof App.startSeaTurtleSession === "function") {
+      started = App.startSeaTurtleSession(sequence);
     } else {
       var canvas = resolveVisibleInputCanvas();
       var context = resolvePaintContext();
@@ -3410,16 +3410,20 @@
   }
 
   function shutdownRescueInteractionState() {
-    if (SeaTurtleScene && SeaTurtleScene.isMounted()) {
-      SeaTurtleScene.exit();
-    }
-    if (CrabScene && CrabScene.isMounted()) {
-      CrabScene.exit();
-    }
-    if (CrabScene && CrabScene.isMounted()) {
-      CrabScene.exit();
-    }
     clearSeaTurtleFeedbackTimer();
+    if (typeof App.stopSeaTurtleSession === "function") {
+      App.stopSeaTurtleSession();
+    } else {
+      if (SeaTurtleScene && SeaTurtleScene.isMounted()) {
+        SeaTurtleScene.exit();
+      }
+    }
+    if (CrabScene && CrabScene.isMounted()) {
+      CrabScene.exit();
+    }
+    if (CrabScene && CrabScene.isMounted()) {
+      CrabScene.exit();
+    }
     clearCrabFeedbackTimer();
     clearYoungWhaleFeedbackTimer();
     clearCrabHoldTimer();
@@ -5708,6 +5712,7 @@
     shutdownActiveRescueForMenu: shutdownRescueInteractionState,
     renderSeaTurtleFrame: renderSeaTurtleFrame,
     updateSeaTurtleRootMarkers: updateSeaTurtleRootMarkers,
+    renderLegacySeaTurtleFrame: renderLegacySeaTurtleFrame,
     hideAssistHand: hideAssistHand,
     ensureRescuePointerInputBound: bindRescuePointerInput,
     routeSeaTurtleFeedback: routeSeaTurtleFeedback,

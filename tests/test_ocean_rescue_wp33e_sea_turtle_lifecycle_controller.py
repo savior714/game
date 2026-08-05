@@ -251,10 +251,11 @@ def test_projection_reads_snapshot_exactly_once() -> None:
         text.count("SeaTurtle.getSnapshot()")
         + text.count("SeaTurtle?.getSnapshot()")
     )
-    assert snapshot_calls == 3, (
-        f"expected exactly 3 SeaTurtle.getSnapshot() calls "
+    assert snapshot_calls == 5, (
+        f"expected exactly 5 SeaTurtle.getSnapshot() calls "
         f"(1 in isSeaTurtleActive + 1 in getSeaTurtleSnapshot + "
-        f"1 in syncSeaTurtleProjection), "
+        f"1 in syncSeaTurtleProjection + 1 in startSeaTurtleSession "
+        f"idempotency check + 1 in stopSeaTurtleSession active check), "
         f"got {snapshot_calls}"
     )
     projection_body = text.split("function syncSeaTurtleProjection")[1].split(

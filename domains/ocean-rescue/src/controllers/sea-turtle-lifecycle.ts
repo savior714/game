@@ -1,14 +1,38 @@
 /**
- * Typed controller boundary for the sea-turtle lifecycle characterization
- * baseline (WP-33E-0).
+ * Typed controller for sea-turtle session activation and shutdown ownership
+ * (WP-33E-2).
  *
- * This package locks the runtime ABI and controller contract without moving
- * pointer handling, feedback timing, completion routing, or shared rescue
- * listener ownership out of `src/app.js`.
+ * This controller owns:
+ * - active SeaTurtleSessionRef storage
+ * - sequence-bound session start with full validation
+ * - duplicate start idempotency (same sequence)
+ * - wrong/stale sequence rejection
+ * - SeaTurtle.start() / SeaTurtle.stop()
+ * - authored scene activate / exit
+ * - shared pointer listener binding request via host bridge
+ * - initial "Rope 1 of 3" progress projection
+ * - initial assist hand hide request
+ * - initial syncSeaTurtleProjection()
+ * - session stop with scene exit and SeaTurtle.stop()
+ * - session reference clear
+ *
+ * This controller does NOT own:
+ * - shared rescue mission router (app.js)
+ * - bindRescuePointerInput actual DOM listener registration (app.js)
+ * - sea-turtle pointer ID / capture element (app.js)
+ * - pointer down/move/up/cancel handlers (app.js)
+ * - feedback sequence and timer (app.js)
+ * - feedback UI (app.js)
+ * - assist escalation (app.js)
+ * - RESCUE_SUCCESS transition (app.js)
+ * - mission-success handoff (app.js)
+ * - crab lifecycle (app.js)
+ * - young-whale lifecycle (app.js)
  */
 
+import type { PauseTimerResumeAppApi } from "./pause-timer-resume";
+import type { RescueSiteSequence } from "./rescue-site-tutorial";
 import type {
-  PointerInputApi,
   PointerIntent,
   SeaTurtleApi,
   SeaTurtleSceneApi,
@@ -21,22 +45,28 @@ export interface SeaTurtleSessionRef {
   readonly missionId: "sea-turtle";
 }
 
-/** Host methods that remain implemented by app.js during WP-33E-0. */
-export interface SeaTurtleLifecycleHostApi {
-  renderSeaTurtleFrame(intent?: PointerIntent): void;
-  updateSeaTurtleRootMarkers(): void;
-  syncSeaTurtleScene(intent?: PointerIntent): boolean;
+/**
+ * Host methods required by the sea-turtle lifecycle controller.
+ * Extends PauseTimerResumeAppApi to inherit phase/timer/pause capabilities
+ * without duplicating declarations for methods already provided upstream.
+ */
+export interface SeaTurtleLifecycleHostApi extends PauseTimerResumeAppApi {
+  ensureRescuePointerInputBound(canvas: HTMLCanvasElement): void;
+  hideAssistHand(): void;
   renderLegacySeaTurtleFrame(
     snapshot: SeaTurtleSnapshot,
     intent?: PointerIntent,
   ): void;
 }
 
-/** App methods exposed by the characterization-only controller boundary. */
+/** Public API exposed by the sea-turtle lifecycle controller. */
 export interface SeaTurtleLifecycleAppApi extends SeaTurtleLifecycleHostApi {
   isSeaTurtleActive(): boolean;
   getSeaTurtleSnapshot(): SeaTurtleSnapshot | null;
-  startSeaTurtleInteraction(): boolean;
+  startSeaTurtleSession(sequence: RescueSiteSequence): boolean;
+  stopSeaTurtleSession(): boolean;
+  getActiveSeaTurtleSession(): SeaTurtleSessionRef | null;
+  isSeaTurtleSessionActive(): boolean;
   syncSeaTurtleProjection(intent?: PointerIntent): boolean;
 }
 
@@ -58,6 +88,8 @@ export function installSeaTurtleLifecycleController(
 ): SeaTurtleLifecycleAppApi {
   const { SeaTurtle, SeaTurtleScene } = resolveDependencies();
 
+  let activeSession: SeaTurtleSessionRef | null = null;
+
   function isSeaTurtleActive(): boolean {
     return SeaTurtle?.getSnapshot().active ?? false;
   }
@@ -66,8 +98,33 @@ export function installSeaTurtleLifecycleController(
     return SeaTurtle?.getSnapshot() ?? null;
   }
 
-  function startSeaTurtleInteraction(): boolean {
+  function getActiveSeaTurtleSession(): SeaTurtleSessionRef | null {
+    return activeSession;
+  }
+
+  function isSeaTurtleSessionActive(): boolean {
+    return activeSession !== null;
+  }
+
+  function startSeaTurtleSession(sequence: RescueSiteSequence): boolean {
     if (!SeaTurtle) {
+      return false;
+    }
+    if (!sequence || typeof sequence !== "object") {
+      return false;
+    }
+    if (sequence.missionId !== SeaTurtle.MissionId) {
+      return false;
+    }
+
+    const activeSequence = host.getActiveRescueSequence();
+    if (activeSequence === null) {
+      return false;
+    }
+    if (activeSequence.sequenceId !== sequence.sequenceId) {
+      return false;
+    }
+    if (activeSequence.missionId !== "sea-turtle") {
       return false;
     }
 
@@ -76,16 +133,70 @@ export function installSeaTurtleLifecycleController(
       return false;
     }
 
+    const canvas = host.resolveVisibleInputCanvas();
+    if (!(canvas instanceof HTMLCanvasElement)) {
+      return false;
+    }
+
+    const overlay = document.getElementById("ocean-rescue-rescue-overlay");
+    if (!overlay) {
+      return false;
+    }
+
+    if (activeSession !== null) {
+      if (
+        activeSession.rescueSequenceId === sequence.sequenceId &&
+        SeaTurtle?.getSnapshot().active === true
+      ) {
+        return true;
+      }
+      return false;
+    }
+
     if (!SeaTurtle.start()) {
       return false;
     }
+
+    activeSession = {
+      rescueSequenceId: sequence.sequenceId,
+      missionId: "sea-turtle",
+    };
 
     if (SeaTurtleScene?.isMounted()) {
       SeaTurtleScene.activate();
     }
 
+    host.ensureRescuePointerInputBound(canvas);
+
+    const progress = document.getElementById("ocean-rescue-rescue-progress");
+    if (progress) {
+      progress.textContent = "Rope 1 of 3";
+    }
+
+    host.hideAssistHand();
     syncSeaTurtleProjection();
+    host.syncPauseButton();
+
     return true;
+  }
+
+  function stopSeaTurtleSession(): boolean {
+    const hadSession = activeSession !== null;
+
+    if (SeaTurtleScene?.isMounted()) {
+      SeaTurtleScene.exit();
+    }
+
+    if (SeaTurtle?.getSnapshot().active === true) {
+      SeaTurtle.stop();
+    }
+
+    activeSession = null;
+
+    if (hadSession) {
+      return true;
+    }
+    return false;
   }
 
   function syncSeaTurtleProjection(intent?: PointerIntent): boolean {
@@ -136,7 +247,10 @@ export function installSeaTurtleLifecycleController(
   const controller: SeaTurtleLifecycleAppApi = Object.assign(host, {
     isSeaTurtleActive,
     getSeaTurtleSnapshot,
-    startSeaTurtleInteraction,
+    getActiveSeaTurtleSession,
+    isSeaTurtleSessionActive,
+    startSeaTurtleSession,
+    stopSeaTurtleSession,
     syncSeaTurtleProjection,
   });
   return controller;

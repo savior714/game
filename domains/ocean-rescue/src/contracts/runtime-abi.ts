@@ -1,5 +1,5 @@
 /**
- * Shared runtime ABI boundary types for Ocean Rescue (WP-32A/WP-33C).
+ * Shared runtime ABI boundary types for Ocean Rescue (WP-32A/WP-33C/WP-33E-0).
  * This module is type-only and must emit no runtime JavaScript.
  */
 import type { GupCatalog, GupId } from "../gups/catalog";
@@ -103,23 +103,38 @@ export interface MissionRuntimeApi {
   readonly MissionId: MissionId;
 }
 
-/**
- * A single rope segment in the sea-turtle interaction.
- */
-export interface SeaTurtleRope {
-  readonly id: string;
-  readonly order: number;
-  readonly start: Readonly<{ readonly x: number; readonly y: number }>;
-  readonly end: Readonly<{ readonly x: number; readonly y: number }>;
+export type SeaTurtleRopeId = "rope-1" | "rope-2" | "rope-3";
+
+export interface SeaTurtlePoint {
+  readonly x: number;
+  readonly y: number;
 }
 
-/**
- * Immutable snapshot of the sea-turtle state machine.
- */
+/** A single rope segment in the sea-turtle interaction. */
+export interface SeaTurtleRope {
+  readonly id: SeaTurtleRopeId;
+  readonly order: 1 | 2 | 3;
+  readonly start: Readonly<SeaTurtlePoint>;
+  readonly end: Readonly<SeaTurtlePoint>;
+}
+
+export interface SeaTurtleConstants {
+  readonly baseEndpointRadius: number;
+  readonly assistedEndpointRadius: number;
+  readonly basePathTolerance: number;
+  readonly assistedPathTolerance: number;
+  readonly tapMovementThreshold: number;
+  readonly minimumTraceProgress: number;
+  readonly maxBackwardProgress: number;
+  readonly successFeedbackMs: number;
+  readonly failureFeedbackMs: number;
+}
+
+/** Immutable snapshot of the sea-turtle state machine. */
 export interface SeaTurtleSnapshot {
   readonly active: boolean;
-  readonly activeRopeId: string | null;
-  readonly completedRopeIds: readonly string[];
+  readonly activeRopeId: SeaTurtleRopeId | null;
+  readonly completedRopeIds: readonly SeaTurtleRopeId[];
   readonly failureCount: number;
   readonly helpLevel: number;
   readonly tapStartArmed: boolean;
@@ -129,30 +144,26 @@ export interface SeaTurtleSnapshot {
   readonly complete: boolean;
 }
 
-/**
- * Result of a pointer-up gesture on a sea-turtle rope.
- */
+/** Result of a pointer-up gesture on a sea-turtle rope. */
 export interface SeaTurtleRopeResult {
   readonly accepted: boolean;
   readonly outcome: "success" | "failure" | "none";
-  readonly ropeId: string | null;
+  readonly ropeId: SeaTurtleRopeId | null;
 }
 
-/**
- * Result of calling finishFeedback() to advance past feedback.
- */
+/** Result of calling finishFeedback() to advance past feedback. */
 export interface SeaTurtleFeedbackCompletion {
   readonly changed: boolean;
   readonly complete: boolean;
-  readonly nextRopeId: string | null;
+  readonly nextRopeId: SeaTurtleRopeId | null;
 }
 
-/**
- * Typed runtime API for the sea-turtle interaction state machine.
- */
+/** Typed runtime API for the sea-turtle interaction state machine. */
 export interface SeaTurtleApi {
-  readonly MissionId: string;
+  readonly MissionId: "sea-turtle";
+  readonly Constants: Readonly<SeaTurtleConstants>;
   readonly Ropes: readonly SeaTurtleRope[];
+  readonly Dialogues: readonly [string, string, string];
   readonly getSnapshot: () => SeaTurtleSnapshot;
   readonly start: () => boolean;
   readonly stop: () => boolean;
@@ -168,12 +179,13 @@ export interface SeaTurtleApi {
   readonly pauseCancel: () => void;
 }
 
-/**
- * Typed scene API for the sea-turtle authored PixiJS scene.
- */
+/** Typed scene API for the sea-turtle authored PixiJS scene. */
 export interface SeaTurtleSceneApi extends RescueSceneApi {
   readonly activate: () => boolean;
-  readonly sync: (snapshot: SeaTurtleSnapshot) => boolean;
+  readonly sync: (
+    snapshot: SeaTurtleSnapshot,
+    intent?: PointerIntent,
+  ) => boolean;
 }
 
 export interface RescueSceneDiagnostics {

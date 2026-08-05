@@ -291,7 +291,7 @@ def test_runtime_abi_and_legacy_manifest_keep_wp33c_boundary() -> None:
     assert "export interface RescueSceneApi" in abi
     assert "SiteTransitionMs" in abi
     assert "TutorialDurationMs" in abi
-    assert "SeaTurtleScene?: RescueSceneApi" in abi
+    assert "SeaTurtleScene?: SeaTurtleSceneApi" in abi
     assert "CrabScene?: RescueSceneApi" in abi
     assert "window." not in abi
 
@@ -321,9 +321,9 @@ def test_wp33c_complete_status_and_phase8_detail_are_asserted() -> None:
     assert "Deterministic build:" in evidence
     assert "Rollback:" in evidence
 
-    # Plan header must point to WP-33D as next executable work package.
+    # Plan header must point to WP-33E as next executable work package.
     header = plan.split("\n---\n", maxsplit=1)[0]
-    assert "**Next executable work package:** WP-33D" in header
+    assert "**Next executable work package:** WP-33E" in header
 
     # Phase 8 detailed status must reflect all three controllers complete.
     phase8_match = plan.find("## 10. Phase 8")

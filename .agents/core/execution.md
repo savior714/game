@@ -30,7 +30,7 @@ verify_with:
 "설계", "로드맵", "실행 계획", "구현 계획" 중 하나라도 발견 시:
 1. **반드시** [.agents/workflows/plan.md](../workflows/plan.md)를 **Read** (워크플로 SSOT — 별도 라우팅 API 없음)
 2. 해당 템플릿을 **전부 따라야 함**
-3. `docs/plans/PLAN_*.md`에 Blueprint 생성 (`.hermes/plans/ 아님`)
+3. `docs/plans/PLAN_*.md`에 Blueprint 생성 (`.hermes/plans/` 아님)
 4. `just plan-lint <path>`로 검증 후 저장
 5. 채팅으로 끝내지 말고 파일로 산출
 **검증**: 작성 직후 `python3 scripts/plan_loop/plan_lint.py <path>` 실행 —
@@ -74,9 +74,12 @@ verify_with:
 
 **Cross-ref**: [diagnose.md](../workflows/diagnose.md) Anti-pattern · [routing.md](./routing.md) §1 터미널 실측 · [principles.md](principles.md) §1.1 Think Before Coding.
 
-#### 2.11 Root Directory & Temporary Files (No Root Clutter)
-- **MUST NOT**: 디버깅, 텍스트 치환, 테스트 목적의 일회성/임시 스크립트(`.py`, `.ts`, `.js`, `.sh` 등)를 프로젝트 루트 디렉토리(`CWD: .`)에 임의로 생성하거나 방치하지 않는다.
-- **MUST**: 모든 임시/스크래치 파일은 반드시 `scratch/` 또는 `scripts/agent/` 디렉토리 내부에 생성해야 하며, 사용이 끝난 후에는 가급적 삭제한다.
+#### 2.11 Stable Source Workspace & Temporary Files
+- **MUST NOT**: source checkout/worktree를 `/tmp`, `/private/tmp`, `${TMPDIR}`, `mktemp` 하위에 만들지 않는다.
+- **MUST**: 기본 source worktree는 `/Users/seungjulee/Desktop/Dev/.worktrees/game/<task-slug>` 또는 실제 저장소와 같은 상위 개발 디렉터리의 안정적인 `.worktrees/game/<task-slug>` sibling 경로에 둔다.
+- **MUST**: VS Code·OpenCode·LSP·`uv`·`pnpm`·테스트·Docker·브라우저·generator는 실제 source worktree 하나를 동일한 workspace root와 CWD로 사용한다. main checkout, worktree, symlink alias, `/tmp`와 `/private/tmp` 경로를 혼합하지 않는다.
+- **MUST NOT**: 디버깅, 텍스트 치환, 테스트 목적의 일회성/임시 스크립트(`.py`, `.ts`, `.js`, `.sh` 등)를 프로젝트 루트 디렉터리(`CWD: .`)에 임의로 생성하거나 방치하지 않는다.
+- **MUST**: 저장소 내부에서 추적할 필요가 있는 scratch는 `scratch/` 또는 `scripts/agent/`에 두고, prompt transport·patch/diff·다운로드·압축 해제·테스트 fixture처럼 폐기 가능한 비소스 산출물은 OS temp를 사용할 수 있다. 어느 경우에도 임시 경로의 source tree를 LSP나 프로젝트 실행 루트로 사용하지 않는다.
 - **DDD Adherence**: 정식 프로덕션 및 비즈니스 로직 코드는 프로젝트 계층 구조(`apps/`, `packages/`, `services/` 등)를 위반하여 루트에 생성해서는 안 되며, 반드시 도메인 및 아키텍처 규칙(`PROJECT_RULES.md`)에 맞는 적절한 경로에 생성해야 한다.
 ### SHOULD
 - 작은 semantic patch 단위로 작업한다.
@@ -115,7 +118,11 @@ verify_with:
 - 작업 범위에 맞는 검증을 통과한 후 완료 선언한다.
 - 변경 시 formatter / lint / typecheck / test를 다시 실행하고, 필요하면 재읽기한다.
 - **LLM/API 연동 디버깅**: 파싱 실패·opaque 응답 시 hub raw JSONL을 계측 SSOT로 우선 조회한다 — `just raw-logs`, `just api-response-errors` ([diagnose.md](../workflows/diagnose.md) AidenGame 부록).
-- 저장소 수정 후 완료 응답 직전: [verification.md](verification.md) §2.5 (`just lint` + renderer `pnpm run typecheck`)로 전체 오류를 확인하고, 내가 변경한 파일의 오류를 우선 0으로 맞춘 뒤 타 파일 기존 오류는 [reporting.md](reporting.md) §1.5에 블로커/경고로 보고한다.
+- 저장소 수정 후 완료 응답 직전 [verification.md](verification.md) §2.3의 정적 진단 closure를 실행한다.
+- 현재 변경으로 새로 생긴 오류와 수정 파일·직접 영향 모듈의 오류를 먼저 0으로 만들고 같은 진단으로 독립 검증한다.
+- 다른 파일의 기존 LSP·typecheck·lint 오류가 드러나면 “범위 밖”으로 보고하고 PASS하지 않는다. 현재 failure domain을 닫은 뒤 다음 정적 failure domain 하나를 선택해 순차 해결한다.
+- workspace root·SDK/interpreter·의존성·stale cache/index·generated/vendor 오분석 가능성을 먼저 확인하고, 환경 문제를 production code 변경으로 덮지 않는다.
+- 안전하게 해결할 수 없는 정적 오류가 남으면 정확한 재현 명령과 원인을 포함해 `BLOCKED`로 종료한다.
 ---
 ## 4. File Access Priority
 상세: [routing.md](./routing.md) §3

@@ -322,6 +322,19 @@ check-ocean-rescue-sea-turtle-controller-boundary:
     uv run pytest tests/test_ocean_rescue_wp33e_sea_turtle_controller_boundary.py -q
     uv run pytest tests/test_ocean_rescue_wp30_esm_entry_module_graph.py -q
 
+# Verify the sea-turtle feedback lifecycle controller (WP-33E-C)
+check-ocean-rescue-sea-turtle-lifecycle-controller:
+    @just check-ocean-rescue-toolchain
+    uv run pytest tests/test_ocean_rescue_wp33e_sea_turtle_lifecycle_controller.py -q
+    uv run pytest tests/test_ocean_rescue_sea_turtle_interaction.py -q
+    uv run pytest tests/test_ocean_rescue_authored_sea_turtle_scene.py -q
+    uv run pytest tests/test_ocean_rescue_rope_geometry_runtime.py -q
+    uv run pytest tests/test_ocean_rescue_wp33d_pause_timer_resume_controller.py -q
+    uv run pytest tests/test_ocean_rescue_wp33c_rescue_site_tutorial_controller.py -q
+    uv run pytest tests/test_ocean_rescue_wp32b_pointer_renderer_boundary.py -q
+    uv run pytest tests/test_ocean_rescue_wp30_esm_entry_module_graph.py -q
+    uv run pytest tests/test_ocean_rescue_wp03_scope_decision.py -q
+
 # Prove the full Young Whale three-debris rescue session in a real browser against the production artifact
 check-ocean-rescue-young-whale-browser-session:
     @just check-ocean-rescue-toolchain

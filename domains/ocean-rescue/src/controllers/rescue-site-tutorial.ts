@@ -11,17 +11,18 @@
  */
 
 import type {
-  GupId,
-  GupsApi,
-  MissionId,
-  MissionsApi,
-  MissionRuntimeApi,
-  RescueApi,
-  RescueMissionContent,
-  RescueSceneApi,
-  RenderRuntimeTravelApi,
-  StateApi,
-  TravelApi,
+   GupId,
+   GupsApi,
+   MissionId,
+   MissionsApi,
+   MissionRuntimeApi,
+   RescueApi,
+   RescueMissionContent,
+   RescueSceneApi,
+   RenderRuntimeTravelApi,
+   SeaTurtleApi,
+   StateApi,
+   TravelApi,
 } from "../contracts/runtime-abi";
 import type { LaunchTravelAppApi } from "./launch-travel";
 
@@ -67,16 +68,16 @@ interface RescueElements {
 }
 
 interface ControllerDependencies {
-  readonly State: StateApi;
-  readonly Missions: MissionsApi;
-  readonly Gups: GupsApi;
-  readonly Travel: TravelApi;
-  readonly Rescue: RescueApi;
-  readonly RenderRuntime: RenderRuntimeTravelApi | null;
-  readonly SeaTurtle: MissionRuntimeApi | null;
-  readonly SeaTurtleScene: RescueSceneApi | null;
-  readonly Crab: MissionRuntimeApi | null;
-  readonly CrabScene: RescueSceneApi | null;
+   readonly State: StateApi;
+   readonly Missions: MissionsApi;
+   readonly Gups: GupsApi;
+   readonly Travel: TravelApi;
+   readonly Rescue: RescueApi;
+   readonly RenderRuntime: RenderRuntimeTravelApi | null;
+   readonly SeaTurtle: SeaTurtleApi | null;
+   readonly SeaTurtleScene: RescueSceneApi | null;
+   readonly Crab: MissionRuntimeApi | null;
+   readonly CrabScene: RescueSceneApi | null;
 }
 
 function resolveDependencies(): ControllerDependencies {

@@ -495,7 +495,10 @@ def _install_pointer_trace(page: Page) -> None:
             upCount: 0,
             cancelCount: 0,
             upPointerId: null,
-            upTrusted: null
+            upTrusted: null,
+            cancelPointerId: null,
+            cancelTrusted: null,
+            cancelPointerType: null
           };
           const canvas = document.getElementById('ocean-rescue-canvas');
           if (!canvas) return;
@@ -513,6 +516,9 @@ def _install_pointer_trace(page: Page) -> None:
           });
           canvas.addEventListener('pointercancel', (e) => {
             window.__wp33e3Trace.cancelCount += 1;
+            window.__wp33e3Trace.cancelPointerId = e.pointerId;
+            window.__wp33e3Trace.cancelTrusted = e.isTrusted;
+            window.__wp33e3Trace.cancelPointerType = e.pointerType;
           });
         }"""
     )
@@ -566,6 +572,56 @@ def _trigger_pointer_down(page: Page, start_client: dict) -> int | float:
         f"observed pointerId must be finite, got {pointer_id}"
     )
     return pointer_id
+
+
+def _trigger_pointer_down_via_cdp(
+    page: Page, context, client_x: int, client_y: int
+) -> int | float:
+    """Generate a trusted pointerdown via Chromium CDP touchStart.
+
+    Uses context.new_cdp_session(page) to send Emulation.setTouchEmulationEnabled
+    followed by Input.dispatchTouchEvent with type=touchStart. The browser
+    generates an isTrusted=true pointerdown with a native browser-assigned
+    pointerId that is read from the canvas trace listener. Returns the
+    observed pointerId for subsequent capture/release verification.
+    """
+    cdp = context.new_cdp_session(page)
+    try:
+        cdp.send("Emulation.setTouchEmulationEnabled", {
+            "enabled": True,
+            "maxTouchPoints": 1,
+        })
+
+        cdp.send("Input.dispatchTouchEvent", {
+            "type": "touchStart",
+            "touchPoints": [{"x": client_x, "y": client_y, "id": 100}],
+        })
+
+        page.wait_for_timeout(150)
+
+        pointer_id = page.evaluate("() => window.__wp33e3Trace.pointerId")
+        assert pointer_id is not None, (
+            "trusted pointerdown did not fire or trace listener did not record pointerId"
+        )
+        assert isinstance(pointer_id, (int, float)), (
+            f"observed pointerId must be a number, got {type(pointer_id).__name__}"
+        )
+        assert pointer_id == pointer_id, (
+            f"observed pointerId must be finite, got {pointer_id}"
+        )
+        return pointer_id
+    finally:
+        try:
+            cdp.send("Emulation.setTouchEmulationEnabled", {
+                "enabled": False,
+                "maxTouchPoints": 0,
+            })
+        except Exception:
+            pass
+        try:
+            cdp.detach()
+        except Exception:
+            pass
 
 
 def _trigger_pointer_up(page: Page, client_x: int, client_y: int) -> None:
@@ -636,6 +692,49 @@ def _trigger_pointer_cancel(
         "}",
         [client_x, client_y, pointer_id],
     )
+
+
+def _trigger_pointer_cancel_via_cdp(
+    page: Page, context, client_x: int, client_y: int
+) -> None:
+    """Generate a trusted pointercancel via Chromium CDP touchStart/touchCancel.
+
+    Uses context.new_cdp_session(page) to send a touchStart with a deterministic
+    touch id, then touchCancel with an empty touchPoints array. The browser
+    generates isTrusted=true pointerdown/pointercancel events with a native
+    browser-assigned pointerId that is read from the canvas trace listener.
+    Touch emulation is enabled before the sequence and disabled after.
+    """
+    cdp = context.new_cdp_session(page)
+    try:
+        cdp.send("Emulation.setTouchEmulationEnabled", {
+            "enabled": True,
+            "maxTouchPoints": 1,
+        })
+
+        cdp.send("Input.dispatchTouchEvent", {
+            "type": "touchStart",
+            "touchPoints": [{"x": client_x, "y": client_y, "id": 100}],
+        })
+
+        page.wait_for_timeout(150)
+
+        cdp.send("Input.dispatchTouchEvent", {
+            "type": "touchCancel",
+            "touchPoints": [],
+        })
+    finally:
+        try:
+            cdp.send("Emulation.setTouchEmulationEnabled", {
+                "enabled": False,
+                "maxTouchPoints": 0,
+            })
+        except Exception:
+            pass
+        try:
+            cdp.detach()
+        except Exception:
+            pass
 
 
 def test_pointer_down_acquires_capture_and_sets_active() -> None:
@@ -1017,16 +1116,19 @@ def test_session_shutdown_releases_active_pointer_capture() -> None:
 
 
 def test_pointer_cancel_releases_capture_and_clears_active_gesture() -> None:
-    """Native pointer capture acquires on trusted pointerdown and releases on synthetic pointercancel.
+    """Chromium CDP touchStart/touchCancel generates trusted pointercancel that releases capture.
 
     Proves the exact transition hasPointerCapture(pointerId): false -> true -> false
-    using the real browser-assigned pointerId, with no controller-state fallback.
+    using a browser-assigned pointerId from a trusted pointercancel generated by
+    Chromium's Input.dispatchTouchEvent (touchStart followed by touchCancel),
+    with no controller-state fallback and no synthetic PointerEvent.
 
-    - trusted pointerdown comes from Playwright page.mouse.down() (not synthetic)
+    - trusted pointerdown AND pointercancel both come from CDP touch events
+      (same input source → same browser-assigned pointerId)
     - pointerId is observed from the browser, never hardcoded
     - native hasPointerCapture() is the sole capture/release criterion
-    - synthetic pointercancel routes through the shared DOM listener to the controller
-    - page.mouse.up() runs in finally so the button is always released
+    - pointercancel comes from CDP touchCancel, producing isTrusted=true
+    - same browser-assigned pointerId is observed on both pointerdown and pointercancel
     """
     server = ViteServerFixture()
     browser = None
@@ -1065,8 +1167,10 @@ def test_pointer_cancel_releases_capture_and_clears_active_gesture() -> None:
             canvas = page.locator("#ocean-rescue-canvas")
             start_client = _canvas_logical_to_client(canvas, rope_start["x"], rope_start["y"])
 
-            # Step 1: trusted pointerdown via Playwright mouse gesture
-            observed_pointer_id = _trigger_pointer_down(page, start_client)
+            # Step 1: trusted pointerdown via Chromium CDP touchStart
+            observed_pointer_id = _trigger_pointer_down_via_cdp(
+                page, context, start_client["x"], start_client["y"]
+            )
 
             # Step 2: verify native capture acquired (false -> true)
             has_capture_before = page.evaluate(
@@ -1096,12 +1200,24 @@ def test_pointer_cancel_releases_capture_and_clears_active_gesture() -> None:
                 "controller must track the browser-assigned pointerId after capture"
             )
 
-            # Step 3: synthetic pointercancel dispatched on canvas (routes through DOM listener)
-            _trigger_pointer_cancel(page, observed_pointer_id, start_client["x"], start_client["y"])
+            # Step 3: trusted pointercancel via Chromium CDP touchCancel
+            _trigger_pointer_cancel_via_cdp(page, context, start_client["x"], start_client["y"])
 
             trace_after = page.evaluate("() => window.__wp33e3Trace")
             assert trace_after["cancelCount"] == 1, (
                 f"pointercancel listener must fire exactly once, got {trace_after['cancelCount']}"
+            )
+
+            cancel_pointer_id = trace_after["cancelPointerId"]
+            cancel_trusted = trace_after["cancelTrusted"]
+            cancel_pointer_type = trace_after["cancelPointerType"]
+
+            assert cancel_trusted is True, (
+                f"pointercancel must be trusted (isTrusted=true), got {cancel_trusted}"
+            )
+            assert cancel_pointer_id == observed_pointer_id, (
+                f"pointercancel pointerId must match pointerdown pointerId, "
+                f"got cancelPointerId={cancel_pointer_id}, observed={observed_pointer_id}"
             )
 
             # Step 4: verify native capture released (true -> false)
@@ -1130,16 +1246,6 @@ def test_pointer_cancel_releases_capture_and_clears_active_gesture() -> None:
             )
             assert tracked_after is False, (
                 "controller must not track the pointerId after pointercancel"
-            )
-
-            # Step 5: release mouse button and verify late pointerup does not re-activate
-            page.mouse.up()
-
-            snapshot_final = page.evaluate(
-                "() => OceanRescue.SeaTurtle.getSnapshot()"
-            )
-            assert snapshot_final["pointerActive"] is False, (
-                "late pointerup after pointercancel must not re-activate gesture"
             )
 
             _assert_quality_gates(errors)

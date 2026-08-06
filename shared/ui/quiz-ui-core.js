@@ -104,12 +104,63 @@
       statsModal: document.getElementById("stats-modal"),
     };
 
+    let _focusTrapHandler = null;
+
+    function _getTabbableElements() {
+      if (!els.statsModal) return [];
+      const all = els.statsModal.querySelectorAll(
+        'a[href], button:not([disabled]):not([tabindex="-1"]), textarea:not([disabled]):not([tabindex="-1"]), input:not([disabled]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])'
+      );
+      const result = [];
+      for (let i = 0; i < all.length; i++) {
+        const el = all[i];
+        if (!el.offsetParent && el.style.display === "none") continue;
+        if (el.offsetWidth === 0 && el.offsetHeight === 0) continue;
+        result.push(el);
+      }
+      return result;
+    }
+
+    function _onTabKey(e) {
+      if (e.key !== "Tab") return;
+      const tabbable = _getTabbableElements();
+      if (tabbable.length === 0) return;
+      const first = tabbable[0];
+      const last = tabbable[tabbable.length - 1];
+      const active = document.activeElement;
+
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        try { last.focus(); } catch (_) {}
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        try { first.focus(); } catch (_) {}
+      }
+    }
+
+    function _attachFocusTrap() {
+      if (_focusTrapHandler) return;
+      _focusTrapHandler = _onTabKey;
+      if (els.statsModal) {
+        els.statsModal.addEventListener("keydown", _focusTrapHandler);
+      }
+    }
+
+    function _detachFocusTrap() {
+      if (!_focusTrapHandler) return;
+      if (els.statsModal) {
+        els.statsModal.removeEventListener("keydown", _focusTrapHandler);
+      }
+      _focusTrapHandler = null;
+    }
+
     function openStats() {
       if (els.statsModal) {
         els.statsModal._prevFocusTarget = document.activeElement || null;
       }
       renderStatsTable();
       if (els.statsModal) els.statsModal.style.display = "flex";
+      _attachFocusTrap();
       const closeBtn = document.getElementById("close-stats-btn");
       if (closeBtn && typeof closeBtn.focus === "function") {
         try { closeBtn.focus(); } catch (_) {}
@@ -117,6 +168,7 @@
     }
 
     function closeStats() {
+      _detachFocusTrap();
       if (els.statsModal) els.statsModal.style.display = "none";
       const target = els.statsModal ? els.statsModal._prevFocusTarget : null;
       if (els.statsModal) {

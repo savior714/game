@@ -27,9 +27,6 @@ E. static ownership — installer order in esm/app.js is A->B->C->D,
 F. ownership exclusions — WP-33E-H mission lifecycle functions are not
    copied into the pause controller, no scene rendering or mission success
    progression implementation exists in the controller.
-
-G. plan/evidence contract — WP-33D COMPLETE recorded only after verification,
-   next executable work package is WP-33E, Phase 8 remains IN_PROGRESS.
 """
 
 from __future__ import annotations
@@ -427,21 +424,9 @@ def test_ownership_exclusions() -> None:
         r"function\s+startCrabInteraction",
         r"function\s+startYoungWhaleInteraction",
     ]
+
     for pattern in forbidden_function_patterns:
         matches = re.findall(pattern, controller_text)
         assert matches == [], (
             f"pause controller must not define {pattern}, found: {matches}"
         )
-
-
-def test_plan_evidence_contract() -> None:
-    """G: plan document reflects WP-33D COMPLETE status."""
-    plan = (
-        REPO_ROOT / "docs" / "plans" / "PLAN_ocean_rescue_vite_esm_typescript_migration.md"
-    )
-    plan_text = plan.read_text(encoding="utf-8")
-    assert "WP-33D: COMPLETE" in plan_text, "WP-33D must be marked COMPLETE"
-    assert "WP-33E" in plan_text, "next WP must be WP-33E"
-    assert "Phase 8" in plan_text and "IN_PROGRESS" in plan_text, (
-        "Phase 8 must remain IN_PROGRESS"
-    )

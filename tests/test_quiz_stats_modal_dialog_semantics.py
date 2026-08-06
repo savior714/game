@@ -4,7 +4,6 @@ Verify that every subject domain's #stats-box exposes dialog semantics:
   pointing to an existing, non-empty heading inside #stats-box.
 """
 
-import os
 from html.parser import HTMLParser
 from pathlib import Path
 import pytest

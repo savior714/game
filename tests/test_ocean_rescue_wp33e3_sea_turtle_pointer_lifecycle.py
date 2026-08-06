@@ -492,6 +492,8 @@ def _install_pointer_trace(page: Page) -> None:
           window.__wp33e3Trace = {
             pointerId: null,
             downCount: 0,
+            downTrusted: null,
+            downPointerType: null,
             moveCount: 0,
             upCount: 0,
             cancelCount: 0,
@@ -506,6 +508,8 @@ def _install_pointer_trace(page: Page) -> None:
           canvas.addEventListener('pointerdown', (e) => {
             window.__wp33e3Trace.pointerId = e.pointerId;
             window.__wp33e3Trace.downCount += 1;
+            window.__wp33e3Trace.downTrusted = e.isTrusted;
+            window.__wp33e3Trace.downPointerType = e.pointerType;
           });
           canvas.addEventListener('pointermove', (e) => {
             window.__wp33e3Trace.moveCount += 1;
@@ -575,18 +579,31 @@ def _trigger_pointer_down(page: Page, start_client: dict) -> int | float:
     return pointer_id
 
 
-def _trigger_pointer_down_via_cdp(
-    page: Page, context, client_x: int, client_y: int
+def _run_sea_turtle_touch_gesture(
+    page: Page, context, client_x: int, client_y: int, *, cancel: bool = False
 ) -> int | float:
-    """Generate a trusted pointerdown via Chromium CDP touchStart.
+    """Execute a single native touch gesture via one CDP session.
 
-    Uses context.new_cdp_session(page) to send Emulation.setTouchEmulationEnabled
-    followed by Input.dispatchTouchEvent with type=touchStart. The browser
-    generates an isTrusted=true pointerdown with a native browser-assigned
+    Creates exactly one CDP session, enables touch emulation once, dispatches
+    touchStart once with the given coordinates, optionally dispatches
+    touchCancel with an empty touchPoints array, then disables touch emulation
+    and detaches the session. The browser generates isTrusted=true pointerdown
+    (and optionally pointercancel) events with a native browser-assigned
     pointerId that is read from the canvas trace listener. Returns the
     observed pointerId for subsequent capture/release verification.
+
+    Contract:
+    - context.new_cdp_session(page) is called exactly once
+    - touch emulation is enabled exactly once before touchStart
+    - touchStart is dispatched exactly once
+    - touchCancel is dispatched at most once (only when cancel=True)
+    - touchCancel uses an empty touchPoints array
+    - touch emulation is disabled and session detached after completion
+    - if an exception leaves an active touch, best-effort touchCancel is sent
+      before disable/detach in the cleanup path
     """
     cdp = context.new_cdp_session(page)
+    active_touch_sent = False
     try:
         cdp.send("Emulation.setTouchEmulationEnabled", {
             "enabled": True,
@@ -597,8 +614,15 @@ def _trigger_pointer_down_via_cdp(
             "type": "touchStart",
             "touchPoints": [{"x": client_x, "y": client_y, "id": 100}],
         })
+        active_touch_sent = True
 
         page.wait_for_timeout(150)
+
+        if cancel:
+            cdp.send("Input.dispatchTouchEvent", {
+                "type": "touchCancel",
+                "touchPoints": [],
+            })
 
         pointer_id = page.evaluate("() => window.__wp33e3Trace.pointerId")
         assert pointer_id is not None, (
@@ -611,6 +635,16 @@ def _trigger_pointer_down_via_cdp(
             f"observed pointerId must be finite, got {pointer_id}"
         )
         return pointer_id
+    except Exception:
+        if active_touch_sent and cancel:
+            try:
+                cdp.send("Input.dispatchTouchEvent", {
+                    "type": "touchCancel",
+                    "touchPoints": [],
+                })
+            except Exception:
+                pass
+        raise
     finally:
         try:
             cdp.send("Emulation.setTouchEmulationEnabled", {
@@ -623,6 +657,73 @@ def _trigger_pointer_down_via_cdp(
             cdp.detach()
         except Exception:
             pass
+
+
+def _begin_sea_turtle_touch_gesture(
+    page: Page, context, client_x: int, client_y: int
+) -> tuple:
+    """Begin a native touch gesture: create CDP session, enable touch, dispatch touchStart.
+
+    Returns (cdp_session, observed_pointer_id) so the caller can perform
+    intermediate checks (capture verification, snapshot, tracking) before
+    completing the gesture with _end_sea_turtle_touch_gesture.
+
+    The CDP session remains open and touch emulation stays enabled until
+    _end_sea_turtle_touch_gesture is called.
+    """
+    cdp = context.new_cdp_session(page)
+    cdp.send("Emulation.setTouchEmulationEnabled", {
+        "enabled": True,
+        "maxTouchPoints": 1,
+    })
+    cdp.send("Input.dispatchTouchEvent", {
+        "type": "touchStart",
+        "touchPoints": [{"x": client_x, "y": client_y, "id": 100}],
+    })
+    page.wait_for_timeout(150)
+    pointer_id = page.evaluate("() => window.__wp33e3Trace.pointerId")
+    assert pointer_id is not None, (
+        "trusted pointerdown did not fire or trace listener did not record pointerId"
+    )
+    assert isinstance(pointer_id, (int, float)), (
+        f"observed pointerId must be a number, got {type(pointer_id).__name__}"
+    )
+    assert pointer_id == pointer_id, (
+        f"observed pointerId must be finite, got {pointer_id}"
+    )
+    return cdp, pointer_id
+
+
+def _end_sea_turtle_touch_gesture(
+    cdp, page: Page, *, cancel: bool = False
+) -> None:
+    """Complete a native touch gesture: optionally dispatch touchCancel, then cleanup.
+
+    If cancel=True, dispatches touchCancel with an empty touchPoints array
+    through the same CDP session. Then disables touch emulation and detaches
+    the session. Safe to call even if an exception occurred.
+    """
+    if cancel and cdp is not None:
+        try:
+            cdp.send("Input.dispatchTouchEvent", {
+                "type": "touchCancel",
+                "touchPoints": [],
+            })
+        except Exception:
+            pass
+    if cdp is None:
+        return
+    try:
+        cdp.send("Emulation.setTouchEmulationEnabled", {
+            "enabled": False,
+            "maxTouchPoints": 0,
+        })
+    except Exception:
+        pass
+    try:
+        cdp.detach()
+    except Exception:
+        pass
 
 
 def _trigger_pointer_up(page: Page, client_x: int, client_y: int) -> None:
@@ -1089,19 +1190,21 @@ def test_session_shutdown_releases_active_pointer_capture() -> None:
 
 
 def test_pointer_cancel_releases_capture_and_clears_active_gesture() -> None:
-    """Chromium CDP touchStart/touchCancel generates trusted pointercancel that releases capture.
+    """Single CDP session touchStart→touchCancel generates trusted pointercancel that releases capture.
 
     Proves the exact transition hasPointerCapture(pointerId): false -> true -> false
-    using a browser-assigned pointerId from a trusted pointercancel generated by
-    Chromium's Input.dispatchTouchEvent (touchStart followed by touchCancel),
-    with no controller-state fallback and no synthetic PointerEvent.
+    using a browser-assigned pointerId from a single native touch gesture
+    (touchStart followed by touchCancel with empty touchPoints) dispatched
+    through one Chromium CDP session, with no controller-state fallback and
+    no synthetic PointerEvent.
 
-    - trusted pointerdown AND pointercancel both come from CDP touch events
+    - trusted pointerdown AND pointercancel come from one CDP session
       (same input source → same browser-assigned pointerId)
     - pointerId is observed from the browser, never hardcoded
     - native hasPointerCapture() is the sole capture/release criterion
     - pointercancel comes from CDP touchCancel, producing isTrusted=true
     - same browser-assigned pointerId is observed on both pointerdown and pointercancel
+    - touch emulation is enabled once, disabled after gesture completes
     """
     server = ViteServerFixture()
     browser = None
@@ -1140,8 +1243,8 @@ def test_pointer_cancel_releases_capture_and_clears_active_gesture() -> None:
             canvas = page.locator("#ocean-rescue-canvas")
             start_client = _canvas_logical_to_client(canvas, rope_start["x"], rope_start["y"])
 
-            # Step 1: trusted pointerdown via Chromium CDP touchStart
-            observed_pointer_id = _trigger_pointer_down_via_cdp(
+            # Step 1: begin single CDP session native touch gesture (touchStart)
+            cdp, observed_pointer_id = _begin_sea_turtle_touch_gesture(
                 page, context, start_client["x"], start_client["y"]
             )
 
@@ -1173,27 +1276,43 @@ def test_pointer_cancel_releases_capture_and_clears_active_gesture() -> None:
                 "controller must track the browser-assigned pointerId after capture"
             )
 
-            # Step 3: trusted pointercancel via Chromium CDP touchCancel
-            _trigger_pointer_cancel_via_cdp(page, context, start_client["x"], start_client["y"])
+            # Step 3: dispatch touchCancel via same CDP session to complete gesture
+            _end_sea_turtle_touch_gesture(cdp, page, cancel=True)
+            cdp = None
 
+            # Step 4: verify trusted event properties and counts
             trace_after = page.evaluate("() => window.__wp33e3Trace")
+            assert trace_after["downCount"] == 1, (
+                f"pointerdown listener must fire exactly once for single native gesture, got {trace_after['downCount']}"
+            )
             assert trace_after["cancelCount"] == 1, (
                 f"pointercancel listener must fire exactly once, got {trace_after['cancelCount']}"
             )
 
+            down_trusted = trace_after["downTrusted"]
+            down_pointer_type = trace_after["downPointerType"]
             cancel_pointer_id = trace_after["cancelPointerId"]
             cancel_trusted = trace_after["cancelTrusted"]
             cancel_pointer_type = trace_after["cancelPointerType"]
 
+            assert down_trusted is True, (
+                f"pointerdown must be trusted (isTrusted=true), got {down_trusted}"
+            )
+            assert down_pointer_type == "touch", (
+                f"pointerdown pointerType must be 'touch', got {down_pointer_type}"
+            )
             assert cancel_trusted is True, (
                 f"pointercancel must be trusted (isTrusted=true), got {cancel_trusted}"
+            )
+            assert cancel_pointer_type == "touch", (
+                f"pointercancel pointerType must be 'touch', got {cancel_pointer_type}"
             )
             assert cancel_pointer_id == observed_pointer_id, (
                 f"pointercancel pointerId must match pointerdown pointerId, "
                 f"got cancelPointerId={cancel_pointer_id}, observed={observed_pointer_id}"
             )
 
-            # Step 4: verify native capture released (true -> false)
+            # Step 5: verify native capture released (true -> false)
             has_capture_after = page.evaluate(
                 "(id) => { "
                 "  const c = document.getElementById('ocean-rescue-canvas'); "

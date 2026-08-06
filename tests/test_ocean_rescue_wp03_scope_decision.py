@@ -1,90 +1,41 @@
-"""Guard the right-sized WP-03 target-device policy."""
+"""Guard stable target-device release and performance policy."""
 
 from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-PLAN = (
+REFERENCE = (
     REPO_ROOT / "docs" / "plans" / "PLAN_ocean_rescue_vite_esm_typescript_migration.md"
 )
 
 
-def test_current_schedule_allows_wp30_before_physical_device_smoke() -> None:
-    plan = PLAN.read_text(encoding="utf-8")
-    header = plan.split("\n---\n", maxsplit=1)[0]
+def test_release_smoke_and_performance_harness_have_distinct_roles() -> None:
+    reference = REFERENCE.read_text(encoding="utf-8")
 
-    assert "**Current phase:** PHASE_8_IN_PROGRESS" in header
-    assert "**Next executable work package:** WP-33E" in header
-    assert "**Updated:** 2026-08-05" in header
-    assert "**Production cutover gate:** SATISFIED" in header
-    assert "WP-03A must pass before MVP release, but it does not block WP-21" in header
-    assert "WP-03B is non-blocking follow-up work" in header
-
-    assert "PHASE_4_READY_WITH_WP03_PENDING" not in header
-    assert "Next executable work package:** WP-03" not in header
-    assert "WP-03 required before WP-21" not in header
-    assert "**Next executable work package:** WP-33D" not in header
-
-
-def test_wp03_is_split_into_release_smoke_and_non_blocking_harness() -> None:
-    plan = PLAN.read_text(encoding="utf-8")
-
-    assert "### WP-03A — Target-device release smoke" in plan
+    assert "### WP-03A — Target-device release smoke" in reference
     assert (
         "MVP release gate; not a WP-21 production-packaging cutover prerequisite"
-        in plan
+        in reference
     )
-    assert "No canonical numeric frame-time or FPS SLA is defined" in plan
+    assert "WP-03A remains mandatory before MVP release" in reference
+    assert "No canonical numeric frame-time or FPS SLA is defined" in reference
 
-    assert "### WP-03B — Reproducible target-device performance harness" in plan
-    assert "**Status:** BACKLOG_NON_BLOCKING" in plan
-    assert "thresholds adopted only after baseline review" in plan
-
-    assert "**Depends on:** WP-20 and WP-02" in plan
-    assert "WP-03A remains mandatory before MVP release" in plan
-
-
-def test_superseded_wp03_blocking_language_is_historical_only() -> None:
-    plan = PLAN.read_text(encoding="utf-8")
-
-    historical_marker = (
-        "Historical WP-20 closure snapshot; retained as provenance "
-        "and superseded for current scheduling:"
+    assert "### WP-03B — Reproducible target-device performance harness" in reference
+    assert "Classification:** `BACKLOG_NON_BLOCKING`" in reference
+    assert "thresholds adopted only after baseline review" in reference
+    assert (
+        "WP-03B가 없다는 이유로 현재 production packaging이나 일반 과목 안정화 작업을 차단하지 않는다."
+        in reference
     )
-    blocked_marker = "WP-21 remains blocked until WP-03"
-    current_marker = "Current scheduling authority:"
 
-    assert historical_marker in plan
-    assert current_marker in plan
-    assert plan.index(historical_marker) < plan.index(blocked_marker)
-    assert plan.index(blocked_marker) < plan.index(current_marker)
 
-    current = plan[plan.index(current_marker) :]
-    assert "WP-33D: COMPLETE" in current
-    assert "Next executable work package: WP-33E" in current
-    assert "WP-21: COMPLETE" in current
-    assert "WP-30: COMPLETE" in current
-    assert "WP-31A: COMPLETE" in current
-    assert "WP-31B: COMPLETE" in current
-    assert "WP-31C: COMPLETE" in current
-    assert "WP-32A: COMPLETE" in current
-    assert "WP-32B: COMPLETE" in current
-    assert "WP-33A: COMPLETE" in current
-    assert "WP-33B: COMPLETE" in current
-    assert "WP-33C: COMPLETE" in current
-    assert "Pointer coordinate boundary state: CHECKED_RUNTIME" in current
-    assert "Scene pointer intent state: NORMALIZED_SHARED" in current
-    assert "Render coordinate adapter state: TYPED_MINIMAL" in current
-    assert "Profile module state: TYPED_CANONICAL" in current
-    assert "Mission catalog state: TYPED_CANONICAL" in current
-    assert "GUP catalog state: TYPED_CANONICAL" in current
-    assert "Launch module state: TYPED_CANONICAL" in current
-    assert "State module state: TYPED_CANONICAL" in current
-    assert "Travel module state: TYPED_CANONICAL" in current
-    assert "Legacy profile.js: ROLLBACK_ONLY" in current
-    assert "Legacy missions.js: CONTROLLER_CANONICAL_PLUS_ROLLBACK" in current
-    assert "Legacy gups.js: CONTROLLER_CANONICAL_PLUS_ROLLBACK" in current
-    assert "Legacy launch.js: ROLLBACK_ONLY" in current
-    assert "Legacy state.js: ROLLBACK_ONLY" in current
-    assert "Legacy travel.js: ROLLBACK_ONLY" in current
-    assert "WP-03B automated performance harness: BACKLOG_NON_BLOCKING" in current
+def test_target_device_policy_is_product_contract_not_schedule_state() -> None:
+    reference = REFERENCE.read_text(encoding="utf-8")
+    section = reference.split("## 7. Target-device release와 성능 정책", maxsplit=1)[1]
+    section = section.split("## 8. 검증 참고", maxsplit=1)[0]
+
+    assert "release acceptance와 후속 측정의 역할을 구분한다" in section
+    assert "두 항목을 하나의 일정 문자열로 결합하지 않는다" in section
+    assert "Next executable work package" not in section
+    assert "Current scheduling authority" not in section
+    assert "WP COMPLETE" not in section

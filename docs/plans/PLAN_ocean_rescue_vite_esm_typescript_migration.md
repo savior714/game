@@ -162,7 +162,29 @@ Ocean Rescue가 다시 우선순위로 선택되면 과거의 “다음 WP”를
 - runtime 변경과 일정 문서 상태 갱신
 - migration 재계획과 구현
 
-## 7. 검증 참고
+## 7. Target-device release와 성능 정책
+
+이 정책은 일정 상태가 아니라 release acceptance와 후속 측정의 역할을 구분한다.
+
+### WP-03A — Target-device release smoke
+
+- 실제 지원 대상 기기에서 핵심 rescue flow와 입력·렌더링을 확인한다.
+- **MVP release gate; not a WP-21 production-packaging cutover prerequisite.**
+- WP-03A remains mandatory before MVP release.
+- No canonical numeric frame-time or FPS SLA is defined.
+- PASS 기준은 현재 사용자 흐름을 막는 입력 오류, page error, failed request, 치명적 렌더링 중단이 없는 것이다.
+
+### WP-03B — Reproducible target-device performance harness
+
+- **Classification:** `BACKLOG_NON_BLOCKING`
+- 자동화 가능한 frame-time, long-task, memory 또는 interaction latency 측정을 재현 가능한 harness로 수집한다.
+- thresholds adopted only after baseline review.
+- production build와 target-device 접근이 준비된 뒤 별도 failure domain으로 수행한다.
+- WP-03B가 없다는 이유로 현재 production packaging이나 일반 과목 안정화 작업을 차단하지 않는다.
+
+두 항목을 하나의 일정 문자열로 결합하지 않는다. WP-03A는 release acceptance이고 WP-03B는 비차단 성능 계측이다.
+
+## 8. 검증 참고
 
 현재 저장소에 존재하는 대표 명령은 다음과 같다. 동결 중에는 재현된 예외에 직접 필요한 것만 실행한다.
 
@@ -177,7 +199,7 @@ just check-ocean-rescue-sea-turtle-lifecycle-controller
 실제 명령 이름과 포함 테스트는 최신 `Justfile`을 우선한다.
 모든 Ocean Rescue 검증을 관성적으로 실행하지 않는다.
 
-## 8. 문서와 evidence 규칙
+## 9. 문서와 evidence 규칙
 
 - WP 계획·다음 WP·진행 상태는 대화에서 관리한다.
 - `docs/plans/PLAN_ocean_rescue_wp*.md`를 만들지 않는다.
@@ -186,7 +208,7 @@ just check-ocean-rescue-sea-turtle-lifecycle-controller
 - 제품 동작, 타입, 빌드, artifact, rollback 계약만 테스트한다.
 - 이 문서는 실제 아키텍처 또는 재개 정책이 변경된 경우에만 수정한다.
 
-## 9. 현재 결론
+## 10. 현재 결론
 
 Ocean Rescue 마이그레이션은 삭제되거나 실패한 것이 아니라 **현재 제품 우선순위에 의해 일시 정지된 기술 영역**이다.
 다음 실행 작업은 이 문서에서 정하지 않는다.

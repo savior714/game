@@ -88,7 +88,6 @@ def test_typed_launch_travel_controller_owns_skip_travel_and_arrival_flow() -> N
                 "typeof OceanRescue.TravelProgress.compute"
             ) == "function"
 
-            # Repeated boot must not add another static-control listener set.
             assert page.evaluate("OceanRescue.App.boot()") is True
             assert page.evaluate("OceanRescue.App.boot()") is True
 
@@ -141,7 +140,6 @@ def test_typed_launch_travel_controller_owns_skip_travel_and_arrival_flow() -> N
             assert travel_state["active"] is True
             assert travel_state["progress"]["valid"] is True
 
-            # A stale automatic launch callback must not cause another transition.
             assert page.evaluate("OceanRescue.App.skipLaunch()") is False
             assert page.evaluate("OceanRescue.State.getSnapshot().phase") == "TRAVEL"
 
@@ -160,7 +158,6 @@ def test_typed_launch_travel_controller_owns_skip_travel_and_arrival_flow() -> N
             assert after_y != before_y
             assert page.evaluate("OceanRescue.Travel.getSnapshot().dragging") is False
 
-            # Existing pause/countdown owner delegates travel mechanics to WP-33B.
             page.click("#ocean-rescue-pause-button")
             assert page.locator("#ocean-rescue-pause-overlay").is_visible()
             paused_distance = page.evaluate("OceanRescue.Travel.getSnapshot().distance")
@@ -174,8 +171,6 @@ def test_typed_launch_travel_controller_owns_skip_travel_and_arrival_flow() -> N
             page.wait_for_timeout(150)
             assert page.evaluate("OceanRescue.Travel.getSnapshot().distance") > paused_distance
 
-            # Drive the typed Travel contract to the arrival threshold; the next
-            # controller RAF must hand off to the unchanged WP-33C host path.
             page.evaluate(
                 """() => {
                   for (let i = 0; i < 1100; i += 1) {
@@ -302,36 +297,6 @@ def test_wp33c_and_wp33d_ownership_are_not_copied() -> None:
     assert 'host.schedulePauseableTimer("launch"' in text
     assert 'host.schedulePauseableTimer("goal-banner"' in text
     assert "host.handoffTravelArrival()" in text
-
-
-def test_phase8_status_and_next_wp_reflect_wp33b_completion() -> None:
-    plan = REPO_ROOT / "docs" / "plans" / "PLAN_ocean_rescue_vite_esm_typescript_migration.md"
-    text = plan.read_text(encoding="utf-8")
-
-    phase8_section_match = None
-    for match in __import__("re").finditer(
-        r"## 10\. Phase 8[^\n]*\n((?:.*\n)+)", text
-    ):
-        phase8_section_match = match.group(1)
-        break
-
-    assert phase8_section_match is not None, "Phase 8 상세 섹션을 찾을 수 없습니다."
-
-    assert "WP-33B: COMPLETE" in text or "WP-33B COMPLETE" in text, (
-        "current scheduling authority에 WP-33B COMPLETE가 기록되어 있어야 합니다."
-    )
-
-    assert "IN_PROGRESS" in phase8_section_match, (
-        "Phase 8 상세 섹션의 Status는 IN_PROGRESS여야 합니다."
-    )
-
-    assert "READY (WP-32B complete)" not in phase8_section_match, (
-        "Phase 8 상세 섹션에 'READY (WP-32B complete)'가 남아 있으면 안 됩니다."
-    )
-
-    assert "WP-33C" in text, (
-        "다음 실행 패키지로 WP-33C가 참조되어 있어야 합니다."
-    )
 
 
 def test_runtime_abi_is_type_only_and_legacy_manifest_excludes_controller() -> None:

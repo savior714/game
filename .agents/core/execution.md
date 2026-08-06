@@ -4,125 +4,112 @@ scope:
 always_apply: false
 priority: 1
 domain: core
+last_verified: 2026-08-06
 verify_with:
-- just prevent-tech-debt
+- uv run pytest -q tests/test_core_agent_contract_consistency.py
 ---
 <!-- Language: ko -->
-# Core Execution & Operating Principles
-본 문서는 에이전트의 핵심 사고 방식(Why/What)과 실행 방식(How)을 규정하는 핵심 실행 규칙입니다.
----
-## 1. Core Operating Principles
-상세: [principles.md](principles.md)
----
-## 2. Non-Negotiable Execution Rules
-### MUST
-#### 2.1 Disk State First
-- 수정 전 반드시 호스트 **읽기 도구**로 exact snippet을 확보한다 (Cursor `Read` · OpenCode `read` · Antigravity `view_file` — [runtime_edit_tools.md §1](./runtime_edit_tools.md)).
-- truth는 디스크 상태뿐이다.
-- grep 결과나 기억만으로 부분 수정 금지.
-- 파일 I/O 실수 예시: [error_patterns.md §1](error_patterns.md#1-파일-편집-실수).
-- 편집 도구 실패·재시도·도구 선택: [runtime_edit_tools.md](./runtime_edit_tools.md) · Cursor 상세 [routing.md](./routing.md) §1.
-#### 2.2 Verification First
-- lint/type/test 실패 상태에서 완료 선언 금지.
-- severity 하향(`error → warn`) 또는 gate 우회 금지.
-#### 2.3 Plan First (강제 트리거)
-**트리거 키워드 감지**: "계획", "plan", "blueprint", "roadmap",
-"설계", "로드맵", "실행 계획", "구현 계획" 중 하나라도 발견 시:
-1. **반드시** [.agents/workflows/plan.md](../workflows/plan.md)를 **Read** (워크플로 SSOT — 별도 라우팅 API 없음)
-2. 해당 템플릿을 **전부 따라야 함**
-3. `docs/plans/PLAN_*.md`에 Blueprint 생성 (`.hermes/plans/` 아님)
-4. `just plan-lint <path>`로 검증 후 저장
-5. 채팅으로 끝내지 말고 파일로 산출
-**검증**: 작성 직후 `python3 scripts/plan_loop/plan_lint.py <path>` 실행 —
-실패 시 수정 없이 제출 금지.
-자유형 계획 텍스트만 던지는 것으로 대체하지 않는다.
-#### 2.4 TDD Red-First
-- 구현 전 실패 테스트를 작성하고 실행 로그를 확인한다.
-- `Red → Green → Refactor`를 강제한다.
-- 구현 후 테스트를 덧붙이는 방식 금지.
-- assertion 없는 테스트, Red 로그 없는 “TDD 완료” 선언 금지.
-- **예외 (UI/Styling)**: 비즈니스 로직이 없는 순수 View 렌더링, CSS 및 레이아웃 수정 등 디자인 변경 작업은 TDD Red-First 요건(실패 테스트 선 작성)에서 면제된다. (오버엔지니어링 방지 및 실용성 확보)
-#### 2.5 Roadmap Integrity
-- 미래 태스크(`todo`, `pending`)는 명시적 폐기 없이 삭제하지 않는다.
-#### 2.6 Section Numbering Integrity
-- 규칙 섹션 번호는 연속성을 유지한다(예: 2.5 다음은 2.6).
-- 번호 공백이 생기면 자동/수동 참조 불일치가 발생할 수 있으므로 즉시 정리한다.
-#### 2.7 README MSOT Integrity
-- 루트 `README.md`의 진척도나 아키텍처 명세를 업데이트하기 전, 반드시 `find`나 `ls`를 통해 해당 파일/디렉토리가 현재 코드베이스에 존재하는지 실측한다. (과거 아카이브된 파일에 대한 허위 참조 방지)
-- 라이선스 리스크(SSPL, BSL 등)가 있는 기술 도입은 원칙적으로 금지한다.
-- 불가피한 경우 `docs/knowledge/research/`에 분석 문서를 선행 작성하고 사용자의 최종 승인을 득한 후 진행한다.
-#### 2.8 Context Route Gate (편집 전 강제, IDE 공통)
-저장소 파일을 **생성·수정·삭제**하기 전, 아래 순서를 반드시 지킨다.
-1. `just route <paths> --json --write-manifest`
-2. `must_read` 전량 Read
-3. `just route-read <paths...>`
-4. `just route-gate-check <paths>`
-절차·lazy Read 상세: [routing.md](./routing.md) §2
-#### 2.9 Secrets & Credentials (ZERO-LEAK, 재발 금지)
-상세: [PROJECT_RULES.md §4.1](../../PROJECT_RULES.md) · [emr_security.md](../domains/medical/emr_security.md)
-#### 2.10 Information Integrity & Honesty (Agentic Honesty)
 
-**MUST**
-- 디스크·도구·테스트로 확인하기 전 **원인·동작·존재 여부를 단정하지 않는다.**
-- 불확실하면 "모름"을 명시하고, 확인 경로(Read·grep·테스트·사용자 질문)를 제시한다.
-- 그럴듯한 추측으로 패치·설계·스펙 서술을 채우지 않는다.
-- Blueprint 경로·README·스펙과 코드가 상충하면 **실측(rg/Glob/Read) 우선** — 문서만으로 경로·동작을 단정하지 않는다.
+# AidenGame 실행 규칙
 
-**MUST NOT**
-- "아마 ~일 것", "보통 ~한다"만으로 Verify PASS·완료 선언.
-- Read/grep 없이 파일·API·설정 존재를 단정.
+이 문서는 작업 시작부터 게시까지의 실행 순서를 정의한다.
+도구 선택 세부는 [`routing.md`](routing.md), 검증은 [`verification.md`](verification.md), 보고는 [`reporting.md`](reporting.md)를 따른다.
 
-**Cross-ref**: [diagnose.md](../workflows/diagnose.md) Anti-pattern · [routing.md](./routing.md) §1 터미널 실측 · [principles.md](principles.md) §1.1 Think Before Coding.
+## 1. 작업 시작
 
-#### 2.11 Stable Source Workspace & Temporary Files
-- **MUST NOT**: source checkout/worktree를 `/tmp`, `/private/tmp`, `${TMPDIR}`, `mktemp` 하위에 만들지 않는다.
-- **MUST**: 기본 source worktree는 `/Users/seungjulee/Desktop/Dev/.worktrees/game/<task-slug>` 또는 실제 저장소와 같은 상위 개발 디렉터리의 안정적인 `.worktrees/game/<task-slug>` sibling 경로에 둔다.
-- **MUST**: VS Code·OpenCode·LSP·`uv`·`pnpm`·테스트·Docker·브라우저·generator는 실제 source worktree 하나를 동일한 workspace root와 CWD로 사용한다. main checkout, worktree, symlink alias, `/tmp`와 `/private/tmp` 경로를 혼합하지 않는다.
-- **MUST NOT**: 디버깅, 텍스트 치환, 테스트 목적의 일회성/임시 스크립트(`.py`, `.ts`, `.js`, `.sh` 등)를 프로젝트 루트 디렉터리(`CWD: .`)에 임의로 생성하거나 방치하지 않는다.
-- **MUST**: 저장소 내부에서 추적할 필요가 있는 scratch는 `scratch/` 또는 `scripts/agent/`에 두고, prompt transport·patch/diff·다운로드·압축 해제·테스트 fixture처럼 폐기 가능한 비소스 산출물은 OS temp를 사용할 수 있다. 어느 경우에도 임시 경로의 source tree를 LSP나 프로젝트 실행 루트로 사용하지 않는다.
-- **DDD Adherence**: 정식 프로덕션 및 비즈니스 로직 코드는 프로젝트 계층 구조(`apps/`, `packages/`, `services/` 등)를 위반하여 루트에 생성해서는 안 되며, 반드시 도메인 및 아키텍처 규칙(`PROJECT_RULES.md`)에 맞는 적절한 경로에 생성해야 한다.
-### SHOULD
-- 작은 semantic patch 단위로 작업한다.
-- formatter 후 재읽기한다.
-- AST/codemod를 우선 고려한다.
-- JSX/Tailwind 수정은 regex보다 AST 기반을 선호한다.
----
-## 3. Execution Flow
-### 3.1 Context Sync
-작업 시작 시 다음을 순서대로 확인한다.
-1. `PROJECT_RULES.md`
-2. 관련 specs
-3. `docs/agent-context/memory/MEMORY.md`
-4. `tests/`
-5. **Plan Blueprint 가 있으면** `scripts/agent/auto_load_preread.py docs/plans/<plan>.md` 실행 → Task Pre-read 목록 전량 Read
-6. **편집 대상이 정해지면 즉시** [routing.md](./routing.md) §2 Context Route Gate
- (`just route <paths> --json --write-manifest` → `must_read` 전량 Read → `just route-read <paths...>` → `just route-gate-check <paths>`)
-연관 가이드라인을 추출하고, 계획에 반영한다.
-### 3.2 Read Before Edit
-- 파일 읽기 → exact snippet 확보 → **부분 수정** 또는 **전체/신규 쓰기** (런타임별 도구명: [runtime_edit_tools.md §1](./runtime_edit_tools.md))
-- 수정 전에는 반드시 현재 디스크 상태를 다시 확인한다.
-- formatter가 multiline wrapping / prop ordering / import sorting / indentation을 바꿀 수 있으므로 이전 old/target context를 신뢰하지 않는다.
-### 3.3 SSOT / TDD
-우선순위는 다음과 같다.
-1. tests
-2. specs
-3. implementation
-반드시 `Red → Green → Refactor` 순서를 따른다.
-### 3.4 Implementation
-- minimal patch
-- bounded scope
-- dirty-write 금지
-- 추상화 남발 금지
-- 구현 시점 품질(에러 경계·중첩 평탄화·helper 중복 금지): [code_quality_lifecycle.md](code_quality_lifecycle.md) §2
-### 3.5 Verification
-- 작업 범위에 맞는 검증을 통과한 후 완료 선언한다.
-- 변경 시 formatter / lint / typecheck / test를 다시 실행하고, 필요하면 재읽기한다.
-- **LLM/API 연동 디버깅**: 파싱 실패·opaque 응답 시 hub raw JSONL을 계측 SSOT로 우선 조회한다 — `just raw-logs`, `just api-response-errors` ([diagnose.md](../workflows/diagnose.md) AidenGame 부록).
-- 저장소 수정 후 완료 응답 직전 [verification.md](verification.md) §2.3의 정적 진단 closure를 실행한다.
-- 현재 변경으로 새로 생긴 오류와 수정 파일·직접 영향 모듈의 오류를 먼저 0으로 만들고 같은 진단으로 독립 검증한다.
-- 다른 파일의 기존 LSP·typecheck·lint 오류가 드러나면 “범위 밖”으로 보고하고 PASS하지 않는다. 현재 failure domain을 닫은 뒤 다음 정적 failure domain 하나를 선택해 순차 해결한다.
-- workspace root·SDK/interpreter·의존성·stale cache/index·generated/vendor 오분석 가능성을 먼저 확인하고, 환경 문제를 production code 변경으로 덮지 않는다.
-- 안전하게 해결할 수 없는 정적 오류가 남으면 정확한 재현 명령과 원인을 포함해 `BLOCKED`로 종료한다.
----
-## 4. File Access Priority
-상세: [routing.md](./routing.md) §3
+1. 사용자의 현재 요청을 확인한다.
+2. 최신 `origin/main`과 대상 파일·직접 관련 테스트를 읽는다.
+3. `AGENTS.md`, `PROJECT_RULES.md`, 가장 가까운 product/technical spec을 확인한다.
+4. 현재 failure domain, 재현 조건, binary criterion을 한 문장으로 고정한다.
+5. 동결 범위나 forbidden action과 충돌하지 않는지 확인한다.
+
+범위가 지정되지 않았다면 일반 과목 안정화 계약을 따른다.
+계획 관련 단어가 있다는 이유만으로 plan 파일을 만들지 않는다.
+
+## 2. workspace와 Git
+
+- mutation은 최신 `origin/main`에서 만든 isolated worktree 또는 동등한 격리 공간에서 수행한다.
+- 기본 로컬 경로는 `/Users/seungjulee/Desktop/Dev/.worktrees/game/<task-slug>`다.
+- source worktree를 OS 임시 디렉터리에 만들지 않는다.
+- IDE, LSP, package manager, 브라우저, generator는 같은 source root와 CWD를 사용한다.
+- unrelated dirty state를 보존한다.
+- force push, history rewrite, 필수 검증 우회는 금지한다.
+- 게시 직전 원격 이동 여부를 다시 확인한다.
+
+connector 기반 작업에서는 최신 branch ref와 대상 blob을 직접 읽고, 후보 commit을 만든 뒤 fast-forward 조건을 다시 확인한다.
+
+## 3. 조사와 진단
+
+- 파일 존재, import graph, caller, fallback, generated artifact 경계를 실측한다.
+- 검색 결과는 조사 자료이며 존재 자체를 결함으로 취급하지 않는다.
+- 실패를 재현할 수 있는 가장 작은 경로를 찾는다.
+- 여러 원인이 나오면 현재 binary criterion과 직접 연결된 하나만 선택한다.
+- baseline이 이미 PASS면 과거 보고만으로 결함을 재작업하지 않는다.
+
+환경·workspace·SDK·dependency·cache·generated/vendor 오분석 가능성을 production code 변경보다 먼저 확인한다.
+
+## 4. 수정
+
+- 대상 파일의 최신 내용을 다시 읽는다.
+- 부분 수정은 정확히 식별되는 최소 블록을 사용한다.
+- 대형 파일 전체 교체는 원본과 후보 diff를 확인한 후에만 수행한다.
+- 같은 failure domain의 source, caller, test, config는 함께 변경할 수 있다.
+- unrelated refactor, formatting, dependency upgrade, 문서 상태 갱신을 섞지 않는다.
+- generated artifact를 수동 편집하지 않는다.
+
+편집 실패 시 더 넓은 치환으로 즉시 재시도하지 않고 파일을 다시 읽어 원인을 확인한다.
+
+## 5. 테스트와 TDD
+
+재현 가능한 결함은 가능하면 수정 전에 failing contract를 확인한다.
+다만 현재 저장소에서 이미 실패가 명확히 재현되고 있거나 문서·설정 drift를 직접 비교할 수 있는 경우, 동일 실패를 중복 생성하기 위해 인위적인 테스트를 먼저 만들지 않는다.
+
+새 테스트는 잡아낼 구체적 failure mode가 있을 때만 추가한다.
+assertion 없는 테스트나 일정 상태 문자열만 검증하는 테스트를 만들지 않는다.
+
+## 6. 검증
+
+다음 순서로 확장한다.
+
+1. 현재 binary criterion의 focused check
+2. 수정 파일과 직접 영향 모듈의 lint/typecheck
+3. 필요한 browser, build, artifact, rollback 검증
+4. 공유 경계 변경 시 영향받는 regression
+5. repository-wide gate는 실제 위험이나 정책이 요구할 때
+
+필수 criterion을 실행하지 못했으면 이유를 기록하고 PASS로 표시하지 않는다.
+검증 실패를 broad ignore나 범위 축소로 숨기지 않는다.
+
+## 7. 게시
+
+1. 변경 파일과 diff scope를 확인한다.
+2. 최신 `origin/main`을 다시 읽는다.
+3. 원격이 이동했으면 최신 main에 재적용한다.
+4. 직접 영향 검증을 반복한다.
+5. fast-forward로만 게시한다.
+6. 게시 후 remote ref와 commit diff를 재확인한다.
+
+SHA 불일치나 원격 이동만으로 작업을 포기하지 않는다. 실제 충돌이 없으면 최신 main에 안전하게 재적용한다.
+
+## 8. 로컬 에이전트 위임
+
+로컬 프롬프트에는 현재 실행할 한 단계만 전달한다.
+
+- objective
+- verified baseline
+- included / excluded scope
+- Do / Do not
+- 쓰기 허용 범위
+- verification
+- binary criterion
+- stop condition
+- 결과 형식
+
+전체 roadmap, 완료 이력, 이후 모든 단계, 반복 정책 전문을 넣지 않는다.
+결과를 받은 뒤 최신 main과 실제 diff를 다시 확인하고 다음 프롬프트를 새로 작성한다.
+
+## 9. 완료
+
+완료는 코드·테스트·브라우저·build·artifact 중 현재 criterion에 필요한 증거가 모두 있을 때만 선언한다.
+보고 형식은 `RESULT / CHANGE / VERIFY`를 기본으로 한다.
+실제 게시 시에만 `COMMIT`, 중단 시에만 `BLOCKER / NEXT`를 추가한다.

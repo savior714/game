@@ -61,14 +61,8 @@ def test_memory_handoff_tracks_current_product_direction() -> None:
     assert date.fromisoformat(match.group(1)) >= date(2026, 8, 6)
 
 
-def test_policy_guard_does_not_assert_schedule_status() -> None:
-    source = Path(__file__).read_text(encoding="utf-8")
+def test_policy_guard_targets_contract_not_schedule_progress() -> None:
+    spec = read(SPEC_PATH)
 
-    forbidden_schedule_assertions = (
-        "WP COMPLETE",
-        "현재 WP",
-        "다음 WP",
-        "Status:** ACTIVE",
-    )
-    for phrase in forbidden_schedule_assertions:
-        assert phrase not in source
+    assert "이번 문서는 일정 상태를 관리하는 plan이 아니다." in spec
+    assert "이 문서에 과목별 진행 상태를 계속 갱신하지 않는다." in spec

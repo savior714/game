@@ -204,10 +204,10 @@
     }
 
     function openStats() {
-      if (els.statsModal) {
-        els.statsModal._prevFocusTarget = document.activeElement || null;
-      }
       if (!els.statsModal._inertSnapshot) {
+        if (els.statsModal) {
+          els.statsModal._prevFocusTarget = document.activeElement || null;
+        }
         const siblings = _getBackgroundSiblings();
         const snapshot = new Map();
         for (let i = 0; i < siblings.length; i++) {

@@ -126,3 +126,53 @@ class TestStatsModalFocusRestorationOnClose:
             f"Expected focus to restore to #stats-btn after closeStats(), "
             f"but activeElement.id was '{active_after_close}'"
         )
+
+    def test_repeated_open_preserves_original_trigger_for_close(self, server, page):
+        """Repeated openStats() must not overwrite the original focus origin."""
+        url = f"{server}/domains/korean/index.html"
+
+        page.goto(url)
+        page.wait_for_load_state("domcontentloaded")
+        clear_storage(page)
+        page.wait_for_selector("#question", state="visible", timeout=5000)
+
+        # Create a single core instance and keep it alive in page context.
+        page.evaluate(
+            "() => { "
+            "  window._statsCore = window.QuizUICore.createStatsModalCore({renderStatsTable: function(){}}); "
+            "}"
+        )
+
+        # Step 1: focus the stats button (the original trigger)
+        page.focus("#stats-btn")
+        active_before = page.evaluate("() => document.activeElement.id")
+        assert active_before == "stats-btn", (
+            f"Expected stats-btn to be focused before open, got '{active_before}'"
+        )
+
+        # Step 2: first openStats()
+        page.evaluate("() => window._statsCore.openStats()")
+
+        active_after_first_open = page.evaluate("() => document.activeElement.id")
+        assert active_after_first_open == "close-stats-btn", (
+            f"Expected focus on #close-stats-btn after first openStats(), "
+            f"but activeElement.id was '{active_after_first_open}'"
+        )
+
+        # Step 3: second openStats() on the same core instance (repeated open)
+        page.evaluate("() => window._statsCore.openStats()")
+
+        active_after_second_open = page.evaluate("() => document.activeElement.id")
+        assert active_after_second_open in ("close-stats-btn", "stats-modal"), (
+            f"Expected modal-internal focus after second open, "
+            f"but activeElement.id was '{active_after_second_open}'"
+        )
+
+        # Step 4: closeStats() - focus must return to the ORIGINAL trigger
+        page.evaluate("() => window._statsCore.closeStats()")
+
+        active_after_close = page.evaluate("() => document.activeElement.id")
+        assert active_after_close == "stats-btn", (
+            f"Expected focus to restore to #stats-btn (original trigger) after closeStats(), "
+            f"but activeElement.id was '{active_after_close}'"
+        )

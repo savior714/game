@@ -200,6 +200,74 @@ def test_pause_menu_and_completion_handoff_remain_host_owned() -> None:
         assert token in app
 
 
+def test_pointer_state_api_is_declared_and_exposed() -> None:
+    """Pointer state API must be declared in SeaTurtleLifecycleAppApi and exposed."""
+    text = _read(CONTROLLER)
+    interface_methods = [
+        "beginSeaTurtlePointer(pointerId: number, captureElement: Element): boolean;",
+        "isTrackedSeaTurtlePointer(pointerId: number): boolean;",
+        "takeSeaTurtlePointer(pointerId: number): SeaTurtlePointerRef | null;",
+        "clearSeaTurtlePointer(): SeaTurtlePointerRef | null;",
+    ]
+    for method in interface_methods:
+        assert method in text, f"AppApi must declare {method}"
+
+    implementation = [
+        "function beginSeaTurtlePointer(",
+        "function isTrackedSeaTurtlePointer(",
+        "function takeSeaTurtlePointer(",
+        "function clearSeaTurtlePointer(",
+    ]
+    for fn in implementation:
+        assert fn in text, f"controller must implement {fn}"
+
+    object_assign = [
+        "beginSeaTurtlePointer,",
+        "isTrackedSeaTurtlePointer,",
+        "takeSeaTurtlePointer,",
+        "clearSeaTurtlePointer,",
+    ]
+    assign_section = text.split("Object.assign(host, {")[1].split("}")[0]
+    for token in object_assign:
+        assert token in assign_section, (
+            f"Object.assign must expose {token.rstrip(',')}"
+        )
+
+
+def test_pointer_state_storage_uses_active_pointer_fields() -> None:
+    """Pointer state must be stored in activePointerId and activePointerCaptureElement."""
+    text = _read(CONTROLLER)
+    assert "let activePointerId: number | null = null;" in text
+    assert "let activePointerCaptureElement: Element | null = null;" in text
+
+
+def test_pointer_state_api_behavior_contract() -> None:
+    """Pointer state API must follow the documented behavior contract."""
+    text = _read(CONTROLLER)
+
+    assert "activePointerId !== null" in text
+    assert "return false;" in text
+    assert "activePointerId = pointerId;" in text
+    assert "activePointerCaptureElement = captureElement;" in text
+    assert "return true;" in text
+
+    assert "activePointerId === pointerId" in text
+
+    assert "activePointerId !== pointerId" in text
+    assert "activePointerId = null;" in text
+    assert "activePointerCaptureElement = null;" in text
+
+    assert "activePointerId === null" in text
+
+
+def test_pointer_ref_type_is_exported() -> None:
+    """SeaTurtlePointerRef must be exported with correct shape."""
+    text = _read(CONTROLLER)
+    assert "export interface SeaTurtlePointerRef" in text
+    assert "readonly pointerId: number;" in text
+    assert "readonly captureElement: Element;" in text
+
+
 def test_characterization_recipe_exists_and_includes_direct_regressions() -> None:
     justfile = _read(JUSTFILE)
     recipe = justfile.split(

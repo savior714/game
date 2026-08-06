@@ -59,6 +59,12 @@ export interface SeaTurtleLifecycleHostApi extends PauseTimerResumeAppApi {
   ): void;
 }
 
+/** Read-only handle to the controller-managed sea-turtle pointer state. */
+export interface SeaTurtlePointerRef {
+  readonly pointerId: number;
+  readonly captureElement: Element;
+}
+
 /** Public API exposed by the sea-turtle lifecycle controller. */
 export interface SeaTurtleLifecycleAppApi extends SeaTurtleLifecycleHostApi {
   isSeaTurtleActive(): boolean;
@@ -68,6 +74,11 @@ export interface SeaTurtleLifecycleAppApi extends SeaTurtleLifecycleHostApi {
   getActiveSeaTurtleSession(): SeaTurtleSessionRef | null;
   isSeaTurtleSessionActive(): boolean;
   syncSeaTurtleProjection(intent?: PointerIntent): boolean;
+  beginSeaTurtlePointer(pointerId: number, captureElement: Element): boolean;
+  isTrackedSeaTurtlePointer(pointerId: number): boolean;
+  hasTrackedSeaTurtlePointer(): boolean;
+  takeSeaTurtlePointer(pointerId: number): SeaTurtlePointerRef | null;
+  clearSeaTurtlePointer(): SeaTurtlePointerRef | null;
 }
 
 interface ControllerDependencies {
@@ -89,6 +100,8 @@ export function installSeaTurtleLifecycleController(
   const { SeaTurtle, SeaTurtleScene } = resolveDependencies();
 
   let activeSession: SeaTurtleSessionRef | null = null;
+  let activePointerId: number | null = null;
+  let activePointerCaptureElement: Element | null = null;
 
   function isSeaTurtleActive(): boolean {
     return SeaTurtle?.getSnapshot().active ?? false;
@@ -244,6 +257,52 @@ export function installSeaTurtleLifecycleController(
     return true;
   }
 
+  function beginSeaTurtlePointer(
+    pointerId: number,
+    captureElement: Element,
+  ): boolean {
+    if (activePointerId !== null) {
+      return false;
+    }
+    activePointerId = pointerId;
+    activePointerCaptureElement = captureElement;
+    return true;
+  }
+
+  function isTrackedSeaTurtlePointer(pointerId: number): boolean {
+    return activePointerId === pointerId;
+  }
+
+  function hasTrackedSeaTurtlePointer(): boolean {
+    return activePointerId !== null;
+  }
+
+  function takeSeaTurtlePointer(pointerId: number): SeaTurtlePointerRef | null {
+    if (activePointerId !== pointerId) {
+      return null;
+    }
+    const ref: SeaTurtlePointerRef = {
+      pointerId: activePointerId,
+      captureElement: activePointerCaptureElement as Element,
+    };
+    activePointerId = null;
+    activePointerCaptureElement = null;
+    return ref;
+  }
+
+  function clearSeaTurtlePointer(): SeaTurtlePointerRef | null {
+    if (activePointerId === null) {
+      return null;
+    }
+    const ref: SeaTurtlePointerRef = {
+      pointerId: activePointerId,
+      captureElement: activePointerCaptureElement as Element,
+    };
+    activePointerId = null;
+    activePointerCaptureElement = null;
+    return ref;
+  }
+
   const controller: SeaTurtleLifecycleAppApi = Object.assign(host, {
     isSeaTurtleActive,
     getSeaTurtleSnapshot,
@@ -252,6 +311,11 @@ export function installSeaTurtleLifecycleController(
     startSeaTurtleSession,
     stopSeaTurtleSession,
     syncSeaTurtleProjection,
+    beginSeaTurtlePointer,
+    isTrackedSeaTurtlePointer,
+    hasTrackedSeaTurtlePointer,
+    takeSeaTurtlePointer,
+    clearSeaTurtlePointer,
   });
   return controller;
 }

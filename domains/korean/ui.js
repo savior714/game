@@ -230,6 +230,20 @@ function spawnConfetti() {
 }
 
 /* ═══════════════════════════════════
+   재시작 제어
+   ═══════════════════════════════════ */
+function bindRestartControl() {
+  const restartButton = document.getElementById('restart-btn');
+  if (!restartButton) {
+    throw new Error('Korean restart button is missing.');
+  }
+  if (restartButton.dataset.koreanRestartBound === 'true') return;
+
+  restartButton.addEventListener('click', startGame);
+  restartButton.dataset.koreanRestartBound = 'true';
+}
+
+/* ═══════════════════════════════════
    초기화 및 시작
    ═══════════════════════════════════ */
 async function loadWordsData() {
@@ -247,6 +261,7 @@ window.onload = async () => {
     window.WORDS = {};
   }
   initDOMCache();
+  bindRestartControl();
   initRocketPanel();
   startGame();
 };

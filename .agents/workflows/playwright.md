@@ -1,134 +1,103 @@
 ---
-description: "Playwright 기반 자동 페이지 문제 발견 → Blueprint 생성"
-# trigger catalog: /playwright <scope> or natural language "playwright로 [scope] 확인"
-version: 1.1.0
-last_updated: 2026-06-10
+situation: 실제 브라우저에서 AidenGame 사용자 흐름 검증
+level: Recommended
+description: 운영 entry와 browser-generated input으로 상태·오류·요청 실패를 검증하는 Playwright workflow
+version: 2.0.0
+last_updated: 2026-08-06
 scope: workflow
 domain: workflow
 ---
 <!-- Language: ko -->
 
-# 🌐 Playwright 브라우저 자동 문제 발견 워크플로우
+# Playwright workflow
 
-브라우저 자동화 도구를 사용해 실제 페이지 탐색 후, 발견된 문제를 Blueprint 문서로 자동화합니다.
+브라우저 테스트 규칙은 [`testing/playwright.md`](../domains/testing/playwright.md)를 함께 따른다.
 
-## 🎯 목적
+## 1. 사용 조건
 
-실제 브라우저 환경에서 다음을 자동 탐지:
-- **Critical**: 500 빌드 에러, 페이지 진입 불가 (`"use client"` 누락 등)
-- **High**: API 연결 실패, 리디렉션 루프
-- **Medium**: 스타일/UX 이슈, 경고 메시지
-- **Low**: 개선 제안 (stale 버전 등)
+- 사용자 흐름이 실제 DOM·focus·pointer·network timing에 의존함
+- source test만으로 문제 identity나 state reset을 증명할 수 없음
+- page error, request failure, redirect, static asset loading을 확인해야 함
+- touch·keyboard·modal·overlay 동작을 검증해야 함
+- 반복 실행으로 flake 여부를 판정해야 함
 
-## 🔄 실행 프로토콜
+단순 pure function 또는 문서 drift를 브라우저로 검증하지 않는다.
 
-### 1단계 — Scope 분석
-사용자 입력에서 대상 페이지/플로우 파싱:
-```
-/playwright login      → /login, /auth/* 라우트 + 세션 리디렉션 확인
-/playwright dashboard  → /dashboard/* 전체 + API 연동 상태
-/playwright full       → 핵심 플로우 (login → dashboard)
-/playwright <커스텀>    → 사용자가 지정한 URL/플로우
-```
+## 2. scope 선택
 
-**기본 Scope 매핑** (사용자 코멘트 없을 시):
-- `login` → `/login`, `/auth/*` 라우트 + 세션 리디렉션 확인
-- `dashboard` → `/dashboard/*` 전체 + API 연동 상태
-- `full` 또는 생략 → 핵심 플로우 (login → dashboard → 주요 기능)
+사용자가 지정한 entry와 flow를 우선한다.
+현재 일반 과목의 운영 entry는 다음과 같다.
 
-> **개선**: 향후 `apps/renderer/app/` 디렉토리 구조 기반 동적 매핑으로 업그레이드 권장.
+- `domains/math/index.html`
+- `domains/english/index.html`
+- `domains/korean/index.html`
+- `domains/science/index.html`
 
-### 2단계 — 브라우저 탐색
-`agent-browser` CLI 사용 (CDP 연결 → 스냅샷).
-```bash
-# CDP 연결 (미연결 시 Chrome 자동 시작)
-curl -fsS http://127.0.0.1:9223/json/version | rg webSocketDebuggerUrl
-agent-browser connect http://127.0.0.1:9223
+범위가 없으면 네 과목 공통 진단 또는 현재 failure domain의 가장 작은 흐름을 선택한다.
+login, dashboard, backend API가 존재한다고 가정하지 않는다.
 
-# 탐색
-target="http://$PLAYWRIGHT_BASE_URL/login"
-agent-browser open "$target"          # 진입점 이동
-agent-browser get title               # 페이지 제목 확인
-agent-browser get url                 # 리디렉션 루프 검증
-agent-browser snapshot                # UI 상태 스냅샷 (boxes=기본)
-agent-browser screenshot /tmp/bug.png # 시각적 증거 필요 시
-```bash
-# Console/Network 검증 (선택)
-agent-browser snapshot  # console 에러 포함
-```
-API 호출 검증은 `just api-response-errors`(AidenGame 부록) 병행.
+## 3. server와 browser
 
-**시크릿 노출 주의**: `PROJECT_RULES.md` §4.1 — 토큰/API 키 원문 응답에 포함 금지.
+- repository root를 local HTTP server로 제공한다.
+- fixed port보다 OS가 할당한 ephemeral port를 우선한다.
+- server, thread, browser, context, page를 test 종료 시 정리한다.
+- locale, timezone, viewport는 재현 조건에 필요한 경우 명시한다.
+- 각 test가 storage isolation을 요구하면 새 context를 사용한다.
+- 외부 network를 요구하지 않는 standalone flow에서 unexpected external request는 실패로 처리한다.
 
-### 3단계 — 문제 분류 및 정량화
-| Severity | 기준 | 예시 |
-|----------|------|------|
-| **Critical** | 페이지 진입 불가, 500 에러 | `"use client"` 누락, 빌드 실패 |
-| **High** | 기능 중단, 데이터 손실 위험 | API 연결 실패, 리디렉션 루프 |
-| **Medium** | UX 저하, 경고 메시지 | 스타일 깨짐, stale 버전 |
-| **Low** | 개선 제안 | 코드 최적화, 주석 부족 |
+특정 browser automation CLI를 강제하지 않는다.
+현재 세션과 저장소에서 지원되는 Playwright API 또는 browser tool을 사용한다.
 
-### 4단계 — Blueprint 생성
-```
-docs/plans/playwright_<scope>_<YYYYMMDD>.md
-```
+## 4. 사용자 입력
 
-**필수 준수 사항**:
-1. `docs/specs/technical/SPEC_TECH_plan_blueprint_contract.md` 컨트랙트 준수 (SSOT 갱신)
-2. 모든 Task에 `[Unit: Atomic]`, `Task-ID`, `Status`, `RetryPolicy`, `Conclusion` 포함
-3. 생성 직후 `uv run python scripts/plan_loop/plan_lint.py <blueprint_path>` 실행 필수
-4. **Scope 동적 매핑**: 하드코딩된 라우트 대신 `apps/renderer/app/` 디렉토리 구조 또는 `next.config.ts` 기반 라우트 파싱 권장
+- 실제 role, accessible name, stable ID, 현재 DOM contract에 맞는 locator를 사용한다.
+- browser-generated mouse, keyboard, pointer input을 우선한다.
+- production handler를 직접 호출해 핵심 입력 boundary를 건너뛰지 않는다.
+- 내부 API 호출은 해당 API 자체가 검증 대상이거나 환경 설정에 필요한 경우에만 사용한다.
+- selector는 실제 사용자 의미와 stability를 기준으로 선택하며 `data-testid`를 무조건 추가하지 않는다.
 
-### 5단계 — 보고
-```markdown
-## 발견된 문제 요약
+## 5. 오류 수집
 
-### Critical Severity
-| ID | 문제 | 영향도 |
-|----|------|--------|
-| BUG-XXX | ... | ... |
+필요한 test에서 다음을 수집한다.
 
-### High Severity
-...
-```
+- `pageerror`
+- console error
+- `requestfailed`
+- 예상하지 않은 외부 request
+- timeout 또는 무한 대기
 
-+ Blueprint 경로 제공
+허용 목록이 필요한 경우 구체적인 원인과 URL·message pattern을 계약으로 설명한다.
+오류를 단순히 수집만 하고 assertion하지 않는 test를 만들지 않는다.
 
-## 📋 출력 형식
+## 6. 일반 과목 공통 흐름
 
-**산출물**: `docs/plans/` 내 Blueprint 문서 (기존 `/plan` 워크플로우와 동일한 컨트랙트 준수)
+과목 completion 진단은 다음을 포함한다.
 
-**보고 형식**: 3~5줄 요약 + severity별 문제 목록 + Blueprint 경로
+1. entry와 첫 문제 표시
+2. 초기 answer/submit/next 상태
+3. 정답 경로와 feedback
+4. next 후 실제 question identity 변화
+5. selection·style·feedback·disabled·focus reset
+6. 오답 경로와 진행 가능성
+7. 중복 click·key repeat 방지
+8. 마지막 문제와 result
+9. restart 후 fresh transient state
+10. page error와 request failure 0건
 
-## ⚙️ 설정
+반복 기준은 현재 product spec의 subject completion contract를 따른다.
 
-| 변수 | 기본값 | 설명 |
-|------|--------|------|
-| `PLAYWRIGHT_BASE_URL` | `http://127.0.0.1:8080` | 프론트엔드 진입점 |
-| `API_PROXY_URL` | `http://127.0.0.1:8000` | 백엔드 API 프록시 (next.config.ts 참고) |
+## 7. 결과와 수정
 
-## 🔍 자연어 명령 인식 규칙
+- browser discovery만 요청받았다면 finding과 재현 경로를 보고하고 코드를 수정하지 않는다.
+- 수정까지 요청받았다면 첫 failure domain 하나만 닫는다.
+- 발견된 문제를 자동으로 Blueprint 파일로 만들지 않는다.
+- screenshot이나 trace는 실제 시각·timing 증거가 필요할 때만 생성하며 repository source와 분리한다.
 
-사용자가 슬래시 명령어 대신 자연어로 요청할 때 다음 패턴을 인식합니다:
+## 8. 완료
 
-| 패턴 예시 | 매칭된 Scope |
-|-----------|-------------|
-| "playwright로 로그인 확인" | `login` |
-| "대시보드 playwright 테스트" | `dashboard` |
-| "전체 페이지 playwright 탐색" | `full` |
-| "auth 관련 playwright 확인" | `login` (자동 매핑) |
-
-**매칭 우선순위**:
-1. 명시적 `/playwright <scope>` 명령어
-2. 자연어에서 키워드 추출 (`로그인`, `대시보드`, `전체`)
-3. 기본값: `full` (명확한 지시가 없을 때)
-
-## 🛑 가드레일 (Strict No-Fix Policy)
-
-- **Blueprint 전용**: 이 워크플로우의 유일한 목적은 **문제 발견 및 계획 수립**입니다. 발견된 문제를 **직접 수정하지 마십시오**.
-- **토큰 최적화**: 코드 수정 시도는 대량의 파일 읽기/쓰기를 유발하여 토큰을 낭비합니다. 오직 `docs/plans/` 생성까지만 수행하십시오.
-- **수정 금지 강제**: 문제를 고치라는 명시적 추가 지시가 없는 한, 구현 단계로 진입하는 것은 정책 위반입니다.
-- **Blueprint 생성 전**: 실제 브라우저 탐색 필수 (추측 금지)
-- **plan_lint 통과**: 검증 없이 저장 금지
-- **중복 계획 방지**: 기존 `docs/plans/README.md`에서 동일 scope plan 확인 후 확장 우선
-- **시크릿 노출 금지**: `PROJECT_RULES.md` §4.1 — 토큰/API 키 원문 응답에 포함 금지
+- 동일 flow가 반복 가능함
+- assertion이 사용자 가시 상태 또는 실제 lifecycle을 검증함
+- browser resource가 정리됨
+- flake를 고정 sleep으로 숨기지 않음
+- page error와 request failure 결과가 보고됨
+- 실행하지 않은 browser flow를 PASS로 확대 해석하지 않음

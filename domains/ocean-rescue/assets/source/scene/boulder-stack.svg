@@ -1,12 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200">
   <g id="terrain-boulder-stack">
     <path d="M50 185 Q42 178 44 168 L50 158 Q56 150 70 146 L100 140 Q118 136 135 138 L170 144 Q190 148 200 156 L214 168 Q220 176 216 185Z" fill="#5C6B7A" stroke="#3F4B57" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M50 185 Q42 178 44 168 L50 158" fill="none" stroke="#6B7A8A" stroke-width="1" opacity="0.3"/>
+    <path d="M200 156 L214 168 Q220 176 216 185" fill="none" stroke="#6B7A8A" stroke-width="1" opacity="0.3"/>
     <path d="M65 148 Q58 140 62 130 L72 120 Q80 114 95 110 L120 106 Q138 104 152 108 L175 116 Q188 122 194 132 L198 140 Q200 146 196 150Z" fill="#6B7A8A" stroke="#3F4B57" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M65 148 Q58 140 62 130" fill="none" stroke="#7A8B99" stroke-width="1" opacity="0.3"/>
+    <path d="M194 132 L198 140 Q200 146 196 150" fill="none" stroke="#7A8B99" stroke-width="1" opacity="0.3"/>
     <path d="M90 112 Q84 104 88 94 L96 84 Q104 78 118 74 L135 72 Q148 72 156 78 L166 88 Q172 96 170 104Z" fill="#7A8B99" stroke="#3F4B57" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M90 112 Q84 104 88 94" fill="none" stroke="#8B9BAB" stroke-width="1" opacity="0.3"/>
+    <path d="M170 104 L166 88 Q172 96 170 104" fill="none" stroke="#8B9BAB" stroke-width="1" opacity="0.3"/>
     <path d="M112 78 Q108 70 112 62 L120 54 Q126 50 134 52 L142 58 Q146 64 144 72Z" fill="#8B9BAB" stroke="#3F4B57" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M112 78 Q108 70 112 62" fill="none" stroke="#9BABC" stroke-width="1" opacity="0.3"/>
+    <path d="M144 72 L142 58 Q146 64 144 72" fill="none" stroke="#9BABC" stroke-width="1" opacity="0.3"/>
     <path d="M55 170 Q70 164 95 162 Q120 160 145 164 Q170 168 195 174" fill="none" stroke="#7A8B99" stroke-width="2" opacity="0.4"/>
+    <path d="M60 176 Q80 170 105 168 Q130 166 155 170 Q180 174 190 180" fill="none" stroke="#7A8B99" stroke-width="1.5" opacity="0.25"/>
     <path d="M70 135 Q88 128 115 126 Q142 128 168 134" fill="none" stroke="#7A8B99" stroke-width="1.5" opacity="0.35"/>
+    <path d="M78 142 Q98 136 125 134 Q150 136 172 142" fill="none" stroke="#7A8B99" stroke-width="1" opacity="0.2"/>
     <path d="M98 95 Q112 90 130 88 Q148 90 162 96" fill="none" stroke="#7A8B99" stroke-width="1.5" opacity="0.3"/>
+    <path d="M105 102 Q120 97 138 95 Q155 97 165 102" fill="none" stroke="#7A8B99" stroke-width="1" opacity="0.2"/>
+    <path d="M118 82 Q124 76 132 74 Q140 76 144 82" fill="none" stroke="#9BABC" stroke-width="1" opacity="0.25"/>
+    <circle cx="75" cy="160" r="3" fill="#6B7A8A" opacity="0.4"/>
+    <circle cx="180" cy="155" r="2.5" fill="#6B7A8A" opacity="0.35"/>
+    <circle cx="100" cy="120" r="2" fill="#7A8B99" opacity="0.3"/>
+    <circle cx="155" cy="110" r="2.5" fill="#7A8B99" opacity="0.3"/>
+    <circle cx="125" cy="80" r="1.8" fill="#8B9BAB" opacity="0.25"/>
     <ellipse cx="130" cy="192" rx="80" ry="5" fill="#A8E6CF" opacity="0.15"/>
+    <ellipse cx="130" cy="193" rx="50" ry="3" fill="#B8F0D8" opacity="0.1"/>
   </g>
 </svg>

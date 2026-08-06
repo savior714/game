@@ -2,10 +2,24 @@
   <g id="scene-reef-mid">
     <path d="M0 200 L0 120 Q40 104 80 116 Q120 92 160 104 Q200 84 240 98 Q280 80 320 94 Q360 86 400 100 L400 200 Z" fill="#1E5A7A" opacity="0.9"/>
     <path d="M0 200 L0 140 Q50 126 100 136 Q150 112 200 128 Q250 116 300 130 Q350 120 400 132 L400 200 Z" fill="#2E7A96" opacity="0.75"/>
+    <path d="M0 170 Q80 160 160 168 Q240 176 320 166 Q370 160 400 168 L400 200 L0 200 Z" fill="#1A4A6A" opacity="0.3"/>
     <ellipse cx="70" cy="138" rx="14" ry="10" fill="#E85D75" stroke="#A83A52" stroke-width="1.5"/>
+    <ellipse cx="70" cy="136" rx="8" ry="5" fill="#F27A94" opacity="0.5"/>
     <ellipse cx="330" cy="140" rx="12" ry="9" fill="#A97BCA" stroke="#7A54A0" stroke-width="1.5"/>
+    <ellipse cx="330" cy="138" rx="7" ry="4.5" fill="#C49BDB" opacity="0.5"/>
     <ellipse cx="190" cy="128" rx="10" ry="8" fill="#C79BDB" stroke="#7A54A0" stroke-width="1.5"/>
+    <ellipse cx="190" cy="126" rx="6" ry="4" fill="#DDB3E8" opacity="0.5"/>
     <path d="M120 150 Q124 134 128 150" fill="none" stroke="#1E5A7A" stroke-width="2" stroke-linecap="round"/>
+    <path d="M118 145 Q120 138 122 145" fill="none" stroke="#2E7A96" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
     <path d="M270 142 Q274 126 278 142" fill="none" stroke="#2E7A96" stroke-width="2" stroke-linecap="round"/>
+    <path d="M268 136 Q270 129 272 136" fill="none" stroke="#3A8AA6" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+    <path d="M155 100 Q158 94 162 96 Q166 94 168 100 Q165 104 162 102 Q159 104 155 100Z" fill="#4A9ABF" opacity="0.6"/>
+    <path d="M280 85 Q283 80 287 82 Q291 80 293 85 Q290 88 287 87 Q284 88 280 85Z" fill="#5AAACF" opacity="0.5"/>
+    <path d="M90 110 Q93 105 97 107 Q101 105 103 110 Q100 113 97 112 Q94 113 90 110Z" fill="#4A9ABF" opacity="0.45"/>
+    <path d="M350 105 Q352 101 355 102 Q358 101 360 105 Q358 107 355 106 Q352 107 350 105Z" fill="#5AAACF" opacity="0.4"/>
+    <path d="M210 95 Q212 92 214 93 Q216 92 218 95 Q216 97 214 96 Q212 97 210 95Z" fill="#4A9ABF" opacity="0.35"/>
+    <circle cx="160" cy="98" r="1.2" fill="#FFFFFF" opacity="0.2"/>
+    <circle cx="285" cy="83" r="1" fill="#FFFFFF" opacity="0.18"/>
+    <circle cx="95" cy="108" r="1" fill="#FFFFFF" opacity="0.15"/>
   </g>
 </svg>

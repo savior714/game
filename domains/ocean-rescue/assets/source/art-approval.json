@@ -59,9 +59,9 @@
     "ui.drag-arrow",
     "ui.drop-zone"
   ],
-  "artPacketSha256": "320b6f6dae13e161e00ea9e1ba79e837096b9cfd1e2e443af0b1c20882796ea8",
+  "artPacketSha256": "7da2955733b307f0d15d3b49d18fa8c4c0f0135d79461f690df3a1bf7a7d3131",
   "contactSheetSha256": "5d825cfca9056e703c738b94f55675825636f532578c2be2e8d01a4fefaec130",
-  "sourceSetSha256": "f32e7a5d40d366ebd0a4af89515e753f0436a9b44b8cdb2a2ecf7b149ae38713",
+  "sourceSetSha256": "55bbbb2bc38244c6b6de0a11828b9b33b18d5eee470c7cfa23f4e64185705113",
   "requiredPredecessor": "163b3206399c051b516c121c6c8c0ca4bd19268a",
   "approvalDate": "2026-08-02",
   "evidence": {

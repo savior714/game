@@ -1,11 +1,26 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200">
   <g id="terrain-sand-rock">
     <path d="M30 190 Q26 170 30 155 Q36 138 52 128 Q70 118 95 114 Q120 110 150 114 Q178 120 198 132 Q214 144 220 162 Q224 176 220 190Z" fill="#D4A373" stroke="#A47551" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M30 190 Q26 170 30 155 Q36 138 52 128 Q70 118 95 114" fill="none" stroke="#C4956A" stroke-width="1" opacity="0.3"/>
+    <path d="M150 114 Q178 120 198 132 Q214 144 220 162 Q224 176 220 190" fill="none" stroke="#C4956A" stroke-width="1" opacity="0.3"/>
     <path d="M50 140 Q60 128 80 122 Q100 116 125 118 Q148 120 168 128 Q185 136 195 148" fill="none" stroke="#E2C290" stroke-width="3" opacity="0.6"/>
+    <path d="M55 148 Q70 138 90 132 Q110 126 135 128 Q158 130 178 138 Q192 146 200 156" fill="none" stroke="#E2C290" stroke-width="2" opacity="0.4"/>
     <path d="M65 155 Q80 145 105 140 Q130 136 155 142 Q175 148 188 158" fill="none" stroke="#E2C290" stroke-width="2.5" opacity="0.4"/>
-    <ellipse cx="125" cy="192" rx="95" ry="6" fill="#A8E6CF" opacity="0.2"/>
+    <path d="M70 168 Q90 160 115 156 Q140 154 165 160 Q182 166 192 174" fill="none" stroke="#E2C290" stroke-width="1.5" opacity="0.25"/>
+    <path d="M80 135 Q86 128 96 124 Q106 120 115 122" fill="none" stroke="#F0D9B5" stroke-width="1.5" opacity="0.35"/>
     <circle cx="80" cy="135" r="4" fill="#F0D9B5" opacity="0.5"/>
+    <circle cx="80" cy="134" r="2" fill="#FFF3DC" opacity="0.3"/>
     <circle cx="160" cy="138" r="3.5" fill="#F0D9B5" opacity="0.5"/>
+    <circle cx="160" cy="137" r="1.8" fill="#FFF3DC" opacity="0.3"/>
+    <circle cx="120" cy="128" r="3" fill="#F0D9B5" opacity="0.4"/>
+    <circle cx="120" cy="127" r="1.5" fill="#FFF3DC" opacity="0.25"/>
+    <circle cx="100" cy="148" r="2.5" fill="#F0D9B5" opacity="0.35"/>
+    <circle cx="175" cy="152" r="2" fill="#F0D9B5" opacity="0.3"/>
     <path d="M100 125 Q108 120 118 118" fill="none" stroke="#C4956A" stroke-width="2" opacity="0.4"/>
+    <path d="M130 132 Q138 128 148 126" fill="none" stroke="#C4956A" stroke-width="1.5" opacity="0.3"/>
+    <path d="M60 170 Q65 166 72 168 Q78 172 76 178" fill="none" stroke="#A47551" stroke-width="1.2" opacity="0.3"/>
+    <path d="M170 165 Q176 160 184 162 Q190 166 188 172" fill="none" stroke="#A47551" stroke-width="1.2" opacity="0.3"/>
+    <ellipse cx="125" cy="192" rx="95" ry="6" fill="#A8E6CF" opacity="0.2"/>
+    <ellipse cx="125" cy="193" rx="60" ry="4" fill="#B8F0D8" opacity="0.12"/>
   </g>
 </svg>

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "sourcePacketSha256": "320b6f6dae13e161e00ea9e1ba79e837096b9cfd1e2e443af0b1c20882796ea8",
-  "approvalRecordSha256": "7921e21e25098a36593117a5e3cabb525726cd4afc07364a040d9f834250ddd4",
-  "sourceSetSha256": "f32e7a5d40d366ebd0a4af89515e753f0436a9b44b8cdb2a2ecf7b149ae38713",
+  "sourcePacketSha256": "7da2955733b307f0d15d3b49d18fa8c4c0f0135d79461f690df3a1bf7a7d3131",
+  "approvalRecordSha256": "a8ee8f168c25a943fed55a8b70dccd92e48c50f1f6a3c9cbbfc97787f4df21bc",
+  "sourceSetSha256": "55bbbb2bc38244c6b6de0a11828b9b33b18d5eee470c7cfa23f4e64185705113",
   "toolchain": {
     "cairosvg": "2.9.0",
     "pillow": "12.3.0",
@@ -109,9 +109,9 @@
           "image": "scene-0.png",
           "spritesheet": "scene-0.json",
           "width": 4032,
-          "height": 2526,
-          "imageSha256": "bc8de21db85ba7bdee653bf2b85f05e98e39f04a05f0a5ca7d85c095db9db16d",
-          "spritesheetSha256": "cf2ef1f330a9da6859d3539f6145dd1776428273acc6867afd2832a196410daf",
+          "height": 2532,
+          "imageSha256": "afbe7a666ec70ad2fc7a898b8550464b084d27069ec6d486f4b3ab6b0ac75994",
+          "spritesheetSha256": "d6045da0eb11d107622d95fe7d5146777dcecd3b82eae2b735816b5a830a6920",
           "aliases": [
             "rescue.rock.01",
             "rescue.rock.02",
@@ -145,7 +145,7 @@
           ]
         }
       ],
-      "bundleSha256": "60322e67a7754046aaa452589ddefd6e80c4f4b408355bac8287c0d4656a5b64"
+      "bundleSha256": "21898b09e192711def50d3c68df650f86e9a33ddacdf3fed33e3674cb1849da3"
     },
     {
       "name": "effects-ui",
@@ -170,8 +170,8 @@
           "spritesheet": "effects-ui-0.json",
           "width": 3833,
           "height": 646,
-          "imageSha256": "594e6eafac1c6a2a492afad9459d1acdd084f7b359fa6e3c93201043ab2d753a",
-          "spritesheetSha256": "d27ee6522bcb61eef70a7ab42de7d6694ae92d1fd9db4a6bfe7a723c5d8ee3bc",
+          "imageSha256": "c0dd88eef3d0b7c7fc32752d699fff12be4fc0da3c59079c2eaafc0ae4efd47c",
+          "spritesheetSha256": "953b48ba37a4bef5fd49943cc3164ae300916e8f1e606ea48cd0500d485dae20",
           "aliases": [
             "fx.bubbles",
             "fx.caustic",
@@ -186,16 +186,16 @@
           ]
         }
       ],
-      "bundleSha256": "b8346a5db1e497df39290843306b9959890ea3359ddff5237e1d1140c96661d4"
+      "bundleSha256": "eedd7c9712e1739562607f1409440b2b577f96245c6c43872dcc484754c35b7f"
     }
   ],
   "files": {
     "characters/characters-0.json": "9c75969c3cbc6b037604dfbef6d81da28c76a26b2242f7070182c0aeb2bfadd9",
     "characters/characters-0.png": "b9ad42ac939bb3dd860c523b42a1d77b915b9c92d50dc6c0e600201f126f4546",
-    "effects-ui/effects-ui-0.json": "d27ee6522bcb61eef70a7ab42de7d6694ae92d1fd9db4a6bfe7a723c5d8ee3bc",
-    "effects-ui/effects-ui-0.png": "594e6eafac1c6a2a492afad9459d1acdd084f7b359fa6e3c93201043ab2d753a",
+    "effects-ui/effects-ui-0.json": "953b48ba37a4bef5fd49943cc3164ae300916e8f1e606ea48cd0500d485dae20",
+    "effects-ui/effects-ui-0.png": "c0dd88eef3d0b7c7fc32752d699fff12be4fc0da3c59079c2eaafc0ae4efd47c",
     "pixi-assets-manifest.json": "6a289c5b258880597e129260ce86a5c3c1f89e82df46f337ce6177df668a8dad",
-    "scene/scene-0.json": "cf2ef1f330a9da6859d3539f6145dd1776428273acc6867afd2832a196410daf",
-    "scene/scene-0.png": "bc8de21db85ba7bdee653bf2b85f05e98e39f04a05f0a5ca7d85c095db9db16d"
+    "scene/scene-0.json": "d6045da0eb11d107622d95fe7d5146777dcecd3b82eae2b735816b5a830a6920",
+    "scene/scene-0.png": "afbe7a666ec70ad2fc7a898b8550464b084d27069ec6d486f4b3ab6b0ac75994"
   }
 }

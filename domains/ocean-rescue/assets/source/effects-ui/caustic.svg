@@ -1,7 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 240">
   <g id="fx-caustic">
     <path d="M0 60 Q60 20 120 60 Q180 100 240 60 Q300 20 360 60 Q420 100 480 60 L520 60 L520 110 Q460 70 400 110 Q340 150 280 110 Q220 70 160 110 Q100 150 40 110 Q20 100 0 110 Z" fill="#8FE3F0" opacity="0.35"/>
+    <path d="M0 80 Q70 50 140 80 Q210 110 280 80 Q350 50 420 80 Q470 95 520 80 L520 130 Q470 115 420 130 Q350 150 280 130 Q210 110 140 130 Q70 150 0 130 Z" fill="#8FE3F0" opacity="0.22"/>
     <path d="M0 130 Q80 90 160 130 Q240 170 320 130 Q400 90 480 130 L520 130 L520 170 Q440 130 360 170 Q280 210 200 170 Q120 130 40 170 Q20 160 0 170 Z" fill="#8FE3F0" opacity="0.28"/>
+    <path d="M0 170 Q60 150 120 170 Q180 190 240 170 Q300 150 360 170 Q420 190 480 170 L520 170 L520 200 Q460 185 400 200 Q340 215 280 200 Q220 185 160 200 Q100 215 40 200 Q20 195 0 200 Z" fill="#8FE3F0" opacity="0.15"/>
     <path d="M0 20 Q100 0 200 20 Q300 40 400 20 Q460 10 520 20 L520 44 Q440 28 360 44 Q280 60 200 44 Q100 28 0 44 Z" fill="#FFF3DC" opacity="0.2"/>
+    <path d="M0 50 Q130 30 260 50 Q390 70 520 50 L520 68 Q390 52 260 68 Q130 84 0 68 Z" fill="#FFF3DC" opacity="0.12"/>
+    <ellipse cx="100" cy="95" rx="18" ry="8" fill="#B8F0FA" opacity="0.15"/>
+    <ellipse cx="260" cy="145" rx="22" ry="10" fill="#B8F0FA" opacity="0.12"/>
+    <ellipse cx="420" cy="95" rx="16" ry="7" fill="#B8F0FA" opacity="0.14"/>
+    <ellipse cx="180" cy="195" rx="14" ry="6" fill="#FFF3DC" opacity="0.1"/>
+    <ellipse cx="380" cy="195" rx="12" ry="5" fill="#FFF3DC" opacity="0.09"/>
   </g>
 </svg>

@@ -285,7 +285,7 @@
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Initial proof-art packet: deep navy far-water with layered wave silhouettes",
-      "sourceSha256": "e84c7995fc1831045105de368201552c7a01c5a36998ad556222f76088043444"
+      "sourceSha256": "2391af7c6001753dd5f2b184104e286cfdb2fc8469190c4dacec4f58c817f244"
     },
     {
       "id": "scene-reef-mid-01",
@@ -305,7 +305,7 @@
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Initial proof-art packet: midground reef with fish silhouettes and anemone",
-      "sourceSha256": "4c3a77d3c29bfad45116a6a292b8addb7b968c18d191c385df89b08c98e868fd"
+      "sourceSha256": "f49c808c4b8ab536457e1ec9c0bd2179954077fd2382d27814acf4937eb017e6"
     },
     {
       "id": "scene-coral-foreground-01",
@@ -325,7 +325,7 @@
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Edge-framing coral with sand base; open center for gameplay plane",
-      "sourceSha256": "0038393b669a64e4432cc355c21818d96df5a0402fa2305a123b5290d74df905"
+      "sourceSha256": "0b55db9c99ad95a2f579990dc1dc9933857db8d4c16a7567617c40f9e12801e5"
     },
     {
       "id": "scene-seaweed-loop-01-01",
@@ -345,7 +345,7 @@
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Initial proof-art packet: closed-loop seaweed silhouette with leaf nodes",
-      "sourceSha256": "28a8b22a65dd12473337bcce235364df5eb7ee7db9bacc1306330dfb378c636d"
+      "sourceSha256": "76f9d1c7a5641cb1810a4771f6b2239ceaf850a4be71312151b37b7f68014c77"
     },
     {
       "id": "ui-drag-arrow-01",
@@ -405,7 +405,7 @@
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Bottom sand/rock corridor with tide pool and rock shelf value separation",
-      "sourceSha256": "e6e0216dee2dc7a5d2d67e35c700a491cab00823ccdb6073468860679e5129dd"
+      "sourceSha256": "e8542657c8db3c146b039f742f67722e1faa5ca32556971fc21ddb2c61153fb3"
     },
     {
       "id": "scene-passage-01",
@@ -425,7 +425,7 @@
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Darker exploration passage arch on the right with faint cyan continuation glow",
-      "sourceSha256": "97d4c85985283469e52dbd78621669551d976f0c96294af0c6f1477022b6f0cd"
+      "sourceSha256": "0f4f32b3184e81b0e920b52b4082ca5b0dd1d547edb79d1c626e51b856a03e8d"
     },
     {
       "id": "fx-cut-ring-01",
@@ -505,7 +505,7 @@
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Soft caustic light bands for slow underwater shimmer",
-      "sourceSha256": "2b9ed57ccf37f166fb2afd16df15646ece99b5fc96c3a38ea52191de3255827a"
+      "sourceSha256": "dc2c040d185ef081ec05f02b8d22ce7307663dc25af72a85aae0154d4d06a5a6"
     },
     {
       "id": "hud-progress-cap-01",
@@ -565,7 +565,7 @@
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Tall branching coral column with pink branches and bulbous tips for coral-reef missions",
-      "sourceSha256": "e66012e7a2404276575fc577e8b33e8ee416ce41ba7803f2085f76fc7fd9002a"
+      "sourceSha256": "f3dd4a0e71035c4ef2096ded944d96bf66f42a3d7df63e13ccaae7f4bb035ed8"
     },
     {
       "id": "terrain-reef-arch-01",
@@ -585,7 +585,7 @@
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Thick arching reef formation with coral-texture inner surface for coral-reef missions",
-      "sourceSha256": "9b9c83fb7df30f591056c64585317f1f77886c5f081d018a18e058a5d91a5327"
+      "sourceSha256": "22dbf131b25631e9ab066e85e5958f900487eb0f09ef5d5bbad22e5d431d4541"
     },
     {
       "id": "terrain-coral-rock-01",
@@ -625,7 +625,7 @@
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Dark rock with three tall kelp strands and bulbous tips for coral-reef missions",
-      "sourceSha256": "f7b0acee8a654a9733a6458b779ac0a8163fbf3d2edf207a050de1a5fadbb57c"
+      "sourceSha256": "f967581e9522c7992280583d011faa75f0dcfe73ebb171d686b8a1b0d40b1254"
     },
     {
       "id": "terrain-reef-spire-01",
@@ -665,7 +665,7 @@
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Rounded sand-colored boulder with gentle highlight ridges for sandy-reef missions",
-      "sourceSha256": "3febedd9880cba3686d1af71440335030fd3605d450ae85cc9f8e9071cab7833"
+      "sourceSha256": "e2c209c339fec16b94bae73b4d8d893bd0c71a0c765a7c93120a99ec3535d737"
     },
     {
       "id": "terrain-shell-ledge-01",
@@ -765,7 +765,7 @@
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Steep gray canyon wall face with horizontal strata lines and small rock protrusions for rocky-canyon missions",
-      "sourceSha256": "8677a13bb6bc1022176ddc47e6db0a5fe7a7b3e92fc0a31a74dafa7084f81ed7"
+      "sourceSha256": "21a8b3f2c048f435278a9b5b1d65e7ddaad62c99d2bc03d65f316904c66195ff"
     },
     {
       "id": "terrain-rock-spire-01",
@@ -825,7 +825,7 @@
       "authoringMethod": "manual-vector",
       "approvalState": "approved",
       "revisionNote": "Stack of four angular gray boulders decreasing in size with horizontal detail lines for rocky-canyon missions",
-      "sourceSha256": "1b1bd1d940a76688d34e27747e4c451609d5f9c1b7c8699c108abb963996d4da"
+      "sourceSha256": "3c75726ff12b4700ffebc84d20c86b47bb4d85eeeb6198a891b726047bcd19ec"
     },
     {
       "id": "terrain-canyon-pillar-01",

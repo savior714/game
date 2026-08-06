@@ -1,15 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200">
   <g id="terrain-canyon-wall">
     <path d="M20 190 L20 30 Q20 22 28 20 L50 16 Q56 14 60 20 L70 36 Q78 48 90 56 L120 72 Q134 80 148 84 L180 92 Q196 96 208 104 L224 116 Q232 124 234 138 L236 170 Q237 182 230 190Z" fill="#6B7A8A" stroke="#4A5A6A" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M20 190 L20 30 Q20 22 28 20 L50 16 Q56 14 60 20" fill="none" stroke="#7A8B99" stroke-width="1" opacity="0.3"/>
+    <path d="M236 170 Q237 182 230 190 L236 190Z" fill="#5C6B7A" opacity="0.3"/>
     <path d="M30 60 L60 52 L90 62 L120 56 L150 66 L180 60 L210 70" fill="none" stroke="#7A8B99" stroke-width="2" opacity="0.5"/>
+    <path d="M35 65 L65 58 L95 66 L125 60 L155 70 L185 64 L205 72" fill="none" stroke="#8B9BAB" stroke-width="1" opacity="0.3"/>
     <path d="M28 90 L62 84 L95 94 L130 88 L165 98 L200 92" fill="none" stroke="#7A8B99" stroke-width="1.5" opacity="0.4"/>
+    <path d="M32 95 L68 88 L100 98 L135 92 L170 102 L195 96" fill="none" stroke="#8B9BAB" stroke-width="1" opacity="0.25"/>
     <path d="M26 120 L65 114 L100 124 L140 118 L175 128 L210 122" fill="none" stroke="#7A8B99" stroke-width="1.5" opacity="0.35"/>
+    <path d="M30 126 L70 120 L105 130 L145 124 L180 134 L205 128" fill="none" stroke="#8B9BAB" stroke-width="1" opacity="0.2"/>
     <path d="M32 150 L68 144 L105 154 L145 148 L180 158" fill="none" stroke="#7A8B99" stroke-width="1.5" opacity="0.3"/>
+    <path d="M38 156 L75 150 L110 160 L150 154 L175 164" fill="none" stroke="#8B9BAB" stroke-width="1" opacity="0.2"/>
     <path d="M45 40 L50 36 L55 42" fill="#5C6B7A" stroke="#4A5A6A" stroke-width="1"/>
+    <path d="M48 44 L52 41 L56 46" fill="#7A8B99" stroke="#4A5A6A" stroke-width="0.8" opacity="0.5"/>
     <path d="M100 48 L106 44 L112 50" fill="#5C6B7A" stroke="#4A5A6A" stroke-width="1"/>
+    <path d="M103 52 L108 49 L113 54" fill="#7A8B99" stroke="#4A5A6A" stroke-width="0.8" opacity="0.5"/>
     <path d="M160 72 L166 68 L172 74" fill="#5C6B7A" stroke="#4A5A6A" stroke-width="1"/>
+    <path d="M163 76 L168 73 L174 78" fill="#7A8B99" stroke="#4A5A6A" stroke-width="0.8" opacity="0.5"/>
+    <path d="M70 80 L74 76 L78 82" fill="#5C6B7A" stroke="#4A5A6A" stroke-width="0.8" opacity="0.4"/>
+    <path d="M190 90 L194 86 L198 92" fill="#5C6B7A" stroke="#4A5A6A" stroke-width="0.8" opacity="0.4"/>
     <rect x="80" y="100" width="12" height="16" rx="2" fill="#5C6B7A" stroke="#4A5A6A" stroke-width="1" opacity="0.5"/>
+    <rect x="82" y="102" width="8" height="12" rx="1" fill="#7A8B99" opacity="0.3"/>
     <rect x="150" y="120" width="10" height="14" rx="2" fill="#5C6B7A" stroke="#4A5A6A" stroke-width="1" opacity="0.4"/>
+    <rect x="152" y="122" width="6" height="10" rx="1" fill="#7A8B99" opacity="0.25"/>
+    <path d="M60 170 Q65 166 72 168 Q78 172 76 178 Q74 182 68 180 Q62 178 60 170Z" fill="#5C6B7A" stroke="#4A5A6A" stroke-width="1" opacity="0.4"/>
+    <path d="M170 165 Q176 160 184 162 Q190 166 188 172 Q186 178 180 176 Q174 174 170 165Z" fill="#5C6B7A" stroke="#4A5A6A" stroke-width="1" opacity="0.35"/>
     <ellipse cx="130" cy="194" rx="105" ry="5" fill="#A8E6CF" opacity="0.15"/>
+    <ellipse cx="130" cy="195" rx="70" ry="3" fill="#B8F0D8" opacity="0.1"/>
   </g>
 </svg>

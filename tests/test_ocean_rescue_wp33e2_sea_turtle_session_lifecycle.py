@@ -29,8 +29,6 @@ FORBIDDEN_CONTROLLER_TOKENS = (
     "pointerUp(",
     "pointerCancel(",
     "setTimeout",
-    'schedulePauseableTimer("sea-turtle-feedback"',
-    "finishFeedback",
     "beginSeaTurtleSuccessFeedback",
     "beginSeaTurtleFailureFeedback",
     "completeMission",
@@ -39,6 +37,9 @@ FORBIDDEN_CONTROLLER_TOKENS = (
     "YoungWhale",
     "any",
     "as unknown as",
+    "applySeaTurtleSuccessVisual",
+    "applySeaTurtleFailureVisual",
+    "setSeaTurtleDialogue",
 )
 
 
@@ -359,12 +360,13 @@ def test_controller_does_not_use_set_timeout() -> None:
     assert "setTimeout" not in text
 
 
-def test_controller_does_not_own_feedback_timer() -> None:
+def test_controller_does_not_own_feedback_visuals() -> None:
+    """WP-33E-4: controller owns sequence + timer, but not app.js visuals."""
     text = _read(CONTROLLER)
-    assert 'schedulePauseableTimer("sea-turtle-feedback"' not in text
-    assert "finishFeedback" not in text
     assert "beginSeaTurtleSuccessFeedback" not in text
     assert "beginSeaTurtleFailureFeedback" not in text
+    assert "applySeaTurtleSuccessVisual" not in text
+    assert "applySeaTurtleFailureVisual" not in text
 
 
 def test_controller_does_not_own_completion_handoff() -> None:

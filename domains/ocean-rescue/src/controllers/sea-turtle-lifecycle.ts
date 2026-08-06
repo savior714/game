@@ -46,6 +46,8 @@ import type {
 import type {
   PointerIntent,
   SeaTurtleApi,
+  SeaTurtleFeedbackCompletion,
+  SeaTurtleRopeId,
   SeaTurtleRopeResult,
   SeaTurtleSceneApi,
   SeaTurtleSnapshot,
@@ -55,6 +57,12 @@ import type {
 export interface SeaTurtleSessionRef {
   readonly rescueSequenceId: number;
   readonly missionId: "sea-turtle";
+}
+
+export interface SeaTurtleFeedbackSequence {
+  readonly rescueSequenceId: number;
+  readonly ropeId: SeaTurtleRopeId;
+  readonly kind: "success" | "failure";
 }
 
 /**
@@ -69,7 +77,11 @@ export interface SeaTurtleLifecycleHostApi extends PauseTimerResumeAppApi {
     snapshot: SeaTurtleSnapshot,
     intent?: PointerIntent,
   ): void;
-  routeSeaTurtleFeedback(result: SeaTurtleRopeResult): void;
+  onSeaTurtleFeedbackComplete(
+    sequence: SeaTurtleFeedbackSequence,
+    result: SeaTurtleFeedbackCompletion,
+  ): void;
+  applySeaTurtleFeedbackVisuals(kind: "success" | "failure", ropeId: SeaTurtleRopeId): void;
 }
 
 /** Read-only handle to the controller-managed sea-turtle pointer state. */
@@ -99,6 +111,10 @@ export interface SeaTurtleLifecycleAppApi extends SeaTurtleLifecycleHostApi {
   hasTrackedSeaTurtlePointer(): boolean;
   takeSeaTurtlePointer(pointerId: number): SeaTurtlePointerRef | null;
   clearSeaTurtlePointer(): SeaTurtlePointerRef | null;
+  beginSeaTurtleFeedback(result: SeaTurtleRopeResult): boolean;
+  clearSeaTurtleFeedback(): void;
+  /** Test-only hook: invoke the pending sea-turtle-feedback timer callback. */
+  __testFlushSeaTurtleFeedback(): void;
 }
 
 interface ControllerDependencies {
@@ -122,6 +138,9 @@ export function installSeaTurtleLifecycleController(
   let activeSession: SeaTurtleSessionRef | null = null;
   let activePointerId: number | null = null;
   let activePointerCaptureElement: Element | null = null;
+  let activeFeedback: SeaTurtleFeedbackSequence | null = null;
+  let pendingFeedbackTimer = false;
+  let feedbackFlushHook: (() => void) | null = null;
 
   function isSeaTurtleActive(): boolean {
     return SeaTurtle?.getSnapshot().active ?? false;
@@ -216,6 +235,7 @@ export function installSeaTurtleLifecycleController(
   function stopSeaTurtleSession(): boolean {
     const hadSession = activeSession !== null;
 
+    clearSeaTurtleFeedback();
     shutdownSeaTurtlePointer();
 
     if (SeaTurtleScene?.isMounted()) {
@@ -487,7 +507,7 @@ export function installSeaTurtleLifecycleController(
         : { active: false, x: null, y: null };
       syncSeaTurtleProjection(inactiveIntent);
       if (result.outcome === "success" || result.outcome === "failure") {
-        host.routeSeaTurtleFeedback(result);
+        beginSeaTurtleFeedback(result);
       }
     }
 
@@ -627,6 +647,133 @@ export function installSeaTurtleLifecycleController(
     return ref;
   }
 
+  function clearSeaTurtleFeedback(): void {
+    host.cancelPauseableTimer("sea-turtle-feedback");
+    pendingFeedbackTimer = false;
+    feedbackFlushHook = null;
+    activeFeedback = null;
+  }
+
+  function beginSeaTurtleFeedback(result: SeaTurtleRopeResult): boolean {
+    if (!SeaTurtle) {
+      return false;
+    }
+    if (!result || typeof result !== "object") {
+      return false;
+    }
+    if (result.accepted !== true) {
+      return false;
+    }
+    if (result.outcome !== "success" && result.outcome !== "failure") {
+      return false;
+    }
+    if (result.ropeId === null) {
+      return false;
+    }
+    if (!activeSession) {
+      return false;
+    }
+    const activeSequence = host.getActiveRescueSequence();
+    if (!activeSequence) {
+      return false;
+    }
+    if (activeSequence.sequenceId !== activeSession.rescueSequenceId) {
+      return false;
+    }
+    if (activeSequence.missionId !== "sea-turtle") {
+      return false;
+    }
+
+    clearSeaTurtleFeedback();
+
+    const sequence: SeaTurtleFeedbackSequence = {
+      rescueSequenceId: activeSession.rescueSequenceId,
+      ropeId: result.ropeId,
+      kind: result.outcome,
+    };
+    activeFeedback = sequence;
+    pendingFeedbackTimer = true;
+
+    host.applySeaTurtleFeedbackVisuals(result.outcome, result.ropeId);
+
+    const capturedSequence = sequence;
+    const durationMs =
+      result.outcome === "success"
+        ? SeaTurtle.Constants.successFeedbackMs
+        : SeaTurtle.Constants.failureFeedbackMs;
+
+    host.schedulePauseableTimer(
+      "sea-turtle-feedback",
+      durationMs,
+      function (): void {
+        pendingFeedbackTimer = false;
+        feedbackFlushHook = null;
+        completeSeaTurtleFeedback(capturedSequence);
+      },
+    );
+    feedbackFlushHook = function (): void {
+      pendingFeedbackTimer = false;
+      feedbackFlushHook = null;
+      completeSeaTurtleFeedback(capturedSequence);
+    };
+
+    return true;
+  }
+
+  function completeSeaTurtleFeedback(
+    sequence: SeaTurtleFeedbackSequence,
+  ): void {
+    if (!SeaTurtle) {
+      return;
+    }
+    if (!activeFeedback) {
+      return;
+    }
+    if (activeFeedback !== sequence) {
+      return;
+    }
+    if (!activeSession) {
+      return;
+    }
+    if (activeSession.rescueSequenceId !== sequence.rescueSequenceId) {
+      return;
+    }
+    const activeSequence = host.getActiveRescueSequence();
+    if (!activeSequence) {
+      return;
+    }
+    if (activeSequence.sequenceId !== sequence.rescueSequenceId) {
+      return;
+    }
+    const snapshot = SeaTurtle.getSnapshot();
+    if (snapshot.feedback === null) {
+      return;
+    }
+    if (snapshot.feedback !== sequence.kind) {
+      return;
+    }
+    if (snapshot.activeRopeId !== sequence.ropeId) {
+      return;
+    }
+
+    activeFeedback = null;
+    const result = SeaTurtle.finishFeedback();
+    if (!result.changed) {
+      return;
+    }
+    syncSeaTurtleProjection();
+    host.onSeaTurtleFeedbackComplete(sequence, result);
+  }
+
+  function __testFlushSeaTurtleFeedback(): void {
+    if (typeof feedbackFlushHook === "function") {
+      const hook = feedbackFlushHook;
+      feedbackFlushHook = null;
+      pendingFeedbackTimer = false;
+      hook();
+    }
+  }
+
   const controller: SeaTurtleLifecycleAppApi = Object.assign(host, {
     isSeaTurtleActive,
     getSeaTurtleSnapshot,
@@ -647,6 +794,9 @@ export function installSeaTurtleLifecycleController(
     hasTrackedSeaTurtlePointer,
     takeSeaTurtlePointer,
     clearSeaTurtlePointer,
+    beginSeaTurtleFeedback,
+    clearSeaTurtleFeedback,
+    __testFlushSeaTurtleFeedback,
   });
   return controller;
 }

@@ -2347,6 +2347,10 @@
   }
 
   function routeSeaTurtleFeedback(result) {
+    if (typeof App.beginSeaTurtleFeedback === "function") {
+      App.beginSeaTurtleFeedback(result);
+      return;
+    }
     routeRescueFeedback(result);
   }
 
@@ -2622,6 +2626,36 @@
     } else {
       updateSeaTurtleRootMarkers();
       renderSeaTurtleFrame();
+    }
+  }
+
+  function onSeaTurtleFeedbackComplete(sequence, result) {
+    if (result.complete) {
+      completeSeaTurtleSuccess();
+      return;
+    }
+    finishSeaTurtleFeedbackVisuals(sequence, result);
+  }
+
+  function applySeaTurtleFeedbackVisuals(kind, ropeId) {
+    if (kind === "success") {
+      applySeaTurtleSuccessVisual();
+      var root = document.getElementById("ocean-rescue-root");
+      if (root) {
+        root.setAttribute("data-sea-turtle-feedback", "success");
+      }
+      setSeaTurtleDialogue(ropeId);
+    } else {
+      applySeaTurtleFailureVisual();
+      var root = document.getElementById("ocean-rescue-root");
+      if (root) {
+        root.setAttribute("data-sea-turtle-feedback", "failure");
+      }
+      var rope = ropeById(ropeId);
+      var progress = document.getElementById("ocean-rescue-rescue-progress");
+      if (progress && rope) {
+        progress.textContent = "Try rope " + rope.order + " again";
+      }
     }
   }
 
@@ -3413,7 +3447,6 @@
   }
 
   function shutdownRescueInteractionState() {
-    clearSeaTurtleFeedbackTimer();
     if (typeof App.stopSeaTurtleSession === "function") {
       App.stopSeaTurtleSession();
     } else {
@@ -5719,7 +5752,9 @@
     hideAssistHand: hideAssistHand,
     ensureRescuePointerInputBound: bindRescuePointerInput,
     routeSeaTurtleFeedback: routeSeaTurtleFeedback,
-    syncSeaTurtleScene: syncSeaTurtleScene
+    syncSeaTurtleScene: syncSeaTurtleScene,
+    onSeaTurtleFeedbackComplete: onSeaTurtleFeedbackComplete,
+    applySeaTurtleFeedbackVisuals: applySeaTurtleFeedbackVisuals
   };
 
   window.OceanRescue.App = App;

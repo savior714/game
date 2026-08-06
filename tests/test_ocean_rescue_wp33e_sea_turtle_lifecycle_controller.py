@@ -30,8 +30,10 @@ FORBIDDEN_CONTROLLER_TOKENS = (
     "as any",
     "beginSeaTurtleSuccessFeedback",
     "beginSeaTurtleFailureFeedback",
-    "completeSeaTurtleFeedback",
     "onSeaTurtleInteractionComplete",
+    "applySeaTurtleSuccessVisual",
+    "applySeaTurtleFailureVisual",
+    "setSeaTurtleDialogue",
 )
 
 
@@ -312,12 +314,12 @@ def test_projection_reads_snapshot_exactly_once() -> None:
         text.count("SeaTurtle.getSnapshot()")
         + text.count("SeaTurtle?.getSnapshot()")
     )
-    assert snapshot_calls == 6, (
-        f"expected exactly 6 SeaTurtle.getSnapshot() calls "
+    assert snapshot_calls == 7, (
+        f"expected exactly 7 SeaTurtle.getSnapshot() calls "
         f"(1 in isSeaTurtleActive + 1 in getSeaTurtleSnapshot + "
         f"1 in syncSeaTurtleProjection + 1 in startSeaTurtleSession "
         f"idempotency check + 1 in stopSeaTurtleSession active check + "
-        f"1 in validateSeaTurtlePointerEvent), "
+        f"1 in validateSeaTurtlePointerEvent + 1 in completeSeaTurtleFeedback), "
         f"got {snapshot_calls}"
     )
     projection_body = text.split("function syncSeaTurtleProjection")[1].split(
@@ -504,12 +506,12 @@ def test_controller_handle_down_stores_pointer_and_capture() -> None:
 
 
 def test_controller_handle_up_routes_feedback_via_host() -> None:
-    """WP-33E-3: handleSeaTurtlePointerUp calls host.routeSeaTurtleFeedback."""
+    """WP-33E-4: handleSeaTurtlePointerUp calls beginSeaTurtleFeedback."""
     text = _read(CONTROLLER)
     up_body = text.split("function handleSeaTurtlePointerUp")[1].split(
         "function "
     )[0]
-    assert "host.routeSeaTurtleFeedback(result)" in up_body
+    assert "beginSeaTurtleFeedback(result)" in up_body
     assert "releaseActivePointerCapture()" in up_body
     assert "clearSeaTurtlePointerState()" in up_body
 
@@ -586,24 +588,30 @@ def test_app_js_ordered_script_fallback_for_pointer_lifecycle() -> None:
         assert token in text
 
 
-def test_controller_host_api_declares_route_sea_turtle_feedback() -> None:
-    """Controller host API declares routeSeaTurtleFeedback method."""
+def test_controller_host_api_declares_feedback_bridge() -> None:
+    """WP-33E-4: controller host API declares onSeaTurtleFeedbackComplete."""
     text = _read(CONTROLLER)
-    assert "routeSeaTurtleFeedback(result: SeaTurtleRopeResult): void" in text
+    assert "onSeaTurtleFeedbackComplete(" in text
 
 
 def test_controller_does_not_own_feedback_timer_or_ui() -> None:
-    """Controller must not own feedback timer, UI, or completion handoff."""
+    """Controller must not own visual/UI orchestration or completion handoff.
+
+    WP-33E-4: controller now owns the feedback sequence, timer via host
+    pauseable registry, and finishFeedback(). Protected boundaries: no direct
+    setTimeout, no app.js visual functions, no Crab/YoungWhale, no direct
+    transition/handoff calls.
+    """
     text = _read(CONTROLLER)
     forbidden = (
         "setTimeout",
-        'schedulePauseableTimer("sea-turtle-feedback"',
         "beginSeaTurtleSuccessFeedback",
         "beginSeaTurtleFailureFeedback",
-        "completeSeaTurtleFeedback",
         "completeMission",
         "startMissionSuccessPresentation",
-        "finishFeedback",
+        "applySeaTurtleSuccessVisual",
+        "applySeaTurtleFailureVisual",
+        "setSeaTurtleDialogue",
     )
     for token in forbidden:
         assert token not in text, f"controller must not own: {token}"

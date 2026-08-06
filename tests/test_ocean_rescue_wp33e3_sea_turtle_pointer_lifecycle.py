@@ -56,9 +56,10 @@ FORBIDDEN_CONTROLLER_TOKENS = (
     "as any",
     "beginSeaTurtleSuccessFeedback",
     "beginSeaTurtleFailureFeedback",
-    "completeSeaTurtleFeedback",
     "onSeaTurtleInteractionComplete",
-    "finishFeedback",
+    "applySeaTurtleSuccessVisual",
+    "applySeaTurtleFailureVisual",
+    "setSeaTurtleDialogue",
 )
 
 
@@ -130,10 +131,10 @@ def test_controller_owns_pointer_state_in_closure() -> None:
     assert "let activePointerCaptureElement: Element | null = null;" in text
 
 
-def test_controller_host_api_declares_route_feedback() -> None:
-    """Controller host API declares routeSeaTurtleFeedback with typed result."""
+def test_controller_host_api_declares_feedback_bridge() -> None:
+    """WP-33E-4: host API declares onSeaTurtleFeedbackComplete bridge."""
     text = _read(CONTROLLER)
-    assert "routeSeaTurtleFeedback(result: SeaTurtleRopeResult): void" in text
+    assert "onSeaTurtleFeedbackComplete(" in text
 
 
 def test_controller_imports_sea_turtle_rope_result() -> None:
@@ -203,12 +204,12 @@ def test_controller_handle_move_calls_sea_turtle_and_sync() -> None:
 
 
 def test_controller_handle_up_routes_feedback() -> None:
-    """handleSeaTurtlePointerUp routes accepted result via host.bridge."""
+    """WP-33E-4: handleSeaTurtlePointerUp calls beginSeaTurtleFeedback."""
     text = _read(CONTROLLER)
     up_body = text.split("function handleSeaTurtlePointerUp")[1].split(
         "function "
     )[0]
-    assert "host.routeSeaTurtleFeedback(result)" in up_body
+    assert "beginSeaTurtleFeedback(result)" in up_body
     assert "releaseActivePointerCapture()" in up_body
     assert "clearSeaTurtlePointerState()" in up_body
 

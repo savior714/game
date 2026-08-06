@@ -107,6 +107,10 @@
     function openStats() {
       renderStatsTable();
       if (els.statsModal) els.statsModal.style.display = "flex";
+      const closeBtn = document.getElementById("close-stats-btn");
+      if (closeBtn && typeof closeBtn.focus === "function") {
+        try { closeBtn.focus(); } catch (_) {}
+      }
     }
 
     function closeStats() {

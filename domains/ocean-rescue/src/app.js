@@ -2630,11 +2630,37 @@
   }
 
   function onSeaTurtleFeedbackComplete(sequence, result) {
-    if (result.complete) {
-      completeSeaTurtleSuccess();
+    finishSeaTurtleFeedbackVisuals(sequence, result);
+  }
+
+  function onSeaTurtleInteractionComplete(session) {
+    if (!session || typeof session !== "object") {
       return;
     }
-    finishSeaTurtleFeedbackVisuals(sequence, result);
+    if (session.missionId !== "sea-turtle") {
+      return;
+    }
+    if (typeof session.rescueSequenceId !== "number" || !isFinite(session.rescueSequenceId)) {
+      return;
+    }
+    if (activeRescueSequence === null) {
+      return;
+    }
+    if (session.rescueSequenceId !== activeRescueSequence.sequenceId) {
+      return;
+    }
+    if (activeRescueSequence.missionId !== "sea-turtle") {
+      return;
+    }
+    var stateSnapshot = State.getSnapshot();
+    if (stateSnapshot.phase !== State.Phases.RESCUE_ACTIVE) {
+      return;
+    }
+    var seaTurtleSnapshot = SeaTurtle && SeaTurtle.getSnapshot();
+    if (!seaTurtleSnapshot || !seaTurtleSnapshot.complete) {
+      return;
+    }
+    completeSeaTurtleSuccess();
   }
 
   function applySeaTurtleFeedbackVisuals(kind, ropeId) {
@@ -5754,6 +5780,7 @@
     routeSeaTurtleFeedback: routeSeaTurtleFeedback,
     syncSeaTurtleScene: syncSeaTurtleScene,
     onSeaTurtleFeedbackComplete: onSeaTurtleFeedbackComplete,
+    onSeaTurtleInteractionComplete: onSeaTurtleInteractionComplete,
     applySeaTurtleFeedbackVisuals: applySeaTurtleFeedbackVisuals
   };
 

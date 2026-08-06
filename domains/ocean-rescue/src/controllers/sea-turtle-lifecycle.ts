@@ -81,6 +81,7 @@ export interface SeaTurtleLifecycleHostApi extends PauseTimerResumeAppApi {
     sequence: SeaTurtleFeedbackSequence,
     result: SeaTurtleFeedbackCompletion,
   ): void;
+  onSeaTurtleInteractionComplete(session: SeaTurtleSessionRef): void;
   applySeaTurtleFeedbackVisuals(kind: "success" | "failure", ropeId: SeaTurtleRopeId): void;
 }
 
@@ -757,12 +758,21 @@ export function installSeaTurtleLifecycleController(
     }
 
     activeFeedback = null;
+    const session = activeSession;
     const result = SeaTurtle.finishFeedback();
     if (!result.changed) {
       return;
     }
     syncSeaTurtleProjection();
-    host.onSeaTurtleFeedbackComplete(sequence, result);
+    if (result.complete === true) {
+      if (session) {
+        host.onSeaTurtleInteractionComplete(session);
+      }
+      return;
+    }
+    if (result.complete === false) {
+      host.onSeaTurtleFeedbackComplete(sequence, result);
+    }
   }
 
   function __testFlushSeaTurtleFeedback(): void {

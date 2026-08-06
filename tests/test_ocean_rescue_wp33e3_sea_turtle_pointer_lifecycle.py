@@ -56,7 +56,6 @@ FORBIDDEN_CONTROLLER_TOKENS = (
     "as any",
     "beginSeaTurtleSuccessFeedback",
     "beginSeaTurtleFailureFeedback",
-    "onSeaTurtleInteractionComplete",
     "applySeaTurtleSuccessVisual",
     "applySeaTurtleFailureVisual",
     "setSeaTurtleDialogue",

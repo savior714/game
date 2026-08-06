@@ -121,7 +121,12 @@
       return result;
     }
 
-    function _onTabKey(e) {
+    function _onModalKeydown(e) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeStats();
+        return;
+      }
       if (e.key !== "Tab") return;
       const tabbable = _getTabbableElements();
       if (tabbable.length === 0) return;
@@ -140,7 +145,7 @@
 
     function _attachFocusTrap() {
       if (_focusTrapHandler) return;
-      _focusTrapHandler = _onTabKey;
+      _focusTrapHandler = _onModalKeydown;
       if (els.statsModal) {
         els.statsModal.addEventListener("keydown", _focusTrapHandler);
       }

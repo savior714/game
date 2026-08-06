@@ -571,7 +571,7 @@ def _trigger_pointer_down(page: Page, start_client: dict) -> int | float:
     assert pointer_id is not None, (
         "trusted pointerdown did not fire or trace listener did not record pointerId"
     )
-    assert isinstance(pointer_id, (int, float)), (
+    assert isinstance(pointer_id, (int, float)) and not isinstance(pointer_id, bool), (
         f"observed pointerId must be a number, got {type(pointer_id).__name__}"
     )
     assert math.isfinite(pointer_id), (
@@ -613,7 +613,7 @@ def _begin_sea_turtle_touch_gesture(
         assert pointer_id is not None, (
             "trusted pointerdown did not fire or trace listener did not record pointerId"
         )
-        assert isinstance(pointer_id, (int, float)), (
+        assert isinstance(pointer_id, (int, float)) and not isinstance(pointer_id, bool), (
             f"observed pointerId must be a number, got {type(pointer_id).__name__}"
         )
         assert math.isfinite(pointer_id), (
@@ -1493,6 +1493,35 @@ def test_pointer_helpers_reject_infinite_pointer_ids() -> None:
             )
 
         with pytest.raises(AssertionError, match="must be finite"):
+            _trigger_pointer_down(fake_page, {"x": 100, "y": 200})
+
+
+def test_pointer_helpers_reject_boolean_pointer_ids() -> None:
+    """Both pointer helpers must reject Python bool observed pointerId values.
+
+    Python ``bool`` is a subclass of ``int``, so ``isinstance(True, int)`` and
+    ``isinstance(False, int)`` both return True. The existing numeric type
+    check ``isinstance(pointer_id, (int, float))`` therefore passes for both
+    ``True`` and ``False``, allowing them to reach the finite and
+    integer-valued checks which also pass. This regression verifies that
+    both ``_trigger_pointer_down`` and ``_begin_sea_turtle_touch_gesture``
+    raise ``AssertionError`` with the "must be a number" contract message
+    for both boolean values.
+    """
+    for bool_value in (True, False):
+        fake_page = _FakePage()
+        _fake_page_returning(fake_page, bool_value)
+        fake_context = _FakeContext()
+
+        with pytest.raises(AssertionError, match="must be a number"):
+            _begin_sea_turtle_touch_gesture(
+                fake_page,
+                fake_context,
+                100,
+                200,
+            )
+
+        with pytest.raises(AssertionError, match="must be a number"):
             _trigger_pointer_down(fake_page, {"x": 100, "y": 200})
 
 

@@ -590,28 +590,35 @@ def _begin_sea_turtle_touch_gesture(
 
     The CDP session remains open and touch emulation stays enabled until
     _end_sea_turtle_touch_gesture is called.
+
+    If an exception occurs after session creation, partial resources are
+    cleaned up via _end_sea_turtle_touch_gesture before re-raising.
     """
     cdp = context.new_cdp_session(page)
-    cdp.send("Emulation.setTouchEmulationEnabled", {
-        "enabled": True,
-        "maxTouchPoints": 1,
-    })
-    cdp.send("Input.dispatchTouchEvent", {
-        "type": "touchStart",
-        "touchPoints": [{"x": client_x, "y": client_y, "id": 100}],
-    })
-    page.wait_for_timeout(150)
-    pointer_id = page.evaluate("() => window.__wp33e3Trace.pointerId")
-    assert pointer_id is not None, (
-        "trusted pointerdown did not fire or trace listener did not record pointerId"
-    )
-    assert isinstance(pointer_id, (int, float)), (
-        f"observed pointerId must be a number, got {type(pointer_id).__name__}"
-    )
-    assert pointer_id == pointer_id, (
-        f"observed pointerId must be finite, got {pointer_id}"
-    )
-    return cdp, pointer_id
+    try:
+        cdp.send("Emulation.setTouchEmulationEnabled", {
+            "enabled": True,
+            "maxTouchPoints": 1,
+        })
+        cdp.send("Input.dispatchTouchEvent", {
+            "type": "touchStart",
+            "touchPoints": [{"x": client_x, "y": client_y, "id": 100}],
+        })
+        page.wait_for_timeout(150)
+        pointer_id = page.evaluate("() => window.__wp33e3Trace.pointerId")
+        assert pointer_id is not None, (
+            "trusted pointerdown did not fire or trace listener did not record pointerId"
+        )
+        assert isinstance(pointer_id, (int, float)), (
+            f"observed pointerId must be a number, got {type(pointer_id).__name__}"
+        )
+        assert pointer_id == pointer_id, (
+            f"observed pointerId must be finite, got {pointer_id}"
+        )
+        return cdp, pointer_id
+    except Exception:
+        _end_sea_turtle_touch_gesture(cdp, page, cancel=True)
+        raise
 
 
 def _end_sea_turtle_touch_gesture(
@@ -1233,6 +1240,127 @@ def test_pointer_cancel_releases_capture_and_clears_active_gesture() -> None:
             server.__exit__(None, None, None)
         except Exception:
             pass
+
+
+class _FakeCdpSession:
+    """Minimal fake CDP session that records send/detach calls."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, dict]] = []
+        self.detach_count: int = 0
+
+    def send(self, method: str, params: dict) -> None:
+        self.calls.append((method, params))
+
+    def detach(self) -> None:
+        self.detach_count += 1
+
+
+class _FakeContext:
+    """Minimal fake browser context that returns a fresh fake CDP session.
+
+    Stores the last created session so callers can inspect cleanup behavior.
+    """
+
+    def __init__(self) -> None:
+        self.sessions_created: int = 0
+        self.last_session: _FakeCdpSession | None = None
+
+    def new_cdp_session(self, page) -> _FakeCdpSession:
+        session = _FakeCdpSession()
+        self.sessions_created += 1
+        self.last_session = session
+        return session
+
+
+class _FakePage:
+    """Minimal fake page that fails trace reads to force cleanup path."""
+
+    def __init__(self) -> None:
+        self.wait_calls: list = []
+        self.evaluate_calls: list = []
+        self._eval_fail = RuntimeError("forced trace read failure")
+
+    def wait_for_timeout(self, ms: int) -> None:
+        self.wait_calls.append(ms)
+
+    def evaluate(self, expression: str) -> object:
+        self.evaluate_calls.append(expression)
+        raise self._eval_fail
+
+
+def test_begin_touch_gesture_cleans_partial_cdp_session_on_trace_failure() -> None:
+    """_begin_sea_turtle_touch_gesture must cleanup on failure after session acquire.
+
+    When trace read fails between touchStart and return, the helper must:
+    - dispatch touchCancel with empty touchPoints
+    - disable touch emulation
+    - detach the CDP session
+    - re-raise the original RuntimeError
+
+    This proves partial-init failure does not leak CDP/touch resources.
+    """
+    fake_page = _FakePage()
+    fake_context = _FakeContext()
+
+    with pytest.raises(RuntimeError, match="forced trace read failure"):
+        _begin_sea_turtle_touch_gesture(
+            fake_page,
+            fake_context,
+            100,
+            200,
+        )
+
+    assert fake_context.sessions_created == 1, (
+        "exactly one CDP session must be created"
+    )
+
+    cdp = fake_context.last_session
+    assert cdp is not None, "session must exist after creation"
+
+    call_methods = [c[0] for c in cdp.calls]
+    enable_calls = [c for c in cdp.calls if c[0] == "Emulation.setTouchEmulationEnabled" and c[1].get("enabled", False)]
+    assert len(enable_calls) == 1, (
+        f"touch emulation enable must be called exactly once, got {len(enable_calls)}"
+    )
+    assert call_methods.count("Input.dispatchTouchEvent") >= 2, (
+        f"touchStart + touchCancel must produce >=2 Input.dispatchTouchEvent calls, got {call_methods}"
+    )
+
+    touch_start_calls = [c for c in cdp.calls if c[0] == "Input.dispatchTouchEvent" and c[1].get("type") == "touchStart"]
+    assert len(touch_start_calls) == 1, (
+        f"touchStart must be dispatched exactly once, got {len(touch_start_calls)}"
+    )
+
+    touch_cancel_calls = [c for c in cdp.calls if c[0] == "Input.dispatchTouchEvent" and c[1].get("type") == "touchCancel"]
+    assert len(touch_cancel_calls) == 1, (
+        f"touchCancel must be dispatched exactly once on failure cleanup, got {len(touch_cancel_calls)}"
+    )
+    assert touch_cancel_calls[0][1]["touchPoints"] == [], (
+        "touchCancel must use empty touchPoints array"
+    )
+
+    disable_calls = [c for c in cdp.calls if c[0] == "Emulation.setTouchEmulationEnabled" and not c[1].get("enabled", True)]
+    assert len(disable_calls) == 1, (
+        f"touch emulation disable must be called exactly once, got {len(disable_calls)}"
+    )
+    assert disable_calls[0][1]["enabled"] is False, (
+        "touch emulation disable must set enabled=False"
+    )
+
+    assert cdp.detach_count == 1, (
+        f"session detach must be called exactly once, got {cdp.detach_count}"
+    )
+
+    expected_sequence = [
+        "Emulation.setTouchEmulationEnabled",
+        "Input.dispatchTouchEvent",
+        "Input.dispatchTouchEvent",
+        "Emulation.setTouchEmulationEnabled",
+    ]
+    assert call_methods[:4] == expected_sequence, (
+        f"CDP call sequence must match expected order, got {call_methods}"
+    )
 
 
 def test_pointercancel_proof_has_only_single_session_touch_helper_path() -> None:

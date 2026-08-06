@@ -73,7 +73,7 @@ push 직전에 `git fetch origin`을 다시 실행한다.
 ## 완료
 
 ```bash
-git push origin main
+git push origin HEAD:main
 git fetch origin
 git status --short
 ```

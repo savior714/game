@@ -1,225 +1,113 @@
 ---
 name: investigate
-description: "Investigate bugs and failures systematically"
+description: AidenGame의 버그·문서·구조 문제를 수정 전에 증거 중심으로 조사하는 read-first skill
+metadata:
+  version: "2.0.0"
 ---
-
 <!-- Language: ko -->
 
-# Investigate Skill
+# Investigate skill
 
-## Purpose
+이 skill은 원인과 영향 범위를 먼저 이해해야 하는 작업에 사용한다.
+workflow 진입점은 [`investigate.md`](../../workflows/investigate.md)다.
 
-Investigate bugs and failures systematically.
+## 1. 조사 질문 고정
 
-Goal:
+조사 시작 시 다음을 한 문장으로 정리한다.
 
-* identify root cause
-* avoid speculative fixes
-* isolate failure conditions
-* produce reproducible understanding
+- 무엇이 잘못됐다고 의심되는가
+- 어느 사용자 흐름 또는 저장소 계약에 영향을 주는가
+- 이번 조사에서 무엇을 확인하면 종료되는가
 
----
+“전체적으로 이상한 점을 찾아라”처럼 넓은 요청이면 authority, runtime, test, workflow 순으로 감사 축을 나누되 한 반복에는 하나의 모순 유형만 다룬다.
 
-# Response Language (MUST)
+## 2. 증거 수집
 
-**이 스킬이 활성화된 세션의 모든 채팅 응답은 한국어로 작성한다.**
+우선순위:
 
-- 증상·재현·근본 원인·수정 전략·회귀 위험 등 **진단 보고 전체**를 한국어로 쓴다.
-- 코드 식별자·로그·스택 트레이스·CLI·파일 경로는 영문을 유지해도 된다.
-- **영문 단락·영문-only 요약·영문-only 결론은 금지**한다. (기술 용어 한 단어는 허용)
-- Investigation Output Format(아래)의 **섹션 제목·본문** 모두 한국어를 따른다.
-- 정책 SSOT: [markdown.md](../../domains/documentation/markdown.md) **Korean First Policy**, [reporting.md](../../core/reporting.md) §1.6
+1. 최신 `origin/main`의 대상 파일
+2. 직접 관련 caller와 test
+3. 가장 가까운 product/technical spec
+4. 실제 browser, build, artifact 또는 connector 결과
+5. 과거 commit은 변화 원인을 이해할 때만 참고
 
----
+문서의 수정일이나 status 문자열을 현재 동작 증거로 사용하지 않는다.
 
-# Iron Law
+## 3. 실행 경로 추적
 
-NEVER implement fixes before identifying root cause.
+필요한 범주만 확인한다.
 
-Do not patch symptoms blindly.
+- DOM event → handler → state transition → render
+- answer selection → feedback → next question → reset
+- pointer/timer/listener → cancel/shutdown cleanup
+- source → build config → generated artifact → deployment entry
+- authority document → routing/workflow → local prompt
+- test fixture → actual boundary → assertion
 
----
+전체 저장소를 무차별 검색하지 않고 현재 질문을 구분하는 경계를 따라간다.
 
-# Investigation Workflow
+## 4. 사실과 가설
 
-## Step 1 — Reproduce
-First reproduce the issue consistently.
+### 사실
 
-Identify:
+직접 읽거나 실행해 확인한 내용:
 
-* exact trigger
-* environment
-* sequence of actions
-* frequency
+- 파일·symbol 존재
+- 특정 state transition
+- test assertion 범위
+- 실제 command 존재
+- browser error 또는 request failure
+- commit diff
 
-If issue cannot be reproduced:
-* gather more signals
-* add logging
-* isolate variables
+### 가설
 
-Do not guess.
+사실만으로 아직 확정되지 않은 설명이다.
+가설에는 검증 방법과 반증 조건을 함께 둔다.
 
----
-## Step 2 — Isolate
+확정되지 않은 가설을 root cause라고 보고하지 않는다.
 
-Reduce problem scope.
+## 5. 재현 여부
 
-Determine:
-* where failure begins
-* what changed recently
-* whether issue is deterministic
-* whether issue is state-dependent
+- 재현 가능하면 trigger, initial state, expected, actual을 기록한다.
+- 재현되지 않으면 이미 해결됐는지, 환경 차이인지, test gap인지 구분한다.
+- 브라우저 증상은 source inspection만으로 최종 확정하지 않는다.
+- 문서·경로·명령 drift는 direct file comparison으로 판정할 수 있다.
 
-Use:
-* logs
-* stack traces
-* diffs
-* binary search
-* instrumentation
+## 6. 영향 범위
 
----
-## Step 3 — Trace
+다음을 구분한다.
 
-Trace:
+- 사용자 진행을 막는 runtime defect
+- 상태 또는 데이터 오염
+- test coverage gap
+- stale documentation
+- agent workflow misrouting
+- generated artifact drift
+- 보안 또는 credential 위험
 
-* data flow
-* state transitions
-* async behavior
-* network interactions
-* rendering lifecycle
-* persistence boundaries
+영향 유형이 다르면 한 수정 작업으로 합치지 않는다.
 
-Verify assumptions directly in code.
+## 7. 수정 권장 경계
 
----
+수정이 필요하면 다음만 제시한다.
 
+- 첫 failure domain
+- 포함 파일 또는 semantic hotspot
+- non-goal
+- 재현 조건
+- binary criterion
+- focused verification
 
-Create hypothesis only AFTER evidence collection.
+향후 전체 roadmap을 자동으로 만들지 않는다.
+저장소 Blueprint는 사용자가 명시적으로 요청한 경우에만 권장할 수 있다.
 
-For each hypothesis:
+## 8. 조사 종료
 
-1. supporting evidence
-2. contradictory evidence
-3. validation method
+다음 중 하나면 조사를 종료한다.
 
-Reject weak hypotheses quickly.
-
----
-## Step 5 — Verify Root Cause
-
-Before fixing, confirm:
-
-* root cause fully explains symptom
-* reproduction matches explanation
-* proposed fix addresses actual cause
-
----
-
-
-If 3 fix attempts fail:
-
-* stop patching
-* reassess architecture/design assumptions
-* investigate systemic issues
-
-Do not continue random edits.
-
----
-# Debugging Principles
-
-## Prefer observation over guessing
-
-Bad:
-
-* "maybe this fixes it"
-
-Good:
-
-* "state becomes null here because X"
-
----
-## Prefer minimal experiments
-
-Make small controlled changes.
-
-Avoid:
-
-* broad rewrites
-* shotgun debugging
-* multiple simultaneous fixes
-
----
-## Preserve Signal
-
-Do not:
-
-* remove logs too early
-* suppress exceptions
-* hide symptoms
-
-Preserve evidence.
-
----
-
-# Domain-Specific Diagnostic Signals
-
-## Next.js Fast Refresh Full Reload as Diagnostic Signal
-
-`⚠ Fast Refresh had to perform a full reload` is **not just a warning** — it's a diagnostic signal about component architecture:
-
-- **Triggers when**: Fast Refresh cannot hot-reload a module because of structural changes in the component tree, state loss during HMR, or client components inside layouts with side-effect hooks
-- **What it tells you**: Look at the component that changed — is it a layout? Does it contain client components with `useEffect` redirect guards, event listeners, or ResizeObservers?
-- **Common root cause**: Auth state transition during hydration (isLoading→isAuthenticated) in a client component nested inside layout
-- **Investigation path**: Check `layout.tsx` → client component imports → useEffect redirect guards → auth context initialization timing
-
-See also: [Next.js Fast Refresh](https://nextjs.org/docs/architecture/fast-refresh)
-
-## React Render Cascade Freezing
-
-환자 전환, 데이터 변경 후 UI가 멈추는 현상은 **렌더링 캐스케이드**가 원인일 수 있습니다.
-
-- **Triggers when**: `useMemo` 컨텍스트 객체의 의존성 배열이 과도하게 넓음 (20개 초과), `useDeferredValue`가 부분만 적용됨
-- **What it tells you**: `widgetBinderContext`, `examination` 훅, `contentProps` 등 큰 `useMemo` 객체의 의존성 배열 길이를 확인
-- **Common root causes**:
-  - A1. 거대 컨텍스트 객체 (~60개 의존성) → 모든 하위 컴포넌트가 리렌더됨
-  - A2. `useDeferredValue` 부분 적용 (patientId만 defer, selectedPatient은 즉시 렌더)
-  - A3. Hook 참조 불안정 (`useMemo` spread 하위 훅 → 하나 변경 시 전체 recompute)
-  - A4. 동기 Effect 블록 (`useLayoutEffect` 내 JSON.stringify 등 메인 스레드 차단)
-- **Investigation path**: `investigate` → [vercel-react-best-practices](../frontend/vercel-react-best-practices/SKILL.md) §5 Re-render Optimization 참고 → Step 2~6 진행
-
----
-# Investigation Output Format
-
-> **언어**: 아래 섹션 제목·본문은 **반드시 한국어**로 작성한다. 코드·로그 인용만 영문 허용.
-
-## 증상 (Symptom)
-
-무엇이 실패하는가?
-
-## 재현 (Reproduction)
-
-어떻게 재현하는가?
-
-## 근본 원인 (Root Cause)
-
-왜 발생하는가?
-
-로그 / 트레이스 / 코드 경로
-
-## 수정 전략 (Fix Strategy)
-
-최소한의 수정 방향
-
-## 회귀 위험 (Regression Risk)
-
-무엇이 추가로 깨질 수 있는가?
-
----
-
-# Final Rule
-
-A clean diagnosis is more valuable than a fast blind fix.
-
-Use logging and instrumentation before broad code modification.
-
-**최종 보고도 한국어로 마무리한다.** (Response Language MUST 준수)
+- 원인과 영향이 충분히 확정됨
+- 원인 후보를 구분할 다음 실험이 명확함
+- 현재 main에서 결함이 재현되지 않음
+- 필요한 환경·입력이 없어 더 이상 증거를 얻을 수 없음
+
+결과는 간결하게 사실, 근거, 영향, 첫 수정 경계 순으로 보고한다.

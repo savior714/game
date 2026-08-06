@@ -1,209 +1,132 @@
 ---
 name: diagnose
-description: >
-  Hard-bug discipline — build a fast feedback loop first, then six phases
-  (reproduce → hypothesise → instrument → fix + regression test → cleanup).
-  Use for /diagnose, debugging, performance regressions, and flaky failures.
-license: MIT
+description: 재현 가능한 실패에 대해 빠른 판정 루프를 만들고 증거로 원인 하나를 닫는 AidenGame 진단 skill
 metadata:
-  version: "1.0.0"
+  version: "2.0.0"
 ---
-
 <!-- Language: ko -->
 
-# Diagnose
+# Diagnose skill
 
-A discipline for hard bugs. Skip phases only when explicitly justified.
-When exploring the codebase, use the project's domain glossary to get a clear mental model of the relevant modules, and check ADRs in the area you're touching.
+이 skill은 hard bug, 성능 회귀, flake처럼 원인이 즉시 드러나지 않는 실패를 다룬다.
+workflow 진입점은 [`diagnose.md`](../../workflows/diagnose.md)다.
 
----
+## 1. 핵심 계약
 
-# Response Language (MUST)
+진단의 첫 산출물은 설명이 아니라 **빠르고 반복 가능한 PASS/FAIL 신호**다.
 
-**이 스킬이 활성화된 세션의 모든 채팅 응답은 한국어로 작성한다.**
+좋은 판정 루프는 다음을 만족한다.
 
-- Phase별 진행 보고·가설 목록·계측 결과·수정 요약·사후 분석 등 **진단 보고 전체**를 한국어로 쓴다.
-- 코드 식별자·로그·스택 트레이스·CLI·파일 경로·`[DEBUG-...]` 태그는 영문을 유지해도 된다.
-- **영문 단락·영문-only 요약·영문-only 결론은 금지**한다. (기술 용어 한 단어는 허용)
-- Diagnose Output Format(아래)의 **섹션 제목·본문** 모두 한국어를 따른다.
-- 정책 SSOT: [markdown.md](../../domains/documentation/markdown.md) **Korean First Policy**, [reporting.md](../../core/reporting.md) §1.6
+- 사용자가 설명한 동일 증상을 잡음
+- 환경과 입력이 명확함
+- 실행 시간이 충분히 짧음
+- 실패 조건이 구체적임
+- 수정 전후 같은 방식으로 실행 가능함
+- 관련 없는 초기화와 전체 suite를 피함
 
----
+루프를 만들 수 없으면 필요한 환경·로그·화면 기록·실기기 접근 중 무엇이 부족한지 정확히 보고한다. 증거 없이 원인을 확정하지 않는다.
 
-## Phase 1 — Build a feedback loop
+## 2. 재현 최소화
 
-**This is the skill.** Everything else is mechanical. If you have a fast, deterministic, agent-runnable pass/fail signal for the bug, you will find the cause — bisection, hypothesis-testing, and instrumentation all just consume that signal. If you don't have one, no amount of staring at code will save you.
+1. 최신 main에서 증상을 재현한다.
+2. 입력, 순서, 저장 상태, viewport, 브라우저, timing 중 필요한 변수를 기록한다.
+3. 관련 없는 단계와 데이터를 제거한다.
+4. 재현률을 측정한다.
+5. 간헐 실패면 반복 횟수를 늘려 신호를 강화한다.
 
-Spend disproportionate effort here. **Be aggressive. Be creative. Refuse to give up.**
+일반 과목에서는 직접 entry, 첫 문제, answer path, next transition, final/restart 경계를 분리해 어느 전이에서 처음 계약이 깨지는지 찾는다.
 
-### Ways to construct one — try them in roughly this order
+## 3. 증거와 가설
 
-1. **Failing test** at whatever seam reaches the bug — unit, integration, e2e.
-2. **Curl / HTTP script** against a running dev server.
-3. **CLI invocation** with a fixture input, diffing stdout against a known-good snapshot.
-4. **Headless browser script** (Playwright / Puppeteer) — drives the UI, asserts on DOM/console/network.
-5. **Replay a captured trace.** Save a real network request / payload / event log to disk; replay it through the code path in isolation.
-6. **Throwaway harness.** Spin up a minimal subset of the system (one service, mocked deps) that exercises the bug code path with a single function call.
-7. **Property / fuzz loop.** If the bug is "sometimes wrong output", run 1000 random inputs and look for the failure mode.
-8. **Bisection harness.** If the bug appeared between two known states (commit, dataset, version), automate "boot at state X, check, repeat" so you can `git bisect run` it.
-9. **Differential loop.** Run the same input through old-version vs new-version (or two configs) and diff outputs.
-10. **HITL bash script.** Last resort. If a human must click, drive _them_ with a structured checklist script so the loop is still structured. Captured output feeds back to you.
+source와 runtime 증거만으로 원인이 구분되지 않을 때 가설을 만든다.
+각 가설은 다음을 가져야 한다.
 
-Build the right feedback loop, and the bug is 90% fixed.
+- 이를 지지하는 관찰
+- 반대되는 관찰
+- 틀렸음을 보여줄 수 있는 예측
+- 가장 작은 검증 방법
 
-### Iterate on the loop itself
+가설 개수를 3개나 5개로 형식적으로 맞추지 않는다.
+첫 번째 그럴듯한 설명에 고정되지 않되, 이미 증거로 원인이 하나로 좁혀졌다면 가짜 대안을 만들지 않는다.
 
-Treat the loop as a product. Once you have _a_ loop, ask:
+## 4. 계측
 
-- Can I make it faster? (Cache setup, skip unrelated init, narrow the test scope.)
-- Can I make the signal sharper? (Assert on the specific symptom, not "didn't crash".)
-- Can I make it more deterministic? (Pin time, seed RNG, isolate filesystem, freeze network.)
+계측은 가설을 구분하는 경계에만 추가한다.
 
-A 30-second flaky loop is barely better than no loop. A 2-second deterministic loop is a debugging superpower.
+- 상태 전이 직전·직후
+- event listener 또는 pointer lifecycle
+- timer schedule·cancel·rearm
+- persistence read/write
+- browser page error와 request failure
+- build input, output, metadata identity
 
-### Non-deterministic bugs
+모든 것을 로그로 남긴 뒤 검색하는 방식은 피한다.
+임시 계측은 고유 marker를 사용하고 완료 전에 제거한다.
+성능 문제는 로그보다 반복 가능한 timing 또는 profiler 기준을 먼저 만든다.
 
-The goal is not a clean repro but a **higher reproduction rate**. Loop the trigger 100×, parallelise, add stress, narrow timing windows, inject sleeps. A 50%-flake bug is debuggable; 1% is not — keep raising the rate until it's debuggable.
+## 5. 수정과 회귀
 
-### When you genuinely cannot build a loop
+원인이 확인되면:
 
-Stop and say so explicitly. List what you tried. Ask the user for: (a) access to whatever environment reproduces it, (b) a captured artifact (HAR file, log dump, core dump, screen recording with timestamps), or (c) permission to add temporary production instrumentation. Do **not** proceed to hypothesise without a loop.
+1. 올바른 seam에서 회귀 계약을 만든다.
+2. 수정 전 실패 또는 현재 위반 상태를 확인한다.
+3. 최소 수정한다.
+4. focused 계약을 통과시킨다.
+5. 원래 사용자 흐름을 다시 실행한다.
+6. 직접 영향 회귀와 정적 진단으로 확장한다.
 
-Do not proceed to Phase 2 until you have a loop you believe in.
+올바른 test seam이 없다면 얕은 mock test로 거짓 안전성을 만들지 않는다. 대신 실제 browser harness, static contract 또는 구조상 test gap을 명확히 기록한다.
 
-## Phase 2 — Reproduce
+## 6. AidenGame 과목 진단
 
-Run the loop. Watch the bug appear.
+현재 기본 대상은 Math, English, Korean, Science다.
 
-Confirm:
+확인 항목:
 
-- [ ] The loop produces the failure mode the **user** described — not a different failure that happens to be nearby. Wrong bug = wrong fix.
-- [ ] The failure is reproducible across multiple runs (or, for non-deterministic bugs, reproducible at a high enough rate to debug against).
-- [ ] You have captured the exact symptom (error message, wrong output, slow timing) so later phases can verify the fix actually addresses it.
+- question content 또는 안정적 identity 변화
+- 정답·오답 경로 모두 진행 가능
+- answer selection과 feedback 초기화
+- next button의 visible/disabled 상태
+- 중복 입력으로 index가 두 번 증가하지 않음
+- final result와 restart
+- 새 세션에 이전 transient state가 남지 않음
+- 실제 browser error와 request failure 0건
 
-Do not proceed until you reproduce the bug.
+기존 progression test 한 번의 PASS를 과목 완료 전체로 확대 해석하지 않는다.
 
-## Phase 3 — Hypothesise
+## 7. 실패한 수정 시도
 
-Generate **3–5 ranked hypotheses** before testing any of them. Single-hypothesis generation anchors on the first plausible idea.
+수정 시도가 실패하면 무작정 두 번째·세 번째 patch를 쌓지 않는다.
 
-Each hypothesis must be **falsifiable**: state the prediction it makes.
+- 같은 재현 신호가 유지되는지 확인
+- 가설이 틀렸는지, 수정 seam이 잘못됐는지 구분
+- 변경을 되돌리거나 분리
+- 새 증거로 원인 모델을 갱신
 
-> Format: "If <X> is the cause, then <changing Y> will make the bug disappear / <changing Z> will make it worse."
+연속된 실패 횟수보다 **같은 원인 모델로 더 진행할 근거가 있는지**가 중단 기준이다.
 
-If you cannot state the prediction, the hypothesis is a vibe — discard or sharpen it.
+## 8. cleanup과 완료
 
-**Show the ranked list to the user before testing.** They often have domain knowledge that re-ranks instantly ("we just deployed a change to #3"), or know hypotheses they've already ruled out. Cheap checkpoint, big time saver. Don't block on it — proceed with your ranking if the user is AFK.
+완료 전 확인:
 
-## Phase 4 — Instrument
+- 원래 repro PASS
+- 회귀 계약 PASS
+- 임시 log와 fixture 제거
+- listener, timer, pointer, server, browser resource cleanup
+- unrelated 변경 없음
+- 필수 static diagnostic 0
+- diff scope와 remote publish 상태 확인
 
-Each probe must map to a specific prediction from Phase 3. **Change one variable at a time.**
+## 9. 출력
 
-Tool preference:
+필요한 섹션만 사용한다.
 
-1. **Debugger / REPL inspection** if the env supports it. One breakpoint beats ten logs.
-2. **Targeted logs** at the boundaries that distinguish hypotheses.
-3. Never "log everything and grep".
+- 증상
+- 판정 루프
+- 확인된 증거
+- 근본 원인
+- 수정
+- 검증
+- 남은 blocker
 
-**Tag every debug log** with a unique prefix, e.g. `[DEBUG-a4f2]`. Cleanup at the end becomes a single grep. Untagged logs survive; tagged logs die.
-
-**Perf branch.** For performance regressions, logs are usually wrong. Instead: establish a baseline measurement (timing harness, `performance.now()`, profiler, query plan), then bisect. Measure first, fix second.
-
-**AidenGame — hub raw JSONL (LLM/API format mismatch):** Before type casts or defensive `get()` patches, read raw responses:
-
-1. `just api-response-errors` → `var/log/emr/hub/api_response_errors.jsonl`
-2. `just raw-logs` → `api_log.jsonl`, `tool_log.jsonl`
-
-SSOT: [diagnose.md](../../workflows/diagnose.md) AidenGame 부록 · [execution.md](../../core/execution.md) §3.5.
-
-## Phase 5 — Fix + regression test
-
-Write the regression test **before the fix** — but only if there is a **correct seam** for it.
-
-A correct seam is one where the test exercises the **real bug pattern** as it occurs at the call site. If the only available seam is too shallow (single-caller test when the bug needs multiple callers, unit test that can't replicate the chain that triggered the bug), a regression test there gives false confidence.
-
-**If no correct seam exists, that itself is the finding.** Note it. The codebase architecture is preventing the bug from being locked down. Flag this for the next phase.
-
-If a correct seam exists:
-
-1. Turn the minimised repro into a failing test at that seam.
-2. Watch it fail.
-3. Apply the fix.
-4. Watch it pass.
-5. Re-run the Phase 1 feedback loop against the original (un-minimised) scenario.
-
-## Phase 6 — Cleanup + post-mortem
-
-Required before declaring done:
-
-- [ ] Original repro no longer reproduces (re-run the Phase 1 loop)
-- [ ] Regression test passes (or absence of seam is documented)
-- [ ] All `[DEBUG-...]` instrumentation removed (`grep` the prefix)
-- [ ] Throwaway prototypes deleted (or moved to a clearly-marked debug location)
-- [ ] The hypothesis that turned out correct is stated in the commit / PR message — so the next debugger learns
-- [ ] **Material Impact 디버깅**(아키텍처·환경·추측 패치 회피 궤적)이면 `/ai-log` Golden Log 검토 — `success=false`·`failure_category`·`root_cause` 포함 ([cognitive_logging.md](../../adaptive/cognitive_logging.md))
-
-**Then ask: what would have prevented this bug?** If the answer involves architectural change (no good test seam, tangled callers, hidden coupling) hand off to **improve-codebase-architecture** (`.agents/skills/improve-codebase-architecture/SKILL.md`) with the specifics. Make the recommendation **after** the fix is in, not before — you have more information now than you started.
-
-### Agent tool mistake → error_patterns (MUST)
-
-When the **root cause** was an **agent tool or edit-discipline** failure — not application/runtime logic — complete this **before** declaring diagnose done:
-
-- bump 전 [`.agents/core/error_patterns.md`](../../core/error_patterns.md) 상단 «메타 금지 7» 절을 먼저 읽는다.
-
-- [ ] **MUST** register or refresh: `just error-pattern-add "<name>" "<symptom>" "<cause>" "<fix>"`. If the same **name** already exists in [`.agents/core/error_patterns.md`](../../core/error_patterns.md), re-run add with that name to **bump** `occurrence_count` / `last_seen` (do not add a duplicate section).
-- [ ] Keep editor-mistake prose in **error_patterns** SSOT; do not copy the same pattern into RES or knowledge-asset.
-
-**Judgment — treat as tool mistake if any one applies:**
-
-1. **Edit-tool chain** — patch uniqueness not checked, patch failed then same old/target retried without re-read, read → full-write overwrite, regex/newline corruption, or JSX patch stack damage (see [runtime_edit_tools.md](../../core/runtime_edit_tools.md), error_patterns §1–§4).
-2. **Gate skip** — edit before `just route-gate-check`, implementation before `just plan-lint` PASS, or line-number / `grep -n`-only patch despite AGENTS.md editing rules.
-3. **Repeat pattern** — same symptom again in-session, or clear match to a named pattern in error_patterns (bump; do not invent a near-duplicate name).
-
-If **none** apply, use [RES_COMMON_ERROR_RESOLUTIONS.md](../../../docs/knowledge/RES_COMMON_ERROR_RESOLUTIONS.md) for **runtime** symptoms and [knowledge-asset](../knowledge-asset/SKILL.md) for durable **product/code** knowledge — not for editor mistakes.
-
-### Phase 6.5 — Spec sync (post-fix doc drift gate)
-
-If the fix touched **routes**, **`next.config`**, **`proxy.ts`**, **auth/cookie middleware**, or any **Blueprint/Plan Conclusion** that records a technical choice:
-
-- [ ] Run **Unified Sync** (`.agents/skills/sync/SKILL.md`, workflow `.agents/workflows/sync.md`): Claim Inventory → `just sync --check` → Phase 2 본문 갱신 → PASS.
-- [ ] When the renderer dev server is up: `just renderer-route-smoke` (catches “build passes, all routes 404” misconfigs such as wrong `pageExtensions`).
-- [ ] Supersede or correct stale Plan Conclusions before `knowledge-asset` 자산화 검토.
-
----
-
-# Diagnose Output Format
-
-> **언어**: 아래 섹션 제목·본문은 **반드시 한국어**로 작성한다. 코드·로그 인용만 영문 허용.
-
-Phase 진행 중·완료 시 채팅 보고는 필요한 섹션만 골라 쓰되, **항상 한국어**로 작성한다.
-
-## 증상 (Symptom)
-
-무엇이 실패하거나 느려졌는가?
-
-## 피드백 루프 (Feedback Loop)
-
-어떤 pass/fail 신호로 재현·검증하는가?
-
-## 가설 (Hypotheses)
-
-Phase 3 — 순위별 가설과 각각의 **반증 가능한 예측** (한국어 서술)
-
-## 근본 원인 (Root Cause)
-
-계측·증거로 확정된 원인
-
-## 수정 (Fix)
-
-적용한 최소 수정 + 회귀 테스트 여부
-
-## 사후 분석 (Post-mortem)
-
-무엇을 정리·제거했는가, 다음에 막을 수 있는 구조적 개선이 있는가
-
----
-
-# Final Rule
-
-**최종 보고도 한국어로 마무리한다.** (Response Language MUST 준수)
+진행 가능한 저장소 작업에서 사용자 체크포인트를 형식적으로 요구하지 않는다. 사용자 결정에 따라 동작·계약·범위·합격 기준이 달라질 때만 질문 하나를 한다.

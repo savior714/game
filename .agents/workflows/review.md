@@ -1,60 +1,70 @@
 ---
-situation: "코드 리뷰 및 PR 전 검토"
-# trigger: /review  ← catalog metadata only; Read this file before executing (error_patterns §16.1)
+situation: 변경 diff 또는 현재 파일의 정확성·회귀 위험 검토
 level: Recommended
-description: "Review code changes with focus on correctness and risk"
-version: 1.1.0
-last_updated: 2026-06-02
+description: findings-first 방식으로 구체적인 실패 시나리오와 근거를 제시하는 review workflow
+version: 2.0.0
+last_updated: 2026-08-06
 scope: workflow
 domain: workflow
 ---
-
 <!-- Language: ko -->
 
-# Review (`/review`)
+# Review workflow
 
-**프로토콜 SSOT**: [.agents/skills/review/SKILL.md](../skills/review/SKILL.md) — 실행 전 Read 후 리뷰 절차를 따른다.
+상세 절차는 [`review/SKILL.md`](../skills/review/SKILL.md)를 따른다.
 
-## 흐름 요약
+## 1. 검토 대상
 
-| 단계 | 내용 |
-| :--- | :--- |
-| 1 | diff·리스크·**구조 체크list(R-1~R5)** 분석 (SKILL §Review Process · [code_quality_lifecycle.md §3](../core/code_quality_lifecycle.md)) |
-| 2 | 발견 정리 (High / Medium / Low) |
-| 3 | Final Check |
-| 4 | **close** — 본문 제시 후 handoff `AskQuestion`/`question`(병용) |
+우선순위:
 
-## Close turn
+1. 사용자가 지정한 commit, diff, 파일 또는 기능
+2. 현재 branch가 명확하면 base 대비 diff
+3. diff가 없고 특정 파일을 요청했다면 현재 파일의 정적 계약
 
-리뷰 결과를 채팅에 낸 **같은 턴 마지막**에 SKILL §**Handoff `AskQuestion`/`question`(병용)**을 호출한다.
+검토 범위를 임의로 저장소 전체로 확대하지 않는다.
 
-### Handoff (`AskQuestion`/`question`(병용) — close 턴 필수)
+## 2. 리뷰 원칙
 
-**권장 수정·후속 작업이 있을 때** (SKILL 표와 동일):
+- findings를 요약보다 먼저 제시한다.
+- 각 finding은 구체적인 실패 시나리오와 코드·문서 근거를 가진다.
+- 정확성, 상태 오염, 회귀, 보안, cleanup, artifact authority를 style보다 우선한다.
+- formatter·lint가 처리할 사소한 선호는 제외한다.
+- 증거가 약한 우려는 finding으로 승격하지 않는다.
+- 일정 상태와 과거 plan 문자열을 제품 동작 finding으로 취급하지 않는다.
 
-| 옵션 (비개발자 라벨 예) | 내부 |
-| :--- | :--- |
-| 권장 수정을 실행 계획(Blueprint)으로 정리하기 `(권장)` | `/plan` same-session |
-| 리뷰·수정 범위 더 discuss하기 | `/discuss` 또는 동일 세션 질의 계속 |
-| 지금 바로 소규모만 고치기 | Fix-first 범위 내 즉시 패치 |
-| 여기서 마무리 | 종료 |
+## 3. 현재 제품 방향
 
-**실질 이슈 없을 때**: 마무리 `(권장)` / 다른 변경 범위 리뷰.
+범위가 지정되지 않은 review follow-up은 일반 과목 안정화 우선순위를 따른다.
 
-**Fast-path**: 사용자가 이미 plan·Blueprint 연속을 선택했으면 handoff `AskQuestion`/`question`(병용) **생략** → same-session plan.
+- 동결된 Ocean Rescue·실험 기능의 신규 구조 개선을 자동 권장하지 않는다.
+- 일반 과목에서 수정 범위가 넓어지면 첫 사용자 failure domain을 우선한다.
+- 공용화는 두 번째 실제 과목에서 동일 책임이 확인된 경우에만 검토한다.
 
-**금지**: close 마지막에 `/plan`·`/discuss` **명령만** 안내. **AskQuestion/`question`(병용) 없이** 종료 선언만 하기. (discuss.md §종료 금지와 동일)
+## 4. 결과 형식
 
-## Same-session plan
+심각도 순으로 작성한다.
 
-사용자가 **Blueprint로 정리**를 고르면:
+```text
+[High|Medium|Low] <제목>
+- 영향: <어떻게 실패하는가>
+- 근거: <파일·symbol·조건>
+- 수정 경계: <최소 안전 수정>
+```
 
-1. 같은 세션에서 [plan.md](plan.md) SSOT — `PLAN_<slug>.md`·`just plan-lint` PASS.
-2. Task·범위는 리뷰 권장 수정(High/Medium)에서 가져온다.
-3. plan-lint PASS 후 **AskQuestion(`question` 병용)**: Task 1.1 구현 `(권장)` / 리뷰·범위 더 discuss / 마무리.
+실질적인 finding이 없으면 그 사실과 남은 검증 한계를 명확히 적는다.
 
-사용자에게 `/plan` 재입력을 요구하지 않는다.
+## 5. 후속 처리
 
-## Same-session discuss
+- 사용자가 수정까지 요청했다면 첫 actionable finding 하나를 단일 failure domain으로 처리한다.
+- 리뷰만 요청했다면 결과를 제공하고 종료한다.
+- 종료 시 사용자 선택 질문을 형식적으로 강제하지 않는다.
+- review 결과를 자동으로 Blueprint 파일로 변환하지 않는다.
+- 여러 finding의 장기 계획은 사용자가 저장소 Blueprint를 명시적으로 요청한 경우에만 문서화한다.
 
-**더 discuss** 선택 시: 코드 변경 없이 범위·우선순위·트레이드오프를 [discuss.md](discuss.md)로 이어가거나, 동일 `/review` 세션에서 항목별로 질의한다. discuss close 시 plan handoff는 discuss SSOT를 따른다.
+## 6. 완료 조건
+
+- 검토 범위가 명확함
+- 모든 finding이 재현 가능한 실패 시나리오와 근거를 가짐
+- 중복·추측·style noise가 제거됨
+- 검증하지 못한 runtime behavior를 source만으로 확정하지 않음
+- 사용자 요청이 review-only면 repository mutation이 없음

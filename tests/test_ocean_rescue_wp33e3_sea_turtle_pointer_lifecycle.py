@@ -24,6 +24,7 @@ import ast
 import math
 import sys
 from pathlib import Path
+from typing import Protocol
 
 import pytest
 from playwright.sync_api import Page, sync_playwright
@@ -389,6 +390,31 @@ def test_justfile_includes_wp33e3_test_in_focused_recipe() -> None:
 # ---------------------------------------------------------------------------
 
 
+class _PointerMouseLike(Protocol):
+    """Minimum structural contract for the mouse object on a pointer page."""
+
+    def move(self, x: int | float, y: int | float) -> None: ...
+
+    def down(self) -> None: ...
+
+    def up(self) -> None: ...
+
+
+class _PointerPageLike(Protocol):
+    """Minimum structural contract the pointer helpers consume from a page.
+
+    Both real Playwright ``Page`` and the test-only ``_FakePage`` satisfy
+    this protocol, so helpers can accept either without ``Any``, ``cast``,
+    or ``type: ignore`` on the call sites.
+    """
+
+    mouse: _PointerMouseLike
+
+    def wait_for_timeout(self, ms: int) -> None: ...
+
+    def evaluate(self, expression: str) -> object: ...
+
+
 def _instrument(page: Page, base_url: str):
     page_errors: list[str] = []
     console_errors: list[str] = []
@@ -559,7 +585,9 @@ def _ensure_canvas_visible(page: Page) -> None:
     )
 
 
-def _trigger_pointer_down(page: Page, start_client: dict) -> int | float:
+def _trigger_pointer_down(
+    page: Page | _PointerPageLike, start_client: dict
+) -> int | float:
     """Move to position and press mouse button so the browser generates a trusted pointerdown.
 
     The canvas trace listener records the real browser-assigned pointerId,
@@ -584,7 +612,7 @@ def _trigger_pointer_down(page: Page, start_client: dict) -> int | float:
 
 
 def _begin_sea_turtle_touch_gesture(
-    page: Page, context, client_x: int, client_y: int
+    page: Page | _PointerPageLike, context, client_x: int, client_y: int
 ) -> tuple:
     """Begin a native touch gesture: create CDP session, enable touch, dispatch touchStart.
 
@@ -629,7 +657,7 @@ def _begin_sea_turtle_touch_gesture(
 
 
 def _end_sea_turtle_touch_gesture(
-    cdp, page: Page, *, cancel: bool = False
+    cdp, page: Page | _PointerPageLike, *, cancel: bool = False
 ) -> None:
     """Complete a native touch gesture: optionally dispatch touchCancel, then cleanup.
 
@@ -1249,6 +1277,9 @@ def test_pointer_cancel_releases_capture_and_clears_active_gesture() -> None:
             pass
 
 
+_NOT_SET = object()
+
+
 class _FakeCdpSession:
     """Minimal fake CDP session that records send/detach calls."""
 
@@ -1280,13 +1311,19 @@ class _FakeContext:
         return session
 
 
-class _FakePage:
-    """Minimal fake page that fails trace reads to force cleanup path."""
+class _FakePage(_PointerPageLike):
+    """Minimal fake page that fails trace reads to force cleanup path.
 
-    def __init__(self) -> None:
+    Pass ``eval_return`` to make ``evaluate()`` return that value instead of
+    raising.  This keeps the method signature stable for the Protocol while
+    letting tests configure the return value without patching the attribute.
+    """
+
+    def __init__(self, eval_return: object = _NOT_SET) -> None:
         self.wait_calls: list = []
         self.evaluate_calls: list = []
-        self._eval_fail = RuntimeError("forced trace read failure")
+        self._eval_fail: RuntimeError | None = RuntimeError("forced trace read failure")
+        self._eval_return = eval_return
         self.mouse = _FakeMouse()
 
     def wait_for_timeout(self, ms: int) -> None:
@@ -1294,13 +1331,16 @@ class _FakePage:
 
     def evaluate(self, expression: str) -> object:
         self.evaluate_calls.append(expression)
+        if self._eval_return is not _NOT_SET:  # type: ignore[comparison-overlap]
+            return self._eval_return
+        assert self._eval_fail is not None
         raise self._eval_fail
 
 
 class _FakeMouse:
     """Minimal fake mouse with no-op move/up/down."""
 
-    def move(self, x: int, y: int) -> None:
+    def move(self, x: int | float, y: int | float) -> None:
         pass
 
     def down(self) -> None:
@@ -1433,15 +1473,12 @@ def test_pointercancel_proof_has_only_single_session_touch_helper_path() -> None
     )
 
 
+
 def _fake_page_returning(page: _FakePage, value: float) -> None:
     """Patch a fake page so every evaluate() call returns the given value."""
 
-    original_evaluate = page.evaluate
-
-    def _eval(_expr: str) -> float:
-        return value
-
-    page.evaluate = _eval  # type: ignore[assignment]
+    page._eval_return = value
+    page._eval_fail = None
 
 
 def test_pointer_helpers_reject_fractional_pointer_ids() -> None:

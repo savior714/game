@@ -579,86 +579,6 @@ def _trigger_pointer_down(page: Page, start_client: dict) -> int | float:
     return pointer_id
 
 
-def _run_sea_turtle_touch_gesture(
-    page: Page, context, client_x: int, client_y: int, *, cancel: bool = False
-) -> int | float:
-    """Execute a single native touch gesture via one CDP session.
-
-    Creates exactly one CDP session, enables touch emulation once, dispatches
-    touchStart once with the given coordinates, optionally dispatches
-    touchCancel with an empty touchPoints array, then disables touch emulation
-    and detaches the session. The browser generates isTrusted=true pointerdown
-    (and optionally pointercancel) events with a native browser-assigned
-    pointerId that is read from the canvas trace listener. Returns the
-    observed pointerId for subsequent capture/release verification.
-
-    Contract:
-    - context.new_cdp_session(page) is called exactly once
-    - touch emulation is enabled exactly once before touchStart
-    - touchStart is dispatched exactly once
-    - touchCancel is dispatched at most once (only when cancel=True)
-    - touchCancel uses an empty touchPoints array
-    - touch emulation is disabled and session detached after completion
-    - if an exception leaves an active touch, best-effort touchCancel is sent
-      before disable/detach in the cleanup path
-    """
-    cdp = context.new_cdp_session(page)
-    active_touch_sent = False
-    try:
-        cdp.send("Emulation.setTouchEmulationEnabled", {
-            "enabled": True,
-            "maxTouchPoints": 1,
-        })
-
-        cdp.send("Input.dispatchTouchEvent", {
-            "type": "touchStart",
-            "touchPoints": [{"x": client_x, "y": client_y, "id": 100}],
-        })
-        active_touch_sent = True
-
-        page.wait_for_timeout(150)
-
-        if cancel:
-            cdp.send("Input.dispatchTouchEvent", {
-                "type": "touchCancel",
-                "touchPoints": [],
-            })
-
-        pointer_id = page.evaluate("() => window.__wp33e3Trace.pointerId")
-        assert pointer_id is not None, (
-            "trusted pointerdown did not fire or trace listener did not record pointerId"
-        )
-        assert isinstance(pointer_id, (int, float)), (
-            f"observed pointerId must be a number, got {type(pointer_id).__name__}"
-        )
-        assert pointer_id == pointer_id, (
-            f"observed pointerId must be finite, got {pointer_id}"
-        )
-        return pointer_id
-    except Exception:
-        if active_touch_sent and cancel:
-            try:
-                cdp.send("Input.dispatchTouchEvent", {
-                    "type": "touchCancel",
-                    "touchPoints": [],
-                })
-            except Exception:
-                pass
-        raise
-    finally:
-        try:
-            cdp.send("Emulation.setTouchEmulationEnabled", {
-                "enabled": False,
-                "maxTouchPoints": 0,
-            })
-        except Exception:
-            pass
-        try:
-            cdp.detach()
-        except Exception:
-            pass
-
-
 def _begin_sea_turtle_touch_gesture(
     page: Page, context, client_x: int, client_y: int
 ) -> tuple:
@@ -766,49 +686,6 @@ def _check_pointer_release(page: Page, pointer_id: int | float) -> None:
     assert has_capture is False, (
         f"native hasPointerCapture({pointer_id}) must be false after release, got {has_capture}"
     )
-
-
-def _trigger_pointer_cancel_via_cdp(
-    page: Page, context, client_x: int, client_y: int
-) -> None:
-    """Generate a trusted pointercancel via Chromium CDP touchStart/touchCancel.
-
-    Uses context.new_cdp_session(page) to send a touchStart with a deterministic
-    touch id, then touchCancel with an empty touchPoints array. The browser
-    generates isTrusted=true pointerdown/pointercancel events with a native
-    browser-assigned pointerId that is read from the canvas trace listener.
-    Touch emulation is enabled before the sequence and disabled after.
-    """
-    cdp = context.new_cdp_session(page)
-    try:
-        cdp.send("Emulation.setTouchEmulationEnabled", {
-            "enabled": True,
-            "maxTouchPoints": 1,
-        })
-
-        cdp.send("Input.dispatchTouchEvent", {
-            "type": "touchStart",
-            "touchPoints": [{"x": client_x, "y": client_y, "id": 100}],
-        })
-
-        page.wait_for_timeout(150)
-
-        cdp.send("Input.dispatchTouchEvent", {
-            "type": "touchCancel",
-            "touchPoints": [],
-        })
-    finally:
-        try:
-            cdp.send("Emulation.setTouchEmulationEnabled", {
-                "enabled": False,
-                "maxTouchPoints": 0,
-            })
-        except Exception:
-            pass
-        try:
-            cdp.detach()
-        except Exception:
-            pass
 
 
 def test_pointer_down_acquires_capture_and_sets_active() -> None:
@@ -1358,14 +1235,18 @@ def test_pointer_cancel_releases_capture_and_clears_active_gesture() -> None:
             pass
 
 
-def test_pointercancel_proof_has_no_synthetic_event_path() -> None:
-    """Regression: synthetic pointercancel helper must not exist.
+def test_pointercancel_proof_has_only_single_session_touch_helper_path() -> None:
+    """Regression: only single-session touch lifecycle helpers may exist.
 
-    WP-33E-3 proves pointercancel via Chromium CDP touchStart/touchCancel only.
-    The stale `_trigger_pointer_cancel()` helper that dispatched a synthetic
-    PointerEvent('pointercancel') through canvas.dispatchEvent must be removed.
-    This test locks that contract in place so future changes cannot re-introduce
-    the synthetic path.
+    WP-33E-3 proves pointercancel via one CDP session: touchStart -> (optional
+    intermediate checks) -> touchCancel. The superseded helpers that either
+    bundled begin/end into one call or created a second CDP session for
+    pointercancel must be removed. This test locks the current ownership
+    contract in place so future changes cannot re-introduce stale paths.
+
+    Also preserves the synthetic event path prohibition: no
+    `new PointerEvent('pointercancel')` and no `canvas.dispatchEvent(...)`
+    for pointercancel may remain in this file.
     """
     text = _read(Path(__file__))
     function_names = {
@@ -1374,11 +1255,22 @@ def test_pointercancel_proof_has_no_synthetic_event_path() -> None:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
     }
 
-    assert "_trigger_pointer_cancel" not in function_names, (
-        "stale synthetic _trigger_pointer_cancel helper must be removed"
+    required = {
+        "_begin_sea_turtle_touch_gesture",
+        "_end_sea_turtle_touch_gesture",
+    }
+    forbidden = {
+        "_trigger_pointer_down_via_cdp",
+        "_trigger_pointer_cancel_via_cdp",
+        "_run_sea_turtle_touch_gesture",
+        "_trigger_pointer_cancel",
+    }
+
+    assert required <= function_names, (
+        f"single-session touch lifecycle helpers missing: {sorted(required - function_names)}"
     )
-    assert "_trigger_pointer_cancel_via_cdp" in function_names, (
-        "trusted CDP _trigger_pointer_cancel_via_cdp must remain"
+    assert forbidden.isdisjoint(function_names), (
+        f"superseded helpers still defined: {sorted(forbidden & function_names)}"
     )
 
     synthetic_constructor = "new Pointer" + "Event(" + "'point" + "cancel'"

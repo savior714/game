@@ -11,7 +11,7 @@
     startY: 360
   });
 
-  var AutoForwardSpeed = 120;
+  var AutoForwardSpeed = 180;
   var TapSpeed = 360;
 
   var state = {

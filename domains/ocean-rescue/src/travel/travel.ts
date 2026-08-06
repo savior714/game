@@ -58,7 +58,7 @@ export const Bounds: TravelBounds = freeze({
   startY: 360,
 });
 
-const AutoForwardSpeed = 120;
+const AutoForwardSpeed = 180;
 const TapSpeed = 360;
 
 interface MutableTravelState {

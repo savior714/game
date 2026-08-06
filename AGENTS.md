@@ -41,6 +41,7 @@
 - IDE, LSP, uv, pnpm, Docker, 브라우저 E2E, generated artifact 검증은 모두 실제 작업 worktree 하나를 동일한 workspace root와 CWD로 사용한다.
 - unrelated dirty state를 보존한다. force push, history rewrite, `--no-verify`, 필수 검증 우회는 금지한다.
 - 게시 전 최신 `origin/main`을 다시 확인한다. non-fast-forward가 발생하면 최신 main에 재적용하고 직접 영향 검증을 다시 실행한다.
+- 비중첩 remote advance와 다른 세션의 선행 게시는 blocker가 아니다. 최신 main 재적용, V1·필수 V2 재실행, 게시 재시도를 반복한다.
 
 ## 5. 병렬 실행과 reservation
 
@@ -62,7 +63,7 @@
 - Next.js, Tauri, 별도 backend API는 현재 범위 밖이다.
 - Ocean Rescue 세부 계약은 사용자가 해당 범위를 명시적으로 재개한 경우 대상 코드에서 가장 가까운 technical spec을 따른다.
 
-## 7. 검증
+## 7. 검증과 작업 판정
 
 현재 방향 문서 정합성:
 
@@ -80,17 +81,36 @@ just test
 just ci
 ```
 
+현재 작업 결과는 다음 두 항목으로만 판정한다.
+
+- `PRIMARY_CRITERION`: 현재 단일 가설을 직접 판정하는 기준
+- `DIRECT_IMPACT_CLOSURE`: 수정 파일과 직접 영향 범위의 lint·type·focused regression
+
+검증 계층:
+
+- V0 `BASELINE`: 수정 전 결함 재현
+- V1 `PRIMARY`: 단일 가설 판정
+- V2 `DIRECT`: 수정 파일과 직접 영향 closure
+- V3 `SYSTEM_SMOKE`: 독립 결함 탐색; 현재 작업 PASS를 취소하지 않음
+- V4 `RELEASE`: 명시적인 release candidate에서만 수행
+
+현재 변경이 정상이어도 실패할 수 있는 broad smoke, full suite 또는 다른 과목·실험 영역의 실패는 primary criterion이 될 수 없다. V3에서 발견된 독립 실패는 현재 작업의 PASS를 취소하지 않고 `DISCOVERED_FAILURE`로 분리한다.
+
 변경 위험에 직접 대응하는 가장 작은 검증부터 시작하며 모든 명령을 일괄 실행하지 않는다.
 
 수정 파일과 직접 영향 모듈의 LSP·typecheck·lint 오류는 0이어야 한다. 환경·workspace·SDK·cache·generated/vendor 오분석을 production code 변경으로 우회하지 않는다.
 
-workaround, fail-open fallback, broad ignore, 검사 대상 축소, baseline·snapshot 갱신, unrelated cleanup으로 실패를 숨기지 않는다. 실행하지 못한 필수 criterion은 PASS로 보고하지 않는다.
+workaround, fail-open fallback, broad ignore, 검사 대상 축소, baseline·snapshot 갱신, unrelated cleanup으로 실패를 숨기지 않는다. 실행하지 못한 V1·필수 V2 criterion은 PASS로 보고하지 않는다.
+
+`BLOCKED`는 `DECISION_REQUIRED`, `PRIMARY_UNEVALUABLE`, `SEMANTIC_OVERLAP`, `SAFETY_BOUNDARY`, 또는 V1·필수 V2 실패를 현재 failure domain 안에서 안전하게 닫을 수 없는 경우에만 사용한다.
+
+remote advance, non-fast-forward, unrelated dirty, V3 실패, 새 독립 결함, 다른 세션의 선행 게시는 blocker가 아니다.
 
 ## 8. 로컬 에이전트 위임
 
 - 프롬프트 발행 전 현재 objective가 `docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md`의 포함 범위인지 확인한다.
 - 포함 범위가 아니고 사용자가 현재 요청에서 방향 변경이나 허용 예외를 명시하지 않았다면 구현 프롬프트를 발행하지 않는다.
-- 프롬프트에는 현재 objective, workspace, included/excluded scope, Do / Do not, acceptance, verification, stop condition만 전달한다.
+- 프롬프트에는 현재 objective, workspace, included/excluded scope, Do / Do not, primary acceptance, direct verification, optional system smoke, stop condition만 전달한다.
 - 현재 package에 필요한 delta만 포함하고 최대 700줄을 넘기지 않는다.
 - source workspace는 안정적인 `.worktrees/game/<task-slug>` 하나로 고정한다.
 - 일반 병렬 prompt에는 reservation metadata를 넣지 않는다.
@@ -104,8 +124,10 @@ workaround, fail-open fallback, broad ignore, 검사 대상 축소, baseline·sn
 
 ```text
 RESULT: PASS | BLOCKED
-CHANGE: <한 문장>
-VERIFY: <한 문장>
+PRIMARY_VERIFY: PASS | FAIL | NOT_RUN
+DIRECT_VERIFY: PASS | FAIL | NOT_RUN
+PUBLISH: PUBLISHED | NOT_APPLICABLE | BLOCKED
+DISCOVERED_FAILURE: <독립 failure domain 또는 NONE>
 ```
 
-실제 게시 시에만 `COMMIT`, 중단 시에만 `BLOCKER`와 `NEXT`를 추가한다.
+실제 게시 시에만 `COMMIT`, 허용된 blocker로 중단할 때만 `BLOCKER`와 `NEXT`를 추가한다.

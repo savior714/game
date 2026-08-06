@@ -1,115 +1,100 @@
 ---
 name: improve-codebase-architecture
-description: >
-  Surface architectural friction; propose deepening opportunities (shallow → deep
-  modules) for testability and AI-navigability. Glossary-driven (Module, Interface,
-  Depth, Seam, Locality, Leverage).
-license: MIT
+description: 실제 caller·invariant·cleanup을 기준으로 AidenGame module depth와 seam을 검토하는 architecture skill
 metadata:
-  version: "1.0.0"
+  version: "2.0.0"
 ---
-
 <!-- Language: ko -->
 
-# Improve Codebase Architecture
+# Improve codebase architecture skill
 
-Surface architectural friction and propose **deepening opportunities** — refactors that turn shallow modules into deep ones. The aim is testability and AI-navigability.
+workflow 진입점은 [`improve-codebase-architecture.md`](../../workflows/improve-codebase-architecture.md)다.
 
-## Glossary
+## 1. 용어
 
-Use these terms exactly in every suggestion. Consistent language is the point — don't drift into "component," "service," "API," or "boundary." Definitions are the bullet list below (treat it as the glossary).
+- **Module:** interface와 implementation을 가진 책임 단위
+- **Interface:** caller가 알아야 하는 입력, 출력, invariant, ordering, error, lifecycle
+- **Depth:** 작은 interface 뒤에 숨겨진 유효 동작과 규칙의 양
+- **Seam:** 동작을 교체하거나 검증할 수 있는 interface 위치
+- **Adapter:** seam의 구체 구현
+- **Locality:** 변경과 지식이 한 책임에 모이는 정도
+- **Leverage:** caller가 적은 지식으로 얻는 동작
 
-- **Module**: Anything with an interface and an implementation (function, class, package, slice).
-- **Interface**: Everything a caller must know to use the module: types, invariants, error modes, ordering, config. Not just the type signature.
-- **Implementation**: The code inside.
-- **Depth**: Leverage at the interface: a lot of behaviour behind a small interface. **Deep** = high leverage. **Shallow** = interface nearly as complex as the implementation.
-- **Seam**: Where an interface lives; a place behaviour can be altered without editing in place.
-- **Adapter**: A concrete thing satisfying an interface at a seam.
-- **Leverage**: What callers get from depth.
-- **Locality**: What maintainers get from depth: change, bugs, knowledge concentrated in one place.
+용어보다 현재 AidenGame code와 product vocabulary를 우선한다.
 
-### Key Principles
+## 2. explore
 
-- **Deletion test**: Imagine deleting the module. If complexity vanishes, it was a pass-through. If complexity reappears across N callers, it was earning its keep.
-- **The interface is the test surface.**
-- **One adapter = hypothetical seam. Two adapters = real seam.**
+- import와 runtime call을 따라 실제 module 경계를 확인한다.
+- 한 개념을 이해하기 위해 여러 파일을 왕복해야 하는 이유를 찾는다.
+- caller가 반복하는 validation, ordering, state reset, cleanup을 찾는다.
+- pure helper로 분리됐지만 실제 bug가 orchestration에 남는지 확인한다.
+- interface와 implementation의 복잡도가 거의 같은 pass-through wrapper를 찾는다.
 
-## Cross-Cutting Concern → Single Entry Point
+## 3. deletion test
 
-횡단 관심사(에러 바운더리, 로깅, 권한 가드, suspense)를 "각 leaf 파일" Task로 쪼개기 **전에**:
+module을 제거한다고 가정한다.
 
-1. 실제 mount/import **진입점 1~N개**를 `rg`/import graph로 식별한다.
-2. 진입점에서 일괄 적용 가능하면 **그곳만** 수정한다 (Surgical + Deep Module).
-3. Blueprint Task 수·회귀면적·Verify 범위를 진입점 기준으로 재작성한다.
+- 복잡성이 사라지면 불필요한 wrapper일 수 있다.
+- 동일 복잡성이 여러 caller에 재등장하면 module이 depth를 제공할 수 있다.
+- caller 하나뿐이고 교체 가능성도 없으면 hypothetical seam을 만들지 않는다.
+- 두 adapter 또는 동일 lifecycle을 공유하는 여러 caller가 있을 때 seam의 실재성을 검토한다.
 
-**Anti-pattern**: Blueprint Target만 늘리고 import graph 미확인 → phantom path·60+ 중복 패치. SSOT: [planning.md](../../core/planning.md) §0 Target Path SSOT Gate · §2.6.
+## 4. interface 최소화
 
-## Process
+새 interface는 다음을 숨겨야 한다.
 
-### 1. Explore
+- per-question transient state reset
+- duplicate input guard
+- event·pointer·timer ownership
+- ordering과 idempotency
+- fallback 선택
+- persistence와 session state 구분
+- error·no-op 조건
 
-Read the project's domain glossary and any ADRs in the area you're touching first.
-Explore organically and note where you experience friction:
+method 수가 적다는 이유만으로 deep module은 아니다. caller가 내부 순서와 invariants를 계속 알아야 하면 shallow하다.
 
-- Where does understanding one concept require bouncing between many small modules?
-- Where are modules **shallow** — interface nearly as complex as the implementation?
-- Where have pure functions been extracted just for testability, but the real bugs hide in how they're called (no **locality**)?
-- Where do tightly-coupled modules leak across their seams?
-- Which parts of the codebase are untested, or hard to test through their current interface?
+## 5. 후보 비교
 
-Apply the **deletion test** to anything you suspect is shallow.
+여러 interface가 실제로 다른 trade-off를 만들 때만 비교한다.
 
-### 2. Present Candidates
+- minimal common contract
+- subject-specific configuration
+- lifecycle owner
+- ports/adapters가 필요한 외부 dependency
 
-Present a numbered list of deepening opportunities. For each candidate:
+각 후보에서 caller code, hidden rules, failure modes, migration cost, test seam을 설명한다.
+권장안은 현재 use case와 검증 가능성을 기준으로 하나만 고른다.
 
-- **Files**: Which files/modules are involved.
-- **Problem**: Why the current architecture is causing friction.
-- **Solution**: Plain English description of what would change.
-- **Benefits**: Explained in terms of locality and leverage, and also in how tests would improve.
+## 6. AidenGame 적용
 
-**Use domain vocabulary** from the project's README or spec tree.
-Do NOT propose interfaces yet. Ask the user: "Which of these would you like to explore?"
+### 일반 과목
 
-### 3. Grilling Loop
+- 첫 과목은 기존 구조 안에서 안정화한다.
+- 두 번째 과목에서 answer/feedback/next/final/restart 책임이 반복될 때 shared module을 검토한다.
+- 과목별 question data와 pedagogy 차이를 억지로 하나의 interface에 넣지 않는다.
 
-Once the user picks a candidate, drop into a grilling conversation. Walk the design tree with them — constraints, dependencies, the shape of the deepened module, what sits behind the seam, what tests survive.
+### Ocean Rescue와 experiments
 
-Side effects:
+현재 신규 architecture migration은 동결 상태다.
+명시적 재개나 치명적 유지보수 예외가 없으면 분석 결과를 implementation으로 전환하지 않는다.
 
-- **Naming**: If naming a deepened module after a new concept, document it.
-- **ADR**: If the user rejects for a load-bearing reason, offer to record it as an ADR.
-- **Want to explore alternative interfaces for the deepened module?** See [Interface Design](#-interface-design).
+## 7. migration
 
----
+- characterization 또는 interface contract를 먼저 확인한다.
+- source와 caller를 한 boundary씩 이동한다.
+- old state와 bridge를 제거한다.
+- fallback과 cleanup을 검증한다.
+- shared boundary 변경이면 모든 실제 caller regression을 실행한다.
+- artifact 영향은 별도 판정 경계로 다룬다.
 
-## Interface Design
+## 8. 완료
 
-When exploring alternative interfaces for a chosen deepening candidate, use this pattern:
+architecture 개선은 다음이 모두 참일 때만 완료다.
 
-### 1. Frame the problem space
-
-- The constraints any new interface would need to satisfy.
-- The dependencies it would rely on.
-- A rough illustrative code sketch to ground the constraints.
-
-### 2. Design Twice (or Thrice)
-
-Propose radically different interfaces for the deepened module:
-
-- **Option A (Minimal)**: 1–3 entry points max. Maximise leverage per entry point.
-- **Option B (Flexible)**: Support many use cases and extension.
-- **Option C (Common Case)**: Optimise for the most common caller.
-- **Option D (Ports & Adapters)**: Design around ports & adapters for cross-seam dependencies.
-
-For each option, provide:
-
-1. Interface (types, methods, params — plus invariants, ordering, error modes)
-2. Usage example showing how callers use it
-3. What the implementation hides behind the seam
-4. Trade-offs
-
-### 3. Present and Compare
-
-Contrast by **depth** (leverage at the interface), **locality** (where change concentrates), and **seam placement**.
-Be opinionated — provide a strong recommendation on which design is strongest and why.
+- caller 지식이 줄었음
+- invariants와 cleanup이 한 owner에 모임
+- interface가 실제 use case를 가짐
+- duplicate state와 orchestration이 제거됨
+- public behavior가 보존됨
+- test가 interface를 통해 실패를 잡음
+- 현재 동결·제품 우선순위를 위반하지 않음

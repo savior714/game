@@ -1,68 +1,105 @@
 ---
 name: refactor
-description: >
-  EMR 프로젝트의 파편화된 리팩토링 기능들을 통합한 범용 리팩토링 스킬.
-  코드 패치 없이 진단(Diagnose) → 심화(Deepen) → 검증 설계(RGR) 3단계 가이드를 통해
-  문제와 설계 방향을 명확히 하고 /plan 으로 핸드오프한다.
-license: MIT
+description: AidenGame의 동작을 보존하며 실제 반복 책임과 ownership을 검증 가능한 seam으로 정리하는 skill
 metadata:
-  version: "1.0.0"
-disable-model-invocation: true
+  version: "2.0.0"
 ---
-
 <!-- Language: ko -->
 
-# Refactor (`/refactor`)
+# Refactor skill
 
-**Refactor** = 프로젝트의 기술 부채, 아키텍처 문제, 코드 악취(Code Smell)를 식별하고, `진단 → 심화 → 검증 설계`의 3단계 가이드를 통해 점진적 리팩토링 방향을 합의하는 **무코드(Meta-Only) 설계 스킬**이다.
-실제 소스 코드를 수정하지 않으며, 설계가 끝나면 `/plan` 워크플로우로 이관하여 RGR(Red-Green-Refactor) 패치를 수행한다.
+workflow 진입점은 [`refactor.md`](../../workflows/refactor.md)다.
 
-> **이웃 스킬들과의 관계**:
-> - 기존 `micro-improve`, `improve-codebase-architecture` 등의 핵심 철학을 이 스킬의 3단계 가이드에 흡수 통합.
-> - 당분간 기존 스킬들과 공존하며 점진적으로 이 진입점(`/refactor`) 하나로 대체 예정.
+## 1. 리팩터링 자격
 
-## 3 단계 가이드 파이프라인
+다음 질문에 답한다.
 
-에이전트는 사용자의 리팩토링 요청에 대해 아래 3 단계를 순차적으로 대화하며 합의한다.
+- 현재 사용자 동작은 무엇인가
+- 구조가 어떤 반복 결함 또는 변경 비용을 만들었는가
+- 동일 책임이 어디에서 반복되는가
+- 어떤 caller가 내부 구현 세부사항을 과도하게 아는가
+- 새 seam을 검증할 실제 use case가 있는가
 
-### 1. 진단 (Diagnose)
-- **현상 파악**: 문제의 표면적 증상이나 사용자가 언급한 기술 부채를 확인한다.
-- **범위 특정**: 어느 모듈, 어느 계층에 해당하는지 (단일 파일 vs 컴포넌트 전체 등) 스캔한다.
-- **결정**: 어떤 문제를 최우선으로 해결할 것인지 1 문장으로 확정한다.
+명확한 구조적 마찰이 없으면 리팩터링하지 않는다.
 
-### 2. 심화 (Deepen)
-- **Shallow → Deep**: 단순히 코드를 옮기는 것을 넘어, 내부의 복잡성을 숨기고 단순한 인터페이스를 노출하도록 (Deep Module) 구조를 기획한다.
-- **결정**: 구체적으로 어떤 인터페이스 변경이나 책임 분리를 가져갈 것인지 합의한다.
+## 2. 현재 구조 지도
 
-### 3. 검증 설계 (RGR - Red-Green-Refactor)
-- **테스트 주도**: 리팩토링 후 기대하는 동작을 보장하기 위해 어떤 실패 테스트 (Red) 를 먼저 작성할지 기획한다.
-- **Verify 기준**: 코드를 패치하기 전, 무엇이 통과 (Green) 되어야 리팩토링이 성공한 것인지 명확히 한다.
-- **결정**: 검증 기준 (테스트 케이스나 명령어) 을 확정한다.
+최소한 다음을 그린다.
 
-> ⚠️ **주의: Conclusion 확인은 실제 워크플로우가 아니다**
-> 
-> PLAN 파일의 `Conclusion` 섹션을 읽거나 "완료"라고 보고하는 것은 **실제 `/refactor` 워크플로우가 아니다**.
-> 
-> - **PLAN 파일의 Conclusion** = 계획서의 상태 요약 (사용자가 작성한 내용)
-> - **실제 워크플로우** = 사용자가 리팩토링 요청을 했을 때, **3 단계 가이드를 따라 실제로 대화하며 합의하는 과정**
-> 
-> 사용자가 "archive workflow 실행"처럼 PLAN 파일 상태를 확인하는 요청을 했다면, **그것은 `/refactor` 워크플로우가 아니라 PLAN 파일의 상태 확인 작업**이다.
-> 
-> **실제 `/refactor` 워크플로우 실행 조건**:
-> - 사용자가 "프로젝트의 기술 부채를 진단해줘", "리팩토링 방향을 논의하고 싶어" 등 **실제 리팩토링 작업을 요청**했을 때
-> - PLAN 파일의 Conclusion 을 확인하는 것은 **워크플로우 실행이 아니다**
+- entry와 caller
+- state owner
+- event·timer·pointer lifecycle owner
+- render 또는 persistence boundary
+- fallback·legacy path
+- focused test seam
 
-## 철칙 (무코드 원칙)
+문서의 과거 architecture 설명보다 현재 import와 runtime call을 우선한다.
 
-1. **소스 코드 수정 절대 금지**: 이 스킬이 실행되는 동안 `.ts`, `.tsx`, `.py` 등 프로젝트 소스 파일은 읽기(Read)만 허용되며, 직접 패치(Write)하지 않는다.
-2. **한 턴 한 결정**: 각 단계(진단/심화/검증)마다 한 턴씩 할애하여 사용자의 승인을 받거나 옵션을 묻는다. 여러 단계를 묶어 무리하게 진행하지 않는다.
-3. **노트 누적**: 진행 중인 논의는 `docs/discussions/DISCUSS_*.md` (또는 활성 논의 노트)에 점진적으로 갱신한다.
-4. **AskQuestion 줄바꿈 가드**: `AskQuestion`/`question`(병용)의 `prompt`/옵션 라벨에는 literal `\n` 문자열을 넣지 않는다. 줄바꿈이 필요하면 JSON 이스케이프 텍스트가 아닌 실제 개행 문자로 작성한다.
+## 3. deep module 판단
 
-## 핸드오프 (Handoff)
+좋은 module은 작은 interface 뒤에 많은 유효한 동작과 불변조건을 숨긴다.
 
-검증 설계(3단계)까지 합의가 끝나면 대화를 종료하고 다음 워크플로우로 핸드오프한다.
+- caller가 전달해야 할 state가 줄어드는가
+- ordering과 error mode가 module 안으로 들어가는가
+- cleanup이 한 소유자에게 모이는가
+- 두 caller가 같은 규칙을 재구현하지 않는가
+- test가 실제 interface를 통해 동작을 검증할 수 있는가
 
-- **`/plan` (기본 권장)**: 합의된 `진단 → 심화 → 검증` 뼈대를 바탕으로 `docs/plans/PLAN_*.md` 문서를 작성하고 Task를 분해하기 위해 이관한다.
+단순 pass-through wrapper는 제거하거나 만들지 않는다.
 
-(이때 에이전트는 사용자가 수동으로 `/plan` 명령어를 입력하도록 유도하거나, 혹은 권장 옵션으로 제시하여 세션을 이어간다.)
+## 4. interface 설계
+
+interface에는 signature뿐 아니라 다음을 포함한다.
+
+- 입력과 출력
+- 허용 state와 transition
+- ordering
+- idempotency
+- error 또는 no-op 조건
+- lifecycle 시작·종료
+- cleanup 책임
+
+옵션을 여러 개 제시해야 할 때만 사용자 결정축을 하나로 좁힌다.
+모든 리팩터링에서 3개 interface안을 형식적으로 만들지 않는다.
+
+## 5. 테스트 순서
+
+1. 현재 public behavior와 failure mode를 고정한다.
+2. 새 seam을 통해 같은 동작을 증명할 contract를 만든다.
+3. implementation과 caller를 이동한다.
+4. duplicate state와 old bridge를 제거한다.
+5. 직접 caller와 fallback regression을 실행한다.
+6. 필요한 browser 또는 artifact 검증으로 확장한다.
+
+테스트만 위해 production interface를 부풀리지 않는다.
+
+## 6. 일반 과목 공용화
+
+첫 과목에서는 현재 구조 안에서 안정화한다.
+두 번째 과목에서 같은 책임이 확인되면 다음을 비교한다.
+
+- DOM contract
+- state transition
+- correct/incorrect policy
+- next/final/restart lifecycle
+- persistence와 transient state 경계
+- subject-specific data 차이
+
+계약이 같지 않으면 shared abstraction보다 과목별 구현을 유지한다.
+
+## 7. 동결 기능
+
+Ocean Rescue와 `experiments/`의 architecture 개선은 현재 방향에서 제외된다.
+사용자의 명시적 재개 또는 허용 예외가 없으면 후보 분석을 구현으로 전환하지 않는다.
+
+## 8. 완료 점검
+
+- public behavior 보존
+- 새 seam에 실제 caller 둘 또는 명확한 lifecycle owner가 있음
+- interface가 implementation보다 단순함
+- duplicate source와 state 제거
+- cleanup과 idempotency 검증
+- 직접 회귀와 정적 진단 통과
+- plan·evidence 상태 변경 없음
+
+리팩터링 완료 후 다음 구조 개선을 관성적으로 이어가지 않는다.

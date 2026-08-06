@@ -1611,6 +1611,15 @@
     }
     var snapshot = State.getSnapshot();
     if (snapshot.phase === State.Phases.RESCUE_SITE_TRANSITION) {
+      var root = document.getElementById("ocean-rescue-root");
+      if (root && root.getAttribute("data-sea-turtle-scene-failure") === "true") {
+        exitPauseToMenu();
+        return;
+      }
+      if (root && root.getAttribute("data-crab-scene-failure") === "true") {
+        exitPauseToMenu();
+        return;
+      }
       if (typeof event.preventDefault === "function") {
         event.preventDefault();
       }
@@ -1738,12 +1747,17 @@
     }
     var started = false;
     if (typeof App.startSeaTurtleSession === "function") {
-      started = App.startSeaTurtleSession(sequence);
-    } else {
-      var canvas = resolveVisibleInputCanvas();
-      var context = resolvePaintContext();
-      var overlay = document.getElementById("ocean-rescue-rescue-overlay");
-      if (canvas && context && overlay) {
+      try {
+        started = App.startSeaTurtleSession(sequence);
+      } catch (bridgeError) {
+        started = false;
+      }
+    }
+    if (!started && typeof App.startSeaTurtleSession === "function") {
+      var fallbackCanvas = resolveVisibleInputCanvas();
+      var fallbackContext = resolvePaintContext();
+      var fallbackOverlay = document.getElementById("ocean-rescue-rescue-overlay");
+      if (fallbackCanvas && fallbackContext && fallbackOverlay) {
         SeaTurtle.start();
         if (SeaTurtleScene && RenderRuntime && RenderRuntime.isReady()) {
           if (!SeaTurtleScene.isMounted()) {
@@ -1755,12 +1769,20 @@
             SeaTurtleScene.activate();
           }
         }
-        bindRescuePointerInput(canvas);
+        bindRescuePointerInput(fallbackCanvas);
         renderSeaTurtleFrame();
         started = true;
       }
     }
     if (!started) {
+      var status = document.getElementById("ocean-rescue-status");
+      if (status) {
+        status.textContent = "Rescue scene could not start — tap to return to menu";
+      }
+      var failedRoot = document.getElementById("ocean-rescue-root");
+      if (failedRoot) {
+        failedRoot.setAttribute("data-sea-turtle-scene-failure", "true");
+      }
       return false;
     }
     seaTurtleRenderMarker = true;
@@ -2308,6 +2330,7 @@
       updateYoungWhaleRootMarkers();
       return;
     }
+    clearCrabHoldTimer();
     if (crabPointerId === null) {
       return;
     }
@@ -2317,7 +2340,6 @@
     if (event.pointerId !== crabPointerId) {
       return;
     }
-    clearCrabHoldTimer();
     Crab.pointerCancel(event.pointerId);
     releaseCrabPointerCapture(event.pointerId);
     crabPointerId = null;
@@ -3503,6 +3525,7 @@
       seaTurtlePointerCaptureEl = null;
     }
     seaTurtleRenderMarker = false;
+    seaTurtleInputBound = false;
     if (
       crabPointerId !== null &&
       crabPointerCaptureEl &&
@@ -3772,6 +3795,7 @@
       return;
     }
     pauseActive = false;
+    cancelPausePointerInteractions();
     if (RenderRuntime && RenderRuntime.isReady()) {
       RenderRuntime.resume();
     }

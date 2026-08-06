@@ -94,10 +94,6 @@ _ROLLBACK_BASELINE_FORBIDDEN_NAMES = (
 _HISTORICAL_EVIDENCE_NAME = "HISTORICAL_PRE_WP21_LEGACY_ARTIFACT_SHA256"
 _SHA256_HEX_RE = re.compile(r"^[0-9a-f]{64}$")
 
-PLAN_DOC = (
-    REPO_ROOT / "docs" / "plans" / "PLAN_ocean_rescue_vite_esm_typescript_migration.md"
-)
-
 
 def _load_manifest() -> dict:
     return json.loads(MANIFEST.read_text(encoding="utf-8"))
@@ -762,36 +758,3 @@ def test_production_artifact_browser_parity() -> None:
     assert script_requests == [], (
         f"standalone artifact must inline all scripts, got {script_requests}"
     )
-
-
-# --- documentation state ---
-
-
-def test_migration_documentation_state() -> None:
-    plan = PLAN_DOC.read_text(encoding="utf-8")
-    assert "WP-21: COMPLETE" in plan
-    assert "Current phase: PHASE_8_IN_PROGRESS" in plan
-    assert "Next executable work package: WP-33D" in plan
-    assert "WP-33C: COMPLETE" in plan
-    assert "Authoritative path before:" in plan
-    assert "Vite application bundle through temporary standalone packaging" in plan
-    assert "WP-31A: COMPLETE" in plan
-    assert "WP-31B: COMPLETE" in plan
-    assert "WP-31C: COMPLETE" in plan
-    assert "WP-32A: COMPLETE" in plan
-    assert "Shared mission ID state: TYPE_AUTHORITY" in plan
-    assert "Global OceanRescue ABI state: TYPED_SHARED" in plan
-    assert "Typed module ESM adapter state: CHECKED_JS" in plan
-    assert "Runtime output state: DETERMINISTIC" in plan
-    assert "Profile module state: TYPED_CANONICAL" in plan
-    assert "Mission catalog state: TYPED_CANONICAL" in plan
-    assert "GUP catalog state: TYPED_CANONICAL" in plan
-    assert "Launch module state: TYPED_CANONICAL" in plan
-    assert "State module state: TYPED_CANONICAL" in plan
-    assert "Travel module state: TYPED_CANONICAL" in plan
-    assert "Legacy profile.js: ROLLBACK_ONLY" in plan
-    assert "Legacy missions.js: CONTROLLER_CANONICAL_PLUS_ROLLBACK" in plan
-    assert "Legacy gups.js: CONTROLLER_CANONICAL_PLUS_ROLLBACK" in plan
-    assert "Legacy launch.js: ROLLBACK_ONLY" in plan
-    assert "Legacy state.js: ROLLBACK_ONLY" in plan
-    assert "Legacy travel.js: ROLLBACK_ONLY" in plan

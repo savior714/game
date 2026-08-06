@@ -40,12 +40,12 @@ Ocean Rescue 관련 spec은 이미 확정된 제품·렌더링·개발 구조·a
 다음 문제가 최신 main 또는 현재 production에서 실제로 재현될 때만 독립 failure domain으로 수정할 수 있다.
 
 - 배포 entry가 열리지 않음
-- 사용자가 기존 rescue flow를 진행할 수 없는 치명적 회귀
-- source, build metadata, tracked artifact의 명확한 drift
-- rollback 불능
+- 사용자가 기존 rescue flow를 진행할 수 없는 배포 차단 치명적 회귀
 - 데이터 손상
 - 보안 또는 credential 노출
-- 일반 과목 변경이 Ocean Rescue 운영 entry를 직접 깨뜨림
+- 일반 과목 변경이 위 배포 차단 치명적 회귀를 직접 유발함
+
+source·build metadata·tracked artifact의 drift, rollback 검증 실패 또는 테스트 실패만으로는 예외가 성립하지 않는다. 이러한 신호가 위 배포 차단 치명적 회귀, 데이터 손상 또는 보안 문제를 직접 증명할 때만 해당 예외 범위에서 조사·수정한다.
 
 예외 수정은 재현된 원인 하나에 한정하며 신규 feature나 장기 migration으로 확장하지 않는다.
 

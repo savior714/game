@@ -493,7 +493,9 @@ def _install_pointer_trace(page: Page) -> None:
             downCount: 0,
             moveCount: 0,
             upCount: 0,
-            cancelCount: 0
+            cancelCount: 0,
+            upPointerId: null,
+            upTrusted: null
           };
           const canvas = document.getElementById('ocean-rescue-canvas');
           if (!canvas) return;
@@ -506,6 +508,8 @@ def _install_pointer_trace(page: Page) -> None:
           });
           canvas.addEventListener('pointerup', (e) => {
             window.__wp33e3Trace.upCount += 1;
+            window.__wp33e3Trace.upPointerId = e.pointerId;
+            window.__wp33e3Trace.upTrusted = e.isTrusted;
           });
           canvas.addEventListener('pointercancel', (e) => {
             window.__wp33e3Trace.cancelCount += 1;
@@ -565,23 +569,15 @@ def _trigger_pointer_down(page: Page, start_client: dict) -> int | float:
 
 
 def _trigger_pointer_up(page: Page, client_x: int, client_y: int) -> None:
-    """Dispatch synthetic pointerup using the browser-assigned pointerId from trace."""
-    pointer_id = page.evaluate("() => window.__wp33e3Trace.pointerId")
-    page.evaluate(
-        """(args) => {
-          const x = args[0];
-          const y = args[1];
-          const pid = args[2];
-          const canvas = document.getElementById('ocean-rescue-canvas');
-          if (!canvas) return;
-          const e = new PointerEvent('pointerup', {
-            clientX: x, clientY: y,
-            pointerId: pid, isPrimary: true, button: 0, bubbles: true
-          });
-          canvas.dispatchEvent(e);
-        }""",
-        [client_x, client_y, pointer_id],
-    )
+    """Generate a trusted browser pointerup via Playwright mouse input.
+
+    Moves the cursor to (client_x, client_y) and releases the mouse button
+    using page.mouse.up(), which produces a native isTrusted=true PointerEvent
+    with the same browser-assigned pointerId that was observed during the
+    preceding trusted pointerdown.
+    """
+    page.mouse.move(client_x, client_y)
+    page.mouse.up()
 
 
 def _check_pointer_capture(page: Page, pointer_id: int | float) -> None:
@@ -823,10 +819,20 @@ def test_pointer_up_releases_capture_and_clears_active() -> None:
 
             observed_pointer_id = _trigger_pointer_down(page, start_client)
 
+            _check_pointer_capture(page, observed_pointer_id)
+
             _trigger_pointer_up(page, start_client["x"], start_client["y"])
 
             trace_after = page.evaluate("() => window.__wp33e3Trace")
             assert trace_after["upCount"] == 1, "pointerup listener must fire once"
+            assert trace_after["upTrusted"] is True, (
+                f"pointerup must be trusted (isTrusted=true), got {trace_after['upTrusted']}"
+            )
+            assert trace_after["upPointerId"] == observed_pointer_id, (
+                f"pointerup pointerId must match pointerdown pointerId, "
+                f"got upPointerId={trace_after['upPointerId']}, "
+                f"observed_pointer_id={observed_pointer_id}"
+            )
 
             snapshot = page.evaluate(
                 "() => OceanRescue.SeaTurtle.getSnapshot()"

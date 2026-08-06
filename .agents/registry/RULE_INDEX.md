@@ -34,6 +34,7 @@ last_verified: 2026-08-06
 
 - [`principles.md`](../core/principles.md)
 - [`execution.md`](../core/execution.md)
+- [`routing.md`](../core/routing.md)
 - [`verification.md`](../core/verification.md)
 - [`reporting.md`](../core/reporting.md)
 - [`planning.md`](../core/planning.md)
@@ -45,7 +46,7 @@ last_verified: 2026-08-06
 - [`memory_hygiene.md`](../core/memory_hygiene.md)
 - [`error_patterns.md`](../core/error_patterns.md)
 
-`routing.md`는 과거 자동 route CLI 설계를 포함한 legacy reference다. 현재 실행 권위로 사용하지 않는다.
+`routing.md`는 현재 세션의 수동 도구·컨텍스트 선택 규칙이며 자동 route CLI나 manifest를 전제하지 않는다.
 
 ## 4. Domain 규칙
 

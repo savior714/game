@@ -12,6 +12,7 @@ REGISTRY_FILES = (
     ROOT / ".agents/registry/WORKFLOW_AND_SKILL_INDEX.md",
 )
 CORE_ROUTING = ROOT / ".agents/core/routing.md"
+CORE_EXECUTION = ROOT / ".agents/core/execution.md"
 ROUTING_FILES = (*REGISTRY_FILES, CORE_ROUTING)
 CURRENT_SPEC = "docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md"
 
@@ -101,6 +102,17 @@ def test_core_routing_declares_manual_current_tool_policy() -> None:
     assert "한 작업에는 하나의 failure domain" in routing
     assert "게시 직전 `origin/main` 이동 여부" in routing
     assert "대형 파일을 전체 교체할 때는 게시 전에 원본과 후보 diff" in routing
+
+
+def test_rule_index_classifies_core_routing_as_current_policy() -> None:
+    index = read(REGISTRY_FILES[2])
+    execution = read(CORE_EXECUTION)
+    routing = read(CORE_ROUTING)
+
+    assert "[`routing.md`](../core/routing.md)" in index
+    assert "legacy reference" not in index
+    assert "[`routing.md`](routing.md)" in execution
+    assert "현재 세션에 실제로 제공된 도구" in routing
 
 
 def test_registry_indexes_every_installed_workflow_and_skill() -> None:

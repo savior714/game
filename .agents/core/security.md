@@ -4,32 +4,82 @@ scope:
 always_apply: false
 priority: 1
 domain: core
+last_verified: 2026-08-06
 verify_with:
-- just prevent-tech-debt
-- just env-lint
+- just commit-gate-hard
 ---
 <!-- Language: ko -->
-# Secrets & Credentials (ZERO-LEAK, 재발 금지)
 
-> **도메인 지침 이전**: HIRA API·PHI 보안 → `[medical/emr_security.md](../domains/medical/emr_security.md)`. CSV 시딩·인코딩 → `[infra/seeding.md](../domains/infra/seeding.md)` (경로 매칭 시 `just route`로 동적 로드).
+# 비밀정보와 자격 증명
 
-**정책 상위 SSOT**: `[PROJECT_RULES.md](../../PROJECT_RULES.md) §4.1`. 본 절은 실행 방법만 고정한다.
+이 문서는 AidenGame 저장소 작업에서 credential과 민감 정보가 로그·문서·커밋으로 노출되지 않도록 하는 실행 규칙이다.
+정책 상위 권위는 [`PROJECT_RULES.md`](../../PROJECT_RULES.md)다.
 
-- **절대 금지**: `.env`, `.env.*`, 앱/CI 시크릿 파일, 키·PEM 등에서 **비밀 문자열을 읽어 채팅·PR·도구 결과에 붙여 넣는 행위**. `grep API_KEY`, `grep LINEAR`, `cat .env` 등 **stdout/stderr에 비밀이 실릴 수 있는 명령**으로 키 존재를 “확인”하는 것도 금지다. (확인이 필요하면 “파일이 있는지”만 `test -f` 등으로, 내용은 열지 않는다.)
-- **선행 동의**: 외부 API·GraphQL·git remote 등에 **비밀이 필요하면 먼저 사용자에게** 자격 증명을 어떻게 둘지 묻는다. 기본 경로는 **`just` 스크립트**(내부적으로 비밀 주입)를 쓰고, 로컬 `.env`를 에이전트가 직접 열어 인용하는 것은 사용자가 명시적으로 허용한 경우에만 허용한다.
-- **직접 쉘 실행 금지 및 just 위임 강제**: 에이전트가 쉘에서 직접 `.env`를 소싱(`source`)하는 것은 원천 금지된다. 비밀값이 필요한 작업은 무조건 사전에 정의된 `just` 명령어(내부적으로 비밀을 안전하게 주입하는)만을 통해서 실행해야 한다.
-- **Linear (저장소 정책)**: Linear 이슈 조회·상태·댓글 동기화는 루트 **`.env`의 `LINEAR_API_KEY`**와 **`scripts/linear_sync/sync_engine.py`** GraphQL 경로를 표준으로 한다. 에이전트는 키를 채팅에 노출하지 않고, `just linear-sync`·`just linear-pull` 출력만 참조한다. **빈 셸 `printenv`만으로 "키 없음" 결론을 내리지 말 것** — 상세는 [linear.md](../workflows/linear.md)「실행 절차 → API 키·`.env` SSOT」.
-- **`.env` / `.env.example` 편집 게이트 (재발 방지)**: **`KEY=VALUE`와 `#` 주석만** — `unset`·`export`·`source`·`$(…)`·리다이렉트 등 **셸 명령 금지** (Docker Compose·`run_dev.sh` 파싱 실패). 저장 후 **`just env-lint` PASS** (`scripts/verify/lint_dotenv.py`; `just lint`에 포함). 로컬 `.env`는 Git에 없으므로 에이전트가 손대면 반드시 린트를 돌린다.
+## 1. 절대 금지
 
-### `.env` 소비자별 strictness (동일 파일, 다른 실패 조건)
+- `.env`, `.env.*`, key, token, cookie, password, PEM 내용을 채팅이나 도구 출력에 노출
+- `cat .env`, `echo $TOKEN`, 환경 전체 dump처럼 민감값이 stdout/stderr에 실릴 수 있는 명령
+- 비밀값을 source, test fixture, 문서, commit message에 하드코딩
+- 로그에 포함된 credential을 오류 설명에서 재인용
+- 검증을 통과시키기 위해 secret scan을 비활성화
 
-| 소비자 | 한 줄 오류 시 |
-|--------|----------------|
-| Docker Compose | **전체 ABORT** |
-| Python `load_env()` line-filter | 해당 줄 skip, 나머지 통과 가능 |
-| bash `export` in `run_dev.sh` | invalid identifier 즉시 실패 |
+## 2. 안전한 확인
 
-→ 셸 명령을 `.env`에 넣으면 **가장 strict한 소비자** 기준으로 dev 전체가 깨진다. 편집 후 `just env-lint` 필수.
+내용을 읽지 않고 다음만 확인할 수 있다.
 
-- **실패·에러 시**: 스택 트레이스·환경 덤프에 키가 섞여 있을 수 있으므로 **응답에 원문을 붙이지 않는다.**
-- **노출 발생 시**: 키 문자열을 다시 보여주지 말고 **즉시 폐기·재발급(회전)**을 안내한다.
+- 파일 존재 여부
+- 필요한 key 이름의 문서화 여부
+- 값이 비어 있는지 여부를 노출하지 않는 안전한 script 결과
+- pre-defined command의 성공/실패
+
+외부 서비스에 credential이 필요하면 저장소가 제공하는 안전한 주입 경계를 먼저 확인한다.
+사용자가 직접 값을 채팅에 붙여넣도록 요구하지 않는다.
+
+## 3. `.env` 형식
+
+`.env`와 `.env.example`은 저장소의 실제 소비자가 지원하는 단순 `KEY=VALUE`와 주석 형식을 따른다.
+
+- shell command, command substitution, redirect를 넣지 않는다.
+- 예시 파일에는 실제 비밀값을 넣지 않는다.
+- `.env`를 수정했다면 현재 linter의 실제 인자를 확인해 검증한다.
+
+현재 저장소의 hard commit gate:
+
+```bash
+just commit-gate-hard
+```
+
+이 gate는 존재하는 dotenv 파일에 대해 `scripts/verify/lint_dotenv.py`와 staged secret 검사를 사용한다.
+
+## 4. Git과 remote
+
+- credential이 포함된 remote URL이나 command를 출력하지 않는다.
+- token이 섞일 수 있는 full URL 대신 repository identity와 masked 상태만 사용한다.
+- secret 파일을 stage하지 않는다.
+- commit gate 실패 시 `--no-verify`로 우회하지 않는다.
+- 과거 history에 노출된 비밀은 파일 삭제만으로 해결되지 않으므로 회전과 history 대응을 별도로 판단한다.
+
+## 5. 로그와 오류
+
+- stack trace와 request dump에서 header, query, environment를 확인하기 전에 민감값 가능성을 고려한다.
+- 필요한 오류 코드와 실패 단계만 요약한다.
+- 원문 로그 공유가 필요하면 credential field를 제거하거나 마스킹한다.
+- 브라우저 storage, cookie, authorization header를 테스트 evidence에 포함하지 않는다.
+
+## 6. 노출 발생 시
+
+1. 추가 출력과 재시도를 중단한다.
+2. 비밀값을 다시 보여주지 않는다.
+3. 어떤 종류의 credential과 경로가 영향을 받았는지 설명한다.
+4. credential 회전 또는 폐기를 안내한다.
+5. commit·log·artifact·remote history 노출 범위를 확인한다.
+6. 재발 방지 gate를 별도 failure domain으로 수정한다.
+
+credential 자체를 검증 증거로 보존하지 않는다.
+
+## 7. 테스트와 문서
+
+- 테스트에는 synthetic placeholder만 사용한다.
+- placeholder가 실제 credential 형식과 혼동되지 않게 명확히 표시한다.
+- 문서에는 key 이름과 안전한 설정 방법만 기록한다.
+- 외부 issue tracker나 특정 서비스 credential을 AidenGame 공통 필수 계약으로 강제하지 않는다.

@@ -4,183 +4,119 @@ scope:
 always_apply: false
 priority: 1
 domain: core
+last_verified: 2026-08-06
 verify_with:
-- just prevent-tech-debt
-- just ddd-gate
-- just fe-boundary-gate
-- just fe-function-length-gate
-- just fe-complexity-gate
-- just test-coupling-gate
-- just test-internal-mock-gate
+- uv run pytest -q tests/test_auxiliary_core_contract_consistency.py
 ---
 <!-- Language: ko -->
 
-# Code Quality Lifecycle — 설계·구현·리뷰·강제·테스트
+# AidenGame 코드 품질 생명주기
 
-코드 품질 점검을 **시점별**로 묶은 normative SSOT입니다. 세부 도구·게이트는 각 절의 Cross-ref를 따릅니다.
+이 문서는 정적 HTML/CSS/JavaScript 런타임과 Python 기반 검증 도구의 품질 기준을 설계·구현·리뷰·검증 단계로 정리한다.
+실제 gate는 최신 `Justfile`, `verify.sh`, package 설정, 테스트 파일을 따른다.
 
----
+## 1. 설계
 
-## 📋 AGENTS.md 헌법 적용 요약
+- 사용자 가시 결과와 failure domain을 먼저 정의한다.
+- 상태 소유권, 이벤트 lifecycle, cleanup, generated artifact 경계를 명확히 한다.
+- 공용화는 두 번째 실제 사용처에서 동일 책임이 확인된 뒤에만 검토한다.
+- 경로와 symbol은 최신 저장소에서 존재 여부를 확인한다.
+- 현재 제품 방향과 동결 범위를 넘는 설계를 시작하지 않는다.
 
-| 원칙 | 이 문서에서의 구현 |
-|------|-------------------|
-| **1. 규칙 위계** | priority: 1 — `PROJECT_RULES.md` 다음, 시점별 품질 체크 normative SSOT |
-| **2. 사고→단순→표적** | §2 I-2 중첩 3단계 초과 시 평탄화, I-3 함수·파일 크기 상한 (500줄/100줄) |
-| **3. 편집 게이트 4단계** | §2 I-5 신규 function·helper 전 검색 — 중복 타입·pass-through helper 금지 |
-| **4. 다중 에이전트** | §0 적용 순서 — 설계→구현→CI·lint→리뷰 순차 실행, §7 Enforcement Map |
-| **5. Plan CLI 전용** | §1 설계 시점 — Blueprint Task에 레이어 경계·SSOT 먼저 기록, `just ddd-gate` 검증 |
-| **6. 검증·한글·고유성** | §5 T-5 테스트 메시지 전역 고유성 — `querySelector` 중복 방지, §4 CI 강제 E-1~E-3 |
+일반 계획은 채팅에서 관리하고, 명시적으로 요청된 Blueprint에만 장기 설계를 기록한다.
 
-> **용어 — Mock**: 본 문서 **Mock** = 테스트 더블(stub/spy/fake). **DB 시드·fixture**는 [seeding.md](../domains/infra/seeding.md). **`dependency_overrides`** = FastAPI composition root 교체(T-2 허용) — 내부 함수 patch와 구분.
+## 2. 구현
 
----
+### 상태와 lifecycle
 
-## 0. 적용 순서
+- 문제별 transient state와 세션 전체 state를 구분한다.
+- event listener, pointer capture, timer, animation frame의 소유자와 cleanup 경로를 둔다.
+- pause, menu, restart, cancel, page teardown에서 임시 상태를 정리한다.
+- 중복 입력이 상태를 두 번 전진시키지 않아야 한다.
 
-| 단계 | 시점 | SSOT |
-| :--- | :--- | :--- |
-| 1 | **설계** (`/plan`, Blueprint) | §1 |
-| 2 | **구현** (코드 편집; Red-first 테스트 **병행**) | §2 · §5 |
-| 3 | **CI·lint** (항상·완료 전) | §4 |
-| 4 | **리뷰** (`/review`, PR) | §3 |
+### JavaScript
 
-**실무 한 사이클**: 설계 → 엣지케이스 Red 테스트 → 구현 Green → `just lint-fe` / `just lint-be` → 리뷰.
+- 암묵적 전역과 load-order side effect를 새로 만들지 않는다.
+- 기존 public namespace와 entry contract를 보존한다.
+- DOM 조회 실패를 조용히 삼켜 핵심 흐름을 멈추지 않는다.
+- 사용자 입력과 상태 변경을 렌더링에서 분리할 수 있는 경계는 명확히 한다.
+- 같은 책임의 helper와 state shape를 중복 생성하지 않는다.
 
-> §4(강제)는 2·3·4 전 단계에서 **우회 불가**하게 동작한다.
+### CSS와 UI
 
----
+- 어린이 사용 환경의 터치 target, disabled state, focus, feedback 가시성을 고려한다.
+- 순수 시각 변경과 진행을 막는 usability 결함을 구분한다.
+- overlay와 animation이 필수 컨트롤을 가리지 않아야 한다.
+- 반응형 변경은 실제 지원 viewport에서 확인한다.
 
-## 1. 설계 시점 (Design Gate)
+### Python 검증 코드
 
-Blueprint·아키텍처 결정 **전** 확인합니다. 상세: [planning.md](planning.md) §0 · [ddd.md](../domains/backend/ddd.md).
+- Ruff와 type checker가 이해할 수 있는 명시적 타입과 단순한 제어 흐름을 사용한다.
+- 테스트 fixture의 server, browser, temp resource를 종료한다.
+- 포괄적 예외 무시로 실패를 숨기지 않는다.
+- 테스트 helper가 production contract를 우회하지 않아야 한다.
 
-### MUST
+## 3. 테스트
 
-| ID | 규칙 | 실무 |
-| :--- | :--- | :--- |
-| **D-1** | **모듈·레이어 경계를 먼저 적는다** | Task `Target`·`Architectural Goal`에 레이어(`domain` / `application` / `features` / `components`)와 허용 의존 방향을 명시. import graph spot-check — [planning.md §0](planning.md) Target Path SSOT Gate |
-| **D-2** | **의존성은 lint·스캐너로 기계 검증** | BE: `just be-boundary-gate` · `just ddd-gate` · `runtime_coupling_scan --check`. FE: `just fe-boundary-gate` · `just lint-fe` |
-| **D-3** | **공용 유틸·타입·shape SSOT 선지정** | 신규 shape 전 `rg`/Glob으로 기존 타입·매퍼·ViewModel 검색. specs > packages/shared > domain types 우선 — 중복 DTO·parallel type 금지 |
-| **D-4** | **디렉터리 위계로 의존 방향을 눈에 보이게** | BE: `main → application → domain ← infrastructure`. FE: `apps/renderer/src/features/<domain>/` · `components/` · `hooks/` — 상위가 하위 UI leaf에 직접 침범하지 않도록 Task 범위를 레이어 단위로 쪼갬 |
+- 문자열 존재보다 사용자 동작과 상태 전이를 우선 검증한다.
+- 정답·오답, 다음 문제, 마지막 문제, 재시작 경계를 구분한다.
+- 문제 identity와 per-question state reset을 확인한다.
+- page error와 request failure를 수집한다.
+- browser-generated input을 사용한다.
+- flake가 중요하면 계약에 정의된 반복 횟수를 적용한다.
+- 내부 구현을 과도하게 mock해 실제 boundary를 건너뛰지 않는다.
 
-### MUST NOT
+문서 test는 stable authority, 링크, 실제 명령, 동결 정책을 검증한다.
+일정 상태나 다음 작업 문자열을 제품 test에 결합하지 않는다.
 
-- 경계·SSOT 없이 "일단 파일 추가" Task 작성
-- Blueprint `Target`에 코드베이스 미존재 경로 기재 ([planning.md §0](planning.md) blocked 처리)
+## 4. 리뷰
 
----
+리뷰에서는 다음을 확인한다.
 
-## 2. 구현 시점 (Implementation Gate)
+- 변경이 한 failure domain에 한정되는가
+- 다른 과목 또는 fallback 경로에 회귀가 없는가
+- 상태·listener·timer cleanup이 완결됐는가
+- 중복 구현이나 dead branch가 생기지 않았는가
+- broad ignore, fail-open fallback, 검사 범위 축소가 없는가
+- generated artifact와 source authority를 혼동하지 않았는가
+- 문서가 현재 제품 방향과 실제 명령을 반영하는가
 
-코드 작성·수정 **중** 확인합니다. 상세: [execution.md](execution.md) §2 · [principles.md](principles.md) §1.2–§1.3.
+발견 사항은 파일·symbol·실패 시나리오와 함께 제시한다.
 
-### MUST
+## 5. 정적 진단
 
-| ID | 규칙 | 실무 |
-| :--- | :--- | :--- |
-| **I-1** | **에러는 경계·핸들러에서만 처리** | 빈 `catch`/`except: pass` 금지. FE: BP-TS-005* · BE: BP-PY-001/002* — `just lint-fe` / `just lint-be` incremental |
-| **I-2** | **중첩 3단계 초과 시 평탄화** | `if`/`for`/`switch` 중첩 3단계 넘으면 early return·guard clause로 재구성. Biome cognitive complexity ≤15 목표 — [biome.json](../../biome.json) |
-| **I-3** | **함수·파일 크기 상한 준수** | 파일 **500줄** — `just prevent-tech-debt`. 함수 **100줄** — `just fe-function-length-gate` (baseline incremental) |
-| **I-4** | **엣지케이스를 happy path보다 먼저 테스트** | Red-first 시 **빈 입력·null·경계값·동시성·실패 경로** 테스트를 먼저 작성. side-effect(저장·발행·라우팅) assertion 포함 — §5 |
-| **I-5** | **신규 function·helper·shape 전 검색** | `rg`/Glob/기존 deep module 우선. pass-through helper·중복 타입 추가 금지 — [improve-codebase-architecture/SKILL.md](../skills/improve-codebase-architecture/SKILL.md) deletion test |
+현재 저장소의 대표 명령:
 
-### MUST NOT
+```bash
+just lint
+just typecheck
+just verify
+```
 
-- 테스트 통과·lint 회피를 위해 production에 방어 코드 추가 ([tdd.md](../domains/testing/tdd.md) Test Self-Repair)
-- I등급(500줄+) 파일 본문 확장 — 분할 Blueprint 선행 ([principles.md §1.3](principles.md))
+수정 파일과 직접 영향 모듈의 오류는 0이어야 한다.
+환경·workspace·dependency 문제를 production code 변경으로 덮지 않는다.
 
----
+함수·파일 길이는 기계적 숫자만으로 실패시키지 않는다.
+긴 코드가 여러 책임, 깊은 중첩, 반복 cleanup을 포함할 때 실제 semantic boundary를 기준으로 분리한다.
 
-## 3. 리뷰 시점 (Review Gate)
+## 6. 공용화와 리팩터링
 
-`/review`·PR에서 diff 기준 확인합니다. 상세: [review/SKILL.md](../skills/review/SKILL.md).
+다음 조건이 모두 있을 때만 공용화를 검토한다.
 
-### MUST (구조·결합)
+1. 두 개 이상의 실제 사용처에서 같은 책임이 반복됨
+2. 입력·출력·상태 전이 계약이 동일함
+3. 차이를 data, configuration, callback으로 표현할 수 있음
+4. 추출 후 모든 영향 경로를 검증할 수 있음
+5. 현재 failure mode 해결 또는 재발 방지에 직접 기여함
 
-| ID | 점검 | 실패 신호 |
-| :--- | :--- | :--- |
-| **R-1** | **대체 지점에 중복·죽은 코드 없음** | 기존 함수/컴포넌트 옆 parallel 구현, 주석 처리 블록, unused export |
-| **R-2** | **조용히 삼킨 에러 없음** | empty catch, `catch { }`, 실패 시 `undefined` 반환만 하고 UI 무반응 |
-| **R-3** | **숨은 결합 없음** | 암묵 계약(초기화 순서·전역 mutable·모듈 load side effect), cross-layer import |
-| **R-4** | **re-export 정리** | barrel(`index.ts`)이 순환·깊은 re-export chain 유발, public API와 내부 구현 혼재 |
-| **R-5** | **fan-in/fan-out 집중 없음** | 단일 파일·함수에 N개 도메인 로직이 몰림 — [improve-codebase-architecture/SKILL.md](../skills/improve-codebase-architecture/SKILL.md) shallow module |
+코드가 비슷해 보인다는 이유만으로 공용 엔진을 만들지 않는다.
 
-리뷰는 evidence(실행 경로·줄 번호·실패 시나리오) 필수 — 추측 코멘트 금지.
+## 7. 완료
 
----
+- 구현 criterion과 직접 회귀가 통과함
+- 필요한 정적 진단이 통과함
+- browser/build/artifact 검증이 요구된 경우 실행됨
+- diff scope가 의도한 파일과 원인에 한정됨
+- remote publish가 요구된 경우 fast-forward가 확인됨
 
-## 4. CI·Lint 강제 (Enforcement)
-
-에이전트·CI가 **우회 불가**하게 막는 항목입니다.
-
-| ID | 규칙 | 검증 |
-| :--- | :--- | :--- |
-| **E-1** | **Strict 타입** | `as any` · `: any` · `catch (e: any)` — BP-TS-001* (**변경 파일 전체** incremental). `as unknown as` — BP-TS-004* (**diff-added-lines**; untracked 신규 파일은 **전체** 검사). 불가피 시 직전 줄 `biome-ignore` + 사유 |
-| **E-2** | **순환·경계·결합 CI** | `just verify`(ddd) · CI `runtime_coupling_scan --check` · `just test-coupling-gate` |
-| **E-3** | **복잡도·중첩 lint** | Biome complexity ≤15 · `just fe-function-length-gate`(100줄/함수) · Ruff PLR0912/0915 · §2 I-2 guard clause |
-
-### MUST NOT
-
-- `@ts-ignore` · `biome-ignore`로 E-1·E-3 영구 우회 (Tier 4 complexity는 별도 Blueprint + TODO 주석만 허용)
-- gate severity 하향(`error → warn`) — [execution.md §2.2](execution.md)
-
----
-
-## 5. 테스트 시점 (Test Gate)
-
-상세: [tdd.md](../domains/testing/tdd.md).
-
-### MUST
-
-| ID | 규칙 | 실무 |
-| :--- | :--- | :--- |
-| **T-1** | **문자열이 아니라 행동을 검증** | DOM 텍스트 스냅샷·커버리지 숫자만으로 Green 선언 금지. 상태 변화·콜백·side-effect·API contract assertion |
-| **T-2** | **Mock은 외부 경계에서만** | HTTP·DB·clock·파일 I/O·외부 SDK만 stub/spy. **내부 모듈·private helper mocking 금지** — SUT 인터페이스로 검증. FastAPI `dependency_overrides`는 **앱 경계** DI 교체로 허용 |
-| **T-3** | **엣지케이스를 테스트로 고정** | 빈 입력·null·경계값·실패·타임아웃 경로를 named test case로 유지 — 회귀 방지 |
-| **T-4** | **테스트 맞춤 production 방어 코드 금지** | Green을 위해 SUT에 null guard·silent fallback 추가하지 않음 — 테스트 전제 수정 또는 SUT 버그 수정 |
-| **T-5** | **테스트 메시지 전역 고유성 확보** | 정적 HTML/JS에서 `document.querySelector()` / `getByText()`는 단일 요소만 찾음. 중복 텍스트 매칭 오류 방지를 위해 고유 식별자(예: "적정" X → "수학 3학년 1단원 정답" O)를 포함하거나 `querySelectorAll()` / `data-testid` 등을 명시적으로 사용 — [AGENTS.md §4.2](../../AGENTS.md#42-test--메시지-전역-고유성) |
-
-### Mock vs DB Mock (구분)
-
-| 개념 | 의미 | SSOT |
-| :--- | :--- | :--- |
-| **테스트 Mock (본 문서)** | 외부 의존을 테스트 더블로 대체 | §5 T-2 |
-| **DB Mock / 시드** | 개발·E2E용 fixture·CSV 시드·in-memory DB | [seeding.md](../domains/infra/seeding.md) |
-| **dependency_overrides** | FastAPI 앱 **composition root**에서 서비스 교체 | API 테스트 경계 — 내부 함수 patch 아님 |
-
----
-
-## 6. Cross-ref 요약
-
-| 시점 | SSOT |
-| :--- | :--- |
-| 설계 | [planning.md](planning.md) · [ddd.md](../domains/backend/ddd.md) |
-| 구현 | [execution.md](execution.md) · [principles.md](principles.md) |
-| 리뷰 | [review/SKILL.md](../skills/review/SKILL.md) |
-| 강제 | [typescript.md](../domains/frontend/typescript.md) · [verification.md](verification.md) |
-| 테스트 | [tdd.md](../domains/testing/tdd.md) |
-
----
-
-## 7. Enforcement Map (기계 검증 SSOT)
-
-| 항목 | 명령 | Baseline | 신규 위반 |
-| :--- | :--- | :--- | :--- |
-| FE `as unknown as` / 빈 catch | `just lint-fe` (bp_linter BP-TS-004/005) | diff-added-lines | FAIL |
-| BE `except: pass` | `just lint-be` (bp_linter BP-PY-001/002) | diff-added-lines | FAIL |
-| FE 함수 100줄 초과 | `just fe-function-length-gate` | `frontend_function_length_baseline.txt` | FAIL |
-| FE cognitive complexity >15 | `just fe-complexity-gate` | `frontend_complexity_baseline.txt` | FAIL |
-| BE import graph (S1–S4) | `just be-boundary-gate` | `backend_boundary_baseline.txt` | FAIL |
-| FE import graph (S5–S12) | `just fe-boundary-gate` | `frontend_boundary_baseline.txt` | FAIL |
-| BE runtime 역결합 R1 | `just runtime-coupling-gate` | `runtime_coupling_baseline.txt` | FAIL |
-| BE 함수 100줄 초과 | `just be-function-length-gate` | `backend_function_length_baseline.txt` | FAIL |
-| DDD 통합 게이트 | `just ddd-gate` (= be + fe boundary) | 위 baseline 공유 | FAIL |
-| 테스트 결합 Critical/High | `just test-coupling-gate` | `test_coupling_baseline.txt` | FAIL |
-| FE 테스트 내부 mock (T-2) | `just test-internal-mock-gate` (CI) | `test_internal_mock_baseline.txt` | FAIL |
-| 파일 500줄 | `just prevent-tech-debt` | git diff hard scope | FAIL |
-| Biome max-depth | — | 없음 | `fe-complexity-gate` + guard clause(I-2) |
-
-Baseline 갱신(리뷰 후): `--update-baseline` 플래그 — [GUIDE_quality_baseline_gates.md](../../docs/ops/rules/GUIDE_quality_baseline_gates.md) · 각 gate 스크립트 docstring.
-
-**SSOT 정합 (2026-06-10)**: `just fe-quality-gates` / `just be-quality-gates`가 `just lint` · `lint-fe` · `lint-be` · `just ci` · `verify.sh`에서 동일 baseline gate를 공유한다(FE: `fe-boundary-gate` S5–S12, BE: `be-boundary-gate` + `runtime-coupling-gate`). `just ddd-gate` = be + fe boundary 위임. BP-TS/BP-PY incremental bp_linter는 **로컬 dirty tree**용 — CI `verify`에는 baseline gate만 포함(bp_linter full-scan 회피).
+완료 문자열이나 커버리지 숫자만으로 품질 완료를 선언하지 않는다.

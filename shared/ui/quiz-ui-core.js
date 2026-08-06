@@ -105,6 +105,9 @@
     };
 
     function openStats() {
+      if (els.statsModal) {
+        els.statsModal._prevFocusTarget = document.activeElement || null;
+      }
       renderStatsTable();
       if (els.statsModal) els.statsModal.style.display = "flex";
       const closeBtn = document.getElementById("close-stats-btn");
@@ -115,6 +118,17 @@
 
     function closeStats() {
       if (els.statsModal) els.statsModal.style.display = "none";
+      const target = els.statsModal ? els.statsModal._prevFocusTarget : null;
+      if (els.statsModal) {
+        els.statsModal._prevFocusTarget = null;
+      }
+      if (target && typeof target.focus === "function") {
+        try {
+          if (target.isConnected) {
+            target.focus();
+          }
+        } catch (_) {}
+      }
     }
 
     function onModalBackdrop(e) {

@@ -62,8 +62,8 @@
 
 <!-- 통계 모달 -->
 <div id="stats-modal" data-action="modal-backdrop">
-  <div id="stats-box">
-    <h3>📊 연산별 기록</h3>
+  <div id="stats-box" role="dialog" aria-modal="true" aria-labelledby="stats-dialog-title">
+    <h3 id="stats-dialog-title">📊 연산별 기록</h3>
     <table id="stats-table">
       <thead>
         <tr>

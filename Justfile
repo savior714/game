@@ -328,6 +328,7 @@ check-ocean-rescue-sea-turtle-lifecycle-controller:
     uv run pytest tests/test_ocean_rescue_wp33e_sea_turtle_lifecycle_controller.py -q
     uv run pytest tests/test_ocean_rescue_wp33e2_sea_turtle_session_lifecycle.py -q
     uv run pytest tests/test_ocean_rescue_wp33e2_sea_turtle_session_browser.py -q
+    uv run pytest tests/test_ocean_rescue_wp33e3_sea_turtle_pointer_lifecycle.py -q
     uv run pytest tests/test_ocean_rescue_sea_turtle_interaction.py -q
     uv run pytest tests/test_ocean_rescue_authored_sea_turtle_scene.py -q
     uv run pytest tests/test_ocean_rescue_rope_geometry_runtime.py -q

@@ -359,18 +359,6 @@ def test_controller_does_not_use_set_timeout() -> None:
     assert "setTimeout" not in text
 
 
-def test_controller_does_not_own_pointer_methods() -> None:
-    text = _read(CONTROLLER)
-    for token in ("pointerDown(", "pointerMove(", "pointerUp(", "pointerCancel("):
-        assert token not in text, f"controller must not own: {token}"
-
-
-def test_controller_does_not_own_pointer_capture() -> None:
-    text = _read(CONTROLLER)
-    for token in ("setPointerCapture", "releasePointerCapture"):
-        assert token not in text, f"controller must not own: {token}"
-
-
 def test_controller_does_not_own_feedback_timer() -> None:
     text = _read(CONTROLLER)
     assert 'schedulePauseableTimer("sea-turtle-feedback"' not in text

@@ -1945,6 +1945,9 @@
     }
     var missionId = activeRescueSequence.missionId;
     if (missionId === SeaTurtle.MissionId) {
+      if (typeof App.isSeaTurtlePointerTracked === "function") {
+        return App.isSeaTurtlePointerTracked(event);
+      }
       if (!SeaTurtle) {
         return false;
       }

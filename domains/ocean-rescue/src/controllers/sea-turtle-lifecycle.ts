@@ -1,6 +1,6 @@
 /**
- * Typed controller for sea-turtle session activation and shutdown ownership
- * (WP-33E-2).
+ * Typed controller for sea-turtle session activation, shutdown, and pointer
+ * gesture lifecycle (WP-33E-2, WP-33E-3).
  *
  * This controller owns:
  * - active SeaTurtleSessionRef storage
@@ -15,14 +15,21 @@
  * - initial syncSeaTurtleProjection()
  * - session stop with scene exit and SeaTurtle.stop()
  * - session reference clear
+ * - active sea-turtle pointer ID and capture element state
+ * - isSeaTurtlePointerTracked(event) validation against active session/phase/pointer
+ * - handleSeaTurtlePointerDown(event) with coordinate mapping, capture, projection
+ * - handleSeaTurtlePointerMove(event) with coordinate mapping and projection sync
+ * - handleSeaTurtlePointerUp(event) with result routing via host bridge
+ * - handleSeaTurtlePointerCancel(event) with capture release and projection sync
+ * - cancelSeaTurtlePointerForPause() cleanup with SeaTurtle.pauseCancel()
+ * - shutdownSeaTurtlePointer() cleanup (idempotent)
+ * - stopSeaTurtleSession() triggers pointer shutdown to avoid leftover capture
  *
  * This controller does NOT own:
  * - shared rescue mission router (app.js)
  * - bindRescuePointerInput actual DOM listener registration (app.js)
- * - sea-turtle pointer ID / capture element (app.js)
- * - pointer down/move/up/cancel handlers (app.js)
- * - feedback sequence and timer (app.js)
- * - feedback UI (app.js)
+ * - sea-turtle feedback sequence and timer (app.js)
+ * - sea-turtle feedback UI (app.js)
  * - assist escalation (app.js)
  * - RESCUE_SUCCESS transition (app.js)
  * - mission-success handoff (app.js)
@@ -33,8 +40,13 @@
 import type { PauseTimerResumeAppApi } from "./pause-timer-resume";
 import type { RescueSiteSequence } from "./rescue-site-tutorial";
 import type {
+  ActivePointerIntent,
+  InactivePointerIntent,
+} from "../contracts/pointer-input";
+import type {
   PointerIntent,
   SeaTurtleApi,
+  SeaTurtleRopeResult,
   SeaTurtleSceneApi,
   SeaTurtleSnapshot,
   OceanRescueNamespace,
@@ -57,6 +69,7 @@ export interface SeaTurtleLifecycleHostApi extends PauseTimerResumeAppApi {
     snapshot: SeaTurtleSnapshot,
     intent?: PointerIntent,
   ): void;
+  routeSeaTurtleFeedback(result: SeaTurtleRopeResult): void;
 }
 
 /** Read-only handle to the controller-managed sea-turtle pointer state. */
@@ -74,6 +87,13 @@ export interface SeaTurtleLifecycleAppApi extends SeaTurtleLifecycleHostApi {
   getActiveSeaTurtleSession(): SeaTurtleSessionRef | null;
   isSeaTurtleSessionActive(): boolean;
   syncSeaTurtleProjection(intent?: PointerIntent): boolean;
+  isSeaTurtlePointerTracked(event: PointerEvent): boolean;
+  handleSeaTurtlePointerDown(event: PointerEvent): boolean;
+  handleSeaTurtlePointerMove(event: PointerEvent): boolean;
+  handleSeaTurtlePointerUp(event: PointerEvent): boolean;
+  handleSeaTurtlePointerCancel(event: PointerEvent): boolean;
+  cancelSeaTurtlePointerForPause(): boolean;
+  shutdownSeaTurtlePointer(): boolean;
   beginSeaTurtlePointer(pointerId: number, captureElement: Element): boolean;
   isTrackedSeaTurtlePointer(pointerId: number): boolean;
   hasTrackedSeaTurtlePointer(): boolean;
@@ -196,6 +216,8 @@ export function installSeaTurtleLifecycleController(
   function stopSeaTurtleSession(): boolean {
     const hadSession = activeSession !== null;
 
+    shutdownSeaTurtlePointer();
+
     if (SeaTurtleScene?.isMounted()) {
       SeaTurtleScene.exit();
     }
@@ -257,6 +279,308 @@ export function installSeaTurtleLifecycleController(
     return true;
   }
 
+  function validateSeaTurtlePointerEvent(
+    event: PointerEvent,
+  ): { valid: boolean; mapped: { x: number; y: number } | null } {
+    if (!event || typeof event !== "object") {
+      return { valid: false, mapped: null };
+    }
+    if (!activeSession) {
+      return { valid: false, mapped: null };
+    }
+    const activeSequence = host.getActiveRescueSequence();
+    if (activeSequence === null) {
+      return { valid: false, mapped: null };
+    }
+    if (activeSequence.sequenceId !== activeSession.rescueSequenceId) {
+      return { valid: false, mapped: null };
+    }
+    if (activeSequence.missionId !== "sea-turtle") {
+      return { valid: false, mapped: null };
+    }
+    const State = window.OceanRescue?.State;
+    if (!State || State.getSnapshot().phase !== State.Phases.RESCUE_ACTIVE) {
+      return { valid: false, mapped: null };
+    }
+    if (!SeaTurtle) {
+      return { valid: false, mapped: null };
+    }
+    const snapshot = SeaTurtle.getSnapshot();
+    if (!snapshot.active) {
+      return { valid: false, mapped: null };
+    }
+    if (typeof event.pointerId !== "number" || !isFinite(event.pointerId)) {
+      return { valid: false, mapped: null };
+    }
+    if (typeof event.clientX !== "number" || !isFinite(event.clientX)) {
+      return { valid: false, mapped: null };
+    }
+    if (typeof event.clientY !== "number" || !isFinite(event.clientY)) {
+      return { valid: false, mapped: null };
+    }
+    return { valid: true, mapped: null };
+  }
+
+  function isSeaTurtlePointerTracked(event: PointerEvent): boolean {
+    const validation = validateSeaTurtlePointerEvent(event);
+    if (!validation.valid) {
+      return false;
+    }
+    if (activePointerId === null) {
+      return false;
+    }
+    if (event.pointerId !== activePointerId) {
+      return false;
+    }
+    return true;
+  }
+
+  function handleSeaTurtlePointerDown(event: PointerEvent): boolean {
+    if (!event || typeof event !== "object") {
+      return false;
+    }
+    if (activePointerId !== null) {
+      return false;
+    }
+    if (event.isPrimary === false) {
+      return false;
+    }
+    if (typeof event.button === "number" && event.button !== 0) {
+      return false;
+    }
+
+    const validation = validateSeaTurtlePointerEvent(event);
+    if (!validation.valid) {
+      return false;
+    }
+
+    const canvas = host.resolveVisibleInputCanvas();
+    if (!(canvas instanceof HTMLCanvasElement)) {
+      return false;
+    }
+
+    const PointerInput = (window.OceanRescue as OceanRescueNamespace)?.PointerInput;
+    const mapped = PointerInput
+      ? PointerInput.mapRescuePoint(event, canvas)
+      : null;
+
+    if (!mapped || typeof mapped.x !== "number" || !isFinite(mapped.x) ||
+        typeof mapped.y !== "number" || !isFinite(mapped.y)) {
+      return false;
+    }
+
+    if (!SeaTurtle?.pointerDown(event.pointerId, mapped.x, mapped.y)) {
+      return false;
+    }
+
+    const captureElement =
+      (event.currentTarget instanceof HTMLCanvasElement
+        ? event.currentTarget
+        : canvas) as Element;
+
+    activePointerId = event.pointerId;
+    activePointerCaptureElement = captureElement;
+
+    if (
+      captureElement &&
+      typeof captureElement.setPointerCapture === "function"
+    ) {
+      captureElement.setPointerCapture(event.pointerId);
+    }
+
+    host.hideAssistHand();
+
+    const activeIntent: PointerIntent = PointerInput
+      ? PointerInput.activeIntent(mapped)
+      : { active: true, x: mapped.x, y: mapped.y };
+    syncSeaTurtleProjection(activeIntent);
+
+    if (typeof event.preventDefault === "function") {
+      event.preventDefault();
+    }
+    if (typeof event.stopPropagation === "function") {
+      event.stopPropagation();
+    }
+
+    return true;
+  }
+
+  function handleSeaTurtlePointerMove(event: PointerEvent): boolean {
+    if (!isSeaTurtlePointerTracked(event)) {
+      return false;
+    }
+
+    const validation = validateSeaTurtlePointerEvent(event);
+    if (!validation.valid) {
+      return false;
+    }
+
+    const canvas = host.resolveVisibleInputCanvas();
+    if (!(canvas instanceof HTMLCanvasElement)) {
+      return false;
+    }
+
+    const PointerInput = (window.OceanRescue as OceanRescueNamespace)?.PointerInput;
+    const mapped = PointerInput
+      ? PointerInput.mapRescuePoint(event, canvas)
+      : null;
+
+    if (!mapped || typeof mapped.x !== "number" || !isFinite(mapped.x) ||
+        typeof mapped.y !== "number" || !isFinite(mapped.y)) {
+      return false;
+    }
+
+    SeaTurtle?.pointerMove(event.pointerId, mapped.x, mapped.y);
+
+    const activeIntent: PointerIntent = PointerInput
+      ? PointerInput.activeIntent(mapped)
+      : { active: true, x: mapped.x, y: mapped.y };
+    syncSeaTurtleProjection(activeIntent);
+
+    if (typeof event.preventDefault === "function") {
+      event.preventDefault();
+    }
+    if (typeof event.stopPropagation === "function") {
+      event.stopPropagation();
+    }
+
+    return true;
+  }
+
+  function handleSeaTurtlePointerUp(event: PointerEvent): boolean {
+    if (!isSeaTurtlePointerTracked(event)) {
+      return false;
+    }
+
+    const validation = validateSeaTurtlePointerEvent(event);
+    if (!validation.valid) {
+      return false;
+    }
+
+    const canvas = host.resolveVisibleInputCanvas();
+    if (!(canvas instanceof HTMLCanvasElement)) {
+      return false;
+    }
+
+    const PointerInput = (window.OceanRescue as OceanRescueNamespace)?.PointerInput;
+    const mapped = PointerInput
+      ? PointerInput.mapRescuePoint(event, canvas)
+      : null;
+
+    let result: SeaTurtleRopeResult | null = null;
+    if (mapped !== null && typeof mapped.x === "number" && typeof mapped.y === "number") {
+      result = SeaTurtle?.pointerUp(event.pointerId, mapped.x, mapped.y) ?? null;
+    } else {
+      SeaTurtle?.pointerCancel(event.pointerId);
+    }
+
+    releaseActivePointerCapture();
+
+    const cleared = clearSeaTurtlePointerState();
+    if (!cleared) {
+      return false;
+    }
+
+    if (result && result.accepted) {
+      const inactiveIntent: PointerIntent = PointerInput
+        ? PointerInput.inactiveIntent()
+        : { active: false, x: null, y: null };
+      syncSeaTurtleProjection(inactiveIntent);
+      if (result.outcome === "success" || result.outcome === "failure") {
+        host.routeSeaTurtleFeedback(result);
+      }
+    }
+
+    if (typeof event.preventDefault === "function") {
+      event.preventDefault();
+    }
+    if (typeof event.stopPropagation === "function") {
+      event.stopPropagation();
+    }
+
+    return true;
+  }
+
+  function handleSeaTurtlePointerCancel(event: PointerEvent): boolean {
+    if (!event || typeof event !== "object") {
+      return false;
+    }
+    if (activePointerId === null) {
+      return false;
+    }
+    if (typeof event.pointerId !== "number" || !isFinite(event.pointerId)) {
+      return false;
+    }
+    if (event.pointerId !== activePointerId) {
+      return false;
+    }
+
+    SeaTurtle?.pointerCancel(event.pointerId);
+
+    releaseActivePointerCapture();
+
+    const cleared = clearSeaTurtlePointerState();
+    if (!cleared) {
+      return false;
+    }
+
+    const PointerInput = (window.OceanRescue as OceanRescueNamespace)?.PointerInput;
+    const inactiveIntent: PointerIntent = PointerInput
+      ? PointerInput.inactiveIntent()
+      : { active: false, x: null, y: null };
+    syncSeaTurtleProjection(inactiveIntent);
+
+    if (typeof event.preventDefault === "function") {
+      event.preventDefault();
+    }
+    if (typeof event.stopPropagation === "function") {
+      event.stopPropagation();
+    }
+
+    return true;
+  }
+
+  function releaseActivePointerCapture(): void {
+    if (
+      activePointerCaptureElement &&
+      typeof activePointerCaptureElement.releasePointerCapture === "function"
+    ) {
+      activePointerCaptureElement.releasePointerCapture(activePointerId ?? 0);
+    }
+  }
+
+  function clearSeaTurtlePointerState(): boolean {
+    if (activePointerId === null) {
+      return false;
+    }
+    activePointerId = null;
+    activePointerCaptureElement = null;
+    return true;
+  }
+
+  function cancelSeaTurtlePointerForPause(): boolean {
+    releaseActivePointerCapture();
+    clearSeaTurtlePointerState();
+
+    if (SeaTurtle && typeof SeaTurtle.pauseCancel === "function") {
+      SeaTurtle.pauseCancel();
+    }
+
+    const PointerInput = (window.OceanRescue as OceanRescueNamespace)?.PointerInput;
+    const inactiveIntent: PointerIntent = PointerInput
+      ? PointerInput.inactiveIntent()
+      : { active: false, x: null, y: null };
+    syncSeaTurtleProjection(inactiveIntent);
+
+    return true;
+  }
+
+  function shutdownSeaTurtlePointer(): boolean {
+    releaseActivePointerCapture();
+    clearSeaTurtlePointerState();
+    return true;
+  }
+
   function beginSeaTurtlePointer(
     pointerId: number,
     captureElement: Element,
@@ -311,6 +635,13 @@ export function installSeaTurtleLifecycleController(
     startSeaTurtleSession,
     stopSeaTurtleSession,
     syncSeaTurtleProjection,
+    isSeaTurtlePointerTracked,
+    handleSeaTurtlePointerDown,
+    handleSeaTurtlePointerMove,
+    handleSeaTurtlePointerUp,
+    handleSeaTurtlePointerCancel,
+    cancelSeaTurtlePointerForPause,
+    shutdownSeaTurtlePointer,
     beginSeaTurtlePointer,
     isTrackedSeaTurtlePointer,
     hasTrackedSeaTurtlePointer,

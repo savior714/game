@@ -28,6 +28,10 @@ FORBIDDEN_CONTROLLER_TOKENS = (
     "as unknown as",
     ": any",
     "as any",
+    "beginSeaTurtleSuccessFeedback",
+    "beginSeaTurtleFailureFeedback",
+    "completeSeaTurtleFeedback",
+    "onSeaTurtleInteractionComplete",
 )
 
 
@@ -116,17 +120,6 @@ def test_controller_remains_characterization_only() -> None:
     text = _read(CONTROLLER)
     for token in FORBIDDEN_CONTROLLER_TOKENS:
         assert token not in text, f"WP-33E-0 moved forbidden runtime ownership: {token}"
-    for future_method in (
-        "handleSeaTurtlePointerDown",
-        "handleSeaTurtlePointerMove",
-        "handleSeaTurtlePointerUp",
-        "handleSeaTurtlePointerCancel",
-        "beginSeaTurtleSuccessFeedback",
-        "beginSeaTurtleFailureFeedback",
-        "completeSeaTurtleFeedback",
-        "onSeaTurtleInteractionComplete",
-    ):
-        assert future_method not in text
 
 
 def test_start_eligibility_and_initial_projection_remain_characterized() -> None:
@@ -319,11 +312,12 @@ def test_projection_reads_snapshot_exactly_once() -> None:
         text.count("SeaTurtle.getSnapshot()")
         + text.count("SeaTurtle?.getSnapshot()")
     )
-    assert snapshot_calls == 5, (
-        f"expected exactly 5 SeaTurtle.getSnapshot() calls "
+    assert snapshot_calls == 6, (
+        f"expected exactly 6 SeaTurtle.getSnapshot() calls "
         f"(1 in isSeaTurtleActive + 1 in getSeaTurtleSnapshot + "
         f"1 in syncSeaTurtleProjection + 1 in startSeaTurtleSession "
-        f"idempotency check + 1 in stopSeaTurtleSession active check), "
+        f"idempotency check + 1 in stopSeaTurtleSession active check + "
+        f"1 in validateSeaTurtlePointerEvent), "
         f"got {snapshot_calls}"
     )
     projection_body = text.split("function syncSeaTurtleProjection")[1].split(
@@ -433,6 +427,183 @@ def test_controller_has_no_dom_or_timer_ownership() -> None:
         "startMissionSuccessPresentation",
         "Crab",
         "YoungWhale",
+    )
+    for token in forbidden:
+        assert token not in text, f"controller must not own: {token}"
+
+
+def test_controller_owns_pointer_lifecycle_methods() -> None:
+    """WP-33E-3: controller owns pointer down/move/up/cancel lifecycle."""
+    text = _read(CONTROLLER)
+    required_methods = [
+        "isSeaTurtlePointerTracked(event: PointerEvent): boolean",
+        "handleSeaTurtlePointerDown(event: PointerEvent): boolean",
+        "handleSeaTurtlePointerMove(event: PointerEvent): boolean",
+        "handleSeaTurtlePointerUp(event: PointerEvent): boolean",
+        "handleSeaTurtlePointerCancel(event: PointerEvent): boolean",
+        "cancelSeaTurtlePointerForPause(): boolean",
+        "shutdownSeaTurtlePointer(): boolean",
+    ]
+    for method in required_methods:
+        assert method in text, f"controller must declare {method}"
+
+    implementation = [
+        "function isSeaTurtlePointerTracked(",
+        "function handleSeaTurtlePointerDown(",
+        "function handleSeaTurtlePointerMove(",
+        "function handleSeaTurtlePointerUp(",
+        "function handleSeaTurtlePointerCancel(",
+        "function cancelSeaTurtlePointerForPause(",
+        "function shutdownSeaTurtlePointer(",
+    ]
+    for fn in implementation:
+        assert fn in text, f"controller must implement {fn}"
+
+    object_assign = [
+        "isSeaTurtlePointerTracked,",
+        "handleSeaTurtlePointerDown,",
+        "handleSeaTurtlePointerMove,",
+        "handleSeaTurtlePointerUp,",
+        "handleSeaTurtlePointerCancel,",
+        "cancelSeaTurtlePointerForPause,",
+        "shutdownSeaTurtlePointer,",
+    ]
+    assign_section = text.split("Object.assign(host, {")[1].split("}")[0]
+    for token in object_assign:
+        assert token in assign_section, (
+            f"Object.assign must expose {token.rstrip(',')}"
+        )
+
+
+def test_controller_owns_pointer_state_in_closure() -> None:
+    """WP-33E-3: controller owns activePointerId and activePointerCaptureElement."""
+    text = _read(CONTROLLER)
+    assert "let activePointerId: number | null = null;" in text
+    assert "let activePointerCaptureElement: Element | null = null;" in text
+
+
+def test_controller_uses_pointer_input_boundary() -> None:
+    """WP-33E-3: controller uses PointerInput.mapRescuePoint, not raw coordinates."""
+    text = _read(CONTROLLER)
+    assert "PointerInput.mapRescuePoint(event, canvas)" in text
+    assert "PointerInput.activeIntent(mapped)" in text
+    assert "PointerInput.inactiveIntent()" in text
+
+
+def test_controller_handle_down_stores_pointer_and_capture() -> None:
+    """WP-33E-3: handleSeaTurtlePointerDown stores pointer ID and capture element."""
+    text = _read(CONTROLLER)
+    down_body = text.split("function handleSeaTurtlePointerDown")[1].split(
+        "function "
+    )[0]
+    assert "activePointerId = event.pointerId;" in down_body
+    assert "activePointerCaptureElement = captureElement;" in down_body
+    assert "setPointerCapture(event.pointerId)" in down_body
+    assert "host.hideAssistHand()" in down_body
+    assert "syncSeaTurtleProjection(activeIntent)" in down_body
+
+
+def test_controller_handle_up_routes_feedback_via_host() -> None:
+    """WP-33E-3: handleSeaTurtlePointerUp calls host.routeSeaTurtleFeedback."""
+    text = _read(CONTROLLER)
+    up_body = text.split("function handleSeaTurtlePointerUp")[1].split(
+        "function "
+    )[0]
+    assert "host.routeSeaTurtleFeedback(result)" in up_body
+    assert "releaseActivePointerCapture()" in up_body
+    assert "clearSeaTurtlePointerState()" in up_body
+
+
+def test_controller_handle_cancel_releases_capture() -> None:
+    """WP-33E-3: handleSeaTurtlePointerCancel releases capture and clears state."""
+    text = _read(CONTROLLER)
+    cancel_body = text.split("function handleSeaTurtlePointerCancel")[1].split(
+        "function "
+    )[0]
+    assert "releaseActivePointerCapture()" in cancel_body
+    assert "clearSeaTurtlePointerState()" in cancel_body
+    assert "syncSeaTurtleProjection(" in cancel_body
+
+
+def test_controller_pause_cancellation_calls_pause_cancel() -> None:
+    """WP-33E-3: cancelSeaTurtlePointerForPause calls SeaTurtle.pauseCancel()."""
+    text = _read(CONTROLLER)
+    pause_body = text.split("function cancelSeaTurtlePointerForPause")[1].split(
+        "function "
+    )[0]
+    assert "SeaTurtle.pauseCancel()" in pause_body
+    assert "releaseActivePointerCapture()" in pause_body
+    assert "clearSeaTurtlePointerState()" in pause_body
+
+
+def test_controller_shutdown_is_idempotent() -> None:
+    """WP-33E-3: shutdownSeaTurtlePointer is safe to call multiple times."""
+    text = _read(CONTROLLER)
+    shutdown_body = text.split("function shutdownSeaTurtlePointer")[1].split(
+        "function "
+    )[0]
+    assert "releaseActivePointerCapture()" in shutdown_body
+    assert "clearSeaTurtlePointerState()" in shutdown_body
+    assert "return true;" in shutdown_body
+
+
+def test_controller_stop_session_triggers_pointer_shutdown() -> None:
+    """WP-33E-3: stopSeaTurtleSession calls shutdownSeaTurtlePointer."""
+    text = _read(CONTROLLER)
+    stop_body = text.split("function stopSeaTurtleSession")[1].split(
+        "function "
+    )[0]
+    assert "shutdownSeaTurtlePointer()" in stop_body
+
+
+def test_app_js_delegates_pointer_lifecycle_to_controller() -> None:
+    """app.js delegates pointer lifecycle to controller when available."""
+    text = _read(APP)
+    delegation_checks = (
+        'typeof App.isSeaTurtlePointerTracked === "function"',
+        'typeof App.handleSeaTurtlePointerDown === "function"',
+        'typeof App.handleSeaTurtlePointerMove === "function"',
+        'typeof App.handleSeaTurtlePointerUp === "function"',
+        'typeof App.handleSeaTurtlePointerCancel === "function"',
+        'typeof App.cancelSeaTurtlePointerForPause === "function"',
+        'typeof App.shutdownSeaTurtlePointer === "function"',
+    )
+    for check in delegation_checks:
+        assert check in text, f"app.js must delegate to {check}"
+
+
+def test_app_js_ordered_script_fallback_for_pointer_lifecycle() -> None:
+    """app.js retains ordered-script fallback for pointer lifecycle."""
+    text = _read(APP)
+    required = (
+        "seaTurtlePointerId = event.pointerId;",
+        "seaTurtlePointerCaptureEl = document.getElementById(\"ocean-rescue-canvas\");",
+        "seaTurtlePointerCaptureEl.setPointerCapture(event.pointerId)",
+        "seaTurtlePointerId = null;",
+        "seaTurtlePointerCaptureEl = null;",
+    )
+    for token in required:
+        assert token in text
+
+
+def test_controller_host_api_declares_route_sea_turtle_feedback() -> None:
+    """Controller host API declares routeSeaTurtleFeedback method."""
+    text = _read(CONTROLLER)
+    assert "routeSeaTurtleFeedback(result: SeaTurtleRopeResult): void" in text
+
+
+def test_controller_does_not_own_feedback_timer_or_ui() -> None:
+    """Controller must not own feedback timer, UI, or completion handoff."""
+    text = _read(CONTROLLER)
+    forbidden = (
+        "setTimeout",
+        'schedulePauseableTimer("sea-turtle-feedback"',
+        "beginSeaTurtleSuccessFeedback",
+        "beginSeaTurtleFailureFeedback",
+        "completeSeaTurtleFeedback",
+        "completeMission",
+        "startMissionSuccessPresentation",
+        "finishFeedback",
     )
     for token in forbidden:
         assert token not in text, f"controller must not own: {token}"

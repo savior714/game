@@ -106,6 +106,54 @@
 
     let _focusTrapHandler = null;
 
+    function _getBackgroundSiblings() {
+      if (!els.statsModal) return [];
+      const body = els.statsModal.parentElement;
+      if (!body) return [];
+      const result = [];
+      for (let i = 0; i < body.children.length; i++) {
+        const child = body.children[i];
+        if (child === els.statsModal) continue;
+        if (child.tagName === "SCRIPT") continue;
+        result.push(child);
+      }
+      return result;
+    }
+
+    function _saveInertSnapshot() {
+      const siblings = _getBackgroundSiblings();
+      const snapshot = {};
+      for (let i = 0; i < siblings.length; i++) {
+        const el = siblings[i];
+        if (el instanceof HTMLElement) {
+          snapshot[el.id || el.tagName + "_" + i] = el.inert;
+        }
+      }
+      return snapshot;
+    }
+
+    function _applyInert(siblings, value) {
+      for (let i = 0; i < siblings.length; i++) {
+        const el = siblings[i];
+        if (el instanceof HTMLElement) {
+          try { el.inert = value; } catch (_) {}
+        }
+      }
+    }
+
+    function _restoreInert(snapshot) {
+      if (!snapshot) return;
+      const siblings = _getBackgroundSiblings();
+      for (let i = 0; i < siblings.length; i++) {
+        const el = siblings[i];
+        if (!(el instanceof HTMLElement)) continue;
+        const key = el.id || el.tagName + "_" + i;
+        if (key in snapshot && el.inert !== snapshot[key]) {
+          try { el.inert = snapshot[key]; } catch (_) {}
+        }
+      }
+    }
+
     function _getTabbableElements() {
       if (!els.statsModal) return [];
       const all = els.statsModal.querySelectorAll(
@@ -163,6 +211,18 @@
       if (els.statsModal) {
         els.statsModal._prevFocusTarget = document.activeElement || null;
       }
+      if (!els.statsModal._inertSnapshot) {
+        const siblings = _getBackgroundSiblings();
+        els.statsModal._inertSnapshot = {};
+        for (let i = 0; i < siblings.length; i++) {
+          const el = siblings[i];
+          if (el instanceof HTMLElement) {
+            const key = el.id || el.tagName + "_" + i;
+            els.statsModal._inertSnapshot[key] = el.inert;
+          }
+        }
+        _applyInert(siblings, true);
+      }
       renderStatsTable();
       if (els.statsModal) els.statsModal.style.display = "flex";
       _attachFocusTrap();
@@ -175,6 +235,11 @@
     function closeStats() {
       _detachFocusTrap();
       if (els.statsModal) els.statsModal.style.display = "none";
+      const snapshot = els.statsModal ? els.statsModal._inertSnapshot : null;
+      if (snapshot) {
+        _restoreInert(snapshot);
+        if (els.statsModal) els.statsModal._inertSnapshot = null;
+      }
       const target = els.statsModal ? els.statsModal._prevFocusTarget : null;
       if (els.statsModal) {
         els.statsModal._prevFocusTarget = null;

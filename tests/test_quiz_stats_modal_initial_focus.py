@@ -16,7 +16,6 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 REPO_ROOT = Path(__file__).parent.parent
-PORT = 18767
 
 
 class HTTPServerFixture:
@@ -24,6 +23,7 @@ class HTTPServerFixture:
         self.server = None
         self.thread = None
         self.base_url = None
+        self._port = None
 
     def start(self):
         os.chdir(REPO_ROOT)
@@ -36,16 +36,18 @@ class HTTPServerFixture:
                 pass
 
         socketserver.TCPServer.allow_reuse_address = True
-        self.server = socketserver.TCPServer(("127.0.0.1", PORT), QuietHandler)
+        self.server = socketserver.TCPServer(("127.0.0.1", 0), QuietHandler)
+        self._port = self.server.server_address[1]
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
         time.sleep(0.5)
-        self.base_url = f"http://127.0.0.1:{PORT}"
+        self.base_url = f"http://127.0.0.1:{self._port}"
         return self.base_url
 
     def stop(self):
         if self.server:
             self.server.shutdown()
+            self.server.server_close()
 
 
 @pytest.fixture(scope="session")

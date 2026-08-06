@@ -253,6 +253,18 @@
       if (e.target === els.statsModal) closeStats();
     }
 
+    let _statsBtnBound = false;
+
+    function _bindStatsButton() {
+      if (_statsBtnBound) return;
+      const btn = document.getElementById("stats-btn");
+      if (!btn) return;
+      btn.addEventListener("click", openStats);
+      _statsBtnBound = true;
+    }
+
+    _bindStatsButton();
+
     return { openStats, closeStats, onModalBackdrop };
   }
 

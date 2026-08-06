@@ -16,10 +16,11 @@ body {
 h1, #score-board, #main-area, #stats-modal, .home-link { position: relative; z-index: 1; }
 
 .home-link {
-  display: inline-flex; align-items: center; gap: 4px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px;
   font-size: 0.82rem; font-weight: 700; color: #BBBBBB;
   text-decoration: none;
   margin-bottom: 10px;
+  min-width: 48px; min-height: 48px; padding: 12px;
   transition: color 0.2s;
 }
 .home-link:hover { color: var(--primary); }
@@ -37,8 +38,9 @@ h1 { color: var(--primary); margin-bottom: 25px; }
 
 #stats-btn, #marble-btn {
   background: var(--primary); color: white; border: none;
-  padding: 8px 16px; border-radius: 20px; cursor: pointer;
+  padding: 12px 16px; border-radius: 20px; cursor: pointer;
   font-family: inherit; font-weight: bold; transition: transform 0.2s;
+  min-height: 48px;
 }
 #stats-btn:hover, #marble-btn:hover { transform: scale(1.05); }
 
@@ -230,7 +232,7 @@ h1 { color: var(--primary); margin-bottom: 25px; }
 
 #next-btn {
   background: var(--primary); color: white; border: none;
-  width: 100%; padding: 14px; border-radius: 12px;
+  width: 100%; padding: 16px; border-radius: 12px;
   font-family: inherit; font-size: 1.1rem; font-weight: bold;
   display: none; cursor: pointer;
 }
@@ -242,8 +244,9 @@ h1 { color: var(--primary); margin-bottom: 25px; }
 #result-msg { font-size: 1.2rem; line-height: 1.6; color: #666; }
 #restart-btn {
   background: var(--primary); color: white; border: none;
-  padding: 12px 30px; border-radius: 30px; font-size: 1.1rem;
+  padding: 16px 30px; border-radius: 30px; font-size: 1.1rem;
   margin-top: 20px; cursor: pointer; font-family: inherit;
+  min-height: 48px;
 }
 
 /* 📊 통계 모달 */
@@ -265,8 +268,8 @@ h1 { color: var(--primary); margin-bottom: 25px; }
 }
 
 .stats-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
-#close-stats-btn { background: #eee; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-family: inherit; }
-#reset-stats-btn { background: #ffebee; color: #ef5350; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-family: inherit; }
+#close-stats-btn { background: #eee; border: none; padding: 14px 20px; border-radius: 10px; cursor: pointer; font-family: inherit; min-height: 48px; }
+#reset-stats-btn { background: #ffebee; color: #ef5350; border: none; padding: 14px 20px; border-radius: 10px; cursor: pointer; font-family: inherit; min-height: 48px; }
 
 @keyframes bounce {
   0%, 100% { transform: translateY(0); }

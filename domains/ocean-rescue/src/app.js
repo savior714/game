@@ -3739,6 +3739,34 @@
     App.syncPauseButton();
   }
 
+  function cancelMissionSuccessPresentationForMenu() {
+    clearMissionSuccessTimer();
+    activeMissionSuccessSequence = null;
+    missionCompleteActionLock = false;
+    var els = resolveMissionSuccessElements();
+    if (els !== null) {
+      clearMissionSuccessAnimation(els);
+      els.visual.hidden = true;
+      els.ecology.hidden = true;
+      els.narration.hidden = true;
+      els.tapHelp.hidden = true;
+      els.card.hidden = true;
+      els.section.hidden = true;
+    }
+    var unlock = document.getElementById(
+      "ocean-rescue-mission-complete-unlock"
+    );
+    if (unlock) {
+      unlock.hidden = true;
+    }
+    var unlockName = document.getElementById(
+      "ocean-rescue-mission-complete-unlock-name"
+    );
+    if (unlockName) {
+      unlockName.textContent = "";
+    }
+  }
+
   function exitPauseToMenu() {
     if (!pauseActive) {
       return;
@@ -3774,10 +3802,11 @@
       snapshot.phase === State.Phases.RESCUE_TUTORIAL
     ) {
       App.cancelRescueSiteRuntime();
-    } else if (
-      snapshot.phase === State.Phases.RESCUE_ACTIVE ||
-      snapshot.phase === State.Phases.RESCUE_SUCCESS
-    ) {
+    } else if (snapshot.phase === State.Phases.RESCUE_SUCCESS) {
+      cancelMissionSuccessPresentationForMenu();
+      activeRescueSequence = null;
+      shutdownRescueInteractionState();
+    } else if (snapshot.phase === State.Phases.RESCUE_ACTIVE) {
       activeRescueSequence = null;
       shutdownRescueInteractionState();
     } else if (snapshot.phase === State.Phases.LAUNCH) {
@@ -5772,6 +5801,7 @@
     cancelPausePointerInteractions: cancelPausePointerInteractions,
     clearPauseSensitiveHoldTimer: clearCrabHoldTimer,
     shutdownActiveRescueForMenu: shutdownRescueInteractionState,
+    cancelMissionSuccessPresentationForMenu: cancelMissionSuccessPresentationForMenu,
     renderSeaTurtleFrame: renderSeaTurtleFrame,
     updateSeaTurtleRootMarkers: updateSeaTurtleRootMarkers,
     renderLegacySeaTurtleFrame: renderLegacySeaTurtleFrame,

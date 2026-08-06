@@ -1503,3 +1503,116 @@ def test_existing_interactions_and_optional_runtime_boundaries() -> None:
         """
     )
     _assert_node_ok(_run_node(harness))
+
+
+def test_menu_exit_during_success_presentation_allows_reentry() -> None:
+    harness = _BOOTSTRAP + textwrap.dedent(
+        """\
+        const dom = makeBootDom({ includeMissionSuccess: true });
+        const ctx = loadApp(dom.document);
+        runSeaTurtleToRescueSuccess(dom, ctx);
+
+        assert.strictEqual(ctx.State.getSnapshot().phase, "RESCUE_SUCCESS");
+        assert.strictEqual(dom.rootEl.getAttribute("data-rescue-phase"), "success-presentation");
+        assert.strictEqual(dom.rootEl.getAttribute("data-mission-success-active"), "true");
+        assert.strictEqual(dom.rootEl.getAttribute("data-mission-success-stage"), "animation");
+        assert.strictEqual(dom.missionSuccessSection.hidden, false);
+
+        const animTimer = timerWithDelay(ctx, 4000);
+        assert.strictEqual(ctx.timers.pending().length, 1);
+
+        ctx.App.enterPause();
+        assert.strictEqual(dom.rootEl.getAttribute("data-pause-active"), "true");
+
+        ctx.App.exitPauseToMenu();
+        assert.strictEqual(ctx.State.getSnapshot().phase, "MISSION_SELECT");
+        assert.strictEqual(dom.rootEl.getAttribute("data-pause-active"), "false");
+
+        const afterMenuExit = ctx.State.getSnapshot();
+        assert.strictEqual(afterMenuExit.phase, "MISSION_SELECT");
+
+        dom.missionList.children[0].click();
+        dom.gupList.children[0].click();
+        dom.gupLaunch.click();
+        assert.strictEqual(ctx.State.getSnapshot().phase, "LAUNCH");
+
+        const launchTimer = ctx.timers.pending()[0];
+        ctx.timers.run(launchTimer.id);
+        assert.strictEqual(ctx.State.getSnapshot().phase, "TRAVEL");
+
+        const travelResult = runToArrival(ctx, 4000);
+        assert.strictEqual(travelResult.arrived, true);
+
+        const goalBannerTimer = ctx.timers.pending().find((t) => t.delay === 3000);
+        if (goalBannerTimer) {
+          ctx.timers.run(goalBannerTimer.id);
+        }
+
+        const transitionTimer = lastPendingTimer(ctx);
+        ctx.timers.run(transitionTimer.id);
+        const tutorialTimer = lastPendingTimer(ctx);
+        ctx.timers.run(tutorialTimer.id);
+        assert.strictEqual(ctx.State.getSnapshot().phase, "RESCUE_ACTIVE");
+
+        completeRopeByTrace(dom, ctx, 1, { x: 800, y: 305 }, [
+          { x: 900, y: 315 }, { x: 1000, y: 322 }
+        ], { x: 1035, y: 328 });
+        runSuccessFeedback(ctx);
+        dispatch(dom.canvas, "pointerdown", pointerEvent(11, 780, 425));
+        dispatch(dom.canvas, "pointerup", pointerEvent(11, 780, 425));
+        dispatch(dom.canvas, "pointerdown", pointerEvent(12, 1040, 438));
+        dispatch(dom.canvas, "pointerup", pointerEvent(12, 1040, 438));
+        runSuccessFeedback(ctx);
+        completeRopeByTrace(dom, ctx, 21, { x: 810, y: 545 }, [
+          { x: 900, y: 550 }, { x: 1000, y: 560 }
+        ], { x: 1025, y: 568 });
+        runSuccessFeedback(ctx);
+
+        assert.strictEqual(ctx.State.getSnapshot().phase, "RESCUE_SUCCESS");
+
+        const secondPhase = ctx.State.getSnapshot().phase;
+        assert.strictEqual(secondPhase, "RESCUE_SUCCESS");
+
+        const secondRescuePhase = dom.rootEl.getAttribute("data-rescue-phase");
+        assert.strictEqual(secondRescuePhase, "success-presentation",
+          "second success presentation should have started (data-rescue-phase=success-presentation)");
+
+        const secondSuccessActive = dom.rootEl.getAttribute("data-mission-success-active");
+        assert.strictEqual(secondSuccessActive, "true",
+          "second success should be active (data-mission-success-active=true)");
+
+        const secondStage = dom.rootEl.getAttribute("data-mission-success-stage");
+        assert.strictEqual(secondStage, "animation",
+          "second success stage should be animation");
+
+        assert.strictEqual(dom.missionSuccessSection.hidden, false,
+          "second success section should be visible");
+
+        const secondPendingTimers = ctx.timers.pending();
+        const successTimer = secondPendingTimers.find((t) => t.delay === 4000);
+        assert.ok(successTimer, "should have a 4000ms success animation timer");
+
+        const secondAnim = timerWithDelay(ctx, 4000);
+        ctx.timers.run(secondAnim.id);
+        assert.strictEqual(dom.rootEl.getAttribute("data-mission-success-stage"), "ecology");
+
+        const secondEco = timerWithDelay(ctx, 3000);
+        ctx.timers.run(secondEco.id);
+        assert.strictEqual(dom.rootEl.getAttribute("data-mission-success-stage"), "narration-1");
+
+        const secondN1 = timerWithDelay(ctx, 3000);
+        ctx.timers.run(secondN1.id);
+        assert.strictEqual(dom.rootEl.getAttribute("data-mission-success-stage"), "narration-2");
+
+        const secondN2 = timerWithDelay(ctx, 3000);
+        ctx.timers.run(secondN2.id);
+        assert.strictEqual(ctx.State.getSnapshot().phase, "MISSION_COMPLETE");
+        assert.strictEqual(dom.rootEl.getAttribute("data-mission-complete-ready"), "true");
+        assert.strictEqual(dom.completeCard.hidden, false);
+
+        const finalPhase = ctx.State.getSnapshot().phase;
+        assert.strictEqual(finalPhase, "MISSION_COMPLETE",
+          "should reach MISSION_COMPLETE after second success presentation");
+        """
+    )
+    _assert_node_ok(_run_node(harness))

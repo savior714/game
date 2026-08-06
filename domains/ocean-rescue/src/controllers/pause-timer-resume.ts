@@ -47,6 +47,7 @@ export interface PauseTimerResumeHostApi extends RescueSiteTutorialAppApi {
   cancelPausePointerInteractions(): void;
   clearPauseSensitiveHoldTimer(): void;
   shutdownActiveRescueForMenu(): void;
+  cancelMissionSuccessPresentationForMenu(): void;
 }
 
 export interface PauseTimerResumeAppApi extends PauseTimerResumeHostApi {
@@ -68,6 +69,7 @@ export interface PauseTimerResumeAppApi extends PauseTimerResumeHostApi {
   enterResumeCountdown(): void;
   completeResume(): void;
   exitPauseToMenu(): void;
+  cancelMissionSuccessPresentationForMenu(): void;
 }
 
 interface ControllerDependencies {
@@ -432,11 +434,13 @@ export function installPauseTimerResumeController(
     if (snapshot.phase === "TRAVEL") {
       host.stopTravelRuntime();
       host.cancelLaunchRuntime?.();
+    } else if (snapshot.phase === "RESCUE_SUCCESS") {
+      host.cancelMissionSuccessPresentationForMenu();
+      host.shutdownActiveRescueForMenu();
     } else if (
       snapshot.phase === "RESCUE_SITE_TRANSITION" ||
       snapshot.phase === "RESCUE_TUTORIAL" ||
-      snapshot.phase === "RESCUE_ACTIVE" ||
-      snapshot.phase === "RESCUE_SUCCESS"
+      snapshot.phase === "RESCUE_ACTIVE"
     ) {
       host.shutdownActiveRescueForMenu();
     } else if (snapshot.phase === "LAUNCH") {
@@ -513,6 +517,9 @@ export function installPauseTimerResumeController(
   controller.enterResumeCountdown = enterResumeCountdown;
   controller.completeResume = completeResume;
   controller.exitPauseToMenu = exitPauseToMenu;
+  controller.cancelMissionSuccessPresentationForMenu = () => {
+    host.cancelMissionSuccessPresentationForMenu();
+  };
   controller.cancelPausePointerInteractions = host.cancelPausePointerInteractions;
   controller.clearPauseSensitiveHoldTimer = host.clearPauseSensitiveHoldTimer;
   controller.shutdownActiveRescueForMenu = host.shutdownActiveRescueForMenu;

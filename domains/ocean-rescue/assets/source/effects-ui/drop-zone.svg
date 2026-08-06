@@ -4,8 +4,20 @@
       <stop offset="0%" stop-color="#9ad0ff" stop-opacity="0.12"/>
       <stop offset="100%" stop-color="#7ab8e0" stop-opacity="0.2"/>
     </linearGradient>
+    <radialGradient id="dropZoneGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#9ad0ff" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#9ad0ff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="dropZoneBlur">
+      <feGaussianBlur stdDeviation="6"/>
+    </filter>
   </defs>
+  <!-- Glow -->
+  <rect x="2" y="2" width="296" height="316" rx="16" ry="16" fill="url(#dropZoneGlow)" filter="url(#dropZoneBlur)"/>
+  <!-- Background -->
   <rect x="2" y="2" width="296" height="316" rx="16" ry="16" fill="url(#dropZoneBg)" stroke="#9ad0ff" stroke-width="3" stroke-opacity="0.55" stroke-dasharray="12 6"/>
+  <!-- Inner highlight -->
+  <rect x="6" y="6" width="288" height="308" rx="14" ry="14" fill="none" stroke="#b8e3f7" stroke-width="1" stroke-opacity="0.2"/>
   <text x="150" y="168" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" fill="#d6e2ee" opacity="0.9">Drop zone</text>
   <rect x="60" y="185" width="180" height="4" rx="2" fill="#9ad0ff" opacity="0.25"/>
 </svg>

@@ -4,6 +4,23 @@
     <path d="M106 60 Q112 50 120 46 Q128 50 134 60" fill="none" stroke="#6B7A8A" stroke-width="2.5" opacity="0.5"/>
     <path d="M98 90 Q106 80 120 76 Q134 80 142 90" fill="none" stroke="#6B7A8A" stroke-width="2" opacity="0.4"/>
     <path d="M92 120 Q100 112 120 108 Q140 112 148 120" fill="none" stroke="#6B7A8A" stroke-width="2" opacity="0.35"/>
+    <!-- Strata lines (canyon-wall style) -->
+    <path d="M100 75 Q110 68 120 66 Q130 68 140 75" fill="none" stroke="#7A8B99" stroke-width="1.5" opacity="0.4"/>
+    <path d="M96 105 Q106 98 120 96 Q134 98 144 105" fill="none" stroke="#7A8B99" stroke-width="1.5" opacity="0.35"/>
+    <path d="M94 140 Q104 134 120 132 Q136 134 146 140" fill="none" stroke="#7A8B99" stroke-width="1.5" opacity="0.3"/>
+    <path d="M102 82 Q112 76 120 74 Q128 76 138 82" fill="none" stroke="#8B9BAB" stroke-width="1" opacity="0.25"/>
+    <path d="M98 112 Q108 106 120 104 Q132 106 142 112" fill="none" stroke="#8B9BAB" stroke-width="1" opacity="0.2"/>
+    <path d="M96 148 Q106 142 120 140 Q134 142 144 148" fill="none" stroke="#8B9BAB" stroke-width="1" opacity="0.2"/>
+    <!-- Texture triangles -->
+    <path d="M108 50 L112 46 L116 52" fill="#4A5A6A" stroke="#3F4B57" stroke-width="0.8"/>
+    <path d="M124 56 L128 52 L132 58" fill="#4A5A6A" stroke="#3F4B57" stroke-width="0.8"/>
+    <path d="M104 85 L108 81 L112 87" fill="#4A5A6A" stroke="#3F4B57" stroke-width="0.8" opacity="0.6"/>
+    <!-- Recesses -->
+    <rect x="108" y="95" width="10" height="12" rx="2" fill="#4A5A6A" stroke="#3F4B57" stroke-width="1" opacity="0.4"/>
+    <rect x="109" y="97" width="6" height="8" rx="1" fill="#6B7A8A" opacity="0.25"/>
+    <rect x="124" y="125" width="8" height="10" rx="2" fill="#4A5A6A" stroke="#3F4B57" stroke-width="1" opacity="0.35"/>
+    <path d="M106 160 Q110 156 116 158 Q120 162 118 168 Q114 170 108 168 Q104 166 106 160Z" fill="#4A5A6A" stroke="#3F4B57" stroke-width="1" opacity="0.3"/>
+    <path d="M128 155 Q132 150 138 152 Q142 156 140 162 Q136 166 130 164 Q126 162 128 155Z" fill="#4A5A6A" stroke="#3F4B57" stroke-width="1" opacity="0.25"/>
     <path d="M110 30 L120 16 L130 30" fill="#4A5A6A" stroke="#3F4B57" stroke-width="1.5"/>
     <path d="M96 55 Q88 50 82 46 Q78 44 82 40" fill="none" stroke="#5C6B7A" stroke-width="2.5" stroke-linecap="round"/>
     <path d="M144 65 Q152 60 158 56 Q162 54 158 50" fill="none" stroke="#5C6B7A" stroke-width="2.5" stroke-linecap="round"/>

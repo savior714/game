@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200">
+  <g id="terrain-rescue-rock-03">
+    <path d="M40 190 Q36 168 42 148 Q50 128 70 116 Q92 104 125 100 Q158 96 182 106 Q204 116 218 134 Q228 150 226 172 Q224 186 216 190Z" fill="#D4A373" stroke="#9B7550" stroke-width="2.5" stroke-linejoin="round"/>
+    <!-- Strata lines -->
+    <path d="M50 152 Q76 142 108 136 Q140 130 172 136 Q198 144 218 156" fill="none" stroke="#E8D5B8" stroke-width="2.5" opacity="0.5"/>
+    <path d="M54 168 Q82 160 116 156 Q150 152 182 158 Q204 166 220 174" fill="none" stroke="#E8D5B8" stroke-width="2" opacity="0.4"/>
+    <path d="M58 134 Q86 126 120 122 Q152 118 184 124 Q206 132 218 142" fill="none" stroke="#E8D5B8" stroke-width="1.5" opacity="0.3"/>
+    <path d="M62 142 Q90 134 124 130 Q156 126 188 132 Q210 140 220 148" fill="none" stroke="#F5E6D0" stroke-width="1" opacity="0.25"/>
+    <!-- Highlight circles -->
+    <ellipse cx="88" cy="124" rx="22" ry="12" fill="#FFFFFF" opacity="0.15"/>
+    <ellipse cx="168" cy="114" rx="18" ry="10" fill="#FFFFFF" opacity="0.12"/>
+    <!-- Texture details -->
+    <path d="M76 110 L80 106 L84 112" fill="#9B7550" stroke="#7B5530" stroke-width="0.8"/>
+    <path d="M146 104 L150 100 L154 106" fill="#9B7550" stroke="#7B5530" stroke-width="0.8"/>
+    <rect x="108" y="144" width="14" height="10" rx="2" fill="#9B7550" stroke="#7B5530" stroke-width="1" opacity="0.4"/>
+    <rect x="110" y="146" width="10" height="6" rx="1" fill="#E8D5B8" opacity="0.25"/>
+    <path d="M136 172 Q140 167 146 169 Q150 173 148 179 Q144 183 138 181 Q134 179 136 172Z" fill="#9B7550" stroke="#7B5530" stroke-width="1" opacity="0.3"/>
+    <path d="M68 178 Q72 173 78 175 Q82 179 80 185 Q76 189 70 187 Q66 185 68 178Z" fill="#9B7550" stroke="#7B5530" stroke-width="1" opacity="0.25"/>
+    <ellipse cx="125" cy="194" rx="95" ry="5" fill="#A8E6CF" opacity="0.15"/>
+  </g>
+</svg>

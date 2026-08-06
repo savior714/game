@@ -1,1071 +1,1071 @@
 {
-  "schemaVersion": 1,
-  "logicalViewport": [
-    1280,
-    720
-  ],
-  "declaredRasterScale": 2,
-  "paletteVersion": "ocean-rescue-v1",
-  "assets": [
-    {
-      "id": "otter-head-01",
-      "alias": "otter.head",
-      "source": "characters/otter-head.svg",
-      "sourceType": "svg",
-      "bundle": "characters",
-      "logicalSize": [
-        200,
-        200
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.55
-      ],
-      "authoringMethod": "frontier-svg-human-approved",
-      "approvalState": "approved",
-      "revisionNote": "Human-approved frontier SVG handoff: readable sea-otter ears, silhouette, cream muzzle and nose at the production face-rig size; preserves separate live eye and mouth overlays.",
-      "sourceSha256": "87e6b35d67e0d856d389570614bb47abef9f6271402e881660f98f400e40c5ec"
-    },
-    {
-      "id": "otter-torso-01",
-      "alias": "otter.torso",
-      "source": "characters/otter-torso.svg",
-      "sourceType": "svg",
-      "bundle": "characters",
-      "logicalSize": [
-        180,
-        220
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.3
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Initial proof-art packet: sea otter torso with belly patch and rescue suit collar",
-      "sourceSha256": "ff88c374528ae0ca376cc36d321093456368c63cf551cba05d3633cf0b82f359"
-    },
-    {
-      "id": "otter-arm-near-01",
-      "alias": "otter.arm.near",
-      "source": "characters/otter-arm-near.svg",
-      "sourceType": "svg",
-      "bundle": "characters",
-      "logicalSize": [
-        120,
-        180
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.12
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Initial proof-art packet: near-side forelimb with paw pads for cutout assembly",
-      "sourceSha256": "f1921d87c1269db93989fc5e74022ef5b044711af37948cf86e4b3f3fcda3123"
-    },
-    {
-      "id": "otter-arm-far-01",
-      "alias": "otter.arm.far",
-      "source": "characters/otter-arm-far.svg",
-      "sourceType": "svg",
-      "bundle": "characters",
-      "logicalSize": [
-        120,
-        180
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.12
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Initial proof-art packet: far-side forelimb with darker shade for depth",
-      "sourceSha256": "d8ade3771c69c784c735e998257190896bb7f433459cfbaf0de789d07458fd98"
-    },
-    {
-      "id": "otter-tail-01",
-      "alias": "otter.tail",
-      "source": "characters/otter-tail.svg",
-      "sourceType": "svg",
-      "bundle": "characters",
-      "logicalSize": [
-        140,
-        120
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.65,
-        0.15
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Initial proof-art packet: flat paddle tail for cutout assembly",
-      "sourceSha256": "21252b048dc249889224cb6edaad217add66362509c48b6233193ef2fea76cfd"
-    },
-    {
-      "id": "otter-eyes-open-01",
-      "alias": "otter.eyes.open",
-      "source": "characters/otter-eyes-open.svg",
-      "sourceType": "svg",
-      "bundle": "characters",
-      "logicalSize": [
-        160,
-        80
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Initial proof-art packet: open alert eye pair with highlights",
-      "sourceSha256": "03092c95b0479659cc2c8882b01931ea90c25b98130a1eedaf0b4cb22388442d"
-    },
-    {
-      "id": "otter-eyes-closed-01",
-      "alias": "otter.eyes.closed",
-      "source": "characters/otter-eyes-closed.svg",
-      "sourceType": "svg",
-      "bundle": "characters",
-      "logicalSize": [
-        160,
-        80
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Initial proof-art packet: closed happy eye arcs for blink and smile states",
-      "sourceSha256": "589648dc8660d6fb98c97e6d0898258f572c85e38ac15db238d261158018447e"
-    },
-    {
-      "id": "otter-mouth-neutral-01",
-      "alias": "otter.mouth.neutral",
-      "source": "characters/otter-mouth-neutral.svg",
-      "sourceType": "svg",
-      "bundle": "characters",
-      "logicalSize": [
-        100,
-        60
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.58
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Initial proof-art packet: straight neutral mouth line",
-      "sourceSha256": "c917789ff5fd58f6d723aa99b088a73cbd30a1d2a11f73136c5c9ffc796e8643"
-    },
-    {
-      "id": "otter-mouth-concern-01",
-      "alias": "otter.mouth.concern",
-      "source": "characters/otter-mouth-concern.svg",
-      "sourceType": "svg",
-      "bundle": "characters",
-      "logicalSize": [
-        100,
-        60
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.47
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Initial proof-art packet: worried downturned mouth with brow lines",
-      "sourceSha256": "de90d201d9cb32d03beb69c40c4f75c8c86d914dbebd1dad6b5d2b976728e095"
-    },
-    {
-      "id": "otter-mouth-smile-01",
-      "alias": "otter.mouth.smile",
-      "source": "characters/otter-mouth-smile.svg",
-      "sourceType": "svg",
-      "bundle": "characters",
-      "logicalSize": [
-        100,
-        60
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.53
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Initial proof-art packet: upward smile with blush",
-      "sourceSha256": "107d7cce74c2e630b739d189bac7a9826853878c1acdcb36acb5a98639f4bb2e"
-    },
-    {
-      "id": "turtle-worried-01",
-      "alias": "turtle.worried",
-      "source": "characters/turtle-worried.svg",
-      "sourceType": "svg",
-      "bundle": "characters",
-      "logicalSize": [
-        200,
-        180
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Initial proof-art packet: worried turtle with downturned mouth and tense flippers",
-      "sourceSha256": "384bc971d99fa6a4e5b0bac5558754b74ff8848ff5af124ce928aeb276abfae5"
-    },
-    {
-      "id": "turtle-free-01",
-      "alias": "turtle.free",
-      "source": "characters/turtle-free.svg",
-      "sourceType": "svg",
-      "bundle": "characters",
-      "logicalSize": [
-        200,
-        180
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Initial proof-art packet: free happy turtle with smile and relaxed flippers",
-      "sourceSha256": "fe3dc87ea5d163aa83815f49ef7e04a1a171357f623e3f13846eb6d044d672e4"
-    },
-    {
-      "id": "scene-submarine-01",
-      "alias": "scene.submarine",
-      "source": "scene/submarine.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        320,
-        200
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.55
-      ],
-      "authoringMethod": "frontier-svg-human-approved",
-      "approvalState": "approved",
-      "revisionNote": "Revision: improved silhouette readability at travel-scene size; distinct hull, cockpit canopy, propulsion, rescue gear, and lights with semantic groups",
-      "sourceSha256": "338e71c483e9e01eba7ddc154e68ef858482c85d39d899eda493e9112df714e9"
-    },
-    {
-      "id": "scene-water-far-01",
-      "alias": "scene.water.far",
-      "source": "scene/water-far.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        400,
-        300
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Initial proof-art packet: deep navy far-water with layered wave silhouettes",
-      "sourceSha256": "2391af7c6001753dd5f2b184104e286cfdb2fc8469190c4dacec4f58c817f244"
-    },
-    {
-      "id": "scene-reef-mid-01",
-      "alias": "scene.reef.mid",
-      "source": "scene/reef-mid.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        400,
-        200
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.65
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Initial proof-art packet: midground reef with fish silhouettes and anemone",
-      "sourceSha256": "f49c808c4b8ab536457e1ec9c0bd2179954077fd2382d27814acf4937eb017e6"
-    },
-    {
-      "id": "scene-coral-foreground-01",
-      "alias": "scene.coral.foreground",
-      "source": "scene/coral-foreground.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
+    "schemaVersion": 1,
+    "logicalViewport": [
         1280,
-        240
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.85
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Edge-framing coral with sand base; open center for gameplay plane",
-      "sourceSha256": "0b55db9c99ad95a2f579990dc1dc9933857db8d4c16a7567617c40f9e12801e5"
-    },
-    {
-      "id": "scene-seaweed-loop-01-01",
-      "alias": "scene.seaweed-loop.01",
-      "source": "scene/seaweed-loop-01.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        120,
-        200
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.1
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Initial proof-art packet: closed-loop seaweed silhouette with leaf nodes",
-      "sourceSha256": "76f9d1c7a5641cb1810a4771f6b2239ceaf850a4be71312151b37b7f68014c77"
-    },
-    {
-      "id": "ui-drag-arrow-01",
-      "alias": "ui.drag-arrow",
-      "source": "effects-ui/drag-arrow.svg",
-      "sourceType": "svg",
-      "bundle": "effects-ui",
-      "logicalSize": [
-        160,
-        160
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Initial proof-art packet: directional drag arrow with dashed circle",
-      "sourceSha256": "d2de91b17af60046a41b79ec49136e4502ffc1ae3ed210b21c6652b1442fa452"
-    },
-    {
-      "id": "fx-success-burst-01",
-      "alias": "fx.success-burst",
-      "source": "effects-ui/success-burst.svg",
-      "sourceType": "svg",
-      "bundle": "effects-ui",
-      "logicalSize": [
-        160,
-        160
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Initial proof-art packet: radial success burst with star rays and particles",
-      "sourceSha256": "68e61720e4efbf7c944e2fc50cbe45a1a42763103b21a98591986c54868ce414"
-    },
-    {
-      "id": "scene-sand-path-01",
-      "alias": "scene.sand-path",
-      "source": "scene/sand-path.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        1200,
-        240
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        1.0
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Bottom sand/rock corridor with tide pool and rock shelf value separation",
-      "sourceSha256": "e8542657c8db3c146b039f742f67722e1faa5ca32556971fc21ddb2c61153fb3"
-    },
-    {
-      "id": "scene-passage-01",
-      "alias": "scene.passage",
-      "source": "scene/passage.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        480,
-        360
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Darker exploration passage arch on the right with faint cyan continuation glow",
-      "sourceSha256": "0f4f32b3184e81b0e920b52b4082ca5b0dd1d547edb79d1c626e51b856a03e8d"
-    },
-    {
-      "id": "fx-cut-ring-01",
-      "alias": "fx.cut-ring",
-      "source": "effects-ui/cut-ring.svg",
-      "sourceType": "svg",
-      "bundle": "effects-ui",
-      "logicalSize": [
-        180,
-        180
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Gold circular focus ring with dotted arc and short rays for the cut point",
-      "sourceSha256": "03b0cb659924369b4aa700ae6fb16191cd5c837f4c5e324fcbd16f674b52f80f"
-    },
-    {
-      "id": "fx-cut-icon-01",
-      "alias": "fx.cut-icon",
-      "source": "effects-ui/cut-icon.svg",
-      "sourceType": "svg",
-      "bundle": "effects-ui",
-      "logicalSize": [
-        96,
-        96
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Scissors icon marking the canonical cut action",
-      "sourceSha256": "23e51d53a490f30e9653a2da7943da84ba41199649a1fb1983c8e9e35bf4ce07"
-    },
-    {
-      "id": "fx-bubbles-01",
-      "alias": "fx.bubbles",
-      "source": "effects-ui/bubbles.svg",
-      "sourceType": "svg",
-      "bundle": "effects-ui",
-      "logicalSize": [
-        120,
-        120
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Small translucent bubble cluster for submarine trail and ambient drift",
-      "sourceSha256": "a9303427d1c4de4a742d43529af21b237c9e48855e96799ee138283046d43fd6"
-    },
-    {
-      "id": "fx-caustic-01",
-      "alias": "fx.caustic",
-      "source": "effects-ui/caustic.svg",
-      "sourceType": "svg",
-      "bundle": "effects-ui",
-      "logicalSize": [
-        520,
-        240
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Soft caustic light bands for slow underwater shimmer",
-      "sourceSha256": "dc2c040d185ef081ec05f02b8d22ce7307663dc25af72a85aae0154d4d06a5a6"
-    },
-    {
-      "id": "hud-progress-cap-01",
-      "alias": "hud.progress-cap",
-      "source": "effects-ui/hud-progress-cap.svg",
-      "sourceType": "svg",
-      "bundle": "effects-ui",
-      "logicalSize": [
-        280,
-        80
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Rounded capsule backing for the rescue-progress HUD",
-      "sourceSha256": "fd460250ba07353833a954ad76326294bc1cc470adaba3d6fa47165ee4222860"
-    },
-    {
-      "id": "hud-loop-icon-01",
-      "alias": "hud.loop-icon",
-      "source": "effects-ui/hud-loop-icon.svg",
-      "sourceType": "svg",
-      "bundle": "effects-ui",
-      "logicalSize": [
-        48,
-        64
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Small seaweed-loop icon used for the rescue progress HUD",
-      "sourceSha256": "491f53cade4ad7da21ac93e142d30b628f5102e8eb99636904ef90a5e2e97665"
-    },
-    {
-      "id": "terrain-coral-column-01",
-      "alias": "terrain.coral-column",
-      "source": "scene/coral-column.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        240,
-        200
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Tall branching coral column with pink branches and bulbous tips for coral-reef missions",
-      "sourceSha256": "f3dd4a0e71035c4ef2096ded944d96bf66f42a3d7df63e13ccaae7f4bb035ed8"
-    },
-    {
-      "id": "terrain-reef-arch-01",
-      "alias": "terrain.reef-arch",
-      "source": "scene/reef-arch.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        240,
-        200
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Thick arching reef formation with coral-texture inner surface for coral-reef missions",
-      "sourceSha256": "22dbf131b25631e9ab066e85e5958f900487eb0f09ef5d5bbad22e5d431d4541"
-    },
-    {
-      "id": "terrain-coral-rock-01",
-      "alias": "terrain.coral-rock",
-      "source": "scene/coral-rock.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        240,
-        200
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Gray rock base topped with clustered pink coral growth for coral-reef missions",
-      "sourceSha256": "8ea8e657f2f280d5d35048667fd786e0b32ac4c194d5d4336c32f9790f29d630"
-    },
-    {
-      "id": "terrain-kelp-rock-01",
-      "alias": "terrain.kelp-rock",
-      "source": "scene/kelp-rock.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        240,
-        200
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Dark rock with three tall kelp strands and bulbous tips for coral-reef missions",
-      "sourceSha256": "f967581e9522c7992280583d011faa75f0dcfe73ebb171d686b8a1b0d40b1254"
-    },
-    {
-      "id": "terrain-reef-spire-01",
-      "alias": "terrain.reef-spire",
-      "source": "scene/reef-spire.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        240,
-        200
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Tall narrow pink spire with lateral coral branches and bulbous cap for coral-reef missions",
-      "sourceSha256": "0b3d13048f393a3d1d87fb7ca7ab4f0f66f7c02460cdf6f8c3e2a8f9e8a7acfe"
-    },
-    {
-      "id": "terrain-sand-rock-01",
-      "alias": "terrain.sand-rock",
-      "source": "scene/sand-rock.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        240,
-        200
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Rounded sand-colored boulder with gentle highlight ridges for sandy-reef missions",
-      "sourceSha256": "e2c209c339fec16b94bae73b4d8d893bd0c71a0c765a7c93120a99ec3535d737"
-    },
-    {
-      "id": "terrain-shell-ledge-01",
-      "alias": "terrain.shell-ledge",
-      "source": "scene/shell-ledge.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        240,
-        200
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Low sand ledge decorated with five cream-colored shells for sandy-reef missions",
-      "sourceSha256": "ab99a70ba18bd62bacdbf11eb3073c683387040bce4c7acf8d66e88584be62be"
-    },
-    {
-      "id": "terrain-low-reef-01",
-      "alias": "terrain.low-reef",
-      "source": "scene/low-reef.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        240,
-        200
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Wide low green reef formation with small coral bumps for sandy-reef missions",
-      "sourceSha256": "9a8c084ed34fb6103b6633a1216606934f9ec355cbae810f5a9325dd4c7651c8"
-    },
-    {
-      "id": "terrain-rock-stack-01",
-      "alias": "terrain.rock-stack",
-      "source": "scene/rock-stack.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        240,
-        200
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Stack of six rounded sand-toned stones decreasing in size for sandy-reef missions",
-      "sourceSha256": "91a88b2d200922a10d54dc5fdaa84f1f848afa9c5e39cf16edb687fd840f1910"
-    },
-    {
-      "id": "terrain-sand-pillar-01",
-      "alias": "terrain.sand-pillar",
-      "source": "scene/sand-pillar.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        240,
-        200
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Tall sand-colored pillar with horizontal strata bands and flared cap for sandy-reef missions",
-      "sourceSha256": "e07ebf29669d98cb57e6d520a5896347aaac15937ff08849dde8c3a211acb870"
-    },
-    {
-      "id": "terrain-canyon-wall-01",
-      "alias": "terrain.canyon-wall",
-      "source": "scene/canyon-wall.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        240,
-        200
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Steep gray canyon wall face with horizontal strata lines and small rock protrusions for rocky-canyon missions",
-      "sourceSha256": "21a8b3f2c048f435278a9b5b1d65e7ddaad62c99d2bc03d65f316904c66195ff"
-    },
-    {
-      "id": "terrain-rock-spire-01",
-      "alias": "terrain.rock-spire",
-      "source": "scene/rock-spire.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        240,
-        200
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Tall narrow dark-gray spire with lateral broken arms and layered bands for rocky-canyon missions",
-      "sourceSha256": "a8cfdf794d465d5643366bec66a7413f7dd7bfd819c6dfdea3bfb8cb6b857d56"
-    },
-    {
-      "id": "terrain-canyon-ledge-01",
-      "alias": "terrain.canyon-ledge",
-      "source": "scene/canyon-ledge.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        240,
-        200
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Canyon ledge with sharp left face and horizontal stratification bands for rocky-canyon missions",
-      "sourceSha256": "e77913bfac3078fba18f17ba2550ffcdf8e31430acfe36eba801d2fcabbea53a"
-    },
-    {
-      "id": "terrain-boulder-stack-01",
-      "alias": "terrain.boulder-stack",
-      "source": "scene/boulder-stack.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        240,
-        200
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Stack of four angular gray boulders decreasing in size with horizontal detail lines for rocky-canyon missions",
-      "sourceSha256": "3c75726ff12b4700ffebc84d20c86b47bb4d85eeeb6198a891b726047bcd19ec"
-    },
-    {
-      "id": "terrain-canyon-pillar-01",
-      "alias": "terrain.canyon-pillar",
-      "source": "scene/canyon-pillar.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        240,
-        200
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Tall narrow canyon pillar with horizontal strata and broken lateral arms for rocky-canyon missions",
-      "sourceSha256": "c3d86c09afa493d849819b217b7d801dd78d992b10dd5515d12f72d0ed51946d"
-    },
-    {
-      "id": "crab-trapped-01",
-      "alias": "crab.trapped",
-      "source": "characters/crab-trapped.svg",
-      "sourceType": "svg",
-      "bundle": "characters",
-      "logicalSize": [
-        200,
-        180
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Crab rescue scene: worried/trapped crab with raised claws and sweat drop",
-      "sourceSha256": "1be431c232caced8028c99155e66b84b13a2cdb49a1237aad64be647d9101dcb"
-    },
-    {
-      "id": "crab-free-01",
-      "alias": "crab.free",
-      "source": "characters/crab-free.svg",
-      "sourceType": "svg",
-      "bundle": "characters",
-      "logicalSize": [
-        200,
-        180
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Crab rescue scene: free/relieved crab with happy closed eyes and blush",
-      "sourceSha256": "4a9e2a96b681b658636e36dd12832590af7fef17629225e329d64b8f4366ab90"
-    },
-    {
-      "id": "rescue-rock-01-01",
-      "alias": "rescue.rock.01",
-      "source": "scene/rock-01.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        100,
-        90
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Crab rescue scene: small rounded gray rock for first movable rock",
-      "sourceSha256": "ae40aff40f82fed2313b78599276a373db70b351cc773a0ac38cd456e00ae884"
-    },
-    {
-      "id": "rescue-rock-02-01",
-      "alias": "rescue.rock.02",
-      "source": "scene/rock-02.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        110,
-        100
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Crab rescue scene: medium textured rock for second movable rock",
-      "sourceSha256": "e8e841000b788de2407df3e65f32008c601e695f8fee83a75fabed5ffca928f3"
-    },
-    {
-      "id": "rescue-rock-03-01",
-      "alias": "rescue.rock.03",
-      "source": "scene/rock-03.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        120,
-        110
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Crab rescue scene: large angular rock for third movable rock",
-      "sourceSha256": "59b4e5a28ed68ee3d8553343bae532ca58891dd5c0792342591eb620150f65f4"
-    },
-    {
-      "id": "grabber-base-01",
-      "alias": "tool.grabber.base",
-      "source": "scene/grabber-base.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        80,
-        70
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Crab rescue scene: GUP-mounted grabber base housing with circular detail",
-      "sourceSha256": "f410cc455e1178e0ee823ea9d57f59ca2e0cd2aa2f1211010913a1005f601620"
-    },
-    {
-      "id": "grabber-arm-01",
-      "alias": "tool.grabber.arm",
-      "source": "scene/grabber-arm.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        40,
-        160
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.05
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Crab rescue scene: articulated grabber arm segment connecting base to claw",
-      "sourceSha256": "fbea8ec1cab3d1b4a928e984d6419034876624015d0cb241870daf235137cf79"
-    },
-    {
-      "id": "grabber-claw-open-01",
-      "alias": "tool.grabber.claw.open",
-      "source": "scene/grabber-claw-open.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        80,
-        70
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.85
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Crab rescue scene: open claw state for hold and approach phases",
-      "sourceSha256": "c11975b374ae338c6758271f6d5ff16714d64bf96399bc0b3ae483752a302c1e"
-    },
-    {
-      "id": "grabber-claw-closed-01",
-      "alias": "tool.grabber.claw.closed",
-      "source": "scene/grabber-claw-closed.svg",
-      "sourceType": "svg",
-      "bundle": "scene",
-      "logicalSize": [
-        80,
-        70
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.85
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Crab rescue scene: closed claw state for grabbed rock phase",
-      "sourceSha256": "6590647f73453c32b76a3995c37a0000572040446c81128bd3a79698cc5383b2"
-    },
-    {
-      "id": "ui-drop-zone-01",
-      "alias": "ui.drop-zone",
-      "source": "effects-ui/drop-zone.svg",
-      "sourceType": "svg",
-      "bundle": "effects-ui",
-      "logicalSize": [
-        300,
-        320
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Crab rescue scene: child-readable drop zone with dashed border and label",
-      "sourceSha256": "cb3c83785c3213968b3fbf931fbab955a5aa6babea98bc248f9fadffc915dabe"
-    },
-    {
-      "id": "fx-hold-ring-01",
-      "alias": "fx.hold-ring",
-      "source": "effects-ui/hold-ring.svg",
-      "sourceType": "svg",
-      "bundle": "effects-ui",
-      "logicalSize": [
-        160,
-        160
-      ],
-      "declaredRasterScale": 2,
-      "pivot": [
-        0.5,
-        0.5
-      ],
-      "authoringMethod": "manual-vector",
-      "approvalState": "approved",
-      "revisionNote": "Crab rescue scene: hold progress ring cue around active rock",
-      "sourceSha256": "ad19ea99cec55222013000f01f1080f3bad83ccf1b40795651f9596e9a15af40"
-    }
-  ]
+        720
+    ],
+    "declaredRasterScale": 2,
+    "paletteVersion": "ocean-rescue-v1",
+    "assets": [
+        {
+            "id": "otter-head-01",
+            "alias": "otter.head",
+            "source": "characters/otter-head.svg",
+            "sourceType": "svg",
+            "bundle": "characters",
+            "logicalSize": [
+                200,
+                200
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.55
+            ],
+            "authoringMethod": "frontier-svg-human-approved",
+            "approvalState": "approved",
+            "revisionNote": "Human-approved frontier SVG handoff: readable sea-otter ears, silhouette, cream muzzle and nose at the production face-rig size; preserves separate live eye and mouth overlays.",
+            "sourceSha256": "87e6b35d67e0d856d389570614bb47abef9f6271402e881660f98f400e40c5ec"
+        },
+        {
+            "id": "otter-torso-01",
+            "alias": "otter.torso",
+            "source": "characters/otter-torso.svg",
+            "sourceType": "svg",
+            "bundle": "characters",
+            "logicalSize": [
+                180,
+                220
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.3
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Initial proof-art packet: sea otter torso with belly patch and rescue suit collar",
+            "sourceSha256": "ff88c374528ae0ca376cc36d321093456368c63cf551cba05d3633cf0b82f359"
+        },
+        {
+            "id": "otter-arm-near-01",
+            "alias": "otter.arm.near",
+            "source": "characters/otter-arm-near.svg",
+            "sourceType": "svg",
+            "bundle": "characters",
+            "logicalSize": [
+                120,
+                180
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.12
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Initial proof-art packet: near-side forelimb with paw pads for cutout assembly",
+            "sourceSha256": "f1921d87c1269db93989fc5e74022ef5b044711af37948cf86e4b3f3fcda3123"
+        },
+        {
+            "id": "otter-arm-far-01",
+            "alias": "otter.arm.far",
+            "source": "characters/otter-arm-far.svg",
+            "sourceType": "svg",
+            "bundle": "characters",
+            "logicalSize": [
+                120,
+                180
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.12
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Initial proof-art packet: far-side forelimb with darker shade for depth",
+            "sourceSha256": "d8ade3771c69c784c735e998257190896bb7f433459cfbaf0de789d07458fd98"
+        },
+        {
+            "id": "otter-tail-01",
+            "alias": "otter.tail",
+            "source": "characters/otter-tail.svg",
+            "sourceType": "svg",
+            "bundle": "characters",
+            "logicalSize": [
+                140,
+                120
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.65,
+                0.15
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Initial proof-art packet: flat paddle tail for cutout assembly",
+            "sourceSha256": "21252b048dc249889224cb6edaad217add66362509c48b6233193ef2fea76cfd"
+        },
+        {
+            "id": "otter-eyes-open-01",
+            "alias": "otter.eyes.open",
+            "source": "characters/otter-eyes-open.svg",
+            "sourceType": "svg",
+            "bundle": "characters",
+            "logicalSize": [
+                160,
+                80
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Initial proof-art packet: open alert eye pair with highlights",
+            "sourceSha256": "03092c95b0479659cc2c8882b01931ea90c25b98130a1eedaf0b4cb22388442d"
+        },
+        {
+            "id": "otter-eyes-closed-01",
+            "alias": "otter.eyes.closed",
+            "source": "characters/otter-eyes-closed.svg",
+            "sourceType": "svg",
+            "bundle": "characters",
+            "logicalSize": [
+                160,
+                80
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Initial proof-art packet: closed happy eye arcs for blink and smile states",
+            "sourceSha256": "589648dc8660d6fb98c97e6d0898258f572c85e38ac15db238d261158018447e"
+        },
+        {
+            "id": "otter-mouth-neutral-01",
+            "alias": "otter.mouth.neutral",
+            "source": "characters/otter-mouth-neutral.svg",
+            "sourceType": "svg",
+            "bundle": "characters",
+            "logicalSize": [
+                100,
+                60
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.58
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Initial proof-art packet: straight neutral mouth line",
+            "sourceSha256": "c917789ff5fd58f6d723aa99b088a73cbd30a1d2a11f73136c5c9ffc796e8643"
+        },
+        {
+            "id": "otter-mouth-concern-01",
+            "alias": "otter.mouth.concern",
+            "source": "characters/otter-mouth-concern.svg",
+            "sourceType": "svg",
+            "bundle": "characters",
+            "logicalSize": [
+                100,
+                60
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.47
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Initial proof-art packet: worried downturned mouth with brow lines",
+            "sourceSha256": "de90d201d9cb32d03beb69c40c4f75c8c86d914dbebd1dad6b5d2b976728e095"
+        },
+        {
+            "id": "otter-mouth-smile-01",
+            "alias": "otter.mouth.smile",
+            "source": "characters/otter-mouth-smile.svg",
+            "sourceType": "svg",
+            "bundle": "characters",
+            "logicalSize": [
+                100,
+                60
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.53
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Initial proof-art packet: upward smile with blush",
+            "sourceSha256": "107d7cce74c2e630b739d189bac7a9826853878c1acdcb36acb5a98639f4bb2e"
+        },
+        {
+            "id": "turtle-worried-01",
+            "alias": "turtle.worried",
+            "source": "characters/turtle-worried.svg",
+            "sourceType": "svg",
+            "bundle": "characters",
+            "logicalSize": [
+                200,
+                180
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Initial proof-art packet: worried turtle with downturned mouth and tense flippers",
+            "sourceSha256": "384bc971d99fa6a4e5b0bac5558754b74ff8848ff5af124ce928aeb276abfae5"
+        },
+        {
+            "id": "turtle-free-01",
+            "alias": "turtle.free",
+            "source": "characters/turtle-free.svg",
+            "sourceType": "svg",
+            "bundle": "characters",
+            "logicalSize": [
+                200,
+                180
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Initial proof-art packet: free happy turtle with smile and relaxed flippers",
+            "sourceSha256": "fe3dc87ea5d163aa83815f49ef7e04a1a171357f623e3f13846eb6d044d672e4"
+        },
+        {
+            "id": "scene-submarine-01",
+            "alias": "scene.submarine",
+            "source": "scene/submarine.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                320,
+                200
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.55
+            ],
+            "authoringMethod": "frontier-svg-human-approved",
+            "approvalState": "approved",
+            "revisionNote": "Revision: improved silhouette readability at travel-scene size; distinct hull, cockpit canopy, propulsion, rescue gear, and lights with semantic groups",
+            "sourceSha256": "338e71c483e9e01eba7ddc154e68ef858482c85d39d899eda493e9112df714e9"
+        },
+        {
+            "id": "scene-water-far-01",
+            "alias": "scene.water.far",
+            "source": "scene/water-far.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                400,
+                300
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Initial proof-art packet: deep navy far-water with layered wave silhouettes",
+            "sourceSha256": "2391af7c6001753dd5f2b184104e286cfdb2fc8469190c4dacec4f58c817f244"
+        },
+        {
+            "id": "scene-reef-mid-01",
+            "alias": "scene.reef.mid",
+            "source": "scene/reef-mid.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                400,
+                200
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.65
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Initial proof-art packet: midground reef with fish silhouettes and anemone",
+            "sourceSha256": "f49c808c4b8ab536457e1ec9c0bd2179954077fd2382d27814acf4937eb017e6"
+        },
+        {
+            "id": "scene-coral-foreground-01",
+            "alias": "scene.coral.foreground",
+            "source": "scene/coral-foreground.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                1280,
+                240
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.85
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Edge-framing coral with sand base; open center for gameplay plane",
+            "sourceSha256": "0b55db9c99ad95a2f579990dc1dc9933857db8d4c16a7567617c40f9e12801e5"
+        },
+        {
+            "id": "scene-seaweed-loop-01-01",
+            "alias": "scene.seaweed-loop.01",
+            "source": "scene/seaweed-loop-01.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                120,
+                200
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.1
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Initial proof-art packet: closed-loop seaweed silhouette with leaf nodes",
+            "sourceSha256": "76f9d1c7a5641cb1810a4771f6b2239ceaf850a4be71312151b37b7f68014c77"
+        },
+        {
+            "id": "ui-drag-arrow-01",
+            "alias": "ui.drag-arrow",
+            "source": "effects-ui/drag-arrow.svg",
+            "sourceType": "svg",
+            "bundle": "effects-ui",
+            "logicalSize": [
+                160,
+                160
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Initial proof-art packet: directional drag arrow with dashed circle",
+            "sourceSha256": "d2de91b17af60046a41b79ec49136e4502ffc1ae3ed210b21c6652b1442fa452"
+        },
+        {
+            "id": "fx-success-burst-01",
+            "alias": "fx.success-burst",
+            "source": "effects-ui/success-burst.svg",
+            "sourceType": "svg",
+            "bundle": "effects-ui",
+            "logicalSize": [
+                160,
+                160
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Initial proof-art packet: radial success burst with star rays and particles",
+            "sourceSha256": "68e61720e4efbf7c944e2fc50cbe45a1a42763103b21a98591986c54868ce414"
+        },
+        {
+            "id": "scene-sand-path-01",
+            "alias": "scene.sand-path",
+            "source": "scene/sand-path.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                1200,
+                240
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                1.0
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Bottom sand/rock corridor with tide pool and rock shelf value separation",
+            "sourceSha256": "e8542657c8db3c146b039f742f67722e1faa5ca32556971fc21ddb2c61153fb3"
+        },
+        {
+            "id": "scene-passage-01",
+            "alias": "scene.passage",
+            "source": "scene/passage.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                480,
+                360
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Darker exploration passage arch on the right with faint cyan continuation glow",
+            "sourceSha256": "0f4f32b3184e81b0e920b52b4082ca5b0dd1d547edb79d1c626e51b856a03e8d"
+        },
+        {
+            "id": "fx-cut-ring-01",
+            "alias": "fx.cut-ring",
+            "source": "effects-ui/cut-ring.svg",
+            "sourceType": "svg",
+            "bundle": "effects-ui",
+            "logicalSize": [
+                180,
+                180
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Gold circular focus ring with dotted arc and short rays for the cut point",
+            "sourceSha256": "03b0cb659924369b4aa700ae6fb16191cd5c837f4c5e324fcbd16f674b52f80f"
+        },
+        {
+            "id": "fx-cut-icon-01",
+            "alias": "fx.cut-icon",
+            "source": "effects-ui/cut-icon.svg",
+            "sourceType": "svg",
+            "bundle": "effects-ui",
+            "logicalSize": [
+                96,
+                96
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Scissors icon marking the canonical cut action",
+            "sourceSha256": "23e51d53a490f30e9653a2da7943da84ba41199649a1fb1983c8e9e35bf4ce07"
+        },
+        {
+            "id": "fx-bubbles-01",
+            "alias": "fx.bubbles",
+            "source": "effects-ui/bubbles.svg",
+            "sourceType": "svg",
+            "bundle": "effects-ui",
+            "logicalSize": [
+                120,
+                120
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Small translucent bubble cluster for submarine trail and ambient drift",
+            "sourceSha256": "a9303427d1c4de4a742d43529af21b237c9e48855e96799ee138283046d43fd6"
+        },
+        {
+            "id": "fx-caustic-01",
+            "alias": "fx.caustic",
+            "source": "effects-ui/caustic.svg",
+            "sourceType": "svg",
+            "bundle": "effects-ui",
+            "logicalSize": [
+                520,
+                240
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Soft caustic light bands for slow underwater shimmer",
+            "sourceSha256": "dc2c040d185ef081ec05f02b8d22ce7307663dc25af72a85aae0154d4d06a5a6"
+        },
+        {
+            "id": "hud-progress-cap-01",
+            "alias": "hud.progress-cap",
+            "source": "effects-ui/hud-progress-cap.svg",
+            "sourceType": "svg",
+            "bundle": "effects-ui",
+            "logicalSize": [
+                280,
+                80
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Rounded capsule backing for the rescue-progress HUD",
+            "sourceSha256": "fd460250ba07353833a954ad76326294bc1cc470adaba3d6fa47165ee4222860"
+        },
+        {
+            "id": "hud-loop-icon-01",
+            "alias": "hud.loop-icon",
+            "source": "effects-ui/hud-loop-icon.svg",
+            "sourceType": "svg",
+            "bundle": "effects-ui",
+            "logicalSize": [
+                48,
+                64
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Small seaweed-loop icon used for the rescue progress HUD",
+            "sourceSha256": "491f53cade4ad7da21ac93e142d30b628f5102e8eb99636904ef90a5e2e97665"
+        },
+        {
+            "id": "terrain-coral-column-01",
+            "alias": "terrain.coral-column",
+            "source": "scene/coral-column.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                240,
+                200
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Tall branching coral column with pink branches and bulbous tips for coral-reef missions",
+            "sourceSha256": "f3dd4a0e71035c4ef2096ded944d96bf66f42a3d7df63e13ccaae7f4bb035ed8"
+        },
+        {
+            "id": "terrain-reef-arch-01",
+            "alias": "terrain.reef-arch",
+            "source": "scene/reef-arch.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                240,
+                200
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Thick arching reef formation with coral-texture inner surface for coral-reef missions",
+            "sourceSha256": "22dbf131b25631e9ab066e85e5958f900487eb0f09ef5d5bbad22e5d431d4541"
+        },
+        {
+            "id": "terrain-coral-rock-01",
+            "alias": "terrain.coral-rock",
+            "source": "scene/coral-rock.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                240,
+                200
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Gray rock base topped with clustered pink coral growth for coral-reef missions",
+            "sourceSha256": "8ea8e657f2f280d5d35048667fd786e0b32ac4c194d5d4336c32f9790f29d630"
+        },
+        {
+            "id": "terrain-kelp-rock-01",
+            "alias": "terrain.kelp-rock",
+            "source": "scene/kelp-rock.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                240,
+                200
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Dark rock with three tall kelp strands and bulbous tips for coral-reef missions",
+            "sourceSha256": "f967581e9522c7992280583d011faa75f0dcfe73ebb171d686b8a1b0d40b1254"
+        },
+        {
+            "id": "terrain-reef-spire-01",
+            "alias": "terrain.reef-spire",
+            "source": "scene/reef-spire.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                240,
+                200
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Tall narrow pink spire with lateral coral branches and bulbous cap for coral-reef missions",
+            "sourceSha256": "0b3d13048f393a3d1d87fb7ca7ab4f0f66f7c02460cdf6f8c3e2a8f9e8a7acfe"
+        },
+        {
+            "id": "terrain-sand-rock-01",
+            "alias": "terrain.sand-rock",
+            "source": "scene/sand-rock.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                240,
+                200
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Rounded sand-colored boulder with gentle highlight ridges for sandy-reef missions",
+            "sourceSha256": "e2c209c339fec16b94bae73b4d8d893bd0c71a0c765a7c93120a99ec3535d737"
+        },
+        {
+            "id": "terrain-shell-ledge-01",
+            "alias": "terrain.shell-ledge",
+            "source": "scene/shell-ledge.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                240,
+                200
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Added strata lines, shell rib lines, and small texture dots",
+            "sourceSha256": "efe091714a76f0e4bc4f03d0cb703d26e27291ae6ce3852a404ae46f4abd8807"
+        },
+        {
+            "id": "terrain-low-reef-01",
+            "alias": "terrain.low-reef",
+            "source": "scene/low-reef.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                240,
+                200
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Added strata lines, texture bumps with highlight strokes, and small texture dots",
+            "sourceSha256": "53709ff5aa533699d97472c30898cb2148ac660b8acbc13752a1d6eb137dfd94"
+        },
+        {
+            "id": "terrain-rock-stack-01",
+            "alias": "terrain.rock-stack",
+            "source": "scene/rock-stack.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                240,
+                200
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Stack of six rounded sand-toned stones decreasing in size for sandy-reef missions",
+            "sourceSha256": "91a88b2d200922a10d54dc5fdaa84f1f848afa9c5e39cf16edb687fd840f1910"
+        },
+        {
+            "id": "terrain-sand-pillar-01",
+            "alias": "terrain.sand-pillar",
+            "source": "scene/sand-pillar.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                240,
+                200
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Tall sand-colored pillar with horizontal strata bands and flared cap for sandy-reef missions",
+            "sourceSha256": "e07ebf29669d98cb57e6d520a5896347aaac15937ff08849dde8c3a211acb870"
+        },
+        {
+            "id": "terrain-canyon-wall-01",
+            "alias": "terrain.canyon-wall",
+            "source": "scene/canyon-wall.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                240,
+                200
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Steep gray canyon wall face with horizontal strata lines and small rock protrusions for rocky-canyon missions",
+            "sourceSha256": "21a8b3f2c048f435278a9b5b1d65e7ddaad62c99d2bc03d65f316904c66195ff"
+        },
+        {
+            "id": "terrain-rock-spire-01",
+            "alias": "terrain.rock-spire",
+            "source": "scene/rock-spire.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                240,
+                200
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Added strata lines, texture triangles, recesses, and pebble details matching canyon-wall standard",
+            "sourceSha256": "48f82fa60f1ee83b30a1101664c5c3870f0d513aa98fe99a95d167e3fb29b26f"
+        },
+        {
+            "id": "terrain-canyon-ledge-01",
+            "alias": "terrain.canyon-ledge",
+            "source": "scene/canyon-ledge.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                240,
+                200
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Added strata lines, texture triangles, recesses, and pebble details matching canyon-wall standard",
+            "sourceSha256": "c840501b2aeaa42b955bacf4b27f1368c97b008f6008fc66dd53f6dcbdf0f689"
+        },
+        {
+            "id": "terrain-boulder-stack-01",
+            "alias": "terrain.boulder-stack",
+            "source": "scene/boulder-stack.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                240,
+                200
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Stack of four angular gray boulders decreasing in size with horizontal detail lines for rocky-canyon missions",
+            "sourceSha256": "3c75726ff12b4700ffebc84d20c86b47bb4d85eeeb6198a891b726047bcd19ec"
+        },
+        {
+            "id": "terrain-canyon-pillar-01",
+            "alias": "terrain.canyon-pillar",
+            "source": "scene/canyon-pillar.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                240,
+                200
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Added strata lines, texture triangles, recesses, and pebble details matching canyon-wall standard",
+            "sourceSha256": "285fba68372bce25f27162933c89946d1b852db70167024297cc2cc5c8467a6c"
+        },
+        {
+            "id": "crab-trapped-01",
+            "alias": "crab.trapped",
+            "source": "characters/crab-trapped.svg",
+            "sourceType": "svg",
+            "bundle": "characters",
+            "logicalSize": [
+                200,
+                180
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Added highlight ellipse, shadow filter, and carapace texture lines matching canyon-wall detail standard",
+            "sourceSha256": "e0588ff1ba0af2ada48a5fd67f1a4c597499da45e97b5375b7bd8283276a1d72"
+        },
+        {
+            "id": "crab-free-01",
+            "alias": "crab.free",
+            "source": "characters/crab-free.svg",
+            "sourceType": "svg",
+            "bundle": "characters",
+            "logicalSize": [
+                200,
+                180
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Added highlight ellipse, shadow filter, and carapace texture lines matching canyon-wall detail standard",
+            "sourceSha256": "c654adef34f29e1ccfcf0d0d32d03348f6541ea41cff5c5a81de8b44fb1a5c65"
+        },
+        {
+            "id": "terrain-rescue-rock-01",
+            "alias": "rescue.rock.01",
+            "source": "scene/rescue-rock-01.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                100,
+                90
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Sandy rescue rock with strata lines and highlight circles for crab rescue missions",
+            "sourceSha256": "753a077b4a7b3984cca23fc53a239d8f12c616a098277a97c2bf9e0d77c1407b"
+        },
+        {
+            "id": "terrain-rescue-rock-02",
+            "alias": "rescue.rock.02",
+            "source": "scene/rescue-rock-02.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                110,
+                100
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Sandy rescue rock with strata lines and highlight circles for crab rescue missions",
+            "sourceSha256": "22161e3bd9f5ba64e595fa0e445894834b21130d9f77037cc62ff22ddc9e3951"
+        },
+        {
+            "id": "terrain-rescue-rock-03",
+            "alias": "rescue.rock.03",
+            "source": "scene/rescue-rock-03.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                120,
+                110
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Sandy rescue rock with strata lines and highlight circles for crab rescue missions",
+            "sourceSha256": "3af39d18fc9c105cacedefc2f7512a40698060ee2897d1b1bc99eb1dade8345e"
+        },
+        {
+            "id": "grabber-base-01",
+            "alias": "tool.grabber.base",
+            "source": "scene/grabber-base.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                80,
+                70
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Added panel seams, screen window detail, status indicator dots, rivets, and highlight layer",
+            "sourceSha256": "aa7bfdff17600aca318466b03d6ae6309719d16b62dfce2f31b3dac5c37501a0"
+        },
+        {
+            "id": "grabber-arm-01",
+            "alias": "tool.grabber.arm",
+            "source": "scene/grabber-arm.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                40,
+                160
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.05
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Added joint rings, rivets along seam, highlight gradient, and shadow layer",
+            "sourceSha256": "1bd97252daed0d154cc3be2be07a9b3632d6ba43efdd2eab5f4eacf5b59cb284"
+        },
+        {
+            "id": "grabber-claw-open-01",
+            "alias": "tool.grabber.claw.open",
+            "source": "scene/grabber-claw-open.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                80,
+                70
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.85
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Added highlight gradient, joint detail circles, grip teeth, and shadow layer",
+            "sourceSha256": "bd41be79d8cae986dbb1240efe7b986eb33df73ca94452fbaf3f84e287582c39"
+        },
+        {
+            "id": "grabber-claw-closed-01",
+            "alias": "tool.grabber.claw.closed",
+            "source": "scene/grabber-claw-closed.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                80,
+                70
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.85
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Added highlight gradient, interlocking grip teeth, joint detail circles, and shadow layer",
+            "sourceSha256": "c7045912bd27efc88a3c37a6ef4c26686ac268e46f83a96d8ae3fa1753cfeb79"
+        },
+        {
+            "id": "ui-drop-zone-01",
+            "alias": "ui.drop-zone",
+            "source": "effects-ui/drop-zone.svg",
+            "sourceType": "svg",
+            "bundle": "effects-ui",
+            "logicalSize": [
+                300,
+                320
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Added radial glow layer, inner highlight border, and refined stroke-opacity",
+            "sourceSha256": "e78429aeba3ce5de833e514f5977c74278489bbe138873a538c99fd3bab688c5"
+        },
+        {
+            "id": "fx-hold-ring-01",
+            "alias": "fx.hold-ring",
+            "source": "effects-ui/hold-ring.svg",
+            "sourceType": "svg",
+            "bundle": "effects-ui",
+            "logicalSize": [
+                160,
+                160
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.5
+            ],
+            "authoringMethod": "manual-vector",
+            "approvalState": "approved",
+            "revisionNote": "Added outer glow blur layer, inner highlight ring, and center glow fill",
+            "sourceSha256": "ec413a02720253c8df92aa59097ef6c912244aa72ca66086449aa2a8b61acab1"
+        }
+    ]
 }

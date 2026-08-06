@@ -3,9 +3,22 @@
     <path d="M10 190 Q8 178 14 168 Q22 156 40 150 Q65 142 100 138 Q135 134 170 138 Q200 142 220 152 Q232 160 236 172 Q238 182 234 190Z" fill="#8FA87A" stroke="#6B8060" stroke-width="2.5" stroke-linejoin="round"/>
     <path d="M30 158 Q50 148 80 144 Q110 140 145 142 Q178 146 205 156" fill="none" stroke="#A8C494" stroke-width="3.5" opacity="0.6"/>
     <path d="M50 165 Q75 156 110 152 Q145 148 180 156 Q205 164 220 172" fill="none" stroke="#A8C494" stroke-width="2.5" opacity="0.4"/>
+    <!-- Strata lines (canyon-wall style, adapted to reef palette) -->
+    <path d="M38 162 Q58 154 85 150 Q115 146 148 148 Q178 150 200 160" fill="none" stroke="#A8C494" stroke-width="1.5" opacity="0.3"/>
+    <path d="M48 170 Q72 162 105 158 Q140 154 175 162 Q200 170 218 178" fill="none" stroke="#A8C494" stroke-width="1.5" opacity="0.25"/>
+    <path d="M56 154 Q78 146 108 142 Q138 138 172 142 Q198 148 214 156" fill="none" stroke="#B8D4A4" stroke-width="1" opacity="0.2"/>
+    <!-- Texture bumps -->
     <path d="M65 148 Q72 140 82 138 Q90 136 95 142" fill="#7BA862" stroke="#6B8060" stroke-width="1.5"/>
+    <path d="M68 144 Q74 138 82 136" fill="none" stroke="#9AB882" stroke-width="1" opacity="0.4"/>
     <path d="M140 144 Q148 136 158 134 Q166 134 170 140" fill="#7BA862" stroke="#6B8060" stroke-width="1.5"/>
+    <path d="M143 140 Q149 134 157 132" fill="none" stroke="#9AB882" stroke-width="1" opacity="0.4"/>
     <path d="M195 150 Q202 143 210 142 Q216 142 218 148" fill="#7BA862" stroke="#6B8060" stroke-width="1.5"/>
+    <path d="M198 146 Q204 140 210 139" fill="none" stroke="#9AB882" stroke-width="1" opacity="0.4"/>
+    <!-- Small texture dots -->
+    <circle cx="90" cy="152" r="2" fill="#9AB882" opacity="0.3"/>
+    <circle cx="165" cy="148" r="2" fill="#9AB882" opacity="0.3"/>
+    <circle cx="115" cy="160" r="1.5" fill="#9AB882" opacity="0.25"/>
+    <circle cx="190" cy="158" r="1.5" fill="#9AB882" opacity="0.25"/>
     <circle cx="120" cy="140" r="8" fill="#A8E6CF" opacity="0.3"/>
     <ellipse cx="125" cy="192" rx="110" ry="6" fill="#A8E6CF" opacity="0.2"/>
   </g>

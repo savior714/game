@@ -4,7 +4,22 @@
       <stop offset="70%" stop-color="#ffd166" stop-opacity="0"/>
       <stop offset="100%" stop-color="#ffd166" stop-opacity="0.7"/>
     </radialGradient>
+    <radialGradient id="holdGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="60%" stop-color="#ffd166" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#ffd166" stop-opacity="0.25"/>
+    </radialGradient>
+    <filter id="holdBlur">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
   </defs>
+  <!-- Glow layer -->
+  <circle cx="80" cy="80" r="72" fill="none" stroke="#ffd166" stroke-width="8" stroke-opacity="0.2" filter="url(#holdBlur)"/>
+  <!-- Main ring -->
   <circle cx="80" cy="80" r="72" fill="none" stroke="#ffd166" stroke-width="4" stroke-opacity="0.7" stroke-dasharray="10 6"/>
+  <!-- Inner highlight -->
+  <circle cx="80" cy="80" r="70" fill="none" stroke="#ffe499" stroke-width="1" stroke-opacity="0.3"/>
+  <!-- Center fill -->
   <circle cx="80" cy="80" r="64" fill="url(#holdRing)"/>
+  <!-- Center glow -->
+  <circle cx="80" cy="80" r="56" fill="url(#holdGlow)"/>
 </svg>

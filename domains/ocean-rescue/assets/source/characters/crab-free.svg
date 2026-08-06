@@ -4,11 +4,28 @@
       <stop offset="0%" stop-color="#e8a06f"/>
       <stop offset="100%" stop-color="#d98a5f"/>
     </radialGradient>
+    <radialGradient id="crabHighlightFree" cx="0.35" cy="0.3" r="0.4">
+      <stop offset="0%" stop-color="#fde8cc" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#fde8cc" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="crabShadowFree" x="-10%" y="-10%" width="130%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3" result="blur"/>
+      <feOffset dx="0" dy="4" result="offsetBlur"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.25"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
   </defs>
+  <!-- Shadow -->
+  <ellipse cx="100" cy="148" rx="48" ry="8" fill="#3a2010" opacity="0.2"/>
   <!-- Body -->
-  <ellipse cx="100" cy="95" rx="52" ry="42" fill="url(#crabBodyFree)"/>
+  <ellipse cx="100" cy="95" rx="52" ry="42" fill="url(#crabBodyFree)" filter="url(#crabShadowFree)"/>
+  <!-- Highlight -->
+  <ellipse cx="82" cy="76" rx="28" ry="18" fill="url(#crabHighlightFree)"/>
   <!-- Carapace ridge -->
   <path d="M68 80 Q100 65 132 80" fill="none" stroke="#c97b56" stroke-width="2.5" opacity="0.5"/>
+  <!-- Carapace texture lines -->
+  <path d="M74 88 Q100 78 126 88" fill="none" stroke="#d98a5f" stroke-width="1" opacity="0.3"/>
+  <path d="M78 96 Q100 88 122 96" fill="none" stroke="#d98a5f" stroke-width="1" opacity="0.25"/>
   <!-- Eyes on stalks -->
   <line x1="78" y1="68" x2="72" y2="50" stroke="#d98a5f" stroke-width="4" stroke-linecap="round"/>
   <line x1="122" y1="68" x2="128" y2="50" stroke="#d98a5f" stroke-width="4" stroke-linecap="round"/>

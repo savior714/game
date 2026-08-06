@@ -5,10 +5,24 @@
     <path d="M22 100 L70 94 L135 88 L205 86 L234 94" fill="none" stroke="#7A8B99" stroke-width="2.5" opacity="0.4"/>
     <path d="M24 130 L75 124 L140 118 L210 116 L234 124" fill="none" stroke="#7A8B99" stroke-width="2" opacity="0.35"/>
     <path d="M26 160 L80 154 L145 148 L215 146 L234 154" fill="none" stroke="#7A8B99" stroke-width="2" opacity="0.3"/>
-    <path d="M50 72 L54 68 L58 74" fill="#4A5A6A" stroke="#3F4B57" stroke-width="1"/>
-    <path d="M160 64 L164 60 L168 66" fill="#4A5A6A" stroke="#3F4B57" stroke-width="1"/>
+    <!-- Strata lines (canyon-wall style) -->
+    <path d="M28 90 L72 82 L135 76 L200 74 L234 82" fill="none" stroke="#7A8B99" stroke-width="1.5" opacity="0.3"/>
+    <path d="M30 115 L78 108 L142 102 L208 100 L234 108" fill="none" stroke="#7A8B99" stroke-width="1.5" opacity="0.25"/>
+    <path d="M32 145 L82 138 L148 132 L212 130 L234 138" fill="none" stroke="#7A8B99" stroke-width="1.5" opacity="0.2"/>
+    <path d="M34 96 L76 88 L138 82 L202 80 L234 88" fill="none" stroke="#8B9BAB" stroke-width="1" opacity="0.2"/>
+    <path d="M36 122 L84 114 L146 108 L210 106 L234 114" fill="none" stroke="#8B9BAB" stroke-width="1" opacity="0.15"/>
+    <!-- Texture triangles -->
+    <path d="M42 76 L46 72 L50 78" fill="#4A5A6A" stroke="#3F4B57" stroke-width="0.8"/>
+    <path d="M168 70 L172 66 L176 72" fill="#4A5A6A" stroke="#3F4B57" stroke-width="0.8"/>
+    <path d="M60 105 L64 101 L68 107" fill="#4A5A6A" stroke="#3F4B57" stroke-width="0.8" opacity="0.5"/>
+    <path d="M190 135 L194 131 L198 137" fill="#4A5A6A" stroke="#3F4B57" stroke-width="0.8" opacity="0.5"/>
+    <!-- Recesses -->
     <rect x="100" y="95" width="16" height="12" rx="2" fill="#4A5A6A" stroke="#3F4B57" stroke-width="1" opacity="0.5"/>
+    <rect x="102" y="97" width="12" height="8" rx="1" fill="#6B7A8A" opacity="0.3"/>
     <rect x="180" y="120" width="14" height="10" rx="2" fill="#4A5A6A" stroke="#3F4B57" stroke-width="1" opacity="0.4"/>
+    <rect x="182" y="122" width="10" height="6" rx="1" fill="#6B7A8A" opacity="0.25"/>
+    <path d="M70 165 Q74 160 80 162 Q84 166 82 172 Q78 176 72 174 Q68 172 70 165Z" fill="#4A5A6A" stroke="#3F4B57" stroke-width="1" opacity="0.3"/>
+    <path d="M170 158 Q174 153 180 155 Q184 159 182 165 Q178 169 172 167 Q168 165 170 158Z" fill="#4A5A6A" stroke="#3F4B57" stroke-width="1" opacity="0.25"/>
     <ellipse cx="125" cy="194" rx="105" ry="5" fill="#A8E6CF" opacity="0.15"/>
   </g>
 </svg>

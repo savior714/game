@@ -6,9 +6,14 @@ Playwright — opens the #stats-modal in all four quiz domains (math, korean,
 english, science). This is a parameterized test that runs the same scenario
 against each domain.
 
-Production change scope: only shared/ui/quiz-ui-core.js wires the button
-click to the core's openStats() at creation time. No per-domain ui.js file
-is touched.
+It also verifies that exactly one stats-open path is wired per domain: one
+real click must invoke renderStatsTable() exactly once. The invocations are
+counted through a test-only wrapper installed on window.renderStatsTable
+from the browser side; no production hook or instrumentation API is added.
+
+Production ownership contract: only shared/ui/quiz-ui-core.js wires the
+#stats-btn click to the core's openStats() at creation time. Per-domain
+ui.js files must not register their own #stats-btn click listener.
 """
 
 import http.server
@@ -22,6 +27,20 @@ from playwright.sync_api import sync_playwright
 REPO_ROOT = Path(__file__).parent.parent
 
 DOMAINS = ["math", "korean", "english", "science"]
+
+INSTALL_RENDER_COUNTER = """
+() => {
+  const original = window.renderStatsTable;
+  if (typeof original !== "function") {
+    throw new Error("window.renderStatsTable is not a function");
+  }
+  window.__statsRenderCount = 0;
+  window.renderStatsTable = function (...args) {
+    window.__statsRenderCount += 1;
+    return original.apply(this, args);
+  };
+}
+"""
 
 
 class HTTPServerFixture:
@@ -97,11 +116,13 @@ def clear_storage(pg):
 
 @pytest.mark.browser
 class TestStatsButtonClickOpensModal:
-    """Real user click on #stats-btn must open #stats-modal in every domain."""
+    """Real user click on #stats-btn must open #stats-modal in every domain
+    and must invoke renderStatsTable() exactly once per click."""
 
     @pytest.mark.parametrize("domain", DOMAINS)
     def test_stats_button_click_opens_modal(self, server, page, domain):
-        """Clicking #stats-btn via Playwright opens the stats modal."""
+        """Clicking #stats-btn via Playwright opens the stats modal and
+        renders the stats table exactly once."""
         url = f"{server}/domains/{domain}/index.html"
 
         page.goto(url)
@@ -125,12 +146,25 @@ class TestStatsButtonClickOpensModal:
         stats_btn = page.locator("#stats-btn")
         stats_btn.wait_for(state="visible", timeout=5000)
 
-        # Step 3: Actual user click — no JS evaluation to open the modal.
+        # Step 3: Install a test-only counter on window.renderStatsTable so
+        # the number of render executions per click can be measured. This
+        # never calls openStats or the button; it only wraps the renderer.
+        page.evaluate(INSTALL_RENDER_COUNTER)
+
+        # Step 4: Actual user click — no JS evaluation to open the modal.
         stats_btn.click()
 
-        # Step 4: #stats-modal must now be visible (display: flex).
+        # Step 5: #stats-modal must now be visible (display: flex).
         final_display = modal.evaluate("el => getComputedStyle(el).display")
         assert final_display == "flex", (
             f"[{domain}] After clicking #stats-btn, #stats-modal display "
             f"was '{final_display}', expected 'flex'"
+        )
+
+        # Step 6: One real click must execute renderStatsTable() exactly
+        # once — a duplicate click binding would run it twice.
+        render_count = page.evaluate("() => window.__statsRenderCount")
+        assert render_count == 1, (
+            f"[{domain}] One #stats-btn click must invoke renderStatsTable() "
+            f"exactly once, but it ran {render_count} times"
         )

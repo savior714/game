@@ -218,7 +218,6 @@ function bindProgressionControl() {
 
 function bindStaticControls() {
   const controls = [
-    ['stats-btn', openStats],
     ['close-stats-btn', closeStats],
     ['reset-stats-btn', confirmResetStats],
     ['restart-btn', startGame],

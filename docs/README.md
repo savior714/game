@@ -48,7 +48,21 @@
 `DESIGN.md`는 순수 시각 개선을 현재 작업으로 만들지 않는다.
 `SPEC_orchestration.md`는 모든 에이전트 작업에 multi-phase dispatch를 강제하지 않는다.
 
-## 5. 기능별 기술 문서
+## 5. Ocean Rescue spec 동결 분류
+
+공통 해석 규칙은 [`OCEAN_RESCUE_FREEZE_NOTICE.md`](specs/OCEAN_RESCUE_FREEZE_NOTICE.md)를 따른다.
+
+| 문서 | 내부 성숙도 라벨의 의미 | 현재 실행 상태 |
+|---|---|---|
+| [`AIDENGAME_OCEAN_RESCUE_MVP_PRD.md`](specs/product/AIDENGAME_OCEAN_RESCUE_MVP_PRD.md) | MVP 제품 계약과 미결정 항목의 기준 | `PAUSED_REFERENCE_ONLY` |
+| [`AIDENGAME_OCEAN_RESCUE_RENDERING_MVP.md`](specs/product/AIDENGAME_OCEAN_RESCUE_RENDERING_MVP.md) | `IMPLEMENTATION_READY` rendering acceptance | `PAUSED_REFERENCE_ONLY` |
+| [`AIDENGAME_OCEAN_RESCUE_DEVELOPMENT_ARCHITECTURE.md`](specs/technical/AIDENGAME_OCEAN_RESCUE_DEVELOPMENT_ARCHITECTURE.md) | `CANONICAL` development architecture contract | `PAUSED_REFERENCE_ONLY` |
+| [`AIDENGAME_OCEAN_RESCUE_MANUAL_SVG_ASSET_HANDOFF.md`](specs/technical/AIDENGAME_OCEAN_RESCUE_MANUAL_SVG_ASSET_HANDOFF.md) | `CANONICAL` manual asset handoff contract | `PAUSED_REFERENCE_ONLY` |
+
+위 문서의 `IMPLEMENTATION_READY`, `CANONICAL`, `locked`, `production readiness`는 문서 내부 계약 성숙도이며 현재 구현 우선순위가 아니다.
+일반 과목 안정화 exit 전에는 사용자의 명시적 재개 또는 치명적 운영 예외가 없는 한 구현·asset 제작·구조 이전을 시작하지 않는다.
+
+## 6. 기능별 기술 문서
 
 기능별 문서는 실제 코드와 직접 관련된 경우에만 읽는다.
 
@@ -60,7 +74,7 @@
 
 문서와 현재 코드가 불일치하면 최신 코드·테스트·설정을 확인하고, 제품 계약 자체가 변경된 것인지 문서 drift인지 구분한다.
 
-## 6. 계획과 상태 기록 규칙
+## 7. 계획과 상태 기록 규칙
 
 - 일반 WP 계획과 다음 WP는 대화에서 관리한다.
 - 상태 전용 plan/evidence 파일을 새로 만들지 않는다.
@@ -68,7 +82,7 @@
 - 완료 근거는 최신 main의 코드, focused test, 브라우저 증거, build/artifact 계약이다.
 - 제품 계약이 아니라 진행률만 달라졌다면 authority 문서를 수정하지 않는다.
 
-## 7. 문서 변경 검증
+## 8. 문서 변경 검증
 
 문서를 변경할 때 다음을 확인한다.
 
@@ -78,6 +92,7 @@
 4. 과거 상태를 현재 일정 권위처럼 표현하지 않는가
 5. 제품 테스트에 일정 상태 assertion을 추가하지 않았는가
 6. optional 또는 legacy package를 현재 필수 실행 경로로 승격하지 않았는가
+7. 기능 문서의 내부 maturity label을 실행 우선순위로 오인하지 않았는가
 
 관련 focused 검증:
 
@@ -86,9 +101,10 @@ uv run pytest -q tests/test_core_quiz_reliability_policy.py
 uv run pytest -q tests/test_agent_registry_consistency.py
 uv run pytest -q tests/test_document_authority_classification.py
 uv run pytest -q tests/test_active_technical_spec_consistency.py
+uv run pytest -q tests/test_ocean_rescue_spec_freeze_classification.py
 ```
 
-## 8. 새 문서 작성 판단
+## 9. 새 문서 작성 판단
 
 새 문서는 다음 조건을 모두 만족할 때만 추가한다.
 

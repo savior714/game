@@ -59,6 +59,15 @@ def test_frozen_feature_references_do_not_publish_next_work() -> None:
     assert "테스트에서 `다음 WP`, `현재 WP`, `WP COMPLETE` 같은 일정 상태를 검증하지 않는다." in ocean
 
 
+def test_frozen_ocean_plan_does_not_expand_operational_exceptions() -> None:
+    ocean = read(OCEAN_REFERENCE)
+
+    assert "artifact drift, rollback 검증 실패 또는 테스트 실패만으로는 운영 예외가 성립하지 않는다" in ocean
+    assert "- 현재 배포 artifact가 source/build 계약과 불일치함" not in ocean
+    assert "- rollback이 동작하지 않음" not in ocean
+    assert "배포 차단 치명적 회귀, 데이터 손상 또는 보안 문제를 직접 증명" in ocean
+
+
 def test_readme_labels_frozen_tooling_as_reference() -> None:
     readme = read(ROOT / "README.md")
 

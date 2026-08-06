@@ -577,6 +577,9 @@ def _trigger_pointer_down(page: Page, start_client: dict) -> int | float:
     assert math.isfinite(pointer_id), (
         f"observed pointerId must be finite, got {pointer_id}"
     )
+    assert pointer_id == math.trunc(pointer_id), (
+        f"observed pointerId must be integer-valued, got {pointer_id}"
+    )
     return pointer_id
 
 
@@ -615,6 +618,9 @@ def _begin_sea_turtle_touch_gesture(
         )
         assert math.isfinite(pointer_id), (
             f"observed pointerId must be finite, got {pointer_id}"
+        )
+        assert pointer_id == math.trunc(pointer_id), (
+            f"observed pointerId must be integer-valued, got {pointer_id}"
         )
         return cdp, pointer_id
     except Exception:
@@ -1436,6 +1442,32 @@ def _fake_page_returning(page: _FakePage, value: float) -> None:
         return value
 
     page.evaluate = _eval  # type: ignore[assignment]
+
+
+def test_pointer_helpers_reject_fractional_pointer_ids() -> None:
+    """Both pointer helpers must reject finite non-integer pointerId values.
+
+    PointerEvent.pointerId is an integer-valued ID per the platform contract.
+    This regression verifies that both _trigger_pointer_down and
+    _begin_sea_turtle_touch_gesture raise AssertionError with the
+    "must be integer-valued" contract message for fractional values that
+    pass the existing finite check.
+    """
+    for frac_value in (1.5, -1.5):
+        fake_page = _FakePage()
+        _fake_page_returning(fake_page, frac_value)
+        fake_context = _FakeContext()
+
+        with pytest.raises(AssertionError, match="must be integer-valued"):
+            _begin_sea_turtle_touch_gesture(
+                fake_page,
+                fake_context,
+                100,
+                200,
+            )
+
+        with pytest.raises(AssertionError, match="must be integer-valued"):
+            _trigger_pointer_down(fake_page, {"x": 100, "y": 200})
 
 
 def test_pointer_helpers_reject_infinite_pointer_ids() -> None:

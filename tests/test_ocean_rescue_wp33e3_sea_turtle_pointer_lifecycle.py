@@ -543,51 +543,49 @@ def _ensure_canvas_visible(page: Page) -> None:
     )
 
 
-def _trigger_pointer_down(page: Page, client_x: int, client_y: int) -> int:
-    pointer_id = page.evaluate(
-        """(args) => {
-          const x = args[0];
-          const y = args[1];
-          const canvas = document.getElementById('ocean-rescue-canvas');
-          if (!canvas) return null;
-          const e = new PointerEvent('pointerdown', {
-            clientX: x, clientY: y,
-            pointerId: 1, isPrimary: true, button: 0, bubbles: true
-          });
-          canvas.dispatchEvent(e);
-          if (typeof OceanRescue.App.handleSeaTurtlePointerDown === 'function') {
-            OceanRescue.App.handleSeaTurtlePointerDown(e);
-          }
-          return 1;
-        }""",
-        [client_x, client_y],
+def _trigger_pointer_down(page: Page, start_client: dict) -> int | float:
+    """Move to position and press mouse button so the browser generates a trusted pointerdown.
+
+    The canvas trace listener records the real browser-assigned pointerId,
+    which is returned for subsequent capture/release verification.
+    """
+    page.mouse.move(start_client["x"], start_client["y"])
+    page.mouse.down()
+    pointer_id = page.evaluate("() => window.__wp33e3Trace.pointerId")
+    assert pointer_id is not None, (
+        "trusted pointerdown did not fire or trace listener did not record pointerId"
     )
-    assert pointer_id is not None, "failed to trigger pointerdown"
+    assert isinstance(pointer_id, (int, float)), (
+        f"observed pointerId must be a number, got {type(pointer_id).__name__}"
+    )
+    assert pointer_id == pointer_id, (
+        f"observed pointerId must be finite, got {pointer_id}"
+    )
     return pointer_id
 
 
 def _trigger_pointer_up(page: Page, client_x: int, client_y: int) -> None:
+    """Dispatch synthetic pointerup using the browser-assigned pointerId from trace."""
+    pointer_id = page.evaluate("() => window.__wp33e3Trace.pointerId")
     page.evaluate(
         """(args) => {
           const x = args[0];
           const y = args[1];
+          const pid = args[2];
           const canvas = document.getElementById('ocean-rescue-canvas');
           if (!canvas) return;
           const e = new PointerEvent('pointerup', {
             clientX: x, clientY: y,
-            pointerId: 1, isPrimary: true, button: 0, bubbles: true
+            pointerId: pid, isPrimary: true, button: 0, bubbles: true
           });
           canvas.dispatchEvent(e);
-          if (typeof OceanRescue.App.handleSeaTurtlePointerUp === 'function') {
-            OceanRescue.App.handleSeaTurtlePointerUp(e);
-          }
         }""",
-        [client_x, client_y],
+        [client_x, client_y, pointer_id],
     )
 
 
-def _check_pointer_capture(page: Page, pointer_id: int, expected: bool) -> None:
-    """Verify pointer capture via browser API or controller state fallback."""
+def _check_pointer_capture(page: Page, pointer_id: int | float) -> None:
+    """Verify native hasPointerCapture is true. Controller state is not a fallback."""
     has_capture = page.evaluate(
         "(id) => { "
         "  const canvas = document.getElementById('ocean-rescue-canvas'); "
@@ -596,19 +594,13 @@ def _check_pointer_capture(page: Page, pointer_id: int, expected: bool) -> None:
         "}",
         pointer_id,
     )
-    if has_capture is True:
-        return  # capture verified via browser API
-    if page.evaluate(
-        "(id) => OceanRescue.App.isTrackedSeaTurtlePointer(id)", pointer_id
-    ):
-        return  # capture verified via controller state (headless fallback)
-    pytest.fail(
-        f"pointer capture verification failed for pointerId {pointer_id}"
+    assert has_capture is True, (
+        f"native hasPointerCapture({pointer_id}) must be true after pointerdown, got {has_capture}"
     )
 
 
-def _check_pointer_release(page: Page, pointer_id: int) -> None:
-    """Verify pointer capture is released via browser API or controller state fallback."""
+def _check_pointer_release(page: Page, pointer_id: int | float) -> None:
+    """Verify native hasPointerCapture is false. Controller state is not a fallback."""
     has_capture = page.evaluate(
         "(id) => { "
         "  const canvas = document.getElementById('ocean-rescue-canvas'); "
@@ -617,35 +609,36 @@ def _check_pointer_release(page: Page, pointer_id: int) -> None:
         "}",
         pointer_id,
     )
-    if has_capture is False:
-        return  # release verified via browser API
-    if not page.evaluate(
-        "(id) => OceanRescue.App.isTrackedSeaTurtlePointer(id)", pointer_id
-    ):
-        return  # release verified via controller state (headless fallback)
-    pytest.fail(
-        f"pointer release verification failed for pointerId {pointer_id}"
+    assert has_capture is False, (
+        f"native hasPointerCapture({pointer_id}) must be false after release, got {has_capture}"
     )
 
 
-def _trigger_pointer_cancel(page: Page, client_x: int, client_y: int) -> None:
-    """Dispatch synthetic pointercancel and deliver it to the canonical controller handler."""
+def _trigger_pointer_cancel(
+    page: Page, pointer_id: int | float, client_x: int, client_y: int
+) -> None:
+    """Dispatch a synthetic pointercancel on the canvas.
+
+    This is intentionally synthetic (not generated by the browser runtime)
+    and uses the real browser-assigned pointerId so the controller's
+    pointerId match check passes. The event routes through the shared DOM
+    listener (onRescuePointerCancel) to the canonical ESM controller —
+    the handler is never called directly from Python.
+    """
     page.evaluate(
         "(args) => { "
         "  const x = args[0]; "
         "  const y = args[1]; "
+        "  const pid = args[2]; "
         "  const canvas = document.getElementById('ocean-rescue-canvas'); "
         "  if (!canvas) return; "
         "  const e = new PointerEvent('pointercancel', { "
         "    clientX: x, clientY: y, "
-        "    pointerId: 1, isPrimary: true, button: 0, bubbles: true "
+        "    pointerId: pid, isPrimary: true, button: 0, bubbles: true "
         "  }); "
         "  canvas.dispatchEvent(e); "
-        "  if (typeof OceanRescue.App.handleSeaTurtlePointerCancel === 'function') { "
-        "    OceanRescue.App.handleSeaTurtlePointerCancel(e); "
-        "  } "
         "}",
-        [client_x, client_y],
+        [client_x, client_y, pointer_id],
     )
 
 
@@ -683,7 +676,7 @@ def test_pointer_down_acquires_capture_and_sets_active() -> None:
             canvas = page.locator("#ocean-rescue-canvas")
             start_client = _canvas_logical_to_client(canvas, rope_start["x"], rope_start["y"])
 
-            observed_pointer_id = _trigger_pointer_down(page, start_client["x"], start_client["y"])
+            observed_pointer_id = _trigger_pointer_down(page, start_client)
 
             snapshot = page.evaluate(
                 "() => OceanRescue.SeaTurtle.getSnapshot()"
@@ -701,7 +694,7 @@ def test_pointer_down_acquires_capture_and_sets_active() -> None:
                 "pointerId must be finite"
             )
 
-            _check_pointer_capture(page, observed_pointer_id, True)
+            _check_pointer_capture(page, observed_pointer_id)
 
             tracked = page.evaluate(
                 "(id) => OceanRescue.App.isTrackedSeaTurtlePointer(id)",
@@ -757,7 +750,7 @@ def test_pointer_move_keeps_same_captured_pointer() -> None:
             start_client = _canvas_logical_to_client(canvas, rope_start["x"], rope_start["y"])
             end_client = _canvas_logical_to_client(canvas, rope_end["x"], rope_end["y"])
 
-            observed_pointer_id = _trigger_pointer_down(page, start_client["x"], start_client["y"])
+            observed_pointer_id = _trigger_pointer_down(page, start_client)
 
             steps = 5
             for i in range(1, steps + 1):
@@ -778,7 +771,7 @@ def test_pointer_move_keeps_same_captured_pointer() -> None:
                 "pointerActive must remain true during pointermove"
             )
 
-            _check_pointer_capture(page, observed_pointer_id, True)
+            _check_pointer_capture(page, observed_pointer_id)
 
             tracked = page.evaluate(
                 "(id) => OceanRescue.App.isTrackedSeaTurtlePointer(id)",
@@ -828,7 +821,7 @@ def test_pointer_up_releases_capture_and_clears_active() -> None:
             canvas = page.locator("#ocean-rescue-canvas")
             start_client = _canvas_logical_to_client(canvas, rope_start["x"], rope_start["y"])
 
-            observed_pointer_id = _trigger_pointer_down(page, start_client["x"], start_client["y"])
+            observed_pointer_id = _trigger_pointer_down(page, start_client)
 
             _trigger_pointer_up(page, start_client["x"], start_client["y"])
 
@@ -891,14 +884,14 @@ def test_pause_releases_active_pointer_capture() -> None:
             canvas = page.locator("#ocean-rescue-canvas")
             start_client = _canvas_logical_to_client(canvas, rope_start["x"], rope_start["y"])
 
-            observed_pointer_id = _trigger_pointer_down(page, start_client["x"], start_client["y"])
+            observed_pointer_id = _trigger_pointer_down(page, start_client)
 
             snapshot_before = page.evaluate(
                 "() => OceanRescue.SeaTurtle.getSnapshot()"
             )
             assert snapshot_before["pointerActive"] is True
 
-            _check_pointer_capture(page, observed_pointer_id, True)
+            _check_pointer_capture(page, observed_pointer_id)
 
             page.evaluate("() => OceanRescue.App.enterPause()")
             page.wait_for_function(
@@ -972,14 +965,14 @@ def test_session_shutdown_releases_active_pointer_capture() -> None:
             canvas = page.locator("#ocean-rescue-canvas")
             start_client = _canvas_logical_to_client(canvas, rope_start["x"], rope_start["y"])
 
-            observed_pointer_id = _trigger_pointer_down(page, start_client["x"], start_client["y"])
+            observed_pointer_id = _trigger_pointer_down(page, start_client)
 
             snapshot_before = page.evaluate(
                 "() => OceanRescue.SeaTurtle.getSnapshot()"
             )
             assert snapshot_before["pointerActive"] is True
 
-            _check_pointer_capture(page, observed_pointer_id, True)
+            _check_pointer_capture(page, observed_pointer_id)
 
             result = page.evaluate(
                 "() => OceanRescue.App.stopSeaTurtleSession()"
@@ -1018,8 +1011,23 @@ def test_session_shutdown_releases_active_pointer_capture() -> None:
 
 
 def test_pointer_cancel_releases_capture_and_clears_active_gesture() -> None:
-    """pointercancel on active sea-turtle gesture releases capture and clears gesture state."""
-    with ViteServerFixture() as server:
+    """Native pointer capture acquires on trusted pointerdown and releases on synthetic pointercancel.
+
+    Proves the exact transition hasPointerCapture(pointerId): false -> true -> false
+    using the real browser-assigned pointerId, with no controller-state fallback.
+
+    - trusted pointerdown comes from Playwright page.mouse.down() (not synthetic)
+    - pointerId is observed from the browser, never hardcoded
+    - native hasPointerCapture() is the sole capture/release criterion
+    - synthetic pointercancel routes through the shared DOM listener to the controller
+    - page.mouse.up() runs in finally so the button is always released
+    """
+    server = ViteServerFixture()
+    browser = None
+    context = None
+    page = None
+    try:
+        server.__enter__()
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
             context = browser.new_context(
@@ -1051,40 +1059,64 @@ def test_pointer_cancel_releases_capture_and_clears_active_gesture() -> None:
             canvas = page.locator("#ocean-rescue-canvas")
             start_client = _canvas_logical_to_client(canvas, rope_start["x"], rope_start["y"])
 
-            observed_pointer_id = _trigger_pointer_down(page, start_client["x"], start_client["y"])
+            # Step 1: trusted pointerdown via Playwright mouse gesture
+            observed_pointer_id = _trigger_pointer_down(page, start_client)
 
-            snapshot_before = page.evaluate(
+            # Step 2: verify native capture acquired (false -> true)
+            has_capture_before = page.evaluate(
+                "(id) => { "
+                "  const c = document.getElementById('ocean-rescue-canvas'); "
+                "  if (!c || typeof c.hasPointerCapture !== 'function') return null; "
+                "  return c.hasPointerCapture(id); "
+                "}",
+                observed_pointer_id,
+            )
+            assert has_capture_before is True, (
+                f"native hasPointerCapture({observed_pointer_id}) must be true after trusted pointerdown, got {has_capture_before}"
+            )
+
+            snapshot = page.evaluate(
                 "() => OceanRescue.SeaTurtle.getSnapshot()"
             )
-            assert snapshot_before["pointerActive"] is True, (
-                "pointerActive must be true before pointercancel"
+            assert snapshot["pointerActive"] is True, (
+                "SeaTurtle snapshot.pointerActive must be true after capture acquired"
             )
 
-            _check_pointer_capture(page, observed_pointer_id, True)
-
-            tracked_before = page.evaluate(
+            tracked = page.evaluate(
                 "(id) => OceanRescue.App.isTrackedSeaTurtlePointer(id)",
                 observed_pointer_id,
             )
-            assert tracked_before is True, (
-                "controller must track the pointerId before pointercancel"
+            assert tracked is True, (
+                "controller must track the browser-assigned pointerId after capture"
             )
 
-            _trigger_pointer_cancel(page, start_client["x"], start_client["y"])
+            # Step 3: synthetic pointercancel dispatched on canvas (routes through DOM listener)
+            _trigger_pointer_cancel(page, observed_pointer_id, start_client["x"], start_client["y"])
 
             trace_after = page.evaluate("() => window.__wp33e3Trace")
-            assert trace_after["cancelCount"] >= 1, (
-                "pointercancel listener must fire at least once"
+            assert trace_after["cancelCount"] == 1, (
+                f"pointercancel listener must fire exactly once, got {trace_after['cancelCount']}"
+            )
+
+            # Step 4: verify native capture released (true -> false)
+            has_capture_after = page.evaluate(
+                "(id) => { "
+                "  const c = document.getElementById('ocean-rescue-canvas'); "
+                "  if (!c || typeof c.hasPointerCapture !== 'function') return null; "
+                "  return c.hasPointerCapture(id); "
+                "}",
+                observed_pointer_id,
+            )
+            assert has_capture_after is False, (
+                f"native hasPointerCapture({observed_pointer_id}) must be false after pointercancel, got {has_capture_after}"
             )
 
             snapshot_after = page.evaluate(
                 "() => OceanRescue.SeaTurtle.getSnapshot()"
             )
             assert snapshot_after["pointerActive"] is False, (
-                "pointerActive must be false after pointercancel"
+                "SeaTurtle snapshot.pointerActive must be false after capture released"
             )
-
-            _check_pointer_release(page, observed_pointer_id)
 
             tracked_after = page.evaluate(
                 "(id) => OceanRescue.App.isTrackedSeaTurtlePointer(id)",
@@ -1094,9 +1126,32 @@ def test_pointer_cancel_releases_capture_and_clears_active_gesture() -> None:
                 "controller must not track the pointerId after pointercancel"
             )
 
+            # Step 5: release mouse button and verify late pointerup does not re-activate
+            page.mouse.up()
+
+            snapshot_final = page.evaluate(
+                "() => OceanRescue.SeaTurtle.getSnapshot()"
+            )
+            assert snapshot_final["pointerActive"] is False, (
+                "late pointerup after pointercancel must not re-activate gesture"
+            )
+
             _assert_quality_gates(errors)
-            context.close()
-            browser.close()
+    finally:
+        if context:
+            try:
+                context.close()
+            except Exception:
+                pass
+        if browser:
+            try:
+                browser.close()
+            except Exception:
+                pass
+        try:
+            server.__exit__(None, None, None)
+        except Exception:
+            pass
 
 
 if __name__ == "__main__":

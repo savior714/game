@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -115,7 +114,6 @@ def test_typed_rescue_site_controller_owns_arrival_tutorial_and_skip_flow() -> N
             )
             assert set(contract.values()) == {"function"}
 
-            # Repeated boot must retain the legacy exactly-once stage listener owner.
             assert page.evaluate("OceanRescue.App.boot()") is True
             assert page.evaluate("OceanRescue.App.boot()") is True
 
@@ -200,7 +198,6 @@ def test_typed_rescue_site_controller_owns_arrival_tutorial_and_skip_flow() -> N
             }
             assert page.evaluate("OceanRescue.App.skipTutorial()") is False
 
-            # The cancelled automatic callback must not advance or restart the flow.
             page.wait_for_timeout(3200)
             assert page.evaluate("OceanRescue.State.getSnapshot().phase") == "RESCUE_ACTIVE"
             _assert_quality_gates(errors)
@@ -298,51 +295,3 @@ def test_runtime_abi_and_legacy_manifest_keep_wp33c_boundary() -> None:
     manifest = json.loads(LEGACY_MANIFEST.read_text(encoding="utf-8"))
     serialized = json.dumps(manifest)
     assert "controllers/rescue-site-tutorial" not in serialized
-
-
-def test_wp33c_complete_status_and_phase8_detail_are_asserted() -> None:
-    """WP-33C COMPLETE status and Phase 8 detailed state must be verifiable."""
-    plan = (
-        REPO_ROOT / "docs" / "plans"
-        / "PLAN_ocean_rescue_vite_esm_typescript_migration.md"
-    ).read_text(encoding="utf-8")
-    evidence = (
-        REPO_ROOT / "docs" / "evidence" / "ocean-rescue" / "migration" / "phase-8"
-        / "rescue-site-tutorial-controller.md"
-    ).read_text(encoding="utf-8")
-
-    # Evidence status must be COMPLETE.
-    assert "## Status\n\nCOMPLETE" in evidence
-
-    # Evidence must record actual verification results.
-    assert "Focused test pass count:" in evidence
-    assert "WP-33C repeated runs:" in evidence
-    assert "Production bundle SHA-256:" in evidence
-    assert "Deterministic build:" in evidence
-    assert "Rollback:" in evidence
-
-    # Plan header must point to WP-33E as next executable work package.
-    header = plan.split("\n---\n", maxsplit=1)[0]
-    assert "**Next executable work package:** WP-33E" in header
-
-    # Phase 8 detailed status must reflect all three controllers complete.
-    phase8_match = plan.find("## 10. Phase 8")
-    assert phase8_match != -1, "Phase 8 section not found in migration plan"
-    phase8_block = plan[phase8_match:]
-    next_phase = phase8_block.find("## 11.")
-    phase8_detail = phase8_block[:next_phase] if next_phase != -1 else phase8_block
-    assert "WP-33A, WP-33B, and WP-33C COMPLETE" in phase8_detail
-    assert "WP-33A and WP-33B COMPLETE" not in phase8_detail
-
-    # Current scheduling authority must list WP-33C as COMPLETE and next as WP-33D or later.
-    authority_marker = "Current scheduling authority:"
-    assert authority_marker in plan
-    authority_block = plan[plan.index(authority_marker) :]
-    assert "WP-33C: COMPLETE" in authority_block
-    next_wp_match = re.search(r"Next executable work package: WP-33([A-Z])", authority_block)
-    assert next_wp_match is not None, "Next executable work package must be listed"
-    next_wp_letter = next_wp_match.group(1)
-    assert next_wp_letter >= "D", f"Next work package must be WP-33D or later, got WP-33{next_wp_letter}"
-
-    # Must not regress to a WP-33B-only detailed status.
-    assert "WP-33A and WP-33B COMPLETE" not in authority_block

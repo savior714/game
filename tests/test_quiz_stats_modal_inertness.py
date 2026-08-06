@@ -181,3 +181,76 @@ class TestStatsModalInertness:
         assert active_after_close == "stats-btn", (
             f"Expected focus on #stats-btn after close, got '{active_after_close}'"
         )
+
+    def test_inert_restore_tracks_element_identity_after_reorder(self, server, page):
+        url = f"{server}/domains/korean/index.html"
+
+        page.goto(url)
+        page.wait_for_load_state("domcontentloaded")
+        clear_storage(page)
+        page.wait_for_selector("#question", state="visible", timeout=5000)
+
+        # Confirm target elements have no id so string-key snapshot would fail
+        ids = page.evaluate(
+            "() => ({ home: document.querySelector('.home-link').id, h1: document.querySelector('body > h1').id })"
+        )
+        assert ids["home"] == "", f".home-link should have no id, got '{ids['home']}'"
+        assert ids["h1"] == "", f"body > h1 should have no id, got '{ids['h1']}'"
+
+        # Step 1: set distinct prior inert states
+        page.evaluate(
+            "() => { document.querySelector('.home-link').inert = false; document.querySelector('body > h1').inert = true; }"
+        )
+        home_link_inert_pre = page.evaluate("() => document.querySelector('.home-link').inert")
+        h1_inert_pre = page.evaluate("() => document.querySelector('body > h1').inert")
+        assert home_link_inert_pre is False, (
+            f".home-link must be inert=false before open, got {home_link_inert_pre}"
+        )
+        assert h1_inert_pre is True, (
+            f"body > h1 must be inert=true before open, got {h1_inert_pre}"
+        )
+
+        # Step 2: focus stats-btn and open the modal
+        page.focus("#stats-btn")
+        modal_core = page.evaluate_handle(
+            "() => window.QuizUICore.createStatsModalCore({renderStatsTable: function(){}})"
+        )
+        modal_core.evaluate("core => core.openStats()")
+
+        # Step 3: verify both are inert while modal is open
+        home_link_inert_open = page.evaluate("() => document.querySelector('.home-link').inert")
+        h1_inert_open = page.evaluate("() => document.querySelector('body > h1').inert")
+        assert home_link_inert_open is True, (
+            f".home-link should be inert after open, got {home_link_inert_open}"
+        )
+        assert h1_inert_open is True, (
+            f"body > h1 should be inert after open, got {h1_inert_open}"
+        )
+        active_after_open = page.evaluate("() => document.activeElement.id")
+        assert active_after_open == "close-stats-btn", (
+            f"Expected focus on #close-stats-btn after open, got '{active_after_open}'"
+        )
+
+        # Step 4: reorder DOM siblings while modal is open (swap positions)
+        page.evaluate(
+            "() => { const home = document.querySelector('.home-link'); const h1 = document.querySelector('body > h1'); home.parentElement.insertBefore(h1, home); }"
+        )
+
+        # Step 5: close the modal using the same instance
+        modal_core.evaluate("core => core.closeStats()")
+
+        # Step 6: verify each element is restored to its own prior inert state
+        home_link_inert_close = page.evaluate("() => document.querySelector('.home-link').inert")
+        h1_inert_close = page.evaluate("() => document.querySelector('body > h1').inert")
+        assert home_link_inert_close is False, (
+            f".home-link should be inert=false after close (was false before open), got {home_link_inert_close}"
+        )
+        assert h1_inert_close is True, (
+            f"body > h1 should be inert=true after close (was true before open), got {h1_inert_close}"
+        )
+
+        # Step 7: verify focus returned to stats-btn
+        active_after_close = page.evaluate("() => document.activeElement.id")
+        assert active_after_close == "stats-btn", (
+            f"Expected focus on #stats-btn after close, got '{active_after_close}'"
+        )

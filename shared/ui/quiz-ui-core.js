@@ -122,11 +122,11 @@
 
     function _saveInertSnapshot() {
       const siblings = _getBackgroundSiblings();
-      const snapshot = {};
+      const snapshot = new Map();
       for (let i = 0; i < siblings.length; i++) {
         const el = siblings[i];
         if (el instanceof HTMLElement) {
-          snapshot[el.id || el.tagName + "_" + i] = el.inert;
+          snapshot.set(el, el.inert);
         }
       }
       return snapshot;
@@ -142,16 +142,12 @@
     }
 
     function _restoreInert(snapshot) {
-      if (!snapshot) return;
-      const siblings = _getBackgroundSiblings();
-      for (let i = 0; i < siblings.length; i++) {
-        const el = siblings[i];
-        if (!(el instanceof HTMLElement)) continue;
-        const key = el.id || el.tagName + "_" + i;
-        if (key in snapshot && el.inert !== snapshot[key]) {
-          try { el.inert = snapshot[key]; } catch (_) {}
+      if (!snapshot || !(snapshot instanceof Map)) return;
+      snapshot.forEach((inertValue, el) => {
+        if (el instanceof HTMLElement && el.inert !== inertValue) {
+          try { el.inert = inertValue; } catch (_) {}
         }
-      }
+      });
     }
 
     function _getTabbableElements() {
@@ -213,14 +209,14 @@
       }
       if (!els.statsModal._inertSnapshot) {
         const siblings = _getBackgroundSiblings();
-        els.statsModal._inertSnapshot = {};
+        const snapshot = new Map();
         for (let i = 0; i < siblings.length; i++) {
           const el = siblings[i];
           if (el instanceof HTMLElement) {
-            const key = el.id || el.tagName + "_" + i;
-            els.statsModal._inertSnapshot[key] = el.inert;
+            snapshot.set(el, el.inert);
           }
         }
+        els.statsModal._inertSnapshot = snapshot;
         _applyInert(siblings, true);
       }
       renderStatsTable();

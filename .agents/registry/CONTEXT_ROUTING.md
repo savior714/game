@@ -1,93 +1,57 @@
 ---
 scope: registry
 domain: core
+last_verified: 2026-08-06
 ---
 <!-- Language: ko -->
 
-# 🛣️ Context Routing Strategy
+# AidenGame 컨텍스트 라우팅
 
-작업 파일 경로·키워드에 따라 에이전트 규칙(Instruction)을 로딩하는 **라우팅 테이블 SSOT**.
+이 문서는 현재 저장소에 실제로 존재하는 경로와 문서만 사용해 작업 컨텍스트를 선택한다.
 
-## 📌 컨텍스트 Tier (Context Budget SSOT)
+## 1. 공통 권위
 
-IDE 플랫폼 선주입(Cursor T0 등)과 `just route` 읽기 용량을 분리한다.
+모든 작업에서 다음 우선순위를 유지한다.
 
-| Tier | 시점 | 내용 | 예상 크기 |
-| :--- | :--- | :--- | :--- |
-| **T0** | IDE always-applied (Cursor 등) | 루트 `AGENTS.md` + `core/principles.md` + `core/error_patterns.md` 헤더 | ~6.7k tok (`just context-t0-estimate`) |
-| **T1** | 세션 시작 (LOAD_ORDER Phase 1·3) | `PROJECT_RULES.md`, `MEMORY.md` 인덱스 | ~8k tok |
-| **T1†** | lazy — Phase 2·ROADMAP | `LOAD_ORDER`, 본 문서, `docs/plans/ROADMAP.md` — 편집·`just route` / plan·roadmap·discuss·`just plan-preread` | 가변 |
-| **T2** | `just route` / 편집 직전 | Always Load (full) + domain rules + skills | 가변 |
-| **T3** | lazy | `SKILL_detail.md`, `error_patterns/detail/*.md`, `patterns.yaml`, `COMPILED.md` | on-demand |
+`사용자의 현재 요청 → AGENTS.md → PROJECT_RULES.md와 가장 가까운 product/technical spec → 최신 code/tests/config`
 
-**금지**: 벤더 `AGENTS.md` 파일명 (Cursor 전체 주입). `patterns.yaml` **always_apply 금지**. `vercel-react-best-practices` 풀 컴파일은 `COMPILED.md`.
+현재 일반 과목 안정화 계약은
+[`CORE_QUIZ_RELIABILITY_STABILIZATION.md`](../../docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md)다.
 
-**예산 CLI**: `just context-t0-estimate` · `just route-budget <paths> --target 8000 --json` · `just context-budget-validate`.
+## 2. 경로별 라우팅
 
-**스킬 카탈로그**: [SKILL_CATALOG.json](SKILL_CATALOG.json) — vendor `skills/vendor/**`는 `open-design-frontend` 경유.
+| 대상 경로 또는 요청 | 추가로 읽을 문서 | 기본 동작 |
+|---|---|---|
+| `domains/math/`, `domains/english/`, `domains/korean/`, `domains/science/` | 현재 안정화 spec, 직접 관련 test | 네 과목 공통 진단과 과목별 completion contract를 따른다. |
+| `tests/**/*browser*`, Playwright 사용 테스트 | [`playwright.md`](../domains/testing/playwright.md) | 실제 브라우저 입력, page error, request failure, 반복 실행을 검증한다. |
+| `tests/`의 기타 파일 | [`verification.md`](../core/verification.md) | 현재 failure domain을 잡는 focused assertion만 추가한다. |
+| `docs/`, `README.md`, `AGENTS.md`, `PROJECT_RULES.md`, `.agents/` | 가장 가까운 authority 문서 | 링크, 우선순위, 현재 제품 방향, 실제 명령 존재 여부를 함께 검증한다. |
+| `domains/ocean-rescue/`, `ocean-rescue/` | 가장 가까운 Ocean Rescue technical spec | 사용자가 현재 요청에서 재개했거나 허용 예외가 성립할 때만 작업한다. |
+| `experiments/` | 가장 가까운 실험 문서 | 일반 과목 안정화 종료 전에는 신규 기능·구조 이전을 시작하지 않는다. |
+| `Justfile`, `verify.sh`, `scripts/` | [`verification.md`](../core/verification.md)와 실제 파일 | 문서에 적힌 명령이 현재 파일에 존재하는지 먼저 확인한다. |
 
-**Cursor 플랫폼 T0 절감** (Reload Window, User Rules, Extension hooks): [DOC_cursor_context_budget.md](../../docs/ops/rules/DOC_cursor_context_budget.md).
+## 3. 범위가 없는 요청
 
----
+“다음 작업”, “이어서 진행”, “로컬 프롬프트”처럼 범위가 없는 요청은 다음 순서로 해석한다.
 
-## 📌 상시 적용 규칙 (Always Load — Tier T2, `just route --full`)
+1. 최신 `origin/main`에서 네 과목 공통 브라우저 진단
+2. 첫 `FAIL` 과목 선택
+3. 모두 통과하면 가장 큰 `PASS_WITH_GAP` 과목 선택
+4. 한 failure domain만 수정하고 독립 검증
 
-`just route` tight는 always-load 생략. `--full` 또는 편집 게이트 번들:
+최근 커밋이 Ocean Rescue라는 이유로 해당 작업을 자동 재개하지 않는다.
 
-- `core/execution.md`, `core/verification.md`, `core/planning.md`, `core/reporting.md`
-- `core/runtime_edit_tools.md` (tri-runtime 읽기·부분 수정·쓰기 스키마 — Cursor·OpenCode·Antigravity)
-- `core/code_quality_lifecycle.md` (코드 편집·plan·review·테스트 — §0·§6 Cross-ref)
-- `core/resilience.md`, `core/memory_hygiene.md`
-- `core/error_patterns.md` 헤더 (TOP 3·메타 금지 8·detail 인덱스; TOP 4–7·WRONG/CORRECT는 detail lazy)
-- `adaptive/*.md` (세션 종료·명시 트리거)
+## 4. 컨텍스트 예산
 
-## 🗺️ 경로별 동적 매핑 (Path-based Loading)
+추가 문서는 최대 세 개를 기본으로 한다.
 
-| 파일 경로 패턴 (Glob) | 적용 규칙 파일 (Domain) | 용도 |
-| :--- | :--- | :--- |
-| `docs/**/*`, `.agents/**/*.md`, `README.md` | `documentation/markdown.md` | 한국어 정책, 문서 SSOT |
-| `docs/plans/**/*` | `documentation/planning_docs.md` | Blueprint 및 계획 문서 작성 |
-| `apps/renderer/**/*.{ts,tsx}` | `frontend/typescript.md`, `frontend/react.md`, `frontend/documentation.md` | renderer TS/React |
-| `packages/**/*.{ts,tsx}`, `apps/desktop/**/*.{ts,tsx}`, `apps/server/**/*.ts` | `frontend/typescript.md`, `frontend/documentation.md` | 공유·desktop·server TS |
-| `apps/renderer/src/stores/**/*.{ts,tsx}`, `apps/renderer/**/store/**/*.{ts,tsx}`, `apps/renderer/**/stores/**/*.{ts,tsx}`, `apps/renderer/**/store.ts` | `tech-stack/zustand.md` | zustand stores |
-| `src/domain/**/*` | `backend/ddd.md` | DDD, Bounded Context, DI |
-| `src/api/**/*`, `src/shared/models/**/*` | `backend/api_contracts.md` | API 명세, Pydantic 모델링 |
-| `docker-compose.dev.yml`, `scripts/dev/docker_infra.sh`, `run_dev.sh` | `infra/docker.md` | Docker dev infra, Runtime Ports |
-| `src/infrastructure/fhir/**/*`, `src/domain/models/fhir/**/*`, `src/shared/krcore/**/*` | `medical/fhir.md` | FHIR R4, KR Core 표준 |
-| `src/security/**/*`, `vault/**/*` | `medical/emr_security.md` | Vault, Encryption, Audit |
-| `scripts/**/*seed*`, `**/seed*.py`, `src/infrastructure/**/*seed*` | `infra/seeding.md` | CSV 시딩, 인코딩 fallback |
-| `tests/**/*`, `**/test_*.py` | `testing/tdd.md` | TDD Red-First, Test Logic |
-| `tests/e2e/**/*`, `**/*.spec.ts` | `testing/playwright.md` | Playwright, Browser Testing |
+- 직접 수정할 구현
+- 직접 관련 focused test
+- 현재 판단에 필요한 가장 가까운 spec
 
-## 프로젝트 스킬 (기계 라우팅)
+장기 계획, 과거 evidence, 이미 반영된 완료 이력은 현재 실행에 필요할 때만 읽는다.
 
-Glob·의도 매핑 **단일 SSOT**: [PROJECT_SKILL_ROUTING.json](PROJECT_SKILL_ROUTING.json) (open-design-frontend 등 — 위 Path 표 domain 열에 `SKILL.md` 넣지 않음). 편집 전 `just route <paths> --json` **`must_read`** — [execution.md](../core/execution.md) §2.8. Blueprint 선행 Read: `just plan-preread` · OHT: [planning.md](../core/planning.md) §0.
+## 5. 자동 라우팅 도구 상태
 
-**skill cap (tight 2)**: `packages/ui-*/**/*.{ts,tsx}` → design + a11y 우선 · `typescript-advanced-types`는 **의도적 탈락** (복잡 타입은 `packages/shared`·`apps/server`). cap 상향은 다이어트 역효과 — renderer `page.tsx`와 동일 논쟁 방지.
-
-**error_patterns detail lazy-load**: [error_patterns.md](../core/error_patterns.md) detail 인덱스 — `just route`가 경로별 `detail/*.md`를 `must_read`에 추가.
-
-**2단계 스킬 lazy-load**: `SKILL.md`(헤더) + `SKILL_detail.md`(본문). `route_context.py`가 `lazy_load`/`detail_path` 부여. **금지**: detail만 읽고 헤더 생략. 매핑: [PROJECT_SKILL_ROUTING.json](PROJECT_SKILL_ROUTING.json).
-
----
-
-## 📒 세션 Route 매니페스트 (멀티 에이전트)
-
-`just route` / `just route-smart` JSON 번들·필독·편집 전 검증 — [routing.md §2](../core/routing.md). 파일: `.agent/route/session-manifest.json` (`ROUTE_MANIFEST_PATH`). 엔진: `scripts/agent/route_gate.py`.
-
----
-
-## ⚡ 키워드 · 슬래시 (수동 자기 규제)
-
-**카탈로그 SSOT**: [WORKFLOW_AND_SKILL_INDEX.md](WORKFLOW_AND_SKILL_INDEX.md) 「워크플로」「키워드 → Read」「프로세스 · 인지 스킬」. **기계 intent**: [PROJECT_SKILL_ROUTING.json](PROJECT_SKILL_ROUTING.json) `intent_routes` (`just route-smart`).
-
----
-
-**docs 지형**: [docs/README.md](../../docs/README.md) (6통 SSOT).
-
-**우선순위**: [AGENTS.md §0](../../AGENTS.md) — `PROJECT_RULES` > `AGENTS` > 경로 매핑 > core.
-
----
-**세션 시작 vs lazy**: [LOAD_ORDER.md](LOAD_ORDER.md) Phase 2·ROADMAP lazy — 본 문서 Glob·Tier 표는 **편집·route 직전**에 Read.
-
-**Last Updated**: 2026-06-07
+현재 저장소에는 기계식 registry catalogue이나 자동 라우팅 명령이 없다.
+라우팅은 이 문서와 [`LOAD_ORDER.md`](LOAD_ORDER.md)를 기준으로 수동 수행한다.

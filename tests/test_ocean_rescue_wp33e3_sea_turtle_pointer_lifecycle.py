@@ -21,6 +21,7 @@ fallback for pointer lifecycle remains in app.js.
 from __future__ import annotations
 
 import ast
+import math
 import sys
 from pathlib import Path
 
@@ -573,7 +574,7 @@ def _trigger_pointer_down(page: Page, start_client: dict) -> int | float:
     assert isinstance(pointer_id, (int, float)), (
         f"observed pointerId must be a number, got {type(pointer_id).__name__}"
     )
-    assert pointer_id == pointer_id, (
+    assert math.isfinite(pointer_id), (
         f"observed pointerId must be finite, got {pointer_id}"
     )
     return pointer_id
@@ -612,7 +613,7 @@ def _begin_sea_turtle_touch_gesture(
         assert isinstance(pointer_id, (int, float)), (
             f"observed pointerId must be a number, got {type(pointer_id).__name__}"
         )
-        assert pointer_id == pointer_id, (
+        assert math.isfinite(pointer_id), (
             f"observed pointerId must be finite, got {pointer_id}"
         )
         return cdp, pointer_id
@@ -1280,6 +1281,7 @@ class _FakePage:
         self.wait_calls: list = []
         self.evaluate_calls: list = []
         self._eval_fail = RuntimeError("forced trace read failure")
+        self.mouse = _FakeMouse()
 
     def wait_for_timeout(self, ms: int) -> None:
         self.wait_calls.append(ms)
@@ -1287,6 +1289,19 @@ class _FakePage:
     def evaluate(self, expression: str) -> object:
         self.evaluate_calls.append(expression)
         raise self._eval_fail
+
+
+class _FakeMouse:
+    """Minimal fake mouse with no-op move/up/down."""
+
+    def move(self, x: int, y: int) -> None:
+        pass
+
+    def down(self) -> None:
+        pass
+
+    def up(self) -> None:
+        pass
 
 
 def test_begin_touch_gesture_cleans_partial_cdp_session_on_trace_failure() -> None:
@@ -1410,6 +1425,43 @@ def test_pointercancel_proof_has_only_single_session_touch_helper_path() -> None
     assert synthetic_dispatch not in text, (
         "synthetic canvas.dispatchEvent call must be removed"
     )
+
+
+def _fake_page_returning(page: _FakePage, value: float) -> None:
+    """Patch a fake page so every evaluate() call returns the given value."""
+
+    original_evaluate = page.evaluate
+
+    def _eval(_expr: str) -> float:
+        return value
+
+    page.evaluate = _eval  # type: ignore[assignment]
+
+
+def test_pointer_helpers_reject_infinite_pointer_ids() -> None:
+    """Both pointer helpers must reject inf and -inf observed pointerId values.
+
+    The browser can surface non-finite pointerId values (inf, -inf) that pass
+    the existing `pointer_id == pointer_id` NaN-only check. This regression
+    verifies that both _trigger_pointer_down and _begin_sea_turtle_touch_gesture
+    raise AssertionError with the "must be finite" contract message for both
+    positive and negative infinity.
+    """
+    for inf_value in (float("inf"), float("-inf")):
+        fake_page = _FakePage()
+        _fake_page_returning(fake_page, inf_value)
+        fake_context = _FakeContext()
+
+        with pytest.raises(AssertionError, match="must be finite"):
+            _begin_sea_turtle_touch_gesture(
+                fake_page,
+                fake_context,
+                100,
+                200,
+            )
+
+        with pytest.raises(AssertionError, match="must be finite"):
+            _trigger_pointer_down(fake_page, {"x": 100, "y": 200})
 
 
 if __name__ == "__main__":

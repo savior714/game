@@ -469,9 +469,21 @@ function spawnConfetti() {
   }
 }
 
+function bindRestartControl() {
+  const restartButton = document.getElementById('restart-btn');
+  if (!restartButton) {
+    throw new Error('English restart button is missing.');
+  }
+  if (restartButton.dataset.englishRestartBound === 'true') return;
+
+  restartButton.addEventListener('click', startGame);
+  restartButton.dataset.englishRestartBound = 'true';
+}
+
 /* ═══════════════════════════════════
    시작
    ═══════════════════════════════════ */
 initDOMCache();
+bindRestartControl();
 initRocketPanel();
 startGame();

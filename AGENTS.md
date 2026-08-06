@@ -108,6 +108,20 @@ remote advance, non-fast-forward, unrelated dirty, V3 실패, 새 독립 결함,
 
 ## 8. 로컬 에이전트 위임
 
+로컬 LLM용 프롬프트는 바로 발행하지 않는다. 매 프롬프트마다 먼저 사용자의 요청을 구체적으로 재해석하여 다음을 제시한다.
+
+- 목표와 대상 failure domain 또는 검증 가설
+- 대상 저장소·기능과 변경 허용 범위
+- 포함·제외 범위와 변경 금지 계약
+- primary criterion과 직접 영향 검증
+- 게시 여부와 예상 최종 상태
+
+그 다음 사용자에게 “제가 이렇게 해석했습니다. 이대로 진행해도 되는 게 맞습니까?”라는 취지로 명시적 승인을 요청한다. 승인 전에는 프롬프트 본문, 코드 블록, 부분 초안 또는 실행 가능한 지시를 제공하지 않는다.
+
+이 절차는 요청이 명확해 보이거나 이전 작업을 단순히 이어가는 경우에도 생략하지 않는다. 사용자가 범위를 수정하면 변경된 해석을 다시 제시하고 재승인받는다. 이미 제시된 해석에 대한 사용자의 명시적 승인은 해당 프롬프트 발행을 위한 승인으로 간주한다.
+
+이 의도 재확인은 대화상 책임 경계다. 전용 스크립트·정기 검사·CI gate·강제 checklist로 자동화하거나 로컬 작업자에게 대신 판단시키지 않는다.
+
 - 프롬프트 발행 전 현재 objective가 `docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md`의 포함 범위인지 확인한다.
 - 포함 범위가 아니고 사용자가 현재 요청에서 방향 변경이나 허용 예외를 명시하지 않았다면 구현 프롬프트를 발행하지 않는다.
 - 프롬프트에는 현재 objective, workspace, included/excluded scope, Do / Do not, primary acceptance, direct verification, optional system smoke, stop condition만 전달한다.

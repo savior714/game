@@ -202,6 +202,20 @@ function spawnConfetti() {
   }
 }
 
+/* ═══════════════════════════════════
+   재시작 제어
+   ═══════════════════════════════════ */
+function bindRestartControl() {
+  const restartButton = document.getElementById('restart-btn');
+  if (!restartButton) {
+    throw new Error('Science restart button is missing.');
+  }
+  if (restartButton.dataset.scienceRestartBound === 'true') return;
+
+  restartButton.addEventListener('click', startGame);
+  restartButton.dataset.scienceRestartBound = 'true';
+}
+
 async function loadQuestionData() {
   const res = await fetch('data/questions.json');
   if (!res.ok) throw new Error(`questions.json HTTP ${res.status}`);
@@ -217,6 +231,7 @@ window.onload = async () => {
     window.WORDS = {};
   }
   initDOMCache();
+  bindRestartControl();
   initRocketPanel();
   startGame();
 };

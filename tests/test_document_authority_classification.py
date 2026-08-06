@@ -68,6 +68,15 @@ def test_frozen_ocean_plan_does_not_expand_operational_exceptions() -> None:
     assert "배포 차단 치명적 회귀, 데이터 손상 또는 보안 문제를 직접 증명" in ocean
 
 
+def test_frozen_space_plan_does_not_expand_operational_exceptions() -> None:
+    space = read(SPACE_REFERENCE)
+
+    assert "page error, console error, failed request 또는 정적 자산 이상만으로는 운영 예외가 성립하지 않는다" in space
+    assert "- 현재 배포에서 페이지 오류가 발생함" not in space
+    assert "- 기존 정적 자산 손상" not in space
+    assert "배포 차단 치명적 회귀, 데이터 손상 또는 보안 문제를 직접 증명" in space
+
+
 def test_readme_labels_frozen_tooling_as_reference() -> None:
     readme = read(ROOT / "README.md")
 

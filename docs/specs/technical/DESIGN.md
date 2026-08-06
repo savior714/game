@@ -1,8 +1,7 @@
 ---
-version: 2.0.0
-last_updated: 2026-04-24
-author: Antigravity (Architect)
-status: Active
+version: 2.1.0
+last_updated: 2026-08-06
+status: STABLE_REFERENCE_NOT_CURRENT_PRIORITY
 tokens:
   colors:
     legacy_brand:
@@ -40,78 +39,113 @@ tokens:
     modal: "28px"
 ---
 
-# Design Specification: Legacy Game Style Import
+# AidenGame Design Reference
 
-이 문서는 과거 게임 디자인의 스타일 자산을 현재 루트 런타임 구조로 가져와 유지하기 위한 Design SSOT입니다.
+이 문서는 기존 학습 게임의 시각 언어와 실제 runtime entry를 보존하기 위한 참고문서다.
+현재 최우선 개발 방향은 `docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md`이며, 진행을 막는 usability 결함 외의 순수 시각 리디자인·장식·애니메이션 개선은 안정화 이후로 미룬다.
 
-## 1. 과거 디자인의 핵심 정체성
+## 1. 기존 디자인 정체성
 
-- **Warm + playful 학습 톤**: 베이스 배경은 `#F8F6F3`, 핵심 액션은 `#FF6B35` 계열.
-- **라운드 중심 UI**: 배지/버튼은 pill radius(`100px`), 카드/모달은 큰 곡률(`24px~32px`).
-- **모션 피드백 우선**: 정답(pop), 오답(shake), 긴급상태(pulse), 보상 등장(slide/bounce) 애니메이션.
-- **게임-시스템 결합형 HUD**: 점수판/타이머/로켓패널/보상 인벤토리를 하나의 플레이 루프로 연결.
+- **Warm + playful 학습 톤:** 기본 배경은 `#F8F6F3`, 핵심 액션은 `#FF6B35` 계열.
+- **라운드 중심 UI:** 배지·버튼은 pill radius, 카드·모달은 큰 곡률.
+- **즉각적인 상태 피드백:** 정답, 오답, 시간 위험, 보상 상태를 색·문구·동작으로 구분.
+- **학습 흐름 중심 HUD:** 문제, 점수, 다음 행동, 결과를 어린이가 한눈에 이해할 수 있어야 함.
 
-## 2. Import Source of Truth
+이 정체성은 신규 시각 작업을 시작하라는 지시가 아니라, 신뢰성 수정 중 기존 화면을 불필요하게 바꾸지 않기 위한 비회귀 기준이다.
 
-아래 파일들이 과거 디자인의 실제 소스이며, 신규 UI는 이 패턴을 우선 상속한다.
+## 2. Style Source of Truth
 
-- 기본 게임 레이아웃/타이포/버튼/모달: `domains/math/base.css` (과목별 CSS도 동일 계열)
-- 로켓 패널/우주 트랙/발사 애니메이션: `domains/math/rocket.css`
-- 전역 보상 인벤토리/보상 모달/토스트: `domains/reward/reward.css`
+현재 과목 화면의 실제 style source는 코드다.
 
-## 3. 스타일 Import 원칙
+- 기본 게임 레이아웃·타이포·버튼·모달: `domains/math/base.css`와 각 과목의 `base.css`
+- 로켓 패널·트랙·발사 상태: 각 과목의 `rocket.css`
+- 보상 인벤토리·모달·토스트: `domains/reward/reward.css`
+- 홈·탐색 레이어: 루트 `styles.css`
 
-### 3.1 CSS 레이어 순서
+문서 token과 실제 CSS가 불일치하면 먼저 현재 product decision과 code를 확인한다. 문서만 보고 CSS를 대규모 통일하지 않는다.
 
-아래 순서로 불러오는 것을 표준으로 한다.
+## 3. Style 적용 원칙
 
-```css
-@import "../../domains/reward/reward.css";
-@import "./base.css";
-@import "./rocket.css";
-```
+### 3.1 CSS 로딩
 
-규칙:
-- 전역 보상 계층(`reward.css`)은 페이지별 스타일보다 먼저 로드한다.
-- 페이지별 오버라이드는 마지막 파일에서만 수행한다.
+페이지가 실제로 사용하는 `<link>`와 import 순서를 authority로 본다.
+새로운 전역 import를 문서 예시만 보고 추가하지 않는다.
 
-### 3.2 컴포넌트 토큰 매핑
+공용 reward style과 과목별 style이 함께 사용되는 경우:
 
-- **Primary CTA**: `#FF6B35`, hover는 더 어두운 오렌지 계열.
-- **Success/Error**: `#059669` / `#DC2626`.
-- **Timer 위험 단계**: normal `#10B981` -> warn `#F59E0B` -> danger `#EF4444`.
-- **Card surface**: white + soft border + drop shadow(`0 8px 32px rgba(0,0,0,0.08)` 계열).
+- 공용 layer가 과목별 control state를 덮어쓰지 않아야 함
+- 과목별 override는 가까운 feature CSS에 둠
+- z-index, overlay, focus style의 실제 사용자 흐름을 확인함
 
-## 4. 레거시 컴포넌트 카탈로그
+### 3.2 상태 표현
 
-- **Quiz Card**: 큰 숫자 문제(`3rem+`), 4-grid 답안 버튼, 하단 피드백 + 다음 버튼.
-- **Rocket Panel**: 수직 트랙 + 지면/대기권/우주 그라데이션 + 흔들림/점화/발사 상태 클래스.
-- **Stats Modal**: 반투명 백드롭 + 라운드 카드 + 난이도 배지 테이블.
-- **Reward Inventory Bar**: 상단 고정, 블러 배경, 슬롯 카드, 상태 강조(보유/빈 슬롯).
+- Primary CTA는 현재 페이지의 기존 accent 체계를 유지함
+- success와 error는 색만이 아니라 문구·상태로 구분함
+- disabled 상태는 실제 click 가능 상태와 일치해야 함
+- feedback과 next action이 동시에 불명확하지 않아야 함
+- animation이 필수 control을 가리거나 입력을 중복 처리하지 않아야 함
 
-## 5. 신규 페이지 적용 체크리스트
+## 4. Component Reference
 
-- Pretendard 폰트 계열을 기본 폰트로 설정했는가
-- 버튼/배지/카드 radius가 기존 라운드 체계를 따르는가
-- 정답/오답/시간위험 피드백 색과 모션이 동일한가
-- 보상 인벤토리와 충돌하지 않도록 상단 여백 및 z-index를 맞췄는가
+- **Quiz Card:** 문제, 답안 control, feedback, next action
+- **Rocket Panel:** 학습 진행의 시각적 보상
+- **Stats Modal:** 누적 기록과 reset control
+- **Reward Inventory:** 보유 상태와 보호자 보상 연동
+- **Result Screen:** 마지막 문제 이후 결과와 restart
 
-## 6. 비회귀 가드
+컴포넌트 이름은 공통 runtime component가 존재한다는 뜻이 아니다. 실제 두 과목에서 동일한 책임과 계약이 확인되기 전에는 선제 공용화하지 않는다.
 
-- 과거 디자인 복원 기준은 `domains/math/base.css`, `domains/math/rocket.css`, `domains/reward/reward.css`의 시각 규칙을 우선한다.
-- 신규 다크 테마(`styles.css`)는 홈/탐색 레이어에서만 사용하고, 레거시 게임 화면 톤을 임의로 치환하지 않는다.
+## 5. 신뢰성 단계의 디자인 범위
+
+현재 포함:
+
+- 터치 target이 작아 눌리지 않음
+- focus 또는 keyboard 진행 불가
+- disabled 상태와 실제 동작 불일치
+- feedback이 없어 현재 상태를 알 수 없음
+- overlay·animation이 필수 control을 가림
+- 중복 입력이 상태를 두 번 전진시킴
+
+현재 제외:
+
+- 색상·그림자·배경 리디자인
+- 신규 animation과 캐릭터 연출
+- 기능과 무관한 layout 재설계
+- 브랜드·테마 통일
+
+## 6. 비회귀 원칙
+
+- 신뢰성 수정은 기존 product tone을 가능한 한 보존한다.
+- CSS 변경은 해당 failure mode를 닫는 최소 범위로 제한한다.
+- 과목별 특수 feedback과 pedagogy를 공용 style 때문에 제거하지 않는다.
+- 실제 viewport와 입력 방식에서 control 상태를 확인한다.
+- 순수 디자인 debt를 현재 안정화 완료 조건에 추가하지 않는다.
 
 ## 7. Runtime Entry and Routing SSOT
 
-현재 템플릿 기반 런타임의 진입점과 라우팅 기준은 아래를 단일 출처로 본다.
+현재 정적 runtime과 배포 경로는 다음과 같다.
 
-- 메인 엔트리: `index.html`
-- 우주 탐험 엔트리: `space-explorer.html` (현재: `experiments/space-explorer/index.html`)
-- 우주 탐험 모듈 엔트리: `experiments/space-explorer/main.js`
-- 배포 rewrite 정책: `vercel.json`
-  - `/space-explorer.html` -> `/experiments/space-explorer/index.html`
-  - 루트(`/`) 및 광역 catch-all rewrite는 사용하지 않음 (메인 라우트 덮어쓰기 방지)
-- `vercel.json` 설정: `"rewrites": []` (빈 배열 — 현재 라우팅 규칙 없음)
+- 메인 entry: `index.html`
+- Space Explorer entry: `experiments/space-explorer/index.html`
+- Space Explorer module entry: `experiments/space-explorer/main.js`
+- Ocean Rescue production standalone artifact: `ocean-rescue/index.html`
+- 배포 설정: `vercel.json`
+- `vercel.json`의 현재 rewrite 설정: `"rewrites": []`
 
----
-**Last Verified**: 2026-04-24 by Antigravity
+다음 경로는 현재 entry가 아니다.
+
+- `/space-explorer.html`
+- `experiments/space-explorer.html`
+
+별도 rewrite가 없으므로 위 alias를 사용하거나 문서에서 redirect된다고 주장하지 않는다.
+실제 routing 변경은 `index.html`, 대상 entry, `vercel.json`, routing test를 함께 검증한다.
+
+## 8. 검증 참고
+
+```bash
+uv run pytest -q tests/test_docs_routing_ssot.py
+uv run pytest -q tests/test_readme_identity.py
+uv run pytest -q tests/test_active_technical_spec_consistency.py
+```
+
+이 문서는 시각 token 또는 runtime routing의 안정적인 계약이 실제로 변경된 경우에만 갱신한다.

@@ -11,6 +11,18 @@
 - **공용 코어**: 과목별 엔진이 공통 로직(`shared/`)을 재사용
 - **우주 탐험 실험실**: `2D/3D` 렌더 모드, 태블릿 제스처(핀치/회전), 고해상도 렌더링 적용
 
+## 🎯 현재 개발 초점
+
+현재는 신규 기능·콘텐츠·게임성 확장보다 **국어·수학·영어·과학 문제풀이의 신뢰성 안정화**를 우선합니다.
+
+- 네 과목에 동일한 브라우저 진단을 적용해 현재 실패 또는 검증 공백이 가장 큰 과목부터 처리합니다.
+- 각 과목은 상태 계약과 실제 브라우저 흐름을 모두 통과해야 완료됩니다.
+- 첫 과목은 기존 구조 안에서 안정화하고, 두 번째 과목에서 반복이 확인된 경우에만 공용 로직을 추출합니다.
+- 과목 하나가 완료될 때마다 `origin/main`에 게시한 뒤 다음 과목으로 이동합니다.
+- 이 단계가 끝날 때까지 Ocean Rescue와 실험 기능의 신규 개발·구조 이전은 중단합니다. 치명적 회귀 수정만 예외입니다.
+
+상세 계약: [`docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md`](docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md)
+
 ## 🧭 현재 엔트리/라우팅 (SSOT)
 
 - 메인 허브: `index.html`
@@ -30,7 +42,7 @@
 | 보호자 관리 페이지 | `domains/reward/guardian/index.html` | 운영중 | 난이도, 주간 영단어, 보상 상점 및 성장 요약 관리 |
 | 우주 탐험 실험 페이지 | `experiments/space-explorer/index.html` | 운영중(실험) | 2D/3D 우주 시뮬레이션 및 터치 제스처 실험 |
 | 과거 보호자/관리 alias | `guardian/index.html`, `admin/index.html` | 없음 | rewrite가 없으므로 사용하지 않음 |
-| 과거 우주 탐험 alias | `/space-explorer.html` | 없음 | `vercel.json` rewrite가 없으므로 사용하지 않음 |
+| 과거 우주 탐험 alias | `/space-explorer.html`, `experiments/space-explorer.html` | 없음 | `vercel.json` rewrite가 없으므로 사용하지 않음 |
 
 ## 🛠️ 로컬 개발
 
@@ -75,6 +87,7 @@ Ocean Rescue에는 도메인 로컬 build-time Node 경계가 존재합니다.
 - 통합 검증: `verify.sh`
 - 문서/설계 기준:
   - `PROJECT_RULES.md`
+  - `docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md`
   - `docs/SPACE_EXPLORER_PLAN.md`
   - `templates/docs/specs/technical/DESIGN.md`
 - 세션 연속성(핸드오프): `docs/agent-context/memory/MEMORY.md`

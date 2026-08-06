@@ -6,6 +6,22 @@
 
 AidenGame은 어린이를 위한 정적 웹 기반 학습 게임 플랫폼이다. 단순한 학습 흐름, 즉각적인 피드백, 성취감, 보호자 통제를 우선한다.
 
+### 1.1 현재 최우선 개발 방향
+
+현재 최우선 목표는 신규 기능·콘텐츠·게임성 확장보다 **기존 일반 과목 문제풀이의 신뢰성 안정화**다.
+
+- 대상은 `domains/math/`, `domains/english/`, `domains/korean/`, `domains/science/`의 운영 문제풀이 흐름이다.
+- 네 과목 모두에서 `진입 → 문제 표시 → 답안 처리 → 피드백 → 다음 문제 반복 → 종료 또는 재시작` 흐름이 검증되기 전에는 신규 기능 개발을 재개하지 않는다.
+- 각 과목은 문제 진행·상태 초기화·정답/오답·마지막 문제·재시작 계약과 실제 브라우저 흐름을 모두 통과해야 완료된다.
+- 첫 대상은 과목 이름이나 과거 중요도로 정하지 않는다. 네 과목에 같은 진단을 실행해 현재 재현 실패가 가장 명확한 과목을 선택한다. 모두 통과하면 검증 공백이 가장 큰 과목을 선택한다.
+- 첫 과목은 기존 구조 안에서 안정화한다. 두 번째 과목에서 같은 책임의 중복이 실제로 확인된 경우에만 `shared/` 추출을 검토한다.
+- 진행 중단, 오조작, 중복 입력, 불명확한 disabled/focus/feedback 상태는 신뢰성 범위에 포함한다. 순수 시각 리디자인·장식·애니메이션 개선은 포함하지 않는다.
+- 과목 하나가 완료될 때마다 직접 영향 회귀를 확인하고 `origin/main`에 게시한 뒤 최신 main에서 다음 과목을 진단한다.
+- 이 단계가 종료될 때까지 Ocean Rescue와 `experiments/`의 신규 기능·구조 이전은 중단한다. 현재 배포를 막는 치명적 회귀, 데이터 손상, 보안 문제만 별도 failure domain으로 수정한다.
+
+상세 제품·검증 계약은
+`docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md`를 따른다.
+
 ## 2. 런타임과 경로
 
 | 역할 | 경로 |
@@ -54,11 +70,11 @@ AidenGame은 어린이를 위한 정적 웹 기반 학습 게임 플랫폼이다
 
 ## 5. 품질
 
-- work package는 coherent objective와 rollback 경계를 가진다.
-- 강하게 결합된 source, caller, test, asset, config는 함께 변경할 수 있다.
-- 하나의 failure domain·가설·binary criterion을 모든 제품 작업에 형식적으로 강제하지 않는다.
-- 다만 서로 다른 LSP·typecheck·lint 원인은 한 패치에 섞지 않고, 하나의 failure domain을 수정·독립 검증한 뒤 다음 failure domain으로 이동한다.
-- unrelated product cleanup은 포함하지 않는다.
+- 각 실행 작업은 하나의 failure domain, 하나의 검증 가능한 가설, 하나의 binary criterion으로 제한한다.
+- 과목 하나는 게시 단위가 될 수 있지만, 그 안에서 발견된 서로 다른 실패 원인은 순차 작업으로 분리한다.
+- 같은 failure domain을 완결하는 데 필요한 source, caller, test, asset, config는 함께 변경할 수 있다.
+- 수정 전 재현 조건과 단일 판정 기준을 고정하고, 수정 후 해당 가설만 독립 검증한 뒤 다음 failure domain으로 이동한다.
+- 서로 다른 LSP·typecheck·lint 원인이나 unrelated product cleanup을 한 패치에 섞지 않는다.
 - 새 검증은 잡아낼 구체적 failure mode가 있을 때만 추가한다.
 - full-suite는 실제 회귀 위험이나 cutover가 요구할 때만 실행한다.
 
@@ -102,6 +118,7 @@ just ci
 |---|---|
 | 실행 규약 | `AGENTS.md` |
 | 프로젝트 정책 | `PROJECT_RULES.md` |
+| 현재 일반 과목 안정화 계약 | `docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md` |
 | exclusive reservation | `agents/workflows/work-package-claim.md` + Issue #1 |
 | Git·publish | `agents/workflows/git.md` |
 | 요구사항·회귀 | `tests/` |

@@ -334,7 +334,7 @@ function _generateCandidate() {
   const level = getDifficultyLevel(cat);
   const word = pickWord(cat, level);
   const res = buildQuestion(pickQuestionType(level), word, { cat });
-  return { ...res, _cat: cat, _level: level, _wordEn: res.type === 'shopping_dialogue' ? en + '_' + (res.id || '') : wEn(word) };
+  return { ...res, _cat: cat, _level: level, _wordEn: res.type === 'shopping_dialogue' ? wEn(word) + '_' + (res.id || '') : wEn(word) };
 }
 
 function pickWord(cat, level) {

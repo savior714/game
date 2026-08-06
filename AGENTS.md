@@ -92,6 +92,17 @@ just ci
 - 모든 변경은 수정 전 재현 조건 또는 기대 동작과 단일 판정 기준을 정하고, 수정 후 해당 failure domain을 가장 짧은 독립 검증으로 판정한다.
 - 형식적인 RED 증명, 고정 횟수 반복, 전 과목·전체 suite 실행을 모든 작업의 기본 절차로 삼지 않는다. 현재 위험이나 실제 불안정성이 요구할 때만 넓힌다.
 
+### 형제 화면·공유 소유자 사전 점검
+
+과목별 화면이나 공용 UI·controller의 동작을 수정하기 전에는 같은 사용자 계약을 제공하는 형제 범위를 읽기 전용으로 점검한다.
+
+- 기본 형제 범위는 `domains/math/`, `domains/korean/`, `domains/english/`, `domains/science/`의 대응 control·flow와 이를 소유하는 `shared/` 구현이다.
+- 재시작, 통계, 점수, 진행, 저장, 입력 이벤트처럼 같은 기능을 제공하는 위치와 동일 button/event binding을 먼저 검색한다.
+- 이 점검은 누락·중복 소유자를 찾기 위한 조사 범위이며 authorized write scope를 자동으로 넓히지 않는다.
+- 같은 shared owner의 한 수정으로 같은 root cause와 rollback boundary를 함께 닫을 수 있을 때만 하나의 failure domain에 포함한다.
+- 과목별 독립 wiring이나 다른 root cause가 확인되면 현재 대상만 수정·검증하고 나머지는 `DISCOVERED_FAILURE` 또는 별도 objective로 분리한다.
+- 현재 대상은 실제 사용자 입력 경로로 검증하며, 입력 한 번에 handler·render·request 같은 직접 효과가 정확히 한 번만 발생해야 한다.
+
 현재 작업 결과는 다음 두 항목으로만 판정한다.
 
 - `PRIMARY_CRITERION`: 현재 단일 가설을 직접 판정하는 기준

@@ -41,6 +41,7 @@ FORBIDDEN_SVG_ATTRS = {
 URL_PATTERN = re.compile(
     r"https?://|ftp://|data:(?:image|text|application)/", re.IGNORECASE
 )
+URL_REF_PATTERN = re.compile(r"url\(\s*['\"]?#([^'\")\s]+)['\"]?\s*\)")
 
 
 def fail(msg: str) -> None:
@@ -207,6 +208,15 @@ def validate_svg(path: Path) -> None:
         if svg_id in seen_ids:
             fail(f"Duplicate SVG id '{svg_id}' in: {path.name}")
         seen_ids.add(svg_id)
+
+    for elem in root_elem.iter():
+        for attr_val in elem.attrib.values():
+            for match in URL_REF_PATTERN.finditer(attr_val):
+                ref_id = match.group(1).strip()
+                if ref_id not in seen_ids:
+                    fail(
+                        f"Missing local url reference target '{ref_id}' in: {path.name}"
+                    )
 
     def check_elements(elem: ET.Element) -> None:
         local = elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag

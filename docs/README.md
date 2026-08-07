@@ -21,10 +21,11 @@
 | [`AGENTS.md`](../AGENTS.md) | 작업 선택, Git, 검증, 보고 계약 | 저장소 실행 규칙이 실제로 변경될 때 |
 | [`PROJECT_RULES.md`](../PROJECT_RULES.md) | 제품·아키텍처·품질 경계 | 제품 정책 또는 경계가 변경될 때 |
 | [`CORE_QUIZ_RELIABILITY_STABILIZATION.md`](specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md) | 현재 일반 과목 안정화 계약 | 사용자 결정이나 completion contract가 변경될 때 |
+| [`PLAN_A_TRACK_RUNTIME_EXECUTION_RUNBOOK.md`](plans/PLAN_A_TRACK_RUNTIME_EXECUTION_RUNBOOK.md) | A 트랙의 원자적 실행 순서, P0 exit, 로컬 LLM 작업 카드·프론티어 delta 리뷰 계약 | A 트랙 우선순위·경계·공통 실행/리뷰 방식이 바뀔 때 |
 | [`MEMORY.md`](agent-context/memory/MEMORY.md) | 새 세션 handoff와 다음 실행 경계 | 제품 방향 또는 다음 실행 경계가 바뀔 때 |
 | [`README.md`](../README.md) | 저장소 진입점 | 사용자·개발자 진입 정보가 변경될 때 |
 
-현재 범위가 지정되지 않은 다음 작업은 일반 과목 공통 브라우저 진단에서 시작한다.
+현재 범위가 지정되지 않은 A 트랙 다음 작업은 실행 런북의 과목별 읽기 전용 계약 감사(`A-Q0`)에서 시작한다.
 
 ## 3. 동결 기술 참고
 
@@ -82,6 +83,7 @@
 
 - 일반 WP 계획과 다음 WP는 대화에서 관리한다.
 - 상태 전용 plan/evidence 파일을 새로 만들지 않는다.
+- `PLAN_A_TRACK_RUNTIME_EXECUTION_RUNBOOK.md`는 진행률표가 아니라 반복 실행에 필요한 안정적인 순서·경계·리뷰 계약이므로 개별 작업 완료만으로 갱신하지 않는다.
 - 테스트에서 `다음 WP`, `현재 WP`, `WP COMPLETE` 같은 일정 상태를 검증하지 않는다.
 - 완료 근거는 최신 main의 코드, focused test, 브라우저 증거, build/artifact 계약이다.
 - 제품 계약이 아니라 진행률만 달라졌다면 authority 문서를 수정하지 않는다.

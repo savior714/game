@@ -6,14 +6,30 @@
 
 이 문서는 root `AGENTS.md`, `PROJECT_RULES.md`, 현재 product direction과 가장 가까운 spec을 보완한다.
 
+## 협업 역할 모델
+
+이 문서의 프론티어 코디네이터는 세부 구현 명령을 작성하는 감독자가 아니라, 사용자와 게임의 방향·우선순위·완료 기준을 함께 정하는 페어 프로그래머이자 로컬 결과의 독립 리뷰어다.
+
+역할은 다음처럼 나눈다.
+
+- 사용자와 프론티어 코디네이터는 플레이 경험, 학습 의미, 현재 결함의 실제 영향, 작업 우선순위와 acceptance criterion을 함께 정한다.
+- 프론티어 코디네이터는 latest `origin/main`, 현재 브라우저·라이브러리 동작과 실제 product direction을 확인해 로컬 모델의 지식 공백만 보정한다.
+- local executor는 authorized write scope 안에서 owner, controller/module 구조, 테스트 위치와 구현 방법을 자율 결정한다.
+- 프론티어 코디네이터는 게시된 commit, diff와 실제 browser/runtime evidence를 다시 읽고 게임 규칙, exactly-once 입력 효과, 상태 전이, 회귀 위험과 사용자 체감을 판정한다.
+- PASS이면 사용자와 다음 우선 작업을 고른다. 보완이 필요하면 가장 중요한 다음 failure domain 하나만 선택해 짧은 delta prompt로 재위임한다.
+- 좁은 수정은 프론티어 코디네이터가 직접 처리할 수 있지만, 기본 협업 모델은 방향·판정·리뷰와 구현 실행을 분리한다.
+
+짧은 프롬프트는 자유 방임이 아니다. 구현 전에 제품 계약과 판정 기준을 고정하고, 구현 후에는 실제 브라우저 증거로 엄격하게 검토한다.
+
 ## 기본 순환
 
 ```text
-latest origin/main과 실제 버전 조사
+사용자와 frontier coordinator가 게임 방향·우선순위·판정 기준을 함께 결정
+→ latest origin/main과 실제 버전 조사
 → 최신 주의점과 단일 failure domain을 짧게 전달
 → local executor가 자율 구현·focused 검증·main 게시
 → 실제 commit/diff/runtime 독립 리뷰
-→ 남은 다음 단일 failure domain만 delta prompt로 전달
+→ 사용자와 다음 우선 작업을 고르거나 남은 다음 단일 failure domain만 delta prompt로 전달
 ```
 
 ## 지식 근거 우선순위
@@ -28,6 +44,7 @@ latest origin/main과 실제 버전 조사
 
 ## 프론티어 코디네이터가 프롬프트 전에 할 일
 
+- 사용자와 현재 결함의 실제 플레이 영향, 우선순위와 완료 기준 정렬
 - 최신 main에서 현재 objective와 product direction 확인
 - manifest, vendor bundle, runtime file, browser target 확인
 - 작업에 필요한 최신 변경점·주의점만 2~5개로 압축
@@ -139,8 +156,9 @@ REPORT
 - 실제 입력 한 번의 직접 효과가 정확히 한 번인가
 - 테스트가 사용자 계약을 판정하는가
 - baseline, snapshot, broad ignore, fallback 또는 unrelated cleanup으로 실패를 숨기지 않았는가
+- 사용자와 합의한 플레이 경험과 실제 결과가 일치하는가
 
-여러 문제가 발견되어도 다음 프롬프트에는 한 failure domain만 넣는다. 이전 전체 프롬프트와 완료된 단계를 반복하지 않는다.
+여러 문제가 발견되어도 다음 프롬프트에는 한 failure domain만 넣는다. 이전 전체 프롬프트와 완료된 단계를 반복하지 않는다. 현재 결과를 판정한 뒤 사용자와 다음 우선 작업을 고른다.
 
 ## 완료 보고
 

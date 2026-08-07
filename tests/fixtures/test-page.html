@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Tab Launcher Test</title></head>
+<body>
+<h1>External Tab Launcher Browser Test</h1>
+<button id="launchBtn">Launch External Tab</button>
+<div id="status">idle</div>
+<script src="../../shared/domain/external-tab-launcher.js"></script>
+<script>
+(function () {
+  var btn = document.getElementById("launchBtn");
+  var status = document.getElementById("status");
+  btn.addEventListener("click", function () {
+    status.textContent = "launching";
+    var fn = ExternalTabLauncher.createOpenExternal(window, "/tests/fixtures/test-target.html");
+    var handle = fn();
+    if (handle) {
+      status.textContent = "launched:ok";
+    } else {
+      status.textContent = "launched:blocked";
+    }
+  });
+})();
+</script>
+</body>
+</html>

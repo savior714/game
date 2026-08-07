@@ -248,7 +248,7 @@ const RewardSystem = (() => {
       cloudSyncListenerBound = true;
       window.addEventListener('cloud-sync-complete', refreshFromStorage);
     }
-    // Check for active youtube free time session on init
+    // Check for active or expired youtube free time session on init
     try {
       const rawSession = localStorage.getItem('study_youtube_free_time_session_v1');
       if (rawSession && typeof FreeTimeSession !== 'undefined') {
@@ -257,6 +257,11 @@ const RewardSystem = (() => {
         const sel = FreeTimeSession.select(restored, Date.now());
         if (sel.active && typeof RewardSystemUI !== 'undefined' && typeof RewardSystemUI.renderFreeTimeTimerUI === 'function') {
           RewardSystemUI.renderFreeTimeTimerUI(restored);
+        } else if (sel.expired && typeof RewardSystemUI !== 'undefined' && typeof RewardSystemUI.renderExpiredFreeTimeSessionUI === 'function') {
+          try {
+            localStorage.setItem('study_youtube_free_time_session_v1', JSON.stringify(restored));
+          } catch (e) {}
+          RewardSystemUI.renderExpiredFreeTimeSessionUI(restored);
         }
       }
     } catch (e) {

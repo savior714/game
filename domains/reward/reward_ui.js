@@ -852,10 +852,15 @@ const RewardSystemUI = (() => {
     startTimerLoop(session);
   }
 
+  function renderExpiredFreeTimeSessionUI(session) {
+    if (!session || session.status !== 'expired') return;
+    renderExpiryOverlay(session);
+  }
+
   return {
     injectCriticalStyles, injectStyles, injectInventoryBar, syncInventoryBarWithState, applyBodyTopOffset, updateUI,
     playEntranceAndAddGem, openShopModal, spawnExplosion, showToast, showGrowthToast,
-    openYoutubeModal, openSnackModal, openMarbleModal, openCustomModal, renderFreeTimeTimerUI
+    openYoutubeModal, openSnackModal, openMarbleModal, openCustomModal, renderFreeTimeTimerUI, renderExpiredFreeTimeSessionUI
   };
 })();
 

@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 200">
+  <g id="scene-seaweed-loop-02">
+    <!-- Outer thick base seaweed loop strand with organic S-wave asymmetrical rhythm -->
+    <path d="M55 185 C20 160 10 115 22 70 C34 25 78 15 95 48 C112 80 105 130 82 165 C68 185 60 188 55 185 Z" fill="none" stroke="#2D8B46" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Secondary inner vibrant green layer -->
+    <path d="M55 183 C23 158 14 116 25 73 C36 30 76 21 91 52 C106 82 100 128 79 162 C67 181 59 184 55 183 Z" fill="none" stroke="#3AA85A" stroke-width="5.5" stroke-linecap="round"/>
+    
+    <!-- Highlight inner vine strand -->
+    <path d="M54 180 C26 156 18 118 28 77 C37 36 74 27 88 55 C101 83 96 125 76 158 C65 177 58 180 54 180" fill="none" stroke="#4AB86A" stroke-width="2" opacity="0.6" stroke-linecap="round"/>
+    
+    <!-- Deep shade under-shadow paths -->
+    <path d="M55 185 C20 160 10 115 22 70" fill="none" stroke="#1A6B3A" stroke-width="1.8" opacity="0.4"/>
+    <path d="M95 48 C112 80 105 130 82 165" fill="none" stroke="#1A6B3A" stroke-width="1.8" opacity="0.4"/>
+    
+    <!-- Asymmetrical organic kelp nodes and bulbs -->
+    <!-- Top-right curve kelp bulb -->
+    <circle cx="95" cy="48" r="6.5" fill="#3AA85A" stroke="#1A6B3A" stroke-width="1.5"/>
+    <circle cx="94" cy="47" r="3" fill="#4AB86A" opacity="0.6"/>
+    <path d="M90 41 C93 37 99 37 102 42" fill="none" stroke="#2D8B46" stroke-width="1.5" opacity="0.6"/>
+
+    <!-- Left mid-height bulb -->
+    <circle cx="22" cy="70" r="7" fill="#3AA85A" stroke="#1A6B3A" stroke-width="1.5"/>
+    <circle cx="21" cy="69" r="3.5" fill="#4AB86A" opacity="0.6"/>
+    <path d="M16 64 C19 60 25 59 28 63" fill="none" stroke="#2D8B46" stroke-width="1.5" opacity="0.6"/>
+
+    <!-- Bottom-right node bulb -->
+    <circle cx="82" cy="165" r="6" fill="#2D8B46" stroke="#1A6B3A" stroke-width="1.5"/>
+    <circle cx="81" cy="164" r="2.8" fill="#4AB86A" opacity="0.5"/>
+
+    <!-- Top left gentle curve accent leaf -->
+    <circle cx="48" cy="32" r="5" fill="#2D8B46"/>
+    <circle cx="48" cy="31" r="2.3" fill="#4AB86A" opacity="0.4"/>
+
+    <!-- Asymmetrical leaf shoots extending from main stem -->
+    <path d="M22 70 Q10 82 18 96 Q24 94 25 80 Z" fill="#3AA85A" opacity="0.85"/>
+    <path d="M95 48 Q108 56 102 72 Q96 68 95 58 Z" fill="#3AA85A" opacity="0.85"/>
+    <path d="M79 162 Q92 170 86 182 Q80 178 79 168 Z" fill="#2D8B46" opacity="0.85"/>
+    <path d="M38 140 Q24 146 26 158 Q34 154 37 146 Z" fill="#3AA85A" opacity="0.8"/>
+    <path d="M68 26 Q78 14 88 20 Q84 28 74 30 Z" fill="#3AA85A" opacity="0.8"/>
+
+    <!-- Decorative inner strand flourish defining central loop boundary -->
+    <path d="M50 160 C38 135 34 105 45 80 C52 64 68 55 78 68 C86 78 84 98 75 118 C65 140 58 152 50 160" fill="none" stroke="#3AA85A" stroke-width="2.5" stroke-linecap="round" opacity="0.75"/>
+    <path d="M48 155 C38 133 36 107 46 84" fill="none" stroke="#4AB86A" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+    
+    <!-- Small floating kelp spore accents -->
+    <circle cx="38" cy="115" r="3" fill="#2D8B46" opacity="0.6"/>
+    <circle cx="85" cy="100" r="3.5" fill="#2D8B46" opacity="0.6"/>
+    <circle cx="62" cy="45" r="2.8" fill="#4AB86A" opacity="0.6"/>
+  </g>
+</svg>

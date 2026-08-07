@@ -348,6 +348,26 @@
             "sourceSha256": "76f9d1c7a5641cb1810a4771f6b2239ceaf850a4be71312151b37b7f68014c77"
         },
         {
+            "id": "scene-seaweed-loop-02-01",
+            "alias": "scene.seaweed-loop.02",
+            "source": "scene/seaweed-loop-02.svg",
+            "sourceType": "svg",
+            "bundle": "scene",
+            "logicalSize": [
+                120,
+                200
+            ],
+            "declaredRasterScale": 2,
+            "pivot": [
+                0.5,
+                0.1
+            ],
+            "authoringMethod": "frontier-svg-human-approved",
+            "approvalState": "approved",
+            "revisionNote": "Human-approved frontier SVG seaweed loop 02 obstacle asset",
+            "sourceSha256": "cc655806372919858f95048b0bda0e26ef84ecfff2eb3b06e07fec167a358f3e"
+        },
+        {
             "id": "ui-drag-arrow-01",
             "alias": "ui.drag-arrow",
             "source": "effects-ui/drag-arrow.svg",

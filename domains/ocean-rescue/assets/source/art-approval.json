@@ -3,7 +3,7 @@
   "packetSchemaVersion": 1,
   "decision": "approved",
   "scope": "ocean-rescue-rendering-mvp-proof-packet",
-  "approvedAssetCount": 53,
+  "approvedAssetCount": 54,
   "approvedAliases": [
     "crab.free",
     "crab.trapped",
@@ -33,6 +33,7 @@
     "scene.reef.mid",
     "scene.sand-path",
     "scene.seaweed-loop.01",
+    "scene.seaweed-loop.02",
     "scene.submarine",
     "scene.water.far",
     "terrain.boulder-stack",
@@ -59,10 +60,10 @@
     "ui.drag-arrow",
     "ui.drop-zone"
   ],
-  "artPacketSha256": "1980953230e909c8d80a60516abe1c67bd17aa534f03ee8fdb4733fd34c85f82",
+  "artPacketSha256": "9848f29d4012b40912b529de7f1a1c751bdecb00e860f9b8d453861116beb44e",
   "contactSheetSha256": "8e808ea8ede6c969c62c08fd048ee9bff6128615d8fa0b035f2a2f4c8e17e5a7",
-  "sourceSetSha256": "f1168e19234519f6719477b1b69b4395be49243a9dd39274a428a9985092ff3a",
-  "requiredPredecessor": "38acb30f69d0f64e3612c8eb1a238904a13cb370",
+  "sourceSetSha256": "9c6511087af6fb72415c88e145b8cb28d533f1abab5878d32e1c29347ad78633",
+  "requiredPredecessor": "17d77f10455709972d6efafbf9a3d718c437b63d",
   "approvalDate": "2026-08-07",
   "evidence": {
     "focusedTest": "tests/test_ocean_rescue_art_packet.py",

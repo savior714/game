@@ -166,42 +166,42 @@ function generateByOpLevel(op, level) {
   return { a, b, op, result, tag };
 }
 
+function _questionKey(candidate) {
+  return [candidate.a, candidate.b].sort((a, b) => a - b).join(',') + candidate.op;
+}
+
+function _isPrimaryQuestionCandidateAllowed(candidate) {
+  const key = _questionKey(candidate);
+  if (candidate.isReinforcement) {
+    // 강화 복습은 최근 10문항 중복 검사를 건너뛰되 직전 문제만은 반복하지 않는다.
+    return key !== _lastQuestionKey;
+  }
+  return !recentQuestions.includes(key);
+}
+
+function _buildEmergencyQuestion() {
+  const emergencyCandidates = [
+    { a: 1, b: 1, op: '+', result: 2, tag: 'add_unit_1_1', level: 0 },
+    { a: 1, b: 2, op: '+', result: 3, tag: 'add_unit_1_2', level: 0 },
+  ];
+  return emergencyCandidates.find(candidate => _questionKey(candidate) !== _lastQuestionKey);
+}
+
 function generateQuestion() {
-  let q = null;
-  let tries = 0;
-
-  while (tries < 20) {
+  for (let tries = 0; tries < 20; tries++) {
     const candidate = _generateCandidate();
-    const key = [candidate.a, candidate.b].sort((a, b) => a - b).join(',') + candidate.op;
-
-    if (candidate.isReinforcement) {
-      // 강화 복습: 직전 문제와 다르면 출제 가능 (최근 10문항 중복 검사 제외)
-      if (key !== _lastQuestionKey) {
-        q = candidate;
-        break;
-      }
-    } else {
-      // 일반 문제: 최근 10문항 중복 방지
-      if (!recentQuestions.includes(key)) {
-        q = candidate;
-        break;
-      }
-    }
-    tries++;
+    if (_isPrimaryQuestionCandidateAllowed(candidate)) return candidate;
   }
 
-  // 20회 시도 후에도 못 찾으면 안전 일반 문제 사용 (강화 문제 바로 반복 방지)
-  if (!q) {
+  // 기본 중복 규칙을 20회 충족하지 못하면 최근 10문항 제한만 완화한다.
+  // 직전 문제 반복 금지는 fallback의 최종 반환값까지 동일하게 유지한다.
+  for (let fallbackTries = 0; fallbackTries < 20; fallbackTries++) {
     const fallback = _generateCandidate();
-    const fKey = [fallback.a, fallback.b].sort((a, b) => a - b).join(',') + fallback.op;
-    if (fallback.isReinforcement && fKey === _lastQuestionKey) {
-      q = _generateCandidate();
-    } else {
-      q = fallback;
-    }
+    if (_questionKey(fallback) !== _lastQuestionKey) return fallback;
   }
 
-  return q;
+  // 난수 생성기가 계속 같은 문항만 반환해도 진행을 멈추거나 직전 문항을 반복하지 않는다.
+  return _buildEmergencyQuestion();
 }
 
 function _generateCandidate() {

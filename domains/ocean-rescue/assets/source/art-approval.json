@@ -60,13 +60,13 @@
     "ui.drop-zone"
   ],
   "artPacketSha256": "1980953230e909c8d80a60516abe1c67bd17aa534f03ee8fdb4733fd34c85f82",
-  "contactSheetSha256": "5d825cfca9056e703c738b94f55675825636f532578c2be2e8d01a4fefaec130",
+  "contactSheetSha256": "8e808ea8ede6c969c62c08fd048ee9bff6128615d8fa0b035f2a2f4c8e17e5a7",
   "sourceSetSha256": "f1168e19234519f6719477b1b69b4395be49243a9dd39274a428a9985092ff3a",
-  "requiredPredecessor": "8a37abf27df224b81a6bc800cd2579c0d61af706",
+  "requiredPredecessor": "311236d6ad872b787920610a2e52c7748901c99f",
   "approvalDate": "2026-08-02",
   "evidence": {
     "focusedTest": "tests/test_ocean_rescue_art_packet.py",
-    "contactSheet": "../review/proof-art-contact-sheet.html",
+    "contactSheet": "domains/ocean-rescue/assets/review/proof-art-contact-sheet.html",
     "visualReviewVerdict": "PASS"
   }
 }

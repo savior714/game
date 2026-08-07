@@ -688,6 +688,70 @@ const RewardSystemUI = (() => {
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   }
 
+  function triggerAudioAlert() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.2); // A5
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.5);
+    } catch (e) {
+      // Audio context blocked or unsupported
+    }
+  }
+
+  function renderExpiryOverlay(session) {
+    if (document.getElementById('yt-expired-overlay')) return;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'yt-expired-overlay';
+    overlay.style.cssText = `
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10000;
+      background: rgba(15, 23, 42, 0.95); display: flex; align-items: center; justify-content: center;
+      color: white; font-family: sans-serif; text-align: center; padding: 24px; box-sizing: border-box;
+    `;
+    overlay.innerHTML = `
+      <div style="max-width: 440px; width: 100%; background: #1e293b; border: 3px solid #f43f5e; border-radius: 24px; padding: 32px 24px; box-shadow: 0 20px 50px rgba(244,63,94,0.3);">
+        <div style="font-size: 4rem; margin-bottom: 16px; animation: pulse 1s infinite alternate;">⏰</div>
+        <h2 style="font-size: 1.8rem; margin: 0 0 12px; color: #f43f5e;">시간이 끝났어요!</h2>
+        <p style="font-size: 1.05rem; line-height: 1.6; color: #cbd5e1; margin-bottom: 24px;">
+          YouTube 탭을 닫고 게임으로 돌아오세요.
+        </p>
+        <button id="yt-ack-btn" style="
+          width: 100%; padding: 14px; background: #f43f5e; color: white; border: none;
+          border-radius: 14px; font-size: 1.1rem; font-weight: bold; cursor: pointer;
+          box-shadow: 0 4px 14px rgba(244,63,94,0.4); transition: transform 0.1s;
+        ">확인했어요</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    triggerAudioAlert();
+
+    const ackBtn = overlay.querySelector('#yt-ack-btn');
+    ackBtn.addEventListener('click', () => {
+      // Mark acknowledged in storage
+      session.status = 'acknowledged';
+      session.acknowledgedAt = Date.now();
+      try {
+        localStorage.setItem('study_youtube_free_time_session_v1', JSON.stringify(session));
+      } catch (e) {}
+
+      overlay.remove();
+      const timerBar = document.getElementById('youtube-free-time-timer');
+      if (timerBar) timerBar.remove();
+    });
+  }
+
   function startTimerLoop(session) {
     if (timerIntervalId) clearInterval(timerIntervalId);
     const deadline = session.endsAt || session.deadline || Date.now();
@@ -707,6 +771,13 @@ const RewardSystemUI = (() => {
       if (remainingMs <= 0) {
         clearInterval(timerIntervalId);
         timerIntervalId = null;
+        if (textEl) textEl.textContent = '00:00';
+        session.status = 'expired';
+        session.expiredAt = session.expiredAt || Date.now();
+        try {
+          localStorage.setItem('study_youtube_free_time_session_v1', JSON.stringify(session));
+        } catch (e) {}
+        renderExpiryOverlay(session);
       }
     }
 

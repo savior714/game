@@ -5,6 +5,7 @@ const DOM = {};
 
 function initDOMCache() {
   DOM.qScore        = document.getElementById('q-score');
+  DOM.qCount        = document.getElementById('q-count');
   DOM.feedback      = document.getElementById('feedback');
   DOM.nextBtn       = document.getElementById('next-btn');
   DOM.gameArea      = document.getElementById('game-area');
@@ -180,7 +181,7 @@ function askQuestion() {
   currentWordData = { cat: q._cat, level: q._level, en: q._wordEn, isWeakness: q.isWeakness, isWeekly: q.isWeekly };
   answer = q.answer;
 
-  (DOM.qScore || document.getElementById('q-score')).textContent     = currentQ + 1;
+  (DOM.qCount || document.getElementById('q-count')).textContent    = currentQ + 1;
   const fbEl = DOM.feedback || document.getElementById('feedback');
   fbEl.textContent    = q.isWeakness ? '🔥 약점 단어 도전!' : '';
   fbEl.className      = q.isWeakness ? 'weakness-highlight' : '';

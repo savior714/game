@@ -8,11 +8,11 @@ import threading
 from pathlib import Path
 
 import pytest
-from playwright.sync_api import Page, sync_playwright
+from playwright.sync_api import Page, expect, sync_playwright
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-ENGLISH_URL = f"/domains/english/index.html"
+ENGLISH_URL = "/domains/english/index.html"
 TOTAL_QUESTIONS = 10
 
 
@@ -103,6 +103,8 @@ def run_full_session_and_restart(static_server: str, page: Page) -> None:
     assert page.evaluate("currentQ") == 0
     assert page.evaluate("score") == 0
     assert page.evaluate("answered") is False
+    expect(page.locator("#q-count")).to_have_text("1")
+    expect(page.locator("#q-score")).to_have_text("0")
     assert page.locator("#result-screen").is_hidden()
     page.wait_for_selector(".answer-btn", state="visible", timeout=5000)
     assert page.locator("#next-btn").is_hidden()

@@ -85,6 +85,8 @@ def test_correct_answer_then_next_advances_exactly_one_question(
     next_button = page.locator("#next-btn")
     expect(next_button).to_be_hidden()
     assert page.evaluate("currentQ") == 0
+    expect(page.locator("#q-count")).to_have_text("1")
+    expect(page.locator("#q-score")).to_have_text("0")
     assert page.evaluate(
         "document.getElementById('next-btn').dataset.progressionBound"
     ) == "true"
@@ -100,4 +102,6 @@ def test_correct_answer_then_next_advances_exactly_one_question(
     expect(next_button).to_be_hidden()
     assert page.evaluate("currentQ") == 1
     assert page.evaluate("answered") is False
+    expect(page.locator("#q-count")).to_have_text("2")
+    expect(page.locator("#q-score")).to_have_text("1")
     assert page_errors == []

@@ -22,8 +22,8 @@ ALLOWED_BUNDLES = {"characters", "scene", "effects-ui"}
 FORBIDDEN_SVG_ELEMENTS = {
     "script",
     "animate",
-    "animateTransform",
-    "animateMotion",
+    "animatetransform",
+    "animatemotion",
     "set",
     "foreignobject",
 }

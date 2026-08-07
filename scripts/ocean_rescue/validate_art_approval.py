@@ -263,10 +263,12 @@ def _is_unsafe_path(path_str: str) -> bool:
     depth = 0
     for part in Path(path_str).parts:
         if part == "..":
+            if depth == 0:
+                return True
             depth -= 1
         elif part != ".":
             depth += 1
-    return depth < 0
+    return False
 
 
 def validate_evidence_paths(record: dict[str, Any]) -> None:

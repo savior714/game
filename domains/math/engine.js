@@ -173,8 +173,8 @@ function generateQuestion() {
     const candidate = _generateCandidate();
     const key = [candidate.a, candidate.b].sort((a, b) => a - b).join(',') + candidate.op;
 
-    // 틀린 문제 복습은 최근 출제 여부보다 우선한다. 일반 문제만 최근 중복을 피한다.
-    if (candidate.isReinforcement || !recentQuestions.includes(key)) {
+    // reinforcement 문제도 최근 출제 중복을 피한다.
+    if (!recentQuestions.includes(key)) {
       q = candidate;
       break;
     }

@@ -133,7 +133,7 @@ def build_receipt(packet: dict[str, Any], existing: dict[str, Any]) -> dict[str,
         "evidence",
         {
             "focusedTest": "tests/test_ocean_rescue_art_packet.py",
-            "contactSheet": "../review/proof-art-contact-sheet.html",
+            "contactSheet": "domains/ocean-rescue/assets/review/proof-art-contact-sheet.html",
             "visualReviewVerdict": "PASS",
         },
     )

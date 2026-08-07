@@ -3,6 +3,8 @@
 
 Reads atlas-manifest.json, pixi-assets-manifest.json, and all declared files
 to produce a frozen JavaScript registry at window.OceanRescue.RenderAssets.
+Publication is blocked when the atlas was not built from the currently
+approved source receipt.
 """
 
 import argparse
@@ -10,9 +12,17 @@ import base64
 import hashlib
 import json
 import os
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SOURCE_ROOT = REPO_ROOT / "domains/ocean-rescue/assets/source"
+PACKET_PATH = SOURCE_ROOT / "art-packet.json"
+APPROVAL_PATH = SOURCE_ROOT / "art-approval.json"
+APPROVAL_VALIDATOR = Path(__file__).resolve().parent / "validate_art_approval.py"
 
 
 class RegistryError(Exception):
@@ -50,6 +60,33 @@ def deterministic_json(obj, indent=2):
     )
 
 
+def validate_publication_provenance(atlas_manifest):
+    result = subprocess.run(
+        [sys.executable, str(APPROVAL_VALIDATOR), str(SOURCE_ROOT)],
+        capture_output=True,
+        text=True,
+        cwd=str(REPO_ROOT),
+    )
+    if result.returncode != 0:
+        detail = (result.stderr + result.stdout).strip()
+        raise RegistryError(detail or "reapproval required")
+
+    approval = load_json(APPROVAL_PATH)
+    expected = {
+        "sourcePacketSha256": sha256_file(PACKET_PATH),
+        "approvalRecordSha256": sha256_file(APPROVAL_PATH),
+        "sourceSetSha256": approval["sourceSetSha256"],
+    }
+    mismatches = [
+        key for key, value in expected.items() if atlas_manifest.get(key) != value
+    ]
+    if mismatches:
+        raise RegistryError(
+            "rebuild required: atlas does not match the current approved "
+            f"source receipt ({', '.join(mismatches)})"
+        )
+
+
 def build_registry(atlas_dir, output_path):
     atlas_dir = Path(atlas_dir)
     output_path = Path(output_path)
@@ -65,6 +102,7 @@ def build_registry(atlas_dir, output_path):
         )
 
     atlas_manifest = load_json(atlas_manifest_path)
+    validate_publication_provenance(atlas_manifest)
     pixi_manifest = load_json(pixi_manifest_path)
 
     atlas_manifest_sha = sha256_file(atlas_manifest_path)

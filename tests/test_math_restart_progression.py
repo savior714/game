@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import http.server
+import re
 import socketserver
 import threading
 from pathlib import Path
@@ -39,31 +40,59 @@ def static_server():
     thread.join(timeout=2)
 
 
-def _play_full_10_questions_and_reach_result(page: Page) -> None:
+def _play_full_10_questions_with_final_wrong(page: Page) -> str:
+    """Plays 9 correct + 1 wrong question, asserts terminal wrong state, and proceeds to result."""
     page.wait_for_selector("#question", state="visible", timeout=5000)
     page.wait_for_selector(".answer-btn", state="visible", timeout=5000)
 
-    for q_index in range(TOTAL_QUESTIONS):
+    for q_index in range(TOTAL_QUESTIONS - 1):
         expect(page.locator("#q-count")).to_have_text(str(q_index + 1))
         assert page.evaluate("answered") is False
 
         correct_answer = str(page.evaluate("answer"))
         assert correct_answer != "", "answer must be non-empty"
 
-        correct_btn = page.locator(".answer-btn", has_text=correct_answer).first
+        exact_pattern = re.compile(rf"^{re.escape(correct_answer)}$")
+        correct_btn = page.locator(".answer-btn").filter(has_text=exact_pattern).first
         correct_btn.click()
 
         page.wait_for_function("answered === true", timeout=5000)
         next_btn = page.locator("#next-btn")
         expect(next_btn).to_be_visible()
+        next_btn.click()
+        page.wait_for_function("answered === false", timeout=5000)
 
-        is_last = q_index == TOTAL_QUESTIONS - 1
-        if is_last:
-            next_btn.click()
-            page.wait_for_selector("#result-screen", state="visible", timeout=5000)
-        else:
-            next_btn.click()
-            page.wait_for_function("answered === false", timeout=5000)
+    # Q10 (final question): choose wrong answer
+    expect(page.locator("#q-count")).to_have_text(str(TOTAL_QUESTIONS))
+    assert page.evaluate("answered") is False
+
+    correct_answer = str(page.evaluate("answer"))
+    assert correct_answer != "", "answer must be non-empty"
+
+    exact_pattern = re.compile(rf"^{re.escape(correct_answer)}$")
+    wrong_btn = page.locator(".answer-btn").filter(has_not_text=exact_pattern).first
+    wrong_btn.click()
+
+    page.wait_for_function("answered === true", timeout=5000)
+    assert page.evaluate("answered") is True
+    assert page.evaluate("score") == 9
+
+    # Assert terminal wrong state
+    correct_btn = page.locator(".answer-btn").filter(has_text=exact_pattern).first
+    expect(wrong_btn).to_have_class(re.compile(r"\bwrong\b"))
+    expect(correct_btn).to_have_class(re.compile(r"\bcorrect\b"))
+
+    feedback_el = page.locator("#feedback")
+    expect(feedback_el).to_have_class("feedback-wrong")
+    terminal_wrong_feedback = feedback_el.inner_text().strip()
+    assert terminal_wrong_feedback != "", "Terminal wrong feedback text must be non-empty"
+
+    next_btn = page.locator("#next-btn")
+    expect(next_btn).to_be_visible()
+    next_btn.click()
+
+    page.wait_for_selector("#result-screen", state="visible", timeout=5000)
+    return terminal_wrong_feedback
 
 
 @pytest.mark.browser
@@ -96,7 +125,7 @@ def test_math_full_session_clean_restart_contract(
 
         page.goto(f"{static_server}{MATH_URL}")
 
-        _play_full_10_questions_and_reach_result(page)
+        terminal_wrong_feedback = _play_full_10_questions_with_final_wrong(page)
 
         game_area = page.locator("#game-area")
         result_screen = page.locator("#result-screen")
@@ -105,6 +134,26 @@ def test_math_full_session_clean_restart_contract(
         expect(game_area).to_be_hidden()
         expect(result_screen).to_be_visible()
         expect(restart_btn).to_be_visible()
+
+        assert page.evaluate("score") == 9
+        result_msg = page.locator("#result-msg").inner_text()
+        assert "9개" in result_msg
+
+        # Install test-only instrumentation before restart click
+        page.evaluate("""() => {
+            window.__askQuestionCallCount = 0;
+            window.__startTimerCallCount = 0;
+            const origAskQuestion = window.askQuestion;
+            window.askQuestion = function(...args) {
+                window.__askQuestionCallCount++;
+                return origAskQuestion.apply(this, args);
+            };
+            const origStartTimer = window.startTimer;
+            window.startTimer = function(...args) {
+                window.__startTimerCallCount++;
+                return origStartTimer.apply(this, args);
+            };
+        }""")
 
         restart_btn.click()
 
@@ -133,12 +182,26 @@ def test_math_full_session_clean_restart_contract(
         assert "feedback-correct" not in feedback_class
         assert "feedback-wrong" not in feedback_class
 
+        current_feedback_text = page.locator("#feedback").inner_text().strip()
+        assert current_feedback_text != terminal_wrong_feedback, (
+            f"Terminal wrong feedback leaked to new question: {terminal_wrong_feedback}"
+        )
+
         new_q_text = page.locator("#question").inner_text().strip()
         assert new_q_text != "", "New question text must be non-empty"
 
         # Answer button interactivity
         first_btn = answer_btns.first
         expect(first_btn).to_be_enabled()
+
+        # Instrumentation exact calls evaluation
+        ask_count = page.evaluate("window.__askQuestionCallCount")
+        assert ask_count == 1, f"Expected askQuestion call count to be 1, got {ask_count}"
+
+        timer_start_count = page.evaluate("window.__startTimerCallCount")
+        assert (
+            timer_start_count == 1
+        ), f"Expected startTimer call count to be 1, got {timer_start_count}"
 
         # Timer single ownership check
         timer_active = page.evaluate(

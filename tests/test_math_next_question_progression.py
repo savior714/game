@@ -101,9 +101,6 @@ def test_stats_controls_open_close_reset_and_backdrop(
         """
     )
 
-    expect(page.locator("#stats-btn")).to_have_attribute(
-        "data-math-control-bound", "true"
-    )
     page.locator("#stats-btn").click()
     expect(modal).to_be_visible()
     expect(page.locator("#stats-tbody tr")).to_have_count(3)

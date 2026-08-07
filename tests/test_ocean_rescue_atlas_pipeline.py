@@ -839,15 +839,17 @@ class TestManifest:
             assert not uuid_re.search(content), f"UUID found in {rel_path}"
             assert not ts_re.search(content), f"Timestamp found in {rel_path}"
 
-    def test_exact_toolchain_pins(self, tmp_path: Path):
-        """Toolchain should have exact dependency versions."""
+    def test_toolchain_versions_match_installed_distributions(self, tmp_path: Path):
+        """Toolchain versions must match installed distribution versions."""
+        from importlib.metadata import version as dist_version
+
         out_dir = tmp_path / "output"
         _run_build(out_dir)
         manifest = _load_json(out_dir / "atlas-manifest.json")
 
         toolchain = manifest.get("toolchain", {})
-        assert toolchain.get("cairosvg") == "2.9.0"
-        assert toolchain.get("pillow") == "12.3.0"
+        assert toolchain.get("cairosvg") == dist_version("cairosvg")
+        assert toolchain.get("pillow") == dist_version("pillow")
 
 
 # ---------------------------------------------------------------------------

@@ -71,6 +71,13 @@ def _get_cairo_version() -> str:
         return "unknown"
 
 
+def _get_installed_version(distribution_name: str) -> str:
+    """Return the installed distribution version, raising on failure."""
+    from importlib.metadata import version as dist_version
+
+    return dist_version(distribution_name)
+
+
 def _fail(msg: str) -> None:
     print(f"FAIL: {msg}", file=sys.stderr)
     sys.exit(1)
@@ -604,8 +611,8 @@ class AtlasBuilder:
             "approvalRecordSha256": approval_record_sha,
             "sourceSetSha256": source_set_sha,
             "toolchain": {
-                "cairosvg": "2.9.0",
-                "pillow": "12.3.0",
+                "cairosvg": _get_installed_version("cairosvg"),
+                "pillow": _get_installed_version("pillow"),
                 "cairo": _get_cairo_version(),
             },
             "rasterization": {

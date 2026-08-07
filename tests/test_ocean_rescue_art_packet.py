@@ -188,6 +188,50 @@ class TestForbiddenSvgContentRejection:
         result = _run_validator(bad_dir)
         assert result.returncode != 0, "Validator must reject SVG with <script>"
 
+    def test_svg_with_foreignobject_rejected(self, tmp_path: Path):
+        packet = _load_packet()
+        svg_content = (
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">\n'
+            '  <rect width="100" height="100"/>\n'
+            '  <foreignObject x="0" y="0" width="100" height="100">\n'
+            '    <div xmlns="http://www.w3.org/1999/xhtml">unsafe</div>\n'
+            "  </foreignObject>\n"
+            "</svg>"
+        )
+        bad_dir = tmp_path / "foreignobject_svg"
+        bad_dir.mkdir()
+
+        # calculate sha256 of modified svg
+        import hashlib
+
+        modified_hash = hashlib.sha256(svg_content.encode("utf-8")).hexdigest()
+
+        modified_packet = json.loads(json.dumps(packet))
+        for asset in modified_packet["assets"]:
+            if asset["alias"] == "otter.head":
+                asset["sourceSha256"] = modified_hash
+
+        (bad_dir / "art-packet.json").write_text(
+            json.dumps(modified_packet, indent=2), encoding="utf-8"
+        )
+        for asset in packet["assets"]:
+            if asset["alias"] == "otter.head":
+                dst = bad_dir / asset["source"]
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                dst.write_text(svg_content, encoding="utf-8")
+            else:
+                src = ASSETS_SOURCE / asset["source"]
+                dst = bad_dir / asset["source"]
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                dst.write_bytes(src.read_bytes())
+
+        result = _run_validator(bad_dir)
+        assert result.returncode != 0, "Validator must reject SVG with <foreignObject>"
+        assert (
+            "Forbidden element <foreignObject>" in result.stderr
+            or "foreignobject" in result.stderr.lower()
+        )
+
 
 class TestInvalidPivotRejection:
     def test_out_of_range_pivot_rejected(self, tmp_path: Path):

@@ -25,6 +25,7 @@ FORBIDDEN_SVG_ELEMENTS = {
     "animateTransform",
     "animateMotion",
     "set",
+    "foreignobject",
 }
 FORBIDDEN_SVG_ATTRS = {
     "onload",

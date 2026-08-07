@@ -62,8 +62,8 @@
   "artPacketSha256": "1980953230e909c8d80a60516abe1c67bd17aa534f03ee8fdb4733fd34c85f82",
   "contactSheetSha256": "8e808ea8ede6c969c62c08fd048ee9bff6128615d8fa0b035f2a2f4c8e17e5a7",
   "sourceSetSha256": "f1168e19234519f6719477b1b69b4395be49243a9dd39274a428a9985092ff3a",
-  "requiredPredecessor": "311236d6ad872b787920610a2e52c7748901c99f",
-  "approvalDate": "2026-08-02",
+  "requiredPredecessor": "38acb30f69d0f64e3612c8eb1a238904a13cb370",
+  "approvalDate": "2026-08-07",
   "evidence": {
     "focusedTest": "tests/test_ocean_rescue_art_packet.py",
     "contactSheet": "domains/ocean-rescue/assets/review/proof-art-contact-sheet.html",

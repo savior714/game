@@ -168,6 +168,15 @@ def validate_svg(path: Path) -> None:
     if root_elem.get("viewBox") is None:
         fail(f"Missing viewBox in: {path.name}")
 
+    seen_ids: set[str] = set()
+    for elem in root_elem.iter():
+        svg_id = elem.get("id")
+        if svg_id is None:
+            continue
+        if svg_id in seen_ids:
+            fail(f"Duplicate SVG id '{svg_id}' in: {path.name}")
+        seen_ids.add(svg_id)
+
     def check_elements(elem: ET.Element) -> None:
         local = elem.tag.split("}")[-1] if "}" in elem.tag else elem.tag
         if local.lower() in FORBIDDEN_SVG_ELEMENTS:

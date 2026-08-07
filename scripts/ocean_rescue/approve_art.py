@@ -129,14 +129,16 @@ def build_receipt(packet: dict[str, Any], existing: dict[str, Any]) -> dict[str,
             "approvalDate": datetime.now(timezone.utc).date().isoformat(),
         }
     )
-    receipt.setdefault(
-        "evidence",
-        {
-            "focusedTest": "tests/test_ocean_rescue_art_packet.py",
-            "contactSheet": "domains/ocean-rescue/assets/review/proof-art-contact-sheet.html",
-            "visualReviewVerdict": "PASS",
-        },
+    evidence = dict(existing.get("evidence") or {})
+    evidence["focusedTest"] = evidence.get(
+        "focusedTest", "tests/test_ocean_rescue_art_packet.py"
     )
+    evidence["contactSheet"] = evidence.get(
+        "contactSheet",
+        "domains/ocean-rescue/assets/review/proof-art-contact-sheet.html",
+    )
+    evidence["visualReviewVerdict"] = "PASS"
+    receipt["evidence"] = evidence
     return receipt
 
 

@@ -280,6 +280,13 @@ def validate_evidence_paths(record: dict[str, Any]) -> None:
         path_str = evidence.get(key, "")
         if _is_unsafe_path(path_str):
             fail(f"Absolute or path-traversal evidence path in {key}: {path_str}")
+    if record.get("decision") == REQUIRED_DECISION:
+        verdict = evidence.get("visualReviewVerdict")
+        if verdict != "PASS":
+            fail(
+                "reapproval required: approved decision requires visualReviewVerdict "
+                f"'PASS', got '{verdict}'"
+            )
 
 
 def validate_no_nondeterministic(record: dict[str, Any]) -> None:

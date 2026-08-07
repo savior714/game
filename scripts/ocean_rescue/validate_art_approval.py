@@ -287,6 +287,12 @@ def validate_evidence_paths(record: dict[str, Any]) -> None:
                 "reapproval required: approved decision requires visualReviewVerdict "
                 f"'PASS', got '{verdict}'"
             )
+        contact_sheet_path = evidence.get("contactSheet")
+        if contact_sheet_path != str(CANONICAL_CONTACT_SHEET):
+            fail(
+                "reapproval required: approved decision requires contactSheet "
+                f"'{CANONICAL_CONTACT_SHEET}', got '{contact_sheet_path}'"
+            )
 
 
 def validate_no_nondeterministic(record: dict[str, Any]) -> None:

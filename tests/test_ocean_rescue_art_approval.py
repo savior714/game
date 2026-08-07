@@ -456,3 +456,89 @@ class TestVisualVerdictCoherence:
         )
 
 
+class TestContactSheetPathCanonicality:
+    def test_writer_overwrites_stale_traversal_contact_sheet_path(self):
+        from scripts.ocean_rescue.approve_art import build_receipt
+
+        packet = _load_json(ART_PACKET_JSON)
+        existing = {
+            "evidence": {
+                "contactSheet": "../review/proof-art-contact-sheet.html",
+            }
+        }
+        receipt = build_receipt(packet, existing)
+        assert receipt["evidence"]["contactSheet"] == (
+            "domains/ocean-rescue/assets/review/proof-art-contact-sheet.html"
+        )
+
+    def test_writer_overwrites_safe_noncanonical_contact_sheet_path(self):
+        from scripts.ocean_rescue.approve_art import build_receipt
+
+        packet = _load_json(ART_PACKET_JSON)
+        existing = {
+            "evidence": {
+                "contactSheet": "some/safe/but-wrong.html",
+            }
+        }
+        receipt = build_receipt(packet, existing)
+        assert receipt["evidence"]["contactSheet"] == (
+            "domains/ocean-rescue/assets/review/proof-art-contact-sheet.html"
+        )
+
+    def test_validator_rejects_safe_noncanonical_contact_sheet_path(self, tmp_path: Path):
+        record = _load_json(ART_APPROVAL_JSON)
+        record = dict(record)
+        record["evidence"] = dict(record.get("evidence", {}))
+        record["evidence"]["contactSheet"] = "some/safe/but-wrong.html"
+
+        fixture_dir = tmp_path / "source"
+        fixture_dir.mkdir(parents=True)
+        review_dir = tmp_path / "review"
+        review_dir.mkdir(parents=True)
+        (review_dir / "proof-art-contact-sheet.html").write_bytes(
+            CONTACT_SHEET.read_bytes()
+        )
+        (fixture_dir / "art-packet.json").write_bytes(ART_PACKET_JSON.read_bytes())
+        packet = _load_json(ART_PACKET_JSON)
+        for asset in packet["assets"]:
+            src = ASSETS_SOURCE / asset["source"]
+            dst = fixture_dir / asset["source"]
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            dst.write_bytes(src.read_bytes())
+        (fixture_dir / "art-approval.json").write_text(
+            json.dumps(record, indent=2), encoding="utf-8"
+        )
+
+        result = _run_validator(VALIDATOR_APPROVAL, fixture_dir)
+        assert result.returncode != 0, (
+            "Validator must reject safe noncanonical contact-sheet path"
+        )
+
+    def test_validator_accepts_canonical_contact_sheet_path(self, tmp_path: Path):
+        record = _load_json(ART_APPROVAL_JSON)
+        assert record["evidence"]["contactSheet"] == (
+            "domains/ocean-rescue/assets/review/proof-art-contact-sheet.html"
+        )
+
+        fixture_dir = tmp_path / "source"
+        fixture_dir.mkdir(parents=True)
+        review_dir = tmp_path / "review"
+        review_dir.mkdir(parents=True)
+        (review_dir / "proof-art-contact-sheet.html").write_bytes(
+            CONTACT_SHEET.read_bytes()
+        )
+        (fixture_dir / "art-packet.json").write_bytes(ART_PACKET_JSON.read_bytes())
+        packet = _load_json(ART_PACKET_JSON)
+        for asset in packet["assets"]:
+            src = ASSETS_SOURCE / asset["source"]
+            dst = fixture_dir / asset["source"]
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            dst.write_bytes(src.read_bytes())
+        (fixture_dir / "art-approval.json").write_text(
+            json.dumps(record, indent=2), encoding="utf-8"
+        )
+
+        result = _run_validator(VALIDATOR_APPROVAL, fixture_dir)
+        assert result.returncode == 0, (
+            f"Validator must accept canonical contact-sheet path:\n{result.stderr}"
+        )

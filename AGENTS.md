@@ -127,6 +127,15 @@ just ci
 - 과목별 독립 wiring이나 다른 root cause가 확인되면 현재 대상만 수정·검증하고 나머지는 `DISCOVERED_FAILURE` 또는 별도 objective로 분리한다.
 - 현재 대상은 실제 사용자 입력 경로로 검증하며, 입력 한 번에 handler·render·request 같은 직접 효과가 정확히 한 번만 발생해야 한다.
 
+### YAGNI와 변경 범위
+
+- YAGNI는 아직 요구되지 않은 미래 capability, speculative abstraction, extension point와 unrelated cleanup을 만들지 않는 원칙이다. 현재 확인된 root cause를 최소 LOC나 최소 파일 수로만 봉합하라는 뜻이 아니다.
+- 목표는 `minimum diff`가 아니라 `minimum coherent, root-cause-complete change`다. 파일 수보다 root cause, invariant, ownership, rollback boundary와 primary criterion의 일치 여부로 package 경계를 정한다.
+- 같은 root cause와 invariant를 공유하고 한 shared owner에서 함께 닫을 수 있다면 production owner, 직접 sibling caller, type/contract, fixture와 focused regression은 하나의 failure domain에 포함할 수 있다.
+- leaf local guard를 반복하거나 동일 normalization·validation·state rule을 여러 caller에 복제하는 방식, shared owner 결함을 남긴 채 한 화면만 우회하는 방식은 under-fixing 신호로 취급한다.
+- 현재 invariant를 명확히 표현하고 testability를 확보하기 위한 작은 refactor는 YAGNI 위반이 아니다. 반면 미래 variation을 예상한 generalization, 현재 failure domain과 무관한 cleanup과 대형 재설계는 분리한다.
+- sibling inventory는 넓게 수행할 수 있지만 mutation scope는 자동으로 넓히지 않는다. 같은 root cause·invariant·rollback boundary로 한 focused verification 아래 함께 판정할 수 없는 발견은 별도 failure domain으로 남긴다.
+
 현재 작업 결과는 다음 두 항목으로만 판정한다.
 
 - `PRIMARY_CRITERION`: 현재 단일 가설을 직접 판정하는 기준
@@ -171,6 +180,9 @@ remote advance, non-fast-forward, unrelated dirty, V3 실패, 새 독립 결함,
 - 프롬프트 발행 전 현재 objective가 `docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md`의 포함 범위인지 확인한다.
 - 포함 범위가 아니고 사용자가 현재 요청에서 방향 변경이나 허용 예외를 명시하지 않았다면 구현 프롬프트를 발행하지 않는다.
 - 프롬프트에는 현재 objective, workspace, included/excluded scope, Do / Do not, primary acceptance, direct verification, optional system smoke, stop condition만 전달한다.
+- `DO`에는 단순히 최소 diff를 지시하지 말고, 수정 전 shared owner와 sibling contract를 읽어 under-fixing 여부를 판정하며 같은 root cause·invariant·rollback boundary이면 필요한 production/type/test 범위까지 coherent하게 닫도록 명시한다.
+- `DO_NOT`에는 미래 capability를 위한 speculative abstraction과 unrelated cleanup을 금지하되, 현재 root cause를 닫는 데 필요한 작은 refactor나 testability 개선을 금지하지 않는다.
+- acceptance는 증상 한 건의 GREEN뿐 아니라 shared root cause가 leaf workaround로 남지 않았는지와 동일 invariant가 새로 중복 구현되지 않았는지를 포함한다.
 - 현재 package에 필요한 delta만 포함하고 최대 700줄을 넘기지 않는다.
 - source workspace는 안정적인 `.worktrees/game/<task-slug>` 하나로 고정한다.
 - 일반 병렬 prompt에는 reservation metadata를 넣지 않는다.

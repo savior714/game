@@ -45,8 +45,8 @@
     if (!_isPlainObject(j)) return false;
     if (j.version !== JOURNAL_SCHEMA_VERSION) return false;
     if (typeof j.transactionId !== "string" || j.transactionId.length === 0) return false;
-    if (j.previousRewardRaw === undefined) return false;
-    if (j.previousSessionRaw === undefined) return false;
+    if (j.previousRewardRaw !== null && typeof j.previousRewardRaw !== "string") return false;
+    if (j.previousSessionRaw !== null && typeof j.previousSessionRaw !== "string") return false;
     if (typeof j.targetRewardRaw !== "string") return false;
     if (typeof j.targetSessionRaw !== "string") return false;
     return true;

@@ -216,6 +216,30 @@
         "y": 0.1
       }
     },
+    "scene.seaweed-loop.03": {
+      "frame": {
+        "x": 3001,
+        "y": 616,
+        "w": 194,
+        "h": 359
+      },
+      "rotated": false,
+      "trimmed": true,
+      "spriteSourceSize": {
+        "x": 20,
+        "y": 28,
+        "w": 194,
+        "h": 359
+      },
+      "sourceSize": {
+        "w": 240,
+        "h": 400
+      },
+      "anchor": {
+        "x": 0.5,
+        "y": 0.1
+      }
+    },
     "scene.submarine": {
       "frame": {
         "x": 4,

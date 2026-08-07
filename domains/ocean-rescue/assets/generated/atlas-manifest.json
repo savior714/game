@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "sourcePacketSha256": "9848f29d4012b40912b529de7f1a1c751bdecb00e860f9b8d453861116beb44e",
-  "approvalRecordSha256": "97d02fddc10e9873245b4d7b4c3372f62fcde31dbeb30e5f14ddb7cc8e1b3a43",
-  "sourceSetSha256": "9c6511087af6fb72415c88e145b8cb28d533f1abab5878d32e1c29347ad78633",
+  "sourcePacketSha256": "0fa0e4cedb09ad9d1deac085ab3caba9a46345ede3e8300d26eeea60e14975eb",
+  "approvalRecordSha256": "4e09878091926e4b4e7e9c6c59902a2486382dd8ba6022c8e1f6a2b7827e7f30",
+  "sourceSetSha256": "774b402159490da09c214cb0be3645550bafa15eaa5fc58bdf5bdf73e69ab81a",
   "toolchain": {
     "cairosvg": "2.9.0",
     "pillow": "12.3.0",
@@ -80,6 +80,7 @@
         "scene.sand-path",
         "scene.seaweed-loop.01",
         "scene.seaweed-loop.02",
+        "scene.seaweed-loop.03",
         "scene.submarine",
         "scene.water.far",
         "terrain.boulder-stack",
@@ -111,8 +112,8 @@
           "spritesheet": "scene-0.json",
           "width": 4032,
           "height": 2532,
-          "imageSha256": "14d76938da8583e6f7bb4faff99883644d8526794cb4e008d363103acd5d7ffb",
-          "spritesheetSha256": "b941ace3dac1993373454a50689f1f51b00b0d4ab76dca034ed08a215d9088e5",
+          "imageSha256": "1f760421dd0f4c2575d8f546fed174928d1441fb1ab85b71538c009a276d8ad3",
+          "spritesheetSha256": "57d5e6e4926dc71985fce7ccac176541a05e528bbf26f65088aafb2bae76731e",
           "aliases": [
             "rescue.rock.01",
             "rescue.rock.02",
@@ -123,6 +124,7 @@
             "scene.sand-path",
             "scene.seaweed-loop.01",
             "scene.seaweed-loop.02",
+            "scene.seaweed-loop.03",
             "scene.submarine",
             "scene.water.far",
             "terrain.boulder-stack",
@@ -147,7 +149,7 @@
           ]
         }
       ],
-      "bundleSha256": "7be57812a26ded3a38e11498037ab8bc44ec87cc706546e4a61cfebc99a0aa74"
+      "bundleSha256": "80648e99a6bba514dfa11edcb3d099ded6abc01fb23f36941adf455d5f1c606b"
     },
     {
       "name": "effects-ui",
@@ -197,7 +199,7 @@
     "effects-ui/effects-ui-0.json": "b6742ced59c976a1e9ed020bfcd341e19420c283cd90b99dc22047da54d13c06",
     "effects-ui/effects-ui-0.png": "4bf8e102579127e9b59b6f5a24211dd9b38144a22a7557a94be143658296e9e8",
     "pixi-assets-manifest.json": "6a289c5b258880597e129260ce86a5c3c1f89e82df46f337ce6177df668a8dad",
-    "scene/scene-0.json": "b941ace3dac1993373454a50689f1f51b00b0d4ab76dca034ed08a215d9088e5",
-    "scene/scene-0.png": "14d76938da8583e6f7bb4faff99883644d8526794cb4e008d363103acd5d7ffb"
+    "scene/scene-0.json": "57d5e6e4926dc71985fce7ccac176541a05e528bbf26f65088aafb2bae76731e",
+    "scene/scene-0.png": "1f760421dd0f4c2575d8f546fed174928d1441fb1ab85b71538c009a276d8ad3"
   }
 }

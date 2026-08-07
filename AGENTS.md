@@ -37,11 +37,16 @@
 - 통합·게시 기준은 `origin/main`이며 기본 게시 방식은 `main` fast-forward push다. PR·feature branch는 사용자가 요청한 경우에만 사용한다.
 - mutation은 최신 `origin/main`에서 만든 isolated worktree 또는 동등한 격리 공간에서 수행한다.
 - 기본 worktree 경로는 `/Users/seungjulee/Desktop/Dev/.worktrees/game/<task-slug>`다. 저장소 위치가 다르면 같은 개발 루트의 안정적인 `.worktrees/game/<task-slug>` sibling 경로를 사용한다.
+- 새 primary/reapply task worktree는 생성과 동시에 `git worktree add --lock --reason`으로 잠가 현재 활성 workspace임을 Git metadata에 남긴다.
+- lock reason에는 owner/tool, task 식별자, 생성 시각과 phase 같은 짧은 운영 식별자만 기록하고 PII, secret 또는 prompt 원문을 넣지 않는다.
+- 게시에 성공하고 worktree가 clean이며 HEAD가 최신 `origin/main`에 포함되고 자신이 만든 worktree임을 확인한 뒤에만 unlock 후 plain `git worktree remove`로 회수한다. 중단·dirty·unpublished worktree는 unlock하거나 제거하지 않는다.
+- `git worktree remove --force`와 worktree 경로의 `rm -rf`는 사용하지 않는다. `git worktree prune`은 이미 경로가 사라진 stale metadata 정리에만 사용한다.
 - source worktree를 `/tmp`, `/private/tmp`, `${TMPDIR}`, `mktemp` 아래에 만들지 않는다.
 - IDE, LSP, uv, pnpm, Docker, 브라우저 E2E, generated artifact 검증은 모두 실제 작업 worktree 하나를 동일한 workspace root와 CWD로 사용한다.
 - unrelated dirty state를 보존한다. force push, history rewrite, `--no-verify`, 필수 검증 우회는 금지한다.
 - 게시 전 최신 `origin/main`을 다시 확인한다. non-fast-forward가 발생하면 최신 main에 재적용하고 직접 영향 검증을 다시 실행한다.
 - 비중첩 remote advance와 다른 세션의 선행 게시는 blocker가 아니다. 최신 main 재적용, V1·필수 V2 재실행, 게시 재시도를 반복한다.
+- 상세 생성·재적용·cleanup 절차는 `agents/workflows/git.md`를 따른다.
 
 ## 5. 병렬 실행과 reservation
 

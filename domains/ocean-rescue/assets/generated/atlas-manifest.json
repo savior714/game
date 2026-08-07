@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "sourcePacketSha256": "7da2955733b307f0d15d3b49d18fa8c4c0f0135d79461f690df3a1bf7a7d3131",
-  "approvalRecordSha256": "a8ee8f168c25a943fed55a8b70dccd92e48c50f1f6a3c9cbbfc97787f4df21bc",
-  "sourceSetSha256": "55bbbb2bc38244c6b6de0a11828b9b33b18d5eee470c7cfa23f4e64185705113",
+  "sourcePacketSha256": "1980953230e909c8d80a60516abe1c67bd17aa534f03ee8fdb4733fd34c85f82",
+  "approvalRecordSha256": "3e391ac6a90d3e31d4f34e05a73efe123e2846899b1641674af3aa4980a5e673",
+  "sourceSetSha256": "f1168e19234519f6719477b1b69b4395be49243a9dd39274a428a9985092ff3a",
   "toolchain": {
     "cairosvg": "2.9.0",
     "pillow": "12.3.0",
@@ -46,8 +46,8 @@
           "spritesheet": "characters-0.json",
           "width": 3188,
           "height": 354,
-          "imageSha256": "b9ad42ac939bb3dd860c523b42a1d77b915b9c92d50dc6c0e600201f126f4546",
-          "spritesheetSha256": "9c75969c3cbc6b037604dfbef6d81da28c76a26b2242f7070182c0aeb2bfadd9",
+          "imageSha256": "af470372f1b9e6054beefdbb2e425ee33f94f81a5d83a8d331672ede6ac47e92",
+          "spritesheetSha256": "99195a26502d6bf5b67d4aa764e820191e657ef126bbe2ef9a7fb3ba36921993",
           "aliases": [
             "crab.free",
             "crab.trapped",
@@ -66,7 +66,7 @@
           ]
         }
       ],
-      "bundleSha256": "4e7e554be330920bf99f55deefda3fd9b8c8069314dff30aa5ef7093ff87c963"
+      "bundleSha256": "646c7c82d6a35f65ddf008553629c46ea8dbda1eddd28eba939f69c6bc356f99"
     },
     {
       "name": "scene",
@@ -110,8 +110,8 @@
           "spritesheet": "scene-0.json",
           "width": 4032,
           "height": 2532,
-          "imageSha256": "afbe7a666ec70ad2fc7a898b8550464b084d27069ec6d486f4b3ab6b0ac75994",
-          "spritesheetSha256": "d6045da0eb11d107622d95fe7d5146777dcecd3b82eae2b735816b5a830a6920",
+          "imageSha256": "04651851421cb251effeca0d55ac25ab510f8880810ca1387e5c2ce5fbc7ea07",
+          "spritesheetSha256": "75c7169b556fc4bd3a0d90e4a31c0b97ed39d24318e7752b54a777a0d27c655f",
           "aliases": [
             "rescue.rock.01",
             "rescue.rock.02",
@@ -145,7 +145,7 @@
           ]
         }
       ],
-      "bundleSha256": "21898b09e192711def50d3c68df650f86e9a33ddacdf3fed33e3674cb1849da3"
+      "bundleSha256": "649a1161107b923b1f7284b0b13dae383fe5a689f9f85a9dce967705b1f77caf"
     },
     {
       "name": "effects-ui",
@@ -168,10 +168,10 @@
           "index": 0,
           "image": "effects-ui-0.png",
           "spritesheet": "effects-ui-0.json",
-          "width": 3833,
+          "width": 3841,
           "height": 646,
-          "imageSha256": "c0dd88eef3d0b7c7fc32752d699fff12be4fc0da3c59079c2eaafc0ae4efd47c",
-          "spritesheetSha256": "953b48ba37a4bef5fd49943cc3164ae300916e8f1e606ea48cd0500d485dae20",
+          "imageSha256": "4bf8e102579127e9b59b6f5a24211dd9b38144a22a7557a94be143658296e9e8",
+          "spritesheetSha256": "b6742ced59c976a1e9ed020bfcd341e19420c283cd90b99dc22047da54d13c06",
           "aliases": [
             "fx.bubbles",
             "fx.caustic",
@@ -186,16 +186,16 @@
           ]
         }
       ],
-      "bundleSha256": "eedd7c9712e1739562607f1409440b2b577f96245c6c43872dcc484754c35b7f"
+      "bundleSha256": "96a7583c25e3586c0105d8df2f2b0d9707fb4bb9104a170a31643666e016d395"
     }
   ],
   "files": {
-    "characters/characters-0.json": "9c75969c3cbc6b037604dfbef6d81da28c76a26b2242f7070182c0aeb2bfadd9",
-    "characters/characters-0.png": "b9ad42ac939bb3dd860c523b42a1d77b915b9c92d50dc6c0e600201f126f4546",
-    "effects-ui/effects-ui-0.json": "953b48ba37a4bef5fd49943cc3164ae300916e8f1e606ea48cd0500d485dae20",
-    "effects-ui/effects-ui-0.png": "c0dd88eef3d0b7c7fc32752d699fff12be4fc0da3c59079c2eaafc0ae4efd47c",
+    "characters/characters-0.json": "99195a26502d6bf5b67d4aa764e820191e657ef126bbe2ef9a7fb3ba36921993",
+    "characters/characters-0.png": "af470372f1b9e6054beefdbb2e425ee33f94f81a5d83a8d331672ede6ac47e92",
+    "effects-ui/effects-ui-0.json": "b6742ced59c976a1e9ed020bfcd341e19420c283cd90b99dc22047da54d13c06",
+    "effects-ui/effects-ui-0.png": "4bf8e102579127e9b59b6f5a24211dd9b38144a22a7557a94be143658296e9e8",
     "pixi-assets-manifest.json": "6a289c5b258880597e129260ce86a5c3c1f89e82df46f337ce6177df668a8dad",
-    "scene/scene-0.json": "d6045da0eb11d107622d95fe7d5146777dcecd3b82eae2b735816b5a830a6920",
-    "scene/scene-0.png": "afbe7a666ec70ad2fc7a898b8550464b084d27069ec6d486f4b3ab6b0ac75994"
+    "scene/scene-0.json": "75c7169b556fc4bd3a0d90e4a31c0b97ed39d24318e7752b54a777a0d27c655f",
+    "scene/scene-0.png": "04651851421cb251effeca0d55ac25ab510f8880810ca1387e5c2ce5fbc7ea07"
   }
 }

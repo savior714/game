@@ -4,16 +4,16 @@
       "frame": {
         "x": 548,
         "y": 2144,
-        "w": 176,
-        "h": 152
+        "w": 170,
+        "h": 84
       },
       "rotated": false,
       "trimmed": true,
       "spriteSourceSize": {
-        "x": 12,
-        "y": 24,
-        "w": 176,
-        "h": 152
+        "x": 20,
+        "y": 89,
+        "w": 170,
+        "h": 84
       },
       "sourceSize": {
         "w": 200,
@@ -26,18 +26,18 @@
     },
     "rescue.rock.02": {
       "frame": {
-        "x": 736,
+        "x": 730,
         "y": 2144,
-        "w": 192,
-        "h": 160
+        "w": 173,
+        "h": 97
       },
       "rotated": false,
       "trimmed": true,
       "spriteSourceSize": {
-        "x": 14,
-        "y": 24,
-        "w": 192,
-        "h": 160
+        "x": 32,
+        "y": 94,
+        "w": 173,
+        "h": 97
       },
       "sourceSize": {
         "w": 220,
@@ -50,18 +50,18 @@
     },
     "rescue.rock.03": {
       "frame": {
-        "x": 940,
+        "x": 915,
         "y": 2144,
-        "w": 208,
-        "h": 176
+        "w": 198,
+        "h": 102
       },
       "rotated": false,
       "trimmed": true,
       "spriteSourceSize": {
-        "x": 16,
-        "y": 24,
-        "w": 208,
-        "h": 176
+        "x": 30,
+        "y": 107,
+        "w": 198,
+        "h": 102
       },
       "sourceSize": {
         "w": 240,
@@ -413,15 +413,15 @@
         "x": 1847,
         "y": 1750,
         "w": 460,
-        "h": 132
+        "h": 133
       },
       "rotated": false,
       "trimmed": true,
       "spriteSourceSize": {
         "x": 16,
-        "y": 264,
+        "y": 263,
         "w": 460,
-        "h": 132
+        "h": 133
       },
       "sourceSize": {
         "w": 480,
@@ -602,18 +602,18 @@
     },
     "tool.grabber.arm": {
       "frame": {
-        "x": 1292,
+        "x": 1261,
         "y": 2144,
-        "w": 48,
-        "h": 282
+        "w": 60,
+        "h": 290
       },
       "rotated": false,
       "trimmed": true,
       "spriteSourceSize": {
-        "x": 16,
+        "x": 10,
         "y": 18,
-        "w": 48,
-        "h": 282
+        "w": 60,
+        "h": 290
       },
       "sourceSize": {
         "w": 80,
@@ -626,18 +626,18 @@
     },
     "tool.grabber.base": {
       "frame": {
-        "x": 1160,
+        "x": 1125,
         "y": 2144,
-        "w": 120,
-        "h": 80
+        "w": 124,
+        "h": 88
       },
       "rotated": false,
       "trimmed": true,
       "spriteSourceSize": {
         "x": 20,
         "y": 40,
-        "w": 120,
-        "h": 80
+        "w": 124,
+        "h": 88
       },
       "sourceSize": {
         "w": 160,
@@ -650,7 +650,7 @@
     },
     "tool.grabber.claw.closed": {
       "frame": {
-        "x": 1504,
+        "x": 1485,
         "y": 2144,
         "w": 122,
         "h": 118
@@ -674,7 +674,7 @@
     },
     "tool.grabber.claw.open": {
       "frame": {
-        "x": 1352,
+        "x": 1333,
         "y": 2144,
         "w": 140,
         "h": 128

@@ -100,16 +100,16 @@
       "frame": {
         "x": 3533,
         "y": 4,
-        "w": 296,
-        "h": 296
+        "w": 304,
+        "h": 304
       },
       "rotated": false,
       "trimmed": true,
       "spriteSourceSize": {
-        "x": 12,
-        "y": 12,
-        "w": 296,
-        "h": 296
+        "x": 8,
+        "y": 8,
+        "w": 304,
+        "h": 304
       },
       "sourceSize": {
         "w": 320,
@@ -248,7 +248,7 @@
     "image": "effects-ui-0.png",
     "format": "RGBA8888",
     "size": {
-      "w": 3833,
+      "w": 3841,
       "h": 646
     },
     "scale": "2"

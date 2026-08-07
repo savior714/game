@@ -2,7 +2,7 @@
 situation: 변경 검증 후 commit과 main fast-forward 게시
 level: Recommended
 description: 격리된 작업 경계에서 의도한 파일만 commit하고 origin/main에 안전하게 게시하는 Git workflow
-version: 3.0.0
+version: 3.0.1
 last_updated: 2026-08-07
 scope: workflow
 domain: workflow
@@ -34,12 +34,18 @@ git status --short
 TASK_SLUG=${TASK_SLUG:?set a short task slug}
 WORKTREE_ROOT=${WORKTREE_ROOT:-/Users/seungjulee/Desktop/Dev/.worktrees/game}
 WORKTREE_DIR="$WORKTREE_ROOT/$TASK_SLUG"
+WORKTREE_CREATED_AT=$(date -u +%Y%m%dT%H%M%SZ)
 mkdir -p "$WORKTREE_ROOT"
 test ! -e "$WORKTREE_DIR"
-git worktree add --detach "$WORKTREE_DIR" origin/main
+git worktree add \
+  --lock \
+  --reason "owner=game-agent task=$TASK_SLUG created=$WORKTREE_CREATED_AT phase=primary" \
+  --detach "$WORKTREE_DIR" origin/main
 cd "$WORKTREE_DIR"
 ```
 
+- 새 task worktree는 생성 시점부터 lock하여 현재 agent가 소유한 활성 workspace임을 Git metadata에 남긴다.
+- lock reason에는 owner/tool, task 식별자, 생성 시각과 phase처럼 짧은 운영 식별자만 기록한다. PII, secret 또는 prompt 원문을 넣지 않는다.
 - source checkout/worktree는 `/tmp`, `/private/tmp`, `${TMPDIR}`, `mktemp` 하위에 만들지 않는다.
 - 실제 저장소가 다른 개발 루트에 있으면 같은 상위 디렉터리의 `.worktrees/game/<task-slug>` 같은 안정적인 sibling root를 사용한다.
 - VS Code·OpenCode·LSP·`uv`·`pnpm`·Docker·브라우저·generator는 모두 `$WORKTREE_DIR` 자체를 workspace root와 CWD로 사용한다.
@@ -113,6 +119,7 @@ type(scope): imperative summary
 push 직전에 `git fetch origin`을 다시 실행한다.
 
 - base 이후 변경이 현재 경로·contract와 무관하면 최신 main에서 만든 다른 안정적인 worktree에 안전하게 재적용한다.
+- 재적용용 worktree도 별도 활성 workspace이므로 primary worktree와 동일한 lock lifecycle을 사용한다.
 - 재적용 후 focused verification과 정적 진단 closure를 다시 실행한다.
 - 관련 경로·contract가 바뀌었으면 최신 상태를 읽고 현재 변경을 조정한 뒤 재검증한다.
 - fast-forward push를 시도한다.
@@ -120,6 +127,18 @@ push 직전에 `git fetch origin`을 다시 실행한다.
 - force push나 merge commit으로 경쟁 변경을 덮지 않는다.
 - SHA가 이동했다는 이유만으로 자동 중단하지 않는다.
 - 원격 이동 자체만으로 BLOCKED 처리하지 않는다.
+
+재적용 worktree를 만들 때도 생성과 동시에 lock한다.
+
+```bash
+REAPPLY_DIR="$WORKTREE_ROOT/${TASK_SLUG}-reapply"
+REAPPLY_CREATED_AT=$(date -u +%Y%m%dT%H%M%SZ)
+test ! -e "$REAPPLY_DIR"
+git worktree add \
+  --lock \
+  --reason "owner=game-agent task=$TASK_SLUG created=$REAPPLY_CREATED_AT phase=reapply" \
+  --detach "$REAPPLY_DIR" origin/main
+```
 
 ## 7. connector 기반 게시
 
@@ -171,11 +190,19 @@ COMMIT: <게시 SHA>
 
 ## 9. cleanup
 
-게시 또는 중단 후 자신이 만든 worktree만 제거한다.
+게시에 성공한 뒤 자신이 만든 detached worktree만 회수한다. 중단된 작업, dirty worktree 또는 아직 `origin/main`에 포함되지 않은 HEAD는 unlock하거나 제거하지 않고 경로를 보존한다.
 
 ```bash
+git -C <main-checkout> fetch origin --prune
+test -z "$(git -C "$WORKTREE_DIR" status --porcelain)"
+WORKTREE_HEAD=$(git -C "$WORKTREE_DIR" rev-parse HEAD)
+git -C <main-checkout> merge-base --is-ancestor "$WORKTREE_HEAD" origin/main
+git -C <main-checkout> worktree unlock "$WORKTREE_DIR"
 git -C <main-checkout> worktree remove "$WORKTREE_DIR"
-git -C <main-checkout> worktree prune
+git -C <main-checkout> worktree prune --dry-run --verbose
 ```
 
-다른 세션의 worktree·branch·dirty state를 정리하지 않는다.
+- unlock은 삭제 직전의 마지막 단계다. clean, published, self-owned 조건을 모두 확인하기 전에는 unlock하지 않는다.
+- plain `git worktree remove`가 실패하면 `--force`로 우회하지 않고 worktree를 보존한다.
+- `git worktree prune`은 정상 worktree 제거 수단이 아니다. `--dry-run`에서 이미 경로가 사라진 stale metadata가 확인된 경우에만 별도로 실행한다.
+- 다른 세션의 worktree·branch·dirty state를 정리하지 않는다.

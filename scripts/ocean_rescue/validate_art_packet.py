@@ -18,6 +18,7 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+SVG_NAMESPACE = "http://www.w3.org/2000/svg"
 ALLOWED_BUNDLES = {"characters", "scene", "effects-ui"}
 
 FORBIDDEN_SVG_ELEMENTS = {
@@ -162,7 +163,13 @@ def validate_svg(path: Path) -> None:
         fail(f"Malformed XML in {path.name}: {e}")
 
     root_elem = tree.getroot()
-    tag = root_elem.tag.split("}")[-1] if "}" in root_elem.tag else root_elem.tag
+    if not root_elem.tag.startswith("{"):
+        fail(f"Missing root SVG namespace in {path.name}")
+    root_ns = root_elem.tag.split("}")[0][1:]
+    if root_ns != SVG_NAMESPACE:
+        fail(f"Invalid root SVG namespace in {path.name}: got '{root_ns}'")
+
+    tag = root_elem.tag.split("}")[-1]
     if tag.lower() != "svg":
         fail(f"Root element is not <svg> in {path.name}: got <{tag}>")
 

@@ -333,8 +333,19 @@
     screenFlashContainer.alpha = 0;
 
     var screenFlashRect = new PIXI.Graphics();
-    screenFlashRect.rect(-WIDTH / 2, -HEIGHT / 2, WIDTH, HEIGHT);
-    screenFlashRect.fill(0xFFFFFF);
+    if (typeof screenFlashRect.rect === "function") {
+      screenFlashRect.rect(-WIDTH / 2, -HEIGHT / 2, WIDTH, HEIGHT);
+    } else if (typeof screenFlashRect.drawRect === "function") {
+      screenFlashRect.drawRect(-WIDTH / 2, -HEIGHT / 2, WIDTH, HEIGHT);
+    }
+    if (typeof screenFlashRect.fill === "function") {
+      screenFlashRect.fill(0xFFFFFF);
+    } else if (typeof screenFlashRect.beginFill === "function") {
+      screenFlashRect.beginFill(0xFFFFFF);
+      if (typeof screenFlashRect.endFill === "function") {
+        screenFlashRect.endFill();
+      }
+    }
     screenFlashContainer.addChild(screenFlashRect);
 
     nodes.screenFlash = screenFlashContainer;

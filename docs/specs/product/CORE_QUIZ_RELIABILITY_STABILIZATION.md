@@ -1,6 +1,6 @@
 # Core Quiz Reliability Stabilization
 
-- **Status:** ACTIVE
+- **Status:** COMPLETED — 4과목 핵심 journey 브라우저 반복 PASS 검증 완료
 - **Effective date:** 2026-08-06
 - **Scope:** AidenGame 일반 과목 문제풀이
 - **Subjects:** Math, English, Korean, Science
@@ -338,8 +338,4 @@ uv run pytest -q tests/test_nonmath_browser_acceptance.py
 
 ## 14. Immediate next action
 
-다음 개발 작업은 구현 수정이 아니다.
-
-> 최신 `origin/main`에서 Math, English, Korean, Science에 동일한 공통 브라우저 진단을 실행하고, 첫 실패 과목 또는 가장 큰 검증 공백을 식별한다.
-
-이 진단 결과를 바탕으로 첫 failure domain 하나를 선택한다. 이미 해결된 다음 문제 전환 결함을 추측으로 다시 작업 대상으로 만들지 않는다.
+네 과목(Math, English, Korean, Science)의 exit gate 브라우저 검증이 완료되었으므로 후속 작업은 `docs/plans/PLAN_A_TRACK_RUNTIME_EXECUTION_RUNBOOK.md`에 따라 진행한다.

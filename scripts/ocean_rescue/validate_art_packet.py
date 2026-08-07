@@ -39,7 +39,7 @@ FORBIDDEN_SVG_ATTRS = {
     "xlink:href",
 }
 URL_PATTERN = re.compile(
-    r"https?://|ftp://|data:(?:image|text|application)/", re.IGNORECASE
+    r"https?://|ftp://|javascript:|data:(?:image|text|application)/", re.IGNORECASE
 )
 URL_REF_PATTERN = re.compile(r"url\(\s*['\"]?#([^'\")\s]+)['\"]?\s*\)")
 

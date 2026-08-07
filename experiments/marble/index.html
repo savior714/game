@@ -1,158 +1,39 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <title>마블 머지!</title>
-  <link rel="stylesheet" href="../../styles.css">
-  <link rel="stylesheet" href="../space-explorer/space-explorer.css">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      background: var(--se-bg-deep);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      font-family: 'Arial Rounded MT Bold', 'Nanum Gothic', sans-serif;
-      overflow: hidden;
-    }
-
-    #app {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      position: relative;
-      padding: 12px;
-    }
-
-    #mb-header {
-      display: flex;
-      width: 320px;
-      justify-content: space-between;
-      align-items: center;
-      color: var(--se-text-primary);
-      font-size: 1rem;
-      font-weight: bold;
-    }
-
-    #mb-close-btn {
-      background: rgba(255,255,255,0.12);
-      border: none;
-      border-radius: 50%;
-      width: 30px;
-      height: 30px;
-      color: white;
-      font-size: 1rem;
-      cursor: pointer;
-      line-height: 1;
-    }
-
-    #mb-close-btn:hover {
-      background: rgba(239,68,68,0.6);
-    }
-
-    #marble-canvas {
-      border-radius: 12px;
-      cursor: crosshair;
-      display: block;
-      touch-action: none;
-      max-width: 100%;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-    }
-
-    #marble-over {
-      display: none;
-      position: absolute;
-      inset: 0;
-      background: rgba(15,15,26,0.94);
-      border-radius: 20px;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 14px;
-      color: white;
-      z-index: 100;
-    }
-
-    #marble-over h3 {
-      font-size: 2rem;
-    }
-
-    #marble-over p {
-      font-size: 1.2rem;
-      opacity: 0.85;
-    }
-
-    .mb-btn {
-      border: none;
-      border-radius: 14px;
-      font-size: 1rem;
-      font-weight: bold;
-      padding: 11px 26px;
-      cursor: pointer;
-    }
-
-    .mb-btn-primary {
-      background: #ff7043;
-      color: white;
-    }
-
-    .mb-btn-secondary {
-      background: rgba(255,255,255,0.15);
-      color: white;
-    }
-
-    .mb-btn:hover {
-      opacity: 0.85;
-    }
-
-    @keyframes mb-spark {
-      0% {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
-      }
-
-      100% {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(2.8) translateY(-18px);
-      }
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>모치팝! | 마블 머지</title>
+<style>
+html,body{margin:0;height:100%;display:grid;place-items:center;background:#ffeef4;color:#5b3b4d;font:800 16px system-ui,sans-serif}
+#loadError{max-width:32rem;padding:24px;text-align:center;line-height:1.6}
+</style>
 </head>
-<body class="se-page">
-
-<header class="site-header">
-  <h1 class="brand">Space Explorer</h1>
-  <nav aria-label="Main navigation">
-    <ul class="nav-list">
-      <li><a href="../../index.html">홈</a></li>
-      <li><a href="../space-explorer/index.html">태양계 탐험</a></li>
-      <li><a href="./index.html" aria-current="page">마블 머지</a></li>
-    </ul>
-  </nav>
-</header>
-
-<div id="app" style="margin-top: 60px;">
-  <div id="mb-header">
-    <span>🔮 마블 머지!</span>
-    <span>점수: <strong id="mb-score-val">0</strong></span>
-    <button id="mb-close-btn" onclick="mbClose()">✕</button>
-  </div>
-  <canvas id="marble-canvas" width="320" height="480"
-    onclick="onMbInput(event)"
-    onmousemove="onMbMove(event)"
-    ontouchstart="onMbInput(event)"
-    ontouchmove="onMbMove(event)"></canvas>
-  <div id="marble-over">
-    <h3>게임 종료!</h3>
-    <p>점수: <strong id="mb-final">0</strong></p>
-    <button class="mb-btn mb-btn-primary" onclick="mbClose()">닫기</button>
-  </div>
-</div>
-
-<script src="marble.js"></script>
+<body>
+<p id="loadError">마블 게임을 불러오는 중이에요…</p>
+<script src="mochipop.bundle.1.js"></script>
+<script src="mochipop.bundle.2.js"></script>
+<script src="mochipop.bundle.3.js"></script>
+<script>
+(async () => {
+  try {
+    if (!('DecompressionStream' in window)) {
+      throw new Error('이 브라우저는 게임 번들 압축 해제를 지원하지 않습니다.');
+    }
+    const encoded = window.__MOCHI_BUNDLE || '';
+    delete window.__MOCHI_BUNDLE;
+    const bytes = Uint8Array.from(atob(encoded), ch => ch.charCodeAt(0));
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));
+    const html = await new Response(stream).text();
+    document.open();
+    document.write(html);
+    document.close();
+  } catch (error) {
+    const target = document.getElementById('loadError');
+    if (target) target.textContent = '마블 게임을 불러오지 못했습니다. 최신 브라우저에서 다시 열어 주세요.';
+    console.error(error);
+  }
+})();
+</script>
 </body>
 </html>

@@ -153,7 +153,7 @@ def test_reinforcement_flow_a_to_b_to_a(static_server: str, page: Page) -> None:
     answer_buttons = page.locator(".answer-btn")
     next_button = page.locator("#next-btn")
 
-    # --- Pre-seed wrongPatterns with known question A (2 + 3 = 5) ---
+    # --- Force initial question to be A (2 + 3 = 5) via askQuestion() ---
     page.evaluate(
         """
         () => {
@@ -161,11 +161,17 @@ def test_reinforcement_flow_a_to_b_to_a(static_server: str, page: Page) -> None:
             { op: '+', level: 0, a: 2, b: 3, tag: 'add_unit_2_3' },
           ];
           recentQuestions = [];
+          _lastQuestionKey = '';
+          Math.random = () => 0.4;
+          askQuestion();
         }
         """
     )
 
-    # --- Q1: answer incorrectly → Q1 added to wrongPatterns (this is question A) ---
+    a_key = _get_question_key(page)
+    assert a_key == "2,3+", f"Initial question must be pre-seeded A (2+3), got {a_key}"
+
+    # --- Q1: answer A incorrectly ---
     correct_answer = page.evaluate("String(answer)")
     wrong_index = _get_wrong_answer_index(page, correct_answer)
     answer_buttons.nth(wrong_index).click()
@@ -173,24 +179,24 @@ def test_reinforcement_flow_a_to_b_to_a(static_server: str, page: Page) -> None:
     page.wait_for_function("answered === true", timeout=5000)
     expect(next_button).to_be_visible()
 
-    a_key = _get_question_key(page)
-    assert a_key, "Question A must have a valid key"
+    # --- Set Math.random to non-reinforcement (0.8) so Q2 becomes B (different from A) ---
+    page.evaluate("Math.random = () => 0.8;")
 
-    # --- Q2: advance → B appears (different from A) ---
+    # --- Q2: advance → B appears (guaranteed different from A="2,3+") ---
     next_button.click()
     page.wait_for_function("answered === false", timeout=5000)
 
     b_key = _get_question_key(page)
-    assert b_key != a_key, f"B must differ from A: {a_key} -> {b_key}"
+    assert b_key != "2,3+", f"B must differ from A (2,3+): got {b_key}"
 
-    # --- Q2: answer correctly → B removed from wrongPatterns, next shows ---
+    # --- Q2: answer B correctly ---
     correct_answer = page.evaluate("String(answer)")
     page.locator(f".answer-btn:text-is('{correct_answer}')").click()
     page.wait_for_function("answered === true", timeout=5000)
     expect(next_button).to_be_visible()
 
-    # --- Clear wrongPatterns and restore ONLY A, clear recentQuestions,
-    #     seed Math.random to force reinforcement path (skip weakness 30%, trigger 45%) ---
+    # --- Clear recentQuestions, normalize wrongPatterns to ONLY A,
+    #     seed Math.random to force reinforcement path (0.4) ---
     page.evaluate(
         """
         () => {

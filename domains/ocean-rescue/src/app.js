@@ -1752,6 +1752,12 @@
       } catch (bridgeError) {
         started = false;
       }
+    } else if (typeof App.startSeaTurtleInteraction === "function") {
+      try {
+        started = App.startSeaTurtleInteraction(sequence);
+      } catch (bridgeError) {
+        started = false;
+      }
     }
     if (!started) {
       var fallbackCanvas = resolveVisibleInputCanvas();

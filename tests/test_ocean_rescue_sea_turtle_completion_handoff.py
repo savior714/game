@@ -46,14 +46,14 @@ def test_host_api_declares_on_sea_turtle_interaction_complete() -> None:
 
 def test_controller_terminal_branch_calls_interaction_complete() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function completeSeaTurtleFeedback")[1].split("function ")[0]
+    body = text.split("function finishActiveFeedback")[1].split("function ")[0]
     assert "onSeaTurtleInteractionComplete(session)" in body
     assert "result.complete === true" in body
 
 
 def test_controller_terminal_branch_does_not_call_feedback_complete() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function completeSeaTurtleFeedback")[1].split("function ")[0]
+    body = text.split("function finishActiveFeedback")[1].split("function ")[0]
     # The terminal branch must not call the general feedback callback
     # Find the terminal branch section
     terminal_section = body.split("result.complete === true")[1].split("result.complete === false")[0]
@@ -62,7 +62,7 @@ def test_controller_terminal_branch_does_not_call_feedback_complete() -> None:
 
 def test_controller_non_terminal_branch_keeps_feedback_complete() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function completeSeaTurtleFeedback")[1].split("function ")[0]
+    body = text.split("function finishActiveFeedback")[1].split("function ")[0]
     non_terminal = body.split("result.complete === false")[1] if "result.complete === false" in body else ""
     assert "onSeaTurtleFeedbackComplete(sequence, result)" in non_terminal
 

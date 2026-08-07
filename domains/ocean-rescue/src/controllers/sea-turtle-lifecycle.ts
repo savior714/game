@@ -77,6 +77,13 @@ export interface SeaTurtleLifecycleHostApi extends PauseTimerResumeAppApi {
     snapshot: SeaTurtleSnapshot,
     intent?: PointerIntent,
   ): void;
+  renderSeaTurtleFrame(
+    snapshot: SeaTurtleSnapshot,
+    intent?: PointerIntent,
+  ): void;
+  updateSeaTurtleRootMarkers(): void;
+  syncSeaTurtleScene(intent?: PointerIntent): void;
+  routeSeaTurtleFeedback(result: SeaTurtleRopeResult): void;
   onSeaTurtleFeedbackComplete(
     sequence: SeaTurtleFeedbackSequence,
     result: SeaTurtleFeedbackCompletion,
@@ -96,6 +103,7 @@ export interface SeaTurtleLifecycleAppApi extends SeaTurtleLifecycleHostApi {
   isSeaTurtleActive(): boolean;
   getSeaTurtleSnapshot(): SeaTurtleSnapshot | null;
   startSeaTurtleSession(sequence: RescueSiteSequence): boolean;
+  startSeaTurtleInteraction(sequence: RescueSiteSequence): boolean;
   stopSeaTurtleSession(): boolean;
   getActiveSeaTurtleSession(): SeaTurtleSessionRef | null;
   isSeaTurtleSessionActive(): boolean;
@@ -231,6 +239,10 @@ export function installSeaTurtleLifecycleController(
     host.syncPauseButton();
 
     return true;
+  }
+
+  function startSeaTurtleInteraction(sequence: RescueSiteSequence): boolean {
+    return startSeaTurtleSession(sequence);
   }
 
   function stopSeaTurtleSession(): boolean {
@@ -709,19 +721,19 @@ export function installSeaTurtleLifecycleController(
       function (): void {
         pendingFeedbackTimer = false;
         feedbackFlushHook = null;
-        completeSeaTurtleFeedback(capturedSequence);
+        finishActiveFeedback(capturedSequence);
       },
     );
     feedbackFlushHook = function (): void {
       pendingFeedbackTimer = false;
       feedbackFlushHook = null;
-      completeSeaTurtleFeedback(capturedSequence);
+      finishActiveFeedback(capturedSequence);
     };
 
     return true;
   }
 
-  function completeSeaTurtleFeedback(
+  function finishActiveFeedback(
     sequence: SeaTurtleFeedbackSequence,
   ): void {
     if (!SeaTurtle) {
@@ -789,6 +801,7 @@ export function installSeaTurtleLifecycleController(
     getSeaTurtleSnapshot,
     getActiveSeaTurtleSession,
     isSeaTurtleSessionActive,
+    startSeaTurtleInteraction,
     startSeaTurtleSession,
     stopSeaTurtleSession,
     syncSeaTurtleProjection,

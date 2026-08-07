@@ -91,10 +91,9 @@ Loop 02 must not be loop 01 with different rotation, different scale, mirroring,
 
 # Required structure
 
-- Root element: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 200">`
 - Root viewBox: `0 0 120 200`
+- Required root group: `scene-seaweed-loop-02`
 - Transparent background
-- Root semantic group ID: `scene-seaweed-loop-02`
 - Deterministic local IDs prefixed with asset ID if `<defs>` or gradients are used
 - Finite numeric coordinates and transforms
 - Independently editable vector geometry

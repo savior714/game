@@ -66,6 +66,10 @@
 
 기능별 문서는 실제 코드와 직접 관련된 경우에만 읽는다.
 
+| 문서 | 상태 | 역할 |
+|---|---|---|
+| [`AIDENGAME_YOUTUBE_FREE_TIME_SESSION.md`](specs/product/AIDENGAME_YOUTUBE_FREE_TIME_SESSION.md) | `APPROVED_PRODUCT_CONTRACT_NOT_IMPLEMENTED` | 외부 YouTube 탭, 15분 자유시간 차감, 독립 타이머·PiP fallback·종료 경고 계약. 현재 일반 과목 안정화 우선순위를 자동 변경하지 않음 |
+
 - `docs/specs/product/`: 제품 동작과 수용 기준
 - `docs/specs/technical/`: 기술 구조와 경계 또는 명시적으로 분류된 참고
 - `docs/ops/`: 실제 운영 절차가 존재하는 경우의 운영 참고

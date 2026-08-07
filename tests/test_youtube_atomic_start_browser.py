@@ -459,3 +459,171 @@ def test_youtube_already_active() -> None:
 
     errors = (page_errors, console_errors, request_failures, youtube_requests)
     _assert_quality_gates(errors)
+
+
+def test_youtube_audio_context_is_primed_on_start_click_and_reused_at_expiry() -> None:
+    server = HTTPServerFixture()
+    base_url = server.start()
+    domain_url = f"{base_url}/domains/math/index.html"
+
+    errors = None
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page(
+                viewport={"width": LOGICAL_WIDTH, "height": LOGICAL_HEIGHT},
+            )
+            page_errors, console_errors, request_failures, youtube_requests = _instrument(
+                page, base_url
+            )
+
+            page.goto(domain_url, wait_until="domcontentloaded", timeout=15000)
+            page.wait_for_timeout(2000)
+
+            page.evaluate("""() => {
+              localStorage.setItem('study_rewards', JSON.stringify({ gems: 10, youtube_minutes: 30, snacks: 2 }));
+              if (typeof RewardSystem !== 'undefined') {
+                const s = RewardSystem.getState();
+                s.gems = 10;
+                s.youtube_minutes = 30;
+                s.snacks = 2;
+              }
+            }""")
+
+            _open_youtube_modal(page)
+            page.wait_for_timeout(500)
+
+            _answer_parent_lock(page)
+            page.click("#yt-unlock-trigger")
+            page.wait_for_timeout(500)
+
+            # Instrument AudioContext probe and window.open before start click
+            page.evaluate("""() => {
+              window.__ytAudioProbe = {
+                constructorCount: 0,
+                resumeCount: 0,
+                resumeCountAtLaunch: null,
+                oscillatorStartCount: 0,
+                events: []
+              };
+
+              class FakeAudioContext {
+                constructor() {
+                  window.__ytAudioProbe.constructorCount++;
+                  window.__ytAudioProbe.events.push("construct");
+                  this.state = "suspended";
+                  this.destination = {};
+                }
+                resume() {
+                  window.__ytAudioProbe.resumeCount++;
+                  window.__ytAudioProbe.events.push("resume");
+                  this.state = "running";
+                  return Promise.resolve();
+                }
+                createOscillator() {
+                  return {
+                    type: 'sine',
+                    frequency: { setValueAtTime: () => {} },
+                    connect: () => {},
+                    start: () => {
+                      window.__ytAudioProbe.oscillatorStartCount++;
+                      window.__ytAudioProbe.events.push("oscillator_start");
+                    },
+                    stop: () => {}
+                  };
+                }
+                createGain() {
+                  return {
+                    gain: { setValueAtTime: () => {}, exponentialRampToValueAtTime: () => {} },
+                    connect: () => {}
+                  };
+                }
+                get currentTime() { return 0; }
+              }
+
+              window.AudioContext = FakeAudioContext;
+              window.webkitAudioContext = FakeAudioContext;
+
+              window._launcherCalls = [];
+              const origOpen = window.open.bind(window);
+              window.open = function(url, target, features) {
+                window.__ytAudioProbe.resumeCountAtLaunch = window.__ytAudioProbe.resumeCount;
+                window.__ytAudioProbe.events.push("launch");
+                if (url === 'about:blank') window._launcherCalls.push('about:blank');
+                return origOpen(url, target, features) || { location: {}, close: function() {} };
+              };
+            }""")
+
+            # Click start button
+            _click_start_button(page)
+            page.wait_for_timeout(500)
+
+            probe_start = page.evaluate("() => window.__ytAudioProbe")
+
+            # Assertions after start click:
+            assert probe_start["constructorCount"] >= 1, f"AudioContext constructor should be called on start click, got {probe_start['constructorCount']}"
+            assert probe_start["resumeCount"] >= 1, f"resume() should be called on start click, got {probe_start['resumeCount']}"
+            assert probe_start["resumeCountAtLaunch"] is not None and probe_start["resumeCountAtLaunch"] >= 1, (
+                f"Audio priming must happen before external tab launch, resumeCountAtLaunch: {probe_start['resumeCountAtLaunch']}"
+            )
+
+            # Event ordering check: 'resume' (or 'construct') before 'launch'
+            events = probe_start["events"]
+            assert "launch" in events, "launch event missing"
+            launch_idx = events.index("launch")
+            resume_idx = events.index("resume") if "resume" in events else -1
+            assert resume_idx != -1 and resume_idx < launch_idx, f"resume event must precede launch event, events: {events}"
+
+            # No audible sound during prime
+            assert probe_start["oscillatorStartCount"] == 0, (
+                f"No sound/oscillator should be started during priming, got {probe_start['oscillatorStartCount']}"
+            )
+
+            # Verify session start contract intact
+            assert _get_reward_minutes(page) == 15, f"Expected 15 minutes remaining, got {_get_reward_minutes(page)}"
+            assert _get_session_count(page) == 1, "Session should be created"
+
+            # Force expiry via controlled deadline in localStorage without calling renderExpiryOverlay directly
+            page.evaluate("""() => {
+              const raw = localStorage.getItem('study_youtube_free_time_session_v1');
+              if (raw) {
+                const s = JSON.parse(raw);
+                s.endsAt = Date.now() - 1000;
+                s.deadline = Date.now() - 1000;
+                localStorage.setItem('study_youtube_free_time_session_v1', JSON.stringify(s));
+              }
+            }""")
+
+            # Wait for production timer loop to fire deadline detection (timer interval is 1s)
+            page.wait_for_timeout(1500)
+
+            probe_expiry = page.evaluate("() => window.__ytAudioProbe")
+
+            # Expiry assertions:
+            assert probe_expiry["constructorCount"] == 1, (
+                f"AudioContext constructor count should stay at 1 (reused), got {probe_expiry['constructorCount']}"
+            )
+            assert probe_expiry["oscillatorStartCount"] >= 1, (
+                f"Oscillator tone should be triggered at expiry, got {probe_expiry['oscillatorStartCount']}"
+            )
+
+            # Expiry overlay visible
+            overlay_visible = page.evaluate("""() => {
+              const el = document.getElementById('yt-expired-overlay');
+              return el ? (el.offsetWidth > 0 && el.offsetHeight > 0) : false;
+            }""")
+            assert overlay_visible, "Expiry overlay should be visible after deadline"
+
+            # Persisted status is expired
+            persisted_status = page.evaluate("""() => {
+              const raw = localStorage.getItem('study_youtube_free_time_session_v1');
+              return raw ? JSON.parse(raw).status : null;
+            }""")
+            assert persisted_status == "expired", f"Expected persisted status expired, got {persisted_status}"
+
+            browser.close()
+    finally:
+        server.stop()
+
+    errors = (page_errors, console_errors, request_failures, youtube_requests)
+    _assert_quality_gates(errors)

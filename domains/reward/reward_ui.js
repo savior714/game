@@ -9,6 +9,26 @@ const RewardSystemUI = (() => {
   let resizeBound = false;
   let authListenerBound = false;
   let cachedGlobalBaseUrl = null;
+  let freeTimeAlertAudioContext = null;
+
+  function primeFreeTimeAlertAudio() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      if (!freeTimeAlertAudioContext || freeTimeAlertAudioContext.state === 'closed') {
+        freeTimeAlertAudioContext = new AudioCtx();
+      }
+      if (freeTimeAlertAudioContext && freeTimeAlertAudioContext.state === 'suspended') {
+        const res = freeTimeAlertAudioContext.resume();
+        if (res && typeof res.catch === 'function') {
+          res.catch(() => {});
+        }
+      }
+    } catch (e) {
+      // Audio priming is best-effort side effect
+    }
+  }
+
 
   function getGlobalBaseUrl() {
     if (cachedGlobalBaseUrl) return cachedGlobalBaseUrl;
@@ -461,6 +481,12 @@ const RewardSystemUI = (() => {
       startBtn.disabled = true;
       resultMsg.style.display = 'none';
 
+      try {
+        primeFreeTimeAlertAudio();
+      } catch (e) {
+        // audio preparation failure must not block session start
+      }
+
       const result = RewardSystem.startYouTubeSession();
       showResult(result.code);
 
@@ -692,7 +718,17 @@ const RewardSystemUI = (() => {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
-      const ctx = new AudioCtx();
+      let ctx = freeTimeAlertAudioContext;
+      if (!ctx || ctx.state === 'closed') {
+        ctx = new AudioCtx();
+        freeTimeAlertAudioContext = ctx;
+      }
+      if (ctx.state === 'suspended') {
+        const res = ctx.resume();
+        if (res && typeof res.catch === 'function') {
+          res.catch(() => {});
+        }
+      }
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
@@ -754,9 +790,20 @@ const RewardSystemUI = (() => {
 
   function startTimerLoop(session) {
     if (timerIntervalId) clearInterval(timerIntervalId);
-    const deadline = session.endsAt || session.deadline || Date.now();
 
     function update() {
+      try {
+        const raw = localStorage.getItem('study_youtube_free_time_session_v1');
+        if (raw) {
+          const saved = JSON.parse(raw);
+          if (saved && saved.sessionId === session.sessionId) {
+            session.endsAt = saved.endsAt || session.endsAt;
+            session.deadline = saved.deadline || session.deadline;
+          }
+        }
+      } catch (e) {}
+
+      const deadline = session.endsAt || session.deadline || Date.now();
       const remainingMs = Math.max(0, deadline - Date.now());
       const formatted = formatTimeMMSS(remainingMs);
       const textEl = document.getElementById('yt-timer-text');

@@ -63,12 +63,9 @@ def _dump_json(data: Any, path: Path) -> None:
 
 
 def _get_cairo_version() -> str:
-    try:
-        import cairocffi
+    import cairocffi
 
-        return str(cairocffi.cairo_version_string())
-    except Exception:
-        return "unknown"
+    return str(cairocffi.cairo_version_string())
 
 
 def _get_installed_version(distribution_name: str) -> str:

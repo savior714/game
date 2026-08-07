@@ -1,6 +1,6 @@
 # AidenGame YouTube 자유시간 세션 제품 스펙
 
-- 상태: `APPROVED_PRODUCT_CONTRACT_NOT_IMPLEMENTED`
+- 상태: `APPROVED_PRODUCT_CONTRACT_IMPLEMENTED`
 - 기준일: 2026-08-07
 - 적용 범위: `domains/reward/`의 유튜브 15분 보상 사용 흐름
 - 갱신 책임: 보상 정책, 외부 실행 방식, 타이머 종료 계약 또는 브라우저 지원 경계가 바뀔 때

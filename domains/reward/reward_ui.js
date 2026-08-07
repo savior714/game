@@ -679,10 +679,112 @@ const RewardSystemUI = (() => {
     }
   });
 
+  let timerIntervalId = null;
+
+  function formatTimeMMSS(ms) {
+    const totalSec = Math.max(0, Math.floor(ms / 1000));
+    const mins = Math.floor(totalSec / 60);
+    const secs = totalSec % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  }
+
+  function startTimerLoop(session) {
+    if (timerIntervalId) clearInterval(timerIntervalId);
+    const deadline = session.endsAt || session.deadline || Date.now();
+
+    function update() {
+      const remainingMs = Math.max(0, deadline - Date.now());
+      const formatted = formatTimeMMSS(remainingMs);
+      const textEl = document.getElementById('yt-timer-text');
+      if (textEl) textEl.textContent = formatted;
+
+      const progressEl = document.getElementById('yt-timer-progress');
+      if (progressEl && session.durationMs > 0) {
+        const pct = Math.min(100, Math.max(0, (remainingMs / session.durationMs) * 100));
+        progressEl.style.width = `${pct}%`;
+      }
+
+      if (remainingMs <= 0) {
+        clearInterval(timerIntervalId);
+        timerIntervalId = null;
+      }
+    }
+
+    update();
+    timerIntervalId = setInterval(update, 1000);
+  }
+
+  function renderFreeTimeTimerUI(session) {
+    if (!session || session.status !== 'running') return;
+    const deadline = session.endsAt || session.deadline || Date.now();
+
+    // 1. Try Document Picture-in-Picture if available and requested
+    if ('documentPictureInPicture' in window && typeof window.documentPictureInPicture.requestWindow === 'function') {
+      try {
+        window.documentPictureInPicture.requestWindow({ width: 320, height: 140 }).then((pipWin) => {
+          pipWin.document.body.innerHTML = `
+            <div style="font-family: sans-serif; padding: 12px; background: #0f172a; color: white; border-radius: 8px; text-align: center;">
+              <div style="font-size: 0.9rem; font-weight: bold; color: #f43f5e;">📺 유튜브 자유시간</div>
+              <div id="pip-timer-text" style="font-size: 2rem; font-weight: bold; margin: 6px 0;">${formatTimeMMSS(deadline - Date.now())}</div>
+              <div style="font-size: 0.75rem; color: #94a3b8;">게임 탭을 닫지 마세요</div>
+            </div>
+          `;
+          const pipInterval = setInterval(() => {
+            const rem = Math.max(0, deadline - Date.now());
+            const text = pipWin.document.getElementById('pip-timer-text');
+            if (text) text.textContent = formatTimeMMSS(rem);
+            if (rem <= 0) clearInterval(pipInterval);
+          }, 1000);
+          pipWin.addEventListener('unload', () => clearInterval(pipInterval));
+          return;
+        }).catch(() => {
+          renderFixedTabTimerBar(session);
+        });
+        // Still render fixed tab timer bar in case PiP window is backgrounded or fails
+        renderFixedTabTimerBar(session);
+        return;
+      } catch (e) {
+        renderFixedTabTimerBar(session);
+        return;
+      }
+    }
+
+    renderFixedTabTimerBar(session);
+  }
+
+  function renderFixedTabTimerBar(session) {
+    let timerBar = document.getElementById('youtube-free-time-timer');
+    if (!timerBar) {
+      timerBar = document.createElement('div');
+      timerBar.id = 'youtube-free-time-timer';
+      timerBar.className = 'youtube-timer-bar';
+      timerBar.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; z-index: 9999;
+        background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
+        color: white; padding: 8px 16px; display: flex; align-items: center; justify-content: space-between;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3); font-family: sans-serif; font-size: 0.95rem; font-weight: bold;
+      `;
+      timerBar.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span>📺 유튜브 자유시간</span>
+          <div style="width: 120px; height: 6px; background: #334155; border-radius: 3px; overflow: hidden;">
+            <div id="yt-timer-progress" style="height: 100%; width: 100%; background: #f43f5e; transition: width 1s linear;"></div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span id="yt-timer-text" style="font-size: 1.2rem; color: #f43f5e; font-variant-numeric: tabular-nums;">--:--</span>
+          <span style="font-size: 0.75rem; color: #94a3b8; font-weight: normal;">(게임 탭 유치)</span>
+        </div>
+      `;
+      document.body.prepend(timerBar);
+    }
+    startTimerLoop(session);
+  }
+
   return {
     injectCriticalStyles, injectStyles, injectInventoryBar, syncInventoryBarWithState, applyBodyTopOffset, updateUI,
     playEntranceAndAddGem, openShopModal, spawnExplosion, showToast, showGrowthToast,
-    openYoutubeModal, openSnackModal, openMarbleModal, openCustomModal
+    openYoutubeModal, openSnackModal, openMarbleModal, openCustomModal, renderFreeTimeTimerUI
   };
 })();
 

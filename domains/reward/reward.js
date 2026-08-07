@@ -224,6 +224,9 @@ const RewardSystem = (() => {
 
     if (result.code === 'started') {
       refreshFromStorage();
+      if (typeof RewardSystemUI !== 'undefined' && typeof RewardSystemUI.renderFreeTimeTimerUI === 'function') {
+        RewardSystemUI.renderFreeTimeTimerUI(result.session);
+      }
     }
 
     return result;
@@ -244,6 +247,20 @@ const RewardSystem = (() => {
     if (!cloudSyncListenerBound) {
       cloudSyncListenerBound = true;
       window.addEventListener('cloud-sync-complete', refreshFromStorage);
+    }
+    // Check for active youtube free time session on init
+    try {
+      const rawSession = localStorage.getItem('study_youtube_free_time_session_v1');
+      if (rawSession && typeof FreeTimeSession !== 'undefined') {
+        const saved = JSON.parse(rawSession);
+        const restored = FreeTimeSession.restore({ savedSession: saved, now: Date.now() });
+        const sel = FreeTimeSession.select(restored, Date.now());
+        if (sel.active && typeof RewardSystemUI !== 'undefined' && typeof RewardSystemUI.renderFreeTimeTimerUI === 'function') {
+          RewardSystemUI.renderFreeTimeTimerUI(restored);
+        }
+      }
+    } catch (e) {
+      // ignore init restore failure
     }
   }
 

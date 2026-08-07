@@ -183,7 +183,11 @@ def validate_svg(path: Path) -> None:
             fail(f"Forbidden element <{local}> in: {path.name}")
         for attr_name in elem.attrib:
             local_attr = attr_name.split("}")[-1] if "}" in attr_name else attr_name
-            if local_attr.lower() in FORBIDDEN_SVG_ATTRS:
+            normalized_attr = local_attr.lower()
+            if (
+                normalized_attr.startswith("on")
+                or normalized_attr in FORBIDDEN_SVG_ATTRS
+            ):
                 fail(f"Forbidden attribute '{local_attr}' in: {path.name}")
         for child in elem:
             check_elements(child)

@@ -232,6 +232,84 @@ class TestForbiddenSvgContentRejection:
             or "foreignobject" in result.stderr.lower()
         )
 
+    @pytest.mark.parametrize("event_attr", ["onfocus", "onauxclick", "onpointerenter"])
+    def test_svg_with_unlisted_on_event_attributes_rejected(
+        self, tmp_path: Path, event_attr: str
+    ):
+        packet = _load_packet()
+        svg_content = (
+            f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">\n'
+            f'  <rect width="100" height="100" {event_attr}="alert(1)"/>\n'
+            f"</svg>"
+        )
+        bad_dir = tmp_path / f"bad_svg_{event_attr}"
+        bad_dir.mkdir()
+
+        import hashlib
+
+        modified_hash = hashlib.sha256(svg_content.encode("utf-8")).hexdigest()
+
+        modified_packet = json.loads(json.dumps(packet))
+        for asset in modified_packet["assets"]:
+            if asset["alias"] == "otter.head":
+                asset["sourceSha256"] = modified_hash
+
+        (bad_dir / "art-packet.json").write_text(
+            json.dumps(modified_packet, indent=2), encoding="utf-8"
+        )
+        for asset in packet["assets"]:
+            if asset["alias"] == "otter.head":
+                dst = bad_dir / asset["source"]
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                dst.write_text(svg_content, encoding="utf-8")
+            else:
+                src = ASSETS_SOURCE / asset["source"]
+                dst = bad_dir / asset["source"]
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                dst.write_bytes(src.read_bytes())
+
+        result = _run_validator(bad_dir)
+        assert result.returncode != 0, f"Validator must reject SVG with {event_attr}"
+        assert f"Forbidden attribute '{event_attr}'" in result.stderr
+
+    def test_svg_with_valid_non_event_attributes_passes(self, tmp_path: Path):
+        packet = _load_packet()
+        svg_content = (
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">\n'
+            '  <rect width="100" height="100" fill="#ff0000" opacity="0.8"/>\n'
+            "</svg>"
+        )
+        valid_dir = tmp_path / "valid_svg_attrs"
+        valid_dir.mkdir()
+
+        import hashlib
+
+        modified_hash = hashlib.sha256(svg_content.encode("utf-8")).hexdigest()
+
+        modified_packet = json.loads(json.dumps(packet))
+        for asset in modified_packet["assets"]:
+            if asset["alias"] == "otter.head":
+                asset["sourceSha256"] = modified_hash
+
+        (valid_dir / "art-packet.json").write_text(
+            json.dumps(modified_packet, indent=2), encoding="utf-8"
+        )
+        for asset in packet["assets"]:
+            if asset["alias"] == "otter.head":
+                dst = valid_dir / asset["source"]
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                dst.write_text(svg_content, encoding="utf-8")
+            else:
+                src = ASSETS_SOURCE / asset["source"]
+                dst = valid_dir / asset["source"]
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                dst.write_bytes(src.read_bytes())
+
+        result = _run_validator(valid_dir)
+        assert result.returncode == 0, (
+            f"Validator must pass on valid attributes: {result.stderr}"
+        )
+
 
 class TestInvalidPivotRejection:
     def test_out_of_range_pivot_rejected(self, tmp_path: Path):

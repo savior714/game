@@ -17,6 +17,8 @@ ALIASES = [
     "scene.coral.foreground",
     "scene.submarine",
     "scene.seaweed-loop.01",
+    "scene.seaweed-loop.02",
+    "scene.seaweed-loop.03",
     "scene.sand-path",
     "scene.passage",
     "otter.tail",
@@ -72,7 +74,8 @@ def test_scene_declares_exact_required_alias_set():
     source = text(SCENE)
     for alias in ALIASES:
         assert f'"{alias}"' in source
-    assert source.count('"scene.seaweed-loop.01"') == 2
+    for num in ("01", "02", "03"):
+        assert f'"scene.seaweed-loop.{num}"' in source
 
 
 def test_scene_requires_all_aliases_before_mount():
@@ -88,15 +91,15 @@ def test_scene_uses_single_bounded_sprite_creation_helper():
     source = text(SCENE)
     assert source.count("new PIXI.Sprite(texture)") == 1
     assert "function makeSprite(alias, label)" in source
-    assert "texture.defaultAnchor" in source
-    assert "sprite.anchor.copyFrom" in source
+    assert "_applyTrimAnchor(sprite, texture)" in source
 
 
-def test_scene_creates_exactly_three_retained_loops_from_one_alias():
+def test_scene_creates_exactly_three_retained_loops_from_authored_aliases():
     source = text(SCENE)
     assert "nodes.loops.push" in source
     assert "for (var i = 0; i < 3; i += 1)" in source
-    assert 'makeSprite("scene.seaweed-loop.01"' in source
+    assert 'var loopAlias = "scene.seaweed-loop.0" + (i + 1);' in source
+    assert "makeSprite(loopAlias," in source
     assert 'loop-count", 3' in source
 
 

@@ -244,8 +244,8 @@ def test_scene_has_no_asset_specific_anchor_hardcodes():
 
 def test_helper_applied_to_each_loop_sprite_at_creation():
     scene = _scene()
-    assert 'makeSprite("scene.seaweed-loop.01"' in scene
-    assert "centerAnchorOnTrimmedVisibleFrame(loopSprite)" in scene
+    assert "makeSprite(loopAlias," in scene
+    assert "_applyTrimAnchor(sprite, texture)" in scene
     assert "nodes.loops.push(loopSprite)" in scene
 
 

@@ -10,6 +10,8 @@
     "scene.coral.foreground",
     "scene.submarine",
     "scene.seaweed-loop.01",
+    "scene.seaweed-loop.02",
+    "scene.seaweed-loop.03",
     "scene.sand-path",
     "scene.passage",
     "otter.tail",
@@ -241,7 +243,8 @@
       hudLoops: []
     };
     for (var i = 0; i < 3; i += 1) {
-      var loopSprite = makeSprite("scene.seaweed-loop.01", "sea-turtle-loop-" + (i + 1));
+      var loopAlias = "scene.seaweed-loop.0" + (i + 1);
+      var loopSprite = makeSprite(loopAlias, "sea-turtle-loop-" + (i + 1));
       nodes.loops.push(loopSprite);
     }
     for (var h = 0; h < 3; h += 1) {

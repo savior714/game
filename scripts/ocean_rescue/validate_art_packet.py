@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -165,8 +166,31 @@ def validate_svg(path: Path) -> None:
     if tag.lower() != "svg":
         fail(f"Root element is not <svg> in {path.name}: got <{tag}>")
 
-    if root_elem.get("viewBox") is None:
+    viewbox_attr = root_elem.get("viewBox")
+    if viewbox_attr is None:
         fail(f"Missing viewBox in: {path.name}")
+
+    parts = [p for p in re.split(r"[,\s]+", viewbox_attr.strip()) if p]
+    if len(parts) != 4:
+        fail(
+            f"Invalid viewBox in {path.name}: expected 4 numeric components, got '{viewbox_attr}'"
+        )
+
+    try:
+        coords = [float(p) for p in parts]
+    except ValueError:
+        fail(f"Invalid viewBox in {path.name}: non-numeric value in '{viewbox_attr}'")
+
+    if not all(math.isfinite(c) for c in coords):
+        fail(
+            f"Invalid viewBox in {path.name}: non-finite numeric value in '{viewbox_attr}'"
+        )
+
+    min_x, min_y, width, height = coords
+    if width <= 0 or height <= 0:
+        fail(
+            f"Invalid viewBox in {path.name}: width and height must be strictly positive, got width={width}, height={height}"
+        )
 
     seen_ids: set[str] = set()
     for elem in root_elem.iter():

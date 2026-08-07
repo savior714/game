@@ -52,6 +52,7 @@ let wrongPatterns = [];
 let currentQData  = null; // { op, level, a, b, tag, isWeakness }
 let recentHistory = []; // 최근 5문제 정답 여부
 let recentQuestions = []; // 최근 10문제 (중복 방지용 키)
+let _lastQuestionKey = ''; // 직전 문제 키 (강화 복습 중복 경계용)
 
 /* ═══════════════════════════════════
    통계 (localStorage)
@@ -173,10 +174,18 @@ function generateQuestion() {
     const candidate = _generateCandidate();
     const key = [candidate.a, candidate.b].sort((a, b) => a - b).join(',') + candidate.op;
 
-    // reinforcement 문제도 최근 출제 중복을 피한다.
-    if (!recentQuestions.includes(key)) {
-      q = candidate;
-      break;
+    if (candidate.isReinforcement) {
+      // 강화 복습: 직전 문제와 다르면 출제 가능 (최근 10문항 중복 검사 제외)
+      if (key !== _lastQuestionKey) {
+        q = candidate;
+        break;
+      }
+    } else {
+      // 일반 문제: 최근 10문항 중복 방지
+      if (!recentQuestions.includes(key)) {
+        q = candidate;
+        break;
+      }
     }
     tries++;
   }
@@ -258,6 +267,7 @@ function askQuestion() {
 
     // 중복 방지 큐에 추가
     const qKey = [q.a, q.b].sort((a, b) => a - b).join(',') + q.op;
+    _lastQuestionKey = qKey;
     recentQuestions.push(qKey);
     if (recentQuestions.length > RECENT_LIMIT) recentQuestions.shift();
 

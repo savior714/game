@@ -1,213 +1,202 @@
-# AidenGame Ocean Rescue — Track B Continuation Runbook
+# AidenGame Ocean Rescue — Track B Active Continuation Runbook
 
-- Version: v1.0
+- Version: v1.1
 - Date: 2026-08-07
 - Status: ACTIVE
-- Track: B — asset/content production, proof, approval, atlas, registry and packaging provenance
+- Track: B — asset/content production, proof, approval, atlas, registry, manifest and packaging provenance
 - Predecessor: `docs/plans/AIDENGAME_OCEAN_RESCUE_TRACK_B_EXECUTION_RUNBOOK.md`
-- Review baseline: `8c28208ddaacde5490a4eea0741416de5231e90f`
+- Status refresh baseline: `25887c30a8359a25b1df7ca5b7a70d5bc473ce25`
 
 ---
 
-## 1. Purpose
+## 1. Current state at the status refresh baseline
 
-This runbook starts after the first Track B execution runbook and its eight maintenance-inventory surfaces have been exercised.
+The predecessor Track B execution runbook has already exercised the initial asset-pipeline integrity inventory and published its fixes. The continuation phase is not complete.
 
-It has two jobs, in this order:
+The current executable order is:
 
-1. close concrete approval-provenance gaps discovered by frontier review of the completed runbook;
-2. continue Ocean Rescue Track B through one-asset-at-a-time visual completion and deterministic publication.
+1. **B14 — OPEN / confirmed**: approval writer ↔ validator contact-sheet path round trip.
+2. **B15 — OPEN / confirmed**: approved decision ↔ `visualReviewVerdict` coherence.
+3. **B16 — PENDING HUMAN GATE**: explicit visual approval of the exact current committed contact sheet through the official approval writer.
+4. **B20 — NOT YET ELIGIBLE**: mandatory visible-asset completeness inventory. Run only after B14–B16 are closed.
+5. **B21–B28 — CONDITIONAL**: one-asset visual completion loop, only when B20 selects one concrete asset gap.
+6. **B30–B33 — MAINTENANCE INVENTORIES**: placeholder audit, atlas integrity, package provenance, toolchain currency.
+7. **B34 — FINAL CLOSEOUT**.
 
-Do not skip the approval-provenance carry-over tasks just because the current tracked `art-approval.json` passes validation.
+### Why B14 is confirmed open
 
-A tracked artifact being green is not sufficient if the official producer can recreate an invalid or semantically inconsistent artifact.
+Current `scripts/ocean_rescue/approve_art.py` still builds a missing `evidence` object with:
+
+```text
+contactSheet = ../review/proof-art-contact-sheet.html
+```
+
+Current `scripts/ocean_rescue/validate_art_approval.py` rejects evidence paths that escape above their root. The tracked `art-approval.json` is manually aligned to the canonical repository-relative path, but the official producer can still recreate a receipt that is inconsistent with the validator contract.
+
+### Why B15 is confirmed open
+
+The approval writer still uses `receipt.setdefault("evidence", ...)`, so an existing contradictory `visualReviewVerdict` can survive a new explicit approval action. The approval validator currently requires the field to exist but does not require the approved receipt's verdict to be exactly `PASS`.
+
+### B16 current mechanical state
+
+The tracked receipt currently reports 53 approved aliases and binds the packet, source set, and contact sheet hashes. Its `requiredPredecessor` is `311236d6ad872b787920610a2e52c7748901c99f`, while `approvalDate` remains `2026-08-02`.
+
+Mechanical consistency is not equivalent to explicit human review of the exact current proof. B16 therefore remains a human gate after B14 and B15 are fixed.
+
+### Changes after the continuation runbook was first added
+
+The later Ocean Rescue commits at the refresh baseline modify Track A runtime code only (`travel.js` and `travel-scene.js`). They do not close B14 or B15 and do not authorize Track B to edit runtime behavior.
 
 ---
 
-## 2. Authoritative documents to read before work
+## 2. Authority and read order
 
-Read the current `origin/main` versions of:
+Before every task, refresh and read the current `origin/main` versions of:
 
 1. `AGENTS.md`
-2. `docs/plans/AIDENGAME_OCEAN_RESCUE_TRACK_B_EXECUTION_RUNBOOK.md`
+2. `PROJECT_RULES.md` when relevant to the touched surface
 3. `docs/specs/technical/AIDENGAME_OCEAN_RESCUE_MANUAL_SVG_ASSET_HANDOFF.md`
 4. `docs/specs/product/AIDENGAME_OCEAN_RESCUE_RENDERING_MVP.md`
-5. this continuation runbook
+5. `docs/plans/AIDENGAME_OCEAN_RESCUE_TRACK_B_EXECUTION_RUNBOOK.md`
+6. this file
+7. the exact implementation and focused tests named by the selected B task
 
-If these disagree, follow the higher-authority/current project contract and report the exact disagreement before editing.
-
-Do not use the baseline SHA above as a frozen implementation target. Always refresh `origin/main` first.
+Past completion reports and this file's baseline SHA are orientation evidence only. Current code/specs on refreshed `origin/main` decide the task.
 
 ---
 
-## 3. Non-negotiable execution model
+## 3. Execution invariant
 
-Every invocation performs exactly one task.
+Every invocation executes exactly one independently decidable unit:
 
 ```text
 one task
 = one failure domain
-= one testable hypothesis
-= one binary primary criterion
+= one falsifiable hypothesis
+= one primary binary criterion
 = one publication decision
 ```
 
-Never combine independent defects because they are nearby.
+Do not combine B14 and B15 because they touch the same files. They have different hypotheses and different decision criteria.
 
-Never continue automatically into the next Bxx task after the current Bxx task is complete.
+Do not continue automatically to the next B task after a PASS. Publish the current task, report evidence, clean up the worktree when allowed, and stop.
 
-After each task:
-
-1. publish if and only if that task passed all required checks;
-2. report the exact evidence;
-3. stop.
-
-A later invocation refreshes `origin/main` and chooses the next eligible task.
+If an out-of-scope defect is found, record it under `DISCOVERED_FAILURE`; do not widen the current write scope.
 
 ---
 
-## 4. Track boundary
+## 4. Track B boundary
 
-Track B owns:
+Track B owns the production chain from authored source through deterministic generated output:
 
-- SVG handoff and source assets;
-- art-packet metadata and source hashes;
+- source/review/handoff SVG assets;
+- art packet metadata, hashes and schema;
+- structural/security validation of incoming authored assets;
 - proof/contact-sheet generation;
 - explicit human approval receipt mechanics;
-- atlas generation and validation;
-- generated render-asset registry provenance;
-- deterministic generated-artifact rebuilds;
-- packaging provenance at the B → A boundary.
+- atlas generation and atlas metadata;
+- render-asset registry/manifest generation;
+- provenance and deterministic rebuild checks;
+- B-side packaging provenance at the B → A boundary.
 
-Track B does not own:
+Track B does **not** own:
 
 - gameplay FSM;
 - mission controller behavior;
 - pointer/input state machines;
-- timers;
-- runtime interaction logic;
-- runtime alias-consumer bugs when B output is proven correct.
+- timers and pause/resume runtime behavior;
+- runtime loader/renderer behavior after B's published contract is proven correct;
+- gameplay tuning such as movement speed or screen effects.
 
-If B outputs pass their producer contract but the runtime fails, report the exact consumer failure and route it to Track A without patching runtime code.
+A/B contract rule:
 
----
+```text
+B producer contract wrong  -> fix B only
+B producer contract correct + runtime consumption wrong -> report and route to Track A
+```
 
-## 5. Human visual approval boundary
-
-Human approval is not inferable from:
-
-- a file existing;
-- a hash matching;
-- a validator passing;
-- a generated contact sheet being deterministic;
-- a local agent saying `PASS`;
-- a previous approval receipt whose fields were later rewritten.
-
-Only an explicit human review of the exact current committed proof/contact sheet authorizes approval of that visual state.
-
-Local agents must never fabricate or infer that approval.
-
-The official approval command may be invoked only after the user explicitly confirms that the exact current committed contact sheet has been reviewed and accepted.
+Never modify A runtime files merely to make a B test pass.
 
 ---
 
-## 6. Git/worktree discipline
+## 5. Git/worktree procedure
 
-Follow current `AGENTS.md` exactly.
+Use the current `AGENTS.md` contract.
 
-Default operating pattern:
+For a mutation task:
 
 1. `git fetch origin`
-2. inspect current `origin/main`
-3. create/use an isolated disposable worktree from that current commit
-4. keep the task diff limited to its allowed scope
-5. verify the single hypothesis
-6. commit intentionally
-7. publish fast-forward to `origin/main`
-8. confirm the commit is reachable from `origin/main`
-9. remove the disposable worktree when it is clean, published and no longer active
+2. inspect the current `origin/main` SHA and relevant diff since the previous task
+3. create a dedicated worktree under `/Users/seungjulee/Desktop/Dev/.worktrees/game/<task-slug>`
+4. create it locked with `git worktree add --lock --reason ...`
+5. use the same worktree/CWD for editor, LSP, Python, browser, generators and tests
+6. keep unrelated dirty state untouched
+7. run the task's focused primary criterion first
+8. run only direct-impact verification next
+9. run required static/diff checks
+10. check `origin/main` again immediately before publication
+11. if remote advanced without semantic overlap, reapply to latest main and rerun the task's V1 plus required direct-impact checks; do not treat ordinary non-overlapping advance as a blocker
+12. publish by fast-forward to `origin/main`
+13. prove the commit is reachable from current `origin/main`
+14. only if the worktree is clean, published, no longer active, and was created by this task: unlock it and remove it with plain `git worktree remove`
 
-Do not create a PR or long-lived feature branch for this runbook.
+Forbidden:
 
-Do not delete dirty, unpublished or active worktrees.
+- `/tmp`, `/private/tmp`, `$TMPDIR`, or `mktemp` worktrees;
+- PR/feature-branch workflow unless the user explicitly requests it;
+- force push/history rewrite;
+- `git worktree remove --force`;
+- deleting dirty/unpublished/active worktrees;
+- full-suite reruns before the focused criterion unless an existing project command is itself the direct criterion.
 
 ---
 
-## 7. Required task card
+## 6. Required task card
 
-Before editing, write this compact task card locally:
+Before editing, write a compact task card:
 
 ```text
 TASK_ID: Bxx
 FAILURE_DOMAIN: <one domain>
 HYPOTHESIS: <one falsifiable sentence>
-PRIMARY_CRITERION: <one binary pass/fail statement>
+PRIMARY_CRITERION: <one binary statement>
 READ_SCOPE:
-  - <files/specs needed to understand the domain>
+  - <minimum files/spec sections>
 WRITE_SCOPE:
   - <minimum files allowed to change>
 FORBIDDEN:
-  - <explicit adjacent surfaces not to modify>
-RED_REPRODUCTION: <smallest command/fixture proving the gap>
-DIRECT_VERIFY: <smallest direct regression set>
-STATIC_VERIFY: <diff/static checks>
+  - <adjacent surfaces explicitly excluded>
+RED_OR_BASELINE: <smallest reproduction or proof of current state>
+DIRECT_VERIFY: <smallest directly affected regression set>
+STATIC_VERIFY: <required lint/type/diff checks>
 STOP_CONDITION: <exact point to stop>
 ```
 
-If the hypothesis cannot be stated in one sentence, the task is too broad.
+If the hypothesis cannot be stated in one sentence, split the task before coding.
 
 ---
 
-## 8. Standard final report
+# PART I — APPROVAL CONTRACT CARRY-OVER
 
-Every local execution must end with exactly these fields:
-
-```text
-RESULT: PASS | FAIL | BLOCKED
-FAILURE_DOMAIN: <exact domain>
-CHANGE: <concise changed behavior/files or NONE>
-PRIMARY_VERIFY: PASS | FAIL | NOT_RUN
-DIRECT_VERIFY: PASS | FAIL | NOT_RUN
-STATIC_VERIFY: PASS | FAIL | NOT_RUN
-PUBLISH: PUBLISHED | NOT_PUBLISHED | NOT_APPLICABLE
-COMMIT: <sha or NONE>
-DISCOVERED_FAILURE: NONE | <one or more out-of-scope observations>
-BLOCKER: NONE | <blocking fact; required when RESULT=BLOCKED>
-```
-
-Each status field must contain one mutually exclusive value only.
-
-`DISCOVERED_FAILURE` is not itself a reason to change an otherwise valid `PASS` into `BLOCKED`.
-
----
-
-# PART I — REVIEW CARRY-OVER
-
-## 9. B14 — Approval writer ↔ validator contact-sheet path round trip
+## 7. B14 — Approval writer ↔ validator contact-sheet path round trip
 
 ### Failure domain
 
 `APPROVAL_WRITER_VALIDATOR_EVIDENCE_PATH_ROUNDTRIP`
 
-### Confirmed review observation
+### Current hypothesis
 
-The official approval writer currently has a default evidence path:
-
-```text
-../review/proof-art-contact-sheet.html
-```
-
-The approval validator rejects root-level `..` path traversal.
-
-The tracked receipt may currently be manually aligned to the canonical repository-relative path, but that does not close the producer contract if the official writer can recreate the rejected value.
-
-### Hypothesis
-
-A receipt produced by the official approval writer from an empty or legacy evidence object can contain a contact-sheet evidence path that the official approval validator rejects or that is not the canonical contact-sheet path.
+When the official approval writer creates an `evidence` object from an empty/legacy receipt, it can emit a contact-sheet path that the official validator rejects or that is not the canonical proof path.
 
 ### Primary criterion
 
-The official writer must produce the canonical repository-relative contact-sheet evidence path, and the validator must accept that writer-produced receipt while rejecting noncanonical/unsafe contact-sheet paths required by the contract.
+A receipt produced by the official writer uses exactly:
+
+```text
+domains/ocean-rescue/assets/review/proof-art-contact-sheet.html
+```
+
+and that writer-produced fixture passes the approval validator, while unsafe/noncanonical contact-sheet paths required by the contract remain rejected.
 
 ### Read scope
 
@@ -215,317 +204,268 @@ The official writer must produce the canonical repository-relative contact-sheet
 - `scripts/ocean_rescue/validate_art_approval.py`
 - `tests/test_ocean_rescue_art_approval.py`
 - `tests/test_ocean_rescue_approval_evidence_path_escape.py`
-- canonical handoff spec
+- the approval/proof section of the manual SVG handoff spec
 
 ### Write scope
 
-Only the minimum of:
+Only the minimum needed from:
 
 - `scripts/ocean_rescue/approve_art.py`
-- `scripts/ocean_rescue/validate_art_approval.py` if exact canonical-path validation is actually needed to make writer/validator symmetric
-- one focused approval test file
+- `scripts/ocean_rescue/validate_art_approval.py` only if validator-side exact canonical-path enforcement is needed
+- one focused approval regression test file
 
-Do not change the live `art-approval.json` in this task.
+Do **not** modify canonical `art-approval.json` in B14.
 
 ### RED reproduction
 
-Use a temporary/isolated fixture. Do not invoke live human approval.
+Use isolated fixture data. Do not invoke live approval.
 
-Prove at least one of these on the pre-fix implementation:
+Preferred reproduction:
 
-1. `build_receipt()` with no pre-existing `evidence` writes `../review/proof-art-contact-sheet.html`; or
-2. an official-writer-produced fixture fails `validate_art_approval.py`; or
-3. a safe but wrong contact-sheet evidence path is accepted even though the receipt claims canonical proof evidence.
+1. import/call the official writer's `build_receipt()` using the canonical packet plus an empty or legacy receipt;
+2. assert the produced `evidence.contactSheet` value;
+3. demonstrate the pre-fix value is `../review/proof-art-contact-sheet.html` or otherwise fails the canonical-path criterion.
 
-The reproduction must not rewrite canonical approval state.
+A second focused case should prove the writer-produced fixture can be fed to the validator contract without rewriting canonical approval state.
 
-### Expected correction
+### Correction rules
 
-Prefer one canonical path constant or equivalent single source inside the approval producer/validator contract rather than two drifting literals.
-
-The canonical evidence value is:
-
-```text
-domains/ocean-rescue/assets/review/proof-art-contact-sheet.html
-```
-
-Do not introduce a new framework, schema layer or generic path library for this one gap.
+- Prefer one small canonical path constant or equivalent single owner.
+- Do not introduce a schema framework, generic path abstraction, or broad receipt refactor.
+- Do not fix B15 in the same task even if the nearby `setdefault` behavior is visible.
 
 ### Direct verification
 
-Run only focused approval tests first.
+Minimum evidence:
 
-Minimum proof:
+- writer-produced fixture contains the canonical contact-sheet path;
+- writer-produced fixture satisfies the validator contract;
+- `../review/...` remains rejected;
+- absolute path remains rejected;
+- escaping traversal remains rejected;
+- current canonical approval validation remains green without changing the tracked receipt.
 
-- writer-produced fixture contains canonical path;
-- writer-produced fixture passes validator;
-- `../review/...` is rejected;
-- absolute/traversal evidence remains rejected;
-- canonical live approval validation remains green without rewriting it.
+Suggested focused commands, adjusted to exact test names after implementation:
 
-### Stop condition
+```bash
+uv run pytest -q tests/test_ocean_rescue_approval_evidence_path_escape.py
+uv run pytest -q tests/test_ocean_rescue_art_approval.py
+uv run python scripts/ocean_rescue/validate_art_approval.py domains/ocean-rescue/assets/source
+```
 
-Stop after this round-trip contract is independently green and published.
+Do not run unrelated gameplay/browser suites for B14.
 
-Do not proceed to B15 in the same invocation.
+### B14 PASS condition
+
+All required focused cases are green, the diff contains only the allowed approval-contract files/tests, static checks pass, and the task commit is published to `origin/main`.
+
+Then stop. Do not start B15 in the same invocation.
 
 ---
 
-## 10. B15 — Approved decision ↔ visual review verdict coherence
+## 8. B15 — Approved decision ↔ visual verdict coherence
 
 ### Failure domain
 
 `APPROVAL_DECISION_VISUAL_VERDICT_INCONSISTENCY`
 
-### Confirmed review observation
+### Current hypothesis
 
-The approval validator currently requires the `visualReviewVerdict` field to exist but does not prove that an approved receipt's verdict is exactly `PASS`.
-
-The approval writer also preserves an existing `evidence` object wholesale via `setdefault`, so a stale verdict can survive a new `--approve` invocation.
-
-### Hypothesis
-
-A receipt with:
-
-```text
-decision = approved
-visualReviewVerdict != PASS
-```
-
-can remain accepted or can be reproduced by the official approval path.
+An approved receipt can retain or validate a non-`PASS` `visualReviewVerdict` because the writer preserves an existing evidence object and the validator only checks field presence.
 
 ### Primary criterion
 
-For an approved receipt:
+For `decision == "approved"`:
 
-- the validator rejects every non-`PASS` visual verdict;
-- a genuine explicit `--approve` operation writes `visualReviewVerdict: PASS` rather than preserving a stale contradictory value.
+1. the official writer always emits `evidence.visualReviewVerdict == "PASS"` for the explicit approval action; and
+2. the official validator rejects approved receipts whose verdict is missing, blank, `FAIL`, `REJECTED`, or any value other than exact `PASS`.
 
 ### Read scope
 
-- approval writer
-- approval validator
+- current post-B14 `approve_art.py`
+- current post-B14 `validate_art_approval.py`
 - focused approval tests
-- manual SVG handoff spec human-approval section
+- human-approval contract in the handoff spec
 
 ### Write scope
 
-Only the approval writer/validator and one focused test as required by this failure domain.
+Only:
 
-Do not update canonical `art-approval.json` here.
+- approval writer and/or validator required for this criterion;
+- one focused test file.
+
+Do not modify the canonical approval receipt in B15.
 
 ### RED reproduction
 
-Create a fixture based on current canonical receipt with only:
+Create isolated fixtures with an otherwise valid approved receipt and vary only `evidence.visualReviewVerdict`.
 
-```json
-"visualReviewVerdict": "REJECTED"
-```
+At least one pre-fix case must demonstrate acceptance/preservation of a contradictory verdict.
 
-or another non-`PASS` value.
+Writer-side reproduction should also begin from an existing evidence object containing a stale contradictory verdict and prove that the explicit approval operation currently preserves it.
 
-Run the approval validator.
+### Correction rules
 
-The task is confirmed only if the contradictory approved receipt is accepted, or if writer behavior demonstrably preserves that contradictory verdict on explicit approval.
-
-If the current code has already moved and both paths are safe, make no change and report `PASS` with the direct evidence.
+- Preserve unrelated evidence fields only when the contract requires them.
+- Explicit approval must own the resulting approval verdict; stale contradictory state cannot override that action.
+- Do not use B15 to redesign approval date semantics, predecessor semantics, or packet hashes.
 
 ### Direct verification
 
-Required focused cases:
+Required cases:
 
-- `PASS` verdict accepted;
+- exact `PASS` accepted;
 - missing verdict rejected;
-- `REJECTED`/`FAIL`/blank verdict rejected;
-- explicit writer receipt produces `PASS`;
-- unrelated evidence fields required by the contract remain intact.
+- empty/whitespace verdict rejected;
+- `FAIL` rejected;
+- `REJECTED` rejected;
+- writer from stale contradictory evidence emits exact `PASS`;
+- unrelated required evidence fields remain intact;
+- canonical receipt validator remains green without rewriting it.
 
-### Stop condition
+Run focused approval tests first, then the direct canonical validator command.
 
-Stop after decision/verdict coherence alone is green and published.
+### B15 PASS condition
+
+Only decision/verdict coherence is changed and independently verified/published.
+
+Then stop. Do not execute B16 automatically.
 
 ---
 
-## 11. B16 — Current contact sheet human-approval provenance
+## 9. B16 — Exact current contact-sheet human approval provenance
 
 ### Failure domain
 
 `CURRENT_CONTACT_SHEET_HUMAN_APPROVAL_PROVENANCE`
 
-### Current review baseline fact
-
-At review baseline `8c28208`, the tracked receipt binds:
-
-- `requiredPredecessor` to the current regenerated contact-sheet lineage;
-- `contactSheetSha256` to the current tracked sheet;
-- `approvalDate` to `2026-08-02`.
-
-Repository evidence alone cannot prove that a human re-reviewed the exact regenerated sheet before those fields were realigned.
-
-### Hypothesis
-
-The current receipt's mechanical integrity may be green while explicit human approval of the exact current contact sheet is not independently evidenced by the current official approval action.
-
-### Primary criterion
-
-The exact current committed contact sheet is explicitly reviewed by the user and, only after that explicit approval, the official approval writer regenerates the receipt; then the approval validator passes against that exact lineage.
-
 ### Mode
 
-This is a human gate, not an autonomous code-fix task.
+Human gate. This is not an autonomous code-fix task.
 
-### Read-only precheck
+### Precheck
 
-Refresh `origin/main` and show:
+After B14 and B15 are published, refresh `origin/main` and report read-only:
 
-- current contact-sheet blob/hash;
-- current packet hash;
-- current source-set hash;
-- current receipt values;
-- commit containing the exact reviewed contact sheet.
+- current `origin/main` SHA;
+- current packet SHA-256;
+- current source-set SHA-256;
+- current contact-sheet SHA-256;
+- current `art-approval.json` values;
+- commit that contains the exact current proof/contact sheet.
 
-Do not modify anything during the precheck.
+Do not change files during the precheck.
 
 ### Human gate
 
-If the user has not explicitly said that the exact current sheet was visually reviewed and accepted:
+The user must explicitly state that the exact identified committed contact sheet has been visually reviewed and accepted.
 
-```text
-RESULT: BLOCKED
-CHANGE: NONE
-PRIMARY_VERIFY: NOT_RUN
-PUBLISH: NOT_APPLICABLE
-BLOCKER: explicit human visual approval of current committed contact sheet is required
-```
+Do not infer approval from:
 
-Do not infer approval from previous messages saying the pipeline is technically complete.
+- a validator PASS;
+- deterministic generation;
+- a previous approval message referring to an older sheet;
+- a local agent report;
+- matching hashes alone.
+
+If explicit approval is absent, report `RESULT: BLOCKED` for B16 with `CHANGE: NONE`, `PRIMARY_VERIFY: NOT_RUN`, and `PUBLISH: NOT_APPLICABLE`.
 
 ### After explicit human approval
 
-Invoke the official approval writer, not a manual JSON edit.
+Use the official approval writer. Do not manually edit `art-approval.json`.
 
-Then verify:
+Verify that the generated receipt has:
 
-- receipt date is generated by the tool;
-- predecessor is the commit containing the reviewed source/packet/sheet state;
-- packet, source-set and contact-sheet hashes match;
-- canonical evidence path is present;
-- visual verdict is `PASS`;
-- approval validator passes.
+- exact current packet hash;
+- exact current source-set hash;
+- exact current contact-sheet hash;
+- `requiredPredecessor` pointing to the committed reviewed lineage required by the tool/spec;
+- canonical contact-sheet evidence path;
+- exact `visualReviewVerdict: PASS`;
+- tool-generated approval date;
+- all 53 current aliases or the current packet's exact alias count/parity if the packet legitimately changed before the gate.
 
-### Stop condition
+Then run the canonical approval validator and direct approval regression tests.
 
-Stop once the human-approved current lineage is recorded and published.
+### B16 PASS condition
+
+The tool-generated receipt for the explicitly reviewed exact proof is published and validates. Then stop.
 
 ---
 
 # PART II — VISUAL COMPLETION LOOP
 
-## 12. B20 — Mandatory visible-asset completeness inventory
+## 10. B20 — Mandatory visible-asset completeness inventory
+
+Run only after B14, B15 and B16 are independently closed.
 
 ### Failure domain
 
 `MANDATORY_VISIBLE_ASSET_COMPLETENESS_INVENTORY`
 
-### Purpose
+### Mode
 
-After B14–B16 are closed, identify whether the Rendering MVP still contains any mandatory primary visible asset that is missing, placeholder-grade, unapproved, incorrectly aliased, or materially below the current intended proof standard.
-
-This task is read-only.
+Read-only selection task.
 
 ### Primary criterion
 
-Every mandatory first-slice visible asset required by the current Rendering MVP is mapped to one canonical packet entry with a valid source, expected bundle, stable alias and approved state; otherwise identify exactly one highest-priority concrete gap.
+Every mandatory visible asset in the current Rendering MVP maps to exactly one current packet entry with:
 
-### Read scope
+- canonical source bytes present;
+- valid source hash;
+- approved asset state;
+- expected bundle membership;
+- stable alias;
+- proof/contact-sheet representation sufficient for current MVP review.
 
-- Rendering MVP mandatory asset list
-- art-packet
-- canonical source directories
-- current contact sheet
-- handoff briefs
-- atlas manifest/registry aliases as needed for parity
+If all are complete, report no actionable gap.
 
-### Forbidden
+If not, select exactly one highest-priority asset gap and report:
 
-- no SVG changes;
-- no packet edits;
-- no atlas rebuild;
-- no runtime changes;
-- no speculative expansion into missions explicitly excluded from current rendering MVP.
-
-### Output
-
-If complete:
-
-```text
-RESULT: PASS
-CHANGE: NONE
-PRIMARY_VERIFY: PASS
-DISCOVERED_FAILURE: NONE
-```
-
-If one concrete visual gap exists, report it as `DISCOVERED_FAILURE` with:
-
-- asset alias/id;
+- asset ID/alias;
 - exact observed deficiency;
-- authoritative expected state;
-- smallest visual criterion that would close it.
+- exact authoritative expected state;
+- one binary visual acceptance criterion;
+- whether the next action is B21.
 
-Do not fix it in B20.
-
-### Stop condition
-
-Stop after inventory and one-gap selection.
+Do not alter SVGs, packet, atlas, registry, approval receipt or runtime in B20.
 
 ---
 
-## 13. B21 — One-asset handoff brief
+## 11. B21 — One-asset handoff brief
 
-Run only when B20 identified one concrete visual-asset gap.
+Run only when B20 selected one concrete asset gap.
 
 ### Failure domain
 
 `<ASSET_ALIAS>_VISUAL_HANDOFF_CONTRACT`
 
-### Hypothesis
-
-A precise one-asset brief can state the visual deficiency and acceptance criterion without requiring the local coding agent to invent final geometry.
-
-### Primary criterion
-
-One handoff brief exists for exactly one asset/revision and contains enough bounded information for the frontier visual author to produce a candidate without touching unrelated assets.
-
-### Brief must contain
+Produce one bounded brief containing:
 
 - asset ID and stable alias;
 - canonical destination path;
 - target atlas bundle;
-- intended display size / proof scale;
-- current source reference if revising an existing asset;
-- exactly one visual failure domain;
-- one binary visual acceptance criterion;
-- silhouette/readability requirements;
+- intended display/proof scale;
+- current source reference when revising an asset;
+- one visual deficiency only;
+- one binary acceptance criterion;
+- silhouette/readability requirement;
 - palette/style continuity constraints;
-- forbidden external references/features;
-- required SVG structural constraints;
-- expected handoff inbox filename;
-- focused validation/proof commands;
-- explicit statement that human visual approval is still required.
+- forbidden external SVG features/references;
+- structural SVG constraints from the current handoff contract;
+- exact inbox filename/path;
+- focused structural/proof commands;
+- explicit note that human visual approval is still required.
 
-### Forbidden
+Local coding LLMs must not invent/redraw frontier-quality final geometry merely to close B21.
 
-The local LLM must not author or redraw frontier-level final SVG geometry in this task.
-
-### Stop condition
-
-Publish the brief and stop for frontier/human asset production.
+Publish the brief if repository documentation is the authorized handoff mechanism, then stop.
 
 ---
 
-## 14. B22 — One-asset inbox structural acceptance
+## 12. B22 — One-asset inbox structural acceptance
 
-Run only after the user/frontier visual author has placed the exact candidate SVG in the handoff inbox.
+Run after the exact candidate exists in the handoff inbox.
 
 ### Failure domain
 
@@ -533,22 +473,15 @@ Run only after the user/frontier visual author has placed the exact candidate SV
 
 ### Primary criterion
 
-The one candidate satisfies the current handoff SVG structural/security contract and is renderable by the sanctioned toolchain.
+The exact candidate passes the sanctioned SVG structure/security/renderability contract.
 
-### Procedure
+Validate only the candidate and its declared contract. Do not canonicalize it.
 
-1. validate only the candidate and its expected contract;
-2. prove expected root namespace/viewBox/IDs/references/security constraints;
-3. render a mechanical proof if required by the existing handoff workflow;
-4. do not canonicalize yet.
-
-If invalid, produce one revision request describing the first decisive failure domain and stop.
-
-Do not redraw the asset locally to make it pass.
+If invalid, report the first decisive structural failure domain and stop. Do not redraw the asset locally.
 
 ---
 
-## 15. B23 — One-asset actual-size proof
+## 13. B23 — One-asset actual-size proof
 
 ### Failure domain
 
@@ -556,208 +489,149 @@ Do not redraw the asset locally to make it pass.
 
 ### Primary criterion
 
-A deterministic proof of the candidate exists at the intended viewing size/context needed for human visual judgment.
+A deterministic proof derived from the exact candidate bytes exists at the intended viewing size/context for human judgment.
 
-### Rules
+Do not approve, canonicalize or hand-edit a substitute raster.
 
-- proof generation is allowed;
-- proof content must come from the candidate bytes, not a hand-edited raster substitute;
-- do not mark the candidate approved;
-- do not canonicalize the candidate;
-- do not rebuild global approval state.
-
-### Stop condition
-
-Publish only proof artifacts that are authoritative outputs of the existing workflow, then stop for human review.
+Stop for human review.
 
 ---
 
-## 16. B24 — One-asset human visual gate and canonicalization
+## 14. B24 — One-asset human visual gate and canonicalization
 
 ### Failure domain
 
 `<ASSET_ALIAS>_HUMAN_VISUAL_ACCEPTANCE`
 
-### Human gate
+The user must explicitly accept or reject the exact B23 proof/candidate.
 
-The user must explicitly accept or reject the exact candidate/proof.
-
-If rejected:
-
-- do not canonicalize;
-- do not modify packet approval metadata;
-- return to a new one-asset revision brief/task.
+If rejected, do not canonicalize. Return to a new single-asset revision cycle.
 
 If explicitly accepted:
 
-- copy/promote only the accepted bytes to the canonical source path according to the handoff spec;
-- update only the packet fields required for that one asset's new bytes/metadata;
-- do not claim global approval receipt remains current after source or proof changes.
+- promote exactly the accepted bytes to the canonical source path;
+- update only the packet fields required for that asset's actual bytes/metadata;
+- do not claim the old global approval receipt remains current.
 
 ### Primary criterion
 
-The exact human-accepted candidate is the canonical asset and the packet records its actual bytes/hash without unrelated asset changes.
+The exact human-accepted candidate is canonical and the packet records its exact current bytes without unrelated asset changes.
 
-### Stop condition
-
-Stop after canonical source + packet state for that one asset is correct and published.
+Publish and stop.
 
 ---
 
-## 17. B25 — Rebuild affected generated asset pipeline
+## 15. B25 — Rebuild affected generated pipeline
 
 ### Failure domain
 
 `<ASSET_ALIAS>_GENERATED_PIPELINE_REBUILD`
 
-### Hypothesis
+Rebuild through existing producers only. Never hand-edit generated outputs.
 
-The accepted canonical source can pass through the existing producer chain deterministically without hand-editing generated outputs.
+As applicable, prove in producer order:
 
-### Primary criterion
-
-The affected atlas/manifest/registry/contact-sheet outputs are regenerated from authoritative inputs, validate successfully, and a second clean rebuild is byte-identical for the affected generated surfaces.
-
-### Required order
-
-Use the existing producer order from the predecessor runbook. Do not invent a new generator.
-
-At minimum prove as applicable:
-
-1. art-packet validation;
+1. packet validation;
 2. contact-sheet clean rebuild;
 3. atlas generation;
 4. atlas validation;
-5. registry generation/provenance;
-6. generated-artifact drift/determinism;
-7. packaging provenance at the B boundary.
+5. registry/manifest generation and provenance;
+6. generated-artifact drift checks;
+7. second clean rebuild byte identity for affected generated surfaces;
+8. B-side package provenance.
 
-### Important
+The old human approval receipt is expected to become stale after source/proof change. Do not manually repair it in B25.
 
-A source/contact-sheet change intentionally makes the previous human approval receipt stale.
-
-Do not manually patch the receipt in B25.
-
-The stale approval receipt is expected until B26.
-
-### Stop condition
-
-Stop when generated outputs are correct and the only expected approval-state consequence is the need for fresh explicit human review.
+Stop when generation is correct and fresh human reapproval is the only expected remaining approval consequence.
 
 ---
 
-## 18. B26 — Reapprove the rebuilt visual packet
+## 16. B26 — Reapprove rebuilt visual packet
 
 ### Failure domain
 
 `REBUILT_PACKET_HUMAN_APPROVAL`
 
-### Primary criterion
+Repeat the B16 human boundary for the new exact committed proof.
 
-The user explicitly reviews the exact current committed contact sheet after the asset change, then the official approval writer records that approval and the validator passes.
+No automatic approval. No manual hash patching. No reuse of an old approval date/verdict as evidence for new bytes.
 
-### Forbidden
-
-- no automatic approval;
-- no manual hash editing;
-- no carrying forward an old approval date/verdict as proof of the new visual state.
-
-### Stop condition
-
-Publish the tool-generated approval receipt and stop.
+Publish only the official writer's new receipt and stop.
 
 ---
 
-## 19. B27 — B → A actual runtime handoff evidence for the changed asset
+## 17. B27 — B → A handoff evidence for changed asset
 
 ### Failure domain
 
 `<ASSET_ALIAS>_B_TO_A_RENDER_HANDOFF`
 
-### Purpose
-
-Prove that B's published output is discoverable and packaged under the expected alias/provenance at the runtime boundary.
-
-This is not a gameplay-fix task.
-
 ### Primary criterion
 
-The changed asset is present in the expected generated bundle/registry/package with the approved source lineage and can be resolved by the existing B-side handoff contract.
+The changed approved asset is present under the expected alias/bundle/registry/package with the correct B-side source lineage and can be resolved through the existing producer contract.
 
-### If runtime behavior fails
-
-If B evidence is correct but runtime rendering/interaction is wrong:
+If that passes but the actual runtime still renders/behaves incorrectly, report:
 
 ```text
 B_PRODUCER_CONTRACT: PASS
-A_CONSUMER_FAILURE: <exact observation>
+A_CONSUMER_FAILURE: <exact runtime observation>
 B_CHANGE_REQUIRED: NO
 ROUTE: TRACK_A
 ```
 
-Do not cross the track boundary.
+Do not patch A runtime in B27.
 
 ---
 
-## 20. B28 — Select next visual asset, if any
+## 18. B28 — Select next visual gap
 
-This is a read-only selection task.
+Read-only. Re-run B20 inventory on fresh `origin/main` and choose at most one next gap.
 
-Re-run the mandatory visible-asset completeness inventory against the new `origin/main`.
+If none exists, the visual completion loop is complete.
 
-Choose at most one next gap.
-
-If none exists, visual completion loop is done.
-
-Do not start B21 for the next asset in the same invocation.
+Do not begin the next B21 in the same invocation.
 
 ---
 
-# PART III — MAINTENANCE AFTER VISUAL COMPLETION
+# PART III — MAINTENANCE INVENTORIES
 
-## 21. B30 — Authored-versus-placeholder audit
+## 19. B30 — Authored-versus-placeholder audit
 
 ### Failure domain
 
 `PRIMARY_VISIBLE_ASSET_PLACEHOLDER_AUDIT`
 
-### Primary criterion
-
-No mandatory primary visible asset in the current Rendering MVP relies on procedural/placeholder representation where the active product contract requires authored art.
-
 Read-only first.
 
-If one real placeholder gap is found, report exactly one candidate and route it back to the B21 one-asset loop.
+Determine whether any mandatory current-MVP visible asset still uses a procedural/placeholder representation where the active contract requires authored art.
 
-Do not mass-replace assets.
+If one exists, report exactly one and route it into B21. Do not mass-replace assets.
 
 ---
 
-## 22. B31 — Atlas budget/integrity inventory
+## 20. B31 — Atlas resource/integrity inventory
 
 ### Failure domain
 
 `ATLAS_RESOURCE_BUDGET_INVENTORY`
 
-Read-only unless a concrete contract violation is reproduced.
+Inspect only already-authorized constraints such as:
 
-Check only limits already authorized by current specs/validators, such as:
-
-- atlas page dimensions;
-- declared bundle membership;
+- page dimensions;
+- bundle membership;
 - frame bounds;
 - trim/padding metadata integrity;
 - duplicate/missing aliases;
-- current toolchain provenance;
+- toolchain provenance;
 - deterministic output.
 
-Do not invent new density, waste-percentage or page-count thresholds merely because they seem desirable.
+Do not invent new density, waste, page-count or aesthetic thresholds.
 
-If a concrete violation exists, open one new task for that single violation.
+If a concrete contract violation is reproduced, stop and open one serial task for that violation only.
 
 ---
 
-## 23. B32 — Offline/package provenance inventory
+## 21. B32 — Offline/package provenance inventory
 
 ### Failure domain
 
@@ -765,142 +639,163 @@ If a concrete violation exists, open one new task for that single violation.
 
 ### Primary criterion
 
-The packaged B asset payload is derived from the current approved source lineage and does not require runtime network retrieval for its asset data.
+The packaged B asset payload is derived from the current approved source lineage and does not require network retrieval for B-owned asset data.
 
-This task may inspect packaging outputs and B-owned build metadata.
-
-Do not edit runtime behavior.
-
-If an offline/network failure originates from runtime application code rather than B packaging, route it to Track A.
+Inspect B build/package metadata only. Runtime network/loader behavior belongs to Track A after the B package contract is proven correct.
 
 ---
 
-## 24. B33 — Toolchain currency check
+## 22. B33 — Toolchain currency inventory
 
 ### Failure domain
 
 `OCEAN_RESCUE_ART_TOOLCHAIN_CURRENCY`
 
-This is read-only by default.
+Read-only by default.
 
-Current sanctioned exact pins at the time this runbook was written:
+At this v1.1 refresh, repository pins are:
 
 - CairoSVG `2.9.0`
 - Pillow `12.3.0`
 
-An upstream release does not authorize an automatic upgrade.
+For each execution:
 
-For every currency check:
-
-1. determine current sanctioned repo pins;
-2. determine current upstream stable releases from authoritative sources;
+1. read current repo pins;
+2. check authoritative upstream stable versions;
 3. inspect security/reliability relevance;
-4. if pins are current, report `NO_ACTIONABLE_GAP`;
-5. if a candidate upgrade exists, do not perform it in the inventory task;
-6. create a separate serial upgrade task because renderer/toolchain changes may alter pixel output and root dependency metadata.
+4. report `NO_ACTIONABLE_GAP` if current;
+5. if an upgrade exists, do not upgrade inside the inventory task;
+6. create a separate serial toolchain-upgrade task because output pixels, manifests and root dependency metadata may change.
 
-A real upgrade task must preserve the predecessor runbook's requirements for isolated candidate rebuild, pixel/output diff classification and deterministic proof.
+Any real renderer/toolchain upgrade must use isolated candidate rebuilds, output/pixel diff classification and deterministic rebuild proof before publication.
 
 ---
 
-## 25. B34 — Continuation closeout
+## 23. B34 — Track B continuation closeout
 
 ### Failure domain
 
 `TRACK_B_CONTINUATION_CLOSEOUT`
 
-This task is read-only.
+Read-only.
 
 ### Primary criterion
 
-All of the following are true on the same current `origin/main` lineage:
+All of these must be true on one current `origin/main` lineage:
 
-- B14 writer/validator round trip is closed;
-- B15 decision/verdict coherence is closed;
-- B16 current human approval provenance is explicit;
-- mandatory visual-asset inventory has no actionable gap within current MVP scope;
-- current canonical source/packet/approval chain validates;
-- generated atlas/registry/package provenance is current;
-- deterministic rebuild evidence is green;
-- no unexplained B-owned diff remains;
-- any runtime-only failure is explicitly routed to Track A;
-- toolchain inventory has no unreviewed actionable security/currency gap.
+- B14 writer/validator path round trip closed;
+- B15 approved/verdict coherence closed;
+- B16 explicit human approval provenance current;
+- mandatory MVP visible-asset inventory has no actionable gap;
+- source/packet/approval chain validates;
+- atlas/registry/manifest/package provenance current;
+- deterministic rebuild evidence green;
+- no unexplained B-owned generated diff remains;
+- runtime-only defects are routed to Track A rather than patched from B;
+- B33 has no unreviewed actionable toolchain/security gap.
 
-### Output
-
-Produce a concise closeout packet:
+Closeout report:
 
 ```text
-TRACK_B_CONTINUATION: PASS | BLOCKED
+TRACK_B_CONTINUATION: <PASS or BLOCKED>
 ORIGIN_MAIN: <sha>
-APPROVAL_LINEAGE: PASS | BLOCKED
-MANDATORY_VISUAL_ASSETS: PASS | BLOCKED
-GENERATED_PROVENANCE: PASS | BLOCKED
-DETERMINISM: PASS | BLOCKED
-TOOLCHAIN_CURRENCY: PASS | BLOCKED
-TRACK_A_HANDOFFS: NONE | <exact items>
-REMAINING_B_GAP: NONE | <one exact gap>
+APPROVAL_LINEAGE: <PASS or BLOCKED>
+MANDATORY_VISUAL_ASSETS: <PASS or BLOCKED>
+GENERATED_PROVENANCE: <PASS or BLOCKED>
+DETERMINISM: <PASS or BLOCKED>
+TOOLCHAIN_CURRENCY: <PASS or BLOCKED>
+TRACK_A_HANDOFFS: <NONE or exact items>
+REMAINING_B_GAP: <NONE or one exact gap>
 ```
 
-Do not add new validators/checklists solely to manufacture a closeout artifact.
+Do not add a new validator/checklist solely to manufacture a closeout artifact.
 
 ---
 
-# PART IV — LOCAL LLM INVOCATION GUIDE
+# PART IV — LOCAL LLM EXECUTION GUIDE
 
-## 26. If handed this runbook without a task-specific prompt
+## 24. Task selection without a separate prompt
 
-The local LLM must:
+If a local executor receives only this runbook:
 
 1. refresh `origin/main`;
-2. read the authoritative documents in §2;
-3. inspect whether B14 is already independently closed on the refreshed code;
-4. if not, execute B14 only;
-5. if B14 is closed, inspect B15;
-6. if B15 is closed, inspect B16;
-7. after B16 is closed, choose the earliest eligible B20+ task;
-8. execute exactly one task;
-9. publish only if that task passes;
-10. report using §8;
-11. stop.
+2. read §2 authority documents;
+3. inspect whether B14 is already independently closed by newer code;
+4. if B14 is open, execute B14 only;
+5. else inspect B15 and execute B15 only if open;
+6. else perform the B16 precheck only;
+7. if B16 needs human approval, stop `BLOCKED` without mutation;
+8. after B16 is proven closed, select the earliest eligible B20+ task;
+9. execute exactly one task;
+10. publish only if the task's own criterion passes;
+11. report using §25;
+12. stop.
 
-Do not execute multiple Bxx tasks in one invocation.
-
----
-
-## 27. Context budget for local models
-
-Do not dump the whole repository into context.
-
-For each Bxx task, provide only:
-
-- this task's section;
-- exact current implementation file(s);
-- one or two focused test files;
-- only the relevant paragraphs from the authoritative spec;
-- current git status/SHA evidence.
-
-If another subsystem becomes relevant, inspect it read-only first and add it only if it is necessary to decide the same hypothesis.
-
-Do not recursively load adjacent runtime files merely because they reference an asset alias.
+Never infer that a numbered task is complete merely because a previous chat said PASS. Use current code, tests, artifacts and `origin/main` reachability.
 
 ---
 
-## 28. Final invariant
+## 25. Final report schema
 
-A Track B task is not complete because generated files are green.
+Allowed values:
 
-It is complete only when the authoritative producer, proof, human-approval boundary, generated lineage and its single task-specific criterion agree.
+- `RESULT`: exactly one of `PASS`, `FAIL`, `BLOCKED`
+- `PRIMARY_VERIFY`: exactly one of `PASS`, `FAIL`, `NOT_RUN`
+- `DIRECT_VERIFY`: exactly one of `PASS`, `FAIL`, `NOT_RUN`
+- `STATIC_VERIFY`: exactly one of `PASS`, `FAIL`, `NOT_RUN`
+- `PUBLISH`: exactly one of `PUBLISHED`, `NOT_PUBLISHED`, `NOT_APPLICABLE`
 
-When a new defect is discovered:
+Report:
 
 ```text
-isolate it
-→ prove it
-→ fix only it
-→ verify only it plus direct impact
+RESULT: <one allowed value>
+FAILURE_DOMAIN: <exact domain>
+CHANGE: <concise behavior/files or NONE>
+PRIMARY_VERIFY: <one allowed value>
+DIRECT_VERIFY: <one allowed value>
+STATIC_VERIFY: <one allowed value>
+PUBLISH: <one allowed value>
+COMMIT: <sha or NONE>
+DISCOVERED_FAILURE: <NONE or out-of-scope observations>
+BLOCKER: <NONE or blocking fact>
+```
+
+`DISCOVERED_FAILURE` does not convert a valid current-task PASS into BLOCKED. `BLOCKER` is required when `RESULT: BLOCKED`.
+
+---
+
+## 26. Context budget for Qwen3.6-class local models
+
+Do not load the entire repository.
+
+For one B task, provide only:
+
+- the selected task section from this runbook;
+- current implementation file(s) named by that task;
+- one or two focused tests;
+- only the relevant spec paragraphs;
+- current `origin/main` SHA/status evidence.
+
+Read adjacent surfaces only to decide the same hypothesis. Do not recursively load runtime consumers just because they mention the same asset alias.
+
+When a new failure domain appears, record it and stop rather than expanding context and write scope indefinitely.
+
+---
+
+## 27. Final invariant
+
+Track B is complete only when its producer, proof, explicit human approval boundary, generated lineage and package handoff all agree on the same authoritative bytes.
+
+For every concrete defect:
+
+```text
+isolate one failure domain
+→ reproduce or prove current state
+→ change only that domain
+→ verify the one primary criterion
+→ verify direct impact
 → publish
 → stop
 ```
 
-That sequence is the default for every continuation task.
+That sequence is the default for the remainder of Track B.

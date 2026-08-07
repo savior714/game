@@ -197,6 +197,38 @@ const RewardSystem = (() => {
     }
   }
 
+  function startYouTubeSession() {
+    if (typeof FreeTimeSessionStartTransaction === 'undefined') {
+      console.error('[RewardSystem] FreeTimeSessionStartTransaction not loaded');
+      return { code: 'commit_failed' };
+    }
+    if (typeof ExternalTabLauncher === 'undefined') {
+      console.error('[RewardSystem] ExternalTabLauncher not loaded');
+      return { code: 'commit_failed' };
+    }
+    if (typeof FreeTimeSession === 'undefined') {
+      console.error('[RewardSystem] FreeTimeSession not loaded');
+      return { code: 'commit_failed' };
+    }
+
+    const openExternal = ExternalTabLauncher.createOpenExternal(window, 'https://www.youtube.com/');
+    const sessionId = 'yt-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+
+    const result = FreeTimeSessionStartTransaction.attemptStart({
+      storage: localStorage,
+      openExternal: openExternal,
+      now: Date.now(),
+      sessionId: sessionId,
+      FreeTimeSession: FreeTimeSession,
+    });
+
+    if (result.code === 'started') {
+      refreshFromStorage();
+    }
+
+    return result;
+  }
+
   function init() {
     load();
     if (typeof RewardSystemUI !== 'undefined') {
@@ -216,7 +248,7 @@ const RewardSystem = (() => {
   }
 
   return { 
-    init, add, consume, consumeInternal, exchangeGem,
+    init, add, consume, consumeInternal, exchangeGem, startYouTubeSession,
     getState: () => state, 
     setTheme, 
     openShopModal: () => {

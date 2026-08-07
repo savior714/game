@@ -389,8 +389,14 @@ const RewardSystemUI = (() => {
           <p class="sub" style="color:#666; font-size:0.8rem;">부모님께서 자물쇠를 눌러 승인해 주세요.</p>
         </div>
 
-        <div id="yt-deduct-area" style="display:none; margin-top:10px;">
-          <button class="btn-primary" id="deduct-yt-btn" style="background:#f43f5e; border-color:#e11d48; width:100%;">15분 사용 기록하기</button>
+        <div id="yt-start-area" style="display:none; margin-top:10px;">
+          <button class="btn-primary" id="start-yt-btn" style="background:#f43f5e; border-color:#e11d48; width:100%;">유튜브 자유시간 15분 시작</button>
+          <p class="sub" style="color:#666; font-size:0.8rem; margin-top:10px;">
+            새 YouTube 탭이 열려요.<br>
+            게임 탭을 닫지 않아야 이후 타이머와 종료 알림이 유지돼요.<br>
+            일찍 닫아도 사용 시간은 환불되지 않아요.
+          </p>
+          <div id="yt-result-msg" style="margin-top:10px; font-size:0.9rem; display:none;"></div>
         </div>
 
         <button class="btn-close" style="margin-top:15px;" data-action="close-overlay">닫기</button>
@@ -399,10 +405,11 @@ const RewardSystemUI = (() => {
     document.body.appendChild(overlay);
 
     const lockTrigger = overlay.querySelector('#yt-unlock-trigger');
-    const deductArea = overlay.querySelector('#yt-deduct-area');
+    const startArea = overlay.querySelector('#yt-start-area');
     const lockArea   = overlay.querySelector('#yt-lock-area');
-    const deductBtn  = overlay.querySelector('#deduct-yt-btn');
-    const display    = overlay.querySelector('.secured-time-display');
+    const startBtn  = overlay.querySelector('#start-yt-btn');
+    const resultMsg = overlay.querySelector('#yt-result-msg');
+    const display   = overlay.querySelector('.secured-time-display');
 
     lockTrigger.addEventListener('click', () => {
       const n1 = Math.floor(Math.random() * 40) + 11; 
@@ -411,22 +418,67 @@ const RewardSystemUI = (() => {
       
       if (String(answer) === String(n1 + n2)) {
         lockArea.style.display = 'none';
-        deductArea.style.display = 'block';
+        startArea.style.display = 'block';
       } else if (answer !== null) {
         alert('정답이 아닙니다.');
       }
     });
 
-    deductBtn.addEventListener('click', () => {
-      RewardSystem.consumeInternal('youtube', (newState) => {
-        display.textContent = `${newState.youtube_minutes}분`;
-        if (newState.youtube_minutes < 15) {
-          setTimeout(() => overlay.remove(), 400);
-        } else {
-          lockArea.style.display = 'block';
-          deductArea.style.display = 'none';
+    function showResult(code) {
+      resultMsg.style.display = 'block';
+      switch (code) {
+        case 'started':
+          resultMsg.style.color = '#16a34a';
+          resultMsg.textContent = '유튜브 자유시간이 시작되었어요! 새 탭을 확인하세요.';
+          break;
+        case 'already_active':
+          resultMsg.style.color = '#d97706';
+          resultMsg.textContent = '이미 유튜브 자유시간이 진행 중이에요.';
+          break;
+        case 'popup_blocked':
+          resultMsg.style.color = '#dc2626';
+          resultMsg.textContent = '팝업이 차단되었어요. 팝업을 허용한 뒤 다시 눌러 주세요.';
+          startBtn.disabled = false;
+          break;
+        case 'insufficient_time':
+          resultMsg.style.color = '#dc2626';
+          resultMsg.textContent = '사용할 시간이 부족해요. 현재 남은 시간을 확인하세요.';
+          break;
+        case 'commit_failed':
+        case 'recovery_required':
+        case 'corrupt_reward_state':
+        case 'corrupt_transaction_journal':
+          resultMsg.style.color = '#dc2626';
+          resultMsg.textContent = '시작에 실패했어요. 다시 시도하거나 페이지를 새로고침해 주세요.';
+          break;
+        default:
+          resultMsg.style.color = '#dc2626';
+          resultMsg.textContent = '알 수 없는 오류가 발생했어요.';
+      }
+    }
+
+    startBtn.addEventListener('click', () => {
+      startBtn.disabled = true;
+      resultMsg.style.display = 'none';
+
+      const result = RewardSystem.startYouTubeSession();
+      showResult(result.code);
+
+      if (result.code === 'started') {
+        display.textContent = `${RewardSystem.getState().youtube_minutes}분`;
+        if (RewardSystem.getState().youtube_minutes < 15) {
+          setTimeout(() => overlay.remove(), 2000);
         }
-      });
+      } else if (result.code === 'already_active') {
+        startBtn.disabled = false;
+      } else if (result.code === 'popup_blocked') {
+        startBtn.disabled = false;
+      } else if (result.code === 'insufficient_time') {
+        display.textContent = `${RewardSystem.getState().youtube_minutes}분`;
+        startBtn.disabled = false;
+      } else {
+        startBtn.disabled = false;
+      }
     });
   }
 

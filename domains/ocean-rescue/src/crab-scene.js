@@ -154,10 +154,30 @@
     sprite.label = label;
     sprite.name = label;
     sprite.eventMode = "none";
-    if (texture.defaultAnchor && sprite.anchor) {
-      sprite.anchor.copyFrom(texture.defaultAnchor);
-    }
+    _applyTrimAnchor(sprite, texture);
     return sprite;
+  }
+
+  function _applyTrimAnchor(sprite, texture) {
+    var trim = texture.trim;
+    var orig = texture.orig;
+    if (
+      !orig ||
+      !isFinite(orig.width) ||
+      !isFinite(orig.height) ||
+      orig.width <= 0 ||
+      orig.height <= 0
+    ) {
+      return;
+    }
+    if (trim && isFinite(trim.x) && isFinite(trim.y) && isFinite(trim.width) && isFinite(trim.height)) {
+      sprite.anchor.set(
+        (trim.x + trim.width / 2) / orig.width,
+        (trim.y + trim.height / 2) / orig.height
+      );
+    } else {
+      sprite.anchor.set(0.5, 0.5);
+    }
   }
 
   function setPosition(displayObject, x, y) {

@@ -180,10 +180,30 @@
     sprite.label = label;
     sprite.name = label;
     sprite.eventMode = "none";
-    if (texture.defaultAnchor && sprite.anchor) {
-      sprite.anchor.copyFrom(texture.defaultAnchor);
-    }
+    _applyTrimAnchor(sprite, texture);
     return sprite;
+  }
+
+  function _applyTrimAnchor(sprite, texture) {
+    var trim = texture.trim;
+    var orig = texture.orig;
+    if (
+      !orig ||
+      !finite(orig.width) ||
+      !finite(orig.height) ||
+      orig.width <= 0 ||
+      orig.height <= 0
+    ) {
+      return;
+    }
+    if (trim && finite(trim.x) && finite(trim.y) && finite(trim.width) && finite(trim.height)) {
+      sprite.anchor.set(
+        (trim.x + trim.width / 2) / orig.width,
+        (trim.y + trim.height / 2) / orig.height
+      );
+    } else {
+      sprite.anchor.set(0.5, 0.5);
+    }
   }
 
   function setPosition(displayObject, x, y) {
@@ -231,6 +251,8 @@
       collisionImpactRing: null,
       collisionImpactRays: null,
       collisionSubmarineFlash: null,
+      screenFlash: null,
+      splashParticles: [],
       obstacleSprites: [],
       obstacleGroups: [],
       obstacleOuters: [],
@@ -293,8 +315,8 @@
     submarineFlash.eventMode = "none";
     submarineFlash.visible = false;
     submarineFlash.alpha = 0;
-    if (submarineFlash.anchor && submarineTexture && submarineTexture.defaultAnchor) {
-      submarineFlash.anchor.copyFrom(submarineTexture.defaultAnchor);
+    if (submarineTexture) {
+      _applyTrimAnchor(submarineFlash, submarineTexture);
     }
 
     nodes.collisionImpactRoot = impactRoot;
@@ -302,6 +324,21 @@
     nodes.collisionImpactRing = impactRing;
     nodes.collisionImpactRays = impactRays;
     nodes.collisionSubmarineFlash = submarineFlash;
+
+    var screenFlashContainer = new PIXI.Container();
+    screenFlashContainer.label = "travel-screen-flash";
+    screenFlashContainer.name = "travel-screen-flash";
+    screenFlashContainer.eventMode = "none";
+    screenFlashContainer.visible = false;
+    screenFlashContainer.alpha = 0;
+
+    var screenFlashRect = new PIXI.Graphics();
+    screenFlashRect.rect(-WIDTH / 2, -HEIGHT / 2, WIDTH, HEIGHT);
+    screenFlashRect.fill(0xFFFFFF);
+    screenFlashContainer.addChild(screenFlashRect);
+
+    nodes.screenFlash = screenFlashContainer;
+    nodes.splashParticles = [];
 
     addChild(far, nodes.waterFar);
     addChild(mid, nodes.reefMid);
@@ -319,6 +356,7 @@
     if (nodes.collisionFlash) {
       addChild(effects, nodes.collisionFlash);
     }
+    addChild(effects, nodes.screenFlash);
 
     layoutStaticNodes();
   }
@@ -375,6 +413,15 @@
     if (nodes.collisionSubmarineFlash) {
       nodes.collisionSubmarineFlash.visible = false;
       nodes.collisionSubmarineFlash.alpha = 0;
+    }
+    if (nodes.screenFlash) {
+      nodes.screenFlash.visible = false;
+      nodes.screenFlash.alpha = 0;
+    }
+    var splashArr = nodes.splashParticles || [];
+    for (var si = 0; si < splashArr.length; si += 1) {
+      splashArr[si].alpha = 0;
+      splashArr[si].visible = false;
     }
   }
 
@@ -476,7 +523,16 @@
     var baseX = 260 - offset.knockbackX;
     var baseY = travelY + hover + offset.shakeY;
     setPosition(nodes.submarine, baseX, baseY);
-    nodes.submarine.rotation = reducedMotion ? 0 : Math.sin(activeTime / 1400) * 0.02;
+    if (reducedMotion) {
+      nodes.submarine.rotation = Math.sin(activeTime / 1400) * 0.02;
+    } else if (terrainSnap && terrainSnap.collisionActive) {
+      var wobbleSpeed = 180;
+      var wobbleAmp = 0.06 * offset.knockbackX / (terrainSnap.knockbackOffsetX || 1);
+      var wobble = Math.sin(activeTime / wobbleSpeed) * Math.max(0, wobbleAmp);
+      nodes.submarine.rotation = Math.sin(activeTime / 1400) * 0.02 + wobble;
+    } else {
+      nodes.submarine.rotation = Math.sin(activeTime / 1400) * 0.02;
+    }
   }
 
   function resolveObstacleAlias(kind) {
@@ -510,9 +566,7 @@
     outerSprite.eventMode = "none";
     outerSprite.tint = OBSTACLE_OUTER_TINT;
     outerSprite.alpha = OBSTACLE_OUTER_ALPHA;
-    if (outerSprite.anchor && texture.defaultAnchor) {
-      outerSprite.anchor.copyFrom(texture.defaultAnchor);
-    }
+    _applyTrimAnchor(outerSprite, texture);
 
     var rimSprite = new PIXI.Sprite(texture);
     rimSprite.label = "travel-obstacle-" + index + "-rim";
@@ -520,9 +574,7 @@
     rimSprite.eventMode = "none";
     rimSprite.tint = OBSTACLE_RIM_TINT;
     rimSprite.alpha = OBSTACLE_RIM_ALPHA;
-    if (rimSprite.anchor && texture.defaultAnchor) {
-      rimSprite.anchor.copyFrom(texture.defaultAnchor);
-    }
+    _applyTrimAnchor(rimSprite, texture);
 
     var bodySprite = new PIXI.Sprite(texture);
     bodySprite.label = "travel-obstacle-" + index;
@@ -530,9 +582,7 @@
     bodySprite.eventMode = "none";
     bodySprite.tint = OBSTACLE_BODY_TINT;
     bodySprite.alpha = 1.0;
-    if (bodySprite.anchor && texture.defaultAnchor) {
-      bodySprite.anchor.copyFrom(texture.defaultAnchor);
-    }
+    _applyTrimAnchor(bodySprite, texture);
 
     group.addChild(outerSprite);
     group.addChild(rimSprite);
@@ -607,21 +657,9 @@
         outer.texture = texture;
         rim.texture = texture;
         body.texture = texture;
-        if (outer.anchor && texture.defaultAnchor) {
-          outer.anchor.copyFrom(texture.defaultAnchor);
-        } else if (outer.anchor) {
-          outer.anchor.set(0.5, 0.5);
-        }
-        if (rim.anchor && texture.defaultAnchor) {
-          rim.anchor.copyFrom(texture.defaultAnchor);
-        } else if (rim.anchor) {
-          rim.anchor.set(0.5, 0.5);
-        }
-        if (body.anchor && texture.defaultAnchor) {
-          body.anchor.copyFrom(texture.defaultAnchor);
-        } else if (body.anchor) {
-          body.anchor.set(0.5, 0.5);
-        }
+        _applyTrimAnchor(outer, texture);
+        _applyTrimAnchor(rim, texture);
+        _applyTrimAnchor(body, texture);
       } else if (!texture) {
         group.visible = false;
         outer.visible = false;
@@ -797,6 +835,7 @@
     if (typeof terrainSnap.collisionCount === "number") {
       impactHandledCollisionCount = terrainSnap.collisionCount;
     }
+    spawnSplashParticles(impactContactX, impactContactY);
   }
 
   function syncSubmarineFlashOverlay(elapsed) {
@@ -846,6 +885,83 @@
     }
     if (rim) {
       rim.alpha = Math.min(1, OBSTACLE_RIM_ALPHA + 0.12 * pulse);
+    }
+  }
+
+  function syncScreenFlash(elapsed) {
+    var flash = nodes.screenFlash;
+    if (!flash) {
+      return;
+    }
+    var flashDuration = reducedMotion ? 120 : 160;
+    var progress = Math.min(1, elapsed / flashDuration);
+    var alpha = (1 - progress) * 0.35;
+    flash.visible = true;
+    flash.alpha = Math.max(0, alpha);
+  }
+
+  function syncSplashParticles(elapsed) {
+    var pool = nodes.splashParticles;
+    if (!pool || !impactEffectRunning) {
+      return;
+    }
+    var activeSplash = false;
+    for (var i = 0; i < pool.length; i += 1) {
+      var p = pool[i];
+      if (!p.active) {
+        continue;
+      }
+      p.life += elapsed;
+      if (p.life >= p.lifetime) {
+        p.active = false;
+        p.visible = false;
+        continue;
+      }
+      activeSplash = true;
+      var t = p.life / p.lifetime;
+      var ease = 1 - t;
+      p.x = p.originX + p.vx * p.life * 0.06;
+      p.y = p.originY + p.vy * p.life * 0.06 + 0.15 * p.life * 0.06;
+      p.scale.set(p.baseScale * ease, p.baseScale * ease);
+      p.alpha = Math.max(0, ease * p.startAlpha);
+    }
+  }
+
+  function spawnSplashParticles(x, y) {
+    var pool = nodes.splashParticles;
+    if (!pool) {
+      return;
+    }
+    var count = reducedMotion ? 6 : 12;
+    for (var i = 0; i < count; i += 1) {
+      var p = null;
+      for (var j = 0; j < pool.length; j += 1) {
+        if (!pool[j].active) {
+          p = pool[j];
+          break;
+        }
+      }
+      if (!p) {
+        p = new PIXI.Graphics();
+        p.circle(0, 0, 3).fill(0xFFFFFF);
+        p.eventMode = "none";
+        pool.push(p);
+        addChild(RenderRuntime.getContainer("effects"), p);
+      }
+      var angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.6;
+      var speed = 1.5 + Math.random() * 2.5;
+      p.active = true;
+      p.life = 0;
+      p.lifetime = 250 + Math.random() * 200;
+      p.originX = x;
+      p.originY = y;
+      p.vx = Math.cos(angle) * speed;
+      p.vy = Math.sin(angle) * speed - 1.2;
+      p.baseScale = 0.6 + Math.random() * 0.8;
+      p.scale.set(p.baseScale, p.baseScale);
+      p.alpha = 1;
+      p.startAlpha = 1;
+      p.visible = true;
     }
   }
 
@@ -1005,6 +1121,8 @@
 
     syncImpactPulse(elapsed);
     syncSubmarineFlashOverlay(elapsed);
+    syncScreenFlash(elapsed);
+    syncSplashParticles(elapsed);
 
     setImpactDiagnostics();
   }
@@ -1215,6 +1333,15 @@
       }
       if (nodes.collisionFlash) {
         removeOwnedChild(RenderRuntime.getContainer("effects"), nodes.collisionFlash);
+      }
+      if (nodes.screenFlash) {
+        removeOwnedChild(RenderRuntime.getContainer("effects"), nodes.screenFlash);
+      }
+      var splashArr = nodes.splashParticles || [];
+      for (var sj = 0; sj < splashArr.length; sj += 1) {
+        if (splashArr[sj] && splashArr[sj].parent) {
+          removeOwnedChild(RenderRuntime.getContainer("effects"), splashArr[sj]);
+        }
       }
       for (var j = 0; j < nodes.obstacleGroups.length; j += 1) {
         removeOwnedChild(RenderRuntime.getContainer("gameplayWorld"), nodes.obstacleGroups[j]);

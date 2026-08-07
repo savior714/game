@@ -117,10 +117,30 @@
     sprite.label = label;
     sprite.name = label;
     sprite.eventMode = "none";
-    if (texture.defaultAnchor && sprite.anchor) {
-      sprite.anchor.copyFrom(texture.defaultAnchor);
-    }
+    _applyTrimAnchor(sprite, texture);
     return sprite;
+  }
+
+  function _applyTrimAnchor(sprite, texture) {
+    var trim = texture.trim;
+    var orig = texture.orig;
+    if (
+      !orig ||
+      !finite(orig.width) ||
+      !finite(orig.height) ||
+      orig.width <= 0 ||
+      orig.height <= 0
+    ) {
+      return;
+    }
+    if (trim && finite(trim.x) && finite(trim.y) && finite(trim.width) && finite(trim.height)) {
+      sprite.anchor.set(
+        (trim.x + trim.width / 2) / orig.width,
+        (trim.y + trim.height / 2) / orig.height
+      );
+    } else {
+      sprite.anchor.set(0.5, 0.5);
+    }
   }
 
   function centerAnchorOnTrimmedVisibleFrame(sprite) {
@@ -222,7 +242,6 @@
     };
     for (var i = 0; i < 3; i += 1) {
       var loopSprite = makeSprite("scene.seaweed-loop.01", "sea-turtle-loop-" + (i + 1));
-      centerAnchorOnTrimmedVisibleFrame(loopSprite);
       nodes.loops.push(loopSprite);
     }
     for (var h = 0; h < 3; h += 1) {

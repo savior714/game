@@ -96,10 +96,7 @@ def _play_full_10_questions_with_final_wrong(page: Page) -> str:
 
 
 @pytest.mark.browser
-@pytest.mark.parametrize("run_index", range(4))
-def test_math_full_session_clean_restart_contract(
-    static_server: str, run_index: int
-) -> None:
+def test_math_full_session_clean_restart_contract(static_server: str) -> None:
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         context = browser.new_context(

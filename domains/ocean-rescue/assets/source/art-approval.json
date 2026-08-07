@@ -61,9 +61,9 @@
     "ui.drop-zone"
   ],
   "artPacketSha256": "9848f29d4012b40912b529de7f1a1c751bdecb00e860f9b8d453861116beb44e",
-  "contactSheetSha256": "8e808ea8ede6c969c62c08fd048ee9bff6128615d8fa0b035f2a2f4c8e17e5a7",
+  "contactSheetSha256": "6d9c3a2d686c053cb9694d3afdff50fa7234e6b8b36ecb4bc2f516e0b0f97f41",
   "sourceSetSha256": "9c6511087af6fb72415c88e145b8cb28d533f1abab5878d32e1c29347ad78633",
-  "requiredPredecessor": "17d77f10455709972d6efafbf9a3d718c437b63d",
+  "requiredPredecessor": "5020568690cecbfc2e4c3273a7a602a8f39c84e4",
   "approvalDate": "2026-08-07",
   "evidence": {
     "focusedTest": "tests/test_ocean_rescue_art_packet.py",

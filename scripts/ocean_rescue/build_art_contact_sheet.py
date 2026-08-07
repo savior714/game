@@ -34,7 +34,7 @@ def build_contact_sheet(source_root: Path) -> str:
         ],
         "scene": [
             "scene.submarine", "scene.water.far", "scene.reef.mid",
-            "scene.coral.foreground", "scene.seaweed-loop.01", "scene.seaweed-loop.02",
+            "scene.coral.foreground", "scene.seaweed-loop.01", "scene.seaweed-loop.02", "scene.seaweed-loop.03",
         ],
         "effects-ui": ["ui.drag-arrow", "fx.success-burst"],
     }

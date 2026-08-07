@@ -1753,7 +1753,7 @@
         started = false;
       }
     }
-    if (!started && typeof App.startSeaTurtleSession === "function") {
+    if (!started) {
       var fallbackCanvas = resolveVisibleInputCanvas();
       var fallbackContext = resolvePaintContext();
       var fallbackOverlay = document.getElementById("ocean-rescue-rescue-overlay");

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 200">
+  <g id="scene-seaweed-loop-03">
+    <!-- Main asymmetrical outer loop strand featuring double-bulge frond curve -->
+    <path d="M60 188 C30 175 14 140 18 95 C22 50 48 18 72 24 C96 30 106 65 98 110 C90 155 75 182 60 188 Z" fill="none" stroke="#2D8B46" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Vibrant secondary inner strand -->
+    <path d="M60 185 C32 172 18 138 21 95 C25 52 49 22 70 27 C92 32 102 65 95 108 C87 151 73 179 60 185 Z" fill="none" stroke="#3AA85A" stroke-width="5.5" stroke-linecap="round"/>
+    
+    <!-- Highlight inner vine strand -->
+    <path d="M60 182 C34 169 22 136 24 95 C28 54 50 26 68 31 C88 36 98 66 92 106 C84 147 71 176 60 182" fill="none" stroke="#4AB86A" stroke-width="2" opacity="0.6" stroke-linecap="round"/>
+    
+    <!-- Under-shadow accents -->
+    <path d="M60 188 C30 175 14 140 18 95" fill="none" stroke="#1A6B3A" stroke-width="1.8" opacity="0.4"/>
+    <path d="M72 24 C96 30 106 65 98 110" fill="none" stroke="#1A6B3A" stroke-width="1.8" opacity="0.4"/>
+    
+    <!-- Asymmetrical kelp fronds and bulbous nodes for loop 03 -->
+    <!-- Top apex node -->
+    <circle cx="72" cy="24" r="7" fill="#3AA85A" stroke="#1A6B3A" stroke-width="1.5"/>
+    <circle cx="71" cy="23" r="3.2" fill="#4AB86A" opacity="0.6"/>
+    <path d="M66 18 C69 14 76 14 79 19" fill="none" stroke="#2D8B46" stroke-width="1.5" opacity="0.6"/>
+
+    <!-- Left lower-taper node bulb -->
+    <circle cx="18" cy="95" r="6.5" fill="#2D8B46" stroke="#1A6B3A" stroke-width="1.5"/>
+    <circle cx="17" cy="94" r="3" fill="#4AB86A" opacity="0.5"/>
+
+    <!-- Right mid-height bulb -->
+    <circle cx="98" cy="110" r="6" fill="#3AA85A" stroke="#1A6B3A" stroke-width="1.5"/>
+    <circle cx="97" cy="109" r="2.8" fill="#4AB86A" opacity="0.6"/>
+
+    <!-- Distinctive frond shoots for loop 03 -->
+    <path d="M72 24 Q84 10 96 18 Q90 28 80 30 Z" fill="#3AA85A" opacity="0.85"/>
+    <path d="M18 95 Q6 108 12 122 Q20 118 20 105 Z" fill="#3AA85A" opacity="0.85"/>
+    <path d="M98 110 Q110 118 106 132 Q98 128 96 118 Z" fill="#2D8B46" opacity="0.85"/>
+    <path d="M42 38 Q32 26 38 16 Q46 22 46 32 Z" fill="#3AA85A" opacity="0.8"/>
+    <path d="M78 165 Q90 175 82 186 Q76 180 76 170 Z" fill="#3AA85A" opacity="0.8"/>
+
+    <!-- Inner central loop opening boundary line -->
+    <path d="M58 162 C42 142 32 112 36 88 C40 64 58 48 70 54 C82 60 84 82 78 104 C70 128 64 150 58 162" fill="none" stroke="#3AA85A" stroke-width="2.5" stroke-linecap="round" opacity="0.75"/>
+    <path d="M56 158 C42 138 34 110 37 88" fill="none" stroke="#4AB86A" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+    
+    <!-- Floating kelp spore accents -->
+    <circle cx="28" cy="65" r="3" fill="#2D8B46" opacity="0.6"/>
+    <circle cx="92" cy="75" r="3.2" fill="#2D8B46" opacity="0.6"/>
+    <circle cx="48" cy="150" r="2.8" fill="#4AB86A" opacity="0.6"/>
+  </g>
+</svg>

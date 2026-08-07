@@ -453,11 +453,21 @@ class TestMultiPageRegistry:
         }
         (gen / "pixi-assets-manifest.json").write_text(json.dumps(pixi_manifest))
 
+        source_root = REPO_ROOT / "domains" / "ocean-rescue" / "assets" / "source"
+        packet_path = source_root / "art-packet.json"
+        approval_path = source_root / "art-approval.json"
+        approval_record = json.loads(approval_path.read_text("utf-8"))
+        provenance = {
+            "sourcePacketSha256": sha256_path(packet_path),
+            "approvalRecordSha256": sha256_path(approval_path),
+            "sourceSetSha256": approval_record["sourceSetSha256"],
+        }
+
         atlas_manifest = {
             "schemaVersion": 1,
-            "sourcePacketSha256": "not-used",
-            "approvalRecordSha256": "not-used",
-            "sourceSetSha256": "not-used",
+            "sourcePacketSha256": provenance["sourcePacketSha256"],
+            "approvalRecordSha256": provenance["approvalRecordSha256"],
+            "sourceSetSha256": provenance["sourceSetSha256"],
             "toolchain": {"cairosvg": "2.9.0", "pillow": "12.3.0", "cairo": "1.18.4"},
             "rasterization": {"rasterScale": 2},
             "packing": {

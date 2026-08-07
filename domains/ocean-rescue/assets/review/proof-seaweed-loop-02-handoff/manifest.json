@@ -1,0 +1,36 @@
+{
+  "taskId": "AIDENGAME-OCEAN-RESCUE-SEAWEED-LOOP-02-HANDOFF-RENDER-PROOF",
+  "assetId": "scene-seaweed-loop-02-01",
+  "alias": "scene.seaweed-loop.02",
+  "svgHash": "cc655806372919858f95048b0bda0e26ef84ecfff2eb3b06e07fec167a358f3e",
+  "logicalSize": [
+    120,
+    200
+  ],
+  "proofs": {
+    "isolated1x": {
+      "file": "isolated-1x.png",
+      "dimensions": [
+        120,
+        200
+      ],
+      "sha256": "a8400ff94d61cea2a3124271711c7f548c67e10b76cf13cb2a04c09eb10d0ef2"
+    },
+    "isolated2x": {
+      "file": "isolated-2x.png",
+      "dimensions": [
+        240,
+        400
+      ],
+      "sha256": "d2aec8a68c1ac28a9c91047cf0cd57f1b9987155cf0e6e19d7faf9fe24f9908c"
+    },
+    "inContextProof": {
+      "file": "in-context-proof.png",
+      "dimensions": [
+        1280,
+        720
+      ],
+      "sha256": "cbe70b61e628a5cfe77b54eba02e5200566ca30e510ca34c2fd7bc4639f4021f"
+    }
+  }
+}

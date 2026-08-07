@@ -168,6 +168,7 @@
       throw new TypeError("attemptStart: FreeTimeSession must implement start, restore, select");
     }
 
+    // 8.1: recover pending transaction first
     let recovery;
     try {
       recovery = recoverPendingTransaction({ storage });
@@ -178,6 +179,7 @@
       return { code: RESULT.CORRUPT_TRANSACTION_JOURNAL };
     }
 
+    // 8.2: check existing session
     const sessionRawIn = storage.getItem(SESSION_STORAGE_KEY);
     if (sessionRawIn !== null) {
       let savedSession = null;
@@ -198,6 +200,7 @@
       }
     }
 
+    // 8.3: check reward balance
     const rewardRawIn = storage.getItem(REWARD_STORAGE_KEY);
     let reward;
     try {
@@ -217,6 +220,7 @@
       return { code: RESULT.INSUFFICIENT_TIME };
     }
 
+    // 8.4: open external tab
     let handle;
     try {
       handle = openExternal();
@@ -227,6 +231,7 @@
       return { code: RESULT.POPUP_BLOCKED };
     }
 
+    // 9: compute target state
     const targetReward = Object.assign({}, reward, {
       youtube_minutes: minutes - CHARGE_MINUTES,
       last_updated: new Date(now).toISOString(),
@@ -243,6 +248,7 @@
     const targetRewardRaw = JSON.stringify(targetReward);
     const targetSessionRaw = JSON.stringify(targetSession);
 
+    // 10: build journal
     const journal = {
       version: JOURNAL_SCHEMA_VERSION,
       transactionId: sessionId,
@@ -252,6 +258,7 @@
       targetSessionRaw: targetSessionRaw,
     };
 
+    // 11.3: persist journal first
     try {
       storage.setItem(JOURNAL_STORAGE_KEY, JSON.stringify(journal));
     } catch (e) {
@@ -259,6 +266,7 @@
       return { code: RESULT.COMMIT_FAILED };
     }
 
+    // 11.4: persist target reward
     try {
       storage.setItem(REWARD_STORAGE_KEY, targetRewardRaw);
     } catch (e) {
@@ -267,6 +275,7 @@
       return { code: rollbackOk ? RESULT.COMMIT_FAILED : RESULT.RECOVERY_REQUIRED };
     }
 
+    // 11.5: persist target session
     try {
       storage.setItem(SESSION_STORAGE_KEY, targetSessionRaw);
     } catch (e) {
@@ -275,6 +284,7 @@
       return { code: rollbackOk ? RESULT.COMMIT_FAILED : RESULT.RECOVERY_REQUIRED };
     }
 
+    // 11.7: remove journal
     try {
       storage.removeItem(JOURNAL_STORAGE_KEY);
     } catch (e) {

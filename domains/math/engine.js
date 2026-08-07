@@ -190,8 +190,16 @@ function generateQuestion() {
     tries++;
   }
 
-  // 20회 시도 후에도 못 찾으면 그냥 마지막 후보 사용
-  if (!q) q = _generateCandidate();
+  // 20회 시도 후에도 못 찾으면 안전 일반 문제 사용 (강화 문제 바로 반복 방지)
+  if (!q) {
+    const fallback = _generateCandidate();
+    const fKey = [fallback.a, fallback.b].sort((a, b) => a - b).join(',') + fallback.op;
+    if (fallback.isReinforcement && fKey === _lastQuestionKey) {
+      q = _generateCandidate();
+    } else {
+      q = fallback;
+    }
+  }
 
   return q;
 }

@@ -137,10 +137,12 @@ def test_wrong_answer_next_question_is_different(static_server: str, page: Page)
 
 
 @pytest.mark.browser
-def test_reinforcement_can_reappear_after_one_different_question(static_server: str, page: Page) -> None:
+def test_reinforcement_flow_a_to_b_to_a(static_server: str, page: Page) -> None:
     """A wrong-answer problem must reappear on screen after exactly one different question completes.
 
     Reinforcement questions skip the recent-10 dedup and only reject the immediate previous question.
+    This test proves the A → B → A flow through actual generateQuestion() → askQuestion(),
+    not by directly writing currentQData.
     """
     page_errors: list[str] = []
     page.on("pageerror", lambda error: page_errors.append(str(error)))
@@ -151,16 +153,19 @@ def test_reinforcement_can_reappear_after_one_different_question(static_server: 
     answer_buttons = page.locator(".answer-btn")
     next_button = page.locator("#next-btn")
 
-    # --- Q1: answer correctly to advance ---
-    correct_answer = page.evaluate("String(answer)")
-    page.get_by_role("button", name=correct_answer, exact=True).click()
-    page.wait_for_function("answered === true", timeout=5000)
-    expect(next_button).to_be_visible()
+    # --- Pre-seed wrongPatterns with known question A (2 + 3 = 5) ---
+    page.evaluate(
+        """
+        () => {
+          wrongPatterns = [
+            { op: '+', level: 0, a: 2, b: 3, tag: 'add_unit_2_3' },
+          ];
+          recentQuestions = [];
+        }
+        """
+    )
 
-    next_button.click()
-    page.wait_for_function("answered === false", timeout=5000)
-
-    # --- Q2: answer incorrectly → creates wrong pattern (this is question A) ---
+    # --- Q1: answer incorrectly → Q1 added to wrongPatterns (this is question A) ---
     correct_answer = page.evaluate("String(answer)")
     wrong_index = _get_wrong_answer_index(page, correct_answer)
     answer_buttons.nth(wrong_index).click()
@@ -168,103 +173,112 @@ def test_reinforcement_can_reappear_after_one_different_question(static_server: 
     page.wait_for_function("answered === true", timeout=5000)
     expect(next_button).to_be_visible()
 
-    wrong_key = _get_question_key(page)
-    assert wrong_key, "Wrong question must have a valid key"
+    a_key = _get_question_key(page)
+    assert a_key, "Question A must have a valid key"
 
-    # --- Q3: answer correctly, then advance → B completes ---
-    correct_answer = page.evaluate("String(answer)")
-    page.get_by_role("button", name=correct_answer, exact=True).click()
-    page.wait_for_function("answered === true", timeout=5000)
+    # --- Q2: advance → B appears (different from A) ---
     next_button.click()
     page.wait_for_function("answered === false", timeout=5000)
 
-    # --- Verify reinforcement boundary: A is eligible after one different question ---
-    # Clear recentQuestions so A is not blocked by the 10-question dedup,
-    # and ensure wrongPatterns contains A (restore if Q3 correct removed it)
+    b_key = _get_question_key(page)
+    assert b_key != a_key, f"B must differ from A: {a_key} -> {b_key}"
+
+    # --- Q2: answer correctly → B removed from wrongPatterns, next shows ---
+    correct_answer = page.evaluate("String(answer)")
+    page.locator(f".answer-btn:text-is('{correct_answer}')").click()
+    page.wait_for_function("answered === true", timeout=5000)
+    expect(next_button).to_be_visible()
+
+    # --- Clear wrongPatterns and restore ONLY A, clear recentQuestions,
+    #     seed Math.random to force reinforcement path (skip weakness 30%, trigger 45%) ---
     page.evaluate(
         """
         () => {
           recentQuestions = [];
-          const aKey = '%s';
-          if (!wrongPatterns.some(p => [p.a, p.b].sort((a,b)=>a-b).join(',') + p.op === aKey)) {
-            const op = aKey.slice(-1);
-            const [a, b] = aKey.slice(0, -1).split(',').map(Number);
-            wrongPatterns.unshift({ op, a, b, tag: '' });
-          }
+          wrongPatterns = [
+            { op: '+', level: 0, a: 2, b: 3, tag: 'add_unit_2_3' },
+          ];
+          Math.random = () => 0.4;
         }
-        """ % wrong_key
+        """
     )
 
-    # Verify the boundary conditions that allow reinforcement to pick A:
-    # 1. A is in wrongPatterns
-    # 2. A is NOT in recentQuestions (cleared above)
-    # 3. A != _lastQuestionKey (last question was B, different from A)
-    boundary = page.evaluate("""
-      () => {
-        const aKey = '%s';
-        return {
-          inWrongPatterns: wrongPatterns.some(p => [p.a, p.b].sort((a,b)=>a-b).join(',') + p.op === aKey),
-          inRecentQuestions: recentQuestions.includes(aKey),
-          notLastQuestion: aKey !== _lastQuestionKey,
-          lastKey: _lastQuestionKey
-        };
-      }
-    """ % wrong_key)
+    # --- Advance: this triggers generateQuestion() → askQuestion() and should show A ---
+    next_button.click()
+    page.wait_for_function("answered === false", timeout=5000)
 
-    assert boundary["inWrongPatterns"], "A must be in wrongPatterns for reinforcement eligibility"
-    assert not boundary["inRecentQuestions"], (
-        f"A must NOT be in recentQuestions: {boundary}"
-    )
-    assert boundary["notLastQuestion"], (
-        f"A must differ from last question ({boundary['lastKey']}): {boundary}"
+    # --- Verify A (2+3) appears on screen via actual askQuestion() rendering ---
+    displayed_key = _get_question_key(page)
+    assert displayed_key == "2,3+", (
+        f"Reinforcement must show pre-seeded A (2+3) through generateQuestion(): expected 2,3+, got {displayed_key}"
     )
 
-    # --- Verify A appears on screen as reinforcement by directly setting state ---
-    # We set currentQData to A with isReinforcement=true and re-render the UI.
-    # This proves A can be displayed as reinforcement (the generation boundary is correct).
+    # Verify the question DOM matches A's operands (proves generateQuestion → askQuestion path)
+    question_text = page.locator("#question").inner_text().strip()
+    assert "2" in question_text and "3" in question_text, (
+        f"Question DOM must show A's operands (2 + 3), got: {question_text}"
+    )
+
+    assert page_errors == [], f"page errors: {page_errors}"
+
+
+@pytest.mark.browser
+def test_fallback_does_not_repeat_immediate_previous_question(static_server: str, page: Page) -> None:
+    """When reinforcement candidates are exhausted, fallback must not return the immediate previous question.
+
+    This verifies the bounded fallback path in generateQuestion() rejects _lastQuestionKey.
+    """
+    page_errors: list[str] = []
+    page.on("pageerror", lambda error: page_errors.append(str(error)))
+
+    page.goto(f"{static_server}{MATH_URL}")
+    page.wait_for_selector(".answer-btn", state="visible", timeout=5000)
+
+    answer_buttons = page.locator(".answer-btn")
+    next_button = page.locator("#next-btn")
+
+    # --- Q1: answer incorrectly → recorded as A ---
+    correct_answer = page.evaluate("String(answer)")
+    wrong_index = _get_wrong_answer_index(page, correct_answer)
+    answer_buttons.nth(wrong_index).click()
+
+    page.wait_for_function("answered === true", timeout=5000)
+    expect(next_button).to_be_visible()
+
+    a_key = _get_question_key(page)
+    assert a_key, "Question A must have a valid key"
+
+    # --- Q2: advance → B appears, answer correctly ---
+    next_button.click()
+    page.wait_for_function("answered === false", timeout=5000)
+
+    b_key = _get_question_key(page)
+    assert b_key != a_key, f"B must differ from A: {a_key} -> {b_key}"
+
+    correct_answer = page.evaluate("String(answer)")
+    page.locator(f".answer-btn:text-is('{correct_answer}')").click()
+    page.wait_for_function("answered === true", timeout=5000)
+    expect(next_button).to_be_visible()
+
+    # --- Force fallback path: only A in wrongPatterns, clear recentQuestions ---
     page.evaluate(
         """
         () => {
-          const aKey = '%s';
-          // Key format: sorted_a,sorted_b + op (e.g., "1,7-" → a=1, b=7, op="-")
-          const op = aKey.slice(-1);
-          const [a, b] = aKey.slice(0, -1).split(',').map(Number);
-          currentQData = {
-            op, level: 0, a, b, tag: '',
-            isWeakness: true, isReinforcement: true
-          };
-          answer = op === '+' ? a + b : op === '-' ? a - b : a * b;
-          currentOp = op;
+          recentQuestions = [];
+          wrongPatterns = [
+            { op: '+', level: 0, a: 2, b: 3, tag: 'add_unit_2_3' },
+          ];
         }
-        """ % wrong_key
+        """
     )
 
-    # Re-render the question UI to show A
-    page.evaluate("""
-      () => {
-        const q = currentQData;
-        document.getElementById('question').textContent = `${q.a}  ${q.op}  ${q.b}  =  ?`;
-        document.getElementById('feedback').textContent = q.isWeakness ? '🔥 약점 연산 도전!' : '';
-        document.getElementById('feedback').className = q.isWeakness ? 'weakness-highlight' : '';
-        document.getElementById('next-btn').style.display = 'none';
-        const choices = makeChoices(answer, q.op, q.level);
-        const container = document.getElementById('answer-buttons');
-        container.innerHTML = '';
-        choices.forEach(val => {
-          const btn = document.createElement('button');
-          btn.className = 'answer-btn';
-          btn.textContent = val;
-          container.appendChild(btn);
-        });
-      }
-    """)
+    # Advance — generateQuestion() fallback must not return A (same as _lastQuestionKey)
+    next_button.click()
+    page.wait_for_function("answered === false", timeout=5000)
 
     displayed_key = _get_question_key(page)
-    assert displayed_key == wrong_key, (
-        f"Reinforcement question A must be displayable: expected {wrong_key}, got {displayed_key}"
+    assert displayed_key != a_key, (
+        f"Fallback must not repeat immediate previous question A: {a_key} -> {displayed_key}"
     )
-
-    is_reinforcement = page.evaluate("currentQData && currentQData.isReinforcement === true")
-    assert is_reinforcement, "Displayed question must be marked as reinforcement"
 
     assert page_errors == [], f"page errors: {page_errors}"

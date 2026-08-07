@@ -6,7 +6,7 @@ version: '3.8'
 services:
   # Local PostgreSQL for testing game stats atomic operations
   postgres:
-    image: postgres:15-alpine
+    image: postgres:15.18-alpine@sha256:3d0f7584ed7d04e27fa050d6683a74746608faf21f202be78460d679cc56461f
     container_name: aiden_game_postgres
     ports:
       - "5433:5432"

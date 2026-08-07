@@ -477,6 +477,79 @@ run("start does not mutate input", () => {
   assert.equal(before, after);
 });
 
+// ── 사례 H — Acknowledged 세션 복원 및 Select ─────────────────────
+
+run("H: acknowledged restore preserves acknowledged status when endsAt <= now", () => {
+  const original = {
+    schemaVersion: 1,
+    sessionId: "ack-session-001",
+    status: "acknowledged",
+    startedAt: NOW - 1000000,
+    endsAt: NOW - 100000,
+    durationMs: 900000,
+    chargedMinutes: 15,
+    source: "reward",
+    warningEmittedAt: null,
+    expiredAt: NOW - 100000,
+    acknowledgedAt: NOW - 50000,
+  };
+  const restored = FreeTimeSession.restore({
+    savedSession: original,
+    now: NOW,
+  });
+  assert.equal(restored.status, "acknowledged");
+});
+
+run("H: acknowledged restore preserves identity and timestamps", () => {
+  const original = {
+    schemaVersion: 1,
+    sessionId: "ack-session-001",
+    status: "acknowledged",
+    startedAt: NOW - 1000000,
+    endsAt: NOW - 100000,
+    durationMs: 900000,
+    chargedMinutes: 15,
+    source: "reward",
+    warningEmittedAt: null,
+    expiredAt: NOW - 100000,
+    acknowledgedAt: NOW - 50000,
+  };
+  const restored = FreeTimeSession.restore({
+    savedSession: original,
+    now: NOW,
+  });
+  assert.equal(restored.sessionId, original.sessionId);
+  assert.equal(restored.startedAt, original.startedAt);
+  assert.equal(restored.endsAt, original.endsAt);
+  assert.equal(restored.expiredAt, original.expiredAt);
+  assert.equal(restored.acknowledgedAt, original.acknowledgedAt);
+});
+
+run("H: select on acknowledged returns active=false, expired=false, remainingMs=0", () => {
+  const original = {
+    schemaVersion: 1,
+    sessionId: "ack-session-001",
+    status: "acknowledged",
+    startedAt: NOW - 1000000,
+    endsAt: NOW - 100000,
+    durationMs: 900000,
+    chargedMinutes: 15,
+    source: "reward",
+    warningEmittedAt: null,
+    expiredAt: NOW - 100000,
+    acknowledgedAt: NOW - 50000,
+  };
+  const restored = FreeTimeSession.restore({
+    savedSession: original,
+    now: NOW,
+  });
+  const sel = FreeTimeSession.select(restored, NOW);
+  assert.equal(sel.active, false);
+  assert.equal(sel.expired, false);
+  assert.equal(sel.remainingMs, 0);
+  assert.equal(sel.status, "acknowledged");
+});
+
 // ── 결과 ─────────────────────────────────────────────────────
 
 console.log(`\nResults: ${passed} passed, ${failed} failed`);

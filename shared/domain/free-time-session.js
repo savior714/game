@@ -117,6 +117,10 @@
       };
     }
 
+    if (savedSession.status === STATUS.ACKNOWLEDGED) {
+      return { ...savedSession };
+    }
+
     if (savedSession.endsAt > now) {
       return { ...savedSession };
     }
@@ -134,6 +138,8 @@
 
   function _isExpired(session, now) {
     if (!_isValidSnapshot(session)) return false;
+    if (session.status === STATUS.ACKNOWLEDGED) return false;
+    if (session.status === STATUS.EXPIRED) return true;
     return session.endsAt <= now;
   }
 

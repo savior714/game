@@ -88,6 +88,16 @@ AidenGame은 어린이를 위한 정적 웹 기반 학습 게임 플랫폼이다
 - LSP·typecheck·lint 오류를 “pre-existing” 또는 “out of scope”라는 이유만으로 보고하고 PASS하지 않는다.
 - 최종 PASS는 현재 변경과 직접 영향 범위의 정적 오류가 0이고 이번 작업에 요구되는 저장소 정적 게이트가 통과한 경우에만 허용한다. 안전하게 해결할 수 없는 정적 오류가 남으면 정확한 재현 명령과 원인을 포함해 `BLOCKED`로 보고한다.
 
+### 5.2 Domain meaning and representation boundaries
+
+- Domain state/object가 의미와 invariant를 소유한다. 외부·저장 표현의 불확실성을 runtime domain 전체에 전파하지 않는다.
+- JSON, localStorage, URL/query, imported content, generated metadata 등 외부 또는 persisted representation은 사용 전에 검증·정규화하고, 계약이 다르면 runtime domain object와 명시적으로 분리한다.
+- 문제·진행·보상·게임 상태의 생성·복원·재시작 경로는 같은 invariant를 보장해야 한다. 복원 경로가 invalid state를 우회 생성하지 않게 한다.
+- 서로 배타적인 상태와 상태별 필수 값은 가능한 한 독립 boolean/null 조합보다 명시적 tag/state와 transition으로 표현한다.
+- 의미가 다른 ID·code·score·quantity 같은 값의 혼동이 실제 오류가 되는 경우 현재 언어·도구가 지원하는 가장 단순한 semantic representation을 사용한다. TypeScript 전환이나 wrapper 전면 도입을 요구하지 않는다.
+- type/JSDoc/schema 오류를 없애기 위해 optional/default/fallback을 임의 추가하거나 unchecked cast·broad object shape로 의미를 약화하지 않는다. producer → boundary/normalizer → domain consumer를 추적해 실제 owner를 고친다.
+- 타입·상태 안정성 작업의 criterion은 “컴파일/검사가 통과한다”가 아니라 이름 붙인 invalid state가 더 이상 trusted runtime에 들어오거나 표현되지 않는다는 직접 증거로 잡는다.
+
 대표 명령:
 
 ```bash

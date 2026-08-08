@@ -81,7 +81,10 @@ def test_freeze_notice_matches_current_scope_and_exceptions() -> None:
 def test_freeze_notice_does_not_expand_exception_scope() -> None:
     notice = read(FREEZE_NOTICE)
 
-    assert "drift, rollback 검증 실패 또는 테스트 실패만으로는 예외가 성립하지 않는다" in notice
+    assert (
+        "drift, rollback 검증 실패 또는 테스트 실패만으로는 예외가 성립하지 않는다"
+        in notice
+    )
     assert "- source, build metadata, tracked artifact의 명확한 drift" not in notice
     assert "- rollback 불능" not in notice
     assert "배포 차단 치명적 회귀, 데이터 손상 또는 보안 문제를 직접 증명" in notice

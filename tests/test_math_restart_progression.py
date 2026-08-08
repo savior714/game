@@ -85,7 +85,9 @@ def _play_full_10_questions_with_final_wrong(page: Page) -> str:
     feedback_el = page.locator("#feedback")
     expect(feedback_el).to_have_class("feedback-wrong")
     terminal_wrong_feedback = feedback_el.inner_text().strip()
-    assert terminal_wrong_feedback != "", "Terminal wrong feedback text must be non-empty"
+    assert terminal_wrong_feedback != "", (
+        "Terminal wrong feedback text must be non-empty"
+    )
 
     next_btn = page.locator("#next-btn")
     expect(next_btn).to_be_visible()
@@ -113,7 +115,9 @@ def test_math_full_session_clean_restart_contract(static_server: str) -> None:
         page.on("pageerror", lambda error: page_errors.append(str(error)))
         page.on(
             "console",
-            lambda msg: console_errors.append(msg.text) if msg.type == "error" else None,
+            lambda msg: (
+                console_errors.append(msg.text) if msg.type == "error" else None
+            ),
         )
         page.on(
             "requestfailed",
@@ -193,18 +197,22 @@ def test_math_full_session_clean_restart_contract(static_server: str) -> None:
 
         # Instrumentation exact calls evaluation
         ask_count = page.evaluate("window.__askQuestionCallCount")
-        assert ask_count == 1, f"Expected askQuestion call count to be 1, got {ask_count}"
+        assert ask_count == 1, (
+            f"Expected askQuestion call count to be 1, got {ask_count}"
+        )
 
         timer_start_count = page.evaluate("window.__startTimerCallCount")
-        assert (
-            timer_start_count == 1
-        ), f"Expected startTimer call count to be 1, got {timer_start_count}"
+        assert timer_start_count == 1, (
+            f"Expected startTimer call count to be 1, got {timer_start_count}"
+        )
 
         # Timer single ownership check
         timer_active = page.evaluate(
             "typeof timerInterval !== 'undefined' ? (timerInterval ? 1 : 0) : 0"
         )
-        assert timer_active == 1, f"Expected exactly 1 active timer interval, got {timer_active}"
+        assert timer_active == 1, (
+            f"Expected exactly 1 active timer interval, got {timer_active}"
+        )
 
         # Stability check for single-click restart invocation
         page.wait_for_timeout(1500)

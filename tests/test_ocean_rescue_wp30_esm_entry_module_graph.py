@@ -401,14 +401,11 @@ def test_each_adapter_has_namespace_guard_and_export() -> None:
             assert "installSeaTurtleLifecycleController" in text, (
                 f"{name}: missing WP-33E controller installation"
             )
-            assert text.index(
-                "installProfileMissionSelectionController(registeredApp)"
-            ) < text.index(
-                "installLaunchTravelController(profileMissionApp)"
-            ) < text.index(
-                "installRescueSiteTutorialController(launchTravelApp)"
-            ) < text.index(
-                "installPauseTimerResumeController(rescueSiteApp)"
+            assert (
+                text.index("installProfileMissionSelectionController(registeredApp)")
+                < text.index("installLaunchTravelController(profileMissionApp)")
+                < text.index("installRescueSiteTutorialController(launchTravelApp)")
+                < text.index("installPauseTimerResumeController(rescueSiteApp)")
             ), (
                 f"{name}: controller installation order must be "
                 f"WP-33A, WP-33B, WP-33C, WP-33D"
@@ -423,6 +420,7 @@ def test_each_adapter_has_namespace_guard_and_export() -> None:
             ):
                 pattern = rf"const\s+{var_name}\s*=\s*{func_name}\s*\("
                 import re as _re
+
                 match = _re.search(pattern, text)
                 if match:
                     positions.append((func_name, match.start()))
@@ -470,14 +468,14 @@ def test_app_adapter_imports_ordered_typed_controllers() -> None:
     for typed in APP_ADAPTER_CONTROLLER_FILES["app.js"]:
         assert typed in resolved, f"app.js must import typed controller {typed}"
     text = (ESM_DIR / "app.js").read_text(encoding="utf-8")
-    assert text.index(
-        "installProfileMissionSelectionController(registeredApp)"
-    ) < text.index(
-        "installLaunchTravelController(profileMissionApp)"
-    ) < text.index("installRescueSiteTutorialController(launchTravelApp)")
-    assert text.index("installRescueSiteTutorialController(launchTravelApp)") < text.index(
-        "installPauseTimerResumeController("
+    assert (
+        text.index("installProfileMissionSelectionController(registeredApp)")
+        < text.index("installLaunchTravelController(profileMissionApp)")
+        < text.index("installRescueSiteTutorialController(launchTravelApp)")
     )
+    assert text.index(
+        "installRescueSiteTutorialController(launchTravelApp)"
+    ) < text.index("installPauseTimerResumeController(")
     assert text.index("installPauseTimerResumeController(") < text.index(
         "installSeaTurtleLifecycleController("
     )

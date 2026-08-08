@@ -78,7 +78,9 @@ def test_seaweed_loops_01_02_03_distinct_texture_consumption_browser() -> None:
                   return aliases.map(alias => RenderRuntime.hasTexture(alias));
                 }"""
             )
-            assert loop_textures == [True, True, True], f"All 3 seaweed loop textures must be loaded: {loop_textures}"
+            assert loop_textures == [True, True, True], (
+                f"All 3 seaweed loop textures must be loaded: {loop_textures}"
+            )
 
             # Start sea-turtle session via public API flow
             start_result = page.evaluate(
@@ -132,8 +134,14 @@ def test_seaweed_loops_01_02_03_distinct_texture_consumption_browser() -> None:
 
             assert release_result["s1"]["completedRopeIds"] == ["rope-1"]
             assert release_result["s2"]["completedRopeIds"] == ["rope-1", "rope-2"]
-            assert release_result["s3"]["completedRopeIds"] == ["rope-1", "rope-2", "rope-3"]
-            assert release_result["s3"]["complete"] is True, "Session must be complete after releasing 3 ropes"
+            assert release_result["s3"]["completedRopeIds"] == [
+                "rope-1",
+                "rope-2",
+                "rope-3",
+            ]
+            assert release_result["s3"]["complete"] is True, (
+                "Session must be complete after releasing 3 ropes"
+            )
 
             _assert_quality_gates(errors)
             context.close()

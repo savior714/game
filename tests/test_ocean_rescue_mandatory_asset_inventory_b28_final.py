@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import json
 import pathlib
-import pytest
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 ART_PACKET = REPO_ROOT / "domains/ocean-rescue/assets/source/art-packet.json"
 ART_APPROVAL = REPO_ROOT / "domains/ocean-rescue/assets/source/art-approval.json"
-RENDERING_MVP_SPEC = REPO_ROOT / "docs/specs/product/AIDENGAME_OCEAN_RESCUE_RENDERING_MVP.md"
+RENDERING_MVP_SPEC = (
+    REPO_ROOT / "docs/specs/product/AIDENGAME_OCEAN_RESCUE_RENDERING_MVP.md"
+)
 
 
 def test_seaweed_loops_all_three_present_and_approved():

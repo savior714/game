@@ -40,8 +40,14 @@ def test_chat_planning_is_default_and_blueprint_is_explicit_only() -> None:
 
     assert "일반적인 계획 요청은 채팅에서 처리한다." in planning
     assert "위 요청만으로 `docs/plans/` 파일을 만들지 않는다." in planning
-    assert "사용자가 파일 생성 또는 기존 Blueprint 사용을 명시적으로 요청한 경우에만" in planning
-    assert "사용자가 **저장소에 Blueprint 또는 plan 문서를 만들라고 명시적으로 요청한 경우에만**" in workflow
+    assert (
+        "사용자가 파일 생성 또는 기존 Blueprint 사용을 명시적으로 요청한 경우에만"
+        in planning
+    )
+    assert (
+        "사용자가 **저장소에 Blueprint 또는 plan 문서를 만들라고 명시적으로 요청한 경우에만**"
+        in workflow
+    )
     assert "일반적인 “계획해줘”, “다음 작업 정리”, “이어서 진행”" in workflow
 
 
@@ -63,9 +69,15 @@ def test_handoff_and_archive_do_not_create_status_document_churn() -> None:
     assert "다음 중 하나가 바뀐 경우에만 갱신한다." in handoff
     assert "과목별 진행률" in handoff
     assert "장기 일정" in handoff
-    assert "사용자가 **기존 저장소 Blueprint의 아카이브를 명시적으로 요청한 경우에만**" in archive
+    assert (
+        "사용자가 **기존 저장소 Blueprint의 아카이브를 명시적으로 요청한 경우에만**"
+        in archive
+    )
     assert "현재 authority 문서" in archive
-    assert "다음 실행 경계나 authority가 바뀌지 않았다면 `MEMORY.md`를 수정하지 않는다." in archive
+    assert (
+        "다음 실행 경계나 authority가 바뀌지 않았다면 `MEMORY.md`를 수정하지 않는다."
+        in archive
+    )
 
 
 def test_planning_docs_remove_foreign_and_automatic_plan_assumptions() -> None:
@@ -111,4 +123,7 @@ def test_product_tests_are_decoupled_from_schedule_state_by_policy() -> None:
     assert "다음 WP" in planning
     assert "현재 WP" in planning
     assert "문서의 COMPLETE 문자열" in planning
-    assert "제품 테스트에 계획 진행률이나 다음 작업 assertion을 추가하지 않는다." in workflow
+    assert (
+        "제품 테스트에 계획 진행률이나 다음 작업 assertion을 추가하지 않는다."
+        in workflow
+    )

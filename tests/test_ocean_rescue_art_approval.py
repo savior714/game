@@ -485,7 +485,9 @@ class TestContactSheetPathCanonicality:
             "domains/ocean-rescue/assets/review/proof-art-contact-sheet.html"
         )
 
-    def test_validator_rejects_safe_noncanonical_contact_sheet_path(self, tmp_path: Path):
+    def test_validator_rejects_safe_noncanonical_contact_sheet_path(
+        self, tmp_path: Path
+    ):
         record = _load_json(ART_APPROVAL_JSON)
         record = dict(record)
         record["evidence"] = dict(record.get("evidence", {}))

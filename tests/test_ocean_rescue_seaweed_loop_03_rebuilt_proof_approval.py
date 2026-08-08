@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import json
 import pathlib
-import pytest
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 APPROVAL_JSON = REPO_ROOT / "domains/ocean-rescue/assets/source/art-approval.json"
-CONTACT_SHEET = REPO_ROOT / "domains/ocean-rescue/assets/review/proof-art-contact-sheet.html"
+CONTACT_SHEET = (
+    REPO_ROOT / "domains/ocean-rescue/assets/review/proof-art-contact-sheet.html"
+)
 
 
 def test_seaweed_loop_03_rebuilt_proof_approval_receipt():

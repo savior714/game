@@ -76,7 +76,9 @@ def _get_wrong_answer_index(page: Page, correct_answer: str) -> int:
 
 
 @pytest.mark.browser
-def test_wrong_answer_next_question_is_different(static_server: str, page: Page) -> None:
+def test_wrong_answer_next_question_is_different(
+    static_server: str, page: Page
+) -> None:
     """After a wrong answer, pressing next must show a different problem (not immediate reinforcement)."""
     page_errors: list[str] = []
     console_errors: list[str] = []
@@ -118,7 +120,9 @@ def test_wrong_answer_next_question_is_different(static_server: str, page: Page)
     expect(next_button).to_be_hidden()
 
     # Question counter must have advanced by exactly 1
-    assert page.evaluate("currentQ") == 1, "Question counter must advance by 1 after wrong answer"
+    assert page.evaluate("currentQ") == 1, (
+        "Question counter must advance by 1 after wrong answer"
+    )
     expect(page.locator("#q-count")).to_have_text("2")
 
     # The new question must NOT be the same as the one we just got wrong
@@ -229,7 +233,9 @@ def test_reinforcement_flow_a_to_b_to_a(static_server: str, page: Page) -> None:
 
 
 @pytest.mark.browser
-def test_fallback_does_not_repeat_immediate_previous_question(static_server: str, page: Page) -> None:
+def test_fallback_does_not_repeat_immediate_previous_question(
+    static_server: str, page: Page
+) -> None:
     """When reinforcement candidates are exhausted, fallback must not return the immediate previous question.
 
     This verifies the bounded fallback path in generateQuestion() rejects _lastQuestionKey.

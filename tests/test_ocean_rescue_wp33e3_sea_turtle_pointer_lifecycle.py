@@ -118,9 +118,7 @@ def test_controller_exposes_pointer_lifecycle_via_object_assign() -> None:
     ]
     assign_section = text.split("Object.assign(host, {")[1].split("}")[0]
     for token in object_assign:
-        assert token in assign_section, (
-            f"Object.assign must expose {token.rstrip(',')}"
-        )
+        assert token in assign_section, f"Object.assign must expose {token.rstrip(',')}"
 
 
 def test_controller_owns_pointer_state_in_closure() -> None:
@@ -153,9 +151,9 @@ def test_controller_uses_pointer_input_boundary() -> None:
 def test_controller_handle_down_validates_primary_and_button() -> None:
     """handleSeaTurtlePointerDown rejects non-primary and non-button-0."""
     text = _read(CONTROLLER)
-    down_body = text.split("function handleSeaTurtlePointerDown")[1].split(
-        "function "
-    )[0]
+    down_body = text.split("function handleSeaTurtlePointerDown")[1].split("function ")[
+        0
+    ]
     assert "event.isPrimary === false" in down_body
     assert "event.button !== 0" in down_body
 
@@ -163,9 +161,9 @@ def test_controller_handle_down_validates_primary_and_button() -> None:
 def test_controller_handle_down_rejects_duplicate() -> None:
     """handleSeaTurtlePointerDown rejects second pointerdown while active."""
     text = _read(CONTROLLER)
-    down_body = text.split("function handleSeaTurtlePointerDown")[1].split(
-        "function "
-    )[0]
+    down_body = text.split("function handleSeaTurtlePointerDown")[1].split("function ")[
+        0
+    ]
     assert "activePointerId !== null" in down_body
     assert "return false" in down_body
 
@@ -173,9 +171,9 @@ def test_controller_handle_down_rejects_duplicate() -> None:
 def test_controller_handle_down_stores_pointer_and_capture() -> None:
     """handleSeaTurtlePointerDown stores pointer ID, capture, and calls setPointerCapture."""
     text = _read(CONTROLLER)
-    down_body = text.split("function handleSeaTurtlePointerDown")[1].split(
-        "function "
-    )[0]
+    down_body = text.split("function handleSeaTurtlePointerDown")[1].split("function ")[
+        0
+    ]
     assert "activePointerId = event.pointerId;" in down_body
     assert "activePointerCaptureElement = captureElement;" in down_body
     assert "setPointerCapture(event.pointerId)" in down_body
@@ -186,18 +184,18 @@ def test_controller_handle_down_stores_pointer_and_capture() -> None:
 def test_controller_handle_move_validates_tracked_pointer() -> None:
     """handleSeaTurtlePointerMove only processes tracked pointer."""
     text = _read(CONTROLLER)
-    move_body = text.split("function handleSeaTurtlePointerMove")[1].split(
-        "function "
-    )[0]
+    move_body = text.split("function handleSeaTurtlePointerMove")[1].split("function ")[
+        0
+    ]
     assert "isSeaTurtlePointerTracked(event)" in move_body
 
 
 def test_controller_handle_move_calls_sea_turtle_and_sync() -> None:
     """handleSeaTurtlePointerMove calls SeaTurtle.pointerMove and syncs projection."""
     text = _read(CONTROLLER)
-    move_body = text.split("function handleSeaTurtlePointerMove")[1].split(
-        "function "
-    )[0]
+    move_body = text.split("function handleSeaTurtlePointerMove")[1].split("function ")[
+        0
+    ]
     assert "SeaTurtle?.pointerMove(event.pointerId, mapped.x, mapped.y)" in move_body
     assert "syncSeaTurtleProjection(activeIntent)" in move_body
 
@@ -205,9 +203,7 @@ def test_controller_handle_move_calls_sea_turtle_and_sync() -> None:
 def test_controller_handle_up_routes_feedback() -> None:
     """WP-33E-4: handleSeaTurtlePointerUp calls beginSeaTurtleFeedback."""
     text = _read(CONTROLLER)
-    up_body = text.split("function handleSeaTurtlePointerUp")[1].split(
-        "function "
-    )[0]
+    up_body = text.split("function handleSeaTurtlePointerUp")[1].split("function ")[0]
     assert "beginSeaTurtleFeedback(result)" in up_body
     assert "releaseActivePointerCapture()" in up_body
     assert "clearSeaTurtlePointerState()" in up_body
@@ -216,9 +212,7 @@ def test_controller_handle_up_routes_feedback() -> None:
 def test_controller_handle_up_handles_no_mapped_point() -> None:
     """handleSeaTurtlePointerUp calls pointerCancel when no mapped point."""
     text = _read(CONTROLLER)
-    up_body = text.split("function handleSeaTurtlePointerUp")[1].split(
-        "function "
-    )[0]
+    up_body = text.split("function handleSeaTurtlePointerUp")[1].split("function ")[0]
     assert "SeaTurtle?.pointerCancel(event.pointerId)" in up_body
 
 
@@ -270,9 +264,7 @@ def test_controller_shutdown_is_idempotent() -> None:
 def test_controller_stop_session_triggers_pointer_shutdown() -> None:
     """stopSeaTurtleSession calls shutdownSeaTurtlePointer to avoid leftover capture."""
     text = _read(CONTROLLER)
-    stop_body = text.split("function stopSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    stop_body = text.split("function stopSeaTurtleSession")[1].split("function ")[0]
     assert "shutdownSeaTurtlePointer()" in stop_body
 
 
@@ -314,7 +306,7 @@ def test_app_js_retains_ordered_script_fallback_for_pointer() -> None:
     text = _read(APP)
     required = (
         "seaTurtlePointerId = event.pointerId;",
-        "seaTurtlePointerCaptureEl = document.getElementById(\"ocean-rescue-canvas\");",
+        'seaTurtlePointerCaptureEl = document.getElementById("ocean-rescue-canvas");',
         "seaTurtlePointerCaptureEl.setPointerCapture(event.pointerId)",
         "seaTurtlePointerCaptureEl.releasePointerCapture(seaTurtlePointerId)",
         "seaTurtlePointerId = null;",
@@ -377,12 +369,10 @@ def test_crab_and_young_whale_unchanged() -> None:
 def test_justfile_includes_wp33e3_test_in_focused_recipe() -> None:
     """Justfile includes WP-33E-3 test in sea-turtle lifecycle focused recipe."""
     text = _read(JUSTFILE)
-    recipe = text.split(
-        "check-ocean-rescue-sea-turtle-lifecycle-controller:", 1
-    )[1].split("\n# ", 1)[0]
-    assert (
-        "tests/test_ocean_rescue_wp33e3_sea_turtle_pointer_lifecycle.py" in recipe
-    )
+    recipe = text.split("check-ocean-rescue-sea-turtle-lifecycle-controller:", 1)[
+        1
+    ].split("\n# ", 1)[0]
+    assert "tests/test_ocean_rescue_wp33e3_sea_turtle_pointer_lifecycle.py" in recipe
 
 
 # ---------------------------------------------------------------------------
@@ -473,9 +463,7 @@ def _force_rescue_active(page: Page) -> None:
 
 
 def _set_active_rescue_sequence(page: Page, sequence):
-    page.evaluate(
-        "(seq) => OceanRescue.App.setActiveRescueSequence(seq)", sequence
-    )
+    page.evaluate("(seq) => OceanRescue.App.setActiveRescueSequence(seq)", sequence)
 
 
 def _make_sea_turtle_sequence(page: Page, sequence_id: int):
@@ -557,9 +545,7 @@ def _install_pointer_trace(page: Page) -> None:
 
 
 def _start_session(page: Page, seq) -> None:
-    result = page.evaluate(
-        "(seq) => OceanRescue.App.startSeaTurtleSession(seq)", seq
-    )
+    result = page.evaluate("(seq) => OceanRescue.App.startSeaTurtleSession(seq)", seq)
     assert result is True, "startSeaTurtleSession must return true"
 
 
@@ -628,22 +614,28 @@ def _begin_sea_turtle_touch_gesture(
     """
     cdp = context.new_cdp_session(page)
     try:
-        cdp.send("Emulation.setTouchEmulationEnabled", {
-            "enabled": True,
-            "maxTouchPoints": 1,
-        })
-        cdp.send("Input.dispatchTouchEvent", {
-            "type": "touchStart",
-            "touchPoints": [{"x": client_x, "y": client_y, "id": 100}],
-        })
+        cdp.send(
+            "Emulation.setTouchEmulationEnabled",
+            {
+                "enabled": True,
+                "maxTouchPoints": 1,
+            },
+        )
+        cdp.send(
+            "Input.dispatchTouchEvent",
+            {
+                "type": "touchStart",
+                "touchPoints": [{"x": client_x, "y": client_y, "id": 100}],
+            },
+        )
         page.wait_for_timeout(150)
         pointer_id = page.evaluate("() => window.__wp33e3Trace.pointerId")
         assert pointer_id is not None, (
             "trusted pointerdown did not fire or trace listener did not record pointerId"
         )
-        assert isinstance(pointer_id, (int, float)) and not isinstance(pointer_id, bool), (
-            f"observed pointerId must be a number, got {type(pointer_id).__name__}"
-        )
+        assert isinstance(pointer_id, (int, float)) and not isinstance(
+            pointer_id, bool
+        ), f"observed pointerId must be a number, got {type(pointer_id).__name__}"
         assert math.isfinite(pointer_id), (
             f"observed pointerId must be finite, got {pointer_id}"
         )
@@ -667,19 +659,25 @@ def _end_sea_turtle_touch_gesture(
     """
     if cancel and cdp is not None:
         try:
-            cdp.send("Input.dispatchTouchEvent", {
-                "type": "touchCancel",
-                "touchPoints": [],
-            })
+            cdp.send(
+                "Input.dispatchTouchEvent",
+                {
+                    "type": "touchCancel",
+                    "touchPoints": [],
+                },
+            )
         except Exception:
             pass
     if cdp is None:
         return
     try:
-        cdp.send("Emulation.setTouchEmulationEnabled", {
-            "enabled": False,
-            "maxTouchPoints": 0,
-        })
+        cdp.send(
+            "Emulation.setTouchEmulationEnabled",
+            {
+                "enabled": False,
+                "maxTouchPoints": 0,
+            },
+        )
     except Exception:
         pass
     try:
@@ -738,9 +736,7 @@ def test_pointer_down_acquires_capture_and_sets_active() -> None:
             context = browser.new_context(
                 viewport={"width": LOGICAL_WIDTH, "height": LOGICAL_HEIGHT}
             )
-            context.add_init_script(
-                "localStorage.clear(); sessionStorage.clear();"
-            )
+            context.add_init_script("localStorage.clear(); sessionStorage.clear();")
             page = context.new_page()
             errors = _instrument(page, server.base_url)
             page.goto(f"{server.base_url}/index.dev.html")
@@ -762,13 +758,13 @@ def test_pointer_down_acquires_capture_and_sets_active() -> None:
             )
 
             canvas = page.locator("#ocean-rescue-canvas")
-            start_client = _canvas_logical_to_client(canvas, rope_start["x"], rope_start["y"])
+            start_client = _canvas_logical_to_client(
+                canvas, rope_start["x"], rope_start["y"]
+            )
 
             observed_pointer_id = _trigger_pointer_down(page, start_client)
 
-            snapshot = page.evaluate(
-                "() => OceanRescue.SeaTurtle.getSnapshot()"
-            )
+            snapshot = page.evaluate("() => OceanRescue.SeaTurtle.getSnapshot()")
             assert snapshot["pointerActive"] is True, (
                 "pointerActive must be true after pointerdown"
             )
@@ -788,9 +784,7 @@ def test_pointer_down_acquires_capture_and_sets_active() -> None:
                 "(id) => OceanRescue.App.isTrackedSeaTurtlePointer(id)",
                 observed_pointer_id,
             )
-            assert tracked is True, (
-                "controller must track the captured pointerId"
-            )
+            assert tracked is True, "controller must track the captured pointerId"
 
             _assert_quality_gates(errors)
             context.close()
@@ -805,9 +799,7 @@ def test_pointer_move_keeps_same_captured_pointer() -> None:
             context = browser.new_context(
                 viewport={"width": LOGICAL_WIDTH, "height": LOGICAL_HEIGHT}
             )
-            context.add_init_script(
-                "localStorage.clear(); sessionStorage.clear();"
-            )
+            context.add_init_script("localStorage.clear(); sessionStorage.clear();")
             page = context.new_page()
             errors = _instrument(page, server.base_url)
             page.goto(f"{server.base_url}/index.dev.html")
@@ -835,7 +827,9 @@ def test_pointer_move_keeps_same_captured_pointer() -> None:
             )
 
             canvas = page.locator("#ocean-rescue-canvas")
-            start_client = _canvas_logical_to_client(canvas, rope_start["x"], rope_start["y"])
+            start_client = _canvas_logical_to_client(
+                canvas, rope_start["x"], rope_start["y"]
+            )
             end_client = _canvas_logical_to_client(canvas, rope_end["x"], rope_end["y"])
 
             observed_pointer_id = _trigger_pointer_down(page, start_client)
@@ -843,8 +837,12 @@ def test_pointer_move_keeps_same_captured_pointer() -> None:
             steps = 5
             for i in range(1, steps + 1):
                 frac = i / steps
-                move_x = int(start_client["x"] + (end_client["x"] - start_client["x"]) * frac)
-                move_y = int(start_client["y"] + (end_client["y"] - start_client["y"]) * frac)
+                move_x = int(
+                    start_client["x"] + (end_client["x"] - start_client["x"]) * frac
+                )
+                move_y = int(
+                    start_client["y"] + (end_client["y"] - start_client["y"]) * frac
+                )
                 page.mouse.move(move_x, move_y)
 
             trace_after = page.evaluate("() => window.__wp33e3Trace")
@@ -852,9 +850,7 @@ def test_pointer_move_keeps_same_captured_pointer() -> None:
                 "pointermove listener must fire during drag"
             )
 
-            snapshot = page.evaluate(
-                "() => OceanRescue.SeaTurtle.getSnapshot()"
-            )
+            snapshot = page.evaluate("() => OceanRescue.SeaTurtle.getSnapshot()")
             assert snapshot["pointerActive"] is True, (
                 "pointerActive must remain true during pointermove"
             )
@@ -883,9 +879,7 @@ def test_pointer_up_releases_capture_and_clears_active() -> None:
             context = browser.new_context(
                 viewport={"width": LOGICAL_WIDTH, "height": LOGICAL_HEIGHT}
             )
-            context.add_init_script(
-                "localStorage.clear(); sessionStorage.clear();"
-            )
+            context.add_init_script("localStorage.clear(); sessionStorage.clear();")
             page = context.new_page()
             errors = _instrument(page, server.base_url)
             page.goto(f"{server.base_url}/index.dev.html")
@@ -907,7 +901,9 @@ def test_pointer_up_releases_capture_and_clears_active() -> None:
             )
 
             canvas = page.locator("#ocean-rescue-canvas")
-            start_client = _canvas_logical_to_client(canvas, rope_start["x"], rope_start["y"])
+            start_client = _canvas_logical_to_client(
+                canvas, rope_start["x"], rope_start["y"]
+            )
 
             observed_pointer_id = _trigger_pointer_down(page, start_client)
 
@@ -926,9 +922,7 @@ def test_pointer_up_releases_capture_and_clears_active() -> None:
                 f"observed_pointer_id={observed_pointer_id}"
             )
 
-            snapshot = page.evaluate(
-                "() => OceanRescue.SeaTurtle.getSnapshot()"
-            )
+            snapshot = page.evaluate("() => OceanRescue.SeaTurtle.getSnapshot()")
             assert snapshot["pointerActive"] is False, (
                 "pointerActive must be false after pointerup"
             )
@@ -956,9 +950,7 @@ def test_pause_releases_active_pointer_capture() -> None:
             context = browser.new_context(
                 viewport={"width": LOGICAL_WIDTH, "height": LOGICAL_HEIGHT}
             )
-            context.add_init_script(
-                "localStorage.clear(); sessionStorage.clear();"
-            )
+            context.add_init_script("localStorage.clear(); sessionStorage.clear();")
             page = context.new_page()
             errors = _instrument(page, server.base_url)
             page.goto(f"{server.base_url}/index.dev.html")
@@ -980,25 +972,21 @@ def test_pause_releases_active_pointer_capture() -> None:
             )
 
             canvas = page.locator("#ocean-rescue-canvas")
-            start_client = _canvas_logical_to_client(canvas, rope_start["x"], rope_start["y"])
+            start_client = _canvas_logical_to_client(
+                canvas, rope_start["x"], rope_start["y"]
+            )
 
             observed_pointer_id = _trigger_pointer_down(page, start_client)
 
-            snapshot_before = page.evaluate(
-                "() => OceanRescue.SeaTurtle.getSnapshot()"
-            )
+            snapshot_before = page.evaluate("() => OceanRescue.SeaTurtle.getSnapshot()")
             assert snapshot_before["pointerActive"] is True
 
             _check_pointer_capture(page, observed_pointer_id)
 
             page.evaluate("() => OceanRescue.App.enterPause()")
-            page.wait_for_function(
-                "OceanRescue.App.isPauseActive()", timeout=3000
-            )
+            page.wait_for_function("OceanRescue.App.isPauseActive()", timeout=3000)
 
-            snapshot_pause = page.evaluate(
-                "() => OceanRescue.SeaTurtle.getSnapshot()"
-            )
+            snapshot_pause = page.evaluate("() => OceanRescue.SeaTurtle.getSnapshot()")
             assert snapshot_pause["pointerActive"] is False, (
                 "pointerActive must be false during pause"
             )
@@ -1037,9 +1025,7 @@ def test_session_shutdown_releases_active_pointer_capture() -> None:
             context = browser.new_context(
                 viewport={"width": LOGICAL_WIDTH, "height": LOGICAL_HEIGHT}
             )
-            context.add_init_script(
-                "localStorage.clear(); sessionStorage.clear();"
-            )
+            context.add_init_script("localStorage.clear(); sessionStorage.clear();")
             page = context.new_page()
             errors = _instrument(page, server.base_url)
             page.goto(f"{server.base_url}/index.dev.html")
@@ -1061,20 +1047,18 @@ def test_session_shutdown_releases_active_pointer_capture() -> None:
             )
 
             canvas = page.locator("#ocean-rescue-canvas")
-            start_client = _canvas_logical_to_client(canvas, rope_start["x"], rope_start["y"])
+            start_client = _canvas_logical_to_client(
+                canvas, rope_start["x"], rope_start["y"]
+            )
 
             observed_pointer_id = _trigger_pointer_down(page, start_client)
 
-            snapshot_before = page.evaluate(
-                "() => OceanRescue.SeaTurtle.getSnapshot()"
-            )
+            snapshot_before = page.evaluate("() => OceanRescue.SeaTurtle.getSnapshot()")
             assert snapshot_before["pointerActive"] is True
 
             _check_pointer_capture(page, observed_pointer_id)
 
-            result = page.evaluate(
-                "() => OceanRescue.App.stopSeaTurtleSession()"
-            )
+            result = page.evaluate("() => OceanRescue.App.stopSeaTurtleSession()")
             assert result is True, "stopSeaTurtleSession must return true"
 
             active_session = page.evaluate(
@@ -1084,9 +1068,7 @@ def test_session_shutdown_releases_active_pointer_capture() -> None:
                 "active session must be null after stopSeaTurtleSession"
             )
 
-            snapshot_after = page.evaluate(
-                "() => OceanRescue.SeaTurtle.getSnapshot()"
-            )
+            snapshot_after = page.evaluate("() => OceanRescue.SeaTurtle.getSnapshot()")
             assert snapshot_after["active"] is False, (
                 "SeaTurtle must not be active after stop"
             )
@@ -1136,9 +1118,7 @@ def test_pointer_cancel_releases_capture_and_clears_active_gesture() -> None:
             context = browser.new_context(
                 viewport={"width": LOGICAL_WIDTH, "height": LOGICAL_HEIGHT}
             )
-            context.add_init_script(
-                "localStorage.clear(); sessionStorage.clear();"
-            )
+            context.add_init_script("localStorage.clear(); sessionStorage.clear();")
             page = context.new_page()
             errors = _instrument(page, server.base_url)
             page.goto(f"{server.base_url}/index.dev.html")
@@ -1160,7 +1140,9 @@ def test_pointer_cancel_releases_capture_and_clears_active_gesture() -> None:
             )
 
             canvas = page.locator("#ocean-rescue-canvas")
-            start_client = _canvas_logical_to_client(canvas, rope_start["x"], rope_start["y"])
+            start_client = _canvas_logical_to_client(
+                canvas, rope_start["x"], rope_start["y"]
+            )
 
             # Step 1: begin single CDP session native touch gesture (touchStart)
             cdp, observed_pointer_id = _begin_sea_turtle_touch_gesture(
@@ -1180,9 +1162,7 @@ def test_pointer_cancel_releases_capture_and_clears_active_gesture() -> None:
                 f"native hasPointerCapture({observed_pointer_id}) must be true after trusted pointerdown, got {has_capture_before}"
             )
 
-            snapshot = page.evaluate(
-                "() => OceanRescue.SeaTurtle.getSnapshot()"
-            )
+            snapshot = page.evaluate("() => OceanRescue.SeaTurtle.getSnapshot()")
             assert snapshot["pointerActive"] is True, (
                 "SeaTurtle snapshot.pointerActive must be true after capture acquired"
             )
@@ -1244,9 +1224,7 @@ def test_pointer_cancel_releases_capture_and_clears_active_gesture() -> None:
                 f"native hasPointerCapture({observed_pointer_id}) must be false after pointercancel, got {has_capture_after}"
             )
 
-            snapshot_after = page.evaluate(
-                "() => OceanRescue.SeaTurtle.getSnapshot()"
-            )
+            snapshot_after = page.evaluate("() => OceanRescue.SeaTurtle.getSnapshot()")
             assert snapshot_after["pointerActive"] is False, (
                 "SeaTurtle snapshot.pointerActive must be false after capture released"
             )
@@ -1372,15 +1350,17 @@ def test_begin_touch_gesture_cleans_partial_cdp_session_on_trace_failure() -> No
             200,
         )
 
-    assert fake_context.sessions_created == 1, (
-        "exactly one CDP session must be created"
-    )
+    assert fake_context.sessions_created == 1, "exactly one CDP session must be created"
 
     cdp = fake_context.last_session
     assert cdp is not None, "session must exist after creation"
 
     call_methods = [c[0] for c in cdp.calls]
-    enable_calls = [c for c in cdp.calls if c[0] == "Emulation.setTouchEmulationEnabled" and c[1].get("enabled", False)]
+    enable_calls = [
+        c
+        for c in cdp.calls
+        if c[0] == "Emulation.setTouchEmulationEnabled" and c[1].get("enabled", False)
+    ]
     assert len(enable_calls) == 1, (
         f"touch emulation enable must be called exactly once, got {len(enable_calls)}"
     )
@@ -1388,12 +1368,20 @@ def test_begin_touch_gesture_cleans_partial_cdp_session_on_trace_failure() -> No
         f"touchStart + touchCancel must produce >=2 Input.dispatchTouchEvent calls, got {call_methods}"
     )
 
-    touch_start_calls = [c for c in cdp.calls if c[0] == "Input.dispatchTouchEvent" and c[1].get("type") == "touchStart"]
+    touch_start_calls = [
+        c
+        for c in cdp.calls
+        if c[0] == "Input.dispatchTouchEvent" and c[1].get("type") == "touchStart"
+    ]
     assert len(touch_start_calls) == 1, (
         f"touchStart must be dispatched exactly once, got {len(touch_start_calls)}"
     )
 
-    touch_cancel_calls = [c for c in cdp.calls if c[0] == "Input.dispatchTouchEvent" and c[1].get("type") == "touchCancel"]
+    touch_cancel_calls = [
+        c
+        for c in cdp.calls
+        if c[0] == "Input.dispatchTouchEvent" and c[1].get("type") == "touchCancel"
+    ]
     assert len(touch_cancel_calls) == 1, (
         f"touchCancel must be dispatched exactly once on failure cleanup, got {len(touch_cancel_calls)}"
     )
@@ -1401,7 +1389,12 @@ def test_begin_touch_gesture_cleans_partial_cdp_session_on_trace_failure() -> No
         "touchCancel must use empty touchPoints array"
     )
 
-    disable_calls = [c for c in cdp.calls if c[0] == "Emulation.setTouchEmulationEnabled" and not c[1].get("enabled", True)]
+    disable_calls = [
+        c
+        for c in cdp.calls
+        if c[0] == "Emulation.setTouchEmulationEnabled"
+        and not c[1].get("enabled", True)
+    ]
     assert len(disable_calls) == 1, (
         f"touch emulation disable must be called exactly once, got {len(disable_calls)}"
     )
@@ -1471,7 +1464,6 @@ def test_pointercancel_proof_has_only_single_session_touch_helper_path() -> None
     assert synthetic_dispatch not in text, (
         "synthetic canvas.dispatchEvent call must be removed"
     )
-
 
 
 def _fake_page_returning(page: _FakePage, value: float) -> None:

@@ -270,6 +270,7 @@ def _assert_node_ok(result: subprocess.CompletedProcess[str]) -> None:
 
 # ── 1. Profile catalog and public contract ──────────────────────────────
 
+
 def test_profile_catalog_and_public_contract() -> None:
     harness = _FULL_BOOTSTRAP + textwrap.dedent(
         """\
@@ -317,6 +318,7 @@ def test_profile_catalog_and_public_contract() -> None:
 
 # ── 2. Fresh storage state ──────────────────────────────────────────────
 
+
 def test_fresh_storage_state() -> None:
     harness = _FULL_BOOTSTRAP + textwrap.dedent(
         """\
@@ -333,6 +335,7 @@ def test_fresh_storage_state() -> None:
 
 # ── 3. Selection does not persist ───────────────────────────────────────
 
+
 def test_selection_does_not_persist() -> None:
     harness = _FULL_BOOTSTRAP + textwrap.dedent(
         """\
@@ -347,6 +350,7 @@ def test_selection_does_not_persist() -> None:
 
 
 # ── 4. Confirmation persists ────────────────────────────────────────────
+
 
 def test_confirmation_persists() -> None:
     harness = _FULL_BOOTSTRAP + textwrap.dedent(
@@ -373,6 +377,7 @@ def test_confirmation_persists() -> None:
 
 # ── 5. Reload hydration ─────────────────────────────────────────────────
 
+
 def test_reload_hydration() -> None:
     harness = _FULL_BOOTSTRAP + textwrap.dedent(
         """\
@@ -392,6 +397,7 @@ def test_reload_hydration() -> None:
 
 
 # ── 6. Invalid storage fallback ─────────────────────────────────────────
+
 
 def test_invalid_storage_fallback() -> None:
     harness = _FULL_BOOTSTRAP + textwrap.dedent(
@@ -444,6 +450,7 @@ def test_invalid_storage_fallback() -> None:
 
 
 # ── 7. Storage exception isolation ──────────────────────────────────────
+
 
 def test_storage_exception_isolation() -> None:
     harness = _FULL_BOOTSTRAP + textwrap.dedent(
@@ -507,6 +514,7 @@ def test_storage_exception_isolation() -> None:
 
 # ── 8. State transition contract ────────────────────────────────────────
 
+
 def test_state_transition_contract() -> None:
     harness = _FULL_BOOTSTRAP + textwrap.dedent(
         """\
@@ -541,6 +549,7 @@ def test_state_transition_contract() -> None:
 
 
 # ── 9. Fresh boot destination ───────────────────────────────────────────
+
 
 def test_fresh_boot_enters_profile_choice() -> None:
     harness = _FULL_BOOTSTRAP + textwrap.dedent(
@@ -582,6 +591,7 @@ def test_fresh_boot_enters_profile_choice() -> None:
 
 # ── 10. Selection UI ───────────────────────────────────────────────────
 
+
 def test_selection_ui() -> None:
     harness = _FULL_BOOTSTRAP + textwrap.dedent(
         """\
@@ -607,6 +617,7 @@ def test_selection_ui() -> None:
 
 
 # ── 11. Confirmation flow ──────────────────────────────────────────────
+
 
 def test_confirmation_flow() -> None:
     harness = _FULL_BOOTSTRAP + textwrap.dedent(
@@ -638,6 +649,7 @@ def test_confirmation_flow() -> None:
 
 # ── 12. Reload skip ────────────────────────────────────────────────────
 
+
 def test_reload_skip() -> None:
     harness = _FULL_BOOTSTRAP + textwrap.dedent(
         """\
@@ -668,6 +680,7 @@ def test_reload_skip() -> None:
 
 # ── 13. Re-entrancy ────────────────────────────────────────────────────
 
+
 def test_re_entrancy() -> None:
     harness = _FULL_BOOTSTRAP + textwrap.dedent(
         """\
@@ -694,6 +707,7 @@ def test_re_entrancy() -> None:
 
 
 # ── 14. Existing progression independence ───────────────────────────────
+
 
 def test_progression_independence() -> None:
     harness = _FULL_BOOTSTRAP + textwrap.dedent(

@@ -119,7 +119,9 @@ def _instrument(page, base_url):
     return page_errors, console_errors, request_failures, external_requests
 
 
-def _assert_quality_gates(page_errors, console_errors, request_failures, external_requests):
+def _assert_quality_gates(
+    page_errors, console_errors, request_failures, external_requests
+):
     assert page_errors == [], f"page errors: {page_errors}"
     assert console_errors == [], f"console errors: {console_errors}"
     assert request_failures == [], f"request failures: {request_failures}"
@@ -290,9 +292,7 @@ def test_controller_exposes_host_bridges():
         "syncSeaTurtleScene",
     ]
     for bridge in bridges:
-        assert bridge in text, (
-            f"controller HostApi must declare {bridge!r} bridge"
-        )
+        assert bridge in text, f"controller HostApi must declare {bridge!r} bridge"
 
 
 def test_controller_exposes_pointer_methods():
@@ -308,9 +308,7 @@ def test_controller_exposes_pointer_methods():
         "shutdownSeaTurtlePointer",
     ]
     for method in methods:
-        assert method in text, (
-            f"controller AppApi must declare {method!r} method"
-        )
+        assert method in text, f"controller AppApi must declare {method!r} method"
 
 
 def test_esm_lane_start_flow():
@@ -351,20 +349,46 @@ def test_esm_lane_start_flow():
                 """
                 results = page.evaluate(script)
 
-                assert results["hasStartMethod"] is True, "App.startSeaTurtleInteraction must exist"
-                assert results["hasPointerDown"] is True, "App.handleSeaTurtlePointerDown must exist"
-                assert results["hasPointerMove"] is True, "App.handleSeaTurtlePointerMove must exist"
-                assert results["hasPointerUp"] is True, "App.handleSeaTurtlePointerUp must exist"
-                assert results["hasPointerCancel"] is True, "App.handleSeaTurtlePointerCancel must exist"
-                assert results["hasPauseCancel"] is True, "App.cancelSeaTurtlePointerForPause must exist"
-                assert results["hasShutdown"] is True, "App.shutdownSeaTurtlePointer must exist"
-                assert results["hasRouteFeedback"] is True, "App.routeSeaTurtleFeedback must exist"
-                assert results["hasRenderFrame"] is True, "App.renderSeaTurtleFrame must exist"
-                assert results["hasUpdateMarkers"] is True, "App.updateSeaTurtleRootMarkers must exist"
+                assert results["hasStartMethod"] is True, (
+                    "App.startSeaTurtleInteraction must exist"
+                )
+                assert results["hasPointerDown"] is True, (
+                    "App.handleSeaTurtlePointerDown must exist"
+                )
+                assert results["hasPointerMove"] is True, (
+                    "App.handleSeaTurtlePointerMove must exist"
+                )
+                assert results["hasPointerUp"] is True, (
+                    "App.handleSeaTurtlePointerUp must exist"
+                )
+                assert results["hasPointerCancel"] is True, (
+                    "App.handleSeaTurtlePointerCancel must exist"
+                )
+                assert results["hasPauseCancel"] is True, (
+                    "App.cancelSeaTurtlePointerForPause must exist"
+                )
+                assert results["hasShutdown"] is True, (
+                    "App.shutdownSeaTurtlePointer must exist"
+                )
+                assert results["hasRouteFeedback"] is True, (
+                    "App.routeSeaTurtleFeedback must exist"
+                )
+                assert results["hasRenderFrame"] is True, (
+                    "App.renderSeaTurtleFrame must exist"
+                )
+                assert results["hasUpdateMarkers"] is True, (
+                    "App.updateSeaTurtleRootMarkers must exist"
+                )
                 assert results["hasHideHand"] is True, "App.hideAssistHand must exist"
-                assert results["hasEnsureBound"] is True, "App.ensureRescuePointerInputBound must exist"
-                assert results["hasSyncScene"] is True, "App.syncSeaTurtleScene must exist"
-                assert results["missionId"] == "sea-turtle", "SeaTurtle.MissionId must be 'sea-turtle'"
+                assert results["hasEnsureBound"] is True, (
+                    "App.ensureRescuePointerInputBound must exist"
+                )
+                assert results["hasSyncScene"] is True, (
+                    "App.syncSeaTurtleScene must exist"
+                )
+                assert results["missionId"] == "sea-turtle", (
+                    "SeaTurtle.MissionId must be 'sea-turtle'"
+                )
 
                 _assert_quality_gates(*errors)
             finally:
@@ -415,8 +439,12 @@ def test_esm_lane_pointer_down_sets_capture():
                 """
                 results = page.evaluate(script)
 
-                assert results["captureSet"] is False, "capture must not be set before pointerdown"
-                assert results["pointerDownCalled"] is False, "SeaTurtle.pointerDown must not be called yet"
+                assert results["captureSet"] is False, (
+                    "capture must not be set before pointerdown"
+                )
+                assert results["pointerDownCalled"] is False, (
+                    "SeaTurtle.pointerDown must not be called yet"
+                )
 
                 _assert_quality_gates(*errors)
             finally:
@@ -450,8 +478,12 @@ def test_legacy_rollback_pointer_behavior():
                 """
                 results = page.evaluate(script)
 
-                assert results["active"] is False, "SeaTurtle must not be active at boot"
-                assert results["pointerActive"] is False, "pointer must not be active at boot"
+                assert results["active"] is False, (
+                    "SeaTurtle must not be active at boot"
+                )
+                assert results["pointerActive"] is False, (
+                    "pointer must not be active at boot"
+                )
                 assert results["pointerId"] is None, "pointer ID must be null at boot"
 
                 _assert_quality_gates(*errors)

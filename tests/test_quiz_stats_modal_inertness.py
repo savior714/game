@@ -105,19 +105,37 @@ class TestStatsModalInertness:
         )
 
         # Step 2: verify background elements are NOT inert by default
-        home_link_inert = page.evaluate("() => document.querySelector('.home-link').inert")
+        home_link_inert = page.evaluate(
+            "() => document.querySelector('.home-link').inert"
+        )
         h1_inert = page.evaluate("() => document.body.children[1].inert")
-        score_board_inert = page.evaluate("() => document.getElementById('score-board').inert")
-        main_area_inert = page.evaluate("() => document.getElementById('main-area').inert")
-        assert home_link_inert is False, f".home-link should not be inert before open, got {home_link_inert}"
-        assert h1_inert is False, f"body > h1 should not be inert before open, got {h1_inert}"
-        assert score_board_inert is False, f"#score-board should not be inert before open, got {score_board_inert}"
-        assert main_area_inert is False, f"#main-area should not be inert before open, got {main_area_inert}"
+        score_board_inert = page.evaluate(
+            "() => document.getElementById('score-board').inert"
+        )
+        main_area_inert = page.evaluate(
+            "() => document.getElementById('main-area').inert"
+        )
+        assert home_link_inert is False, (
+            f".home-link should not be inert before open, got {home_link_inert}"
+        )
+        assert h1_inert is False, (
+            f"body > h1 should not be inert before open, got {h1_inert}"
+        )
+        assert score_board_inert is False, (
+            f"#score-board should not be inert before open, got {score_board_inert}"
+        )
+        assert main_area_inert is False, (
+            f"#main-area should not be inert before open, got {main_area_inert}"
+        )
 
         # Step 3: set #main-area to inert = true to prove per-element restoration
         page.evaluate("() => { document.getElementById('main-area').inert = true; }")
-        main_area_inert_pre = page.evaluate("() => document.getElementById('main-area').inert")
-        assert main_area_inert_pre is True, "#main-area must be inert=true before open to test restoration"
+        main_area_inert_pre = page.evaluate(
+            "() => document.getElementById('main-area').inert"
+        )
+        assert main_area_inert_pre is True, (
+            "#main-area must be inert=true before open to test restoration"
+        )
 
         # Step 4: create stats modal core instance and open
         modal_core = page.evaluate_handle(
@@ -126,10 +144,16 @@ class TestStatsModalInertness:
         modal_core.evaluate("core => core.openStats()")
 
         # Step 5: verify background elements ARE inert after open
-        home_link_inert_open = page.evaluate("() => document.querySelector('.home-link').inert")
+        home_link_inert_open = page.evaluate(
+            "() => document.querySelector('.home-link').inert"
+        )
         h1_inert_open = page.evaluate("() => document.body.children[1].inert")
-        score_board_inert_open = page.evaluate("() => document.getElementById('score-board').inert")
-        main_area_inert_open = page.evaluate("() => document.getElementById('main-area').inert")
+        score_board_inert_open = page.evaluate(
+            "() => document.getElementById('score-board').inert"
+        )
+        main_area_inert_open = page.evaluate(
+            "() => document.getElementById('main-area').inert"
+        )
 
         assert home_link_inert_open is True, (
             f".home-link should be inert after open, got {home_link_inert_open}"
@@ -145,7 +169,9 @@ class TestStatsModalInertness:
         )
 
         # Step 6: verify stats modal itself is NOT inert
-        stats_modal_inert = page.evaluate("() => document.getElementById('stats-modal').inert")
+        stats_modal_inert = page.evaluate(
+            "() => document.getElementById('stats-modal').inert"
+        )
         assert stats_modal_inert is False, (
             f"#stats-modal must NOT be inert while open, got {stats_modal_inert}"
         )
@@ -160,10 +186,16 @@ class TestStatsModalInertness:
         modal_core.evaluate("core => core.closeStats()")
 
         # Step 9: verify background elements are restored to their pre-open state
-        home_link_inert_close = page.evaluate("() => document.querySelector('.home-link').inert")
+        home_link_inert_close = page.evaluate(
+            "() => document.querySelector('.home-link').inert"
+        )
         h1_inert_close = page.evaluate("() => document.body.children[1].inert")
-        score_board_inert_close = page.evaluate("() => document.getElementById('score-board').inert")
-        main_area_inert_close = page.evaluate("() => document.getElementById('main-area').inert")
+        score_board_inert_close = page.evaluate(
+            "() => document.getElementById('score-board').inert"
+        )
+        main_area_inert_close = page.evaluate(
+            "() => document.getElementById('main-area').inert"
+        )
 
         assert home_link_inert_close is False, (
             f".home-link should be inert=false after close, got {home_link_inert_close}"
@@ -203,7 +235,9 @@ class TestStatsModalInertness:
         page.evaluate(
             "() => { document.querySelector('.home-link').inert = false; document.querySelector('body > h1').inert = true; }"
         )
-        home_link_inert_pre = page.evaluate("() => document.querySelector('.home-link').inert")
+        home_link_inert_pre = page.evaluate(
+            "() => document.querySelector('.home-link').inert"
+        )
         h1_inert_pre = page.evaluate("() => document.querySelector('body > h1').inert")
         assert home_link_inert_pre is False, (
             f".home-link must be inert=false before open, got {home_link_inert_pre}"
@@ -220,7 +254,9 @@ class TestStatsModalInertness:
         modal_core.evaluate("core => core.openStats()")
 
         # Step 3: verify both are inert while modal is open
-        home_link_inert_open = page.evaluate("() => document.querySelector('.home-link').inert")
+        home_link_inert_open = page.evaluate(
+            "() => document.querySelector('.home-link').inert"
+        )
         h1_inert_open = page.evaluate("() => document.querySelector('body > h1').inert")
         assert home_link_inert_open is True, (
             f".home-link should be inert after open, got {home_link_inert_open}"
@@ -242,8 +278,12 @@ class TestStatsModalInertness:
         modal_core.evaluate("core => core.closeStats()")
 
         # Step 6: verify each element is restored to its own prior inert state
-        home_link_inert_close = page.evaluate("() => document.querySelector('.home-link').inert")
-        h1_inert_close = page.evaluate("() => document.querySelector('body > h1').inert")
+        home_link_inert_close = page.evaluate(
+            "() => document.querySelector('.home-link').inert"
+        )
+        h1_inert_close = page.evaluate(
+            "() => document.querySelector('body > h1').inert"
+        )
         assert home_link_inert_close is False, (
             f".home-link should be inert=false after close (was false before open), got {home_link_inert_close}"
         )

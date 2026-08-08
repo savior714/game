@@ -105,7 +105,9 @@ class TestStatsModalFocusOnOpen:
         )
 
         # Step 2: call openStats() via the shared QuizUICore
-        page.evaluate("() => window.QuizUICore.createStatsModalCore({renderStatsTable: function(){}}).openStats()")
+        page.evaluate(
+            "() => window.QuizUICore.createStatsModalCore({renderStatsTable: function(){}}).openStats()"
+        )
 
         # Step 3: verify focus moved into the modal
         active_after = page.evaluate("() => document.activeElement.id")

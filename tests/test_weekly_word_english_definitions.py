@@ -42,7 +42,7 @@ function buildQuestion(type, word) {{
   if (type === 'sentence') return {{ type, koHint: word[1], word: word[0] }};
   return {{ type, main: word[1], word: word[0] }};
 }}
-{DEFINITIONS_JS.read_text(encoding='utf-8')}
+{DEFINITIONS_JS.read_text(encoding="utf-8")}
 const amount = ['amount', '양', '📊', 2];
 const apple = ['apple', '사과', '🍎', 0];
 console.log(JSON.stringify({{

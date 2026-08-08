@@ -132,9 +132,7 @@ def test_wrong_answer_state_resets_on_next_question(
     expect(next_button).to_be_hidden()
     expect(page.locator(".answer-btn.wrong")).to_have_count(0)
     expect(page.locator(".answer-btn.correct")).to_have_count(0)
-    assert feedback.evaluate(
-        "element => !element.classList.contains('feedback-wrong')"
-    )
+    assert feedback.evaluate("element => !element.classList.contains('feedback-wrong')")
     assert feedback.inner_text().strip() != previous_feedback
 
     page.locator(".answer-btn").first.click()

@@ -144,7 +144,9 @@ def test_canonical_pause_resume_browser_flow() -> None:
                 page.wait_for_function(
                     "OceanRescue.State.getSnapshot().phase === 'TRAVEL'"
                 )
-                page.wait_for_function("!!document.getElementById('ocean-rescue-pause-overlay')?.hidden === false")
+                page.wait_for_function(
+                    "!!document.getElementById('ocean-rescue-pause-overlay')?.hidden === false"
+                )
                 page.wait_for_function(
                     "document.getElementById('ocean-rescue-root').getAttribute('data-pause-active') === 'true'"
                 )
@@ -157,9 +159,9 @@ def test_canonical_pause_resume_browser_flow() -> None:
                 travel_distance_after = page.evaluate(
                     "OceanRescue.Travel.getSnapshot().distance"
                 )
-                assert (
-                    travel_distance_before == travel_distance_after
-                ), "travel distance should not change while paused"
+                assert travel_distance_before == travel_distance_after, (
+                    "travel distance should not change while paused"
+                )
 
                 _click_resume(page)
                 page.wait_for_function(
@@ -177,9 +179,7 @@ def test_canonical_pause_resume_browser_flow() -> None:
                 page.wait_for_function(
                     "document.getElementById('ocean-rescue-pause-overlay').hidden === true"
                 )
-                page.wait_for_function(
-                    "OceanRescue.App.isPauseActive() === false"
-                )
+                page.wait_for_function("OceanRescue.App.isPauseActive() === false")
                 page.wait_for_function(
                     "OceanRescue.State.getSnapshot().phase === 'TRAVEL'"
                 )
@@ -228,19 +228,17 @@ def test_timer_freeze_and_rearm() -> None:
                     "document.getElementById('ocean-rescue-pause-overlay').hidden === false"
                 )
 
-                pause_time = page.evaluate("Date.now()")
+                _pause_time = page.evaluate("Date.now()")
                 page.wait_for_timeout(4000)
 
-                callback_fired_during_pause = page.evaluate(
+                _callback_fired_during_pause = page.evaluate(
                     """() => {
                       return window.__goalFiredDuringPause || false;
                     }"""
                 )
 
                 _click_resume(page)
-                page.wait_for_function(
-                    "OceanRescue.App.isPauseActive() === false"
-                )
+                page.wait_for_function("OceanRescue.App.isPauseActive() === false")
 
                 _assert_quality_gates(errors)
             finally:
@@ -299,7 +297,7 @@ def test_repeated_boot_no_duplicate_listeners() -> None:
 
                 _enter_travel(page)
 
-                pause_click_count = page.evaluate(
+                _pause_click_count = page.evaluate(
                     """() => {
                       const btn = document.getElementById('ocean-rescue-pause-button');
                       const before = btn.__listenerCount || 0;
@@ -345,7 +343,9 @@ def test_static_ownership_and_install_order() -> None:
         if match:
             positions.append((name, match.start()))
 
-    assert len(positions) == 4, f"expected 4 installers, found {len(positions)}: {positions}"
+    assert len(positions) == 4, (
+        f"expected 4 installers, found {len(positions)}: {positions}"
+    )
     for i in range(len(positions) - 1):
         assert positions[i][1] < positions[i + 1][1], (
             f"{positions[i][0]} must appear before {positions[i + 1][0]}"
@@ -398,9 +398,7 @@ def test_static_ownership_and_install_order() -> None:
     )
 
     controller_text = CONTROLLER.read_text(encoding="utf-8")
-    add_event_listener_matches = re.findall(
-        r"\.addEventListener\s*\(", controller_text
-    )
+    add_event_listener_matches = re.findall(r"\.addEventListener\s*\(", controller_text)
     assert add_event_listener_matches == [], (
         f"typed controller must not register DOM event listeners, found {len(add_event_listener_matches)}"
     )

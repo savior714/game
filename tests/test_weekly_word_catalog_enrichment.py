@@ -105,7 +105,9 @@ def _run_harness() -> dict:
     sources.append(HARNESS)
     combined = "\n".join(sources)
 
-    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as f:
+    with tempfile.NamedTemporaryFile(
+        "w", suffix=".js", delete=False, encoding="utf-8"
+    ) as f:
         f.write(combined)
         script_path = f.name
     try:
@@ -131,26 +133,38 @@ def results() -> dict:
 def test_caseA_apple_resolves(results: dict) -> None:
     assert results["caseA"] == {"en": "apple", "ko": "사과", "icon": "\U0001f34e"}
 
+
 def test_caseA_uppercase(results: dict) -> None:
     assert results["caseA_upper"] == {"en": "apple", "ko": "사과", "icon": "\U0001f34e"}
 
+
 def test_caseA_spaces(results: dict) -> None:
-    assert results["caseA_spaces"] == {"en": "apple", "ko": "사과", "icon": "\U0001f34e"}
+    assert results["caseA_spaces"] == {
+        "en": "apple",
+        "ko": "사과",
+        "icon": "\U0001f34e",
+    }
+
 
 def test_caseA_mixed(results: dict) -> None:
     assert results["caseA_mixed"] == {"en": "apple", "ko": "사과", "icon": "\U0001f34e"}
 
+
 def test_caseB_duplicate_detected(results: dict) -> None:
     assert results["caseB_isDuplicate"] is True
+
 
 def test_caseB_array_unchanged(results: dict) -> None:
     assert results["caseB_arrayUnchanged"] is True
 
+
 def test_caseC_returns_null(results: dict) -> None:
     assert results["caseC_returnsNull"] is True
 
+
 def test_caseC_array_unchanged(results: dict) -> None:
     assert results["caseC_arrayUnchanged"] is True
+
 
 def test_schema_en_ko_icon(results: dict) -> None:
     assert results["schemaEn"] is True
@@ -158,12 +172,15 @@ def test_schema_en_ko_icon(results: dict) -> None:
     assert results["schemaIcon"] is True
     assert results["schemaKeys"] is True
 
+
 def test_returns_new_objects(results: dict) -> None:
     assert results["newObjects"] is True
     assert results["newObjectsEqual"] is True
 
+
 def test_words_not_mutated(results: dict) -> None:
     assert results["wordsUnmutated"] is True
+
 
 def test_guardian_uses_catalog_lookup() -> None:
     content = (ROOT / "domains/reward/guardian/guardian.js").read_text(encoding="utf-8")
@@ -174,10 +191,12 @@ def test_guardian_uses_catalog_lookup() -> None:
     assert "WORDS" in body
     assert "weeklyWords.some" in body
 
+
 def test_guardian_has_resolver() -> None:
     content = (ROOT / "domains/reward/guardian/guardian.js").read_text(encoding="utf-8")
     assert "function resolveWeeklyWord" in content
     assert "Object.keys(wordsCatalog)" in content
+
 
 def test_guardian_html_loads_words_js() -> None:
     content = (ROOT / "domains/reward/guardian/index.html").read_text(encoding="utf-8")
@@ -186,11 +205,13 @@ def test_guardian_html_loads_words_js() -> None:
     assert w > 0
     assert g > w
 
+
 def test_guardian_html_single_input() -> None:
     content = (ROOT / "domains/reward/guardian/index.html").read_text(encoding="utf-8")
     assert 'id="ww-en"' in content
     assert 'id="ww-ko"' not in content
     assert 'id="ww-icon"' not in content
+
 
 def test_addWeeklyWord_no_manual_ko() -> None:
     content = (ROOT / "domains/reward/guardian/guardian.js").read_text(encoding="utf-8")

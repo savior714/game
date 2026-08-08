@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import pathlib
-import pytest
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 ATLAS_JSON = REPO_ROOT / "domains/ocean-rescue/assets/generated/scene/scene-0.json"

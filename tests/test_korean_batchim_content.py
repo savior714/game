@@ -13,8 +13,7 @@ GENERAL_BATCHIM_PROMPT = "받침이 있는 단어를 고르세요."
 
 def _has_batchim(word: str) -> bool:
     return any(
-        0xAC00 <= ord(character) <= 0xD7A3
-        and (ord(character) - 0xAC00) % 28 != 0
+        0xAC00 <= ord(character) <= 0xD7A3 and (ord(character) - 0xAC00) % 28 != 0
         for character in word
     )
 

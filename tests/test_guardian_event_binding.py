@@ -94,7 +94,9 @@ def _node() -> str:
     return node
 
 
-def test_guardian_delegated_handlers_bind_once_and_dispatch_once(tmp_path: Path) -> None:
+def test_guardian_delegated_handlers_bind_once_and_dispatch_once(
+    tmp_path: Path,
+) -> None:
     harness = tmp_path / "harness.js"
     harness.write_text(HARNESS, encoding="utf-8")
     proc = subprocess.run(

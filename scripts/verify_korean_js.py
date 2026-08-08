@@ -87,14 +87,14 @@ def collect_targets(root: Path, dirs: list[str], all_flag: bool) -> list[Path]:
         patterns = ["domains/**/*.js", "shared/**/*.js", "experiments/**/*.js"]
         targets = []
         for pat in patterns:
-            targets.extend(root.glob(pat))
+            targets.extend([p for p in root.glob(pat) if p.is_file() and "node_modules" not in p.parts])
         return sorted(set(targets))
 
     targets = []
     for d in dirs:
         dir_path = root / d
         if dir_path.exists() and dir_path.is_dir():
-            targets.extend(dir_path.rglob("*.js"))
+            targets.extend([p for p in dir_path.rglob("*.js") if p.is_file() and "node_modules" not in p.parts])
     return sorted(set(targets))
 
 

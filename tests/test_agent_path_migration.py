@@ -15,10 +15,14 @@ def test_agent_documents_have_one_canonical_root() -> None:
         compatibility = COMPAT_ROOT / name
 
         assert canonical.is_dir(), f"missing canonical agent directory: {canonical}"
-        assert compatibility.is_symlink(), f"compatibility path must be a symlink: {compatibility}"
+        assert compatibility.is_symlink(), (
+            f"compatibility path must be a symlink: {compatibility}"
+        )
         assert compatibility.resolve() == canonical.resolve()
 
 
 def test_compatibility_root_contains_only_expected_links() -> None:
     assert COMPAT_ROOT.is_dir()
-    assert sorted(path.name for path in COMPAT_ROOT.iterdir()) == sorted(MIGRATED_DIRECTORIES)
+    assert sorted(path.name for path in COMPAT_ROOT.iterdir()) == sorted(
+        MIGRATED_DIRECTORIES
+    )

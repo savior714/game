@@ -87,9 +87,10 @@ def test_correct_answer_then_next_advances_exactly_one_question(
     assert page.evaluate("currentQ") == 0
     expect(page.locator("#q-count")).to_have_text("1")
     expect(page.locator("#q-score")).to_have_text("0")
-    assert page.evaluate(
-        "document.getElementById('next-btn').dataset.progressionBound"
-    ) == "true"
+    assert (
+        page.evaluate("document.getElementById('next-btn').dataset.progressionBound")
+        == "true"
+    )
 
     answer_current_question_correctly(page)
 

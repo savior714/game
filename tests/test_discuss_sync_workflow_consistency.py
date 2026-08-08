@@ -82,7 +82,10 @@ def test_sync_compares_claims_without_fake_spec_sync_cli() -> None:
 
     assert "implementation drift" in workflow
     assert "documentation drift" in workflow
-    assert "현재 `Justfile`의 `sync` recipe는 dependency/environment 동기화용 `uv sync`다." in workflow
+    assert (
+        "현재 `Justfile`의 `sync` recipe는 dependency/environment 동기화용 `uv sync`다."
+        in workflow
+    )
     assert "MATCH" in skill
     assert "DOC_STALE" in skill
     assert "IMPLEMENTATION_VIOLATION" in skill

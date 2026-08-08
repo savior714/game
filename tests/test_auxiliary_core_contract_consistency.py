@@ -143,4 +143,7 @@ def test_security_uses_actual_hard_gate_without_service_specific_credentials() -
     assert "scripts/verify/lint_dotenv.py" in security
     assert "`cat .env`, `echo $TOKEN`" in security
     assert "commit gate 실패 시 `--no-verify`로 우회하지 않는다." in security
-    assert "특정 서비스 credential을 AidenGame 공통 필수 계약으로 강제하지 않는다." in security
+    assert (
+        "특정 서비스 credential을 AidenGame 공통 필수 계약으로 강제하지 않는다."
+        in security
+    )

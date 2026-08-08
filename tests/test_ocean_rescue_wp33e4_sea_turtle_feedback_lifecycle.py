@@ -233,7 +233,10 @@ class TestOceanRescueWP33EFeedbackLifecycleRuntime:
                 context.add_init_script("window.localStorage.clear();")
                 page = context.new_page()
                 try:
-                    page.goto(f"{server.base_url}/index.dev.html", wait_until="domcontentloaded")
+                    page.goto(
+                        f"{server.base_url}/index.dev.html",
+                        wait_until="domcontentloaded",
+                    )
                     page.wait_for_selector(
                         "#ocean-rescue-root[data-ocean-rescue-ready='true']",
                         timeout=20000,
@@ -241,10 +244,16 @@ class TestOceanRescueWP33EFeedbackLifecycleRuntime:
                     _start_session(page)
                     _trace_rope(page)
                     snap = _snapshot(page)
-                    assert snap["feedback"] == "success", f"expected success, got {snap}"
-                    page.evaluate("() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()")
+                    assert snap["feedback"] == "success", (
+                        f"expected success, got {snap}"
+                    )
+                    page.evaluate(
+                        "() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()"
+                    )
                     snap2 = _snapshot(page)
-                    assert snap2["feedback"] is None, f"expected null after finish, got {snap2}"
+                    assert snap2["feedback"] is None, (
+                        f"expected null after finish, got {snap2}"
+                    )
                 finally:
                     browser.close()
 
@@ -258,7 +267,10 @@ class TestOceanRescueWP33EFeedbackLifecycleRuntime:
                 context.add_init_script("window.localStorage.clear();")
                 page = context.new_page()
                 try:
-                    page.goto(f"{server.base_url}/index.dev.html", wait_until="domcontentloaded")
+                    page.goto(
+                        f"{server.base_url}/index.dev.html",
+                        wait_until="domcontentloaded",
+                    )
                     page.wait_for_selector(
                         "#ocean-rescue-root[data-ocean-rescue-ready='true']",
                         timeout=20000,
@@ -266,9 +278,13 @@ class TestOceanRescueWP33EFeedbackLifecycleRuntime:
                     _start_session(page)
                     _trace_rope(page)
                     assert _snapshot(page)["feedback"] == "success"
-                    page.evaluate("() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()")
+                    page.evaluate(
+                        "() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()"
+                    )
                     assert _snapshot(page)["feedback"] is None
-                    page.evaluate("() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()")
+                    page.evaluate(
+                        "() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()"
+                    )
                     assert _snapshot(page)["feedback"] is None
                     assert _snapshot(page)["activeRopeId"] == "rope-2"
                 finally:
@@ -284,7 +300,10 @@ class TestOceanRescueWP33EFeedbackLifecycleRuntime:
                 context.add_init_script("window.localStorage.clear();")
                 page = context.new_page()
                 try:
-                    page.goto(f"{server.base_url}/index.dev.html", wait_until="domcontentloaded")
+                    page.goto(
+                        f"{server.base_url}/index.dev.html",
+                        wait_until="domcontentloaded",
+                    )
                     page.wait_for_selector(
                         "#ocean-rescue-root[data-ocean-rescue-ready='true']",
                         timeout=20000,
@@ -293,7 +312,9 @@ class TestOceanRescueWP33EFeedbackLifecycleRuntime:
                     _trace_rope(page)
                     assert _snapshot(page)["feedback"] == "success"
                     page.evaluate("() => window.OceanRescue.App.stopSeaTurtleSession()")
-                    page.evaluate("() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()")
+                    page.evaluate(
+                        "() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()"
+                    )
                     assert _snapshot(page)["active"] is False
                 finally:
                     browser.close()

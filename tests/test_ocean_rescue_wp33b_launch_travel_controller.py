@@ -84,9 +84,9 @@ def test_typed_launch_travel_controller_owns_skip_travel_and_arrival_flow() -> N
                 ].map((name) => [name, typeof OceanRescue.App[name]]))"""
             )
             assert set(contract.values()) == {"function"}
-            assert page.evaluate(
-                "typeof OceanRescue.TravelProgress.compute"
-            ) == "function"
+            assert (
+                page.evaluate("typeof OceanRescue.TravelProgress.compute") == "function"
+            )
 
             assert page.evaluate("OceanRescue.App.boot()") is True
             assert page.evaluate("OceanRescue.App.boot()") is True
@@ -147,7 +147,9 @@ def test_typed_launch_travel_controller_owns_skip_travel_and_arrival_flow() -> N
             box = canvas.bounding_box()
             assert box is not None
             page.mouse.click(box["x"] + box["width"] * 0.5, box["y"] + 180)
-            page.wait_for_function("OceanRescue.Travel.getSnapshot().tapTargetY !== null")
+            page.wait_for_function(
+                "OceanRescue.Travel.getSnapshot().tapTargetY !== null"
+            )
 
             before_y = page.evaluate("OceanRescue.Travel.getSnapshot().y")
             page.mouse.move(box["x"] + 300, box["y"] + 320)
@@ -162,14 +164,20 @@ def test_typed_launch_travel_controller_owns_skip_travel_and_arrival_flow() -> N
             assert page.locator("#ocean-rescue-pause-overlay").is_visible()
             paused_distance = page.evaluate("OceanRescue.Travel.getSnapshot().distance")
             page.wait_for_timeout(150)
-            assert page.evaluate("OceanRescue.Travel.getSnapshot().distance") == paused_distance
+            assert (
+                page.evaluate("OceanRescue.Travel.getSnapshot().distance")
+                == paused_distance
+            )
             page.click("#ocean-rescue-pause-resume")
             page.wait_for_function(
                 "document.getElementById('ocean-rescue-pause-overlay').hidden === true",
                 timeout=6000,
             )
             page.wait_for_timeout(150)
-            assert page.evaluate("OceanRescue.Travel.getSnapshot().distance") > paused_distance
+            assert (
+                page.evaluate("OceanRescue.Travel.getSnapshot().distance")
+                > paused_distance
+            )
 
             page.evaluate(
                 """() => {
@@ -232,9 +240,7 @@ def test_typed_launch_automatic_completion_reaches_travel_once() -> None:
                 "OceanRescue.State.getSnapshot().phase === 'TRAVEL'", timeout=9000
             )
             assert (
-                page.locator("#ocean-rescue-root").get_attribute(
-                    "data-launch-skipped"
-                )
+                page.locator("#ocean-rescue-root").get_attribute("data-launch-skipped")
                 == "false"
             )
             assert page.evaluate("OceanRescue.App.skipLaunch()") is False
@@ -257,7 +263,9 @@ def test_canonical_app_installs_controllers_in_order() -> None:
     text = ESM_APP.read_text(encoding="utf-8")
     assert "../controllers/profile-mission-selection" in text
     assert "../controllers/launch-travel" in text
-    profile_install = text.index("installProfileMissionSelectionController(registeredApp)")
+    profile_install = text.index(
+        "installProfileMissionSelectionController(registeredApp)"
+    )
     launch_install = text.index("installLaunchTravelController(profileMissionApp)")
     assert profile_install < launch_install
     assert "export { App };" in text

@@ -97,9 +97,7 @@ def _force_rescue_active(page: Page) -> None:
 
 
 def _set_active_rescue_sequence(page: Page, sequence):
-    page.evaluate(
-        "(seq) => OceanRescue.App.setActiveRescueSequence(seq)", sequence
-    )
+    page.evaluate("(seq) => OceanRescue.App.setActiveRescueSequence(seq)", sequence)
 
 
 def _make_sea_turtle_sequence(page: Page, sequence_id: int):
@@ -160,17 +158,13 @@ def test_sea_turtle_session_lifecycle_browser_proof() -> None:
             assert result is True, "first startSeaTurtleSession must return true"
 
             # Step 2: getActiveSeaTurtleSession returns exact sequence ID and mission ID
-            session = page.evaluate(
-                "() => OceanRescue.App.getActiveSeaTurtleSession()"
-            )
+            session = page.evaluate("() => OceanRescue.App.getActiveSeaTurtleSession()")
             assert session is not None, "active session must exist after start"
             assert session["rescueSequenceId"] == 1
             assert session["missionId"] == "sea-turtle"
 
             # Step 3: SeaTurtle snapshot active === true
-            snapshot = page.evaluate(
-                "() => OceanRescue.SeaTurtle.getSnapshot()"
-            )
+            snapshot = page.evaluate("() => OceanRescue.SeaTurtle.getSnapshot()")
             assert snapshot["active"] is True, "SeaTurtle must be active"
 
             # Step 4: activeRopeId === "rope-1"
@@ -180,12 +174,15 @@ def test_sea_turtle_session_lifecycle_browser_proof() -> None:
             progress = page.evaluate(
                 "() => document.getElementById('ocean-rescue-rescue-progress').textContent"
             )
-            assert progress == "Rope 1 of 3", f"expected 'Rope 1 of 3', got '{progress}'"
+            assert progress == "Rope 1 of 3", (
+                f"expected 'Rope 1 of 3', got '{progress}'"
+            )
 
             # Step 6: isSeaTurtleSessionActive returns true
-            assert page.evaluate(
-                "() => OceanRescue.App.isSeaTurtleSessionActive()"
-            ) is True
+            assert (
+                page.evaluate("() => OceanRescue.App.isSeaTurtleSessionActive()")
+                is True
+            )
 
             # Step 7: Identical sequence restart returns true without resetting state
             first_active_rope = page.evaluate(
@@ -194,7 +191,9 @@ def test_sea_turtle_session_lifecycle_browser_proof() -> None:
             result_dup = page.evaluate(
                 "(seq) => OceanRescue.App.startSeaTurtleSession(seq)", seq1
             )
-            assert result_dup is True, "duplicate start with same sequence must return true"
+            assert result_dup is True, (
+                "duplicate start with same sequence must return true"
+            )
             second_active_rope = page.evaluate(
                 "() => OceanRescue.SeaTurtle.getSnapshot().activeRopeId"
             )
@@ -238,9 +237,7 @@ def test_sea_turtle_session_lifecycle_browser_proof() -> None:
             )
 
             # Step 12: SeaTurtle snapshot active === false after shutdown
-            post_snapshot = page.evaluate(
-                "() => OceanRescue.SeaTurtle.getSnapshot()"
-            )
+            post_snapshot = page.evaluate("() => OceanRescue.SeaTurtle.getSnapshot()")
             assert post_snapshot["active"] is False, (
                 "SeaTurtle must not be active after shutdown"
             )
@@ -275,9 +272,7 @@ def test_stale_session_argument_rejected_after_shutdown() -> None:
             # Set active rescue sequence and start a session
             seq1 = _make_sea_turtle_sequence(page, 1)
             _set_active_rescue_sequence(page, seq1)
-            page.evaluate(
-                "(seq) => OceanRescue.App.startSeaTurtleSession(seq)", seq1
-            )
+            page.evaluate("(seq) => OceanRescue.App.startSeaTurtleSession(seq)", seq1)
 
             # Shutdown via pause then menu
             page.evaluate("() => OceanRescue.App.enterPause()")

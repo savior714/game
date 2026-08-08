@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 # Tiny attribute-tracking parser
 # ---------------------------------------------------------------------------
 
+
 class StatsBoxCollector(HTMLParser):
     """Collect id, role, aria-modal, aria-labelledby attributes of #stats-box,
     and the ids + text contents of every element inside it."""
@@ -67,6 +68,7 @@ def _parse(path: Path) -> StatsBoxCollector:
 # Per-domain fixture
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(params=DOMAINS, ids=DOMAINS)
 def stats_box(request) -> tuple[str, StatsBoxCollector]:
     domain = request.param
@@ -80,27 +82,22 @@ def stats_box(request) -> tuple[str, StatsBoxCollector]:
 # Assertions
 # ---------------------------------------------------------------------------
 
+
 def test_stats_box_exists(stats_box):
     domain, c = stats_box
-    assert c.stats_box_attrs is not None, (
-        f"[{domain}] #stats-box not found"
-    )
+    assert c.stats_box_attrs is not None, f"[{domain}] #stats-box not found"
 
 
 def test_stats_box_has_role_dialog(stats_box):
     domain, c = stats_box
     role = (c.stats_box_attrs or {}).get("role", "")
-    assert role == "dialog", (
-        f"[{domain}] expected role=dialog, got role={role!r}"
-    )
+    assert role == "dialog", f"[{domain}] expected role=dialog, got role={role!r}"
 
 
 def test_stats_box_has_aria_modal_true(stats_box):
     domain, c = stats_box
     val = (c.stats_box_attrs or {}).get("aria-modal", "")
-    assert val == "true", (
-        f"[{domain}] expected aria-modal=true, got aria-modal={val!r}"
-    )
+    assert val == "true", f"[{domain}] expected aria-modal=true, got aria-modal={val!r}"
 
 
 def test_stats_box_has_aria_labelledby(stats_box):
@@ -122,6 +119,4 @@ def test_labelledby_target_has_text(stats_box):
     domain, c = stats_box
     ref = (c.stats_box_attrs or {}).get("aria-labelledby", "")
     text = c.text_inside.get(ref, "").strip()
-    assert text, (
-        f"[{domain}] labelledby target id={ref!r} has no visible text"
-    )
+    assert text, f"[{domain}] labelledby target id={ref!r} has no visible text"

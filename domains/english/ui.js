@@ -100,6 +100,7 @@ const sequentialAnswerCore = QuizUICore.createSequentialAnswerCore({
    공통 보기 버튼 렌더
    ═══════════════════════════════════ */
 function escapeHtml(str) {
+  if (str == null) return '';
   return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -224,18 +225,21 @@ function askQuestion() {
       if (e.key === 'Enter') submit();
     };
     setTimeout(() => inp.focus(), 50);
-  } else if (q.type === 'sentence') {
-    const parts = q.sentenceLine.split('_____');
+  } else if (q.type === 'sentence' || q.type === 'shopping_dialogue') {
+    const rawLine = q.sentenceLine || q.line || '';
+    const parts = rawLine.split('_____');
     const sentHtml =
       escapeHtml(parts[0]) +
       '<span class="q-blank-slot">_____</span>' +
       escapeHtml(parts[1] || '');
-    const sLong = (q.sentenceLine && q.sentenceLine.length > 36) ? ' q-long' : '';
+    const sLong = (rawLine && rawLine.length > 36) ? ' q-long' : '';
+    const defaultLabel = q.type === 'shopping_dialogue' ? '대화문의 빈칸에 알맞은 영단어를 고르세요.' : '문장의 빈칸에 알맞은 영단어를 고르세요.';
+    const labelText = q.label || defaultLabel;
     qEl.innerHTML =
       iconHtml +
-      `<div class="q-hint">${escapeHtml(q.koHint)}</div>` +
+      (q.koHint ? `<div class="q-hint">${escapeHtml(q.koHint)}</div>` : '') +
       `<div class="q-sentence${sLong}">${sentHtml}</div>` +
-      `<div class="q-mini">${escapeHtml(q.label)}</div>`;
+      `<div class="q-mini">${escapeHtml(labelText)}</div>`;
     renderChoiceBtns(q.choices);
   } else if (q.hint) {
     qEl.innerHTML =

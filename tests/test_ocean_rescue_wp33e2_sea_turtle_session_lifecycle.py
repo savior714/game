@@ -66,9 +66,7 @@ def test_host_api_declares_hide_assist_hand() -> None:
 
 def test_public_api_exposes_start_sea_turtle_session_with_sequence() -> None:
     text = _read(CONTROLLER)
-    assert (
-        "startSeaTurtleSession(sequence: RescueSiteSequence): boolean" in text
-    )
+    assert "startSeaTurtleSession(sequence: RescueSiteSequence): boolean" in text
 
 
 def test_public_api_exposes_stop_sea_turtle_session() -> None:
@@ -78,9 +76,7 @@ def test_public_api_exposes_stop_sea_turtle_session() -> None:
 
 def test_public_api_exposes_get_active_sea_turtle_session() -> None:
     text = _read(CONTROLLER)
-    assert (
-        "getActiveSeaTurtleSession(): SeaTurtleSessionRef | null" in text
-    )
+    assert "getActiveSeaTurtleSession(): SeaTurtleSessionRef | null" in text
 
 
 def test_public_api_exposes_is_sea_turtle_session_active() -> None:
@@ -101,99 +97,75 @@ def test_session_ref_type_has_required_fields() -> None:
 
 def test_start_validates_sea_turtle_dependency_exists() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function startSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function startSeaTurtleSession")[1].split("function ")[0]
     assert "!SeaTurtle" in body
 
 
 def test_start_validates_sequence_is_object() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function startSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function startSeaTurtleSession")[1].split("function ")[0]
     assert 'typeof sequence !== "object"' in body
 
 
 def test_start_validates_sequence_mission_id_matches() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function startSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function startSeaTurtleSession")[1].split("function ")[0]
     assert "sequence.missionId !== SeaTurtle.MissionId" in body
 
 
 def test_start_validates_active_sequence_not_null() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function startSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function startSeaTurtleSession")[1].split("function ")[0]
     assert "host.getActiveRescueSequence()" in body
     assert "activeSequence === null" in body
 
 
 def test_start_validates_sequence_id_matches_active() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function startSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function startSeaTurtleSession")[1].split("function ")[0]
     assert "activeSequence.sequenceId !== sequence.sequenceId" in body
 
 
 def test_start_validates_active_sequence_mission_is_sea_turtle() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function startSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function startSeaTurtleSession")[1].split("function ")[0]
     assert 'activeSequence.missionId !== "sea-turtle"' in body
 
 
 def test_start_validates_rescue_active_phase() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function startSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function startSeaTurtleSession")[1].split("function ")[0]
     assert "State.Phases.RESCUE_ACTIVE" in body
 
 
 def test_start_validates_visible_canvas_exists() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function startSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function startSeaTurtleSession")[1].split("function ")[0]
     assert "HTMLCanvasElement" in body
 
 
 def test_start_validates_overlay_exists() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function startSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function startSeaTurtleSession")[1].split("function ")[0]
     assert "ocean-rescue-rescue-overlay" in body
 
 
 def test_start_validates_no_duplicate_active_session() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function startSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function startSeaTurtleSession")[1].split("function ")[0]
     assert "activeSession !== null" in body
 
 
 def test_start_idempotency_returns_true_for_same_sequence() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function startSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function startSeaTurtleSession")[1].split("function ")[0]
     assert "activeSession.rescueSequenceId === sequence.sequenceId" in body
     assert "return true" in body
 
 
 def test_start_rejects_different_active_session() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function startSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function startSeaTurtleSession")[1].split("function ")[0]
     lines = body.split("\n")
     in_duplicate_block = False
     found_reject_false = False
@@ -209,17 +181,13 @@ def test_start_rejects_different_active_session() -> None:
 
 def test_activation_calls_sea_turtle_start() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function startSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function startSeaTurtleSession")[1].split("function ")[0]
     assert "SeaTurtle.start()" in body
 
 
 def test_activation_stores_active_session() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function startSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function startSeaTurtleSession")[1].split("function ")[0]
     assert "activeSession = {" in body
     assert "rescueSequenceId: sequence.sequenceId" in body
     assert 'missionId: "sea-turtle"' in body
@@ -227,99 +195,73 @@ def test_activation_stores_active_session() -> None:
 
 def test_activation_activates_authored_scene() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function startSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function startSeaTurtleSession")[1].split("function ")[0]
     assert "SeaTurtleScene.activate()" in body
 
 
 def test_activation_requests_pointer_listener_binding() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function startSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function startSeaTurtleSession")[1].split("function ")[0]
     assert "host.ensureRescuePointerInputBound(canvas)" in body
 
 
 def test_activation_sets_initial_progress() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function startSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function startSeaTurtleSession")[1].split("function ")[0]
     assert '"Rope 1 of 3"' in body
 
 
 def test_activation_hides_assist_hand() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function startSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function startSeaTurtleSession")[1].split("function ")[0]
     assert "host.hideAssistHand()" in body
 
 
 def test_activation_calls_sync_projection() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function startSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function startSeaTurtleSession")[1].split("function ")[0]
     assert "syncSeaTurtleProjection()" in body
 
 
 def test_activation_calls_sync_pause_button() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function startSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function startSeaTurtleSession")[1].split("function ")[0]
     assert "host.syncPauseButton()" in body
 
 
 def test_activation_returns_true_on_success() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function startSeaTurtleSession")[1].split(
-        "function "
-    )[0]
-    assert "return true;" in body, (
-        "startSeaTurtleSession must contain 'return true;'"
-    )
+    body = text.split("function startSeaTurtleSession")[1].split("function ")[0]
+    assert "return true;" in body, "startSeaTurtleSession must contain 'return true;'"
 
 
 def test_stop_exits_authored_scene() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function stopSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function stopSeaTurtleSession")[1].split("function ")[0]
     assert "SeaTurtleScene.exit()" in body
 
 
 def test_stop_calls_sea_turtle_stop_when_active() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function stopSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function stopSeaTurtleSession")[1].split("function ")[0]
     assert "SeaTurtle.stop()" in body
 
 
 def test_stop_clears_active_session() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function stopSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function stopSeaTurtleSession")[1].split("function ")[0]
     assert "activeSession = null" in body
 
 
 def test_stop_returns_true_when_session_existed() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function stopSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function stopSeaTurtleSession")[1].split("function ")[0]
     assert "hadSession" in body
 
 
 def test_stop_returns_false_when_already_stopped() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function stopSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function stopSeaTurtleSession")[1].split("function ")[0]
     lines = body.split("\n")
     in_return_section = False
     found_false_return = False
@@ -335,17 +277,13 @@ def test_stop_returns_false_when_already_stopped() -> None:
 
 def test_stop_does_not_clear_active_rescue_sequence() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function stopSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function stopSeaTurtleSession")[1].split("function ")[0]
     assert "setActiveRescueSequence" not in body
 
 
 def test_stop_does_not_transition_phase() -> None:
     text = _read(CONTROLLER)
-    body = text.split("function stopSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    body = text.split("function stopSeaTurtleSession")[1].split("function ")[0]
     assert "beginTransition" not in body
     assert "forcePhase" not in body
 

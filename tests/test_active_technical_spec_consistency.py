@@ -61,7 +61,10 @@ def test_orchestration_is_optional_legacy_library_not_execution_authority() -> N
 
     assert "status: LEGACY_REFERENCE_ONLY" in spec
     assert "current_execution_authority: AGENTS.md" in spec
-    assert "현재 AidenGame 작업의 필수 실행 파이프라인이나 자동 dispatch authority가 아니다." in spec
+    assert (
+        "현재 AidenGame 작업의 필수 실행 파이프라인이나 자동 dispatch authority가 아니다."
+        in spec
+    )
     assert "자동 실행하지 않는다." in spec
     assert "한 failure domain" in spec
     assert "한 binary criterion" in spec
@@ -69,7 +72,10 @@ def test_orchestration_is_optional_legacy_library_not_execution_authority() -> N
     assert "tests/test_orchestration_pipeline.py" in spec
     assert "legacy enum과 helper 존재를 현재 작업 의무로 확대 해석하지 않는다." in spec
     assert "존재하지 않는 `just route` 또는 route manifest를 필수 gate로 요구" in spec
-    assert "모든 작업을 analyzer → dispatcher → auditor → fixer → final auditor로 강제" in spec
+    assert (
+        "모든 작업을 analyzer → dispatcher → auditor → fixer → final auditor로 강제"
+        in spec
+    )
 
     forbidden = (
         "AGENTS.md §2.3",

@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import json
 import pathlib
-import pytest
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
-PROOF_DIR = REPO_ROOT / "domains/ocean-rescue/assets/review/proof-seaweed-loop-03-handoff"
+PROOF_DIR = (
+    REPO_ROOT / "domains/ocean-rescue/assets/review/proof-seaweed-loop-03-handoff"
+)
 MANIFEST_FILE = PROOF_DIR / "manifest.json"
 
 

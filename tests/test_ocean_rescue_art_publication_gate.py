@@ -15,13 +15,10 @@ GENERATED_DIR = REPO_ROOT / "domains/ocean-rescue/assets/generated"
 PACKET_PATH = SOURCE_ROOT / "art-packet.json"
 APPROVAL_PATH = SOURCE_ROOT / "art-approval.json"
 APPROVER = REPO_ROOT / "scripts/ocean_rescue/approve_art.py"
-REGISTRY_BUILDER = (
-    REPO_ROOT / "scripts/ocean_rescue/build_render_assets_registry.py"
-)
+REGISTRY_BUILDER = REPO_ROOT / "scripts/ocean_rescue/build_render_assets_registry.py"
 VALIDATOR = REPO_ROOT / "scripts/ocean_rescue/validate_art_approval.py"
 CONTACT_SHEET = (
-    REPO_ROOT
-    / "domains/ocean-rescue/assets/review/proof-art-contact-sheet.html"
+    REPO_ROOT / "domains/ocean-rescue/assets/review/proof-art-contact-sheet.html"
 )
 
 

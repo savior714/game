@@ -84,7 +84,9 @@ def _assert_quality_gates(errors) -> None:
     assert page_errors == [], f"page errors: {page_errors}"
     assert console_errors == [], f"console errors: {console_errors}"
     assert request_failures == [], f"request failures: {request_failures}"
-    assert youtube_requests == [], f"unexpected youtube domain requests: {youtube_requests}"
+    assert youtube_requests == [], (
+        f"unexpected youtube domain requests: {youtube_requests}"
+    )
 
 
 def test_youtube_expired_session_restored_on_bootstrap() -> None:
@@ -99,8 +101,8 @@ def test_youtube_expired_session_restored_on_bootstrap() -> None:
             page = browser.new_page(
                 viewport={"width": LOGICAL_WIDTH, "height": LOGICAL_HEIGHT},
             )
-            page_errors, console_errors, request_failures, youtube_requests = _instrument(
-                page, base_url
+            page_errors, console_errors, request_failures, youtube_requests = (
+                _instrument(page, base_url)
             )
 
             # Instrument window.open to track any external launches
@@ -142,7 +144,9 @@ def test_youtube_expired_session_restored_on_bootstrap() -> None:
 
             # 1. Verify window.open was NOT called (0 external launches)
             launch_calls = page.evaluate("() => window._launchCalls || []")
-            assert len(launch_calls) == 0, f"Expected 0 launch calls, got {launch_calls}"
+            assert len(launch_calls) == 0, (
+                f"Expected 0 launch calls, got {launch_calls}"
+            )
 
             # 2. Check persisted session in localStorage
             stored_session = page.evaluate("""() => {
@@ -150,29 +154,39 @@ def test_youtube_expired_session_restored_on_bootstrap() -> None:
                 return raw ? JSON.parse(raw) : null;
             }""")
             assert stored_session is not None, "Session should exist in localStorage"
-            assert stored_session["status"] == "expired", f"Expected persisted status 'expired', got '{stored_session.get('status')}'"
-            assert isinstance(stored_session.get("expiredAt"), (int, float)), f"Expected finite expiredAt, got {stored_session.get('expiredAt')}"
+            assert stored_session["status"] == "expired", (
+                f"Expected persisted status 'expired', got '{stored_session.get('status')}'"
+            )
+            assert isinstance(stored_session.get("expiredAt"), (int, float)), (
+                f"Expected finite expiredAt, got {stored_session.get('expiredAt')}"
+            )
 
             # 3. Check #yt-expired-overlay visibility
             overlay_visible = page.evaluate("""() => {
                 const el = document.getElementById('yt-expired-overlay');
                 return el ? (el.offsetWidth > 0 && el.offsetHeight > 0) : false;
             }""")
-            assert overlay_visible, "#yt-expired-overlay should be visible on bootstrap for expired session"
+            assert overlay_visible, (
+                "#yt-expired-overlay should be visible on bootstrap for expired session"
+            )
 
             # 4. Check reward inventory was not modified
             rewards = page.evaluate("""() => {
                 const raw = localStorage.getItem('study_rewards');
                 return raw ? JSON.parse(raw) : null;
             }""")
-            assert rewards["youtube_minutes"] == 15, f"Inventory should remain 15, got {rewards.get('youtube_minutes')}"
+            assert rewards["youtube_minutes"] == 15, (
+                f"Inventory should remain 15, got {rewards.get('youtube_minutes')}"
+            )
 
             # 5. Check no running timer bar or PiP was started
             running_timer = page.evaluate("""() => {
                 const el = document.getElementById('youtube-free-time-timer');
                 return el ? (el.offsetWidth > 0 && el.offsetHeight > 0) : false;
             }""")
-            assert not running_timer, "Running timer bar should NOT be rendered for expired session"
+            assert not running_timer, (
+                "Running timer bar should NOT be rendered for expired session"
+            )
 
             browser.close()
     finally:
@@ -194,8 +208,8 @@ def test_youtube_acknowledged_session_restored_on_bootstrap() -> None:
             page = browser.new_page(
                 viewport={"width": LOGICAL_WIDTH, "height": LOGICAL_HEIGHT},
             )
-            page_errors, console_errors, request_failures, youtube_requests = _instrument(
-                page, base_url
+            page_errors, console_errors, request_failures, youtube_requests = (
+                _instrument(page, base_url)
             )
 
             # Instrument window.open to track any external launches
@@ -237,7 +251,9 @@ def test_youtube_acknowledged_session_restored_on_bootstrap() -> None:
 
             # 1. Verify window.open was NOT called (0 external launches)
             launch_calls = page.evaluate("() => window._launchCalls || []")
-            assert len(launch_calls) == 0, f"Expected 0 launch calls, got {launch_calls}"
+            assert len(launch_calls) == 0, (
+                f"Expected 0 launch calls, got {launch_calls}"
+            )
 
             # 2. Check persisted session in localStorage
             stored_session = page.evaluate("""() => {
@@ -245,30 +261,40 @@ def test_youtube_acknowledged_session_restored_on_bootstrap() -> None:
                 return raw ? JSON.parse(raw) : null;
             }""")
             assert stored_session is not None, "Session should exist in localStorage"
-            assert stored_session["status"] == "acknowledged", f"Expected persisted status 'acknowledged', got '{stored_session.get('status')}'"
+            assert stored_session["status"] == "acknowledged", (
+                f"Expected persisted status 'acknowledged', got '{stored_session.get('status')}'"
+            )
             assert stored_session["sessionId"] == "yt-ack-seed-456"
-            assert isinstance(stored_session.get("acknowledgedAt"), (int, float)), f"Expected finite acknowledgedAt, got {stored_session.get('acknowledgedAt')}"
+            assert isinstance(stored_session.get("acknowledgedAt"), (int, float)), (
+                f"Expected finite acknowledgedAt, got {stored_session.get('acknowledgedAt')}"
+            )
 
             # 3. Check #yt-expired-overlay is ABSENT
             overlay_visible = page.evaluate("""() => {
                 const el = document.getElementById('yt-expired-overlay');
                 return el ? (el.offsetWidth > 0 && el.offsetHeight > 0) : false;
             }""")
-            assert not overlay_visible, "#yt-expired-overlay should NOT be visible on bootstrap for acknowledged session"
+            assert not overlay_visible, (
+                "#yt-expired-overlay should NOT be visible on bootstrap for acknowledged session"
+            )
 
             # 4. Check reward inventory was not modified
             rewards = page.evaluate("""() => {
                 const raw = localStorage.getItem('study_rewards');
                 return raw ? JSON.parse(raw) : null;
             }""")
-            assert rewards["youtube_minutes"] == 15, f"Inventory should remain 15, got {rewards.get('youtube_minutes')}"
+            assert rewards["youtube_minutes"] == 15, (
+                f"Inventory should remain 15, got {rewards.get('youtube_minutes')}"
+            )
 
             # 5. Check no running timer bar or PiP was started
             running_timer = page.evaluate("""() => {
                 const el = document.getElementById('youtube-free-time-timer');
                 return el ? (el.offsetWidth > 0 && el.offsetHeight > 0) : false;
             }""")
-            assert not running_timer, "Running timer bar should NOT be rendered for acknowledged session"
+            assert not running_timer, (
+                "Running timer bar should NOT be rendered for acknowledged session"
+            )
 
             browser.close()
     finally:

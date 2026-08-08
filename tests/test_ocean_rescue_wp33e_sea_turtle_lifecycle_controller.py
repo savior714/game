@@ -223,9 +223,7 @@ def test_pointer_state_api_is_declared_and_exposed() -> None:
     ]
     assign_section = text.split("Object.assign(host, {")[1].split("}")[0]
     for token in object_assign:
-        assert token in assign_section, (
-            f"Object.assign must expose {token.rstrip(',')}"
-        )
+        assert token in assign_section, f"Object.assign must expose {token.rstrip(',')}"
 
 
 def test_pointer_state_storage_uses_active_pointer_fields() -> None:
@@ -264,9 +262,9 @@ def test_pointer_ref_type_is_exported() -> None:
 
 def test_characterization_recipe_exists_and_includes_direct_regressions() -> None:
     justfile = _read(JUSTFILE)
-    recipe = justfile.split(
-        "check-ocean-rescue-sea-turtle-lifecycle-controller:", 1
-    )[1].split("\n# ", 1)[0]
+    recipe = justfile.split("check-ocean-rescue-sea-turtle-lifecycle-controller:", 1)[
+        1
+    ].split("\n# ", 1)[0]
     required = (
         "tests/test_ocean_rescue_wp33e_sea_turtle_lifecycle_controller.py",
         "tests/test_ocean_rescue_sea_turtle_interaction.py",
@@ -309,9 +307,8 @@ def test_controller_projects_six_root_markers_directly() -> None:
 
 def test_projection_reads_snapshot_exactly_once() -> None:
     text = _read(CONTROLLER)
-    snapshot_calls = (
-        text.count("SeaTurtle.getSnapshot()")
-        + text.count("SeaTurtle?.getSnapshot()")
+    snapshot_calls = text.count("SeaTurtle.getSnapshot()") + text.count(
+        "SeaTurtle?.getSnapshot()"
     )
     assert snapshot_calls == 7, (
         f"expected exactly 7 SeaTurtle.getSnapshot() calls "
@@ -324,9 +321,9 @@ def test_projection_reads_snapshot_exactly_once() -> None:
     projection_body = text.split("function syncSeaTurtleProjection")[1].split(
         "function "
     )[0]
-    assert (
-        "const snapshot = SeaTurtle.getSnapshot();" in projection_body
-    ), "syncSeaTurtleProjection must read snapshot exactly once into a local"
+    assert "const snapshot = SeaTurtle.getSnapshot();" in projection_body, (
+        "syncSeaTurtleProjection must read snapshot exactly once into a local"
+    )
 
 
 def test_projection_passes_same_snapshot_to_scene_or_fallback() -> None:
@@ -471,9 +468,7 @@ def test_controller_owns_pointer_lifecycle_methods() -> None:
     ]
     assign_section = text.split("Object.assign(host, {")[1].split("}")[0]
     for token in object_assign:
-        assert token in assign_section, (
-            f"Object.assign must expose {token.rstrip(',')}"
-        )
+        assert token in assign_section, f"Object.assign must expose {token.rstrip(',')}"
 
 
 def test_controller_owns_pointer_state_in_closure() -> None:
@@ -494,9 +489,9 @@ def test_controller_uses_pointer_input_boundary() -> None:
 def test_controller_handle_down_stores_pointer_and_capture() -> None:
     """WP-33E-3: handleSeaTurtlePointerDown stores pointer ID and capture element."""
     text = _read(CONTROLLER)
-    down_body = text.split("function handleSeaTurtlePointerDown")[1].split(
-        "function "
-    )[0]
+    down_body = text.split("function handleSeaTurtlePointerDown")[1].split("function ")[
+        0
+    ]
     assert "activePointerId = event.pointerId;" in down_body
     assert "activePointerCaptureElement = captureElement;" in down_body
     assert "setPointerCapture(event.pointerId)" in down_body
@@ -507,9 +502,7 @@ def test_controller_handle_down_stores_pointer_and_capture() -> None:
 def test_controller_handle_up_routes_feedback_via_host() -> None:
     """WP-33E-4: handleSeaTurtlePointerUp calls beginSeaTurtleFeedback."""
     text = _read(CONTROLLER)
-    up_body = text.split("function handleSeaTurtlePointerUp")[1].split(
-        "function "
-    )[0]
+    up_body = text.split("function handleSeaTurtlePointerUp")[1].split("function ")[0]
     assert "beginSeaTurtleFeedback(result)" in up_body
     assert "releaseActivePointerCapture()" in up_body
     assert "clearSeaTurtlePointerState()" in up_body
@@ -551,9 +544,7 @@ def test_controller_shutdown_is_idempotent() -> None:
 def test_controller_stop_session_triggers_pointer_shutdown() -> None:
     """WP-33E-3: stopSeaTurtleSession calls shutdownSeaTurtlePointer."""
     text = _read(CONTROLLER)
-    stop_body = text.split("function stopSeaTurtleSession")[1].split(
-        "function "
-    )[0]
+    stop_body = text.split("function stopSeaTurtleSession")[1].split("function ")[0]
     assert "shutdownSeaTurtlePointer()" in stop_body
 
 
@@ -578,7 +569,7 @@ def test_app_js_ordered_script_fallback_for_pointer_lifecycle() -> None:
     text = _read(APP)
     required = (
         "seaTurtlePointerId = event.pointerId;",
-        "seaTurtlePointerCaptureEl = document.getElementById(\"ocean-rescue-canvas\");",
+        'seaTurtlePointerCaptureEl = document.getElementById("ocean-rescue-canvas");',
         "seaTurtlePointerCaptureEl.setPointerCapture(event.pointerId)",
         "seaTurtlePointerId = null;",
         "seaTurtlePointerCaptureEl = null;",

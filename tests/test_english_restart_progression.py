@@ -115,5 +115,7 @@ def run_full_session_and_restart(static_server: str, page: Page) -> None:
 
 
 @pytest.mark.browser
-def test_english_restart_button_starts_new_session(static_server: str, page: Page) -> None:
+def test_english_restart_button_starts_new_session(
+    static_server: str, page: Page
+) -> None:
     run_full_session_and_restart(static_server, page)

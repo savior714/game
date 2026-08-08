@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import pathlib
-import pytest
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 SOURCE_SVG = REPO_ROOT / "domains/ocean-rescue/assets/source/scene/seaweed-loop-02.svg"
@@ -14,7 +13,7 @@ APPROVAL_JSON = REPO_ROOT / "domains/ocean-rescue/assets/source/art-approval.jso
 
 def test_seaweed_loop_02_canonical_source_exists():
     assert SOURCE_SVG.exists()
-    assert SOURCE_SVG.read_bytes().startswith(b'<svg')
+    assert SOURCE_SVG.read_bytes().startswith(b"<svg")
 
 
 def test_seaweed_loop_02_art_packet_entry():
@@ -26,7 +25,10 @@ def test_seaweed_loop_02_art_packet_entry():
     assert loop02["bundle"] == "scene"
     assert loop02["logicalSize"] == [120, 200]
     assert loop02["pivot"] == [0.5, 0.1]
-    assert loop02["sourceSha256"] == "cc655806372919858f95048b0bda0e26ef84ecfff2eb3b06e07fec167a358f3e"
+    assert (
+        loop02["sourceSha256"]
+        == "cc655806372919858f95048b0bda0e26ef84ecfff2eb3b06e07fec167a358f3e"
+    )
 
 
 def test_seaweed_loop_02_approval_receipt():

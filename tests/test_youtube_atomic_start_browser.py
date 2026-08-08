@@ -97,7 +97,9 @@ def _assert_quality_gates(errors) -> None:
     assert page_errors == [], f"page errors: {page_errors}"
     assert console_errors == [], f"console errors: {console_errors}"
     assert request_failures == [], f"request failures: {request_failures}"
-    assert youtube_requests == [], f"unexpected youtube domain requests: {youtube_requests}"
+    assert youtube_requests == [], (
+        f"unexpected youtube domain requests: {youtube_requests}"
+    )
 
 
 def _patch_external_tab_launcher(page: Page) -> None:
@@ -147,20 +149,23 @@ def _open_youtube_modal(page: Page) -> None:
     """Click youtube inventory item to open the youtube modal."""
     page.click('[data-type="youtube"]')
     # Wait for modal to appear
-    page.wait_for_selector('.reward-yt-modal', timeout=3000)
+    page.wait_for_selector(".reward-yt-modal", timeout=3000)
 
 
 def _answer_parent_lock(page: Page) -> None:
     """Answer the parent lock prompt by parsing the math problem."""
+
     def handle_dialog(dialog) -> None:
         msg = dialog.message
         import re
+
         nums = re.findall(r"\d+", msg)
         if len(nums) >= 2:
             answer = str(int(nums[-2]) + int(nums[-1]))
             dialog.accept(answer)
         else:
             dialog.accept("51")
+
     page.on("dialog", handle_dialog)
 
 
@@ -183,7 +188,7 @@ def _get_reward_minutes(page: Page) -> int:
 
 
 def _get_inventory_minutes(page: Page) -> str:
-    return page.locator('#inv-youtube').text_content() or "0"
+    return page.locator("#inv-youtube").text_content() or "0"
 
 
 def _get_session_count(page: Page) -> int:
@@ -226,8 +231,8 @@ def test_youtube_atomic_start_flow() -> None:
             page = browser.new_page(
                 viewport={"width": LOGICAL_WIDTH, "height": LOGICAL_HEIGHT},
             )
-            page_errors, console_errors, request_failures, youtube_requests = _instrument(
-                page, base_url
+            page_errors, console_errors, request_failures, youtube_requests = (
+                _instrument(page, base_url)
             )
 
             # Navigate to math domain page (loads reward scripts)
@@ -255,19 +260,27 @@ def test_youtube_atomic_start_flow() -> None:
               };
             }""")
             assert scripts_loaded["FreeTimeSession"], "FreeTimeSession not loaded"
-            assert scripts_loaded["ExternalTabLauncher"], "ExternalTabLauncher not loaded"
-            assert scripts_loaded["FreeTimeSessionStartTransaction"], "FreeTimeSessionStartTransaction not loaded"
+            assert scripts_loaded["ExternalTabLauncher"], (
+                "ExternalTabLauncher not loaded"
+            )
+            assert scripts_loaded["FreeTimeSessionStartTransaction"], (
+                "FreeTimeSessionStartTransaction not loaded"
+            )
             assert scripts_loaded["RewardSystem"], "RewardSystem not loaded"
 
             # Verify initial youtube_minutes = 30
-            assert _get_reward_minutes(page) == 30, f"Expected 30, got {_get_reward_minutes(page)}"
+            assert _get_reward_minutes(page) == 30, (
+                f"Expected 30, got {_get_reward_minutes(page)}"
+            )
 
             # Open youtube modal
             _open_youtube_modal(page)
             page.wait_for_timeout(500)
 
             # Before parent approval: start button not visible
-            assert not _is_start_button_visible(page), "Start button should not be visible before approval"
+            assert not _is_start_button_visible(page), (
+                "Start button should not be visible before approval"
+            )
 
             # Answer parent lock
             _answer_parent_lock(page)
@@ -275,15 +288,25 @@ def test_youtube_atomic_start_flow() -> None:
             page.wait_for_timeout(500)
 
             # After approval: start button visible with correct text
-            assert _is_start_button_visible(page), "Start button should be visible after approval"
+            assert _is_start_button_visible(page), (
+                "Start button should be visible after approval"
+            )
             start_btn_text = page.locator("#start-yt-btn").text_content()
-            assert "유튜브 자유시간 15분 시작" in start_btn_text, f"Expected start button text, got: {start_btn_text}"
+            assert "유튜브 자유시간 15분 시작" in start_btn_text, (
+                f"Expected start button text, got: {start_btn_text}"
+            )
 
             # Informational text present
             info_text = page.locator("#yt-start-area .sub").text_content() or ""
-            assert "새 YouTube" in info_text or "YouTube" in info_text, f"Info text missing YouTube mention: {info_text}"
-            assert "닫지" in info_text or "tab" in info_text.lower() or "게임" in info_text, f"Info text missing keep-game-tab: {info_text}"
-            assert "환불" in info_text or "닫아도" in info_text, f"Info text missing no-refund: {info_text}"
+            assert "새 YouTube" in info_text or "YouTube" in info_text, (
+                f"Info text missing YouTube mention: {info_text}"
+            )
+            assert (
+                "닫지" in info_text or "tab" in info_text.lower() or "게임" in info_text
+            ), f"Info text missing keep-game-tab: {info_text}"
+            assert "환불" in info_text or "닫아도" in info_text, (
+                f"Info text missing no-refund: {info_text}"
+            )
 
             # Patch launcher before clicking start
             _patch_external_tab_launcher(page)
@@ -293,7 +316,9 @@ def test_youtube_atomic_start_flow() -> None:
               const btn = document.getElementById('start-yt-btn');
               return { disabled: btn ? btn.disabled : 'not found', hasAttr: btn ? btn.hasAttribute('disabled') : 'not found' };
             }""")
-            assert not btn_state["disabled"], f"Button should be enabled before click, state: {btn_state}"
+            assert not btn_state["disabled"], (
+                f"Button should be enabled before click, state: {btn_state}"
+            )
 
             # Click start button once
             _click_start_button(page)
@@ -301,11 +326,17 @@ def test_youtube_atomic_start_flow() -> None:
 
             # Launcher called exactly once (about:blank proves launch flow ran)
             launcher_state = _get_launcher_state(page)
-            assert len(launcher_state["calls"]) == 1, f"Expected 1 launcher call, got {len(launcher_state['calls'])}"
-            assert "about:blank" in launcher_state["calls"], f"Expected about:blank open, got {launcher_state['calls']}"
+            assert len(launcher_state["calls"]) == 1, (
+                f"Expected 1 launcher call, got {len(launcher_state['calls'])}"
+            )
+            assert "about:blank" in launcher_state["calls"], (
+                f"Expected about:blank open, got {launcher_state['calls']}"
+            )
 
             # Reward decreased to 15
-            assert _get_reward_minutes(page) == 15, f"Expected 15, got {_get_reward_minutes(page)}"
+            assert _get_reward_minutes(page) == 15, (
+                f"Expected 15, got {_get_reward_minutes(page)}"
+            )
 
             # Running session created
             assert _get_session_count(page) == 1, "Expected 1 session"
@@ -317,16 +348,26 @@ def test_youtube_atomic_start_flow() -> None:
             # Result message shown
             result_msg = _get_result_message(page)
             assert result_msg is not None, "Result message should be shown"
-            assert "시작" in result_msg or "new" in result_msg.lower() or "tab" in result_msg.lower(), f"Expected success message, got: {result_msg}"
+            assert (
+                "시작" in result_msg
+                or "new" in result_msg.lower()
+                or "tab" in result_msg.lower()
+            ), f"Expected success message, got: {result_msg}"
 
             # Quick double-click test
             _click_start_button(page)
             page.wait_for_timeout(500)
 
             launcher_state2 = _get_launcher_state(page)
-            assert len(launcher_state2["calls"]) == 1, f"Double-click should not call launcher again, got {len(launcher_state2['calls'])}"
-            assert _get_reward_minutes(page) == 15, f"Double-click should not deduct again, got {_get_reward_minutes(page)}"
-            assert _get_session_count(page) == 1, f"Double-click should not create extra session, got {_get_session_count(page)}"
+            assert len(launcher_state2["calls"]) == 1, (
+                f"Double-click should not call launcher again, got {len(launcher_state2['calls'])}"
+            )
+            assert _get_reward_minutes(page) == 15, (
+                f"Double-click should not deduct again, got {_get_reward_minutes(page)}"
+            )
+            assert _get_session_count(page) == 1, (
+                f"Double-click should not create extra session, got {_get_session_count(page)}"
+            )
 
             browser.close()
     finally:
@@ -348,8 +389,8 @@ def test_youtube_popup_blocked() -> None:
             page = browser.new_page(
                 viewport={"width": LOGICAL_WIDTH, "height": LOGICAL_HEIGHT},
             )
-            page_errors, console_errors, request_failures, youtube_requests = _instrument(
-                page, base_url
+            page_errors, console_errors, request_failures, youtube_requests = (
+                _instrument(page, base_url)
             )
 
             page.goto(domain_url, wait_until="domcontentloaded", timeout=15000)
@@ -370,7 +411,9 @@ def test_youtube_popup_blocked() -> None:
             page.click("#yt-unlock-trigger")
             page.wait_for_timeout(500)
 
-            assert _is_start_button_visible(page), "Start button should be visible after approval"
+            assert _is_start_button_visible(page), (
+                "Start button should be visible after approval"
+            )
 
             # Set popup blocked
             _set_popup_blocked(page)
@@ -380,18 +423,26 @@ def test_youtube_popup_blocked() -> None:
 
             # Launcher attempted once
             launcher_state = _get_launcher_state(page)
-            assert len(launcher_state["calls"]) == 1, f"Expected 1 launcher attempt, got {len(launcher_state['calls'])}"
+            assert len(launcher_state["calls"]) == 1, (
+                f"Expected 1 launcher attempt, got {len(launcher_state['calls'])}"
+            )
 
             # Reward unchanged
-            assert _get_reward_minutes(page) == 30, f"Reward should stay at 30 after popup blocked, got {_get_reward_minutes(page)}"
+            assert _get_reward_minutes(page) == 30, (
+                f"Reward should stay at 30 after popup blocked, got {_get_reward_minutes(page)}"
+            )
 
             # Guidance message shown
             result_msg = _get_result_message(page)
             assert result_msg is not None, "Result message should be shown"
-            assert "차단" in result_msg or "팝업" in result_msg, f"Expected popup blocked message, got: {result_msg}"
+            assert "차단" in result_msg or "팝업" in result_msg, (
+                f"Expected popup blocked message, got: {result_msg}"
+            )
 
             # Button re-enabled for retry
-            assert not _is_start_button_disabled(page), "Button should be re-enabled for retry"
+            assert not _is_start_button_disabled(page), (
+                "Button should be re-enabled for retry"
+            )
 
             browser.close()
     finally:
@@ -413,8 +464,8 @@ def test_youtube_already_active() -> None:
             page = browser.new_page(
                 viewport={"width": LOGICAL_WIDTH, "height": LOGICAL_HEIGHT},
             )
-            page_errors, console_errors, request_failures, youtube_requests = _instrument(
-                page, base_url
+            page_errors, console_errors, request_failures, youtube_requests = (
+                _instrument(page, base_url)
             )
 
             page.goto(domain_url, wait_until="domcontentloaded", timeout=15000)
@@ -440,7 +491,9 @@ def test_youtube_already_active() -> None:
             page.click("#yt-unlock-trigger")
             page.wait_for_timeout(500)
 
-            assert _is_start_button_visible(page), "Start button should be visible after approval"
+            assert _is_start_button_visible(page), (
+                "Start button should be visible after approval"
+            )
 
             _patch_external_tab_launcher(page)
             _click_start_button(page)
@@ -448,10 +501,14 @@ def test_youtube_already_active() -> None:
 
             # Launcher not called
             launcher_state = _get_launcher_state(page)
-            assert len(launcher_state["calls"]) == 0, f"Launcher should not be called when already active, got {len(launcher_state['calls'])}"
+            assert len(launcher_state["calls"]) == 0, (
+                f"Launcher should not be called when already active, got {len(launcher_state['calls'])}"
+            )
 
             # Reward unchanged
-            assert _get_reward_minutes(page) == 30, f"Reward should stay at 30 when already active, got {_get_reward_minutes(page)}"
+            assert _get_reward_minutes(page) == 30, (
+                f"Reward should stay at 30 when already active, got {_get_reward_minutes(page)}"
+            )
 
             browser.close()
     finally:
@@ -473,8 +530,8 @@ def test_youtube_audio_context_is_primed_on_start_click_and_reused_at_expiry() -
             page = browser.new_page(
                 viewport={"width": LOGICAL_WIDTH, "height": LOGICAL_HEIGHT},
             )
-            page_errors, console_errors, request_failures, youtube_requests = _instrument(
-                page, base_url
+            page_errors, console_errors, request_failures, youtube_requests = (
+                _instrument(page, base_url)
             )
 
             page.goto(domain_url, wait_until="domcontentloaded", timeout=15000)
@@ -561,9 +618,16 @@ def test_youtube_audio_context_is_primed_on_start_click_and_reused_at_expiry() -
             probe_start = page.evaluate("() => window.__ytAudioProbe")
 
             # Assertions after start click:
-            assert probe_start["constructorCount"] >= 1, f"AudioContext constructor should be called on start click, got {probe_start['constructorCount']}"
-            assert probe_start["resumeCount"] >= 1, f"resume() should be called on start click, got {probe_start['resumeCount']}"
-            assert probe_start["resumeCountAtLaunch"] is not None and probe_start["resumeCountAtLaunch"] >= 1, (
+            assert probe_start["constructorCount"] >= 1, (
+                f"AudioContext constructor should be called on start click, got {probe_start['constructorCount']}"
+            )
+            assert probe_start["resumeCount"] >= 1, (
+                f"resume() should be called on start click, got {probe_start['resumeCount']}"
+            )
+            assert (
+                probe_start["resumeCountAtLaunch"] is not None
+                and probe_start["resumeCountAtLaunch"] >= 1
+            ), (
                 f"Audio priming must happen before external tab launch, resumeCountAtLaunch: {probe_start['resumeCountAtLaunch']}"
             )
 
@@ -572,7 +636,9 @@ def test_youtube_audio_context_is_primed_on_start_click_and_reused_at_expiry() -
             assert "launch" in events, "launch event missing"
             launch_idx = events.index("launch")
             resume_idx = events.index("resume") if "resume" in events else -1
-            assert resume_idx != -1 and resume_idx < launch_idx, f"resume event must precede launch event, events: {events}"
+            assert resume_idx != -1 and resume_idx < launch_idx, (
+                f"resume event must precede launch event, events: {events}"
+            )
 
             # No audible sound during prime
             assert probe_start["oscillatorStartCount"] == 0, (
@@ -580,7 +646,9 @@ def test_youtube_audio_context_is_primed_on_start_click_and_reused_at_expiry() -
             )
 
             # Verify session start contract intact
-            assert _get_reward_minutes(page) == 15, f"Expected 15 minutes remaining, got {_get_reward_minutes(page)}"
+            assert _get_reward_minutes(page) == 15, (
+                f"Expected 15 minutes remaining, got {_get_reward_minutes(page)}"
+            )
             assert _get_session_count(page) == 1, "Session should be created"
 
             # Force expiry via controlled deadline in localStorage without calling renderExpiryOverlay directly
@@ -619,7 +687,9 @@ def test_youtube_audio_context_is_primed_on_start_click_and_reused_at_expiry() -
               const raw = localStorage.getItem('study_youtube_free_time_session_v1');
               return raw ? JSON.parse(raw).status : null;
             }""")
-            assert persisted_status == "expired", f"Expected persisted status expired, got {persisted_status}"
+            assert persisted_status == "expired", (
+                f"Expected persisted status expired, got {persisted_status}"
+            )
 
             browser.close()
     finally:

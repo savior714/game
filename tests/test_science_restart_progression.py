@@ -104,7 +104,9 @@ def _wrong_answer_index(page: Page, current_answer: str) -> int:
 
 
 @pytest.mark.browser
-def test_science_restart_button_starts_new_session(static_server: str, page: Page) -> None:
+def test_science_restart_button_starts_new_session(
+    static_server: str, page: Page
+) -> None:
     page_errors: list[str] = []
     console_errors: list[str] = []
     failed_requests: list[str] = []
@@ -142,7 +144,9 @@ def test_science_restart_button_starts_new_session(static_server: str, page: Pag
 
 
 @pytest.mark.browser
-def test_science_restart_single_click_exact_effect(static_server: str, page: Page) -> None:
+def test_science_restart_single_click_exact_effect(
+    static_server: str, page: Page
+) -> None:
     page.goto(f"{static_server}{SCIENCE_URL}")
     _wait_for_question(page)
     _play_full_session(page)

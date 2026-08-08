@@ -66,9 +66,7 @@ class HTTPServerFixture:
         socketserver.TCPServer.allow_reuse_address = True
         self.server = socketserver.TCPServer(("127.0.0.1", 0), QuietHandler)
         self._port = self.server.server_address[1]
-        self.thread = threading.Thread(
-            target=self.server.serve_forever, daemon=True
-        )
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
         time.sleep(0.3)
         self.base_url = f"http://127.0.0.1:{self._port}"
@@ -134,9 +132,7 @@ class TestStatsButtonClickOpensModal:
 
         # Step 1: #stats-modal must be hidden initially.
         modal = page.locator("#stats-modal")
-        initial_display = modal.evaluate(
-            "el => getComputedStyle(el).display"
-        )
+        initial_display = modal.evaluate("el => getComputedStyle(el).display")
         assert initial_display != "flex", (
             f"[{domain}] #stats-modal should be hidden on load, "
             f"but display was '{initial_display}'"

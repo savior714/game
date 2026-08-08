@@ -102,7 +102,9 @@ def _node() -> str:
     return node
 
 
-def test_compat_loaders_resolve_canonical_paths_in_auth_then_sync_order(tmp_path: Path) -> None:
+def test_compat_loaders_resolve_canonical_paths_in_auth_then_sync_order(
+    tmp_path: Path,
+) -> None:
     harness = tmp_path / "harness.js"
     harness.write_text(HARNESS, encoding="utf-8")
     proc = subprocess.run(

@@ -17,7 +17,9 @@ def _record(contact_sheet: str) -> dict:
     }
 
 
-def test_evidence_path_cannot_escape_and_reenter(capsys: pytest.CaptureFixture[str]) -> None:
+def test_evidence_path_cannot_escape_and_reenter(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     path = "proof/../../review/proof-art-contact-sheet.html"
 
     with pytest.raises(SystemExit) as exc_info:

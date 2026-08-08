@@ -199,7 +199,10 @@ def test_typed_rescue_site_controller_owns_arrival_tutorial_and_skip_flow() -> N
             assert page.evaluate("OceanRescue.App.skipTutorial()") is False
 
             page.wait_for_timeout(3200)
-            assert page.evaluate("OceanRescue.State.getSnapshot().phase") == "RESCUE_ACTIVE"
+            assert (
+                page.evaluate("OceanRescue.State.getSnapshot().phase")
+                == "RESCUE_ACTIVE"
+            )
             _assert_quality_gates(errors)
             context.close()
             browser.close()
@@ -236,7 +239,9 @@ def test_canonical_app_installs_wp33c_after_wp33b() -> None:
     assert "../controllers/profile-mission-selection" in text
     assert "../controllers/launch-travel" in text
     assert "../controllers/rescue-site-tutorial" in text
-    profile_install = text.index("installProfileMissionSelectionController(registeredApp)")
+    profile_install = text.index(
+        "installProfileMissionSelectionController(registeredApp)"
+    )
     launch_install = text.index("installLaunchTravelController(profileMissionApp)")
     rescue_install = text.index("installRescueSiteTutorialController(launchTravelApp)")
     assert profile_install < launch_install < rescue_install

@@ -110,7 +110,10 @@ def test_verification_is_risk_based_and_schedule_decoupled() -> None:
 def test_reporting_distinguishes_executed_tests_from_source_review() -> None:
     reporting = read(REPORTING)
 
-    assert "테스트를 실행하지 않고 source contract만 확인했다면 “pytest PASS”라고 쓰지 않는다." in reporting
+    assert (
+        "테스트를 실행하지 않고 source contract만 확인했다면 “pytest PASS”라고 쓰지 않는다."
+        in reporting
+    )
     assert "문서 작업은 제품 기능이 완료됐다는 뜻이 아니다." in reporting
     assert "실제 게시 시에만 `COMMIT`" in reporting
     assert "중단 시에만 `BLOCKER`와 `NEXT`" in reporting

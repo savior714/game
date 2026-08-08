@@ -93,7 +93,9 @@ def test_youtube_expiry_overlay_and_acknowledge() -> None:
                 const el = document.getElementById('yt-expired-overlay');
                 return el ? (el.offsetWidth > 0 && el.offsetHeight > 0) : false;
             }""")
-            assert overlay_visible, "Expiry overlay (#yt-expired-overlay) should be visible on timer expiration"
+            assert overlay_visible, (
+                "Expiry overlay (#yt-expired-overlay) should be visible on timer expiration"
+            )
 
             # Click acknowledge button
             page.click("#yt-ack-btn")
@@ -105,7 +107,9 @@ def test_youtube_expiry_overlay_and_acknowledge() -> None:
                 if (!raw) return null;
                 return JSON.parse(raw).status;
             }""")
-            assert status == "acknowledged", f"Expected acknowledged status, got {status}"
+            assert status == "acknowledged", (
+                f"Expected acknowledged status, got {status}"
+            )
 
             browser.close()
     finally:

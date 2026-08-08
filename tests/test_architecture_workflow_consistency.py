@@ -61,7 +61,9 @@ def test_discover_is_read_first_without_auto_queue_or_blueprint() -> None:
 
     assert CURRENT_SPEC in workflow
     assert "기본적으로 read-only다." in workflow
-    assert "queue JSON, timestamp Blueprint, backlog를 자동 생성하지 않는다." in workflow
+    assert (
+        "queue JSON, timestamp Blueprint, backlog를 자동 생성하지 않는다." in workflow
+    )
     assert "첫 actionable candidate 하나" in workflow
     assert "동일 책임의 두 번째 실제 사용처" in workflow
     assert "자동으로 queue·artifact·Blueprint를 발급하지 않는다." in skill
@@ -120,7 +122,10 @@ def test_architecture_uses_real_seams_without_forced_option_expansion() -> None:
     assert "실제 두 번째 adapter·caller" in workflow
     assert "file length나 AI 탐색 편의만으로" in workflow
     assert "여러 interface안을 형식적으로 생성" in workflow
-    assert "caller 하나뿐이고 교체 가능성도 없으면 hypothetical seam을 만들지 않는다." in skill
+    assert (
+        "caller 하나뿐이고 교체 가능성도 없으면 hypothetical seam을 만들지 않는다."
+        in skill
+    )
     assert "현재 신규 architecture migration은 동결" in skill
     assert "method 수가 적다는 이유만으로 deep module은 아니다." in skill
 

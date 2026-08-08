@@ -56,14 +56,20 @@ def test_controller_terminal_branch_does_not_call_feedback_complete() -> None:
     body = text.split("function finishActiveFeedback")[1].split("function ")[0]
     # The terminal branch must not call the general feedback callback
     # Find the terminal branch section
-    terminal_section = body.split("result.complete === true")[1].split("result.complete === false")[0]
+    terminal_section = body.split("result.complete === true")[1].split(
+        "result.complete === false"
+    )[0]
     assert "onSeaTurtleFeedbackComplete(" not in terminal_section
 
 
 def test_controller_non_terminal_branch_keeps_feedback_complete() -> None:
     text = _read(CONTROLLER)
     body = text.split("function finishActiveFeedback")[1].split("function ")[0]
-    non_terminal = body.split("result.complete === false")[1] if "result.complete === false" in body else ""
+    non_terminal = (
+        body.split("result.complete === false")[1]
+        if "result.complete === false" in body
+        else ""
+    )
     assert "onSeaTurtleFeedbackComplete(sequence, result)" in non_terminal
 
 
@@ -93,7 +99,9 @@ def test_controller_does_not_own_rescue_success_or_presentation() -> None:
 
 def test_legacy_inline_fallback_terminal_completion_remains() -> None:
     text = _read(APP)
-    legacy_body = text.split("function completeSeaTurtleFeedback")[1].split("function ")[0]
+    legacy_body = text.split("function completeSeaTurtleFeedback")[1].split(
+        "function "
+    )[0]
     assert "result.complete" in legacy_body
     assert "completeSeaTurtleSuccess()" in legacy_body
 
@@ -225,7 +233,10 @@ class TestOceanRescueSeaTurtleCompletionHandoff:
                 context.add_init_script("window.localStorage.clear();")
                 page = context.new_page()
                 try:
-                    page.goto(f"{server.base_url}/index.dev.html", wait_until="domcontentloaded")
+                    page.goto(
+                        f"{server.base_url}/index.dev.html",
+                        wait_until="domcontentloaded",
+                    )
                     page.wait_for_selector(
                         "#ocean-rescue-root[data-ocean-rescue-ready='true']",
                         timeout=20000,
@@ -236,21 +247,27 @@ class TestOceanRescueSeaTurtleCompletionHandoff:
                     # Rope 1
                     _trace_active_rope(page)
                     assert _snapshot(page)["feedback"] == "success"
-                    page.evaluate("() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()")
+                    page.evaluate(
+                        "() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()"
+                    )
                     assert _snapshot(page)["feedback"] is None
                     assert _get_completion_count(page) == 0
 
                     # Rope 2
                     _trace_active_rope(page)
                     assert _snapshot(page)["feedback"] == "success"
-                    page.evaluate("() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()")
+                    page.evaluate(
+                        "() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()"
+                    )
                     assert _snapshot(page)["feedback"] is None
                     assert _get_completion_count(page) == 0
 
                     # Rope 3 (terminal)
                     _trace_active_rope(page)
                     assert _snapshot(page)["feedback"] == "success"
-                    page.evaluate("() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()")
+                    page.evaluate(
+                        "() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()"
+                    )
 
                     # Exactly-once completion handoff
                     assert _get_completion_count(page) == 1
@@ -271,7 +288,9 @@ class TestOceanRescueSeaTurtleCompletionHandoff:
                     assert root_phase is not None and root_phase.startswith("success")
 
                     # Re-flushing does not trigger another completion
-                    page.evaluate("() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()")
+                    page.evaluate(
+                        "() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()"
+                    )
                     assert _get_completion_count(page) == 1
 
                     # No page errors
@@ -289,7 +308,10 @@ class TestOceanRescueSeaTurtleCompletionHandoff:
                 context.add_init_script("window.localStorage.clear();")
                 page = context.new_page()
                 try:
-                    page.goto(f"{server.base_url}/index.dev.html", wait_until="domcontentloaded")
+                    page.goto(
+                        f"{server.base_url}/index.dev.html",
+                        wait_until="domcontentloaded",
+                    )
                     page.wait_for_selector(
                         "#ocean-rescue-root[data-ocean-rescue-ready='true']",
                         timeout=20000,
@@ -299,7 +321,9 @@ class TestOceanRescueSeaTurtleCompletionHandoff:
 
                     # Complete rope 1 only
                     _trace_active_rope(page)
-                    page.evaluate("() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()")
+                    page.evaluate(
+                        "() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()"
+                    )
 
                     # Directly invoke completion callback with session that is not complete
                     page.evaluate(
@@ -328,7 +352,10 @@ class TestOceanRescueSeaTurtleCompletionHandoff:
                 context.add_init_script("window.localStorage.clear();")
                 page = context.new_page()
                 try:
-                    page.goto(f"{server.base_url}/index.dev.html", wait_until="domcontentloaded")
+                    page.goto(
+                        f"{server.base_url}/index.dev.html",
+                        wait_until="domcontentloaded",
+                    )
                     page.wait_for_selector(
                         "#ocean-rescue-root[data-ocean-rescue-ready='true']",
                         timeout=20000,
@@ -363,7 +390,10 @@ class TestOceanRescueSeaTurtleCompletionHandoff:
                 context.add_init_script("window.localStorage.clear();")
                 page = context.new_page()
                 try:
-                    page.goto(f"{server.base_url}/index.dev.html", wait_until="domcontentloaded")
+                    page.goto(
+                        f"{server.base_url}/index.dev.html",
+                        wait_until="domcontentloaded",
+                    )
                     page.wait_for_selector(
                         "#ocean-rescue-root[data-ocean-rescue-ready='true']",
                         timeout=20000,
@@ -399,7 +429,10 @@ class TestOceanRescueSeaTurtleCompletionHandoff:
                 context.add_init_script("window.localStorage.clear();")
                 page = context.new_page()
                 try:
-                    page.goto(f"{server.base_url}/index.dev.html", wait_until="domcontentloaded")
+                    page.goto(
+                        f"{server.base_url}/index.dev.html",
+                        wait_until="domcontentloaded",
+                    )
                     page.wait_for_selector(
                         "#ocean-rescue-root[data-ocean-rescue-ready='true']",
                         timeout=20000,
@@ -425,11 +458,17 @@ class TestOceanRescueSeaTurtleCompletionHandoff:
 
                     # Complete all 3 ropes
                     _trace_active_rope(page)
-                    page.evaluate("() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()")
+                    page.evaluate(
+                        "() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()"
+                    )
                     _trace_active_rope(page)
-                    page.evaluate("() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()")
+                    page.evaluate(
+                        "() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()"
+                    )
                     _trace_active_rope(page)
-                    page.evaluate("() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()")
+                    page.evaluate(
+                        "() => window.OceanRescue.App.__testFlushSeaTurtleFeedback()"
+                    )
 
                     phase = page.evaluate(
                         "() => window.OceanRescue.State.getSnapshot().phase"

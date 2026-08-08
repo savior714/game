@@ -203,7 +203,7 @@ function buildQuestion(type, word, meta) {
     };
   }
   if (type === 'typing') {
-    return { type, ico, main: ko, sub: '영어 철자를 직접 입력하세요.', answer: en, word: en };
+    return { type, ico, main: ko, sub: '영어 철자를 직접 입력하세요. (시간 제한 없음 ⌨️)', answer: en, word: en };
   }
   if (type === 'spelling') {
     const numBlanks = en.length >= 5 && Math.random() < 0.5 ? 2 : 1;

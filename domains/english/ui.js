@@ -291,7 +291,28 @@ function checkTypingAnswer(raw) {
 /* ═══════════════════════════════════
    타이머
    ═══════════════════════════════════ */
+function setNoLimitTimerUI() {
+  stopTimer();
+  timeLeft = TIME_LIMIT;
+  const timerText = document.getElementById('timer-text');
+  const timerBar = document.getElementById('timer-bar');
+  const timerLabel = document.getElementById('timer-label');
+  const gameCard = document.getElementById('game-card');
+
+  if (timerText) timerText.textContent = '♾️';
+  if (timerBar) {
+    timerBar.style.width = '100%';
+    timerBar.classList.remove('warn', 'danger');
+  }
+  if (timerLabel) timerLabel.classList.remove('danger');
+  if (gameCard) gameCard.classList.remove('time-danger');
+}
+
 function startTimer() {
+  if (uiQuestionKind === 'typing') {
+    setNoLimitTimerUI();
+    return;
+  }
   timerCore.startTimer();
 }
 
@@ -300,11 +321,15 @@ function stopTimer() {
 }
 
 function updateTimerUI() {
+  if (uiQuestionKind === 'typing') {
+    setNoLimitTimerUI();
+    return;
+  }
   timerCore.updateTimerUI();
 }
 
 function timeOut() {
-  if (answered) return;
+  if (answered || uiQuestionKind === 'typing') return;
   answered = true;
   recordResult(false, TIME_LIMIT);
   if (seqBlanks) {
@@ -313,12 +338,6 @@ function timeOut() {
       if (b.textContent === blank.char) b.classList.add('correct');
     });
     seqBlanks = null;
-  } else if (uiQuestionKind === 'typing') {
-    const inp = document.getElementById('typing-input');
-    if (inp) {
-      inp.classList.add('wrong');
-      inp.disabled = true;
-    }
   } else {
     document.querySelectorAll('.answer-btn').forEach(b => {
       if (b.textContent === answer) b.classList.add('correct');

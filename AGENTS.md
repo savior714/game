@@ -2,6 +2,32 @@
 
 이 문서는 AidenGame 저장소에만 해당하는 계약만 담는다. 일반적인 에이전트 행동은 시스템 프롬프트를 따른다.
 
+## 0. Web GPT canonical overlay (2026-08-08)
+
+전역 개발 원칙은 Codex의 `developer_instructions`가 담당한다. 이 절은 기존
+AidenGame workflow와 product contract를 대체하지 않는 프로젝트 고유 불변식이다.
+
+- 브라우저/PixiJS architecture와 standalone deployable-artifact contract는
+  명시적 변경이 없는 한 보존한다. 새 engine, Next.js, separate backend,
+  runtime-critical external network dependency를 도입하지 않는다.
+- implementation, documentation, test, required runtime/development path에 paid
+  tool, asset, service, API, font, plan을 도입하지 않는다.
+- `flake.nix`가 존재해도 Nix는 active toolchain이 아니다. 정책 변경 없이는
+  `flake.lock` 생성, Nix pin upgrade/recommendation, Nix reproducibility work를
+  하지 않는다.
+- canonical manual visual-asset handoff를 보존한다:
+  untrusted inbox/source → structural/security validation → actual game scale proof
+  → required explicit approval → canonical source registration → canonical artifact
+  regeneration → PixiJS/runtime verification.
+- local text-only LLM이 approved SVG artwork를 조용히 재설계하게 하지 않는다.
+- deterministic source → raster/atlas → registry → bundle → standalone artifact
+  chain을 보존한다.
+- canonical pipeline을 우회하려고 hash, provenance, registry identity, atlas
+  metadata, generated bundle output을 손으로 편집하지 않는다.
+- repository가 exact pin과 deterministic build step을 선언하면 이 문서의 오래된
+  버전 대신 현재 선언을 따른다. unrelated asset/gameplay fix 중 renderer,
+  dependency, tooling을 바꾸지 않는다.
+
 ## 1. 적용 순서
 
 1. 사용자의 현재 요청

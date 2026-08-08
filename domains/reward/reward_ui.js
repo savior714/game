@@ -567,7 +567,7 @@ const RewardSystemUI = (() => {
   }
 
   function openMarbleModal() {
-    const marbleUrl = new URL('../marble/', getGlobalBaseUrl()).href;
+    const marbleUrl = new URL('../../experiments/marble/', getGlobalBaseUrl()).href;
 
     const overlay = createModalOverlay('reward-marble-modal');
     overlay.style.backgroundColor = 'rgba(0,0,0,0.92)';

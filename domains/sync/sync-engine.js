@@ -4,7 +4,8 @@ window.SyncEngine = (() => {
   const DEFAULT_STUDY_SHOP_ITEMS = [
     { id: 'youtube', icon: '📺', label: '유튜브 15분', desc: '좋아하는 영상 시청', price: 1 },
     { id: 'snack', icon: '🍪', label: '간식 1개', desc: '맛있는 간식 시간', price: 1 },
-    { id: 'marble', icon: '🎮', label: '마블 게임', desc: '마블 한 판 더!', price: 1 }
+    { id: 'marble', icon: '🎮', label: '마블 게임', desc: '마블 한 판 더!', price: 1 },
+    { id: 'bubble', icon: '🫧', label: '비눗방울 게임', desc: '버블팡 한 판 더!', price: 1 }
   ];
 
   /** 로그인 직후 pull 시 서버 빈 값이 로컬 진행을 덮지 않도록 study_rewards만 병합 */
@@ -32,6 +33,7 @@ window.SyncEngine = (() => {
       youtube_minutes: Math.max(L.youtube_minutes || 0, R.youtube_minutes || 0),
       snacks: Math.max(L.snacks || 0, R.snacks || 0),
       marble_plays: Math.max(L.marble_plays || 0, R.marble_plays || 0),
+      bubble_plays: Math.max(L.bubble_plays || 0, R.bubble_plays || 0),
       custom_inventory,
       shop_items,
       _updated_at: Math.max(L._updated_at || 0, R._updated_at || 0)

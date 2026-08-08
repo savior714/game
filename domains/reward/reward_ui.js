@@ -168,7 +168,7 @@ const RewardSystemUI = (() => {
     state.shop_items.forEach(item => {
       let unit = '개';
       if (item.id === 'youtube') unit = '분';
-      else if (item.id === 'marble') unit = '회';
+      else if (item.id === 'marble' || item.id === 'bubble') unit = '회';
       
       html += `
         <div class="inventory-item empty-slot" data-type="${item.id}" data-action="consume" data-item-id="${item.id}" style="display:flex;">
@@ -243,6 +243,7 @@ const RewardSystemUI = (() => {
       else if (type === 'youtube') { count = state.youtube_minutes; }
       else if (type === 'snack') { count = state.snacks; }
       else if (type === 'marble') { count = state.marble_plays; }
+      else if (type === 'bubble') { count = state.bubble_plays; }
       else { count = state.custom_inventory[type] || 0; }
 
       const valEl = document.getElementById('inv-' + type);
@@ -586,6 +587,26 @@ const RewardSystemUI = (() => {
     }, { once: true });
   }
 
+  function openBubbleModal() {
+    const bubbleUrl = new URL('../../experiments/bubble/', getGlobalBaseUrl()).href;
+
+    const overlay = createModalOverlay('reward-bubble-modal');
+    overlay.style.backgroundColor = 'rgba(0,0,0,0.92)';
+    overlay.innerHTML = `
+      <div class="reward-marble-content">
+         <iframe src="${bubbleUrl}" style="width:360px; height:560px; border:none; border-radius:20px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);"></iframe>
+          <button class="btn-close-marble" data-action="close-overlay">학습으로 돌아가기</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    
+    window.addEventListener('message', (e) => {
+      if (e.data === 'closeBubble') {
+        overlay.remove();
+      }
+    }, { once: true });
+  }
+
   function createModalOverlay(id) {
     const el = document.createElement('div');
     el.className = 'reward-modal-overlay ' + id;
@@ -907,7 +928,7 @@ const RewardSystemUI = (() => {
   return {
     injectCriticalStyles, injectStyles, injectInventoryBar, syncInventoryBarWithState, applyBodyTopOffset, updateUI,
     playEntranceAndAddGem, openShopModal, spawnExplosion, showToast, showGrowthToast,
-    openYoutubeModal, openSnackModal, openMarbleModal, openCustomModal, renderFreeTimeTimerUI, renderExpiredFreeTimeSessionUI
+    openYoutubeModal, openSnackModal, openMarbleModal, openBubbleModal, openCustomModal, renderFreeTimeTimerUI, renderExpiredFreeTimeSessionUI
   };
 })();
 

@@ -13,10 +13,12 @@ const RewardSystem = (() => {
     youtube_minutes: 0,
     snacks: 0,
     marble_plays: 0,
+    bubble_plays: 0,
     shop_items: [
       { id: 'youtube', icon: '📺', label: '유튜브 15분', desc: '좋아하는 영상 시청', price: 1 },
       { id: 'snack', icon: '🍪', label: '간식 1개', desc: '맛있는 간식 시간', price: 1 },
-      { id: 'marble', icon: '🎮', label: '마블 게임', desc: '마블 한 판 더!', price: 1 }
+      { id: 'marble', icon: '🎮', label: '마블 게임', desc: '마블 한 판 더!', price: 1 },
+      { id: 'bubble', icon: '🫧', label: '비눗방울 게임', desc: '버블팡 한 판 더!', price: 1 }
     ],
     custom_inventory: {},
     theme: 'modern',
@@ -42,6 +44,7 @@ const RewardSystem = (() => {
         state.youtube_minutes = Number.isFinite(Number(state.youtube_minutes)) ? Number(state.youtube_minutes) : 0;
         state.snacks = Number.isFinite(Number(state.snacks)) ? Number(state.snacks) : 0;
         state.marble_plays = Number.isFinite(Number(state.marble_plays)) ? Number(state.marble_plays) : 0;
+        state.bubble_plays = Number.isFinite(Number(state.bubble_plays)) ? Number(state.bubble_plays) : 0;
       } catch (e) {
         console.error('RewardSystem load failed:', e);
       }
@@ -79,6 +82,8 @@ const RewardSystem = (() => {
       state.snacks = (Number(state.snacks) || 0) + safeAmount;
     } else if (type === 'marble') {
       state.marble_plays = (Number(state.marble_plays) || 0) + safeAmount;
+    } else if (type === 'bubble') {
+      state.bubble_plays = (Number(state.bubble_plays) || 0) + safeAmount;
     } else {
       if (!state.custom_inventory[type]) state.custom_inventory[type] = 0;
       state.custom_inventory[type] = (Number(state.custom_inventory[type]) || 0) + safeAmount;
@@ -90,6 +95,7 @@ const RewardSystem = (() => {
     else if (type === 'youtube') typeName = '📺 유튜브 시간';
     else if (type === 'snack') typeName = '🍪 간식';
     else if (type === 'marble') typeName = '🎮 마블 게임';
+    else if (type === 'bubble') typeName = '🫧 비눗방울 게임';
     else {
        const item = state.shop_items.find(i => i.id === type);
        if (item) typeName = `${item.icon} ${item.label}`;
@@ -105,6 +111,7 @@ const RewardSystem = (() => {
     if (type === 'youtube') return state.youtube_minutes >= 15;
     if (type === 'snack') return state.snacks >= amount;
     if (type === 'marble') return state.marble_plays >= amount;
+    if (type === 'bubble') return state.bubble_plays >= amount;
     return (state.custom_inventory[type] || 0) >= amount;
   }
 
@@ -124,6 +131,10 @@ const RewardSystem = (() => {
       state.marble_plays -= 1;
       save();
       RewardSystemUI.openMarbleModal();
+    } else if (type === 'bubble') {
+      state.bubble_plays -= 1;
+      save();
+      RewardSystemUI.openBubbleModal();
     } else {
       const item = state.shop_items.find(i => i.id === type) || { id: type, icon: '🎁', label: '알 수 없는 보상' };
       RewardSystemUI.openCustomModal(item, state);
@@ -169,6 +180,7 @@ const RewardSystem = (() => {
     if (targetType === 'youtube') state.youtube_minutes += 15;
     else if (targetType === 'snack') state.snacks += 1;
     else if (targetType === 'marble') state.marble_plays += 1;
+    else if (targetType === 'bubble') state.bubble_plays += 1;
     else {
       if (!state.custom_inventory[targetType]) state.custom_inventory[targetType] = 0;
       state.custom_inventory[targetType] += 1;

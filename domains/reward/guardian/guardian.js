@@ -281,11 +281,12 @@ function loadRewards() {
   }
   if (!rewardState) {
     rewardState = {
-      gems: 0, youtube_minutes: 0, snacks: 0, marble_plays: 0,
+      gems: 0, youtube_minutes: 0, snacks: 0, marble_plays: 0, bubble_plays: 0,
       shop_items: [
         { id: 'youtube', icon: '📺', label: '유튜브 15분', desc: '좋아하는 영상 시청', price: 1 },
         { id: 'snack', icon: '🍪', label: '간식 1개', desc: '맛있는 간식 시간', price: 1 },
-        { id: 'marble', icon: '🎮', label: '마블 게임', desc: '마블 한 판 더!', price: 1 }
+        { id: 'marble', icon: '🎮', label: '마블 게임', desc: '마블 한 판 더!', price: 1 },
+        { id: 'bubble', icon: '🫧', label: '비눗방울 게임', desc: '버블팡 한 판 더!', price: 1 }
       ],
       custom_inventory: {}
     };
@@ -294,7 +295,8 @@ function loadRewards() {
     rewardState.shop_items = [
       { id: 'youtube', icon: '📺', label: '유튜브 15분', desc: '좋아하는 영상 시청', price: 1 },
       { id: 'snack', icon: '🍪', label: '간식 1개', desc: '맛있는 간식 시간', price: 1 },
-      { id: 'marble', icon: '🎮', label: '마블 게임', desc: '마블 한 판 더!', price: 1 }
+      { id: 'marble', icon: '🎮', label: '마블 게임', desc: '마블 한 판 더!', price: 1 },
+      { id: 'bubble', icon: '🫧', label: '비눗방울 게임', desc: '버블팡 한 판 더!', price: 1 }
     ];
   }
   if (!rewardState.custom_inventory) rewardState.custom_inventory = {};
@@ -316,6 +318,7 @@ function renderRewardList() {
     if (item.id === 'youtube') invCount = rewardState.youtube_minutes + '분';
     else if (item.id === 'snack') invCount = rewardState.snacks + '개';
     else if (item.id === 'marble') invCount = rewardState.marble_plays + '회';
+    else if (item.id === 'bubble') invCount = (rewardState.bubble_plays || 0) + '회';
     else invCount = (rewardState.custom_inventory[item.id] || 0) + '개';
 
     const div = document.createElement('div');

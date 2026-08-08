@@ -55,7 +55,7 @@ const GrowthVisualizer = (() => {
     if (newLevel > oldLevel && !state.levelUpShown) {
       const oldLabel = DIFF_LABELS[oldLevel] || `Lv.${oldLevel}`;
       const newLabel = DIFF_LABELS[newLevel] || `Lv.${newLevel}`;
-      const message = `${subject} ${oldLabel} → ${newLabel} 올라! 🎉`;
+      const message = `${subject} ${oldLabel} → ${newLabel} 난이도 상승! 🎉`;
       showToast(message);
       state.levelUpShown = true;
       state.lastLevelUpSubject = subject;

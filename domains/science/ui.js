@@ -82,7 +82,7 @@ function timeOut() {
     if (b.textContent === answer) b.classList.add('correct');
   });
   const fb = DOM.feedback || document.getElementById('feedback');
-  fb.textContent = `⏳ 시간 초과! 정답은 "${answer}" 정답이에요!`;
+  fb.textContent = `⏳ 시간 초과! 정답은 "${answer}"이에요!`;
   fb.className   = 'feedback-wrong';
   (DOM.nextBtn || document.getElementById('next-btn')).style.display = 'inline-block';
 }

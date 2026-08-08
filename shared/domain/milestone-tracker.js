@@ -8,20 +8,20 @@ const MilestoneTracker = (() => {
 
   const STREAK_MILESTONES = [
     { key: 'streak_3', threshold: 3, message: '3연속! 대단해! 🔥', gems: 0 },
-    { key: 'streak_5', threshold: 5, message: '5연속! 넉줄 확인 무기! 🛡️', gems: 0 },
-    { key: 'streak_10', threshold: 10, message: '10연속! 무서워! 😱', gems: 0 },
+    { key: 'streak_5', threshold: 5, message: '5연속 정답! 대단해요! 🛡️', gems: 0 },
+    { key: 'streak_10', threshold: 10, message: '10연속 정답! 정말 대단해요! ⚡', gems: 0 },
     { key: 'streak_15', threshold: 15, message: '15연속! 로켓 발사 임무! 🚀', gems: 0 },
   ];
 
   const SESSION_MILESTONES = [
-    { key: 'session_3', threshold: 3, message: '오늘 3문제 맞혔어! 미션', gems: 0 },
-    { key: 'session_5', threshold: 5, message: '세션 부분 이상! 5문제! 🌟', gems: 1 },
+    { key: 'session_3', threshold: 3, message: '오늘 3문제 맞혔어요! 미션 달성! 🎯', gems: 0 },
+    { key: 'session_5', threshold: 5, message: '오늘 5문제 성공! 훌륭해요! 🌟', gems: 1 },
     { key: 'session_10', threshold: 10, message: '완벽 세션! 10문제 전부 정답! 💯', gems: 1 },
-    { key: 'session_20', threshold: 20, message: '20문제?! 진지한 게임처! 🏆', gems: 1 },
+    { key: 'session_20', threshold: 20, message: '20문제 달성! 퀴즈 왕이에요! 🏆', gems: 1 },
   ];
 
   const FIRST_MILESTONES = [
-    { key: 'first_answer', message: '처음 정답! 흥나하! 🎉', gems: 0 },
+    { key: 'first_answer', message: '첫 정답 성공! 축하해요! 🎉', gems: 0 },
     { key: 'first_subject_complete', message: '처음 과제 완료! 🎊', gems: 0 },
     { key: 'first_rocket', message: '처음 로켓 발사! 🚀✨', gems: 0 },
   ];

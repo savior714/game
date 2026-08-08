@@ -110,7 +110,7 @@
       }
 
       if (state.streak >= 18) {
-        badge.textContent = `🚀 발사 ${launchStreak - state.streak}초전!`;
+        badge.textContent = `🚀 발사 ${launchStreak - state.streak}회 전!`;
         badge.classList.add("pre-launch");
       } else {
         badge.textContent = `🔥 ${state.streak} / ${launchStreak}`;

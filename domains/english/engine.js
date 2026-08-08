@@ -185,10 +185,16 @@ function buildQuestion(type, word, meta) {
     if (!dialogues || dialogues.length === 0) {
       return buildQuestion('sentence', word, meta);
     }
-    const dialogue = dialogues[Math.floor(Math.random() * dialogues.length)];
+    const matchingDialogues = dialogues.filter(d =>
+      d.answer.some(ans => ans.toLowerCase() === en.toLowerCase())
+    );
+    if (matchingDialogues.length === 0) {
+      return buildQuestion('sentence', word, meta);
+    }
+    const dialogue = matchingDialogues[Math.floor(Math.random() * matchingDialogues.length)];
     const blankLine = dialogue.line;
-    const correctAnswer = dialogue.answer[0];
-    const choices = [correctAnswer, ...dialogue.answer.slice(1), ...makeWordChoices(word, 'en').slice(0, 4 - dialogue.answer.length)].sort(() => Math.random() - 0.5);
+    const correctAnswer = en;
+    const choices = makeWordChoices(word, 'en');
     return {
       type,
       id: dialogue.id,
@@ -198,7 +204,7 @@ function buildQuestion(type, word, meta) {
       line: blankLine,
       blank: true,
       answer: correctAnswer,
-      choices: choices.slice(0, 4),
+      choices,
       word: en,
     };
   }

@@ -50,6 +50,80 @@ def _close(a: float, b: float, tol: float) -> bool:
     return abs(a - b) <= tol + 1e-9
 
 
+def _run_production_js_mapping(
+    cases: list[dict], with_render_runtime: bool = False
+) -> list[dict[str, float]]:
+    """Execute production domains/ocean-rescue/src/pointer-input.js via Node.js."""
+    import shutil
+    import subprocess
+
+    node_bin = shutil.which("node")
+    if not node_bin:
+        pytest.skip("node executable not found on PATH")
+
+    repo_root = Path(__file__).resolve().parents[4]
+    pointer_js_path = (
+        repo_root / "domains" / "ocean-rescue" / "src" / "pointer-input.js"
+    )
+    assert pointer_js_path.is_file(), f"pointer-input.js missing at {pointer_js_path}"
+
+    runner_js = f"""
+const fs = require('fs');
+const vm = require('vm');
+
+const pointerJsCode = fs.readFileSync({json.dumps(str(pointer_js_path))}, 'utf-8');
+
+const cases = {json.dumps(cases)};
+const withRenderRuntime = {json.dumps(with_render_runtime)};
+
+const context = {{
+    window: {{}},
+    console: console,
+    Math: Math,
+    isFinite: isFinite
+}};
+
+vm.createContext(context);
+vm.runInContext(pointerJsCode, context);
+
+if (withRenderRuntime) {{
+    context.window.OceanRescue.RenderRuntime = {{
+        isReady: () => true,
+        mapClientToLogical: (cx, cy) => ({{ x: cx * (1280 / 1280), y: cy * (720 / 720), inside: true }})
+    }};
+}}
+
+const PointerInput = context.window.OceanRescue.PointerInput;
+if (!PointerInput || typeof PointerInput.mapRescuePoint !== 'function') {{
+    console.error("PointerInput.mapRescuePoint not found on window.OceanRescue");
+    process.exit(1);
+}}
+
+const results = cases.map(c => {{
+    const canvas = {{
+        getBoundingClientRect: () => ({{
+            left: c.canvasRectLeft,
+            top: c.canvasRectTop,
+            width: c.canvasRectWidth,
+            height: c.canvasRectHeight
+        }})
+    }};
+    const event = {{ clientX: c.browserX, clientY: c.browserY }};
+    const pt = PointerInput.mapRescuePoint(event, canvas);
+    return pt ? {{ x: pt.x, y: pt.y }} : null;
+}});
+
+console.log(JSON.stringify(results));
+"""
+    res = subprocess.run(
+        [node_bin, "-e", runner_js],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return json.loads(res.stdout.strip())
+
+
 # ---------------------------------------------------------------------------
 # Contract assertions on the fixture file itself
 # ---------------------------------------------------------------------------
@@ -248,3 +322,54 @@ class TestCoordinateMapping:
             assert _close(inv_y, c["browserY"], tolerance), (
                 f"[{c['id']}] Round-trip Y: {inv_y} vs {c['browserY']}"
             )
+
+
+# ---------------------------------------------------------------------------
+# Production JS runtime coordinate mapping verification (WP-33E / Track A)
+# ---------------------------------------------------------------------------
+
+
+class TestProductionRuntimeCoordinateMapping:
+    """Verify production pointer-input.js via Node.js satisfies coordinate acceptance."""
+
+    @pytest.fixture(scope="class")
+    def fixture_data(self):
+        return _load_fixture()
+
+    @pytest.fixture(scope="class")
+    def tolerance(self, fixture_data):
+        return fixture_data["meta"]["tolerance"]
+
+    def test_production_js_runtime_matches_fixture(self, fixture_data, tolerance):
+        cases = fixture_data["cases"]
+        results = _run_production_js_mapping(cases)
+        assert len(results) == len(cases)
+
+        for case, res in zip(cases, results):
+            assert res is not None, f"[{case['id']}] Production mapping returned null"
+            got_x = res["x"]
+            got_y = res["y"]
+            exp_x = case["expectedLogicalX"]
+            exp_y = case["expectedLogicalY"]
+            assert _close(got_x, exp_x, tolerance), (
+                f"[{case['id']}] JS Production X mismatch: got {got_x}, expected {exp_x}"
+            )
+            assert _close(got_y, exp_y, tolerance), (
+                f"[{case['id']}] JS Production Y mismatch: got {got_y}, expected {exp_y}"
+            )
+
+    def test_production_js_dpr_coverage(self, fixture_data, tolerance):
+        """Verify DPR 1, 1.5, and 2 cases pass through actual production pointer-input.js."""
+        cases = fixture_data["cases"]
+        dpr_map = {1: False, 1.5: False, 2: False}
+        results = _run_production_js_mapping(cases)
+
+        for case, res in zip(cases, results):
+            dpr = case["effectiveDpr"]
+            if dpr in dpr_map:
+                dpr_map[dpr] = True
+            assert res is not None
+            assert _close(res["x"], case["expectedLogicalX"], tolerance)
+            assert _close(res["y"], case["expectedLogicalY"], tolerance)
+
+        assert all(dpr_map.values()), f"Missing DPR coverage verification: {dpr_map}"

@@ -181,7 +181,7 @@ uv run pytest -q tests/test_agent_registry_consistency.py
 계획·runbook·다음 실행 task를 만들 때 repository 전체 broad scan부터 시작하지 않는다.
 
 1. latest `origin/main`을 확인한다.
-2. [`../reviews/review-backlog.md`](../reviews/review-backlog.md)를 먼저 읽는다.
+2. [`review backlog`](../../agents/reviews/review-backlog.md)를 먼저 읽는다.
 3. backlog candidate를 production owner, sibling invariant, relevant diff/history, focused test/runtime evidence에 대조해 독립 재검증한다.
 4. 여전히 실제 gap인 LIVE finding만 task 후보로 유지하고 SATISFIED / OBSOLETE / INVALID finding은 backlog에서 제거한다.
 5. LIVE 후보 중 가치가 높은 finding을 실행 task로 승격한다.

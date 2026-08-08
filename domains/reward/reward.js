@@ -30,14 +30,24 @@ const RewardSystem = (() => {
   // ──────────────────────────────────────────
   // 1. 상태 관리 (State Management)
   // ──────────────────────────────────────────
+  function ensureDefaultShopItems(targetState) {
+    if (!targetState.shop_items || !Array.isArray(targetState.shop_items)) {
+      targetState.shop_items = [...initialState.shop_items];
+      return;
+    }
+    initialState.shop_items.forEach(defaultItem => {
+      if (!targetState.shop_items.some(item => item.id === defaultItem.id)) {
+        targetState.shop_items.push({ ...defaultItem });
+      }
+    });
+  }
+
   function load() {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
         state = { ...initialState, ...JSON.parse(saved) };
-        if (!state.shop_items || state.shop_items.length === 0) {
-          state.shop_items = [...initialState.shop_items];
-        }
+        ensureDefaultShopItems(state);
         if (!state.custom_inventory) state.custom_inventory = {};
         // 로컬/클라우드 병합 과정에서 숫자 필드가 문자열·NaN으로 들어와도 누적이 깨지지 않게 정규화
         state.gems = Number.isFinite(Number(state.gems)) ? Number(state.gems) : 0;
@@ -48,6 +58,8 @@ const RewardSystem = (() => {
       } catch (e) {
         console.error('RewardSystem load failed:', e);
       }
+    } else {
+      ensureDefaultShopItems(state);
     }
   }
 

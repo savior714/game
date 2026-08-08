@@ -291,13 +291,20 @@ function loadRewards() {
       custom_inventory: {}
     };
   }
+  const defaultItems = [
+    { id: 'youtube', icon: '📺', label: '유튜브 15분', desc: '좋아하는 영상 시청', price: 1 },
+    { id: 'snack', icon: '🍪', label: '간식 1개', desc: '맛있는 간식 시간', price: 1 },
+    { id: 'marble', icon: '🎮', label: '마블 게임', desc: '마블 한 판 더!', price: 1 },
+    { id: 'bubble', icon: '🫧', label: '비눗방울 게임', desc: '버블팡 한 판 더!', price: 1 }
+  ];
   if (!rewardState.shop_items) {
-    rewardState.shop_items = [
-      { id: 'youtube', icon: '📺', label: '유튜브 15분', desc: '좋아하는 영상 시청', price: 1 },
-      { id: 'snack', icon: '🍪', label: '간식 1개', desc: '맛있는 간식 시간', price: 1 },
-      { id: 'marble', icon: '🎮', label: '마블 게임', desc: '마블 한 판 더!', price: 1 },
-      { id: 'bubble', icon: '🫧', label: '비눗방울 게임', desc: '버블팡 한 판 더!', price: 1 }
-    ];
+    rewardState.shop_items = [...defaultItems];
+  } else {
+    defaultItems.forEach(item => {
+      if (!rewardState.shop_items.some(i => i.id === item.id)) {
+        rewardState.shop_items.push({ ...item });
+      }
+    });
   }
   if (!rewardState.custom_inventory) rewardState.custom_inventory = {};
   renderRewardList();

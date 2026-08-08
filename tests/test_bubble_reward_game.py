@@ -32,6 +32,16 @@ def test_reward_system_bubble_integration():
 
     guardian_content = GUARDIAN_SCRIPT.read_text(encoding="utf-8")
     assert "bubble_plays" in guardian_content
+    assert "id: 'bubble'" in guardian_content or 'id: "bubble"' in guardian_content
 
     sync_content = SYNC_SCRIPT.read_text(encoding="utf-8")
     assert "bubble_plays" in sync_content
+    assert "id: 'bubble'" in sync_content or 'id: "bubble"' in sync_content
+
+
+def test_ensure_default_shop_items_on_load():
+    """Ensure RewardSystem load() reconciles missing default items like bubble from legacy localStorage."""
+    reward_content = REWARD_SCRIPT.read_text(encoding="utf-8")
+    assert "ensureDefaultShopItems" in reward_content, (
+        "reward.js must define ensureDefaultShopItems to reconcile missing default items on load"
+    )

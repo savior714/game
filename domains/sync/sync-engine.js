@@ -22,9 +22,15 @@ window.SyncEngine = (() => {
     });
 
     let shop_items;
-    if (Array.isArray(R.shop_items) && R.shop_items.length > 0) shop_items = R.shop_items;
-    else if (Array.isArray(L.shop_items) && L.shop_items.length > 0) shop_items = L.shop_items;
+    if (Array.isArray(R.shop_items) && R.shop_items.length > 0) shop_items = R.shop_items.slice();
+    else if (Array.isArray(L.shop_items) && L.shop_items.length > 0) shop_items = L.shop_items.slice();
     else shop_items = DEFAULT_STUDY_SHOP_ITEMS.slice();
+
+    DEFAULT_STUDY_SHOP_ITEMS.forEach((defaultItem) => {
+      if (!shop_items.some((item) => item.id === defaultItem.id)) {
+        shop_items.push({ ...defaultItem });
+      }
+    });
 
     return {
       ...L,

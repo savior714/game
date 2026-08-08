@@ -8,7 +8,7 @@
 ═══════════════════════════════════ */
 const TOTAL              = 10;
 const TIME_LIMIT         = 120;
-const MIN_DATA           = 3;    // 난이도 조정 최소 시도 횟수(레벨별 판정용)
+const MIN_DATA           = 2;    // 난이도 조정 최소 시도 횟수(레벨별 판정용)
 /** ProgressEngine 승급 임계값 — 수학만 다소 완화(빠른 승급) */
 const MATH_DIFF_OPTS     = { upThreshold: 0.85, downThreshold: 0.75 };
 const LAUNCH_STREAK      = 20;   // 연속 정답 → 로켓 발사

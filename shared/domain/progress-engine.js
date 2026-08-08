@@ -131,16 +131,17 @@
   }
 
   /**
-   * 최근 답변 흐름 기반 부스트 계산
+   * 최근 답변 흐름 기반 부스트 계산 (가속화 적용)
    * @param {boolean[]} recentHistory - 최근 답변 이력
-   * @returns {number} 부스트 값 (0-2)
+   * @returns {number} 부스트 값 (0-3)
    */
   function getRecentFlowBoost(recentHistory) {
     if (!Array.isArray(recentHistory) || recentHistory.length === 0) return 0;
     const recent = recentHistory.slice(-5);
     const corrects = recent.filter((r) => r === true).length;
-    if (corrects >= 5) return 2;
-    if (corrects >= 3) return 1;
+    if (corrects >= 5) return 3;
+    if (corrects >= 3) return 2;
+    if (corrects >= 2) return 1;
     return 0;
   }
 

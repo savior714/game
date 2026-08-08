@@ -30,7 +30,7 @@ const wLv  = w => w[3];
 ═══════════════════════════════════ */
 const TOTAL              = 10;
 const TIME_LIMIT         = 120;
-const MIN_DATA           = 3;
+const MIN_DATA           = 2;
 const SUBJECT_DIFF_OPTS  = { upThreshold: 0.85, downThreshold: 0.75 };
 const LAUNCH_STREAK      = 20;
 const STATS_KEY          = ProgressEngine.createStatsKey('english');

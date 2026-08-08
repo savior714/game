@@ -6,7 +6,7 @@
 
   var registry = {
     "atlasManifest": {
-        "approvalRecordSha256": "4e09878091926e4b4e7e9c6c59902a2486382dd8ba6022c8e1f6a2b7827e7f30",
+        "approvalRecordSha256": "8ee04d5e854a378cac5edb51489bd684434b86ca00a9f39ee2059ee63879258e",
         "bundles": [
             {
                 "aliases": [
@@ -210,7 +210,7 @@
             "pillow": "12.3.0"
         }
     },
-    "atlasManifestSha256": "61c4fb2885ba064b550b94fd1c16879ac18b48c2b767944559d4a3848db8f19f",
+    "atlasManifestSha256": "271498aa92d1a5f044dc7796e9484ed49ca0d2dee6176503bbe856c1d422883c",
     "bundleOrder": [
         "characters",
         "scene",

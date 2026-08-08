@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "sourcePacketSha256": "0fa0e4cedb09ad9d1deac085ab3caba9a46345ede3e8300d26eeea60e14975eb",
-  "approvalRecordSha256": "4e09878091926e4b4e7e9c6c59902a2486382dd8ba6022c8e1f6a2b7827e7f30",
+  "approvalRecordSha256": "8ee04d5e854a378cac5edb51489bd684434b86ca00a9f39ee2059ee63879258e",
   "sourceSetSha256": "774b402159490da09c214cb0be3645550bafa15eaa5fc58bdf5bdf73e69ab81a",
   "toolchain": {
     "cairosvg": "2.9.0",

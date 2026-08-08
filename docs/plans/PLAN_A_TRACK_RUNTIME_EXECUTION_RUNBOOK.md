@@ -1,6 +1,6 @@
 # A 트랙 런타임·플레이 — Rolling Runbook
 
-- **상태:** ACTIVE — DPR input alignment runtime evidence
+- **상태:** ACTIVE — Game-state presentation evidence audit
 - **갱신:** 2026-08-08 KST
 - **기준:** 실행 시점의 최신 `origin/main`
 - **범위:** player-facing runtime/play. Asset source/schema/generator/atlas/provenance는 B 소유다.
@@ -13,49 +13,45 @@
 
 - Quiz launcher / YouTube fallback 안정화
 - Ocean Rescue authored Kid / Sea Turtle / Seaweed 런타임 소비와 현재 macOS app 조립
+- DPR 1, 1.5, 2 production pointer-input.js mapping acceptance evidence (2c2ca83)
 
 기존 Ocean Rescue browser baseline은 profile → mission select → GUP → launch → travel → pause/resume → Sea Turtle rescue를 이미 관통한다. 같은 의미의 smoke/evidence test를 추가하지 않는다.
 
-## 2. ACTIVE — DPR input alignment runtime evidence
+## 2. ACTIVE — Game-state presentation evidence audit
 
 **Failure domain**  
-Ocean Rescue의 실제 runtime pointer mapping이 DPR `1`, `1.5`, `2`에서 정렬된다는 acceptance evidence가 production path에 연결되어 있지 않다.
+Sea Turtle rescue 미션에서 required state transitions (IDLE → APPROACH → RECOVERY / SUCCESS / FAILURE) 및 visual state distinction에 관한 실제 runtime presentation evidence가 부족하거나 누락된 지점을 확정하고 닫는다.
 
 **Current evidence**
-- Rendering MVP Phase E는 DPR `1`, `1.5`, `2` hit alignment를 요구한다.
-- Acceptance criteria는 supported scaling/DPR에서 pointer alignment와 1280×720 logical coordinates 유지를 요구한다.
-- `tests/ocean-rescue/rendering-acceptance/coordinates/test_coordinates.py`는 production code를 import하지 않고 `mapRescueCoordinates` 수식을 Python으로 다시 구현해 fixture와 비교한다.
+- `sea-turtle-scene.js` 및 `sea-turtle.js`는 상태 전이와 연출(feedback / success / failure) 인터페이스를 소유한다.
+- unit level / controller scaffold 테스트는 구조 계약을 확인하지만, 실제 runtime presentation 및 state transition visual distinction이 통과하는지 검증하는 focused acceptance harness 증거를 확장할 필요가 있다.
 
 **Hypothesis**  
-현재 fixture/formula test는 수학 계약은 검증하지만, 최신 Ocean Rescue runtime의 실제 pointer-mapping owner가 같은 계약을 소비하는지는 판정하지 못한다.
+Sea Turtle rescue 미션의 상태 전이 및 visual feedback distinction을 단일 focused runtime acceptance test로 고정함으로써 런타임 플레이 딜리버리 신뢰성을 확증할 수 있다.
 
 **Primary criterion**  
-고정된 representative browser-pointer samples가 **실제 최신 runtime mapping path**를 통과했을 때 DPR `1`, `1.5`, `2` 각각에서 기존 fixture의 expected logical coordinates를 기존 tolerance 안에서 모두 만족하면 PASS.
+Sea Turtle 미션의 주요 state transition(상태 전이 및 feedback presentation)이 production runtime 코드 경로를 통과하여 올바른 visual state distinction 상태를 반환하면 PASS.
 
 **Do first — read only**
-1. 최신 runtime에서 pointer/client coordinates → 1280×720 logical coordinates를 소유하는 production owner와 직접 caller를 찾는다.
-2. resize/letterbox/DPR 값을 같은 mapping에 공급하는 sibling surface만 inventory한다.
-3. 기존 browser/runtime harness 중 해당 owner를 실제 실행할 수 있는 가장 가까운 것을 찾는다.
+1. `sea-turtle-scene.js` 및 `sea-turtle.js`의 상태 전이 메서드와 visual feedback presentation 소유자를 읽는다.
+2. 현재 `tests/` 아래에서 Sea Turtle state presentation 관련 테스트의 커버리지 공백을 확인한다.
 
 **Authorized change boundary**
-- 우선: 기존 coordinate acceptance test/fixture 또는 가장 가까운 runtime/browser acceptance harness.
-- production mapping은 runtime reproducer가 실제 결함을 증명할 때만 같은 카드에서 수정한다.
-- scene asset, animation, fallback renderer, packaging, quiz, B 생산 체인은 수정하지 않는다.
+- 우선: 기존 sea turtle test / harness 또는 신규 focused runtime acceptance test.
+- production state presentation logic은 실제 결함 증명 시에만 수정한다.
 
 **Verification**
-- V0: 현재 pure-formula test가 production path를 실행하지 않는 증거를 고정한다.
-- V1 PRIMARY: DPR `1`, `1.5`, `2` runtime mapping acceptance 하나만 판정한다.
-- V2 DIRECT: 수정한 harness/owner의 직접 영향 surface만 확인한다.
-- `git diff --check` 및 수정 파일 static diagnostics를 통과한다.
-- shipped assembly를 건드렸을 때만 build/exact-app probe를 추가한다.
+- V0: state presentation evidence gap 고정
+- V1 PRIMARY: Sea Turtle state transition 및 visual distinction acceptance 하나만 판정
+- V2 DIRECT: 수정한 harness/owner의 직접 영향 surface 확인
 
 **Stop condition**  
-첫 runtime mismatch가 나오면 evidence-gap 작업을 계속 넓히지 말고, 그 mismatch의 mapping defect 하나로 hypothesis를 다시 좁힌다.
+첫 presentation mismatch 발견 시 그 defect 하나로 가설을 축소한다.
 
 ## 3. NEXT — ACTIVE 종료 후에만
 
-1. **Game-state presentation evidence audit** — sea-otter/turtle의 required state transitions와 success/failure visual distinction 중 실제 runtime evidence가 없는 항목 하나만 승격한다.
-2. **Fallback acceptance evidence audit** — Canvas fallback의 complete playable rescue flow와 visible-placeholder 금지 계약 중 실제 증거 공백 하나만 승격한다.
+1. **Fallback acceptance evidence audit** — Canvas fallback의 complete playable rescue flow와 visible-placeholder 금지 계약 중 실제 증거 공백 하나만 승격한다.
+
 
 NEXT는 backlog 구현 지시가 아니다. 최신 main에 이미 충분한 evidence가 있으면 삭제한다.
 

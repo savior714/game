@@ -4,7 +4,7 @@ scope:
 always_apply: false
 priority: 1
 domain: core
-last_verified: 2026-08-06
+last_verified: 2026-08-08
 verify_with:
 - uv run pytest -q tests/test_planning_workflow_consistency.py
 ---
@@ -175,3 +175,24 @@ uv run pytest -q tests/test_agent_registry_consistency.py
 
 최종 보고는 `AGENTS.md` 형식을 따른다.
 실제 게시 시에만 커밋 SHA를 기록한다.
+
+## 10. Review backlog에서 실행 후보 공급
+
+계획·runbook·다음 실행 task를 만들 때 repository 전체 broad scan부터 시작하지 않는다.
+
+1. latest `origin/main`을 확인한다.
+2. [`../reviews/review-backlog.md`](../reviews/review-backlog.md)를 먼저 읽는다.
+3. backlog candidate를 production owner, sibling invariant, relevant diff/history, focused test/runtime evidence에 대조해 독립 재검증한다.
+4. 여전히 실제 gap인 LIVE finding만 task 후보로 유지하고 SATISFIED / OBSOLETE / INVALID finding은 backlog에서 제거한다.
+5. LIVE 후보 중 가치가 높은 finding을 실행 task로 승격한다.
+6. hypothesis, primary criterion, authorized scope와 RDV strategy는 승격 시점의 최신 evidence에서 정한다.
+7. 후보가 부족하면 targeted review를 먼저 수행하고, 그래도 부족할 때만 broad review로 확장한다.
+8. 새 evidence-grounded unresolved finding은 backlog에 기록한다.
+9. publication 뒤 latest main에서 primary criterion 만족을 다시 확인한 후에만 backlog에서 제거한다.
+
+Discovery 순서는 `review backlog → targeted review → broad review`다.
+Review backlog는 truth cache, product roadmap, 완료 이력 또는 실행 queue가 아니다. Runbook 승격만으로 finding을 제거하지 않는다.
+
+각 finding은 failure domain, current evidence, likely owner, primary risk/invariant와 semantic revalidation anchors만 유지한다. 구현 recipe, 상세 patch plan, authorized scope, lifecycle status, RED/GREEN history, stale SHA 중심 evidence와 filler는 기록하지 않는다.
+
+승격 task는 기본적으로 `한 작업 = 한 failure domain = 한 hypothesis = 한 primary criterion`을 유지한다.

@@ -15,8 +15,8 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  const DURATION_MS = 900000;
-  const CHARGED_MINUTES = 15;
+  const DURATION_MS = 600000;
+  const CHARGED_MINUTES = 10;
   const SCHEMA_VERSION = 1;
 
   const STATUS = Object.freeze({

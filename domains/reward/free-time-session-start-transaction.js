@@ -2,7 +2,7 @@
  * @fileoverview 자유시간 시작 트랜잭션 — 복구 가능한 원자적 커밋
  * @module free-time-session-start-transaction
  *
- * 외부 탭 생성, 15분 차감, 세션 저장을 하나의 트랜잭션 경계로 수행한다.
+ * 외부 탭 생성, 10분 차감, 세션 저장을 하나의 트랜잭션 경계로 수행한다.
  * Web Storage는 다중 키 원자적 커밋이 없으므로 복구 journal을 사용한다.
  * 모든 의존성(storage, openExternal, now, sessionId, FreeTimeSession)은 외부 주입이다.
  */
@@ -21,7 +21,7 @@
   const JOURNAL_STORAGE_KEY = "study_youtube_free_time_start_tx_v1";
 
   const JOURNAL_SCHEMA_VERSION = 1;
-  const CHARGE_MINUTES = 15;
+  const CHARGE_MINUTES = 10;
 
   const RESULT = Object.freeze({
     STARTED: "started",

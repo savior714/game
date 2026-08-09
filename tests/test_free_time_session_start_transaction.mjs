@@ -1,7 +1,7 @@
 /**
  * @fileoverview 자유시간 시작 트랜잭션 — focused runtime test
  *
- * 외부 탭 생성, 15분 차감, 세션 저장이 하나의 복구 가능한 트랜잭션 경계에서
+ * 외부 탭 생성, 10분 차감, 세션 저장이 하나의 복구 가능한 트랜잭션 경계에서
  * 수행되는지 검증한다. 브라우저 API나 실제 저장소에 의존하지 않는다.
  *
  * 실행: node tests/test_free_time_session_start_transaction.mjs
@@ -249,7 +249,7 @@ run("A: no journal created when session already active", () => {
 
 run("B: insufficient minutes returns insufficient_time", () => {
   const storage = new FakeStorage({
-    [REWARD_KEY]: JSON.stringify({ youtube_minutes: 14 }),
+    [REWARD_KEY]: JSON.stringify({ youtube_minutes: 9 }),
   });
   const opener = new FakeOpener();
   const result = TxModule.attemptStart(makeDeps(storage, opener));
@@ -258,7 +258,7 @@ run("B: insufficient minutes returns insufficient_time", () => {
 
 run("B: opener not called when insufficient time", () => {
   const storage = new FakeStorage({
-    [REWARD_KEY]: JSON.stringify({ youtube_minutes: 14 }),
+    [REWARD_KEY]: JSON.stringify({ youtube_minutes: 9 }),
   });
   const opener = new FakeOpener();
   TxModule.attemptStart(makeDeps(storage, opener));
@@ -267,7 +267,7 @@ run("B: opener not called when insufficient time", () => {
 
 run("B: no storage writes when insufficient time", () => {
   const storage = new FakeStorage({
-    [REWARD_KEY]: JSON.stringify({ youtube_minutes: 14 }),
+    [REWARD_KEY]: JSON.stringify({ youtube_minutes: 9 }),
   });
   const opener = new FakeOpener();
   const rewardBefore = storage.raw(REWARD_KEY);
@@ -373,14 +373,14 @@ run("D: opener called exactly once on success", () => {
   assert.equal(opener.callCount, 1);
 });
 
-run("D: reward decreased by exactly 15", () => {
+run("D: reward decreased by exactly 10", () => {
   const storage = new FakeStorage({
     [REWARD_KEY]: JSON.stringify({ youtube_minutes: 30 }),
   });
   const opener = new FakeOpener();
   TxModule.attemptStart(makeDeps(storage, opener));
   const reward = JSON.parse(storage.raw(REWARD_KEY));
-  assert.equal(reward.youtube_minutes, 15);
+  assert.equal(reward.youtube_minutes, 20);
 });
 
 run("D: running session stored", () => {
@@ -393,14 +393,14 @@ run("D: running session stored", () => {
   assert.equal(session.status, "running");
 });
 
-run("D: session chargedMinutes is 15", () => {
+run("D: session chargedMinutes is 10", () => {
   const storage = new FakeStorage({
     [REWARD_KEY]: JSON.stringify({ youtube_minutes: 30 }),
   });
   const opener = new FakeOpener();
   TxModule.attemptStart(makeDeps(storage, opener));
   const session = JSON.parse(storage.raw(SESSION_KEY));
-  assert.equal(session.chargedMinutes, 15);
+  assert.equal(session.chargedMinutes, 10);
 });
 
 run("D: session startedAt equals now", () => {
@@ -413,14 +413,14 @@ run("D: session startedAt equals now", () => {
   assert.equal(session.startedAt, NOW);
 });
 
-run("D: session endsAt equals now + 900000", () => {
+run("D: session endsAt equals now + 600000", () => {
   const storage = new FakeStorage({
     [REWARD_KEY]: JSON.stringify({ youtube_minutes: 30 }),
   });
   const opener = new FakeOpener();
   TxModule.attemptStart(makeDeps(storage, opener));
   const session = JSON.parse(storage.raw(SESSION_KEY));
-  assert.equal(session.endsAt, NOW + 900000);
+  assert.equal(session.endsAt, NOW + 600000);
 });
 
 run("D: session source is reward", () => {
@@ -498,7 +498,7 @@ run("E: retry does not call opener again", () => {
   assert.equal(opener2.callCount, 0);
 });
 
-run("E: reward stays at 15 after retry", () => {
+run("E: reward stays at 20 after retry", () => {
   const storage = new FakeStorage({
     [REWARD_KEY]: JSON.stringify({ youtube_minutes: 30 }),
   });
@@ -507,7 +507,7 @@ run("E: reward stays at 15 after retry", () => {
   const opener2 = new FakeOpener();
   TxModule.attemptStart(makeDeps(storage, opener2, { sessionId: "sess-002" }));
   const reward = JSON.parse(storage.raw(REWARD_KEY));
-  assert.equal(reward.youtube_minutes, 15);
+  assert.equal(reward.youtube_minutes, 20);
 });
 
 run("E: original sessionId preserved on retry", () => {
@@ -642,7 +642,7 @@ run("G: handle close called exactly once after session write failure", () => {
 run("H: incomplete transaction rolled back via recover", () => {
   const previousRewardRaw = JSON.stringify({ youtube_minutes: 30 });
   const previousSessionRaw = null;
-  const targetRewardRaw = JSON.stringify({ youtube_minutes: 15 });
+  const targetRewardRaw = JSON.stringify({ youtube_minutes: 20 });
   const targetSessionRaw = JSON.stringify(
     FreeTimeSession.start({ now: NOW, sessionId: "sess-001", source: "reward" })
   );
@@ -664,7 +664,7 @@ run("H: incomplete transaction rolled back via recover", () => {
 
 run("H: reward restored to previous after incomplete rollback", () => {
   const previousRewardRaw = JSON.stringify({ youtube_minutes: 30 });
-  const targetRewardRaw = JSON.stringify({ youtube_minutes: 15 });
+  const targetRewardRaw = JSON.stringify({ youtube_minutes: 20 });
   const targetSessionRaw = JSON.stringify(
     FreeTimeSession.start({ now: NOW, sessionId: "sess-001", source: "reward" })
   );
@@ -686,7 +686,7 @@ run("H: reward restored to previous after incomplete rollback", () => {
 
 run("H: journal removed after incomplete rollback", () => {
   const previousRewardRaw = JSON.stringify({ youtube_minutes: 30 });
-  const targetRewardRaw = JSON.stringify({ youtube_minutes: 15 });
+  const targetRewardRaw = JSON.stringify({ youtube_minutes: 20 });
   const targetSessionRaw = JSON.stringify(
     FreeTimeSession.start({ now: NOW, sessionId: "sess-001", source: "reward" })
   );
@@ -710,7 +710,7 @@ run("H: journal removed after incomplete rollback", () => {
 
 run("I: finalized committed transaction preserved on recovery", () => {
   const previousRewardRaw = JSON.stringify({ youtube_minutes: 30 });
-  const targetRewardRaw = JSON.stringify({ youtube_minutes: 15 });
+  const targetRewardRaw = JSON.stringify({ youtube_minutes: 20 });
   const targetSessionRaw = JSON.stringify(
     FreeTimeSession.start({ now: NOW, sessionId: "sess-001", source: "reward" })
   );
@@ -732,7 +732,7 @@ run("I: finalized committed transaction preserved on recovery", () => {
 
 run("I: target reward preserved after finalized recovery", () => {
   const previousRewardRaw = JSON.stringify({ youtube_minutes: 30 });
-  const targetRewardRaw = JSON.stringify({ youtube_minutes: 15 });
+  const targetRewardRaw = JSON.stringify({ youtube_minutes: 20 });
   const targetSessionRaw = JSON.stringify(
     FreeTimeSession.start({ now: NOW, sessionId: "sess-001", source: "reward" })
   );
@@ -754,7 +754,7 @@ run("I: target reward preserved after finalized recovery", () => {
 
 run("I: target session preserved after finalized recovery", () => {
   const previousRewardRaw = JSON.stringify({ youtube_minutes: 30 });
-  const targetRewardRaw = JSON.stringify({ youtube_minutes: 15 });
+  const targetRewardRaw = JSON.stringify({ youtube_minutes: 20 });
   const targetSessionRaw = JSON.stringify(
     FreeTimeSession.start({ now: NOW, sessionId: "sess-001", source: "reward" })
   );
@@ -776,7 +776,7 @@ run("I: target session preserved after finalized recovery", () => {
 
 run("I: journal removed after finalized recovery", () => {
   const previousRewardRaw = JSON.stringify({ youtube_minutes: 30 });
-  const targetRewardRaw = JSON.stringify({ youtube_minutes: 15 });
+  const targetRewardRaw = JSON.stringify({ youtube_minutes: 20 });
   const targetSessionRaw = JSON.stringify(
     FreeTimeSession.start({ now: NOW, sessionId: "sess-001", source: "reward" })
   );

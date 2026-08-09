@@ -65,7 +65,7 @@ function run(name, fn) {
 
 console.log("FreeTimeSession pure state contract tests\n");
 
-// ── 사례 A — 정확한 15분 시작 ───────────────────────────────
+// ── 사례 A — 정확한 10분 시작 ───────────────────────────────
 
 run("A: startedAt equals injected now", () => {
   const session = FreeTimeSession.start({
@@ -76,22 +76,22 @@ run("A: startedAt equals injected now", () => {
   assert.equal(session.startedAt, NOW);
 });
 
-run("A: endsAt is startedAt + 900000", () => {
+run("A: endsAt is startedAt + 600000", () => {
   const session = FreeTimeSession.start({
     now: NOW,
     sessionId: "sess-001",
     source: "reward",
   });
-  assert.equal(session.endsAt, 1900000);
+  assert.equal(session.endsAt, 1600000);
 });
 
-run("A: chargedMinutes is 15", () => {
+run("A: chargedMinutes is 10", () => {
   const session = FreeTimeSession.start({
     now: NOW,
     sessionId: "sess-001",
     source: "reward",
   });
-  assert.equal(session.chargedMinutes, 15);
+  assert.equal(session.chargedMinutes, 10);
 });
 
 run("A: status is running", () => {
@@ -181,10 +181,10 @@ run("B: original endsAt preserved on duplicate", () => {
     sessionId: "sess-002",
     source: "reward",
   });
-  assert.equal(result.session.endsAt, 1900000);
+  assert.equal(result.session.endsAt, 1600000);
 });
 
-run("B: no 15min extension on duplicate", () => {
+run("B: no 10min extension on duplicate", () => {
   const first = FreeTimeSession.start({
     now: NOW,
     sessionId: "sess-001",
@@ -196,8 +196,8 @@ run("B: no 15min extension on duplicate", () => {
     sessionId: "sess-002",
     source: "reward",
   });
-  assert.ok(result.session.endsAt <= 1900000);
-  assert.ok(result.session.endsAt === 1900000);
+  assert.ok(result.session.endsAt <= 1600000);
+  assert.ok(result.session.endsAt === 1600000);
 });
 
 // ── 사례 C — 마감 전 복원 ───────────────────────────────────
@@ -210,7 +210,7 @@ run("C: restore before deadline keeps active status", () => {
   });
   const restored = FreeTimeSession.restore({
     savedSession: original,
-    now: 1899999,
+    now: 1599999,
   });
   assert.equal(restored.status, "running");
 });
@@ -223,7 +223,7 @@ run("C: restore before deadline preserves sessionId", () => {
   });
   const restored = FreeTimeSession.restore({
     savedSession: original,
-    now: 1899999,
+    now: 1599999,
   });
   assert.equal(restored.sessionId, "sess-001");
 });
@@ -236,7 +236,7 @@ run("C: restore before deadline preserves startedAt", () => {
   });
   const restored = FreeTimeSession.restore({
     savedSession: original,
-    now: 1899999,
+    now: 1599999,
   });
   assert.equal(restored.startedAt, NOW);
 });
@@ -249,9 +249,9 @@ run("C: restore before deadline preserves endsAt exactly", () => {
   });
   const restored = FreeTimeSession.restore({
     savedSession: original,
-    now: 1899999,
+    now: 1599999,
   });
-  assert.equal(restored.endsAt, 1900000);
+  assert.equal(restored.endsAt, 1600000);
 });
 
 run("C: restore before deadline — remaining time is 1ms", () => {
@@ -262,9 +262,9 @@ run("C: restore before deadline — remaining time is 1ms", () => {
   });
   const restored = FreeTimeSession.restore({
     savedSession: original,
-    now: 1899999,
+    now: 1599999,
   });
-  const sel = FreeTimeSession.select(restored, 1899999);
+  const sel = FreeTimeSession.select(restored, 1599999);
   assert.equal(sel.remainingMs, 1);
 });
 
@@ -278,7 +278,7 @@ run("D: restore at exactly endsAt is expired", () => {
   });
   const restored = FreeTimeSession.restore({
     savedSession: original,
-    now: 1900000,
+    now: 1600000,
   });
   assert.equal(restored.status, "expired");
 });
@@ -291,9 +291,9 @@ run("D: restore at exactly endsAt is not active", () => {
   });
   const restored = FreeTimeSession.restore({
     savedSession: original,
-    now: 1900000,
+    now: 1600000,
   });
-  const sel = FreeTimeSession.select(restored, 1900000);
+  const sel = FreeTimeSession.select(restored, 1600000);
   assert.equal(sel.active, false);
 });
 
@@ -305,9 +305,9 @@ run("D: restore at exactly endsAt — remaining time is 0", () => {
   });
   const restored = FreeTimeSession.restore({
     savedSession: original,
-    now: 1900000,
+    now: 1600000,
   });
-  const sel = FreeTimeSession.select(restored, 1900000);
+  const sel = FreeTimeSession.select(restored, 1600000);
   assert.equal(sel.remainingMs, 0);
 });
 
@@ -350,7 +350,7 @@ run("E: restore after deadline does not recalculate endsAt", () => {
     savedSession: original,
     now: 2000000,
   });
-  assert.equal(restored.endsAt, 1900000);
+  assert.equal(restored.endsAt, 1600000);
 });
 
 // ── 사례 F — Selector 무부작용성 ─────────────────────────────
@@ -388,7 +388,7 @@ run("F: select does not change startedAt, endsAt, status", () => {
   });
   FreeTimeSession.select(session, NOW + 100000);
   assert.equal(session.startedAt, NOW);
-  assert.equal(session.endsAt, 1900000);
+  assert.equal(session.endsAt, 1600000);
   assert.equal(session.status, "running");
 });
 
@@ -401,7 +401,7 @@ run("G: remainingMs equals endsAt - now before deadline", () => {
     source: "reward",
   });
   const sel = FreeTimeSession.select(session, 1400000);
-  assert.equal(sel.remainingMs, 500000);
+  assert.equal(sel.remainingMs, 200000);
 });
 
 run("G: remainingMs is 0 at or after deadline", () => {
@@ -410,7 +410,7 @@ run("G: remainingMs is 0 at or after deadline", () => {
     sessionId: "sess-001",
     source: "reward",
   });
-  const sel1 = FreeTimeSession.select(session, 1900000);
+  const sel1 = FreeTimeSession.select(session, 1600000);
   const sel2 = FreeTimeSession.select(session, 2500000);
   assert.equal(sel1.remainingMs, 0);
   assert.equal(sel2.remainingMs, 0);
@@ -425,9 +425,9 @@ run("G: no internal mutable counter needed", () => {
   const sel1 = FreeTimeSession.select(session, NOW + 1000);
   const sel2 = FreeTimeSession.select(session, NOW + 2000);
   const sel3 = FreeTimeSession.select(session, NOW + 3000);
-  assert.equal(sel1.remainingMs, 899000);
-  assert.equal(sel2.remainingMs, 898000);
-  assert.equal(sel3.remainingMs, 897000);
+  assert.equal(sel1.remainingMs, 599000);
+  assert.equal(sel2.remainingMs, 598000);
+  assert.equal(sel3.remainingMs, 597000);
 });
 
 // ── 추가: 세션 없음 복원 ─────────────────────────────────────
@@ -455,12 +455,12 @@ run("select on inactive session returns inactive", () => {
 
 // ── 추가: 상수 계약 ───────────────────────────────────────────
 
-run("DURATION_MS is 900000", () => {
-  assert.equal(FreeTimeSession.DURATION_MS, 900000);
+run("DURATION_MS is 600000", () => {
+  assert.equal(FreeTimeSession.DURATION_MS, 600000);
 });
 
-run("CHARGED_MINUTES is 15", () => {
-  assert.equal(FreeTimeSession.CHARGED_MINUTES, 15);
+run("CHARGED_MINUTES is 10", () => {
+  assert.equal(FreeTimeSession.CHARGED_MINUTES, 10);
 });
 
 run("SCHEMA_VERSION is 1", () => {
@@ -486,8 +486,8 @@ run("H: acknowledged restore preserves acknowledged status when endsAt <= now", 
     status: "acknowledged",
     startedAt: NOW - 1000000,
     endsAt: NOW - 100000,
-    durationMs: 900000,
-    chargedMinutes: 15,
+    durationMs: 600000,
+    chargedMinutes: 10,
     source: "reward",
     warningEmittedAt: null,
     expiredAt: NOW - 100000,
@@ -507,8 +507,8 @@ run("H: acknowledged restore preserves identity and timestamps", () => {
     status: "acknowledged",
     startedAt: NOW - 1000000,
     endsAt: NOW - 100000,
-    durationMs: 900000,
-    chargedMinutes: 15,
+    durationMs: 600000,
+    chargedMinutes: 10,
     source: "reward",
     warningEmittedAt: null,
     expiredAt: NOW - 100000,
@@ -532,8 +532,8 @@ run("H: select on acknowledged returns active=false, expired=false, remainingMs=
     status: "acknowledged",
     startedAt: NOW - 1000000,
     endsAt: NOW - 100000,
-    durationMs: 900000,
-    chargedMinutes: 15,
+    durationMs: 600000,
+    chargedMinutes: 10,
     source: "reward",
     warningEmittedAt: null,
     expiredAt: NOW - 100000,

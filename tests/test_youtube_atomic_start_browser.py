@@ -6,12 +6,12 @@ Drives a domain page (math) through the reward system and verifies:
 - youtube_minutes inventory shows initial value (30)
 - clicking youtube inventory item opens youtube modal
 - before parent approval: start button not visible
-- after parent approval (math answer): start button shows "유튜브 자유시간 15분 시작"
+- after parent approval (math answer): start button shows "유튜브 자유시간 10분 시작"
 - informational text present about new tab, keep game tab open, no refund
 - clicking start button once: launcher called exactly once with youtube URL
-- reward decreases from 30 to 15
+- reward decreases from 30 to 20
 - running session created
-- modal and inventory update to 15 minutes
+- modal and inventory update to 20 minutes
 - quick double-click: launcher still called only once, no extra deduction
 - popup blocked: reward stays at 30, guidance shown, retry button active
 - already active session: launcher called 0 times, no extra deduction
@@ -292,7 +292,7 @@ def test_youtube_atomic_start_flow() -> None:
                 "Start button should be visible after approval"
             )
             start_btn_text = page.locator("#start-yt-btn").text_content()
-            assert "유튜브 자유시간 15분 시작" in start_btn_text, (
+            assert "유튜브 자유시간 10분 시작" in start_btn_text, (
                 f"Expected start button text, got: {start_btn_text}"
             )
 
@@ -333,9 +333,9 @@ def test_youtube_atomic_start_flow() -> None:
                 f"Expected about:blank open, got {launcher_state['calls']}"
             )
 
-            # Reward decreased to 15
-            assert _get_reward_minutes(page) == 15, (
-                f"Expected 15, got {_get_reward_minutes(page)}"
+            # Reward decreased to 20
+            assert _get_reward_minutes(page) == 20, (
+                f"Expected 20, got {_get_reward_minutes(page)}"
             )
 
             # Running session created
@@ -343,7 +343,7 @@ def test_youtube_atomic_start_flow() -> None:
 
             # Inventory updated
             inv_minutes = _get_inventory_minutes(page)
-            assert "15" in inv_minutes, f"Inventory should show 15, got: {inv_minutes}"
+            assert "20" in inv_minutes, f"Inventory should show 20, got: {inv_minutes}"
 
             # Result message shown
             result_msg = _get_result_message(page)
@@ -362,7 +362,7 @@ def test_youtube_atomic_start_flow() -> None:
             assert len(launcher_state2["calls"]) == 1, (
                 f"Double-click should not call launcher again, got {len(launcher_state2['calls'])}"
             )
-            assert _get_reward_minutes(page) == 15, (
+            assert _get_reward_minutes(page) == 20, (
                 f"Double-click should not deduct again, got {_get_reward_minutes(page)}"
             )
             assert _get_session_count(page) == 1, (
@@ -646,8 +646,8 @@ def test_youtube_audio_context_is_primed_on_start_click_and_reused_at_expiry() -
             )
 
             # Verify session start contract intact
-            assert _get_reward_minutes(page) == 15, (
-                f"Expected 15 minutes remaining, got {_get_reward_minutes(page)}"
+            assert _get_reward_minutes(page) == 20, (
+                f"Expected 20 minutes remaining, got {_get_reward_minutes(page)}"
             )
             assert _get_session_count(page) == 1, "Session should be created"
 

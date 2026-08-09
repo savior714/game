@@ -49,7 +49,7 @@ const validJournal = {
   transactionId: "tx-corrupt-raw",
   previousRewardRaw: JSON.stringify({ youtube_minutes: 30 }),
   previousSessionRaw: null,
-  targetRewardRaw: JSON.stringify({ youtube_minutes: 15 }),
+  targetRewardRaw: JSON.stringify({ youtube_minutes: 20 }),
   targetSessionRaw: JSON.stringify({ sessionId: "tx-corrupt-raw", status: "running" }),
 };
 

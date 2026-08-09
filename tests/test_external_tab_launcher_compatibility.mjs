@@ -128,7 +128,7 @@ run("1: adapter success handle → reward decreased", () => {
   const storage = new FakeStorage({ [REWARD_KEY]: JSON.stringify({ youtube_minutes: 30 }) });
   TxModule.attemptStart({ storage, openExternal, now: NOW, sessionId: "compat-002", FreeTimeSession });
   const reward = JSON.parse(storage.raw(REWARD_KEY));
-  assert.equal(reward.youtube_minutes, 15);
+  assert.equal(reward.youtube_minutes, 20);
 });
 
 run("1: adapter success handle → session stored", () => {

@@ -411,7 +411,7 @@ const RewardSystemUI = (() => {
         </div>
 
         <div id="yt-start-area" style="display:none; margin-top:10px;">
-          <button class="btn-primary" id="start-yt-btn" style="background:#f43f5e; border-color:#e11d48; width:100%;">유튜브 자유시간 15분 시작</button>
+          <button class="btn-primary" id="start-yt-btn" style="background:#f43f5e; border-color:#e11d48; width:100%;">유튜브 자유시간 10분 시작</button>
           <p class="sub" style="color:#666; font-size:0.8rem; margin-top:10px;">
             새 YouTube 탭이 열려요.<br>
             게임 탭을 닫지 않아야 이후 타이머와 종료 알림이 유지돼요.<br>
@@ -493,7 +493,7 @@ const RewardSystemUI = (() => {
 
       if (result.code === 'started') {
         display.textContent = `${RewardSystem.getState().youtube_minutes}분`;
-        if (RewardSystem.getState().youtube_minutes < 15) {
+        if (RewardSystem.getState().youtube_minutes < 10) {
           setTimeout(() => overlay.remove(), 2000);
         }
       } else if (result.code === 'already_active') {

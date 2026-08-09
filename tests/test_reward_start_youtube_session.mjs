@@ -171,7 +171,7 @@ function makeStartDeps(storage, launcher) {
 
 console.log("YouTube atomic session start (entry point contract)\n");
 
-// ── A. 성공: 초기 youtube_minutes=30 → 15 ─────────────────────
+// ── A. 성공: 초기 youtube_minutes=30 → 20 ─────────────────────
 
 run("A: successful start returns started", () => {
   const storage = new FakeStorage({
@@ -200,14 +200,14 @@ run("A: target URL is https://www.youtube.com/", () => {
   assert.equal(launcher.lastUrl, "https://www.youtube.com/");
 });
 
-run("A: reward decreased by exactly 15", () => {
+run("A: reward decreased by exactly 10", () => {
   const storage = new FakeStorage({
     [REWARD_KEY]: JSON.stringify({ youtube_minutes: 30 }),
   });
   const launcher = new FakeExternalTabLauncher();
   TxModule.attemptStart(makeStartDeps(storage, launcher));
   const reward = JSON.parse(storage.raw(REWARD_KEY));
-  assert.equal(reward.youtube_minutes, 15);
+  assert.equal(reward.youtube_minutes, 20);
 });
 
 run("A: running session stored", () => {
@@ -220,14 +220,14 @@ run("A: running session stored", () => {
   assert.equal(session.status, "running");
 });
 
-run("A: session chargedMinutes is 15", () => {
+run("A: session chargedMinutes is 10", () => {
   const storage = new FakeStorage({
     [REWARD_KEY]: JSON.stringify({ youtube_minutes: 30 }),
   });
   const launcher = new FakeExternalTabLauncher();
   TxModule.attemptStart(makeStartDeps(storage, launcher));
   const session = JSON.parse(storage.raw(SESSION_KEY));
-  assert.equal(session.chargedMinutes, 15);
+  assert.equal(session.chargedMinutes, 10);
 });
 
 run("A: journal removed after success", () => {
@@ -355,7 +355,7 @@ run("C: original session preserved on already_active", () => {
 
 run("D: insufficient minutes returns insufficient_time", () => {
   const storage = new FakeStorage({
-    [REWARD_KEY]: JSON.stringify({ youtube_minutes: 14 }),
+    [REWARD_KEY]: JSON.stringify({ youtube_minutes: 9 }),
   });
   const launcher = new FakeExternalTabLauncher();
   const result = TxModule.attemptStart(makeStartDeps(storage, launcher));
@@ -364,7 +364,7 @@ run("D: insufficient minutes returns insufficient_time", () => {
 
 run("D: opener not called when insufficient time", () => {
   const storage = new FakeStorage({
-    [REWARD_KEY]: JSON.stringify({ youtube_minutes: 14 }),
+    [REWARD_KEY]: JSON.stringify({ youtube_minutes: 9 }),
   });
   const launcher = new FakeExternalTabLauncher();
   TxModule.attemptStart(makeStartDeps(storage, launcher));
@@ -373,12 +373,12 @@ run("D: opener not called when insufficient time", () => {
 
 run("D: reward unchanged when insufficient time", () => {
   const storage = new FakeStorage({
-    [REWARD_KEY]: JSON.stringify({ youtube_minutes: 14 }),
+    [REWARD_KEY]: JSON.stringify({ youtube_minutes: 9 }),
   });
   const launcher = new FakeExternalTabLauncher();
   TxModule.attemptStart(makeStartDeps(storage, launcher));
   const reward = JSON.parse(storage.raw(REWARD_KEY));
-  assert.equal(reward.youtube_minutes, 14);
+  assert.equal(reward.youtube_minutes, 9);
 });
 
 // ── E. 중복 클릭 (double-click) — 두 번 시도 시 두 번째는 already_active ──
@@ -413,7 +413,7 @@ run("E: double click — opener called exactly once total", () => {
   assert.equal(launcher.callCount, 1);
 });
 
-run("E: double click — reward decreased exactly once (15)", () => {
+run("E: double click — reward decreased exactly once (20)", () => {
   const storage = new FakeStorage({
     [REWARD_KEY]: JSON.stringify({ youtube_minutes: 30 }),
   });
@@ -421,7 +421,7 @@ run("E: double click — reward decreased exactly once (15)", () => {
   TxModule.attemptStart(makeStartDeps(storage, launcher));
   TxModule.attemptStart(makeStartDeps(storage, launcher));
   const reward = JSON.parse(storage.raw(REWARD_KEY));
-  assert.equal(reward.youtube_minutes, 15);
+  assert.equal(reward.youtube_minutes, 20);
 });
 
 run("E: double click — exactly one session", () => {

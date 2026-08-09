@@ -15,7 +15,7 @@ const RewardSystem = (() => {
     marble_plays: 0,
     bubble_plays: 0,
     shop_items: [
-      { id: 'youtube', icon: '📺', label: '유튜브 15분', desc: '좋아하는 영상 시청', price: 1 },
+      { id: 'youtube', icon: '📺', label: '유튜브 10분', desc: '좋아하는 영상 시청', price: 1 },
       { id: 'snack', icon: '🍪', label: '간식 1개', desc: '맛있는 간식 시간', price: 1 },
       { id: 'marble', icon: '🎮', label: '마블 게임', desc: '마블 한 판 더!', price: 1 },
       { id: 'bubble', icon: '🫧', label: '비눗방울 게임', desc: '버블팡 한 판 더!', price: 1 }
@@ -89,7 +89,7 @@ const RewardSystem = (() => {
     if (type === 'gems') {
       state.gems = (Number(state.gems) || 0) + safeAmount;
     } else if (type === 'youtube') {
-      state.youtube_minutes = (Number(state.youtube_minutes) || 0) + (safeAmount * 15);
+      state.youtube_minutes = (Number(state.youtube_minutes) || 0) + (safeAmount * 10);
     } else if (type === 'snack') {
       state.snacks = (Number(state.snacks) || 0) + safeAmount;
     } else if (type === 'marble') {
@@ -120,7 +120,7 @@ const RewardSystem = (() => {
 
   function has(type, amount = 1) {
     if (type === 'gems') return state.gems >= amount;
-    if (type === 'youtube') return state.youtube_minutes >= 15;
+    if (type === 'youtube') return state.youtube_minutes >= 10;
     if (type === 'snack') return state.snacks >= amount;
     if (type === 'marble') return state.marble_plays >= amount;
     if (type === 'bubble') return state.bubble_plays >= amount;
@@ -155,10 +155,10 @@ const RewardSystem = (() => {
 
   // reward_ui.js에서 호출하는 내부 데이터 수정 함수
   function consumeInternal(type, onSuccess) {
-    if (type === 'youtube' && state.youtube_minutes >= 15) {
-      state.youtube_minutes -= 15;
+    if (type === 'youtube' && state.youtube_minutes >= 10) {
+      state.youtube_minutes -= 10;
       save();
-      if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.showToast('15분 차감 완료');
+      if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.showToast('10분 차감 완료');
       if (onSuccess) onSuccess(state);
     } else if (type === 'snack') {
       if (state.snacks <= 0) {
@@ -189,7 +189,7 @@ const RewardSystem = (() => {
     }
     
     state.gems -= price;
-    if (targetType === 'youtube') state.youtube_minutes += 15;
+    if (targetType === 'youtube') state.youtube_minutes += 10;
     else if (targetType === 'snack') state.snacks += 1;
     else if (targetType === 'marble') state.marble_plays += 1;
     else if (targetType === 'bubble') state.bubble_plays += 1;

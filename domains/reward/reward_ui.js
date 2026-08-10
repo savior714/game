@@ -62,6 +62,11 @@ const RewardSystemUI = (() => {
         opacity: 0; visibility: visible; display: flex; justify-content: center;
         min-height: 48px; pointer-events: none; transition: opacity 0.4s ease;
       }
+      #reward-inventory .inventory-content,
+      #reward-inventory .inventory-left {
+        flex-wrap: nowrap !important;
+        white-space: nowrap;
+      }
       #reward-inventory.ready { opacity: 1; pointer-events: auto; }
       body.reward-loading { overflow: hidden; }
 

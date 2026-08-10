@@ -45,3 +45,17 @@ def test_ensure_default_shop_items_on_load():
     assert "ensureDefaultShopItems" in reward_content, (
         "reward.js must define ensureDefaultShopItems to reconcile missing default items on load"
     )
+
+
+def test_reward_inventory_single_line_layout_contract():
+    """Ensure reward.css and reward_ui.js strictly enforce nowrap layout for single-line top inventory bar."""
+    css_content = (ROOT / "domains/reward/reward.css").read_text(encoding="utf-8")
+    assert "flex-wrap: nowrap !important" in css_content, (
+        "reward.css must enforce flex-wrap: nowrap !important on inventory-left and inventory-content"
+    )
+
+    ui_content = REWARD_UI_SCRIPT.read_text(encoding="utf-8")
+    assert "flex-wrap: nowrap !important" in ui_content, (
+        "reward_ui.js critical CSS must enforce flex-wrap: nowrap !important for immediate single-line rendering"
+    )
+

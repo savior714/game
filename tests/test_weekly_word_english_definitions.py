@@ -14,16 +14,16 @@ DEFINITIONS_JS = ROOT / "domains/english/weekly-word-definitions.js"
 INDEX_HTML = ROOT / "domains/english/index.html"
 
 EXPECTED_DEFINITIONS = {
-    "amount": "how much of something there is",
-    "material": "a solid substance such as wood, plastic, or metal",
-    "space": "an empty area that is available to be used",
-    "example": "something that shows what a group of things is like",
-    "easily": "without problems or difficulties",
-    "forms": "the shape or appearance of something",
-    "planet": "a large object in space that moves around a star",
-    "tasty": "dilicious ; having a pleasing flavor",
-    "antarctica": "the continent that surrounds the South Pole",
-    "survive": "to continue to live and grow",
+    "belly": "the part of the body below the chest and above the legs",
+    "glide": "to move easily without stopping and without effort or noise",
+    "sleek": "smooth or shiny",
+    "waterproof": "not allowing water to go through",
+    "huddle": "to move close together",
+    "feather": "one of the soft and light parts of a bird that grows from the skin and covers the body",
+    "throat": "the space inside the neck down which food and air can go through",
+    "waddle": "to walk using short steps while rocking from side to side",
+    "fuzzy": "furry, hairy",
+    "hunt": "to chase and try to catch and kill an animal or bird for food",
 }
 
 
@@ -43,15 +43,15 @@ function buildQuestion(type, word) {{
   return {{ type, main: word[1], word: word[0] }};
 }}
 {DEFINITIONS_JS.read_text(encoding="utf-8")}
-const amount = ['amount', '양', '📊', 2];
+const belly = ['belly', '배', '🤰', 1];
 const apple = ['apple', '사과', '🍎', 0];
 console.log(JSON.stringify({{
   batchId: EnglishWeeklyWordDefinitions.batchId,
   definitions: EnglishWeeklyWordDefinitions.all,
-  normalizedLookup: EnglishWeeklyWordDefinitions.get(' Antarctica '),
-  spelling: buildQuestion('spelling', amount),
-  sentence: buildQuestion('sentence', amount),
-  typing: buildQuestion('typing', amount),
+  normalizedLookup: EnglishWeeklyWordDefinitions.get(' Belly '),
+  spelling: buildQuestion('spelling', belly),
+  sentence: buildQuestion('sentence', belly),
+  typing: buildQuestion('typing', belly),
   unmapped: buildQuestion('typing', apple),
 }}));
 """
@@ -64,13 +64,13 @@ console.log(JSON.stringify({{
     )
     payload = json.loads(result.stdout)
 
-    assert payload["batchId"] == "2026-08-07"
+    assert payload["batchId"] == "2026-08-14"
     assert payload["definitions"] == EXPECTED_DEFINITIONS
-    assert payload["normalizedLookup"] == EXPECTED_DEFINITIONS["antarctica"]
-    assert payload["spelling"]["hint"] == EXPECTED_DEFINITIONS["amount"]
-    assert payload["sentence"]["koHint"] == EXPECTED_DEFINITIONS["amount"]
-    assert payload["typing"]["main"] == EXPECTED_DEFINITIONS["amount"]
-    assert payload["typing"]["englishDefinition"] == EXPECTED_DEFINITIONS["amount"]
+    assert payload["normalizedLookup"] == EXPECTED_DEFINITIONS["belly"]
+    assert payload["spelling"]["hint"] == EXPECTED_DEFINITIONS["belly"]
+    assert payload["sentence"]["koHint"] == EXPECTED_DEFINITIONS["belly"]
+    assert payload["typing"]["main"] == EXPECTED_DEFINITIONS["belly"]
+    assert payload["typing"]["englishDefinition"] == EXPECTED_DEFINITIONS["belly"]
     assert payload["unmapped"] == {"type": "typing", "main": "사과", "word": "apple"}
 
 

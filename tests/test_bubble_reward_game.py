@@ -58,4 +58,3 @@ def test_reward_inventory_single_line_layout_contract():
     assert "flex-wrap: nowrap !important" in ui_content, (
         "reward_ui.js critical CSS must enforce flex-wrap: nowrap !important for immediate single-line rendering"
     )
-

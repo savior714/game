@@ -47,6 +47,20 @@
   .ghost-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 #c9d8ee; }
 
   /* ---------- HUD ---------- */
+  .float-home-btn {
+    position: fixed; top: 14px; left: 14px; z-index: 100;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    font-family: 'Jua', sans-serif; font-size: 15px; color: var(--navy);
+    background: rgba(255, 255, 255, 0.94); border: 2.5px solid #ffffff;
+    border-radius: 999px; padding: 8px 16px; text-decoration: none;
+    box-shadow: 0 5px 0 rgba(29,63,110,.16), 0 12px 22px rgba(29,63,110,.14);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    pointer-events: auto;
+  }
+  .float-home-btn:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 7px 0 rgba(29,63,110,.2), 0 14px 25px rgba(29,63,110,.18);
+  }
   #hud{
     position:fixed; top:0; left:0; right:0; z-index:5;
     display:flex; justify-content:center; align-items:flex-start;
@@ -164,6 +178,10 @@
 </style>
 </head>
 <body>
+<a href="../../index.html" class="float-home-btn" aria-label="메인 홈으로 이동">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+  <span>홈으로</span>
+</a>
 <canvas id="game"></canvas>
 
 <!-- HUD -->

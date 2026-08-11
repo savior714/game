@@ -739,3 +739,54 @@
 .se-page .gesture-hint {
   color: var(--se-text-muted);
 }
+
+/* ── Header & Navigation ────────────────────── */
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--se-border-soft);
+  margin-bottom: 20px;
+}
+
+.site-header .brand {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--se-text-primary);
+  margin: 0;
+}
+
+.nav-list {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-list a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 15px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #e0e8ff;
+  background: rgba(74, 104, 232, 0.2);
+  border: 1px solid rgba(120, 150, 255, 0.3);
+  border-radius: 9999px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.nav-list a:hover {
+  background: rgba(74, 104, 232, 0.45);
+  border-color: rgba(160, 190, 255, 0.6);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 104, 232, 0.3);
+}

@@ -25,8 +25,4 @@ def test_seaweed_loop_inventory_selection():
     # Required seaweed loop assets in Rendering MVP
     assert "scene.seaweed-loop.01" in aliases
     assert "scene.seaweed-loop.02" in aliases
-
-    # Next single mandatory asset gap selection
-    assert "scene.seaweed-loop.03" not in aliases
-    selected_next_gap = "scene.seaweed-loop.03"
-    assert selected_next_gap == "scene.seaweed-loop.03"
+    assert "scene.seaweed-loop.03" in aliases

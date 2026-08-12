@@ -15,7 +15,7 @@ CONTACT_SHEET = (
 def test_seaweed_loop_02_rebuilt_proof_approval_receipt():
     assert APPROVAL_JSON.exists()
     approval = json.loads(APPROVAL_JSON.read_text(encoding="utf-8"))
-    assert approval["approvedAssetCount"] == 54
+    assert approval["approvedAssetCount"] == 55
     assert approval["decision"] == "approved"
     assert approval["evidence"]["visualReviewVerdict"] == "PASS"
     assert "scene.seaweed-loop.02" in approval["approvedAliases"]

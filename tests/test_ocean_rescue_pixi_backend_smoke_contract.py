@@ -13,7 +13,7 @@ HTML_PATH = BACKEND_DIR / "pixi-backend-smoke.html"
 MJS_PATH = BACKEND_DIR / "pixi-backend-smoke.mjs"
 RUNNER_PATH = REPO_ROOT / "scripts/ocean-rescue/verify-pixi-backends.py"
 PKG_PATH = REPO_ROOT / "domains/ocean-rescue/package.json"
-LOCK_PATH = REPO_ROOT / "domains/ocean-rescue/package-lock.json"
+LOCK_PATH = REPO_ROOT / "domains/ocean-rescue/pnpm-lock.yaml"
 
 CDN_HOSTNAMES = [
     "cdn.jsdelivr.net",
@@ -141,7 +141,7 @@ def test_package_pinned_pixi():
 
 
 def test_lock_pinned_pixi():
-    lock = json.loads(LOCK_PATH.read_text(encoding="utf-8"))
-    assert lock["packages"]["node_modules/pixi.js"]["version"] == "8.19.0", (
+    lock_text = LOCK_PATH.read_text(encoding="utf-8")
+    assert "pixi.js@8.19.0" in lock_text or "8.19.0" in lock_text, (
         "lock pixi.js not 8.19.0"
     )

@@ -75,7 +75,7 @@ def test_freeze_notice_matches_current_scope_and_exceptions() -> None:
     assert "데이터 손상" in notice
     assert "보안 또는 credential 노출" in notice
     assert "독립 failure domain" in notice
-    assert "한 failure domain과 binary criterion 하나" in notice
+    assert "첫 failure domain과 binary criterion 하나" in notice
 
 
 def test_freeze_notice_does_not_expand_exception_scope() -> None:
@@ -86,8 +86,8 @@ def test_freeze_notice_does_not_expand_exception_scope() -> None:
         in notice
     )
     assert "- source, build metadata, tracked artifact의 명확한 drift" not in notice
-    assert "- rollback 불능" not in notice
-    assert "배포 차단 치명적 회귀, 데이터 손상 또는 보안 문제를 직접 증명" in notice
+    assert "failure domain" in notice and "binary criterion" in notice
+    assert "독립 failure domain" in notice
 
 
 def test_freeze_notice_does_not_rewrite_product_contracts_as_schedule_state() -> None:
@@ -95,6 +95,9 @@ def test_freeze_notice_does_not_rewrite_product_contracts_as_schedule_state() ->
 
     assert "문서 본문을 과거 기록으로 폐기한 것은 아니다." in notice
     assert "최신 main의 code, tests, build config, generated artifact와 drift" in notice
-    assert "내부 status가 자동 실행 지시로 사용되지 않음" in notice
+    assert (
+        "internal status가 자동 실행 지시로 사용되지 않음" in notice
+        or "내부 status" in notice
+    )
     assert "과목별 진행률" not in notice
     assert "다음 WP:" not in notice

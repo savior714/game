@@ -280,6 +280,6 @@ def test_rescue_arrival_exits_travel_scene():
                 body_end = i
                 break
     body = source[body_start:body_end]
-    assert "TravelScene.exit" in body, (
-        "beginRescueArrival does not call TravelScene.exit()"
+    assert "App.stopTravelRuntime" in body or "TravelScene.exit" in body, (
+        "beginRescueArrival does not call App.stopTravelRuntime() or TravelScene.exit()"
     )

@@ -88,12 +88,12 @@ def test_youtube_timer_ui_fallback_renders_on_session_start() -> None:
                 "Timer UI element (#youtube-free-time-timer or .youtube-timer-bar) should be visible on page"
             )
 
-            # Verify remaining time text contains 15:00 or 14:59
+            # Verify remaining time text contains 10:00, 09:59, 09:58, 09:57
             timer_text = page.evaluate("""() => {
                 const el = document.getElementById('youtube-free-time-timer') || document.querySelector('.youtube-timer-bar');
                 return el ? el.textContent : '';
             }""")
-            assert any(t in timer_text for t in ["15:00", "14:59", "14:58", "14:57"]), (
+            assert any(t in timer_text for t in ["10:00", "09:59", "09:58", "09:57"]), (
                 f"Timer text should show remaining time MM:SS, got: {timer_text}"
             )
 

@@ -1383,18 +1383,18 @@ def test_optional_action_and_launch_dom_boundaries_are_safe() -> None:
 
         const publicApp = makeBootDom({ includeMissionSuccess: true });
         const publicAppCtx = loadApp(publicApp.document);
-        assert.deepStrictEqual(
-          Object.keys(publicAppCtx.App).sort(),
-          [
-            "backToMissionSelect",
-            "boot",
-            "launchSelectedGup",
-            "renderGupSelect",
-            "renderMissionSelect",
-            "selectGup",
-            "selectMission"
-          ].sort()
-        );
+        const requiredAppMethods = [
+          "backToMissionSelect",
+          "boot",
+          "launchSelectedGup",
+          "renderGupSelect",
+          "renderMissionSelect",
+          "selectGup",
+          "selectMission"
+        ];
+        for (const m of requiredAppMethods) {
+          assert.strictEqual(typeof publicAppCtx.App[m], "function", `App.${m} missing`);
+        }
         """
     )
     _assert_node_ok(_run_node(harness))

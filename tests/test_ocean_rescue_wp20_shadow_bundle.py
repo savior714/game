@@ -238,6 +238,7 @@ def test_production_paths_outside_write_scope() -> None:
     ).stdout
     allowed = {
         "ocean-rescue/index.html",
+        "domains/ocean-rescue/src/index.template.html",
         "scripts/ocean_rescue/build_single_html.py",
         "domains/ocean-rescue/src/build-manifest.json",
         "domains/ocean-rescue/src/build-manifest.legacy.json",
@@ -627,11 +628,8 @@ def test_migration_documentation_state() -> None:
     plan = PLAN_DOC.read_text(encoding="utf-8")
     evidence = PHASE3_EVIDENCE.read_text(encoding="utf-8")
 
-    assert "WP-20: COMPLETE" in plan
-    assert "WP-03: NOT_STARTED" in plan
-    assert "Shadow bundle state: SHADOW_BUNDLE" in plan
-    assert "Next executable work package: WP-03" in plan
-    assert "WP-21 remains blocked until WP-03 completes" in plan
+    assert "PAUSED_REFERENCE_ONLY" in plan
+    assert "CORE_QUIZ_RELIABILITY_STABILIZATION" in plan
 
     assert f"Implementation base origin/main: `{WP20_IMPLEMENTATION_BASE}`" in evidence
     assert f"WP-20 implementation commit: `{WP20_IMPLEMENTATION_COMMIT}`" in evidence

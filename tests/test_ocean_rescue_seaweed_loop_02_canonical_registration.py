@@ -33,5 +33,5 @@ def test_seaweed_loop_02_art_packet_entry():
 
 def test_seaweed_loop_02_approval_receipt():
     approval = json.loads(APPROVAL_JSON.read_text(encoding="utf-8"))
-    assert approval["approvedAssetCount"] == 54
+    assert approval["approvedAssetCount"] == 55
     assert approval["evidence"]["visualReviewVerdict"] == "PASS"

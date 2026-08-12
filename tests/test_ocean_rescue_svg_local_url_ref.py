@@ -135,4 +135,4 @@ class TestSvgLocalUrlRefValidation:
     def test_canonical_assets_pass(self):
         proc = _run_validator(ASSETS_SOURCE)
         assert proc.returncode == 0, proc.stderr
-        assert "53 assets validated." in proc.stdout
+        assert "PASS: 55 assets validated." in proc.stdout

@@ -22,6 +22,7 @@ The arrival-transition hide is covered deterministically by the VM harness in
 """
 
 import json
+import math
 import os
 import socketserver
 import threading
@@ -80,7 +81,7 @@ def server():
 
 def _expected_percent(distance: float, arrival: float) -> int:
     ratio = max(0.0, min(1.0, distance / arrival))
-    return round(ratio * 100)
+    return math.floor(ratio * 100 + 0.5)
 
 
 _COLLECT_BODY = """() => {

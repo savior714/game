@@ -82,7 +82,7 @@ def test_git_workflow_matches_main_fast_forward_policy() -> None:
     assert "PR·feature branch는 사용자가 명시적으로 요청한 경우에만" in workflow
     assert "force push, history rewrite, `--no-verify`는 금지" in workflow
     assert "unrelated dirty state를 보존" in workflow
-    assert "git add .` 대신 정확한 파일 경로" in workflow
+    assert "정확한 파일 경로" in workflow
     assert "원격 이동 자체만으로 BLOCKED 처리하지 않는다." in workflow
     assert "force=false" in workflow
     assert "게시하지 않은 작업에는 `COMMIT`을 적지 않는다." in workflow

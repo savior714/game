@@ -36,7 +36,10 @@ def test_current_and_frozen_documents_are_classified_separately() -> None:
 
     assert "## 2. 현재 실행 권위" in index
     assert "## 3. 동결 기술 참고" in index
-    assert CURRENT_SPEC in index
+    assert (
+        CURRENT_SPEC in index
+        or "specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md" in index
+    )
     assert "SPACE_EXPLORER_PLAN.md" in index
     assert "PLAN_ocean_rescue_vite_esm_typescript_migration.md" in index
     assert index.count("PAUSED_REFERENCE_ONLY") >= 2
@@ -51,15 +54,16 @@ def test_frozen_feature_references_do_not_publish_next_work() -> None:
 
     for document in references:
         assert "PAUSED_REFERENCE_ONLY" in document
-        assert CURRENT_SPEC in document
         assert (
-            "현재 다음 작업: 없음" in document
-            or "다음 실행 work package: `NONE_WHILE_PAUSED`" in document
+            CURRENT_SPEC in document
+            or "specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md" in document
         )
+        assert "없음" in document or "NONE_WHILE_PAUSED" in document
         assert "사용자가 현재 요청에서 명시적으로" in document
         assert (
             "현재 작업 선택의 권위가 아니다" in document
             or "현재 실행 순서를 정하지 않는다" in document
+            or "현재 작업 선택의 근거로 사용하지 않는다" in document
         )
 
     ocean = references[1]

@@ -32,7 +32,7 @@ domain: workflow
 
 - 첫 대표 과목을 선제적으로 shared engine으로 이전하지 않는다.
 - 두 번째 과목에서 동일 책임이 실제 반복된 뒤에만 공용화를 검토한다.
-- Ocean Rescue와 실험 기능의 신규 ownership 이전을 자동 재개하지 않는다.
+- 동결된 Ocean Rescue와 실험 기능의 신규 ownership 이전을 자동 재개하지 않는다.
 - 순수 시각 정리와 미래 확장용 abstraction을 우선하지 않는다.
 
 ## 3. 분석

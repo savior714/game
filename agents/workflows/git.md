@@ -84,7 +84,7 @@ soft gate가 다른 원인의 오류를 드러내더라도 `--no-verify`로 우�
 
 ## 4. staging
 
-- `git add .` 대신 정확한 파일 경로를 지정한다.
+- 전체 선택 스테이징 대신 정확한 파일 경로를 지정한다.
 - secret, local database, IDE state, browser report, temporary artifact를 stage하지 않는다.
 - 하나의 commit에는 한 coherent failure domain만 포함한다.
 - 같은 원인을 닫는 source, caller, test, config는 함께 stage할 수 있다.

@@ -20,7 +20,7 @@ domain: workflow
 - 테스트·문서·도구의 반복 drift를 감사해야 함
 - 특정 영역의 구조적 마찰을 우선순위화해야 함
 
-범위가 없는 “다음 작업”은 discover 메뉴가 아니라 현재 일반 과목 공통 진단으로 해석한다.
+범위가 없는 “다음 작업”은 discover 메뉴가 아니라 현재 [`CORE_QUIZ_RELIABILITY_STABILIZATION.md`](../../docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md) 공통 진단으로 해석한다.
 
 ## 2. 기본 원칙
 
@@ -46,7 +46,7 @@ domain: workflow
 - 사용자 진행을 막는 runtime defect
 - 문제별 state reset 또는 final/restart 공백
 - 중복 input·listener·timer lifecycle
-- 두 과목에서 실제로 반복된 동일 책임
+- 두 과목에서 실제로 반복된 동일 책임 (동일 책임의 두 번째 실제 사용처)
 - browser evidence 또는 static contract 공백
 - stale authority·broken link·가짜 command
 - generated artifact와 source ownership drift

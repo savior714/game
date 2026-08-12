@@ -28,7 +28,7 @@ sync는 다음 두 경우를 구분한다.
 현재 `Justfile`의 `sync` recipe는 dependency/environment 동기화용 `uv sync`다.
 spec alignment CLI가 아니다.
 
-- `just sync --check`, code lock, 자동 spec 생성 기능이 존재한다고 가정하지 않는다.
+- spec alignment CLI(--check), code lock, 자동 명세 생성 기능이 존재한다고 가정하지 않는다.
 - 문서에 적힌 명령은 최신 `Justfile`, `verify.sh`, `scripts/`에서 실제 존재 여부를 확인한다.
 - sync 완료를 위해 특정 자동화 manifest나 외부 service를 요구하지 않는다.
 

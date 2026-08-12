@@ -34,6 +34,7 @@ workflow는 작업 방식을 보조하며 현재 제품 우선순위를 바꾸�
 | 커밋·게시 절차 | [`git.md`](../workflows/git.md) | — |
 | 세션 handoff | [`go.md`](../workflows/go.md) | — |
 | 사용자가 명시한 과거 plan 정리 | [`archive.md`](../workflows/archive.md) | — |
+| 워크 패키지 선점 | [`work-package-claim.md`](../workflows/work-package-claim.md) | — |
 
 ## 3. 선택 규칙
 

@@ -92,6 +92,6 @@ handoff에는 다음만 기록한다.
 - 존재하지 않는 automation 명령 실행
 - 외부 서비스 동기화를 무조건 요구
 - roadmap이나 추천 다음 작업을 자동 갱신
-- `git add .`로 unrelated 변경 포함
+- 전체 스테이징으로 unrelated 변경 포함
 - archive 파일 물리 삭제 후 링크를 방치
 - 현재 authority 문서를 과거 기록과 같은 위치로 이동

@@ -40,6 +40,7 @@ h1, #score-board, #main-area, #stats-modal, .home-link { position: relative; z-i
   padding: 8px 16px; min-height: 44px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
   transition: all 0.2s ease;
+  outline-color: #2D7DD2;
 }
 .home-link:hover {
   color: #4F46E5;
@@ -350,7 +351,14 @@ h1 {
 .confetti-emoji { position: fixed; font-size: 2rem; pointer-events: none; animation: fall 1.5s ease-in forwards; }
 @keyframes fall { 0%{opacity:1;transform:translateY(-20px) rotate(0deg)} 100%{opacity:0;transform:translateY(80vh) rotate(360deg)} }
 
-.home-link:focus-visible,
+.home-link:focus,
+.home-link:focus-visible {
+  outline-style: solid !important;
+  outline-width: 3px !important;
+  outline-color: #2D7DD2 !important;
+  outline-offset: 2px !important;
+}
+
 #stats-btn:focus-visible,
 #marble-btn:focus-visible,
 .answer-btn:focus-visible,

@@ -24,6 +24,7 @@ h1, #score-board, #main-area, #stats-modal, .home-link { position: relative; z-i
   padding: 8px 16px; min-height: 44px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
   transition: all 0.2s ease;
+  outline-color: var(--primary);
 }
 .home-link:hover {
   color: var(--primary, #D97706);

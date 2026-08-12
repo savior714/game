@@ -1,194 +1,634 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>학습 게임 놀이터</title>
+  <title>학습 게임 놀이터 | AIDEN GAME LABS</title>
+  
+  <!-- Fonts -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Outfit:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+  
+  <!-- GSAP Animation Core -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
   <link rel="stylesheet" href="./styles.css">
+  
   <style>
-    body { font-family: 'Pretendard', -apple-system, sans-serif; word-break: keep-all; }
-
-    .spring {
-      transition:
-        transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-        box-shadow 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    :root {
+      --font-heading: 'Syne', 'Space Grotesk', 'Pretendard', sans-serif;
+      --font-body: 'Outfit', 'Pretendard', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
     }
-    .card-live:hover { transform: translateY(-6px) scale(1.015); }
-    .arrow-nudge { transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
-    .card-live:hover .arrow-nudge  { transform: translateX(5px); }
 
-    @keyframes breathe {
-      0%,100% { transform: scale(1); opacity: 0.55; }
-      50% { transform: scale(1.12); opacity: 0.75; }
+    body {
+      font-family: var(--font-body);
+      background-color: #08080A;
+      color: #F4F4F5;
+      word-break: keep-all;
+      overflow-x: hidden;
     }
-    .orb { animation: breathe 9s ease-in-out infinite; }
-    .orb-b { animation-delay: -4.5s; }
+
+    h1, h2, h3, .font-heading {
+      font-family: var(--font-heading);
+    }
+
+    .font-mono-custom {
+      font-family: var(--font-mono);
+    }
+
+    /* Ambient Gradient Mesh Background */
+    .bg-mesh-glow {
+      background-image: 
+        radial-gradient(ellipse 80% 60% at 50% -20%, rgba(139, 92, 246, 0.18), rgba(0, 0, 0, 0)),
+        radial-gradient(ellipse 60% 50% at 90% 80%, rgba(16, 185, 129, 0.12), rgba(0, 0, 0, 0)),
+        radial-gradient(ellipse 50% 50% at 10% 50%, rgba(6, 182, 212, 0.15), rgba(0, 0, 0, 0));
+    }
+
+    /* Glassmorphism & HUD Styling */
+    .glass-hud-card {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .glass-hud-card:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(139, 92, 246, 0.35);
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px -10px rgba(139, 92, 246, 0.25);
+    }
+
+    .glass-hud-accent-math:hover {
+      border-color: rgba(249, 115, 22, 0.45);
+      box-shadow: 0 16px 40px -10px rgba(249, 115, 22, 0.3);
+    }
+
+    .glass-hud-accent-english:hover {
+      border-color: rgba(59, 130, 246, 0.45);
+      box-shadow: 0 16px 40px -10px rgba(59, 130, 246, 0.3);
+    }
+
+    .glass-hud-accent-korean:hover {
+      border-color: rgba(168, 85, 247, 0.45);
+      box-shadow: 0 16px 40px -10px rgba(168, 85, 247, 0.3);
+    }
+
+    .glass-hud-accent-science:hover {
+      border-color: rgba(16, 185, 129, 0.45);
+      box-shadow: 0 16px 40px -10px rgba(16, 185, 129, 0.3);
+    }
+
+    .glass-hud-accent-ocean:hover {
+      border-color: rgba(6, 182, 212, 0.45);
+      box-shadow: 0 16px 40px -10px rgba(6, 182, 212, 0.3);
+    }
+
+    /* Keycap styling */
+    .key-cap {
+      background: linear-gradient(180deg, #27272A 0%, #18181B 100%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 3px 0 #09090B;
+      transition: all 0.15s ease;
+    }
+
+    .key-cap.active-key {
+      background: linear-gradient(180deg, #8B5CF6 0%, #6D28D9 100%);
+      border-color: #A78BFA;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 0 15px rgba(139, 92, 246, 0.6);
+      color: #FFFFFF;
+      transform: translateY(2px);
+    }
+
+    /* Arrow Nudge Animation */
+    .arrow-btn-nudge {
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .glass-hud-card:hover .arrow-btn-nudge {
+      transform: translateX(6px) scale(1.1);
+    }
+
+    /* Pulse Glow */
+    @keyframes hudPulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.8; }
+    }
+    .hud-glow-pulse {
+      animation: hudPulse 4s ease-in-out infinite;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #08080A; }
+    ::-webkit-scrollbar-thumb { background: #27272A; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3F3F46; }
   </style>
 </head>
-<body class="bg-[#F8F6F3] min-h-screen overflow-x-hidden">
-  <header class="site-header relative z-20 max-w-[980px] mx-auto px-5 pt-4">
-    <h1 class="brand text-gray-900">학습 게임 놀이터</h1>
-    <nav id="main-top-nav" aria-label="Main navigation">
-      <ul class="nav-list">
-        <li><a href="./index.html" aria-current="page">홈</a></li>
-        <li><a href="./experiments/space-explorer/index.html">우주 탐험</a></li>
-      </ul>
-    </nav>
-  </header>
+<body class="bg-[#08080A] text-zinc-100 min-h-screen relative overflow-x-hidden bg-mesh-glow selection:bg-violet-500/30 selection:text-violet-200">
 
-  <div class="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-    <div class="orb absolute -top-40 -right-40 w-[480px] h-[480px] rounded-full bg-orange-300/20 blur-[80px]"></div>
-    <div class="orb orb-b absolute -bottom-40 -left-40 w-[360px] h-[360px] rounded-full bg-blue-300/15 blur-[80px]"></div>
+  <!-- Ambient Light Orbs -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden -z-10" aria-hidden="true">
+    <div class="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-violet-600/15 blur-[120px] hud-glow-pulse"></div>
+    <div class="absolute top-1/2 -left-32 w-96 h-96 rounded-full bg-emerald-500/10 blur-[140px] hud-glow-pulse" style="animation-delay: -2s;"></div>
+    <div class="absolute -bottom-32 right-1/4 w-96 h-96 rounded-full bg-cyan-500/15 blur-[130px] hud-glow-pulse" style="animation-delay: -1s;"></div>
   </div>
 
-  <div class="relative z-10 max-w-[740px] mx-auto px-5 py-16 pb-20">
-    <header class="mb-14">
-      <div class="mb-7 inline-flex items-center gap-2 bg-white border border-black/[.07] rounded-full px-4 py-1.5 text-[11px] tracking-wide text-gray-400 font-semibold shadow-sm">
-        <span class="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0"></span>
-        어린이 학습 게임
+  <!-- Header Navigation -->
+  <header class="site-header relative z-30 max-w-7xl mx-auto px-4 sm:px-6 pt-5 pb-3">
+    <div class="flex items-center justify-between gap-4 p-3 rounded-2xl glass-hud-card border border-white/10">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center text-white font-black text-lg shadow-[0_0_20px_rgba(139,92,246,0.5)]">
+          A
+        </div>
+        <div>
+          <h1 class="brand text-white text-base font-extrabold tracking-wider uppercase font-['Syne'] leading-tight">
+            AIDEN GAME LABS
+          </h1>
+          <div class="text-[10px] font-mono text-violet-400 font-semibold tracking-widest flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+            학습 게임 놀이터
+          </div>
+        </div>
       </div>
-      <h1 class="text-[clamp(2rem,9vw,3.2rem)] font-extrabold text-gray-900 leading-[1.12] tracking-[-0.035em] mb-4">
+
+      <nav id="main-top-nav" aria-label="Main navigation" class="flex items-center gap-2">
+        <ul class="nav-list flex items-center gap-2">
+          <li>
+            <a href="./index.html" aria-current="page" class="px-4 py-2 rounded-xl bg-violet-500/20 border border-violet-500/40 text-violet-300 text-xs font-semibold tracking-wide transition-all shadow-[0_0_15px_rgba(139,92,246,0.2)]">
+              홈
+            </a>
+          </li>
+          <li>
+            <a href="./experiments/space-explorer/index.html" class="px-4 py-2 rounded-xl bg-white/[0.04] border border-white/10 hover:border-violet-500/30 text-zinc-300 hover:text-white text-xs font-semibold tracking-wide transition-all">
+              우주 탐험
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="hidden sm:flex items-center gap-3">
+        <button id="sound-toggle-btn" type="button" class="px-3 py-1.5 rounded-xl bg-white/[0.04] border border-white/10 text-xs font-mono text-zinc-300 hover:text-white hover:border-violet-500/40 transition-all flex items-center gap-1.5 cursor-pointer">
+          <span class="text-violet-400">🔊</span> SPATIAL AUDIO
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6 pb-24">
+    
+    <!-- Hero Header Banner -->
+    <header class="mb-10 gsap-stagger-item">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-orange-500/15 via-violet-500/15 to-emerald-500/15 border border-orange-500/30 text-[11px] font-mono text-orange-400 font-bold tracking-widest uppercase mb-4 shadow-[0_0_20px_rgba(249,115,22,0.15)]">
+        <span class="w-2 h-2 rounded-full bg-orange-400 animate-pulse"></span>
+        어린이 학습 게임 PLATFORM
+      </div>
+      <h1 class="text-4xl sm:text-6xl font-extrabold text-white tracking-tight leading-[1.12] mb-3 font-['Syne']">
         오늘은 어떤<br>
-        <span class="text-orange-500">공부</span>를 해볼까요?
+        <span class="bg-gradient-to-r from-orange-400 via-amber-300 to-violet-400 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(249,115,22,0.35)]">공부</span>를 해볼까요?
       </h1>
-      <p class="text-gray-500 text-[0.95rem] leading-relaxed">게임처럼 재미있게, 실력은 확실하게</p>
+      <p class="text-zinc-400 text-base sm:text-lg max-w-xl font-normal leading-relaxed">
+        게임처럼 재미있게, 실력은 확실하게. 차세대 몰입형 인터랙티브 러닝 놀이터
+      </p>
     </header>
 
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <a href="./domains/math/index.html" class="card-live spring col-span-1 sm:col-span-2 sm:row-span-2 block bg-white rounded-2xl p-[3px] border border-black/[.06] shadow-sm">
-        <div class="bg-orange-50 rounded-[17px] border border-orange-100/50 p-7 h-full flex flex-col min-h-[200px] sm:min-h-[260px]">
-          <span class="text-[10px] font-black tracking-[0.12em] uppercase text-orange-500 bg-white/80 rounded-full px-3 py-1 w-fit">수학</span>
-          <div class="text-[3rem] sm:text-[4rem] mt-5 mb-1 leading-none select-none">🔢</div>
-          <div class="text-[1.4rem] sm:text-[1.7rem] font-extrabold text-gray-900 tracking-tight">수학 놀이</div>
-          <div class="text-[0.82rem] text-gray-500 leading-relaxed mt-1">덧셈 · 뺄셈 · 곱셈<br>연속 정답으로 로켓 발사!</div>
-          <div class="mt-auto pt-5 flex items-center gap-2.5 text-orange-500 font-bold text-sm">
-            <span class="arrow-nudge w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white text-xs flex-shrink-0">→</span>
-            시작하기
+    <!-- Asymmetric Bento Grid Layout -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-5 mb-10">
+
+      <!-- Bento Item 1: HUD Interactive Viewport & Live Specs (Col 8) -->
+      <div class="md:col-span-8 glass-hud-card rounded-3xl p-6 relative overflow-hidden flex flex-col justify-between border border-violet-500/20 shadow-[0_0_30px_rgba(139,92,246,0.12)] gsap-stagger-item">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-violet-600/20 via-transparent to-transparent rounded-full blur-2xl pointer-events-none"></div>
+        
+        <div class="flex items-center justify-between gap-2 mb-6">
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-1 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 text-[11px] font-mono font-bold tracking-wider flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+              LIVE HUB ENGINE
+            </span>
+            <span id="fps-counter" class="px-2.5 py-1 rounded-lg bg-zinc-900/80 border border-zinc-700/80 text-zinc-300 text-[11px] font-mono">
+              60.0 FPS
+            </span>
           </div>
+          <span class="text-xs font-mono text-zinc-400 tracking-wider">SYSTEM ACTIVE</span>
+        </div>
+
+        <div class="my-4 p-5 rounded-2xl bg-zinc-950/60 border border-white/5 relative overflow-hidden">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <div class="text-xs font-mono text-violet-400 font-semibold tracking-wider uppercase mb-1">PLAYER STATUS</div>
+              <div class="text-2xl font-extrabold text-white font-['Space_Grotesk']">S-CLASS EXPLORER</div>
+              <div class="text-xs text-zinc-400 mt-1">연속 출석 7일 달성 · 보석 상점 열림</div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="px-4 py-2 rounded-xl bg-violet-600/20 border border-violet-500/30 text-violet-300 text-center">
+                <div class="text-[10px] font-mono text-violet-400">QUESTS</div>
+                <div class="text-lg font-black font-mono">100%</div>
+              </div>
+              <div class="px-4 py-2 rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-300 text-center">
+                <div class="text-[10px] font-mono text-emerald-400">GEMS</div>
+                <div class="text-lg font-black font-mono">READY</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 text-xs font-mono text-zinc-400 pt-2 border-t border-white/5">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-violet-500"></span>
+            PIXI JS RENDERER READY
+          </div>
+          <div class="text-zinc-500">AIDEN GAME V2.6 CORE</div>
+        </div>
+      </div>
+
+      <!-- Bento Item 2: Physical Control Scheme HUD Card (Col 4) -->
+      <div class="md:col-span-4 glass-hud-card rounded-3xl p-6 flex flex-col justify-between border border-white/10 gsap-stagger-item">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-mono text-amber-400 font-bold tracking-wider uppercase flex items-center gap-1.5">
+              <span>🎮</span> HUD CONTROL SCHEME
+            </span>
+            <span class="text-[10px] font-mono text-zinc-500">KEYMAP</span>
+          </div>
+
+          <p class="text-xs text-zinc-400 mb-5 leading-relaxed">
+            키보드를 눌러 인터랙티브 제어를 체감해보세요.
+          </p>
+
+          <!-- Physical Keycaps Display -->
+          <div class="grid grid-cols-3 gap-2 max-w-[210px] mx-auto mb-6 text-center">
+            <div></div>
+            <kbd id="key-w" class="key-cap px-3 py-2 rounded-xl text-xs font-mono font-bold text-zinc-200 block shadow-md">W</kbd>
+            <div></div>
+            <kbd id="key-a" class="key-cap px-3 py-2 rounded-xl text-xs font-mono font-bold text-zinc-200 block shadow-md">A</kbd>
+            <kbd id="key-s" class="key-cap px-3 py-2 rounded-xl text-xs font-mono font-bold text-zinc-200 block shadow-md">S</kbd>
+            <kbd id="key-d" class="key-cap px-3 py-2 rounded-xl text-xs font-mono font-bold text-zinc-200 block shadow-md">D</kbd>
+          </div>
+
+          <div class="flex justify-center gap-2 text-center">
+            <kbd id="key-space" class="key-cap px-6 py-2 rounded-xl text-xs font-mono font-bold text-zinc-200 block w-full max-w-[210px]">SPACE BAR</kbd>
+          </div>
+        </div>
+
+        <div class="mt-6 pt-3 border-t border-white/5 flex items-center justify-between text-[11px] font-mono text-zinc-500">
+          <span>INPUT FEEDBACK</span>
+          <span id="last-key-pressed" class="text-violet-400 font-bold">READY</span>
+        </div>
+      </div>
+
+      <!-- Bento Item 3: Featured Primary Subject - Math 놀이 (Col 7, Row Span 2) -->
+      <a href="./domains/math/index.html" class="md:col-span-7 md:row-span-2 glass-hud-card glass-hud-accent-math rounded-3xl p-7 flex flex-col justify-between group relative overflow-hidden border border-orange-500/20 bg-gradient-to-br from-orange-950/30 via-zinc-900/40 to-black gsap-stagger-item">
+        <div class="absolute -top-20 -right-20 w-80 h-80 bg-orange-500/15 rounded-full blur-3xl group-hover:bg-orange-500/25 transition-all duration-500"></div>
+        
+        <div>
+          <div class="flex items-center justify-between gap-3 mb-6">
+            <span class="text-[11px] font-mono font-bold tracking-widest uppercase px-3 py-1 rounded-full bg-orange-500/20 border border-orange-500/40 text-orange-300">
+              MATHEMATICS CORE
+            </span>
+            <span class="text-xs font-mono text-orange-400/80">FEATURED MODULE</span>
+          </div>
+
+          <div class="text-6xl sm:text-7xl mb-4 transform group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300 select-none">
+            🔢
+          </div>
+
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2 font-['Syne']">
+            수학 놀이
+          </h2>
+
+          <p class="text-zinc-300 text-sm sm:text-base leading-relaxed mb-6">
+            덧셈 · 뺄셈 · 곱셈<br>
+            연속 정답으로 로켓 발사!
+          </p>
+
+          <div class="flex flex-wrap gap-2 mb-6">
+            <span class="px-2.5 py-1 rounded-lg bg-orange-950/40 border border-orange-500/20 text-orange-200 text-xs font-mono">기초 연산</span>
+            <span class="px-2.5 py-1 rounded-lg bg-orange-950/40 border border-orange-500/20 text-orange-200 text-xs font-mono">스피드 퀴즈</span>
+            <span class="px-2.5 py-1 rounded-lg bg-orange-950/40 border border-orange-500/20 text-orange-200 text-xs font-mono">로켓 부스터</span>
+          </div>
+        </div>
+
+        <div class="pt-6 border-t border-orange-500/20 flex items-center justify-between">
+          <span class="text-sm font-bold text-orange-400 group-hover:text-orange-300 transition-colors">
+            로켓 챌린지 시작하기
+          </span>
+          <span class="arrow-btn-nudge w-10 h-10 rounded-2xl bg-orange-500 text-white flex items-center justify-center text-sm font-bold shadow-[0_0_20px_rgba(249,115,22,0.4)]">
+            →
+          </span>
         </div>
       </a>
 
-      <a href="./domains/english/index.html" class="card-live spring col-span-1 sm:col-span-2 block bg-white rounded-2xl p-[3px] border border-black/[.06] shadow-sm">
-        <div class="bg-blue-50 rounded-[17px] border border-blue-100/50 p-6 h-full flex flex-col">
-          <span class="text-[10px] font-black tracking-[0.12em] uppercase text-blue-600 bg-white/80 rounded-full px-3 py-1 w-fit">영어</span>
-          <div class="text-[2.4rem] mt-4 mb-1 leading-none select-none">📚</div>
-          <div class="text-[1.2rem] font-extrabold text-gray-900 tracking-tight">영어 놀이</div>
-          <div class="text-[0.8rem] text-gray-500 leading-relaxed mt-1">단어 · 문장 퀴즈로 영어 실력 UP!</div>
-          <div class="mt-auto pt-4 flex items-center gap-2 text-blue-600 font-bold text-sm">
-            <span class="arrow-nudge w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs flex-shrink-0">→</span>
-            시작하기
+      <!-- Bento Item 4: English 놀이 (Col 5) -->
+      <a href="./domains/english/index.html" class="md:col-span-5 glass-hud-card glass-hud-accent-english rounded-3xl p-6 flex flex-col justify-between group relative overflow-hidden border border-blue-500/20 bg-gradient-to-br from-blue-950/30 via-zinc-900/40 to-black gsap-stagger-item">
+        <div class="absolute -top-10 -right-10 w-48 h-48 bg-blue-500/15 rounded-full blur-2xl group-hover:bg-blue-500/25 transition-all duration-500"></div>
+
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-[11px] font-mono font-bold tracking-widest uppercase px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/40 text-blue-300">
+              ENGLISH LITERACY
+            </span>
           </div>
+
+          <div class="text-4xl mb-3 transform group-hover:scale-110 transition-transform duration-300 select-none">
+            📚
+          </div>
+
+          <h2 class="text-xl sm:text-2xl font-extrabold text-white tracking-tight mb-1 font-['Syne']">
+            영어 놀이
+          </h2>
+
+          <p class="text-zinc-300 text-xs sm:text-sm leading-relaxed mb-4">
+            단어 · 문장 퀴즈로 영어 실력 UP!
+          </p>
+        </div>
+
+        <div class="pt-4 border-t border-blue-500/20 flex items-center justify-between">
+          <span class="text-xs font-bold text-blue-400 group-hover:text-blue-300">
+            시작하기
+          </span>
+          <span class="arrow-btn-nudge w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xs font-bold shadow-[0_0_15px_rgba(37,99,235,0.4)]">
+            →
+          </span>
         </div>
       </a>
 
-      <a href="./domains/korean/index.html" class="card-live spring col-span-1 bg-white rounded-2xl p-[3px] border border-black/[.06] shadow-sm">
-        <div class="bg-purple-50 rounded-[17px] border border-purple-100/50 p-5 h-full flex flex-col">
-          <span class="text-[10px] font-black tracking-[0.12em] uppercase text-purple-600 bg-white/80 rounded-full px-3 py-1 w-fit">국어</span>
-          <div class="text-[2.2rem] mt-3 mb-1 leading-none select-none">📖</div>
-          <div class="text-[1.1rem] font-extrabold text-gray-900 tracking-tight">국어 놀이</div>
-          <div class="text-[0.78rem] text-gray-500 leading-relaxed mt-1">받침 · 맞춤법 · 어휘</div>
-          <div class="mt-auto pt-4 flex items-center gap-2 text-purple-600 font-bold text-sm">
-            <span class="arrow-nudge w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center text-white text-xs flex-shrink-0">→</span>
-            시작하기
+      <!-- Bento Item 5: Korean 놀이 (Col 2.5/5) -->
+      <a href="./domains/korean/index.html" class="md:col-span-2.5 sm:col-span-6 glass-hud-card glass-hud-accent-korean rounded-3xl p-6 flex flex-col justify-between group relative overflow-hidden border border-purple-500/20 bg-gradient-to-br from-purple-950/30 via-zinc-900/40 to-black gsap-stagger-item">
+        <div>
+          <span class="text-[10px] font-mono font-bold tracking-widest uppercase px-2.5 py-1 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 inline-block mb-3">
+            KOREAN
+          </span>
+
+          <div class="text-3xl mb-2 transform group-hover:scale-110 transition-transform duration-300 select-none">
+            📖
           </div>
+
+          <h2 class="text-lg font-extrabold text-white tracking-tight mb-1 font-['Syne']">
+            국어 놀이
+          </h2>
+
+          <p class="text-zinc-400 text-xs leading-relaxed mb-3">
+            받침 · 맞춤법 · 어휘
+          </p>
+        </div>
+
+        <div class="pt-3 border-t border-purple-500/20 flex items-center justify-between">
+          <span class="text-xs font-bold text-purple-400">시작</span>
+          <span class="arrow-btn-nudge w-7 h-7 rounded-lg bg-purple-600 text-white flex items-center justify-center text-xs font-bold">→</span>
         </div>
       </a>
 
-      <a href="./domains/science/index.html" class="card-live spring col-span-1 bg-white rounded-2xl p-[3px] border border-black/[.06] shadow-sm">
-        <div class="bg-emerald-50 rounded-[17px] border border-emerald-100/50 p-5 h-full flex flex-col">
-          <span class="text-[10px] font-black tracking-[0.12em] uppercase text-emerald-600 bg-white/80 rounded-full px-3 py-1 w-fit">과학</span>
-          <div class="text-[2.2rem] mt-3 mb-1 leading-none select-none">🔬</div>
-          <div class="text-[1.1rem] font-extrabold text-gray-900 tracking-tight">과학 놀이</div>
-          <div class="text-[0.78rem] text-gray-500 leading-relaxed mt-1">분류 · 개념 퀴즈</div>
-          <div class="mt-auto pt-4 flex items-center gap-2 text-emerald-600 font-bold text-sm">
-            <span class="arrow-nudge w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs flex-shrink-0">→</span>
-            시작하기
+      <!-- Bento Item 6: Science 놀이 (Col 2.5/5) -->
+      <a href="./domains/science/index.html" class="md:col-span-2.5 sm:col-span-6 glass-hud-card glass-hud-accent-science rounded-3xl p-6 flex flex-col justify-between group relative overflow-hidden border border-emerald-500/20 bg-gradient-to-br from-emerald-950/30 via-zinc-900/40 to-black gsap-stagger-item">
+        <div>
+          <span class="text-[10px] font-mono font-bold tracking-widest uppercase px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 inline-block mb-3">
+            SCIENCE
+          </span>
+
+          <div class="text-3xl mb-2 transform group-hover:scale-110 transition-transform duration-300 select-none">
+            🔬
           </div>
+
+          <h2 class="text-lg font-extrabold text-white tracking-tight mb-1 font-['Syne']">
+            과학 놀이
+          </h2>
+
+          <p class="text-zinc-400 text-xs leading-relaxed mb-3">
+            분류 · 개념 퀴즈
+          </p>
+        </div>
+
+        <div class="pt-3 border-t border-emerald-500/20 flex items-center justify-between">
+          <span class="text-xs font-bold text-emerald-400">시작</span>
+          <span class="arrow-btn-nudge w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">→</span>
         </div>
       </a>
+
     </div>
 
-    <p class="mt-6 text-center text-[12px] text-gray-400">
+    <!-- Live Stats Bar -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12 gsap-stagger-item">
+      <div class="glass-hud-card rounded-2xl p-4 text-center border border-white/5">
+        <div class="text-2xl font-black font-mono text-violet-400" id="stat-solved">1,280+</div>
+        <div class="text-xs text-zinc-400 mt-1">퀴즈 해결</div>
+      </div>
+      <div class="glass-hud-card rounded-2xl p-4 text-center border border-white/5">
+        <div class="text-2xl font-black font-mono text-orange-400" id="stat-rockets">340+</div>
+        <div class="text-xs text-zinc-400 mt-1">로켓 발사</div>
+      </div>
+      <div class="glass-hud-card rounded-2xl p-4 text-center border border-white/5">
+        <div class="text-2xl font-black font-mono text-emerald-400" id="stat-accuracy">98.4%</div>
+        <div class="text-xs text-zinc-400 mt-1">정답률</div>
+      </div>
+      <div class="glass-hud-card rounded-2xl p-4 text-center border border-white/5">
+        <div class="text-2xl font-black font-mono text-cyan-400">S-RANK</div>
+        <div class="text-xs text-zinc-400 mt-1">탐험가 등급</div>
+      </div>
+    </div>
+
+    <!-- Exploration & Lab Modules Section -->
+    <div class="space-y-4">
+      
+      <!-- Ocean Rescue Section -->
+      <section class="gsap-stagger-item" aria-labelledby="ocean-rescue-card-title">
+        <a href="./ocean-rescue/index.html" class="glass-hud-card glass-hud-accent-ocean block rounded-3xl p-6 border border-cyan-500/30 bg-gradient-to-r from-cyan-950/40 via-zinc-900/50 to-black group relative overflow-hidden">
+          <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-cyan-500/15 rounded-full blur-2xl group-hover:bg-cyan-500/25 transition-all"></div>
+          
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+              <div class="text-4xl sm:text-5xl leading-none transform group-hover:scale-110 transition-transform select-none" aria-hidden="true">
+                🌊
+              </div>
+              <div>
+                <div class="text-[10px] font-mono font-bold tracking-widest uppercase text-cyan-400 mb-0.5">
+                  바다 탐험
+                </div>
+                <h2 id="ocean-rescue-card-title" class="text-xl sm:text-2xl font-extrabold text-white tracking-tight font-['Syne']">
+                  Ocean Rescue
+                </h2>
+                <div class="text-xs text-zinc-300 mt-1">
+                  잠수정을 타고 바다 생물을 구조해요
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-bold text-cyan-400 group-hover:text-cyan-300">탐험 시작</span>
+              <span class="arrow-btn-nudge w-10 h-10 rounded-2xl bg-cyan-600 text-white flex items-center justify-center text-sm font-bold shadow-[0_0_20px_rgba(8,145,178,0.4)]" aria-hidden="true">
+                →
+              </span>
+            </div>
+          </div>
+        </a>
+      </section>
+
+      <!-- Space Explorer Main Lab -->
+      <section class="gsap-stagger-item">
+        <a href="./experiments/space-explorer/index.html" class="glass-hud-card block rounded-3xl p-6 border border-indigo-500/30 bg-gradient-to-r from-indigo-950/40 via-zinc-900/50 to-black group relative overflow-hidden">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+              <div class="text-4xl sm:text-5xl leading-none transform group-hover:scale-110 transition-transform select-none">
+                🪐
+              </div>
+              <div>
+                <div class="text-[10px] font-mono font-bold tracking-widest uppercase text-indigo-400 mb-0.5">
+                  실험실
+                </div>
+                <div class="text-xl sm:text-2xl font-extrabold text-white tracking-tight font-['Syne']">
+                  태양계 탐험 (실험)
+                </div>
+                <div class="text-xs text-zinc-400 mt-1">
+                  기존 학습 루프와 분리된 독립 실험 페이지
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <span class="text-xs font-bold text-indigo-400">실험하기</span>
+              <span class="arrow-btn-nudge w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-sm font-bold shadow-[0_0_20px_rgba(79,70,229,0.4)]">
+                →
+              </span>
+            </div>
+          </div>
+        </a>
+      </section>
+
+      <!-- Sub Experiments Grid (3 Columns) -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        <!-- Orbit Eclipse -->
+        <section class="gsap-stagger-item">
+          <a href="./experiments/space-explorer/orbit-eclipse.html" class="glass-hud-card block rounded-2xl p-5 border border-sky-500/20 bg-zinc-900/40 group relative">
+            <div class="text-3xl mb-2 transform group-hover:scale-110 transition-transform select-none">🌍</div>
+            <div class="text-[10px] font-mono font-bold text-sky-400 tracking-wider uppercase mb-0.5">우주 개념</div>
+            <div class="text-base font-extrabold text-white mb-1 font-['Syne']">공전·자전과 일식/월식</div>
+            <div class="text-xs text-zinc-400 leading-normal">태양-지구-달 움직임을 눈으로 보는 설명 페이지</div>
+            <div class="mt-4 flex items-center justify-between pt-3 border-t border-white/5 text-xs text-sky-400 font-bold">
+              <span>자세히 보기</span>
+              <span class="arrow-btn-nudge">→</span>
+            </div>
+          </a>
+        </section>
+
+        <!-- Paint Mixing -->
+        <section class="gsap-stagger-item">
+          <a href="./experiments/space-explorer/paint-mixing.html" class="glass-hud-card block rounded-2xl p-5 border border-emerald-500/20 bg-zinc-900/40 group relative">
+            <div class="text-3xl mb-2 transform group-hover:scale-110 transition-transform select-none">🎨</div>
+            <div class="text-[10px] font-mono font-bold text-emerald-400 tracking-wider uppercase mb-0.5">색 실험</div>
+            <div class="text-base font-extrabold text-white mb-1 font-['Syne']">물감 색 섞기 실험</div>
+            <div class="text-xs text-zinc-400 leading-normal">노랑+파랑=초록처럼, 색 조합 결과를 체험해요</div>
+            <div class="mt-4 flex items-center justify-between pt-3 border-t border-white/5 text-xs text-emerald-400 font-bold">
+              <span>실험 시작</span>
+              <span class="arrow-btn-nudge">→</span>
+            </div>
+          </a>
+        </section>
+
+        <!-- Dino Escape -->
+        <section class="gsap-stagger-item">
+          <a href="./experiments/space-explorer/dino-escape.html" class="glass-hud-card block rounded-2xl p-5 border border-amber-500/20 bg-zinc-900/40 group relative">
+            <div class="text-3xl mb-2 transform group-hover:scale-110 transition-transform select-none">🦖</div>
+            <div class="text-[10px] font-mono font-bold text-amber-400 tracking-wider uppercase mb-0.5">액션 실험</div>
+            <div class="text-base font-extrabold text-white mb-1 font-['Syne']">공룡 추격 탈출 게임</div>
+            <div class="text-xs text-zinc-400 leading-normal">도망치며 던지고 점수를 쌓아 돌→창→총을 해금해요</div>
+            <div class="mt-4 flex items-center justify-between pt-3 border-t border-white/5 text-xs text-amber-400 font-bold">
+              <span>플레이</span>
+              <span class="arrow-btn-nudge">→</span>
+            </div>
+          </a>
+        </section>
+
+      </div>
+
+    </div>
+
+    <p class="mt-12 text-center text-xs text-zinc-500 font-mono">
       상단 보상바에서 보석 상점, 보호자/관리 기능을 이용할 수 있습니다.
     </p>
 
-    <section class="mt-6" aria-labelledby="ocean-rescue-card-title">
-      <a href="./ocean-rescue/index.html" class="card-live spring block bg-white rounded-2xl p-[3px] border border-cyan-200 shadow-sm">
-        <div class="bg-cyan-50 rounded-[17px] border border-cyan-100/70 p-5 flex items-center gap-4">
-          <div class="text-[2rem] leading-none" aria-hidden="true">🌊</div>
-          <div class="flex-1 min-w-0">
-            <div class="text-[10px] font-black tracking-[0.12em] uppercase text-cyan-700">바다 탐험</div>
-            <h2 id="ocean-rescue-card-title" class="text-[1.05rem] font-extrabold text-gray-900">Ocean Rescue</h2>
-            <div class="text-[0.78rem] text-gray-500">잠수정을 타고 바다 생물을 구조해요</div>
-          </div>
-          <span class="arrow-nudge w-8 h-8 rounded-full bg-cyan-600 flex items-center justify-center text-white text-xs flex-shrink-0" aria-hidden="true">→</span>
-        </div>
-      </a>
-    </section>
+  </main>
 
-    <section class="mt-6">
-      <a href="./experiments/space-explorer/index.html" class="card-live spring block bg-white rounded-2xl p-[3px] border border-dashed border-indigo-200 shadow-sm">
-        <div class="bg-indigo-50 rounded-[17px] border border-indigo-100/60 p-5 flex items-center gap-4">
-          <div class="text-[2rem] leading-none">🪐</div>
-          <div class="flex-1 min-w-0">
-            <div class="text-[10px] font-black tracking-[0.12em] uppercase text-indigo-600">실험실</div>
-            <div class="text-[1.05rem] font-extrabold text-gray-900">태양계 탐험 (실험)</div>
-            <div class="text-[0.78rem] text-gray-500">기존 학습 루프와 분리된 독립 실험 페이지</div>
-          </div>
-          <span class="arrow-nudge w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs flex-shrink-0">→</span>
-        </div>
-      </a>
-    </section>
+  <!-- GSAP Stagger Entrance Script & Keycap Input Visualizer -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      // 1. GSAP Entrance Stagger
+      if (typeof gsap !== 'undefined') {
+        gsap.from(".gsap-stagger-item", {
+          duration: 0.75,
+          y: 35,
+          opacity: 0,
+          stagger: 0.07,
+          ease: "power3.out"
+        });
+      }
 
-    <section class="mt-3">
-      <a href="./experiments/space-explorer/orbit-eclipse.html" class="card-live spring block bg-white rounded-2xl p-[3px] border border-dashed border-sky-200 shadow-sm">
-        <div class="bg-sky-50 rounded-[17px] border border-sky-100/70 p-5 flex items-center gap-4">
-          <div class="text-[2rem] leading-none">🌍</div>
-          <div class="flex-1 min-w-0">
-            <div class="text-[10px] font-black tracking-[0.12em] uppercase text-sky-700">우주 개념</div>
-            <div class="text-[1.05rem] font-extrabold text-gray-900">공전·자전과 일식/월식</div>
-            <div class="text-[0.78rem] text-gray-500">태양-지구-달 움직임을 눈으로 보는 설명 페이지</div>
-          </div>
-          <span class="arrow-nudge w-8 h-8 rounded-full bg-sky-600 flex items-center justify-center text-white text-xs flex-shrink-0">→</span>
-        </div>
-      </a>
-    </section>
+      // 2. Dynamic FPS Counter Simulator
+      const fpsEl = document.getElementById("fps-counter");
+      if (fpsEl) {
+        let lastTime = performance.now();
+        let frameCount = 0;
+        function updateFPS(now) {
+          frameCount++;
+          if (now - lastTime >= 1000) {
+            const fps = ((frameCount * 1000) / (now - lastTime)).toFixed(1);
+            fpsEl.textContent = `${fps} FPS`;
+            frameCount = 0;
+            lastTime = now;
+          }
+          requestAnimationFrame(updateFPS);
+        }
+        requestAnimationFrame(updateFPS);
+      }
 
-    <section class="mt-3">
-      <a href="./experiments/space-explorer/paint-mixing.html" class="card-live spring block bg-white rounded-2xl p-[3px] border border-dashed border-emerald-200 shadow-sm">
-        <div class="bg-emerald-50 rounded-[17px] border border-emerald-100/70 p-5 flex items-center gap-4">
-          <div class="text-[2rem] leading-none">🎨</div>
-          <div class="flex-1 min-w-0">
-            <div class="text-[10px] font-black tracking-[0.12em] uppercase text-emerald-700">색 실험</div>
-            <div class="text-[1.05rem] font-extrabold text-gray-900">물감 색 섞기 실험</div>
-            <div class="text-[0.78rem] text-gray-500">노랑+파랑=초록처럼, 색 조합에 따라 결과를 체험해요</div>
-          </div>
-          <span class="arrow-nudge w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs flex-shrink-0">→</span>
-        </div>
-      </a>
-    </section>
+      // 3. Keypress Visualizer Feedback
+      const keyMap = {
+        'KeyW': 'key-w',
+        'KeyA': 'key-a',
+        'KeyS': 'key-s',
+        'KeyD': 'key-d',
+        'Space': 'key-space'
+      };
 
-    <section class="mt-3">
-      <a href="./experiments/space-explorer/dino-escape.html" class="card-live spring block bg-white rounded-2xl p-[3px] border border-dashed border-amber-200 shadow-sm">
-        <div class="bg-amber-50 rounded-[17px] border border-amber-100/70 p-5 flex items-center gap-4">
-          <div class="text-[2rem] leading-none">🦖</div>
-          <div class="flex-1 min-w-0">
-            <div class="text-[10px] font-black tracking-[0.12em] uppercase text-amber-700">액션 실험</div>
-            <div class="text-[1.05rem] font-extrabold text-gray-900">공룡 추격 탈출 게임</div>
-            <div class="text-[0.78rem] text-gray-500">도망치며 던지고 점수를 쌓아 돌→창→총을 해금해요</div>
-          </div>
-          <span class="arrow-nudge w-8 h-8 rounded-full bg-amber-600 flex items-center justify-center text-white text-xs flex-shrink-0">→</span>
-        </div>
-      </a>
-    </section>
-  </div>
+      const lastKeyEl = document.getElementById('last-key-pressed');
 
+      window.addEventListener('keydown', (e) => {
+        const keyId = keyMap[e.code];
+        if (keyId) {
+          const el = document.getElementById(keyId);
+          if (el) {
+            el.classList.add('active-key');
+          }
+          if (lastKeyEl) {
+            lastKeyEl.textContent = `KEY: ${e.code.replace('Key', '')}`;
+          }
+        }
+      });
+
+      window.addEventListener('keyup', (e) => {
+        const keyId = keyMap[e.code];
+        if (keyId) {
+          const el = document.getElementById(keyId);
+          if (el) {
+            el.classList.remove('active-key');
+          }
+        }
+      });
+    });
+  </script>
+
+  <!-- Legacy Domain & Reward Integration Scripts -->
   <script src="shared/domain/free-time-session.js"></script>
   <script src="shared/domain/external-tab-launcher.js"></script>
   <script src="domains/reward/free-time-session-start-transaction.js"></script>
   <script src="domains/reward/reward_ui.js"></script>
   <script src="domains/reward/reward.js"></script>
+
 </body>
 </html>

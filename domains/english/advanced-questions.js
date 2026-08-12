@@ -154,6 +154,7 @@ const EnglishAdvancedQuestions = (function () {
     { id: 'shoes_price', speaker: 'customer', line: "How much are these _____?", blank: true, answer: ['shoes'], category: 'clothing' },
     { id: 'hat_buy', speaker: 'customer', line: "I'd like to buy this _____.", blank: true, answer: ['hat'], category: 'clothing' },
     { id: 'hat_price', speaker: 'customer', line: "How much is this _____?", blank: true, answer: ['hat'], category: 'clothing' },
+    { id: 'apple_buy', speaker: 'customer', line: "I'd like to buy an _____.", blank: true, answer: ['apple'], category: 'fruits' },
   ];
 
   return {

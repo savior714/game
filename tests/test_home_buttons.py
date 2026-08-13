@@ -55,3 +55,23 @@ def test_home_buttons_exist_in_all_pages():
             assert found_in_html or found_in_js, (
                 f"Expected home link with href '{expected_href}' in {rel_path}"
             )
+
+
+def test_main_page_core_quiz_subject_buttons_styling():
+    index_path = REPO_ROOT / "index.html"
+    assert index_path.exists()
+    content = index_path.read_text(encoding="utf-8")
+
+    assert "core-subject-grid" in content
+    assert "core-subject-btn" in content
+    assert "수학 놀이" in content
+    assert "영어 놀이" in content
+    assert "국어 놀이" in content
+    assert "과학 놀이" in content
+
+    styles_path = REPO_ROOT / "styles.css"
+    assert styles_path.exists()
+    styles_content = styles_path.read_text(encoding="utf-8")
+
+    assert ".core-subject-grid" in styles_content
+    assert ".core-subject-btn" in styles_content

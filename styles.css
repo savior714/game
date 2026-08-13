@@ -253,6 +253,71 @@ body {
   color: #273300;
 }
 
+/* Core Quiz Subject Buttons inside Featured Card */
+.core-subject-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.85rem;
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.core-subject-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.1rem;
+  min-height: 58px;
+  background: rgba(7, 9, 14, 0.12);
+  border: 1.5px solid rgba(7, 9, 14, 0.2);
+  border-radius: 16px;
+  color: #07090e;
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 0.98rem;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
+}
+
+.core-subject-btn:hover {
+  background: #07090e;
+  color: var(--neon-volt);
+  border-color: #07090e;
+  transform: translateY(-3px) scale(1.025);
+  box-shadow: 0 10px 24px -4px rgba(0, 0, 0, 0.35);
+}
+
+.core-subject-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.core-subject-btn .btn-emoji {
+  font-size: 1.45rem;
+  margin-right: 0.65rem;
+  line-height: 1;
+}
+
+.core-subject-btn .btn-arrow {
+  font-size: 1.15rem;
+  font-weight: 900;
+  transition: transform 0.2s ease;
+  opacity: 0.8;
+}
+
+.core-subject-btn:hover .btn-arrow {
+  transform: translateX(4px);
+  opacity: 1;
+  color: var(--neon-volt);
+}
+
+@media (max-width: 640px) {
+  .core-subject-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+}
+
+
 .card-title {
   font-size: 1.75rem;
   font-weight: 900;

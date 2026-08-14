@@ -21,7 +21,8 @@ def test_templates_index_is_aidengame_hub_page() -> None:
     assert 'id="main-top-nav"' in html
 
     # Modern Hub UI Structure & Functional Verification
-    assert "DREAM TEAM LEARNING ARENA" in html
+    assert "INTERACTIVE LEARNING PLAYGROUND" in html
+    assert "DREAM TEAM" not in html
     assert "console-hud" in html
     assert "dream-grid" in html
     assert "console-footer" in html

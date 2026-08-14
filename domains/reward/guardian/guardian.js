@@ -110,7 +110,7 @@ document.addEventListener('click', (e) => {
 
   switch (action) {
     case 'go-home':
-      window.location.href = '../../index.html';
+      window.location.href = '../../../index.html';
       e.stopPropagation();
       break;
     case 'set-subject':

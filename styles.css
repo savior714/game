@@ -51,7 +51,7 @@ body {
     radial-gradient(circle at 50% 100%, rgba(7, 9, 14, 0.95), #07090e);
 }
 
-/* Console Top HUD Bar */
+/* Console Top HUD Bar (Unified Single Header) */
 .console-hud {
   display: flex;
   align-items: center;
@@ -62,11 +62,18 @@ body {
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 20px;
-  padding: 0.75rem 1.25rem;
+  padding: 0.6rem 1.25rem;
   box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
   position: sticky;
-  top: var(--reward-bar-height, 10px);
+  top: 1rem;
   z-index: 100;
+}
+
+.hud-left-section {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-shrink: 0;
 }
 
 .brand-badge {
@@ -83,29 +90,175 @@ body {
   box-shadow: 0 0 10px var(--neon-volt);
 }
 
-.hud-stat-group {
+/* Integrated Reward HUD Mount & Controls */
+.hud-reward-mount {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: flex-end;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
-.hud-stat-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.85rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #F8FAFC;
+.hud-reward-mount #reward-inventory {
+  position: static !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  width: auto !important;
+  min-height: auto !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  z-index: auto !important;
+  display: flex !important;
+  align-items: center !important;
 }
 
-.hud-stat-chip .chip-label {
-  color: var(--neon-volt);
-  font-weight: 800;
+.hud-reward-mount #reward-inventory .inventory-content {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.75rem !important;
+  max-width: 100% !important;
+  width: auto !important;
+}
+
+.hud-reward-mount #reward-inventory .inventory-rail-left {
+  display: none !important;
+}
+
+.hud-reward-mount #reward-inventory .inventory-center {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+}
+
+.hud-reward-mount #reward-inventory .inventory-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.45rem !important;
+  flex-wrap: nowrap !important;
+}
+
+.hud-reward-mount #reward-inventory .inventory-item {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  padding: 0.35rem 0.75rem !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  color: #F8FAFC !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  text-decoration: none !important;
+}
+
+.hud-reward-mount #reward-inventory .inventory-item .val {
+  font-family: var(--font-mono) !important;
+  font-weight: 800 !important;
+}
+
+.hud-reward-mount #reward-inventory .inventory-item.gem-item {
+  background: rgba(215, 255, 0, 0.12) !important;
+  border-color: rgba(215, 255, 0, 0.35) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 0 12px rgba(215, 255, 0, 0.12) !important;
+}
+
+.hud-reward-mount #reward-inventory .inventory-item.gem-item .val {
+  color: var(--neon-volt) !important;
+}
+
+.hud-reward-mount #reward-inventory .inventory-item.has-reward {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  color: #FFFFFF !important;
+}
+
+.hud-reward-mount #reward-inventory .inventory-item.empty-slot {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  color: #94A3B8 !important;
+  opacity: 0.65 !important;
+}
+
+.hud-reward-mount #reward-inventory .inventory-item:hover {
+  transform: translateY(-1px) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.hud-reward-mount #reward-inventory .inventory-item.gem-item:hover {
+  background: rgba(215, 255, 0, 0.2) !important;
+  border-color: rgba(215, 255, 0, 0.6) !important;
+  box-shadow: 0 0 18px rgba(215, 255, 0, 0.25) !important;
+}
+
+.hud-reward-mount #reward-inventory .inventory-rail-right {
+  display: flex !important;
+  align-items: center !important;
+  flex: 0 0 auto !important;
+}
+
+.hud-reward-mount #reward-inventory .inventory-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  margin-left: 0.25rem !important;
+}
+
+.hud-reward-mount #reward-inventory .inventory-auth {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 999px !important;
+  padding: 0.35rem 0.85rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  color: #E2E8F0 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.hud-reward-mount #reward-inventory .inventory-auth:hover {
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  color: #FFFFFF !important;
+}
+
+.hud-reward-mount #reward-inventory .inventory-bar-icon-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #CBD5E1 !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  padding: 0 !important;
+}
+
+.hud-reward-mount #reward-inventory .inventory-bar-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  color: #FFFFFF !important;
+  transform: rotate(45deg) scale(1.05) !important;
+}
+
+.hud-reward-mount #reward-inventory .inventory-bar-icon-btn svg {
+  width: 18px !important;
+  height: 18px !important;
 }
 
 /* Big Console Arena Header */
@@ -520,6 +673,24 @@ body {
   }
 }
 
+@media (max-width: 900px) {
+  .console-hud {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+  .hud-left-section {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .hud-reward-mount {
+    width: 100%;
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+}
+
 @media (max-width: 640px) {
   .dream-grid {
     grid-template-columns: 1fr;
@@ -540,5 +711,3 @@ body {
 .canvas-panel canvas {
   touch-action: none;
 }
-
-

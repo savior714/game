@@ -40,3 +40,29 @@ def test_templates_index_is_aidengame_hub_page() -> None:
         ocean_rescue_position,
     )
     assert ocean_rescue_position < space_experiment_position
+
+
+def test_main_hub_unified_topbar_structure() -> None:
+    html = (TEMPLATES / "index.html").read_text(encoding="utf-8")
+    styles = (TEMPLATES / "styles.css").read_text(encoding="utf-8")
+    reward_ui = (ROOT / "domains" / "reward" / "reward_ui.js").read_text(
+        encoding="utf-8"
+    )
+
+    # 1. index.html unified header structure
+    assert 'class="console-hud' in html
+    assert 'class="hud-left-section"' in html
+    assert 'id="main-top-nav"' in html
+    assert 'id="reward-inventory-mount"' in html
+    assert "GP" not in html
+    assert "12,500" not in html
+    assert "🪙" not in html
+
+    # 2. reward_ui.js mount support
+    assert "document.getElementById('reward-inventory-mount')" in reward_ui
+    assert "is-integrated" in reward_ui
+
+    # 3. styles.css integration styling
+    assert ".hud-reward-mount" in styles
+    assert ".hud-reward-mount #reward-inventory" in styles
+    assert ".hud-reward-mount #reward-inventory .inventory-item.gem-item" in styles

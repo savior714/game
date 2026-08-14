@@ -75,3 +75,15 @@ def test_main_page_core_quiz_subject_buttons_styling():
 
     assert ".core-subject-grid" in styles_content
     assert ".core-subject-btn" in styles_content
+
+
+def test_guardian_go_home_target_path():
+    guardian_js = (REPO_ROOT / "domains/reward/guardian/guardian.js").read_text(
+        encoding="utf-8"
+    )
+    guardian_events = (
+        REPO_ROOT / "domains/reward/guardian/guardian-events.js"
+    ).read_text(encoding="utf-8")
+
+    assert "window.location.href = '../../../index.html';" in guardian_js
+    assert "global.location.href = '../../../index.html';" in guardian_events

@@ -48,7 +48,7 @@
 
     const action = target.dataset.action;
     const handlers = {
-      'go-home': () => { global.location.href = '../../index.html'; },
+      'go-home': () => { global.location.href = '../../../index.html'; },
       'set-subject': () => global.setSubject?.(target.dataset.subject),
       'save-settings': () => global.saveSettings?.(),
       'add-weekly-word': () => global.addWeeklyWord?.(),

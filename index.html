@@ -33,22 +33,22 @@
   <!-- Console Shell Wrapper -->
   <div class="console-wrapper">
 
-    <!-- Top Console HUD Navigation Bar -->
+    <!-- Top Console HUD Navigation Bar (Unified Header) -->
     <header class="console-hud gsap-stagger-item">
-      <div class="brand-badge">
-        <div class="brand-dot"></div>
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-black tracking-widest text-[#d7ff00] uppercase">AIDEN GAME LABS</span>
-            <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-slate-300 font-semibold">v2.0</span>
+      <div class="hud-left-section">
+        <div class="brand-badge">
+          <div class="brand-dot"></div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-black tracking-widest text-[#d7ff00] uppercase">AIDEN GAME LABS</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-slate-300 font-semibold">v2.0</span>
+            </div>
+            <h1 class="text-sm font-extrabold text-white tracking-tight leading-none mt-0.5">
+              학습 게임 놀이터
+            </h1>
           </div>
-          <h1 class="text-sm font-extrabold text-white tracking-tight leading-none mt-0.5">
-            학습 게임 놀이터
-          </h1>
         </div>
-      </div>
 
-      <div class="flex items-center gap-4">
         <!-- Main Top Navigation -->
         <nav id="main-top-nav" aria-label="Main navigation">
           <ul class="nav-list">
@@ -64,19 +64,10 @@
             </li>
           </ul>
         </nav>
-
-        <!-- HUD Currency & Status -->
-        <div class="hud-stat-group hidden sm:flex">
-          <div class="hud-stat-chip">
-            <span class="chip-label">GP</span>
-            <span>12,500</span>
-          </div>
-          <div class="hud-stat-chip">
-            <span class="chip-label">🪙</span>
-            <span>450</span>
-          </div>
-        </div>
       </div>
+
+      <!-- Integrated Reward System & User Control Mount -->
+      <div id="reward-inventory-mount" class="hud-reward-mount"></div>
     </header>
 
     <main class="relative z-10 py-6">

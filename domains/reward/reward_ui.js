@@ -156,9 +156,11 @@ const RewardSystemUI = (() => {
 
   function injectInventoryBar(state) {
     if (document.getElementById('reward-inventory')) return;
+    const mountTarget = document.getElementById('reward-inventory-mount');
     const bar = document.createElement('div');
     bar.id = 'reward-inventory';
     if (state.theme === 'analog') bar.classList.add('theme-analog');
+    if (mountTarget) bar.classList.add('is-integrated');
     bar.style.opacity = '0';
     let html = `
       <div class="inventory-content">
@@ -199,7 +201,11 @@ const RewardSystemUI = (() => {
     `;
     bar.innerHTML = html;
     bar.dataset.shopItemsSig = JSON.stringify(state.shop_items || []);
-    document.body.prepend(bar);
+    if (mountTarget) {
+      mountTarget.appendChild(bar);
+    } else {
+      document.body.prepend(bar);
+    }
     applyBodyTopOffset();
 
     if (!authListenerBound) {
@@ -221,6 +227,13 @@ const RewardSystemUI = (() => {
   function applyBodyTopOffset() {
     const bar = document.getElementById('reward-inventory');
     if (!bar || !document.body) return;
+
+    if (bar.classList.contains('is-integrated') || window.getComputedStyle(bar).position !== 'fixed') {
+      bar.classList.add('ready');
+      bar.style.opacity = '1';
+      document.documentElement.style.setProperty('--reward-bar-height', '0px');
+      return;
+    }
 
     const currentPaddingTop = parseFloat(window.getComputedStyle(document.body).paddingTop) || 0;
     const basePaddingTop = Number(document.body.dataset.basePaddingTop || currentPaddingTop);
@@ -943,9 +956,9 @@ const RewardSystemUI = (() => {
       document.querySelector('script[src*="/domains/reward/reward_ui.js"]') ||
       document.querySelector('script[src$="reward_ui.js"]');
     if (script && script.src) {
-      return new URL('../guardian/index.html', new URL('.', script.src)).href;
+      return new URL('./guardian/index.html', new URL('.', script.src)).href;
     }
-    return './guardian/index.html';
+    return './domains/reward/guardian/index.html';
   }
   window.checkGuardian = function checkGuardian() {
     const url = guardianPageUrl();

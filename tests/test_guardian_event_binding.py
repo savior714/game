@@ -118,7 +118,7 @@ def test_guardian_delegated_handlers_bind_once_and_dispatch_once(
     assert result["calls"]["custom"] == 1
     assert result["calls"]["growth"] == 1
     assert result["calls"]["deleteWeekly"] == [3]
-    assert result["href"] == "../../index.html"
+    assert result["href"] == "../../../index.html"
 
 
 def test_guardian_event_script_is_syntax_valid() -> None:

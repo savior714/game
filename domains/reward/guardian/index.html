@@ -81,24 +81,28 @@
   <!-- Ambient Glow Background -->
   <div class="console-bg-glow"></div>
 
-  <!-- Header -->
-  <header class="bg-[#0e1422]/90 backdrop-blur-xl border-b border-white/10 px-5 py-4 sticky top-0 z-50 shadow-2xl">
-    <div class="max-w-2xl mx-auto flex items-center justify-between gap-4">
+  <!-- Top Console HUD Navigation Bar -->
+  <div class="max-w-2xl mx-auto px-5 pt-4">
+    <header class="w-full flex items-center justify-between gap-4 px-5 py-3 rounded-full bg-[#0e1422]/85 backdrop-blur-xl border border-white/10 shadow-2xl sticky top-4 z-50">
       <div class="flex items-center gap-4">
-        <button data-action="go-home" class="px-3.5 py-2 flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-slate-200 font-bold text-xs transition-all shrink-0" aria-label="메인 홈으로 이동">
+        <a href="../../../index.html" class="flex items-center gap-3 no-underline group" aria-label="AIDEN GAME LABS 메인 홈">
+          <div class="w-2.5 h-2.5 rounded-full bg-[#d7ff00] shadow-[0_0_10px_#d7ff00]"></div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-black tracking-widest text-[#d7ff00] uppercase">AIDEN GAME LABS</span>
+              <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-white/10 text-slate-300 font-semibold">v2.0</span>
+            </div>
+            <div class="text-xs font-bold text-slate-400">보호자 관리 시스템</div>
+          </div>
+        </a>
+
+        <button data-action="go-home" class="px-3.5 py-1.5 flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-slate-200 font-bold text-xs transition-all shrink-0" aria-label="메인 홈으로 이동">
           <svg class="w-4 h-4 text-[#d7ff00]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
           <span>홈으로</span>
         </button>
-        <div>
-          <h1 class="text-xl font-black tracking-tight text-white flex items-center gap-2">
-            <span>🛡️ 보호자 관리</span>
-            <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-slate-400 font-semibold uppercase tracking-wider">Console</span>
-          </h1>
-          <p class="text-xs text-slate-400 mt-0.5">과목별 시작 난이도를 조절하세요</p>
-        </div>
       </div>
-    </div>
-  </header>
+    </header>
+  </div>
 
   <main class="max-w-2xl mx-auto px-5 py-6 relative z-10">
     

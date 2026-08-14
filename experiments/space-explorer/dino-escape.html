@@ -1,13 +1,23 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" class="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>공룡 추격 탈출 게임 | Space Explorer</title>
-  <link rel="stylesheet" href="../styles.css" />
+  <title>공룡 추격 탈출 게임 | Space Explorer | AIDEN GAME LABS</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+  
   <link rel="stylesheet" href="./space-explorer.css" />
 </head>
-<body class="se-page">
+<body class="se-page selection:bg-[#d7ff00]/30 selection:text-[#d7ff00]">
+
+  <!-- Ambient Glow Background -->
+  <div class="console-bg-glow"></div>
+
   <header class="site-header">
     <h1 class="brand">Space Explorer</h1>
     <nav aria-label="Main navigation">
@@ -24,7 +34,7 @@
 
   <main class="container dino-layout">
     <section class="card" aria-label="공룡 추격 게임 화면">
-      <h2>Dino Escape</h2>
+      <h2>🦖 Dino Escape</h2>
       <div class="hud-grid">
         <div class="hud-item">SCORE<strong id="dino-score">0</strong></div>
         <div class="hud-item">CURRENT<strong id="dino-current-weapon">STONE</strong></div>
@@ -33,7 +43,7 @@
       <div id="dino-next-progress-track" class="progress-track" aria-hidden="true">
         <div id="dino-next-progress-fill" class="progress-fill"></div>
       </div>
-      <div class="mini-note" id="dino-enemy-health-label">Dino Health 50 / 50</div>
+      <div class="mini-note" id="dino-enemy-health-label" style="margin-top: 6px;">Dino Health 50 / 50</div>
       <div id="dino-enemy-health-track" class="progress-track" aria-hidden="true">
         <div id="dino-enemy-health-fill" class="progress-fill"></div>
       </div>
@@ -46,11 +56,12 @@
         height="540"
         role="img"
         aria-label="공룡 추격 탈출 게임 캔버스"
+        style="margin-top: 12px;"
       ></canvas>
     </section>
 
     <aside class="card controls-panel" aria-label="공룡 게임 상태 및 조작 안내">
-      <h2>조작과 상태</h2>
+      <h2>🕹️ 조작과 상태</h2>
       <p id="dino-status" aria-live="polite">공룡이 따라오고 있어요. 멀리 도망치며 던져 보세요!</p>
       <button id="dino-restart-button" type="button">재시작</button>
       <p class="mini-note">WASD Move | Auto Throw | Shift Sprint</p>
@@ -66,7 +77,7 @@
     </aside>
   </main>
   <section id="dino-chase-settings" class="container chase-settings card" aria-label="공룡 추격 설정">
-    <h2>추격 난이도 설정 (외부)</h2>
+    <h2>⚙️ 추격 난이도 설정</h2>
     <div class="chase-settings-grid">
       <div class="setting-field">
         <label for="dino-enemy-base-speed-input">공룡 시작 속도</label>
@@ -82,3 +93,4 @@
   <script src="./dino-escape.js"></script>
 </body>
 </html>
+

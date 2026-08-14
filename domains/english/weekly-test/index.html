@@ -1,114 +1,140 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>주간 영단어 시험</title>
+  <title>주간 영단어 시험 | AIDEN GAME LABS</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+  
   <link rel="stylesheet" href="weekly-test.css">
 </head>
-<body>
+<body class="selection:bg-[#d7ff00]/30 selection:text-[#d7ff00]">
 
-<div class="wt-container">
-  <a href="../../../index.html" class="home-link" aria-label="메인 홈으로 이동">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-    <span>홈으로</span>
-  </a>
+  <!-- Ambient Glow Background -->
+  <div class="console-bg-glow"></div>
 
-  <header class="wt-header">
-    <h1>주간 영단어 시험</h1>
-    <p class="wt-subtitle">영어 정의를 보고 단어 전체를 직접 입력하세요</p>
-  </header>
+  <div class="wt-container">
+    <!-- Top Console HUD Navigation Bar -->
+    <header class="console-hud">
+      <div class="hud-left-section">
+        <a href="../../../index.html" class="brand-badge group" aria-label="AIDEN GAME LABS 메인 홈">
+          <div class="brand-dot"></div>
+          <div>
+            <div class="flex items-center gap-2" style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-size: 0.75rem; font-weight: 900; letter-spacing: 0.1em; color: #d7ff00; text-transform: uppercase;">AIDEN GAME LABS</span>
+              <span style="font-size: 10px; padding: 2px 6px; border-radius: 9999px; background: rgba(255,255,255,0.1); color: #cbd5e1; font-weight: 600;">v2.0</span>
+            </div>
+            <div style="font-size: 0.75rem; font-weight: 700; color: #94a3b8; margin-top: 1px;">영어 평가 시스템</div>
+          </div>
+        </a>
 
-  <!-- ── 시험 시작 화면 ── -->
-  <div id="start-screen" class="wt-card">
-    <div class="wt-start-info">
-      <p><strong id="test-title">8월 14일 목요일 주간 영단어</strong></p>
-      <p style="margin-top: 8px;"><span id="test-total">10개 단어</span></p>
-      <p style="margin-top: 12px;">영어 정의를 보고 단어의 철자를 직접 입력합니다.<br>
-      시험이 끝날 때까지 정답을 알려주지 않습니다.<br>
-      대소문자는 구분하지 않습니다.</p>
+        <a href="../../../index.html" class="home-link" aria-label="메인 홈으로 이동">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          <span>홈으로</span>
+        </a>
+      </div>
+    </header>
+
+    <header class="wt-header">
+      <h1>📝 주간 영단어 시험</h1>
+      <p class="wt-subtitle">영어 정의를 보고 단어 전체를 직접 입력하세요</p>
+    </header>
+
+    <!-- ── 시험 시작 화면 ── -->
+    <div id="start-screen" class="wt-card">
+      <div class="wt-start-info">
+        <p><strong id="test-title">8월 14일 목요일 주간 영단어</strong></p>
+        <p style="margin-top: 8px;"><span id="test-total">10개 단어</span></p>
+        <p style="margin-top: 12px;">영어 정의를 보고 단어의 철자를 직접 입력합니다.<br>
+        시험이 끝날 때까지 정답을 알려주지 않습니다.<br>
+        대소문자는 구분하지 않습니다.</p>
+      </div>
+
+      <div id="resume-banner" style="display: none;">
+        진행 중인 시험이 있습니다.
+      </div>
+
+      <div class="wt-btn-row">
+        <button id="start-btn" class="wt-btn wt-btn-primary">시험 시작</button>
+        <button id="continue-btn" class="wt-btn wt-btn-secondary" style="display: none;">이어서 하기</button>
+      </div>
     </div>
 
-    <div id="resume-banner" style="display: none;">
-      진행 중인 시험이 있습니다.
+    <!-- ── 시험 화면 ── -->
+    <div id="test-screen" class="wt-card" style="display: none;">
+      <div class="wt-q-header">
+        <span id="q-number" class="wt-q-number">1 / 10</span>
+      </div>
+
+      <div class="wt-progress-wrap">
+        <div id="q-progress-bar" class="wt-progress-bar"></div>
+      </div>
+
+      <div class="wt-prompt-box">
+        <p id="q-prompt" class="wt-prompt">an empty area that is available to be used</p>
+      </div>
+
+      <div class="wt-input-wrap">
+        <input
+          type="text"
+          id="answer-input"
+          class="wt-input"
+          placeholder="영어 단어 입력"
+          autocomplete="off"
+          autocapitalize="none"
+          autocorrect="off"
+          spellcheck="false"
+          writingsuggestions="false"
+          enterkeyhint="next"
+          aria-label="영어 답 입력"
+        >
+        <p id="empty-msg" class="wt-empty-msg">단어를 입력해 주세요</p>
+      </div>
+
+      <p class="wt-hint">Enter를 누르면 다음 문제로 이동합니다</p>
+
+      <div class="wt-nav-row">
+        <button id="prev-btn" class="wt-btn wt-btn-secondary">이전</button>
+      </div>
     </div>
 
-    <div class="wt-btn-row">
-      <button id="start-btn" class="wt-btn wt-btn-primary">시험 시작</button>
-      <button id="continue-btn" class="wt-btn wt-btn-secondary" style="display: none;">이어서 하기</button>
+    <!-- ── 답안 확인 화면 ── -->
+    <div id="review-screen" class="wt-card" style="display: none;">
+      <h2 class="wt-review-title">답안을 확인하세요</h2>
+      <p class="wt-review-sub">번호를 누르면 다시 수정할 수 있습니다</p>
+
+      <div id="review-list" class="wt-review-list"></div>
+
+      <div id="unanswered-warning"></div>
+
+      <div class="wt-btn-row">
+        <button id="submit-btn" class="wt-btn wt-btn-primary">최종 제출</button>
+      </div>
+    </div>
+
+    <!-- ── 결과 화면 ── -->
+    <div id="result-screen" class="wt-card" style="display: none;">
+      <div class="wt-result-score" id="result-score">8 / 10</div>
+      <div class="wt-result-pct" id="result-pct">80%</div>
+      <div class="wt-result-time" id="result-time">소요 시간: 2분 30초</div>
+
+      <div id="result-detail" class="wt-result-detail"></div>
+
+      <div class="wt-btn-row">
+        <button id="retry-wrong-btn" class="wt-btn wt-btn-danger">틀린 단어 다시 쓰기</button>
+        <button id="result-restart-btn" class="wt-btn wt-btn-secondary">시험 다시 보기</button>
+      </div>
     </div>
   </div>
 
-  <!-- ── 시험 화면 ── -->
-  <div id="test-screen" class="wt-card" style="display: none;">
-    <div class="wt-q-header">
-      <span id="q-number" class="wt-q-number">1 / 10</span>
-    </div>
-
-    <div class="wt-progress-wrap">
-      <div id="q-progress-bar" class="wt-progress-bar"></div>
-    </div>
-
-    <div class="wt-prompt-box">
-      <p id="q-prompt" class="wt-prompt">an empty area that is available to be used</p>
-    </div>
-
-    <div class="wt-input-wrap">
-      <input
-        type="text"
-        id="answer-input"
-        class="wt-input"
-        placeholder="영어 단어 입력"
-        autocomplete="off"
-        autocapitalize="none"
-        autocorrect="off"
-        spellcheck="false"
-        writingsuggestions="false"
-        enterkeyhint="next"
-        aria-label="영어 답 입력"
-      >
-      <p id="empty-msg" class="wt-empty-msg">단어를 입력해 주세요</p>
-    </div>
-
-    <p class="wt-hint">Enter를 누르면 다음 문제로 이동합니다</p>
-
-    <div class="wt-nav-row">
-      <button id="prev-btn" class="wt-btn wt-btn-secondary">이전</button>
-    </div>
-  </div>
-
-  <!-- ── 답안 확인 화면 ── -->
-  <div id="review-screen" class="wt-card" style="display: none;">
-    <h2 class="wt-review-title">답안을 확인하세요</h2>
-    <p class="wt-review-sub">번호를 누르면 다시 수정할 수 있습니다</p>
-
-    <div id="review-list" class="wt-review-list"></div>
-
-    <div id="unanswered-warning"></div>
-
-    <div class="wt-btn-row">
-      <button id="submit-btn" class="wt-btn wt-btn-primary">최종 제출</button>
-    </div>
-  </div>
-
-  <!-- ── 결과 화면 ── -->
-  <div id="result-screen" class="wt-card" style="display: none;">
-    <div class="wt-result-score" id="result-score">8 / 10</div>
-    <div class="wt-result-pct" id="result-pct">80%</div>
-    <div class="wt-result-time" id="result-time">소요 시간: 2분 30초</div>
-
-    <div id="result-detail" class="wt-result-detail"></div>
-
-    <div class="wt-btn-row">
-      <button id="retry-wrong-btn" class="wt-btn wt-btn-danger">틀린 단어 다시 쓰기</button>
-      <button id="result-restart-btn" class="wt-btn wt-btn-secondary">시험 다시 보기</button>
-    </div>
-  </div>
-</div>
-
-<script src="../weekly-word-definitions.js"></script>
-<script src="weekly-test-engine.js"></script>
-<script src="weekly-test-ui.js"></script>
+  <script src="../weekly-word-definitions.js"></script>
+  <script src="weekly-test-engine.js"></script>
+  <script src="weekly-test-ui.js"></script>
 </body>
 </html>
+

@@ -42,10 +42,10 @@ const LABELS = ['입문', '기초', '중급', '숙련', '마스터', '초월', '
 const COLORS = ['text-green-500 bg-green-100', 'text-emerald-500 bg-emerald-100', 'text-blue-500 bg-blue-100', 'text-indigo-500 bg-indigo-100', 'text-orange-500 bg-orange-100', 'text-purple-500 bg-purple-100', 'text-red-500 bg-red-100'];
 
 const STORAGE_KEYS = {
-  math: 'mathGameStats',
-  english: 'englishGameStats',
-  korean: 'koreanGameStats',
-  science: 'scienceGameStats'
+  math: 'aiden_math_stats',
+  english: 'aiden_english_stats',
+  korean: 'aiden_korean_stats',
+  science: 'aiden_science_stats'
 };
 
 let currentSubject = 'math';

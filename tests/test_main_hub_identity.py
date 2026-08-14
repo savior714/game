@@ -20,12 +20,15 @@ def test_templates_index_is_aidengame_hub_page() -> None:
     assert "experiments/space-explorer/index.html" in html
     assert 'id="main-top-nav"' in html
 
-    # Console UI Specific Structure Verification
+    # Modern Hub UI Structure & Functional Verification
     assert "DREAM TEAM LEARNING ARENA" in html
     assert "console-hud" in html
     assert "dream-grid" in html
     assert "console-footer" in html
-    assert "CORE SUBJECT QUICK SLOTS" in html
+    assert "CORE QUIZ LABS" in html
+    assert "SELECT" not in html
+    assert "󰁌" not in html
+    assert "fps-counter" not in html
 
     assert "Ocean Rescue" in html
     assert "잠수정을 타고 바다 생물을 구조해요" in html

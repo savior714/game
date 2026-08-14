@@ -1,13 +1,23 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" class="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>물감 색 섞기 실험 | Space Explorer</title>
-  <link rel="stylesheet" href="../styles.css" />
+  <title>물감 색 섞기 실험 | Space Explorer | AIDEN GAME LABS</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+  
   <link rel="stylesheet" href="./space-explorer.css" />
 </head>
-<body class="se-page">
+<body class="se-page selection:bg-[#d7ff00]/30 selection:text-[#d7ff00]">
+
+  <!-- Ambient Glow Background -->
+  <div class="console-bg-glow"></div>
+
   <header class="site-header">
     <h1 class="brand">Space Explorer</h1>
     <nav aria-label="Main navigation">
@@ -25,7 +35,7 @@
 
   <main class="container mix-layout">
     <section class="card" aria-label="색상 선택 영역">
-      <h2>물감 선택</h2>
+      <h2>🎨 물감 선택</h2>
       <p class="gesture-hint">원하는 색을 누를수록 한 방울씩 더 들어가며 색이 점점 짙어져요.</p>
       <div class="palette" role="group" aria-label="색상 팔레트">
         <button type="button" class="color-chip" data-color="yellow">노랑</button>
@@ -45,7 +55,7 @@
     </section>
 
     <aside class="card controls-panel" aria-label="혼합 결과 영역">
-      <h2>혼합 결과</h2>
+      <h2>🧪 혼합 결과</h2>
       <div class="result-swatch-wrap">
         <div id="paint-mixing-three-layer" class="three-layer" aria-hidden="true"></div>
         <div id="paint-result-swatch" class="result-swatch" role="img" aria-label="섞은 물감 결과 색"></div>
@@ -62,3 +72,4 @@
   <script type="module" src="./paint-mixing.js"></script>
 </body>
 </html>
+

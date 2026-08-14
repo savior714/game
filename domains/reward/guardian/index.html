@@ -1,13 +1,19 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>보호자 설정</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>보호자 관리 | AIDEN GAME LABS</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { font-family: 'Pretendard', -apple-system, sans-serif; word-break: keep-all; }
+    body { font-family: 'Outfit', 'Pretendard', -apple-system, sans-serif; word-break: keep-all; }
     
     /* Range Slider Styling */
     input[type=range] {
@@ -17,60 +23,84 @@
     }
     input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none;
-      height: 24px;
-      width: 24px;
+      height: 26px;
+      width: 26px;
       border-radius: 50%;
-      background: #ffffff;
-      border: 3px solid #ff7b00;
+      background: #d7ff00;
+      border: 3px solid #07090e;
       cursor: pointer;
       margin-top: -10px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-      transition: transform 0.1s;
+      box-shadow: 0 0 15px rgba(215, 255, 0, 0.6);
+      transition: transform 0.15s, box-shadow 0.15s;
     }
     input[type=range]::-webkit-slider-thumb:active {
-      transform: scale(1.1);
+      transform: scale(1.15);
+      box-shadow: 0 0 20px rgba(215, 255, 0, 0.9);
     }
     input[type=range]::-webkit-slider-runnable-track {
       width: 100%;
       height: 6px;
       cursor: pointer;
-      background: #e5e7eb;
+      background: rgba(255, 255, 255, 0.12);
       border-radius: 9999px;
     }
     
     .active-tab {
-      background-color: #2563eb;
-      color: white;
-      font-weight: 700;
-      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4);
+      background-color: #d7ff00;
+      color: #07090e;
+      font-weight: 900;
+      box-shadow: 0 0 15px rgba(215, 255, 0, 0.4);
     }
     .inactive-tab {
-      background-color: #f3f4f6;
-      color: #4b5563;
-      font-weight: 500;
+      background-color: rgba(255, 255, 255, 0.05);
+      color: #94a3b8;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-weight: 600;
     }
     .inactive-tab:hover {
-      background-color: #e5e7eb;
+      background-color: rgba(255, 255, 255, 0.12);
+      color: #FFFFFF;
+    }
+
+    /* Ambient Glow Mesh */
+    .console-bg-glow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background: 
+        radial-gradient(circle at 50% 0%, rgba(215, 255, 0, 0.08), transparent 40%),
+        radial-gradient(circle at 10% 30%, rgba(6, 182, 212, 0.06), transparent 45%),
+        radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.06), transparent 50%),
+        radial-gradient(circle at 50% 100%, rgba(7, 9, 14, 0.95), #07090e);
     }
   </style>
 </head>
-<body class="bg-[#F8F6F3] min-h-screen text-gray-800 pb-16">
+<body class="bg-[#07090e] min-h-screen text-slate-100 pb-16 relative selection:bg-[#d7ff00]/30 selection:text-[#d7ff00]">
+
+  <!-- Ambient Glow Background -->
+  <div class="console-bg-glow"></div>
 
   <!-- Header -->
-  <header class="bg-white border-b border-gray-200 px-5 py-4 sticky top-0 z-50">
-    <div class="max-w-2xl mx-auto flex items-center gap-4">
-      <button data-action="go-home" class="px-3 py-1.5 flex items-center gap-1.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs transition-colors shrink-0" aria-label="메인 홈으로 이동">
-        <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-        <span>홈으로</span>
-      </button>
-      <div>
-        <h1 class="text-xl font-bold tracking-tight text-gray-900">보호자 관리</h1>
-        <p class="text-xs text-gray-500 mt-0.5">과목별 시작 난이도를 조절하세요</p>
+  <header class="bg-[#0e1422]/90 backdrop-blur-xl border-b border-white/10 px-5 py-4 sticky top-0 z-50 shadow-2xl">
+    <div class="max-w-2xl mx-auto flex items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <button data-action="go-home" class="px-3.5 py-2 flex items-center gap-1.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-slate-200 font-bold text-xs transition-all shrink-0" aria-label="메인 홈으로 이동">
+          <svg class="w-4 h-4 text-[#d7ff00]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          <span>홈으로</span>
+        </button>
+        <div>
+          <h1 class="text-xl font-black tracking-tight text-white flex items-center gap-2">
+            <span>🛡️ 보호자 관리</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-slate-400 font-semibold uppercase tracking-wider">Console</span>
+          </h1>
+          <p class="text-xs text-slate-400 mt-0.5">과목별 시작 난이도를 조절하세요</p>
+        </div>
       </div>
     </div>
   </header>
 
-  <main class="max-w-2xl mx-auto px-5 py-6">
+  <main class="max-w-2xl mx-auto px-5 py-6 relative z-10">
     
     <!-- Subject Tabs -->
     <div class="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
@@ -82,20 +112,20 @@
     </div>
 
     <!-- Difficulty Control Panel -->
-    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
+    <div class="bg-[#0e1422]/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10 mb-6">
       <div class="flex items-end justify-between mb-4">
         <div>
-          <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
-            <span id="current-label" class="bg-orange-100 text-orange-600 px-2.5 py-0.5 rounded-md text-sm">기초</span>
-            <span id="current-age" class="text-gray-500 text-sm font-medium">7세 (예비 초)</span>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <span id="current-label" class="bg-[#d7ff00]/15 text-[#d7ff00] border border-[#d7ff00]/30 px-2.5 py-0.5 rounded-md text-sm font-black">기초</span>
+            <span id="current-age" class="text-slate-400 text-sm font-medium">7세 (예비 초)</span>
           </h2>
         </div>
-        <div class="text-3xl font-black text-gray-200" id="level-display">Lv. 1</div>
+        <div class="text-3xl font-black text-[#d7ff00]/40 font-mono" id="level-display">Lv. 1</div>
       </div>
 
       <div class="relative py-4">
         <input type="range" id="level-slider" min="0" max="6" value="1" step="1" data-action="slider-change">
-        <div class="flex justify-between text-[10px] sm:text-xs text-gray-400 font-medium px-1 mt-3">
+        <div class="flex justify-between text-[10px] sm:text-xs text-slate-400 font-medium px-1 mt-3">
           <span>5~6세</span>
           <span>7세</span>
           <span>초1</span>
@@ -107,7 +137,7 @@
       </div>
 
       <div class="mt-8 flex justify-end">
-        <button id="save-btn" data-action="save-settings" class="bg-gray-900 text-white px-6 py-3 rounded-xl font-bold text-sm w-full sm:w-auto hover:bg-gray-800 transition-colors shadow-md flex items-center justify-center gap-2">
+        <button id="save-btn" data-action="save-settings" class="bg-[#d7ff00] text-black px-6 py-3 rounded-xl font-black text-sm w-full sm:w-auto hover:bg-[#c7ee00] transition-all shadow-[0_0_20px_rgba(215,255,0,0.4)] flex items-center justify-center gap-2">
           이 난이도로 적용하기
         </button>
       </div>
@@ -115,9 +145,9 @@
 
     <!-- Preview Section -->
     <div>
-      <h3 class="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-        이런 문제들이 출제됩니다
+      <h3 class="text-sm font-bold text-white mb-3 flex items-center gap-2">
+        <svg class="w-4 h-4 text-[#d7ff00]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+        <span>이런 문제들이 출제됩니다</span>
       </h3>
       
       <div id="preview-container" class="space-y-3 mb-8">
@@ -126,50 +156,50 @@
     </div>
 
     <!-- Weekly Test Words Section (English Only) -->
-    <div id="weekly-words-section" class="border-t border-gray-200 pt-8 mb-8" style="display: none;">
-      <h3 class="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+    <div id="weekly-words-section" class="border-t border-white/10 pt-8 mb-8" style="display: none;">
+      <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2">
         <span>📝</span> 영어 주간 시험 단어 (집중 학습)
       </h3>
-      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <p class="text-xs text-gray-500 mb-4">입력한 단어가 게임 중 <strong class="text-blue-600 font-bold">60% 이상의 확률</strong>로 자주 등장합니다. (영유/학원 주간 숙제용)</p>
+      <div class="bg-[#0e1422]/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10">
+        <p class="text-xs text-slate-400 mb-4">입력한 단어가 게임 중 <strong class="text-[#38bdf8] font-bold">60% 이상의 확률</strong>로 자주 등장합니다. (영유/학원 주간 숙제용)</p>
         
-        <div class="flex flex-col gap-3 bg-blue-50 p-4 rounded-xl mb-6 border border-blue-100">
+        <div class="flex flex-col gap-3 bg-white/5 p-4 rounded-xl mb-6 border border-white/10">
           <div class="flex gap-2">
-            <input type="text" id="ww-en" placeholder="영단어만 입력하세요 (예: apple)" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-            <button data-action="add-weekly-word" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-blue-700 transition shrink-0">단어 추가</button>
+            <input type="text" id="ww-en" placeholder="영단어만 입력하세요 (예: apple)" class="flex-1 px-3.5 py-2.5 bg-black/40 border border-white/15 rounded-lg text-sm text-white focus:outline-none focus:border-[#38bdf8]">
+            <button data-action="add-weekly-word" class="bg-[#38bdf8] text-black px-6 py-2.5 rounded-lg font-black text-sm hover:bg-[#0ea5e9] transition-all shadow-[0_0_15px_rgba(56,189,248,0.4)] shrink-0">단어 추가</button>
           </div>
-          <p class="text-[10px] text-gray-500">영단어만 입력하면 게임 단어 사전에서 뜻과 이모지를 자동으로 가져옵니다.</p>
+          <p class="text-[10px] text-slate-400">영단어만 입력하면 게임 단어 사전에서 뜻과 이모지를 자동으로 가져옵니다.</p>
         </div>
 
         <div id="ww-list" class="space-y-2">
           <!-- Weekly words will be rendered here -->
-          <div class="text-center py-4 text-xs text-gray-400 italic">추가된 단어가 없습니다.</div>
+          <div class="text-center py-4 text-xs text-slate-500 italic">추가된 단어가 없습니다.</div>
         </div>
       </div>
     </div>
 
     <!-- Reward Customization Panel -->
-    <div class="border-t border-gray-200 pt-8" id="reward-custom-section">
-      <h3 class="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+    <div class="border-t border-white/10 pt-8" id="reward-custom-section">
+      <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2">
         <span>💎</span> 보상 상점 관리
       </h3>
-      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
-        <p class="text-xs text-gray-500 mb-4">유튜브·간식·마블은 기본 예시입니다. 이름·가격·아이콘은 각 행에서 <strong class="text-gray-700">편집</strong>할 수 있고, 완전히 새 보상은 아래 양식에서 <strong class="text-gray-700">추가하기</strong>로 넣을 수 있습니다.</p>
+      <div class="bg-[#0e1422]/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10 mb-6">
+        <p class="text-xs text-slate-400 mb-4">유튜브·간식·마블은 기본 예시입니다. 이름·가격·아이콘은 각 행에서 <strong class="text-slate-200">편집</strong>할 수 있고, 완전히 새 보상은 아래 양식에서 <strong class="text-slate-200">추가하기</strong>로 넣을 수 있습니다.</p>
         
-        <div class="flex flex-col gap-3 bg-gray-50 p-4 rounded-xl mb-6">
+        <div class="flex flex-col gap-3 bg-white/5 p-4 rounded-xl mb-6 border border-white/10">
           <div>
             <div class="flex gap-2">
-              <input type="text" id="cr-icon" placeholder="아이콘(이모지 등)" class="w-20 px-3 py-2 border border-gray-200 rounded-lg text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500" value="🎁" aria-describedby="cr-icon-hint">
-              <input type="text" id="cr-label" placeholder="보상 이름 (예: 게임 30분)" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <input type="text" id="cr-icon" placeholder="아이콘" class="w-20 px-3 py-2 bg-black/40 border border-white/15 rounded-lg text-center text-lg text-white focus:outline-none focus:border-[#d7ff00]" value="🎁" aria-describedby="cr-icon-hint">
+              <input type="text" id="cr-label" placeholder="보상 이름 (예: 게임 30분)" class="flex-1 px-3 py-2 bg-black/40 border border-white/15 rounded-lg text-sm text-white focus:outline-none focus:border-[#d7ff00]">
             </div>
-            <p id="cr-icon-hint" class="text-xs text-gray-500 mt-1.5">Windows: <kbd class="px-1 py-0.5 rounded bg-gray-200 text-gray-800 font-sans text-[0.7rem]">Win</kbd> + <kbd class="px-1 py-0.5 rounded bg-gray-200 text-gray-800 font-sans text-[0.7rem]">.</kbd> 를 누르면 이모지 패널이 열립니다.</p>
+            <p id="cr-icon-hint" class="text-xs text-slate-400 mt-1.5">Windows: <kbd class="px-1.5 py-0.5 rounded bg-white/10 text-white font-sans text-[0.7rem]">Win</kbd> + <kbd class="px-1.5 py-0.5 rounded bg-white/10 text-white font-sans text-[0.7rem]">.</kbd> 를 누르면 이모지 패널이 열립니다.</p>
           </div>
-          <input type="text" id="cr-desc" placeholder="상세 설명 (선택)" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <input type="text" id="cr-desc" placeholder="상세 설명 (선택)" class="w-full px-3 py-2 bg-black/40 border border-white/15 rounded-lg text-sm text-white focus:outline-none focus:border-[#d7ff00]">
           <div class="flex gap-2 items-center justify-between">
-            <div class="flex items-center gap-2 text-sm text-gray-700">
-              <span class="font-bold">가격:</span> 💎 <input type="number" id="cr-price" value="1" min="1" class="w-16 px-2 py-1 border border-gray-200 rounded-md text-center focus:outline-none focus:ring-2 focus:ring-blue-500"> 개
+            <div class="flex items-center gap-2 text-sm text-slate-300">
+              <span class="font-bold">가격:</span> 💎 <input type="number" id="cr-price" value="1" min="1" class="w-16 px-2 py-1 bg-black/40 border border-white/15 rounded-md text-center text-white focus:outline-none focus:border-[#d7ff00]"> 개
             </div>
-            <button data-action="add-custom-reward" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-blue-700 transition">추가하기</button>
+            <button data-action="add-custom-reward" class="bg-[#d7ff00] text-black px-4 py-2 rounded-lg font-black text-sm hover:bg-[#c7ee00] transition-all shadow-[0_0_15px_rgba(215,255,0,0.4)]">추가하기</button>
           </div>
         </div>
 
@@ -181,18 +211,18 @@
 
     <!-- Weekly Growth Summary Panel (hidden by default) -->
     <div id="growth-panel" class="hidden">
-      <h3 class="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+      <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2">
         <span>📊</span> 주간 성장 요약
       </h3>
-      <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
-        <div id="growth-loading" class="text-center py-8 text-sm text-gray-400">
+      <div class="bg-[#0e1422]/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10 mb-6">
+        <div id="growth-loading" class="text-center py-8 text-sm text-slate-400">
           로딩 중...
         </div>
         <div id="growth-content" class="hidden">
           <div id="growth-summary-cards" class="space-y-3 mb-6">
             <!-- Subject growth cards rendered here -->
           </div>
-          <div id="growth-weekly-total" class="bg-blue-50 rounded-xl p-4 mb-4">
+          <div id="growth-weekly-total" class="bg-white/5 border border-white/10 rounded-xl p-4 mb-4">
             <!-- Weekly totals -->
           </div>
           <div id="growth-insights" class="space-y-2">
@@ -214,3 +244,4 @@
   <script src="guardian-events.js"></script>
 </body>
 </html>
+

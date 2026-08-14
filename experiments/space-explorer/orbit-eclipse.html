@@ -1,13 +1,23 @@
 <!doctype html>
-<html lang="ko">
+<html lang="ko" class="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>공전·자전과 일식/월식 | Space Explorer</title>
-  <link rel="stylesheet" href="../styles.css" />
+  <title>공전·자전과 일식/월식 | Space Explorer | AIDEN GAME LABS</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+  
   <link rel="stylesheet" href="./space-explorer.css" />
 </head>
-<body class="se-page">
+<body class="se-page selection:bg-[#d7ff00]/30 selection:text-[#d7ff00]">
+
+  <!-- Ambient Glow Background -->
+  <div class="console-bg-glow"></div>
+
   <header class="site-header">
     <h1 class="brand">Space Explorer</h1>
     <nav aria-label="Main navigation">
@@ -24,7 +34,7 @@
 
   <main class="container lesson-layout">
     <section class="card" aria-label="공전과 일식 월식 장면">
-      <h2>태양-지구-달 움직임</h2>
+      <h2>🌍 태양-지구-달 움직임</h2>
       <div class="lesson-scene-wrap">
         <div id="orbit-eclipse-three-layer" class="three-layer" aria-hidden="true"></div>
         <canvas
@@ -72,3 +82,4 @@
   <script type="module" src="./orbit-eclipse.js"></script>
 </body>
 </html>
+

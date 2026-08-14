@@ -36,18 +36,18 @@
     <!-- Top Console HUD Navigation Bar (Unified Header) -->
     <header class="console-hud gsap-stagger-item">
       <div class="hud-left-section">
-        <div class="brand-badge">
+        <a href="./index.html" class="brand-badge group focus:outline-none" aria-label="AIDEN GAME LABS 메인 홈">
           <div class="brand-dot"></div>
           <div>
             <div class="flex items-center gap-2">
-              <span class="text-xs font-black tracking-widest text-[#d7ff00] uppercase">AIDEN GAME LABS</span>
+              <span class="text-xs font-black tracking-widest text-[#d7ff00] uppercase group-hover:text-white transition-colors">AIDEN GAME LABS</span>
               <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-slate-300 font-semibold">v2.0</span>
             </div>
             <h1 class="text-sm font-extrabold text-white tracking-tight leading-none mt-0.5">
               학습 게임 놀이터
             </h1>
           </div>
-        </div>
+        </a>
 
         <!-- Main Top Navigation -->
         <nav id="main-top-nav" aria-label="Main navigation">
@@ -86,12 +86,11 @@
         </p>
       </header>
 
-      <!-- 4-Grid Big Console Cards Section (eFootball / Dream Team Style) -->
+      <!-- 4-Grid Big Console Cards Section -->
       <div class="dream-grid">
 
         <!-- Card 1: EVENTS / Ocean Rescue (Left Big Card) -->
         <a href="./ocean-rescue/index.html" class="console-card group gsap-stagger-item" aria-labelledby="ocean-rescue-card-title">
-          <div class="card-top-tag">NEW</div>
           <div class="card-watermark">OCEAN</div>
           
           <div class="relative z-10">
@@ -107,13 +106,12 @@
 
           <div class="card-action-bar">
             <span class="text-xs font-black tracking-wider text-cyan-400 uppercase">탐험 미션 시작</span>
-            <span class="card-action-btn">→</span>
+            <span class="card-action-btn" aria-hidden="true">→</span>
           </div>
         </a>
 
         <!-- Card 2: FEATURED / Core Subjects (Center Neon Volt Highlight Card) -->
         <div class="console-card console-card-featured group gsap-stagger-item">
-          <div class="card-top-tag">4</div>
           <div class="card-watermark">SUBJECTS</div>
 
           <div class="relative z-10">
@@ -127,64 +125,58 @@
             </p>
 
             <div class="core-subject-grid">
-              <a href="./domains/math/index.html" class="core-subject-btn group/btn">
+              <a href="./domains/math/index.html" class="core-subject-btn group/btn" aria-label="수학 놀이 시작">
                 <div class="flex items-center">
-                  <span class="btn-emoji">🔢</span>
+                  <span class="btn-emoji" aria-hidden="true">🔢</span>
                   <div class="flex flex-col text-left">
                     <span class="leading-tight">수학 놀이</span>
                     <span class="text-[11px] font-extrabold opacity-70 group-hover/btn:opacity-90">수리와 계산</span>
                   </div>
                 </div>
-                <span class="btn-arrow">→</span>
+                <span class="btn-arrow" aria-hidden="true">→</span>
               </a>
-              <a href="./domains/english/index.html" class="core-subject-btn group/btn">
+              <a href="./domains/english/index.html" class="core-subject-btn group/btn" aria-label="영어 놀이 시작">
                 <div class="flex items-center">
-                  <span class="btn-emoji">📚</span>
+                  <span class="btn-emoji" aria-hidden="true">📚</span>
                   <div class="flex flex-col text-left">
                     <span class="leading-tight">영어 놀이</span>
                     <span class="text-[11px] font-extrabold opacity-70 group-hover/btn:opacity-90">알파벳과 단어</span>
                   </div>
                 </div>
-                <span class="btn-arrow">→</span>
+                <span class="btn-arrow" aria-hidden="true">→</span>
               </a>
-              <a href="./domains/korean/index.html" class="core-subject-btn group/btn">
+              <a href="./domains/korean/index.html" class="core-subject-btn group/btn" aria-label="국어 놀이 시작">
                 <div class="flex items-center">
-                  <span class="btn-emoji">📖</span>
+                  <span class="btn-emoji" aria-hidden="true">📖</span>
                   <div class="flex flex-col text-left">
                     <span class="leading-tight">국어 놀이</span>
                     <span class="text-[11px] font-extrabold opacity-70 group-hover/btn:opacity-90">어휘와 맞춤법</span>
                   </div>
                 </div>
-                <span class="btn-arrow">→</span>
+                <span class="btn-arrow" aria-hidden="true">→</span>
               </a>
-              <a href="./domains/science/index.html" class="core-subject-btn group/btn">
+              <a href="./domains/science/index.html" class="core-subject-btn group/btn" aria-label="과학 놀이 시작">
                 <div class="flex items-center">
-                  <span class="btn-emoji">🔬</span>
+                  <span class="btn-emoji" aria-hidden="true">🔬</span>
                   <div class="flex flex-col text-left">
                     <span class="leading-tight">과학 놀이</span>
                     <span class="text-[11px] font-extrabold opacity-70 group-hover/btn:opacity-90">자연과 원리</span>
                   </div>
                 </div>
-                <span class="btn-arrow">→</span>
+                <span class="btn-arrow" aria-hidden="true">→</span>
               </a>
             </div>
-          </div>
-
-          <div class="card-action-bar">
-            <span class="text-xs font-black tracking-wider text-black uppercase">기초 과목 학습하기</span>
-            <span class="card-action-btn">★</span>
           </div>
         </div>
 
         <!-- Card 3: FRIENDS MATCH / Space Explorer (Top Right Card) -->
-        <a href="./experiments/space-explorer/index.html" class="console-card group gsap-stagger-item">
-          <div class="card-top-tag">LAB</div>
+        <a href="./experiments/space-explorer/index.html" class="console-card group gsap-stagger-item" aria-labelledby="space-explorer-card-title">
           <div class="card-watermark">SPACE</div>
 
           <div class="relative z-10">
             <div class="card-category text-indigo-400">INTERACTIVE SIMULATION</div>
             <div class="text-4xl mb-3 select-none transform group-hover:scale-110 transition-transform duration-300">🪐</div>
-            <h2 class="card-title text-indigo-100">
+            <h2 id="space-explorer-card-title" class="card-title text-indigo-100">
               SPACE EXPLORER
             </h2>
             <p class="card-desc">
@@ -194,13 +186,12 @@
 
           <div class="card-action-bar">
             <span class="text-xs font-black tracking-wider text-indigo-400 uppercase">시뮬레이션 접속</span>
-            <span class="card-action-btn">→</span>
+            <span class="card-action-btn" aria-hidden="true">→</span>
           </div>
         </a>
 
         <!-- Card 4: QUICK MATCH / Mini Games & Labs (Bottom Right Card) -->
         <div class="console-card group gsap-stagger-item">
-          <div class="card-top-tag">PLAY</div>
           <div class="card-watermark">GAMES</div>
 
           <div class="relative z-10">
@@ -210,125 +201,44 @@
               QUICK LABS
             </h2>
             <p class="card-desc">
-              공전·자전과 일식/월식, 물감 색 섞기, 공룡 추격 탈출 게임을 플레이하세요. 태양-지구-달 움직임을 눈으로 보는 신기한 실험실입니다.
+              태양-지구-달 움직임을 눈으로 보는 신기한 실험, 물감 색 조합, 공룡 탈출 게임을 직접 플레이하세요.
             </p>
 
-            <div class="flex items-center gap-2 mt-2">
-              <a href="./experiments/space-explorer/orbit-eclipse.html" class="px-2.5 py-1 rounded-lg bg-sky-500/10 border border-sky-500/30 text-sky-300 text-xs font-bold hover:bg-sky-500/20">🌍 공전·자전과 일식/월식</a>
-              <a href="./experiments/space-explorer/paint-mixing.html" class="px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-bold hover:bg-emerald-500/20">🎨 물감 색 섞기 실험</a>
-              <a href="./experiments/space-explorer/dino-escape.html" class="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-bold hover:bg-amber-500/20">🦖 공룡 추격 탈출 게임</a>
+            <div class="quick-labs-list">
+              <a href="./experiments/space-explorer/orbit-eclipse.html" class="quick-lab-item group/lab">
+                <span class="quick-lab-name">🌍 공전·자전과 일식/월식</span>
+                <span class="quick-lab-arrow" aria-hidden="true">→</span>
+              </a>
+              <a href="./experiments/space-explorer/paint-mixing.html" class="quick-lab-item group/lab">
+                <span class="quick-lab-name">🎨 물감 색 섞기 실험</span>
+                <span class="quick-lab-arrow" aria-hidden="true">→</span>
+              </a>
+              <a href="./experiments/space-explorer/dino-escape.html" class="quick-lab-item group/lab">
+                <span class="quick-lab-name">🦖 공룡 추격 탈출 게임</span>
+                <span class="quick-lab-arrow" aria-hidden="true">→</span>
+              </a>
             </div>
-          </div>
-
-          <div class="card-action-bar">
-            <span class="text-xs font-black tracking-wider text-amber-400 uppercase">빠른 플레이</span>
-            <span class="card-action-btn">▶</span>
           </div>
         </div>
 
       </div>
 
-      <!-- 4-Subject Quick Dock Slots -->
-      <section class="subject-dock gsap-stagger-item">
-        <div class="dock-header">
-          <div class="dock-title">
-            <span class="w-2 h-2 rounded-full bg-[#d7ff00]"></span>
-            <span>CORE SUBJECT QUICK SLOTS</span>
-          </div>
-          <span class="text-xs text-slate-400 font-mono">SELECT TO ENTER</span>
-        </div>
-
-        <div class="dock-grid">
-          <!-- Math -->
-          <a href="./domains/math/index.html" class="dock-card dock-card-math group">
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-orange-500/20 text-orange-300 uppercase">MATHEMATICS</span>
-                <span class="text-lg">🔢</span>
-              </div>
-              <div class="text-base font-black text-white group-hover:text-orange-300 transition-colors">수학 놀이</div>
-              <div class="text-xs text-slate-400 mt-1">기초 연산 & 스피드 퀴즈</div>
-            </div>
-            <div class="mt-4 pt-2 border-t border-white/5 flex items-center justify-between text-xs font-bold text-orange-400">
-              <span>수학 시작</span>
-              <span>→</span>
-            </div>
-          </a>
-
-          <!-- English -->
-          <a href="./domains/english/index.html" class="dock-card dock-card-english group">
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 uppercase">ENGLISH</span>
-                <span class="text-lg">📚</span>
-              </div>
-              <div class="text-base font-black text-white group-hover:text-blue-300 transition-colors">영어 놀이</div>
-              <div class="text-xs text-slate-400 mt-1">필수 영단어 & 실생활 표현</div>
-            </div>
-            <div class="mt-4 pt-2 border-t border-white/5 flex items-center justify-between text-xs font-bold text-blue-400">
-              <span>영어 시작</span>
-              <span>→</span>
-            </div>
-          </a>
-
-          <!-- Korean -->
-          <a href="./domains/korean/index.html" class="dock-card dock-card-korean group">
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 uppercase">KOREAN</span>
-                <span class="text-lg">📖</span>
-              </div>
-              <div class="text-base font-black text-white group-hover:text-purple-300 transition-colors">국어 놀이</div>
-              <div class="text-xs text-slate-400 mt-1">맞춤법 & 풍부한 어휘력</div>
-            </div>
-            <div class="mt-4 pt-2 border-t border-white/5 flex items-center justify-between text-xs font-bold text-purple-400">
-              <span>국어 시작</span>
-              <span>→</span>
-            </div>
-          </a>
-
-          <!-- Science -->
-          <a href="./domains/science/index.html" class="dock-card dock-card-science group">
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 uppercase">SCIENCE</span>
-                <span class="text-lg">🔬</span>
-              </div>
-              <div class="text-base font-black text-white group-hover:text-emerald-300 transition-colors">과학 놀이</div>
-              <div class="text-xs text-slate-400 mt-1">자연과 과학 현상의 원리</div>
-            </div>
-            <div class="mt-4 pt-2 border-t border-white/5 flex items-center justify-between text-xs font-bold text-emerald-400">
-              <span>과학 시작</span>
-              <span>→</span>
-            </div>
-          </a>
-        </div>
-      </section>
-
-      <!-- Console Footer Controls Bar -->
+      <!-- Footer Information & Quick Links -->
       <footer class="console-footer gsap-stagger-item">
-        <div class="footer-prompts">
-          <div class="prompt-item">
-            <span class="prompt-btn">✕</span>
-            <span>SELECT</span>
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full">
+          <div class="flex items-center gap-3 text-xs text-slate-400">
+            <span class="font-extrabold text-white">AIDEN GAME LABS</span>
+            <span class="text-slate-600">|</span>
+            <span>아이들을 위한 인터랙티브 학습 놀이터</span>
           </div>
-          <div class="prompt-item">
-            <span class="prompt-btn">◯</span>
-            <span>BACK</span>
-          </div>
-          <div class="prompt-item">
-            <span class="prompt-btn">󰁌</span>
-            <span>HELP</span>
-          </div>
-        </div>
 
-        <div class="flex items-center gap-4 font-mono text-xs">
-          <div class="flex items-center gap-1.5 text-emerald-400">
-            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span id="fps-counter">60 FPS</span>
+          <div class="flex items-center gap-4 text-xs font-semibold text-slate-400">
+            <a href="./domains/reward/guardian/index.html" class="hover:text-white transition-colors">보호자 관리</a>
+            <span class="text-slate-600">·</span>
+            <a href="./experiments/space-explorer/index.html" class="hover:text-white transition-colors">실험실</a>
+            <span class="text-slate-600">·</span>
+            <span class="font-mono text-slate-500">© 2026</span>
           </div>
-          <span class="text-slate-600">|</span>
-          <span class="text-slate-400">AIDEN GAME LABS</span>
         </div>
       </footer>
 
@@ -336,10 +246,9 @@
 
   </div>
 
-  <!-- GSAP Stagger Entrance Script & FPS Counter -->
+  <!-- GSAP Stagger Entrance Script -->
   <script>
     document.addEventListener("DOMContentLoaded", function() {
-      // 1. GSAP Entrance Stagger
       if (typeof gsap !== 'undefined') {
         gsap.from(".gsap-stagger-item", {
           duration: 0.6,
@@ -348,24 +257,6 @@
           stagger: 0.05,
           ease: "power2.out"
         });
-      }
-
-      // 2. Dynamic FPS Counter Simulator
-      const fpsEl = document.getElementById("fps-counter");
-      if (fpsEl) {
-        let lastTime = performance.now();
-        let frameCount = 0;
-        function updateFPS(now) {
-          frameCount++;
-          if (now - lastTime >= 1000) {
-            const fps = ((frameCount * 1000) / (now - lastTime)).toFixed(1);
-            fpsEl.textContent = `${fps} FPS`;
-            frameCount = 0;
-            lastTime = now;
-          }
-          requestAnimationFrame(updateFPS);
-        }
-        requestAnimationFrame(updateFPS);
       }
     });
   </script>

@@ -320,26 +320,6 @@ body {
   box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.7), 0 0 25px rgba(215, 255, 0, 0.15);
 }
 
-/* Card Top Tag Badge (e.g. [3], [6], [NEW]) */
-.card-top-tag {
-  position: absolute;
-  top: 1.25rem;
-  right: 1.25rem;
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-mono);
-  font-weight: 800;
-  font-size: 0.85rem;
-  color: #FFFFFF;
-  z-index: 10;
-}
-
 /* Featured Neon Volt Card */
 .console-card-featured {
   background: linear-gradient(135deg, #d7ff00 0%, #b5db00 100%);
@@ -347,12 +327,6 @@ body {
   border: 2px solid #ffffff;
   grid-row: span 2;
   box-shadow: 0 15px 40px -5px rgba(215, 255, 0, 0.3);
-}
-
-.console-card-featured .card-top-tag {
-  background: #07090e;
-  color: var(--neon-volt);
-  border: none;
 }
 
 .console-card-featured .card-title {
@@ -412,22 +386,22 @@ body {
   grid-template-columns: repeat(2, 1fr);
   gap: 0.85rem;
   margin-top: 1.25rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.5rem;
 }
 
 .core-subject-btn {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.85rem 1.1rem;
-  min-height: 58px;
-  background: rgba(7, 9, 14, 0.12);
-  border: 1.5px solid rgba(7, 9, 14, 0.2);
+  padding: 0.95rem 1.15rem;
+  min-height: 62px;
+  background: rgba(7, 9, 14, 0.14);
+  border: 1.5px solid rgba(7, 9, 14, 0.22);
   border-radius: 16px;
   color: #07090e;
   text-decoration: none;
   font-weight: 800;
-  font-size: 0.98rem;
+  font-size: 1rem;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.04);
 }
@@ -445,13 +419,13 @@ body {
 }
 
 .core-subject-btn .btn-emoji {
-  font-size: 1.45rem;
+  font-size: 1.5rem;
   margin-right: 0.65rem;
   line-height: 1;
 }
 
 .core-subject-btn .btn-arrow {
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   font-weight: 900;
   transition: transform 0.2s ease;
   opacity: 0.8;
@@ -469,7 +443,6 @@ body {
     gap: 0.75rem;
   }
 }
-
 
 .card-title {
   font-size: 1.75rem;
@@ -500,10 +473,6 @@ body {
   z-index: 2;
 }
 
-.console-card-featured .card-action-bar {
-  border-top-color: rgba(7, 9, 14, 0.15);
-}
-
 .card-action-btn {
   display: inline-flex;
   align-items: center;
@@ -517,114 +486,68 @@ body {
   transition: transform 0.2s ease, background 0.2s ease;
 }
 
-.console-card-featured .card-action-btn {
-  background: #07090e;
-  color: var(--neon-volt);
-}
-
 .console-card:hover .card-action-btn {
   transform: translateX(4px);
   background: var(--neon-volt);
   color: #07090e;
 }
 
-/* 4-Subject Quick Dock Slot Row */
-.subject-dock {
-  background: rgba(14, 18, 28, 0.8);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  padding: 1.25rem;
-  margin-bottom: 2.5rem;
-}
-
-.dock-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
-.dock-title {
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.dock-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.85rem;
-}
-
-.dock-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
-  padding: 1rem;
-  text-decoration: none;
-  color: #F8FAFC;
+/* Quick Labs List inside Card 4 */
+.quick-labs-list {
   display: flex;
   flex-direction: column;
+  gap: 0.55rem;
+  margin-top: 0.75rem;
+  z-index: 2;
+  position: relative;
+}
+
+.quick-lab-item {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  transition: all 0.25s ease;
+  padding: 0.65rem 0.95rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #F8FAFC;
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.dock-card:hover {
-  background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(255, 255, 255, 0.25);
-  transform: translateY(-3px);
+.quick-lab-item:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #FDE68A;
+  transform: translateX(3px);
 }
 
-.dock-card-math:hover { border-color: rgba(249, 115, 22, 0.5); }
-.dock-card-english:hover { border-color: rgba(59, 130, 246, 0.5); }
-.dock-card-korean:hover { border-color: rgba(168, 85, 247, 0.5); }
-.dock-card-science:hover { border-color: rgba(16, 185, 129, 0.5); }
+.quick-lab-arrow {
+  font-weight: 900;
+  transition: transform 0.2s ease;
+  opacity: 0.6;
+}
 
-/* Console Navigation Prompts Footer */
+.quick-lab-item:hover .quick-lab-arrow {
+  transform: translateX(3px);
+  opacity: 1;
+  color: #F59E0B;
+}
+
+/* Clean Modern Footer */
 .console-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.25rem;
-  background: rgba(10, 13, 20, 0.95);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  font-size: 0.78rem;
+  padding: 1.25rem 1.5rem;
+  background: rgba(10, 13, 20, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  font-size: 0.8rem;
   color: var(--muted);
-}
-
-.footer-prompts {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.prompt-item {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-weight: 700;
-  color: #CBD5E1;
-}
-
-.prompt-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  font-size: 0.7rem;
-  font-weight: 900;
-  color: #FFFFFF;
+  margin-top: 1rem;
 }
 
 /* Nav Link Overrides */
@@ -668,9 +591,6 @@ body {
     grid-column: span 2;
     grid-row: auto;
   }
-  .dock-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
 }
 
 @media (max-width: 900px) {
@@ -697,9 +617,6 @@ body {
   }
   .console-card-featured {
     grid-column: span 1;
-  }
-  .dock-grid {
-    grid-template-columns: 1fr;
   }
   .console-footer {
     flex-direction: column;

@@ -308,6 +308,8 @@ export function installPauseTimerResumeController(
     host.cancelPausePointerInteractions();
     host.clearPauseSensitiveHoldTimer();
 
+    window.OceanRescue?.Audio?.pauseSpeech?.();
+
     setPauseRootMarkers(true);
 
     const overlay = document.getElementById("ocean-rescue-pause-overlay");
@@ -323,6 +325,27 @@ export function installPauseTimerResumeController(
     if (resumeBtn) {
       resumeBtn.hidden = false;
       resumeBtn.disabled = false;
+    }
+
+    // Sync volume sliders with current Audio settings
+    const audioSettings = window.OceanRescue?.Audio?.getSettings?.();
+    if (audioSettings) {
+      const soundSlider = document.getElementById("ocean-rescue-volume-sound") as HTMLInputElement | null;
+      const soundVal = document.getElementById("ocean-rescue-volume-sound-val");
+      const voiceSlider = document.getElementById("ocean-rescue-volume-voice") as HTMLInputElement | null;
+      const voiceVal = document.getElementById("ocean-rescue-volume-voice-val");
+      if (soundSlider) {
+        soundSlider.value = String(audioSettings.sound);
+      }
+      if (soundVal) {
+        soundVal.textContent = String(audioSettings.sound);
+      }
+      if (voiceSlider) {
+        voiceSlider.value = String(audioSettings.voice);
+      }
+      if (voiceVal) {
+        voiceVal.textContent = String(audioSettings.voice);
+      }
     }
 
     syncPauseButton();
@@ -397,6 +420,8 @@ export function installPauseTimerResumeController(
     }
     setPauseRootMarkers(false);
 
+    window.OceanRescue?.Audio?.resumeSpeech?.();
+
     rearmAllPauseTimers();
     syncPauseButton();
 
@@ -411,6 +436,8 @@ export function installPauseTimerResumeController(
       return;
     }
     pauseActive = false;
+
+    window.OceanRescue?.Audio?.cancelSpeech?.();
 
     if (RenderRuntime?.isReady()) {
       RenderRuntime.resume();

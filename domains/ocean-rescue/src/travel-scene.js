@@ -846,6 +846,9 @@
     if (typeof terrainSnap.collisionCount === "number") {
       impactHandledCollisionCount = terrainSnap.collisionCount;
     }
+    if (window.OceanRescue && window.OceanRescue.Audio && typeof window.OceanRescue.Audio.playBump === "function") {
+      window.OceanRescue.Audio.playBump();
+    }
     spawnSplashParticles(impactContactX, impactContactY);
   }
 

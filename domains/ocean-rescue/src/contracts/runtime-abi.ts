@@ -238,6 +238,47 @@ export type PauseableTimerOwner =
   | "young-whale-feedback"
   | "mission-success";
 
+export interface AudioSettings {
+  readonly sound: number;
+  readonly voice: number;
+}
+
+export interface SpeakOptions {
+  readonly companion?: string;
+  readonly pitch?: number;
+  readonly rate?: number;
+  readonly onStart?: () => void;
+  readonly onEnd?: () => void;
+  readonly onError?: () => void;
+}
+
+export interface AudioApi {
+  readonly init: () => void;
+  readonly prime: () => void;
+  readonly getSettings: () => AudioSettings;
+  readonly setSoundVolume: (val: number) => number;
+  readonly setVoiceVolume: (val: number) => number;
+  readonly testSoundVolume: () => void;
+  readonly testVoiceVolume: () => void;
+  readonly playClick: () => void;
+  readonly playSelect: () => void;
+  readonly playBump: () => void;
+  readonly playCut: () => void;
+  readonly playGrab: () => void;
+  readonly playDrop: () => void;
+  readonly playConnect: () => void;
+  readonly playSuccess: () => void;
+  readonly playWrong: () => void;
+  readonly playWhaleCall: () => void;
+  readonly playDoorOpen: () => void;
+  readonly playGoalBanner: () => void;
+  readonly speak: (text: string, options?: SpeakOptions) => boolean;
+  readonly cancelSpeech: () => void;
+  readonly pauseSpeech: () => void;
+  readonly resumeSpeech: () => void;
+  readonly isSpeaking: () => boolean;
+}
+
 export interface OceanRescueNamespace {
   Profile?: ProfileApi;
   Missions?: MissionsApi;
@@ -251,9 +292,11 @@ export interface OceanRescueNamespace {
   SeaTurtleScene?: SeaTurtleSceneApi;
   Crab?: MissionRuntimeApi;
   CrabScene?: RescueSceneApi;
+  YoungWhale?: MissionRuntimeApi;
   TravelScene?: TravelSceneApi;
   RenderRuntime?: RenderRuntimeTravelApi;
   PointerInput?: PointerInputApi;
+  Audio?: AudioApi;
   TravelProgress?: Readonly<{
     compute: (travelSnapshot: unknown) => TravelProgressResult;
   }>;

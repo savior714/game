@@ -13,9 +13,383 @@
   var SeaTurtleScene = window.OceanRescue.SeaTurtleScene || null;
   var Crab = window.OceanRescue.Crab || null;
   var YoungWhale = window.OceanRescue.YoungWhale || null;
-  var MissionSuccess = window.OceanRescue.MissionSuccess || null;
   var TravelScene = window.OceanRescue.TravelScene || null;
   var CrabScene = window.OceanRescue.CrabScene || null;
+  var MissionSuccess = window.OceanRescue.MissionSuccess || null;
+
+  var audioContext = null;
+  var masterSoundGain = null;
+  var soundVolume = 70;
+  var voiceVolume = 85;
+  var currentUtterance = null;
+  var lastSpokenText = "";
+  var lastSpokenOptions = null;
+  var isPausedSpeaking = false;
+  var AUDIO_STORAGE_KEY = "ocean_rescue_audio_settings";
+
+  function loadAudioSettings() {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        var raw = window.localStorage.getItem(AUDIO_STORAGE_KEY);
+        if (raw) {
+          var parsed = JSON.parse(raw);
+          if (typeof parsed.sound === "number" && parsed.sound >= 0 && parsed.sound <= 100) {
+            soundVolume = Math.round(parsed.sound);
+          }
+          if (typeof parsed.voice === "number" && parsed.voice >= 0 && parsed.voice <= 100) {
+            voiceVolume = Math.round(parsed.voice);
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  function saveAudioSettings() {
+    try {
+      if (typeof window !== "undefined" && window.localStorage) {
+        window.localStorage.setItem(
+          AUDIO_STORAGE_KEY,
+          JSON.stringify({ sound: soundVolume, voice: voiceVolume })
+        );
+      }
+    } catch (e) {}
+  }
+
+  function getAudioContext() {
+    if (!audioContext && typeof window !== "undefined") {
+      var AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        audioContext = new AudioContextClass();
+        masterSoundGain = audioContext.createGain();
+        masterSoundGain.gain.setValueAtTime(soundVolume / 100, audioContext.currentTime);
+        masterSoundGain.connect(audioContext.destination);
+      }
+    }
+    return audioContext;
+  }
+
+  loadAudioSettings();
+
+  var Audio = window.OceanRescue.Audio || {
+    prime: function () {
+      var ctx = getAudioContext();
+      if (ctx && ctx.state === "suspended" && typeof ctx.resume === "function") {
+        ctx.resume();
+      }
+    },
+    setSoundVolume: function (vol) {
+      soundVolume = Math.max(0, Math.min(100, Math.round(Number(vol) || 0)));
+      saveAudioSettings();
+      var ctx = getAudioContext();
+      if (ctx && masterSoundGain && masterSoundGain.gain) {
+        masterSoundGain.gain.setValueAtTime(soundVolume / 100, ctx.currentTime);
+      }
+    },
+    setVoiceVolume: function (vol) {
+      voiceVolume = Math.max(0, Math.min(100, Math.round(Number(vol) || 0)));
+      saveAudioSettings();
+    },
+    getSettings: function () {
+      return { sound: soundVolume, voice: voiceVolume };
+    },
+    testSoundVolume: function () {
+      this.playClick();
+    },
+    testVoiceVolume: function () {
+      this.speak("옥토넛 출동 준비 완료!", { companion: "barnacles" });
+    },
+    playClick: function () {
+      if (soundVolume <= 0) return;
+      var ctx = getAudioContext();
+      if (!ctx || !masterSoundGain) return;
+      try {
+        var now = ctx.currentTime;
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+        osc.connect(gain);
+        gain.connect(masterSoundGain);
+        osc.start(now);
+        osc.stop(now + 0.07);
+      } catch (e) {}
+    },
+    playSelect: function () {
+      if (soundVolume <= 0) return;
+      var ctx = getAudioContext();
+      if (!ctx || !masterSoundGain) return;
+      try {
+        var now = ctx.currentTime;
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.09);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+        osc.connect(gain);
+        gain.connect(masterSoundGain);
+        osc.start(now);
+        osc.stop(now + 0.11);
+      } catch (e) {}
+    },
+    playDoorOpen: function () {
+      if (soundVolume <= 0) return;
+      var ctx = getAudioContext();
+      if (!ctx || !masterSoundGain) return;
+      try {
+        var now = ctx.currentTime;
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(150, now);
+        osc.frequency.linearRampToValueAtTime(320, now + 0.35);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        osc.connect(gain);
+        gain.connect(masterSoundGain);
+        osc.start(now);
+        osc.stop(now + 0.42);
+      } catch (e) {}
+    },
+    playGoalBanner: function () {
+      if (soundVolume <= 0) return;
+      var ctx = getAudioContext();
+      if (!ctx || !masterSoundGain) return;
+      try {
+        var now = ctx.currentTime;
+        var notes = [587.33, 880];
+        for (var i = 0; i < notes.length; i += 1) {
+          var osc = ctx.createOscillator();
+          var gain = ctx.createGain();
+          var start = now + (i * 0.1);
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(notes[i], start);
+          gain.gain.setValueAtTime(0.25, start);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + 0.28);
+          osc.connect(gain);
+          gain.connect(masterSoundGain);
+          osc.start(start);
+          osc.stop(start + 0.3);
+        }
+      } catch (e) {}
+    },
+    playBump: function () {
+      if (soundVolume <= 0) return;
+      var ctx = getAudioContext();
+      if (!ctx || !masterSoundGain) return;
+      try {
+        var now = ctx.currentTime;
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(110, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.15);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+        osc.connect(gain);
+        gain.connect(masterSoundGain);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      } catch (e) {}
+    },
+    playCut: function () {
+      if (soundVolume <= 0) return;
+      var ctx = getAudioContext();
+      if (!ctx || !masterSoundGain) return;
+      try {
+        var now = ctx.currentTime;
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(1200, now);
+        osc.frequency.exponentialRampToValueAtTime(400, now + 0.08);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+        osc.connect(gain);
+        gain.connect(masterSoundGain);
+        osc.start(now);
+        osc.stop(now + 0.12);
+      } catch (e) {}
+    },
+    playGrab: function () {
+      if (soundVolume <= 0) return;
+      var ctx = getAudioContext();
+      if (!ctx || !masterSoundGain) return;
+      try {
+        var now = ctx.currentTime;
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.exponentialRampToValueAtTime(500, now + 0.09);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+        osc.connect(gain);
+        gain.connect(masterSoundGain);
+        osc.start(now);
+        osc.stop(now + 0.12);
+      } catch (e) {}
+    },
+    playDrop: function () {
+      if (soundVolume <= 0) return;
+      var ctx = getAudioContext();
+      if (!ctx || !masterSoundGain) return;
+      try {
+        var now = ctx.currentTime;
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.exponentialRampToValueAtTime(70, now + 0.18);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        osc.connect(gain);
+        gain.connect(masterSoundGain);
+        osc.start(now);
+        osc.stop(now + 0.22);
+      } catch (e) {}
+    },
+    playConnect: function () {
+      if (soundVolume <= 0) return;
+      var ctx = getAudioContext();
+      if (!ctx || !masterSoundGain) return;
+      try {
+        var now = ctx.currentTime;
+        var osc1 = ctx.createOscillator();
+        var osc2 = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc1.type = "sine";
+        osc2.type = "triangle";
+        osc1.frequency.setValueAtTime(880, now);
+        osc2.frequency.setValueAtTime(1760, now + 0.04);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(masterSoundGain);
+        osc1.start(now);
+        osc2.start(now + 0.04);
+        osc1.stop(now + 0.24);
+        osc2.stop(now + 0.24);
+      } catch (e) {}
+    },
+    playSuccess: function () {
+      if (soundVolume <= 0) return;
+      var ctx = getAudioContext();
+      if (!ctx || !masterSoundGain) return;
+      try {
+        var now = ctx.currentTime;
+        var notes = [523.25, 659.25, 783.99, 1046.50];
+        for (var i = 0; i < notes.length; i += 1) {
+          var osc = ctx.createOscillator();
+          var gain = ctx.createGain();
+          var start = now + (i * 0.08);
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(notes[i], start);
+          gain.gain.setValueAtTime(0.3, start);
+          gain.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
+          osc.connect(gain);
+          gain.connect(masterSoundGain);
+          osc.start(start);
+          osc.stop(start + 0.38);
+        }
+      } catch (e) {}
+    },
+    playWrong: function () {
+      if (soundVolume <= 0) return;
+      var ctx = getAudioContext();
+      if (!ctx || !masterSoundGain) return;
+      try {
+        var now = ctx.currentTime;
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.linearRampToValueAtTime(190, now + 0.15);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        osc.connect(gain);
+        gain.connect(masterSoundGain);
+        osc.start(now);
+        osc.stop(now + 0.24);
+      } catch (e) {}
+    },
+    playWhaleCall: function () {
+      if (soundVolume <= 0) return;
+      var ctx = getAudioContext();
+      if (!ctx || !masterSoundGain) return;
+      try {
+        var now = ctx.currentTime;
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(280, now);
+        osc.frequency.exponentialRampToValueAtTime(420, now + 0.3);
+        osc.frequency.exponentialRampToValueAtTime(320, now + 0.6);
+        gain.gain.setValueAtTime(0.01, now);
+        gain.gain.linearRampToValueAtTime(0.4, now + 0.2);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+        osc.connect(gain);
+        gain.connect(masterSoundGain);
+        osc.start(now);
+        osc.stop(now + 0.75);
+      } catch (e) {}
+    },
+    speak: function (text, options) {
+      if (!text || typeof text !== "string" || voiceVolume <= 0) return false;
+      if (typeof window === "undefined" || !window.speechSynthesis || typeof window.SpeechSynthesisUtterance === "undefined") return false;
+      lastSpokenText = text;
+      lastSpokenOptions = options || null;
+      setTimeout(function () {
+        try {
+          window.speechSynthesis.cancel();
+          var utterance = new window.SpeechSynthesisUtterance(text);
+          utterance.lang = "ko-KR";
+          utterance.volume = voiceVolume / 100;
+          utterance.rate = (options && typeof options.rate === "number") ? options.rate : 0.95;
+          utterance.pitch = (options && typeof options.pitch === "number") ? options.pitch : 1.0;
+          currentUtterance = utterance;
+          utterance.onend = function () {
+            currentUtterance = null;
+            if (options && typeof options.onEnd === "function") options.onEnd();
+          };
+          utterance.onerror = function () {
+            currentUtterance = null;
+            if (options && typeof options.onEnd === "function") options.onEnd();
+          };
+          window.speechSynthesis.speak(utterance);
+        } catch (e) {}
+      }, 0);
+      return true;
+    },
+    cancelSpeech: function () {
+      currentUtterance = null;
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+      }
+    },
+    pauseSpeech: function () {
+      if (currentUtterance) {
+        isPausedSpeaking = true;
+        this.cancelSpeech();
+      }
+    },
+    resumeSpeech: function () {
+      if (isPausedSpeaking && lastSpokenText) {
+        isPausedSpeaking = false;
+        this.speak(lastSpokenText, lastSpokenOptions);
+      }
+    },
+    isSpeaking: function () {
+      return currentUtterance !== null || (typeof window !== "undefined" && window.speechSynthesis && window.speechSynthesis.speaking);
+    }
+  };
+
+  window.OceanRescue.Audio = Audio;
 
   var controlsBound = false;
   var launchSequenceCounter = 0;
@@ -633,6 +1007,20 @@
       status.textContent = content.briefing;
     }
 
+    if (Audio) {
+      if (typeof Audio.prime === "function") {
+        Audio.prime();
+      }
+      if (typeof Audio.playDoorOpen === "function") {
+        Audio.playDoorOpen();
+      }
+      if (typeof Audio.speak === "function") {
+        Audio.speak(content.briefing, {
+          companion: (mission.companion || "").toLowerCase()
+        });
+      }
+    }
+
     scheduleLaunchCompletion(sequence);
   }
 
@@ -727,6 +1115,9 @@
     goalSequenceId = sequence.sequenceId;
     goalBanner.hidden = false;
     goalBanner.textContent = sequence.missionContent.goal;
+    if (Audio && typeof Audio.playGoalBanner === "function") {
+      Audio.playGoalBanner();
+    }
     var duration = typeof overrideDurationMs === "number" ? overrideDurationMs : Launch.GoalDurationMs;
     goalTimerId = scheduleWithRegistry("goal-banner", duration, function () {
       hideGoalBanner(sequence.sequenceId);
@@ -1359,6 +1750,12 @@
       status.textContent = "Rescue site: " + content.situation;
     }
 
+    if (Audio && typeof Audio.speak === "function") {
+      Audio.speak(content.situation, {
+        companion: (mission.companion || "").toLowerCase()
+      });
+    }
+
     scheduleSiteTransitionCompletion(sequence);
     App.syncPauseButton();
     return true;
@@ -1427,6 +1824,11 @@
     var status = document.getElementById("ocean-rescue-status");
     if (status) {
       status.textContent = sequence.missionContent.tutorial;
+    }
+    if (Audio && typeof Audio.speak === "function") {
+      Audio.speak(sequence.missionContent.tutorial, {
+        companion: (sequence.companion || "").toLowerCase()
+      });
     }
     scheduleTutorialCompletion(sequence);
     return true;
@@ -2564,6 +2966,15 @@
       root.setAttribute("data-sea-turtle-feedback", "success");
     }
     setSeaTurtleDialogue(ropeId);
+    if (Audio) {
+      if (typeof Audio.playCut === "function") {
+        Audio.playCut();
+      }
+      var index = ropeOrderIndexById(ropeId);
+      if (index >= 0 && index < SeaTurtle.Dialogues.length && typeof Audio.speak === "function") {
+        Audio.speak(SeaTurtle.Dialogues[index], { companion: "peso" });
+      }
+    }
     seaTurtleFeedbackSequence = {
       sequenceId:
         activeRescueSequence === null ? null : activeRescueSequence.sequenceId,
@@ -2586,6 +2997,9 @@
     var progress = document.getElementById("ocean-rescue-rescue-progress");
     if (progress && rope) {
       progress.textContent = "Try rope " + rope.order + " again";
+    }
+    if (Audio && typeof Audio.playWrong === "function") {
+      Audio.playWrong();
     }
     seaTurtleFeedbackSequence = {
       sequenceId:
@@ -2956,6 +3370,18 @@
       root.setAttribute("data-crab-feedback", "success");
     }
     setCrabDialogue(rockId);
+    if (Audio) {
+      if (typeof Audio.playDrop === "function") {
+        Audio.playDrop();
+      }
+      if (typeof Audio.playSuccess === "function") {
+        Audio.playSuccess();
+      }
+      var index = crabRockOrderIndexById(rockId);
+      if (index >= 0 && index < Crab.Dialogues.length && typeof Audio.speak === "function") {
+        Audio.speak(Crab.Dialogues[index], { companion: "tweak" });
+      }
+    }
     crabFeedbackSequence = {
       sequenceId:
         activeRescueSequence === null ? null : activeRescueSequence.sequenceId,
@@ -2978,6 +3404,9 @@
     var progress = document.getElementById("ocean-rescue-rescue-progress");
     if (progress && rock) {
       progress.textContent = "Try rock " + rock.order + " again";
+    }
+    if (Audio && typeof Audio.playWrong === "function") {
+      Audio.playWrong();
     }
     crabFeedbackSequence = {
       sequenceId:
@@ -3300,6 +3729,26 @@
     var snapshot = YoungWhale.getSnapshot();
     if (snapshot.stage === "towing") {
       setYoungWhaleDialogue(debrisId);
+      if (Audio) {
+        setTimeout(function () {
+          if (typeof Audio.playWhaleCall === "function") {
+            Audio.playWhaleCall();
+          }
+          if (typeof Audio.playSuccess === "function") {
+            Audio.playSuccess();
+          }
+          var index = youngWhaleDebrisOrderIndexById(debrisId);
+          if (index >= 0 && index < YoungWhale.Dialogues.length && typeof Audio.speak === "function") {
+            Audio.speak(YoungWhale.Dialogues[index], { companion: "barnacles" });
+          }
+        }, 0);
+      }
+    } else {
+      if (Audio && typeof Audio.playConnect === "function") {
+        setTimeout(function () {
+          Audio.playConnect();
+        }, 0);
+      }
     }
     youngWhaleFeedbackSequence = {
       sequenceId:
@@ -3330,6 +3779,9 @@
         progress.textContent =
           "Try connecting debris " + debris.order + " again";
       }
+    }
+    if (Audio && typeof Audio.playWrong === "function") {
+      Audio.playWrong();
     }
     youngWhaleFeedbackSequence = {
       sequenceId:
@@ -3750,6 +4202,9 @@
     freezeAllPauseTimers();
     cancelPausePointerInteractions();
     clearCrabHoldTimer();
+    if (Audio && typeof Audio.pauseSpeech === "function") {
+      Audio.pauseSpeech();
+    }
     setPauseRootMarkers(true);
     var overlay = document.getElementById("ocean-rescue-pause-overlay");
     var countdown = document.getElementById("ocean-rescue-pause-countdown");
@@ -3764,6 +4219,25 @@
     if (resumeBtn) {
       resumeBtn.hidden = false;
       resumeBtn.disabled = false;
+    }
+    if (Audio && typeof Audio.getSettings === "function") {
+      var audioSettings = Audio.getSettings();
+      var soundSlider = document.getElementById("ocean-rescue-volume-sound");
+      var soundVal = document.getElementById("ocean-rescue-volume-sound-val");
+      var voiceSlider = document.getElementById("ocean-rescue-volume-voice");
+      var voiceVal = document.getElementById("ocean-rescue-volume-voice-val");
+      if (soundSlider) {
+        soundSlider.value = String(audioSettings.sound);
+      }
+      if (soundVal) {
+        soundVal.textContent = String(audioSettings.sound);
+      }
+      if (voiceSlider) {
+        voiceSlider.value = String(audioSettings.voice);
+      }
+      if (voiceVal) {
+        voiceVal.textContent = String(audioSettings.voice);
+      }
     }
     App.syncPauseButton();
   }
@@ -3801,6 +4275,9 @@
       return;
     }
     pauseActive = false;
+    if (Audio && typeof Audio.cancelSpeech === "function") {
+      Audio.cancelSpeech();
+    }
     cancelPausePointerInteractions();
     if (RenderRuntime && RenderRuntime.isReady()) {
       RenderRuntime.resume();
@@ -3956,6 +4433,9 @@
       overlay.hidden = true;
     }
     setPauseRootMarkers(false);
+    if (Audio && typeof Audio.resumeSpeech === "function") {
+      Audio.resumeSpeech();
+    }
     rearmAllPauseTimers();
     App.syncPauseButton();
     var snapshot = State.getSnapshot();
@@ -4103,6 +4583,11 @@
     if (status) {
       status.textContent = sequence.content.companionLine;
     }
+    if (Audio && typeof Audio.speak === "function") {
+      Audio.speak(sequence.content.companionLine, {
+        companion: (sequence.companion || "").toLowerCase()
+      });
+    }
     return scheduleMissionSuccessTimer(
       sequence,
       "narration-1",
@@ -4129,6 +4614,11 @@
     if (status) {
       status.textContent = sequence.content.animalLine;
     }
+    if (Audio && typeof Audio.speak === "function") {
+      Audio.speak(sequence.content.animalLine, {
+        companion: "narrator"
+      });
+    }
     return scheduleMissionSuccessTimer(
       sequence,
       "narration-2",
@@ -4149,6 +4639,9 @@
       return false;
     }
     clearMissionSuccessTimer();
+    if (Audio && typeof Audio.playSuccess === "function") {
+      Audio.playSuccess();
+    }
     var completionResult = Missions.completeMission(sequence.missionId);
     sequence.firstCompletion = completionResult.changed ? true : false;
     sequence.newlyUnlockedMissionId =
@@ -5324,7 +5817,9 @@
     if (typeof pointerX !== "number" || typeof pointerY !== "number") {
       return;
     }
-    context.save();
+    if (typeof context.save === "function") {
+      context.save();
+    }
     if (snapshot.feedback === "failure") {
       context.strokeStyle = "#ff6b6b";
       context.lineWidth = 6;
@@ -5337,7 +5832,9 @@
     context.moveTo(debris.connection.x, debris.connection.y);
     context.lineTo(pointerX, pointerY);
     context.stroke();
-    context.restore();
+    if (typeof context.restore === "function") {
+      context.restore();
+    }
   }
 
   function drawYoungWhaleTowLine(context, snapshot) {
@@ -5361,7 +5858,9 @@
         endY = geometry.hookCenter.y;
       }
     }
-    context.save();
+    if (typeof context.save === "function") {
+      context.save();
+    }
     context.strokeStyle = "rgba(154, 208, 255, 0.9)";
     context.lineWidth = 6;
     context.lineCap = "round";
@@ -5369,7 +5868,9 @@
     context.moveTo(startX, startY);
     context.lineTo(endX, endY);
     context.stroke();
-    context.restore();
+    if (typeof context.restore === "function") {
+      context.restore();
+    }
   }
 
   function drawYoungWhaleActiveMarkers(context, snapshot) {
@@ -5423,11 +5924,15 @@
     if (debris === null) {
       return;
     }
-    context.save();
+    if (typeof context.save === "function") {
+      context.save();
+    }
     context.strokeStyle = "#ffd166";
     context.lineWidth = 4;
     context.lineCap = "round";
-    context.setLineDash([14, 12]);
+    if (typeof context.setLineDash === "function") {
+      context.setLineDash([14, 12]);
+    }
     if (snapshot.stage === "connection") {
       context.beginPath();
       context.moveTo(debris.connection.x, debris.connection.y);
@@ -5438,7 +5943,9 @@
       context.lineTo(debris.safeSpot.x, debris.safeSpot.y);
     }
     context.stroke();
-    context.restore();
+    if (typeof context.restore === "function") {
+      context.restore();
+    }
   }
 
   function drawYoungWhaleWhale(context, snapshot) {
@@ -5635,6 +6142,42 @@
     if (pauseMenu && typeof pauseMenu.addEventListener === "function") {
       pauseMenu.addEventListener("click", function () {
         App.exitPauseToMenu();
+      });
+    }
+    var soundSlider = document.getElementById("ocean-rescue-volume-sound");
+    if (soundSlider && typeof soundSlider.addEventListener === "function") {
+      soundSlider.addEventListener("input", function () {
+        var val = Number(soundSlider.value);
+        if (Audio && typeof Audio.setSoundVolume === "function") {
+          Audio.setSoundVolume(val);
+        }
+        var valSpan = document.getElementById("ocean-rescue-volume-sound-val");
+        if (valSpan) {
+          valSpan.textContent = String(val);
+        }
+      });
+      soundSlider.addEventListener("change", function () {
+        if (Audio && typeof Audio.testSoundVolume === "function") {
+          Audio.testSoundVolume();
+        }
+      });
+    }
+    var voiceSlider = document.getElementById("ocean-rescue-volume-voice");
+    if (voiceSlider && typeof voiceSlider.addEventListener === "function") {
+      voiceSlider.addEventListener("input", function () {
+        var val = Number(voiceSlider.value);
+        if (Audio && typeof Audio.setVoiceVolume === "function") {
+          Audio.setVoiceVolume(val);
+        }
+        var valSpan = document.getElementById("ocean-rescue-volume-voice-val");
+        if (valSpan) {
+          valSpan.textContent = String(val);
+        }
+      });
+      voiceSlider.addEventListener("change", function () {
+        if (Audio && typeof Audio.testVoiceVolume === "function") {
+          Audio.testVoiceVolume();
+        }
       });
     }
     controlsBound = true;

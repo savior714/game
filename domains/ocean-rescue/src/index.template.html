@@ -364,6 +364,32 @@
     >
       <div id="ocean-rescue-pause-menu">
         <h2 id="ocean-rescue-pause-title">Game Paused</h2>
+        <div id="ocean-rescue-pause-volume-controls">
+          <div class="ocean-rescue-volume-row">
+            <label for="ocean-rescue-volume-sound">Sound</label>
+            <input
+              id="ocean-rescue-volume-sound"
+              type="range"
+              min="0"
+              max="100"
+              value="70"
+              aria-label="Sound volume"
+            >
+            <span id="ocean-rescue-volume-sound-val">70</span>
+          </div>
+          <div class="ocean-rescue-volume-row">
+            <label for="ocean-rescue-volume-voice">Voice</label>
+            <input
+              id="ocean-rescue-volume-voice"
+              type="range"
+              min="0"
+              max="100"
+              value="85"
+              aria-label="Voice volume"
+            >
+            <span id="ocean-rescue-volume-voice-val">85</span>
+          </div>
+        </div>
         <button
           id="ocean-rescue-pause-resume"
           type="button"

@@ -61,6 +61,12 @@ def test_main_hub_unified_topbar_structure() -> None:
     assert "12,500" not in html
     assert "🪙" not in html
 
+    nav_start = html.index('id="main-top-nav"')
+    nav_end = html.index("</nav>", nav_start)
+    main_top_nav_html = html[nav_start:nav_end]
+    assert "홈" in main_top_nav_html
+    assert "우주 탐험" not in main_top_nav_html
+
     # 2. reward_ui.js mount support
     assert "document.getElementById('reward-inventory-mount')" in reward_ui
     assert "is-integrated" in reward_ui

@@ -45,20 +45,28 @@ skill goal
 ## 🧭 현재 엔트리/라우팅
 
 - 메인 허브: `index.html`
+- 우주 탐험 페이지: `experiments/space-explorer/index.html`
+- 우주 탐험 모듈 엔트리: `experiments/space-explorer/main.js`
 - 과목별 학습: `domains/{math,english,korean,science}/index.html`
 - 보호자 관리: `domains/reward/guardian/index.html`
-- Space Explorer: `experiments/space-explorer/index.html`
 - Ocean Rescue source/package: `domains/ocean-rescue/`
 - Ocean Rescue production artifact: `ocean-rescue/index.html`
-- 배포 라우팅: `vercel.json`
+- 배포 라우팅 설정: `vercel.json`
+- 검증 진입점: 루트 `verify.sh`
+- 주요 상태 분류:
+  - Ocean Rescue | 운영중·active feature
+  - Space Explorer | 운영중 artifact·개발 동결
 
-| Surface | 상태 | 역할 |
-|---|---|---|
-| 메인 허브 | 운영중 | 학습·보상·게임 진입점 |
-| Core Quiz 4과목 | 운영중 | adaptive learning의 학습 surface |
-| Guardian / Reward | 운영중 | 성장·목표·보상 관리 |
-| Ocean Rescue | 운영중·active feature | 학습 완료 후 reward game |
-| Space Explorer | 운영중 artifact·개발 동결 | 실험 참고 |
+### 운영 / 실험 / 레거시 경로 구분표
+
+| 구분 | 경로 | 상태 | 용도 |
+|---|---|---|---|
+| 메인 허브 | `index.html` | 운영중 | 학습·보상·게임 진입점 |
+| Core Quiz 4과목 | `domains/{math,english,korean,science}/index.html` | 운영중 | adaptive learning의 학습 surface |
+| Guardian / Reward | `domains/reward/guardian/index.html` | 운영중 | 성장·목표·보상 관리 |
+| Ocean Rescue | `ocean-rescue/index.html` | 운영중·active feature | 학습 완료 후 reward game |
+| 우주 탐험 실험 페이지 | `experiments/space-explorer/index.html` | 운영중·개발 동결 | 실험 참고 |
+| 과거 우주 탐험 alias | `/space-explorer.html`, `experiments/space-explorer.html` | 없음 | 레거시 경로 |
 
 과거 alias나 plan의 WP 번호를 현재 runtime entry 또는 다음 작업의 근거로 사용하지 않습니다.
 

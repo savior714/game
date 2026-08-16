@@ -1,9 +1,9 @@
-"""Browser acceptance for YouTube free time PiP and timer UI fallback.
+"""Browser acceptance for YouTube free time contextual countdown and no global timer bar.
 
 Verifies:
-- On session start (or when active session exists), a fixed timer UI is rendered in the page.
-- Remaining time is formatted as MM:SS based on deadline - Date.now().
-- Document Picture-in-Picture fallback works cleanly when window.documentPictureInPicture is undefined or fails.
+- On session start, NO fixed global timer bar (#youtube-free-time-timer or .youtube-timer-bar) is rendered.
+- Instead, the contextual inventory control for YouTube shows active countdown ("사용 중 · MM:SS").
+- When session is restored on reload, contextual countdown is restored and document PiP is NOT automatically requested.
 """
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ class HTTPServerFixture:
             self.thread.join(timeout=2)
 
 
-def test_youtube_timer_ui_fallback_renders_on_session_start() -> None:
+def test_youtube_contextual_countdown_and_no_fixed_bar() -> None:
     server = HTTPServerFixture()
     base_url = server.start()
     domain_url = f"{base_url}/domains/math/index.html"
@@ -75,26 +75,27 @@ def test_youtube_timer_ui_fallback_renders_on_session_start() -> None:
                 }
             }""")
 
-            # Start session
-            result = page.evaluate("() => RewardSystem.startYouTubeSession()")
+            # Start 10-minute session
+            result = page.evaluate(
+                "() => RewardSystem.startYouTubeSession(10, { isDirectUserStart: true })"
+            )
             assert result["code"] == "started", f"Expected started, got {result}"
 
-            # Check if timer bar UI element exists and is visible
-            timer_visible = page.evaluate("""() => {
+            # 1. Global fixed timer bar must NOT exist
+            timer_bar_exists = page.evaluate("""() => {
                 const el = document.getElementById('youtube-free-time-timer') || document.querySelector('.youtube-timer-bar');
-                return el ? (el.offsetWidth > 0 && el.offsetHeight > 0) : false;
+                return el !== null;
             }""")
-            assert timer_visible, (
-                "Timer UI element (#youtube-free-time-timer or .youtube-timer-bar) should be visible on page"
-            )
+            assert not timer_bar_exists, "Global fixed timer bar should NOT be created"
 
-            # Verify remaining time text contains 10:00, 09:59, 09:58, 09:57
-            timer_text = page.evaluate("""() => {
-                const el = document.getElementById('youtube-free-time-timer') || document.querySelector('.youtube-timer-bar');
+            # 2. Contextual inventory item must show running countdown
+            page.wait_for_timeout(1000)
+            yt_text = page.evaluate("""() => {
+                const el = document.getElementById('inv-youtube');
                 return el ? el.textContent : '';
             }""")
-            assert any(t in timer_text for t in ["10:00", "09:59", "09:58", "09:57"]), (
-                f"Timer text should show remaining time MM:SS, got: {timer_text}"
+            assert "사용 중" in yt_text or ":" in yt_text, (
+                f"Contextual YouTube control should display running countdown, got: '{yt_text}'"
             )
 
             browser.close()

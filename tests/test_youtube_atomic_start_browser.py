@@ -169,8 +169,8 @@ def _answer_parent_lock(page: Page) -> None:
     page.on("dialog", handle_dialog)
 
 
-def _click_start_button(page: Page) -> None:
-    page.click("#start-yt-btn", force=True)
+def _click_start_button(page: Page, duration: int = 10) -> None:
+    page.click(f'button[data-duration="{duration}"]', force=True)
 
 
 def _get_reward_minutes(page: Page) -> int:
@@ -212,11 +212,11 @@ def _is_start_button_visible(page: Page) -> bool:
     }""")
 
 
-def _is_start_button_disabled(page: Page) -> bool:
-    return page.evaluate("""() => {
-      const btn = document.getElementById('start-yt-btn');
+def _is_start_button_disabled(page: Page, duration: int = 10) -> bool:
+    return page.evaluate(f"""() => {{
+      const btn = document.querySelector('button[data-duration="{duration}"]');
       return btn ? btn.disabled : true;
-    }""")
+    }}""")
 
 
 def test_youtube_atomic_start_flow() -> None:
@@ -289,14 +289,14 @@ def test_youtube_atomic_start_flow() -> None:
             page.click("#yt-unlock-trigger")
             page.wait_for_timeout(500)
 
-            # After approval: start button visible with correct text
+            # After approval: duration choice buttons visible
             assert _is_start_button_visible(page), (
                 "Start button should be visible after approval"
             )
-            start_btn_text = page.locator("#start-yt-btn").text_content()
-            assert "유튜브 자유시간 10분 시작" in start_btn_text, (
-                f"Expected start button text, got: {start_btn_text}"
-            )
+            btn10_text = page.locator('button[data-duration="10"]').text_content()
+            assert "10분" in btn10_text, f"Expected 10분 button, got: {btn10_text}"
+            assert page.locator('button[data-duration="20"]').is_visible()
+            assert page.locator('button[data-duration="30"]').is_visible()
 
             # Informational text present
             info_text = page.locator("#yt-start-area .sub").text_content() or ""
@@ -313,13 +313,25 @@ def test_youtube_atomic_start_flow() -> None:
             # Patch launcher before clicking start
             _patch_external_tab_launcher(page)
 
-            # Debug: check button state
+            # Check button state: 10/20/30 should be enabled (inventory=30)
             btn_state = page.evaluate("""() => {
-              const btn = document.getElementById('start-yt-btn');
-              return { disabled: btn ? btn.disabled : 'not found', hasAttr: btn ? btn.hasAttribute('disabled') : 'not found' };
+              const btn10 = document.querySelector('button[data-duration="10"]');
+              const btn20 = document.querySelector('button[data-duration="20"]');
+              const btn30 = document.querySelector('button[data-duration="30"]');
+              return {
+                btn10: btn10 ? !btn10.disabled : false,
+                btn20: btn20 ? !btn20.disabled : false,
+                btn30: btn30 ? !btn30.disabled : false,
+              };
             }""")
-            assert not btn_state["disabled"], (
-                f"Button should be enabled before click, state: {btn_state}"
+            assert btn_state["btn10"], (
+                f"10 min button should be enabled, state: {btn_state}"
+            )
+            assert btn_state["btn20"], (
+                f"20 min button should be enabled, state: {btn_state}"
+            )
+            assert btn_state["btn30"], (
+                f"30 min button should be enabled, state: {btn_state}"
             )
 
             # Click start button once
@@ -343,9 +355,11 @@ def test_youtube_atomic_start_flow() -> None:
             # Running session created
             assert _get_session_count(page) == 1, "Expected 1 session"
 
-            # Inventory updated
+            # Inventory updated with contextual running countdown
             inv_minutes = _get_inventory_minutes(page)
-            assert "20" in inv_minutes, f"Inventory should show 20, got: {inv_minutes}"
+            assert "사용 중" in inv_minutes or ":" in inv_minutes, (
+                f"Inventory should show running contextual timer, got: {inv_minutes}"
+            )
 
             # Result message shown
             result_msg = _get_result_message(page)
@@ -442,7 +456,7 @@ def test_youtube_popup_blocked() -> None:
             )
 
             # Button re-enabled for retry
-            assert not _is_start_button_disabled(page), (
+            assert not _is_start_button_disabled(page, 10), (
                 "Button should be re-enabled for retry"
             )
 

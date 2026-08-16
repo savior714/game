@@ -1200,6 +1200,56 @@ run("M: finalized committed v2 transaction preserves all 3 states", () => {
   assert.equal(storage.raw(JOURNAL_KEY), null);
 });
 
+// ── N. Fail-closed Allowance ─────────────────────────────────
+
+run("N: missing FreeTimeAllowance fails closed with commit_failed", () => {
+  const initialReward = JSON.stringify({ youtube_minutes: 60 });
+  const storage = new FakeStorage({
+    [REWARD_KEY]: initialReward,
+  });
+  const opener = new FakeOpener();
+  const deps = {
+    storage: storage,
+    openExternal: () => opener.open(),
+    now: MORNING_9AM,
+    sessionId: "sess-no-allowance",
+    FreeTimeSession: FreeTimeSession,
+    FreeTimeAllowance: null,
+    durationMinutes: 10,
+  };
+
+  const result = TxModule.attemptStart(deps);
+  assert.equal(result.code, "commit_failed");
+  assert.equal(opener.callCount, 0);
+  assert.equal(storage.raw(REWARD_KEY), initialReward);
+  assert.equal(storage.raw(SESSION_KEY), null);
+  assert.equal(storage.raw(USAGE_KEY), null);
+  assert.equal(storage.raw(JOURNAL_KEY), null);
+});
+
+run("N: FreeTimeAllowance without evaluateStart fails closed", () => {
+  const initialReward = JSON.stringify({ youtube_minutes: 60 });
+  const storage = new FakeStorage({
+    [REWARD_KEY]: initialReward,
+  });
+  const opener = new FakeOpener();
+  const deps = {
+    storage: storage,
+    openExternal: () => opener.open(),
+    now: MORNING_9AM,
+    sessionId: "sess-bad-allowance",
+    FreeTimeSession: FreeTimeSession,
+    FreeTimeAllowance: {},
+    durationMinutes: 10,
+  };
+
+  const result = TxModule.attemptStart(deps);
+  assert.equal(result.code, "commit_failed");
+  assert.equal(opener.callCount, 0);
+  assert.equal(storage.raw(REWARD_KEY), initialReward);
+  assert.equal(storage.raw(SESSION_KEY), null);
+});
+
 // ── 결과 ─────────────────────────────────────────────────────
 
 console.log(`\nResults: ${passed} passed, ${failed} failed`);

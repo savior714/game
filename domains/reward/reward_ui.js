@@ -248,6 +248,53 @@ const RewardSystemUI = (() => {
     bar.classList.add('ready');
   }
 
+  let currentActiveSession = null;
+  let sessionMonitorIntervalId = null;
+  let activePipWindow = null;
+
+  function updateContextualCountdown(session, remainingMs) {
+    const deadline = session.endsAt || Date.now();
+    const rem = typeof remainingMs === 'number' ? remainingMs : Math.max(0, deadline - Date.now());
+    const formatted = formatTimeMMSS(rem);
+    const isWarning = rem <= 60000 && rem > 0;
+
+    const ytItem = document.querySelector('#reward-inventory .inventory-item[data-type="youtube"]');
+    if (ytItem) {
+      ytItem.classList.add('has-reward');
+      ytItem.classList.remove('empty-slot');
+      ytItem.style.display = 'flex';
+      const valEl = document.getElementById('inv-youtube') || ytItem.querySelector('.val');
+      const unitEl = ytItem.querySelector('.unit');
+      if (valEl) {
+        valEl.textContent = isWarning ? `1분 남음 · ${formatted}` : `사용 중 · ${formatted}`;
+      }
+      if (unitEl) {
+        unitEl.textContent = '';
+      }
+    }
+  }
+
+  function restoreContextualControl() {
+    const ytItem = document.querySelector('#reward-inventory .inventory-item[data-type="youtube"]');
+    if (ytItem) {
+      const state = (typeof RewardSystem !== 'undefined' && typeof RewardSystem.getState === 'function')
+        ? RewardSystem.getState()
+        : null;
+      const count = state ? state.youtube_minutes : 0;
+      const valEl = document.getElementById('inv-youtube') || ytItem.querySelector('.val');
+      const unitEl = ytItem.querySelector('.unit');
+      if (valEl) valEl.textContent = count;
+      if (unitEl) unitEl.textContent = '분';
+      if (count > 0) {
+        ytItem.classList.add('has-reward');
+        ytItem.classList.remove('empty-slot');
+      } else {
+        ytItem.classList.remove('has-reward');
+        ytItem.classList.add('empty-slot');
+      }
+    }
+  }
+
   function updateUI(state) {
     const gems = document.getElementById('inv-gems');
     if (gems) gems.textContent = state.gems;
@@ -255,6 +302,11 @@ const RewardSystemUI = (() => {
     document.querySelectorAll('#reward-inventory .inventory-item[data-type]').forEach(el => {
       const type = el.dataset.type;
       if (!type) return;
+
+      if (type === 'youtube' && currentActiveSession && currentActiveSession.status === 'running' && currentActiveSession.endsAt > Date.now()) {
+        updateContextualCountdown(currentActiveSession);
+        return;
+      }
 
       let count = 0;
       if (type === 'gems') { count = state.gems; }
@@ -266,6 +318,11 @@ const RewardSystemUI = (() => {
 
       const valEl = document.getElementById('inv-' + type);
       if (valEl) valEl.textContent = count;
+
+      if (type === 'youtube') {
+        const unitEl = el.querySelector('.unit');
+        if (unitEl) unitEl.textContent = '분';
+      }
 
       if (type === 'gems') {
         el.classList.add('has-reward');
@@ -417,53 +474,135 @@ const RewardSystemUI = (() => {
     const overlay = createModalOverlay('reward-yt-modal');
     overlay.innerHTML = `
       <div class="reward-modal-content">
-        <div class="icon-bounce" style="font-size:3rem; margin-bottom:15px;">📺</div>
-        <h3>확보된 유튜브 시간</h3>
-        <div class="secured-time-display" style="font-size:2.5rem; font-weight:bold; color:#f43f5e; margin:15px 0;">
-          ${state.youtube_minutes}분
+        <div class="icon-bounce" style="font-size:3rem; margin-bottom:12px;">📺</div>
+        <h3 style="margin:0 0 12px; font-size:1.4rem;">유튜브 자유시간</h3>
+
+        <div class="yt-status-card" style="background:#f8fafc; border-radius:14px; padding:12px 16px; margin:12px 0; font-size:0.95rem; text-align:left; border:1px solid #e2e8f0;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span style="color:#64748b;">보유 자유시간</span>
+            <span style="font-weight:bold; color:#f43f5e;" id="yt-modal-inventory">${state.youtube_minutes}분</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span style="color:#64748b;">오늘 사용</span>
+            <span style="font-weight:bold; color:#0f172a;" id="yt-modal-daily">0 / 60분</span>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span style="color:#64748b;" id="yt-modal-period-label">오전 사용</span>
+            <span style="font-weight:bold; color:#0f172a;" id="yt-modal-period">0 / 30분</span>
+          </div>
         </div>
         
         <div id="yt-lock-area" style="margin: 20px 0;">
           <button id="yt-unlock-trigger" style="background:none; border:none; font-size:4rem; cursor:pointer;" title="부모님용 잠금 해제">🔒</button>
-          <p class="sub" style="color:#666; font-size:0.8rem;">부모님께서 자물쇠를 눌러 승인해 주세요.</p>
+          <p class="sub" style="color:#666; font-size:0.8rem; margin-top:8px;">부모님께서 자물쇠를 눌러 승인해 주세요.</p>
         </div>
 
         <div id="yt-start-area" style="display:none; margin-top:10px;">
-          <button class="btn-primary" id="start-yt-btn" style="background:#f43f5e; border-color:#e11d48; width:100%;">유튜브 자유시간 10분 시작</button>
-          <p class="sub" style="color:#666; font-size:0.8rem; margin-top:10px;">
+          <div style="font-size:0.95rem; font-weight:bold; margin-bottom:10px; color:#334155;">사용할 시간을 선택해 주세요</div>
+          <div class="yt-duration-options" style="display:flex; gap:8px; justify-content:center; margin-bottom:12px;">
+            <button type="button" class="btn-duration btn-duration-10" data-duration="10" style="flex:1; padding:12px 6px; font-weight:bold; font-size:1rem; border-radius:12px; border:none;">10분</button>
+            <button type="button" class="btn-duration btn-duration-20" data-duration="20" style="flex:1; padding:12px 6px; font-weight:bold; font-size:1rem; border-radius:12px; border:none;">20분</button>
+            <button type="button" class="btn-duration btn-duration-30" data-duration="30" style="flex:1; padding:12px 6px; font-weight:bold; font-size:1rem; border-radius:12px; border:none;">30분</button>
+          </div>
+          <p class="sub" style="color:#666; font-size:0.8rem; margin-top:8px; line-height:1.4;">
             새 YouTube 탭이 열려요.<br>
-            게임 탭을 닫지 않아야 이후 타이머와 종료 알림이 유지돼요.<br>
+            게임 탭을 닫지 않아야 종료 알림이 유지돼요.<br>
             일찍 닫아도 사용 시간은 환불되지 않아요.
           </p>
           <div id="yt-result-msg" style="margin-top:10px; font-size:0.9rem; display:none;"></div>
         </div>
 
-        <button class="btn-close" style="margin-top:15px;" data-action="close-overlay">닫기</button>
+        <button class="btn-close" style="margin-top:15px; width:100%;" data-action="close-overlay">닫기</button>
       </div>
     `;
     document.body.appendChild(overlay);
 
     const lockTrigger = overlay.querySelector('#yt-unlock-trigger');
     const startArea = overlay.querySelector('#yt-start-area');
-    const lockArea   = overlay.querySelector('#yt-lock-area');
-    const startBtn  = overlay.querySelector('#start-yt-btn');
+    const lockArea = overlay.querySelector('#yt-lock-area');
     const resultMsg = overlay.querySelector('#yt-result-msg');
-    const display   = overlay.querySelector('.secured-time-display');
+    const displayInv = overlay.querySelector('#yt-modal-inventory');
+    const displayDaily = overlay.querySelector('#yt-modal-daily');
+    const displayPeriod = overlay.querySelector('#yt-modal-period');
+    const displayPeriodLabel = overlay.querySelector('#yt-modal-period-label');
+    const durationBtns = overlay.querySelectorAll('.btn-duration');
+
+    function getQuotaProjection() {
+      if (typeof FreeTimeAllowance !== 'undefined' && typeof FreeTimeAllowance.getRemainingQuota === 'function') {
+        let savedUsage = null;
+        try {
+          savedUsage = JSON.parse(localStorage.getItem(FreeTimeAllowance.STORAGE_KEY) || 'null');
+        } catch (e) {}
+        return FreeTimeAllowance.getRemainingQuota({ usage: savedUsage, now: Date.now() });
+      }
+      return null;
+    }
+
+    function updateStatusDisplay() {
+      const quota = getQuotaProjection();
+      const currentMinutes = (typeof RewardSystem !== 'undefined' && typeof RewardSystem.getState === 'function')
+        ? RewardSystem.getState().youtube_minutes
+        : state.youtube_minutes;
+
+      if (displayInv) displayInv.textContent = `${currentMinutes}분`;
+
+      const dailyUsed = quota ? (quota.morningMinutes + quota.afternoonMinutes) : 0;
+      if (displayDaily) displayDaily.textContent = `${dailyUsed} / 60분`;
+
+      const isAfternoon = quota
+        ? quota.period === (FreeTimeAllowance.PERIOD?.AFTERNOON || 'afternoon')
+        : new Date().getHours() >= 12;
+      const periodUsed = quota ? (isAfternoon ? quota.afternoonMinutes : quota.morningMinutes) : 0;
+      if (displayPeriodLabel) displayPeriodLabel.textContent = `${isAfternoon ? '오후' : '오전'} 사용`;
+      if (displayPeriod) displayPeriod.textContent = `${periodUsed} / 30분`;
+    }
+
+    function updateDurationButtons() {
+      const currentMinutes = (typeof RewardSystem !== 'undefined' && typeof RewardSystem.getState === 'function')
+        ? RewardSystem.getState().youtube_minutes
+        : state.youtube_minutes;
+
+      let savedUsage = null;
+      if (typeof FreeTimeAllowance !== 'undefined') {
+        try {
+          savedUsage = JSON.parse(localStorage.getItem(FreeTimeAllowance.STORAGE_KEY) || 'null');
+        } catch (e) {}
+      }
+
+      durationBtns.forEach(btn => {
+        const d = Number(btn.dataset.duration);
+        const inventoryOk = currentMinutes >= d;
+        let allowanceOk = false;
+        if (typeof FreeTimeAllowance !== 'undefined' && typeof FreeTimeAllowance.evaluateStart === 'function') {
+          const auth = FreeTimeAllowance.evaluateStart({ usage: savedUsage, now: Date.now(), durationMinutes: d });
+          allowanceOk = auth.allowed;
+        }
+        const canStart = inventoryOk && allowanceOk;
+        btn.disabled = !canStart;
+        btn.style.background = canStart ? '#f43f5e' : '#cbd5e1';
+        btn.style.color = canStart ? 'white' : '#64748b';
+        btn.style.cursor = canStart ? 'pointer' : 'not-allowed';
+        btn.style.opacity = canStart ? '1' : '0.6';
+      });
+    }
+
+    updateStatusDisplay();
 
     lockTrigger.addEventListener('click', () => {
-      const n1 = Math.floor(Math.random() * 40) + 11; 
+      const n1 = Math.floor(Math.random() * 40) + 11;
       const n2 = Math.floor(Math.random() * 40) + 11;
       const answer = prompt(`🔒 [부모님 잠금 해제]\n\n계산해 주세요: ${n1} + ${n2} = ?`);
-      
+
       if (String(answer) === String(n1 + n2)) {
         lockArea.style.display = 'none';
         startArea.style.display = 'block';
+        updateDurationButtons();
       } else if (answer !== null) {
         alert('정답이 아닙니다.');
       }
     });
 
-    function showResult(code) {
+    function showResult(code, duration) {
       resultMsg.style.display = 'block';
       switch (code) {
         case 'started':
@@ -477,7 +616,6 @@ const RewardSystemUI = (() => {
         case 'popup_blocked':
           resultMsg.style.color = '#dc2626';
           resultMsg.textContent = '팝업이 차단되었어요. 팝업을 허용한 뒤 다시 눌러 주세요.';
-          startBtn.disabled = false;
           break;
         case 'insufficient_time':
           resultMsg.style.color = '#dc2626';
@@ -486,22 +624,24 @@ const RewardSystemUI = (() => {
         case 'invalid_duration':
           resultMsg.style.color = '#dc2626';
           resultMsg.textContent = '올바르지 않은 시간 설정이에요 (10/20/30분).';
-          startBtn.disabled = false;
           break;
-        case 'exceeds_period_allowance':
+        case 'exceeds_period_allowance': {
+          const isAfternoon = (typeof FreeTimeAllowance !== 'undefined' && typeof FreeTimeAllowance.getPeriod === 'function')
+            ? FreeTimeAllowance.getPeriod(Date.now()) === (FreeTimeAllowance.PERIOD?.AFTERNOON || 'afternoon')
+            : new Date().getHours() >= 12;
           resultMsg.style.color = '#dc2626';
-          resultMsg.textContent = '현재 시간대(오전/오후 30분) 사용 한도를 초과했어요.';
-          startBtn.disabled = false;
+          resultMsg.textContent = isAfternoon
+            ? '오후 자유시간 30분을 모두 사용했어요. 내일 다시 사용할 수 있어요.'
+            : '오전 자유시간 30분을 모두 사용했어요. 오후에 다시 사용할 수 있어요.';
           break;
+        }
         case 'exceeds_daily_allowance':
           resultMsg.style.color = '#dc2626';
-          resultMsg.textContent = '오늘 하루 사용 한도(60분)를 초과했어요.';
-          startBtn.disabled = false;
+          resultMsg.textContent = '오늘 하루 사용 한도(60분)를 초과했어요. 내일 다시 사용할 수 있어요.';
           break;
         case 'crosses_boundary':
           resultMsg.style.color = '#dc2626';
-          resultMsg.textContent = '정오(12:00) 또는 자정(24:00)을 넘는 세션은 시작할 수 없어요.';
-          startBtn.disabled = false;
+          resultMsg.textContent = '지금은 선택한 시간을 다 사용할 수 없어요. 가능한 시간을 선택해 주세요.';
           break;
         case 'commit_failed':
         case 'recovery_required':
@@ -516,34 +656,28 @@ const RewardSystemUI = (() => {
       }
     }
 
-    startBtn.addEventListener('click', () => {
-      startBtn.disabled = true;
-      resultMsg.style.display = 'none';
+    durationBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const duration = Number(btn.dataset.duration);
+        durationBtns.forEach(b => { b.disabled = true; });
+        resultMsg.style.display = 'none';
 
-      try {
-        primeFreeTimeAlertAudio();
-      } catch (e) {
-        // audio preparation failure must not block session start
-      }
-
-      const result = RewardSystem.startYouTubeSession();
-      showResult(result.code);
-
-      if (result.code === 'started') {
-        display.textContent = `${RewardSystem.getState().youtube_minutes}분`;
-        if (RewardSystem.getState().youtube_minutes < 10) {
-          setTimeout(() => overlay.remove(), 2000);
+        try {
+          primeFreeTimeAlertAudio();
+        } catch (e) {
+          // audio preparation failure must not block session start
         }
-      } else if (result.code === 'already_active') {
-        startBtn.disabled = false;
-      } else if (result.code === 'popup_blocked') {
-        startBtn.disabled = false;
-      } else if (result.code === 'insufficient_time') {
-        display.textContent = `${RewardSystem.getState().youtube_minutes}분`;
-        startBtn.disabled = false;
-      } else {
-        startBtn.disabled = false;
-      }
+
+        const result = RewardSystem.startYouTubeSession(duration, { isDirectUserStart: true });
+        showResult(result.code, duration);
+
+        if (result.code === 'started') {
+          updateStatusDisplay();
+          setTimeout(() => overlay.remove(), 1500);
+        } else {
+          updateDurationButtons();
+        }
+      });
     });
   }
 
@@ -764,8 +898,6 @@ const RewardSystemUI = (() => {
     }
   });
 
-  let timerIntervalId = null;
-
   function formatTimeMMSS(ms) {
     const totalSec = Math.max(0, Math.floor(ms / 1000));
     const mins = Math.floor(totalSec / 60);
@@ -834,7 +966,6 @@ const RewardSystemUI = (() => {
 
     const ackBtn = overlay.querySelector('#yt-ack-btn');
     ackBtn.addEventListener('click', () => {
-      // Mark acknowledged in storage
       session.status = 'acknowledged';
       session.acknowledgedAt = Date.now();
       try {
@@ -842,120 +973,105 @@ const RewardSystemUI = (() => {
       } catch (e) {}
 
       overlay.remove();
-      const timerBar = document.getElementById('youtube-free-time-timer');
-      if (timerBar) timerBar.remove();
+      currentActiveSession = null;
+      restoreContextualControl();
     });
   }
 
-  function startTimerLoop(session) {
-    if (timerIntervalId) clearInterval(timerIntervalId);
+  function startSessionMonitor(session) {
+    if (sessionMonitorIntervalId) {
+      clearInterval(sessionMonitorIntervalId);
+      sessionMonitorIntervalId = null;
+    }
+    currentActiveSession = session;
 
-    function update() {
+    function tick() {
       try {
         const raw = localStorage.getItem('study_youtube_free_time_session_v1');
         if (raw) {
           const saved = JSON.parse(raw);
           if (saved && saved.sessionId === session.sessionId) {
             session.endsAt = saved.endsAt || session.endsAt;
-            session.deadline = saved.deadline || session.deadline;
+            session.status = saved.status || session.status;
+            session.warningEmittedAt = saved.warningEmittedAt || session.warningEmittedAt;
+            session.expiredAt = saved.expiredAt || session.expiredAt;
           }
         }
       } catch (e) {}
 
-      const deadline = session.endsAt || session.deadline || Date.now();
+      const deadline = session.endsAt || Date.now();
       const remainingMs = Math.max(0, deadline - Date.now());
-      const formatted = formatTimeMMSS(remainingMs);
-      const textEl = document.getElementById('yt-timer-text');
-      if (textEl) textEl.textContent = formatted;
 
-      const progressEl = document.getElementById('yt-timer-progress');
-      if (progressEl && session.durationMs > 0) {
-        const pct = Math.min(100, Math.max(0, (remainingMs / session.durationMs) * 100));
-        progressEl.style.width = `${pct}%`;
+      // 1-minute warning: remaining <= 60s, exactly once
+      if (remainingMs <= 60000 && remainingMs > 0 && !session.warningEmittedAt) {
+        session.warningEmittedAt = Date.now();
+        try {
+          localStorage.setItem('study_youtube_free_time_session_v1', JSON.stringify(session));
+        } catch (e) {}
+        triggerAudioAlert();
       }
 
+      // Expiry transition
       if (remainingMs <= 0) {
-        clearInterval(timerIntervalId);
-        timerIntervalId = null;
-        if (textEl) textEl.textContent = '00:00';
+        clearInterval(sessionMonitorIntervalId);
+        sessionMonitorIntervalId = null;
         session.status = 'expired';
         session.expiredAt = session.expiredAt || Date.now();
         try {
           localStorage.setItem('study_youtube_free_time_session_v1', JSON.stringify(session));
         } catch (e) {}
+        currentActiveSession = null;
+        restoreContextualControl();
+        if (activePipWindow && !activePipWindow.closed) {
+          try { activePipWindow.close(); } catch (e) {}
+          activePipWindow = null;
+        }
         renderExpiryOverlay(session);
+        return;
+      }
+
+      updateContextualCountdown(session, remainingMs);
+
+      if (activePipWindow && !activePipWindow.closed && activePipWindow.document) {
+        const pipText = activePipWindow.document.getElementById('pip-timer-text');
+        if (pipText) {
+          pipText.textContent = formatTimeMMSS(remainingMs);
+        }
       }
     }
 
-    update();
-    timerIntervalId = setInterval(update, 1000);
+    tick();
+    sessionMonitorIntervalId = setInterval(tick, 1000);
   }
 
-  function renderFreeTimeTimerUI(session) {
+  function renderFreeTimeTimerUI(session, options) {
     if (!session || session.status !== 'running') return;
-    const deadline = session.endsAt || session.deadline || Date.now();
+    startSessionMonitor(session);
 
-    // 1. Try Document Picture-in-Picture if available and requested
-    if ('documentPictureInPicture' in window && typeof window.documentPictureInPicture.requestWindow === 'function') {
+    const isDirectUserStart = Boolean(options && options.isDirectUserStart);
+    if (isDirectUserStart && 'documentPictureInPicture' in window && typeof window.documentPictureInPicture.requestWindow === 'function') {
       try {
+        const deadline = session.endsAt || Date.now();
+        const initialRem = Math.max(0, deadline - Date.now());
         window.documentPictureInPicture.requestWindow({ width: 320, height: 140 }).then((pipWin) => {
+          activePipWindow = pipWin;
           pipWin.document.body.innerHTML = `
             <div style="font-family: sans-serif; padding: 12px; background: #0f172a; color: white; border-radius: 8px; text-align: center;">
               <div style="font-size: 0.9rem; font-weight: bold; color: #f43f5e;">📺 유튜브 자유시간</div>
-              <div id="pip-timer-text" style="font-size: 2rem; font-weight: bold; margin: 6px 0;">${formatTimeMMSS(deadline - Date.now())}</div>
+              <div id="pip-timer-text" style="font-size: 2rem; font-weight: bold; margin: 6px 0;">${formatTimeMMSS(initialRem)}</div>
               <div style="font-size: 0.75rem; color: #94a3b8;">게임 탭을 닫지 마세요</div>
             </div>
           `;
-          const pipInterval = setInterval(() => {
-            const rem = Math.max(0, deadline - Date.now());
-            const text = pipWin.document.getElementById('pip-timer-text');
-            if (text) text.textContent = formatTimeMMSS(rem);
-            if (rem <= 0) clearInterval(pipInterval);
-          }, 1000);
-          pipWin.addEventListener('unload', () => clearInterval(pipInterval));
-          return;
+          pipWin.addEventListener('unload', () => {
+            activePipWindow = null;
+          });
         }).catch(() => {
-          renderFixedTabTimerBar(session);
+          // Document PiP rejected or failed: session continues seamlessly without global fixed bar
         });
-        // Still render fixed tab timer bar in case PiP window is backgrounded or fails
-        renderFixedTabTimerBar(session);
-        return;
       } catch (e) {
-        renderFixedTabTimerBar(session);
-        return;
+        // Document PiP exception: session continues seamlessly
       }
     }
-
-    renderFixedTabTimerBar(session);
-  }
-
-  function renderFixedTabTimerBar(session) {
-    let timerBar = document.getElementById('youtube-free-time-timer');
-    if (!timerBar) {
-      timerBar = document.createElement('div');
-      timerBar.id = 'youtube-free-time-timer';
-      timerBar.className = 'youtube-timer-bar';
-      timerBar.style.cssText = `
-        position: fixed; top: 0; left: 0; width: 100%; z-index: 9999;
-        background: linear-gradient(90deg, #0f172a 0%, #1e293b 100%);
-        color: white; padding: 8px 16px; display: flex; align-items: center; justify-content: space-between;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3); font-family: sans-serif; font-size: 0.95rem; font-weight: bold;
-      `;
-      timerBar.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span>📺 유튜브 자유시간</span>
-          <div style="width: 120px; height: 6px; background: #334155; border-radius: 3px; overflow: hidden;">
-            <div id="yt-timer-progress" style="height: 100%; width: 100%; background: #f43f5e; transition: width 1s linear;"></div>
-          </div>
-        </div>
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <span id="yt-timer-text" style="font-size: 1.2rem; color: #f43f5e; font-variant-numeric: tabular-nums;">--:--</span>
-          <span style="font-size: 0.75rem; color: #94a3b8; font-weight: normal;">(게임 탭 유치)</span>
-        </div>
-      `;
-      document.body.prepend(timerBar);
-    }
-    startTimerLoop(session);
   }
 
   function renderExpiredFreeTimeSessionUI(session) {

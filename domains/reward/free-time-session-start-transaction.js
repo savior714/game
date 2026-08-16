@@ -151,8 +151,8 @@
   }
 
   function _resolveFreeTimeAllowance(deps) {
-    if (deps && deps.FreeTimeAllowance) {
-      return deps.FreeTimeAllowance;
+    if (deps && Object.prototype.hasOwnProperty.call(deps, "FreeTimeAllowance")) {
+      return deps.FreeTimeAllowance || null;
     }
     if (typeof globalThis !== "undefined" && globalThis.FreeTimeAllowance) {
       return globalThis.FreeTimeAllowance;
@@ -246,33 +246,27 @@
     let targetUsage = null;
     const usageRawIn = storage.getItem(USAGE_STORAGE_KEY);
 
-    if (FreeTimeAllowance && typeof FreeTimeAllowance.evaluateStart === "function") {
-      let savedUsage = null;
-      if (usageRawIn !== null) {
-        try {
-          savedUsage = JSON.parse(usageRawIn);
-        } catch (e) {
-          savedUsage = null;
-        }
-      }
-      const authResult = FreeTimeAllowance.evaluateStart({
-        usage: savedUsage,
-        now: now,
-        durationMinutes: durationMinutes,
-      });
-      if (!authResult.allowed) {
-        return { code: authResult.reason };
-      }
-      targetUsage = authResult.nextUsage;
-    } else {
-      if (
-        typeof durationMinutes !== "number" ||
-        !Number.isFinite(durationMinutes) ||
-        ![10, 20, 30].includes(durationMinutes)
-      ) {
-        return { code: RESULT.INVALID_DURATION };
+    if (!FreeTimeAllowance || typeof FreeTimeAllowance.evaluateStart !== "function") {
+      return { code: RESULT.COMMIT_FAILED };
+    }
+
+    let savedUsage = null;
+    if (usageRawIn !== null) {
+      try {
+        savedUsage = JSON.parse(usageRawIn);
+      } catch (e) {
+        savedUsage = null;
       }
     }
+    const authResult = FreeTimeAllowance.evaluateStart({
+      usage: savedUsage,
+      now: now,
+      durationMinutes: durationMinutes,
+    });
+    if (!authResult.allowed) {
+      return { code: authResult.reason };
+    }
+    targetUsage = authResult.nextUsage;
 
     // 4: check reward balance
     const rewardRawIn = storage.getItem(REWARD_STORAGE_KEY);

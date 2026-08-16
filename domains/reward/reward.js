@@ -294,7 +294,7 @@ const RewardSystem = (() => {
     }
   }
 
-  function startYouTubeSession(durationMinutes) {
+  function startYouTubeSession(durationMinutes, options) {
     if (typeof FreeTimeSessionStartTransaction === 'undefined') {
       console.error('[RewardSystem] FreeTimeSessionStartTransaction not loaded');
       return { code: 'commit_failed' };
@@ -307,6 +307,10 @@ const RewardSystem = (() => {
       console.error('[RewardSystem] FreeTimeSession not loaded');
       return { code: 'commit_failed' };
     }
+    if (typeof FreeTimeAllowance === 'undefined') {
+      console.error('[RewardSystem] FreeTimeAllowance not loaded');
+      return { code: 'commit_failed' };
+    }
 
     const openExternal = ExternalTabLauncher.createOpenExternal(window, 'https://www.youtube.com/');
     const sessionId = 'yt-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
@@ -317,14 +321,14 @@ const RewardSystem = (() => {
       now: Date.now(),
       sessionId: sessionId,
       FreeTimeSession: FreeTimeSession,
-      FreeTimeAllowance: typeof FreeTimeAllowance !== 'undefined' ? FreeTimeAllowance : undefined,
+      FreeTimeAllowance: FreeTimeAllowance,
       durationMinutes: durationMinutes !== undefined ? durationMinutes : 10,
     });
 
     if (result.code === 'started') {
       refreshFromStorage();
       if (typeof RewardSystemUI !== 'undefined' && typeof RewardSystemUI.renderFreeTimeTimerUI === 'function') {
-        RewardSystemUI.renderFreeTimeTimerUI(result.session);
+        RewardSystemUI.renderFreeTimeTimerUI(result.session, options);
       }
     }
 
@@ -355,7 +359,7 @@ const RewardSystem = (() => {
         const restored = FreeTimeSession.restore({ savedSession: saved, now: Date.now() });
         const sel = FreeTimeSession.select(restored, Date.now());
         if (sel.active && typeof RewardSystemUI !== 'undefined' && typeof RewardSystemUI.renderFreeTimeTimerUI === 'function') {
-          RewardSystemUI.renderFreeTimeTimerUI(restored);
+          RewardSystemUI.renderFreeTimeTimerUI(restored, { isDirectUserStart: false });
         } else if (sel.expired && typeof RewardSystemUI !== 'undefined' && typeof RewardSystemUI.renderExpiredFreeTimeSessionUI === 'function') {
           try {
             localStorage.setItem('study_youtube_free_time_session_v1', JSON.stringify(restored));

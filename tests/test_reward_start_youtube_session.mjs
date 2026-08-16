@@ -23,6 +23,9 @@ const require = createRequire(import.meta.url);
 const FREE_TIME_SESSION_PATH = resolve(
   __dirname, "..", "shared", "domain", "free-time-session.js",
 );
+const FREE_TIME_ALLOWANCE_PATH = resolve(
+  __dirname, "..", "shared", "domain", "free-time-allowance.js",
+);
 const TX_PATH = resolve(
   __dirname, "..", "domains", "reward", "free-time-session-start-transaction.js",
 );
@@ -31,6 +34,7 @@ const REWARD_KEY = "study_rewards";
 const SESSION_KEY = "study_youtube_free_time_session_v1";
 
 let FreeTimeSession;
+let FreeTimeAllowance;
 let TxModule;
 
 function loadModule(path) {
@@ -49,6 +53,13 @@ try {
   FreeTimeSession = loadModule(FREE_TIME_SESSION_PATH);
 } catch (e) {
   console.error("Failed to load FreeTimeSession:", e.message);
+  process.exit(1);
+}
+
+try {
+  FreeTimeAllowance = loadModule(FREE_TIME_ALLOWANCE_PATH);
+} catch (e) {
+  console.error("Failed to load FreeTimeAllowance:", e.message);
   process.exit(1);
 }
 
@@ -153,9 +164,9 @@ function run(name, fn) {
   }
 }
 
-// ── Dep builder matching startYouTubeSession internals ─────────
+const MORNING_9AM = new Date(2026, 7, 16, 9, 0, 0, 0).getTime();
 
-function makeStartDeps(storage, launcher) {
+function makeStartDeps(storage, launcher, opts = {}) {
   const openExternal = function() {
     return launcher.launch("https://www.youtube.com/");
   };
@@ -163,9 +174,11 @@ function makeStartDeps(storage, launcher) {
   return {
     storage: storage,
     openExternal: openExternal,
-    now: 1000000,
+    now: opts.now !== undefined ? opts.now : MORNING_9AM,
     sessionId: sessionId,
     FreeTimeSession: FreeTimeSession,
+    FreeTimeAllowance: opts.FreeTimeAllowance !== undefined ? opts.FreeTimeAllowance : FreeTimeAllowance,
+    durationMinutes: opts.durationMinutes !== undefined ? opts.durationMinutes : 10,
   };
 }
 
@@ -306,7 +319,7 @@ run("B: no journal after popup blocked", () => {
 // ── C. already_active ────────────────────────────────────────
 
 run("C: existing active session returns already_active", () => {
-  const session = FreeTimeSession.start({ now: 1000000, sessionId: "sess-existing", source: "reward" });
+  const session = FreeTimeSession.start({ now: MORNING_9AM, sessionId: "sess-existing", source: "reward" });
   const storage = new FakeStorage({
     [REWARD_KEY]: JSON.stringify({ youtube_minutes: 30 }),
     [SESSION_KEY]: JSON.stringify(session),
@@ -317,7 +330,7 @@ run("C: existing active session returns already_active", () => {
 });
 
 run("C: opener not called when already active", () => {
-  const session = FreeTimeSession.start({ now: 1000000, sessionId: "sess-existing", source: "reward" });
+  const session = FreeTimeSession.start({ now: MORNING_9AM, sessionId: "sess-existing", source: "reward" });
   const storage = new FakeStorage({
     [REWARD_KEY]: JSON.stringify({ youtube_minutes: 30 }),
     [SESSION_KEY]: JSON.stringify(session),
@@ -328,7 +341,7 @@ run("C: opener not called when already active", () => {
 });
 
 run("C: reward unchanged when already active", () => {
-  const session = FreeTimeSession.start({ now: 1000000, sessionId: "sess-existing", source: "reward" });
+  const session = FreeTimeSession.start({ now: MORNING_9AM, sessionId: "sess-existing", source: "reward" });
   const storage = new FakeStorage({
     [REWARD_KEY]: JSON.stringify({ youtube_minutes: 30 }),
     [SESSION_KEY]: JSON.stringify(session),
@@ -340,7 +353,7 @@ run("C: reward unchanged when already active", () => {
 });
 
 run("C: original session preserved on already_active", () => {
-  const session = FreeTimeSession.start({ now: 1000000, sessionId: "sess-existing", source: "reward" });
+  const session = FreeTimeSession.start({ now: MORNING_9AM, sessionId: "sess-existing", source: "reward" });
   const sessionRaw = JSON.stringify(session);
   const storage = new FakeStorage({
     [REWARD_KEY]: JSON.stringify({ youtube_minutes: 30 }),
@@ -433,6 +446,49 @@ run("E: double click — exactly one session", () => {
   TxModule.attemptStart(makeStartDeps(storage, launcher));
   const session = JSON.parse(storage.raw(SESSION_KEY));
   assert.equal(session.status, "running");
+});
+
+// ── F. Duration propagation (20/30분) ─────────────────────────
+
+run("F: 20-minute start deducts 20 minutes and sets 20min duration", () => {
+  const storage = new FakeStorage({
+    [REWARD_KEY]: JSON.stringify({ youtube_minutes: 50 }),
+  });
+  const launcher = new FakeExternalTabLauncher();
+  const res = TxModule.attemptStart(makeStartDeps(storage, launcher, { durationMinutes: 20 }));
+  assert.equal(res.code, "started");
+  assert.equal(res.session.durationMs, 1200000);
+  assert.equal(res.session.chargedMinutes, 20);
+  const reward = JSON.parse(storage.raw(REWARD_KEY));
+  assert.equal(reward.youtube_minutes, 30);
+});
+
+run("F: 30-minute start deducts 30 minutes and sets 30min duration", () => {
+  const storage = new FakeStorage({
+    [REWARD_KEY]: JSON.stringify({ youtube_minutes: 60 }),
+  });
+  const launcher = new FakeExternalTabLauncher();
+  const res = TxModule.attemptStart(makeStartDeps(storage, launcher, { durationMinutes: 30 }));
+  assert.equal(res.code, "started");
+  assert.equal(res.session.durationMs, 1800000);
+  assert.equal(res.session.chargedMinutes, 30);
+  const reward = JSON.parse(storage.raw(REWARD_KEY));
+  assert.equal(reward.youtube_minutes, 30);
+});
+
+// ── G. Fail-closed on missing FreeTimeAllowance ────────────────
+
+run("G: missing FreeTimeAllowance fails closed with commit_failed", () => {
+  const storage = new FakeStorage({
+    [REWARD_KEY]: JSON.stringify({ youtube_minutes: 60 }),
+  });
+  const launcher = new FakeExternalTabLauncher();
+  const res = TxModule.attemptStart(makeStartDeps(storage, launcher, { FreeTimeAllowance: null }));
+  assert.equal(res.code, "commit_failed");
+  assert.equal(launcher.callCount, 0);
+  const reward = JSON.parse(storage.raw(REWARD_KEY));
+  assert.equal(reward.youtube_minutes, 60);
+  assert.equal(storage.raw(SESSION_KEY), null);
 });
 
 // ── 결과 ─────────────────────────────────────────────────────

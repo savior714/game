@@ -60,10 +60,27 @@ window.addEventListener('DOMContentLoaded', () => {
 function setSubject(sub) {
   currentSubject = sub;
   
+  // 수학 학습 진도 스냅샷 섹션 노출 제어 (수학만)
+  const mathSection = document.getElementById('math-progress-snapshot-section');
+  if (mathSection) {
+    mathSection.style.display = (sub === 'math') ? 'block' : 'none';
+  }
+  if (sub === 'math') {
+    renderMathProgressSnapshot();
+  }
+
   // 주간 단어 섹션 노출 제어 (영어만)
   const wwSection = document.getElementById('weekly-words-section');
   if (wwSection) wwSection.style.display = (sub === 'english') ? 'block' : 'none';
   if (sub === 'english') loadWeeklyWords();
+
+  // 다른 패널 복구
+  const previewParent = document.getElementById('preview-container')?.parentElement;
+  if (previewParent) previewParent.style.display = 'block';
+  const rewardSection = document.getElementById('reward-custom-section');
+  if (rewardSection) rewardSection.style.display = 'block';
+  const growthPanel = document.getElementById('growth-panel');
+  if (growthPanel) growthPanel.classList.add('hidden');
 
   // 탭 라벨 스타일 변환
   document.querySelectorAll('.tab-btn').forEach(b => {
@@ -71,8 +88,10 @@ function setSubject(sub) {
     b.classList.add('inactive-tab');
   });
   const t = document.getElementById(`tab-${sub}`);
-  t.classList.remove('inactive-tab');
-  t.classList.add('active-tab');
+  if (t) {
+    t.classList.remove('inactive-tab');
+    t.classList.add('active-tab');
+  }
 
   // 로컬 스토리지에서 현재 레벨 산출
   const key = STORAGE_KEYS[sub];
@@ -92,10 +111,20 @@ function setSubject(sub) {
               if(stats[firstDomain].levels[i].attempts > 3 && (stats[firstDomain].levels[i].correct / stats[firstDomain].levels[i].attempts) >= 0.9) {
                 baseLevel = i+1;
               } else break;
+           }
+        }
+      }
+    } catch(e) {}
+  }
+
+  const sl = document.getElementById('level-slider');
+  if (sl) {
+    sl.value = baseLevel;
+    onSliderChange(baseLevel);
   }
 }
 
-// Slider input handler (replaces oninput="onSliderChange(this.value)")
+// Slider input handler
 document.addEventListener('input', (e) => {
   if (e.target.id === 'level-slider' && window.onSliderChange) {
     window.onSliderChange(e.target.value);
@@ -151,14 +180,6 @@ document.addEventListener('click', (e) => {
       break;
   }
 });
-      }
-    } catch(e) {}
-  }
-  
-  const sl = document.getElementById('level-slider');
-  sl.value = baseLevel;
-  onSliderChange(baseLevel);
-}
 
 function onSliderChange(val) {
   currentLevel = parseInt(val, 10);
@@ -625,6 +646,8 @@ function deleteWeeklyWord(idx) {
 // ──────────────────────────────────────────
 function showGrowthTab() {
   // Hide subject panels, show growth panel
+  const mathSection = document.getElementById('math-progress-snapshot-section');
+  if (mathSection) mathSection.style.display = 'none';
   document.getElementById('preview-container').parentElement.style.display = 'none';
   document.getElementById('weekly-words-section').style.display = 'none';
   document.getElementById('reward-custom-section').style.display = 'none';
@@ -831,4 +854,272 @@ function renderInsights(summary) {
     div.textContent = '아직 학습 기록이 부족합니다. 열심히 공부해보세요!';
     container.appendChild(div);
   }
+}
+
+// ──────────────────────────────────────────
+// 수학 보호자 학습 진도 스냅샷 (Math Guardian Progress Snapshot)
+// ──────────────────────────────────────────
+
+function escapeHtml(str) {
+  if (typeof str !== 'string') return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+const STATUS_BADGE_CLASSES = {
+  MASTERED: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+  NEEDS_REVIEW: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
+  STRUGGLING: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
+  PRACTICING: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+  NOT_STARTED: 'bg-slate-700/30 text-slate-400 border-white/10',
+};
+
+function renderMathProgressSnapshot() {
+  const container = document.getElementById('math-progress-snapshot-section');
+  if (!container) return;
+
+  let evidenceList = [];
+  let skillCatalog = {};
+  let skillOrder = [];
+  let masteryMap = {};
+  let dailyGoal = null;
+  const now = Date.now();
+
+  try {
+    if (window.MathEvidenceStore && typeof window.MathEvidenceStore.getEvidenceList === 'function') {
+      evidenceList = window.MathEvidenceStore.getEvidenceList();
+    }
+    if (window.MathSkills) {
+      skillCatalog = window.MathSkills.MATH_SKILLS || {};
+      skillOrder = window.MathSkills.MATH_SKILL_ORDER || Object.keys(skillCatalog);
+    }
+    if (window.MathMasteryEngine && typeof window.MathMasteryEngine.computeAllSkillsMastery === 'function') {
+      masteryMap = window.MathMasteryEngine.computeAllSkillsMastery(skillOrder, evidenceList, now);
+    }
+    if (window.MathDailyGoalEngine && typeof window.MathDailyGoalEngine.loadDailyGoal === 'function') {
+      dailyGoal = window.MathDailyGoalEngine.loadDailyGoal();
+    }
+  } catch (err) {
+    console.warn('[Guardian] Failed to read canonical math state:', err);
+  }
+
+  let snapshot = null;
+  if (window.MathGuardianSummary && typeof window.MathGuardianSummary.buildGuardianMathSnapshot === 'function') {
+    snapshot = window.MathGuardianSummary.buildGuardianMathSnapshot({
+      skillCatalog: skillCatalog,
+      skillOrder: skillOrder,
+      evidenceList: evidenceList,
+      masteryMap: masteryMap,
+      dailyGoal: dailyGoal,
+      now: now,
+    });
+  }
+
+  if (!snapshot) {
+    container.innerHTML = `
+      <div class="bg-[#0e1422]/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10 text-center text-xs text-slate-400">
+        진도 데이터를 불러올 수 없습니다.
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+
+  // 1. 헤더
+  html += `
+    <div class="flex items-center justify-between">
+      <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+        <span class="text-lg">📈</span>
+        <span>수학 학습 진도 스냅샷</span>
+      </h3>
+      <span class="text-xs px-2.5 py-1 rounded-full bg-[#d7ff00]/10 text-[#d7ff00] font-bold border border-[#d7ff00]/20">
+        보호자 전용 진도표
+      </span>
+    </div>
+  `;
+
+  // 2. 오늘의 목표 카드 (Today's Goal Card)
+  const todayGoal = snapshot.todayGoal;
+  html += `
+    <div class="bg-[#0e1422]/90 backdrop-blur-xl rounded-2xl p-5 shadow-2xl border border-white/10">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">🎯</span>
+          <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">오늘의 수학 목표</span>
+        </div>
+        ${todayGoal.hasGoal ? (
+          todayGoal.completed
+            ? '<span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black">오늘 목표 완료 ✓</span>'
+            : '<span class="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-bold">도전 중</span>'
+        ) : (
+          '<span class="px-2.5 py-0.5 rounded-full bg-white/10 text-slate-400 text-xs font-medium">목표 미설정</span>'
+        )}
+      </div>
+      <div class="text-base font-extrabold text-white mb-2">
+        ${escapeHtml(todayGoal.skillName)}
+      </div>
+      ${todayGoal.hasGoal ? `
+        <div class="flex items-center justify-between text-xs text-slate-400 mb-2 font-medium">
+          <span>목표 진행도</span>
+          <span class="font-mono font-bold text-white">${todayGoal.currentCount} / ${todayGoal.targetCount} 완료</span>
+        </div>
+        <div class="w-full bg-black/40 rounded-full h-2 overflow-hidden border border-white/10">
+          <div class="bg-[#d7ff00] h-full rounded-full transition-all duration-300" style="width: ${todayGoal.progressPercent}%;"></div>
+        </div>
+      ` : `
+        <p class="text-xs text-slate-400 leading-relaxed">
+          아이가 수학 놀이를 시작하면 오늘의 맞춤형 스킬 목표가 자동으로 추천됩니다.
+        </p>
+      `}
+    </div>
+  `;
+
+  // 3. 빈 상태인 경우 (Empty State)
+  if (snapshot.isEmpty) {
+    html += `
+      <div class="bg-[#0e1422]/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10 text-center">
+        <div class="text-4xl mb-3">🌱</div>
+        <h4 class="text-sm font-bold text-white mb-1">아직 기록된 수학 학습 증거가 없습니다</h4>
+        <p class="text-xs text-slate-400 leading-relaxed max-w-md mx-auto">
+          아이가 수학 놀이에서 문제를 풀기 시작하면, 여기에 실제 학습 결과, 취약점 분석, 복습 시점 안내 및 풀이 변화가 나타납니다.
+        </p>
+      </div>
+    `;
+    container.innerHTML = html;
+    return;
+  }
+
+  // 4. 지금 살펴볼 스킬 (Attention Priority Cards)
+  if (snapshot.attentionSkills && snapshot.attentionSkills.length > 0) {
+    let attentionCardsHtml = '';
+    for (const skill of snapshot.attentionSkills) {
+      const badgeClass = STATUS_BADGE_CLASSES[skill.status] || STATUS_BADGE_CLASSES.PRACTICING;
+      const rankIcon = skill.status === 'STRUGGLING' ? '🚨' : (skill.status === 'NEEDS_REVIEW' ? '🔄' : '⚡');
+
+      attentionCardsHtml += `
+        <div class="bg-white/5 border border-white/10 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-sm">${rankIcon}</span>
+              <span class="text-sm font-bold text-white">${escapeHtml(skill.name)}</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full border font-bold ${badgeClass}">
+                ${escapeHtml(skill.statusLabel)}
+              </span>
+            </div>
+            <p class="text-xs text-slate-300 font-medium">
+              ${escapeHtml(skill.growthSummary)}
+            </p>
+          </div>
+          <div class="text-right shrink-0">
+            <div class="text-xs text-slate-400">최근 결과</div>
+            <div class="text-sm font-mono font-bold text-[#d7ff00]">
+              ${skill.recentCorrect} / ${skill.recentAttempts} 정답
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    html += `
+      <div class="bg-[#0e1422]/90 backdrop-blur-xl rounded-2xl p-5 shadow-2xl border border-amber-500/20">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-base">⚠️</span>
+          <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider">지금 살펴볼 스킬 (집중 필요)</h4>
+        </div>
+        <div class="space-y-2.5">
+          ${attentionCardsHtml}
+        </div>
+      </div>
+    `;
+  }
+
+  // 5. 잘하고 있는 스킬 (Mastered Strengths)
+  if (snapshot.masteredSkills && snapshot.masteredSkills.length > 0) {
+    let masteredTagsHtml = '';
+    for (const skill of snapshot.masteredSkills) {
+      masteredTagsHtml += `
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs font-bold">
+          <span>✨</span>
+          <span>${escapeHtml(skill.shortName)}</span>
+          <span class="text-[10px] opacity-75 font-mono">(${skill.totalAttempts}회 완료)</span>
+        </div>
+      `;
+    }
+
+    html += `
+      <div class="bg-[#0e1422]/90 backdrop-blur-xl rounded-2xl p-5 shadow-2xl border border-emerald-500/20">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="text-base">🌟</span>
+          <h4 class="text-xs font-bold text-emerald-400 uppercase tracking-wider">잘하고 있어요 (숙달 완료)</h4>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          ${masteredTagsHtml}
+        </div>
+      </div>
+    `;
+  }
+
+  // 6. 스킬별 상세 학습 현황 목록
+  let allSkillsHtml = '';
+  for (const skill of snapshot.skillSnapshots) {
+    const badgeClass = STATUS_BADGE_CLASSES[skill.status] || STATUS_BADGE_CLASSES.NOT_STARTED;
+    const trendIcon = skill.trend === 'improved' ? '📈' : (skill.trend === 'declined' ? '📉' : (skill.trend === 'maintained' ? '➡️' : ''));
+
+    allSkillsHtml += `
+      <div class="bg-white/5 border border-white/10 rounded-xl p-3.5 transition-all hover:bg-white/[0.07]">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-bold text-white">${escapeHtml(skill.name)}</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full border font-bold ${badgeClass}">
+              ${escapeHtml(skill.statusLabel)}
+            </span>
+          </div>
+          <div class="flex items-center gap-2 text-[11px] text-slate-400 font-mono">
+            ${skill.curriculumRef ? `<span class="bg-black/30 px-1.5 py-0.5 rounded">${escapeHtml(skill.curriculumRef)}</span>` : ''}
+            <span>총 ${skill.totalAttempts}회 시도</span>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-300 gap-1 bg-black/20 p-2.5 rounded-lg border border-white/5">
+          <div>
+            <span class="text-slate-400">최근 풀이:</span>
+            <span class="font-bold text-white ml-1 font-mono">${skill.recentAttempts > 0 ? `${skill.recentCorrect} / ${skill.recentAttempts} 정답` : '기록 없음'}</span>
+          </div>
+          <div class="text-xs text-slate-300">
+            ${skill.hasPreviousComparison ? `
+              <span class="text-slate-400">이전 대비:</span>
+              <span class="font-bold text-[#d7ff00] ml-1">${escapeHtml(skill.trendText)} ${trendIcon}</span>
+              <span class="text-slate-400 font-mono text-[11px] ml-1">(직전 ${skill.previousCorrect}/${skill.previousAttempts})</span>
+            ` : `
+              <span class="text-slate-400 text-[11px]">${escapeHtml(skill.growthSummary)}</span>
+            `}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  html += `
+    <div class="bg-[#0e1422]/90 backdrop-blur-xl rounded-2xl p-5 shadow-2xl border border-white/10">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <span class="text-base">📋</span>
+          <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">교육과정 스킬별 학습 현황</h4>
+        </div>
+        <span class="text-[11px] text-slate-400 font-medium font-mono">
+          ${snapshot.summary.practicedSkillCount} / ${snapshot.summary.totalSkillCount} 스킬 연습
+        </span>
+      </div>
+      <div class="space-y-3">
+        ${allSkillsHtml}
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
 }

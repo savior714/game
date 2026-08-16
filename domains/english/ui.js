@@ -108,6 +108,10 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+function renderTaskPrompt(text, icon = '👉') {
+  return `<div class="q-hint"><strong>${icon} ${escapeHtml(text)}</strong></div>`;
+}
+
 function renderChoiceBtns(choices) {
   const container = DOM.answerBtns || document.getElementById('answer-buttons');
   container.className = 'answer-buttons';
@@ -142,7 +146,7 @@ function renderChoiceBtns(choices) {
    순차 빈칸 단어 표시 렌더
    ═══════════════════════════════════ */
 function renderSeqWord() {
-  const { word, blankIndices } = seqBlanks;
+  const { word, blankIndices, blanks } = seqBlanks;
   let html = '';
   for (let k = 0; k < word.length; k++) {
     const bPos = blankIndices.indexOf(k);
@@ -157,6 +161,12 @@ function renderSeqWord() {
     }
   }
   document.getElementById('seq-word').innerHTML = html;
+
+  const progress = document.getElementById('seq-progress');
+  if (progress && blanks.length > 1) {
+    const visibleStep = Math.min(seqStep + 1, blanks.length);
+    progress.textContent = `${visibleStep} / ${blanks.length}번째 빈칸`;
+  }
 }
 
 function renderSeqWordComplete() {
@@ -202,20 +212,23 @@ function askQuestion() {
     // 순차 빈칸 모드
     seqBlanks = q;
     qEl.innerHTML =
+      renderTaskPrompt('빈칸에 들어갈 알파벳을 골라요', '🧩') +
       iconHtml +
-      `<div class="q-hint">${q.hint}</div>` +
-      `<div class="q-blanked${longClass}" id="seq-word"></div>`;
+      `<div class="q-mini">뜻: ${escapeHtml(q.hint)}</div>` +
+      `<div class="q-blanked${longClass}" id="seq-word"></div>` +
+      (q.blanks.length > 1 ? `<div class="q-mini" id="seq-progress">1 / ${q.blanks.length}번째 빈칸</div>` : '');
     renderSeqWord();
     renderChoiceBtns(q.blanks[0].choices);
   } else if (q.type === 'typing') {
     uiQuestionKind = 'typing';
     qEl.innerHTML =
+      renderTaskPrompt('뜻을 보고 영어 단어를 직접 써요', '✍️') +
       iconHtml +
       `<div class="q-main${longClass}">${q.main}</div>` +
-      `<div class="q-typing-hint">${q.sub || ''}</div>`;
+      `<div class="q-typing-hint">시간 제한 없이 천천히 써도 돼요.</div>`;
     answerBtns.className = 'answer-buttons answer-buttons--typing';
     answerBtns.innerHTML =
-      `<input type="text" class="typing-input" id="typing-input" autocomplete="off" spellcheck="false" placeholder="영어로 입력" aria-label="영어 답 입력">` +
+      `<input type="text" class="typing-input" id="typing-input" autocomplete="off" spellcheck="false" placeholder="영어 단어 쓰기" aria-label="영어 답 입력">` +
       `<button type="button" class="typing-submit" id="typing-submit">확인</button>`;
     const inp = document.getElementById('typing-input');
     const submit = () => checkTypingAnswer(inp.value);
@@ -233,22 +246,25 @@ function askQuestion() {
       '<span class="q-blank-slot">_____</span>' +
       escapeHtml(parts[1] || '');
     const sLong = (rawLine && rawLine.length > 36) ? ' q-long' : '';
-    const defaultLabel = q.type === 'shopping_dialogue' ? '대화문의 빈칸에 알맞은 영단어를 고르세요.' : '문장의 빈칸에 알맞은 영단어를 고르세요.';
-    const labelText = q.label || defaultLabel;
+    const taskText = q.type === 'shopping_dialogue'
+      ? '대화의 빈칸에 들어갈 영어 단어를 골라요'
+      : '문장의 빈칸에 들어갈 영어 단어를 골라요';
     qEl.innerHTML =
+      renderTaskPrompt(taskText, q.type === 'shopping_dialogue' ? '💬' : '🧩') +
       iconHtml +
-      (q.koHint ? `<div class="q-hint">${escapeHtml(q.koHint)}</div>` : '') +
-      `<div class="q-sentence${sLong}">${sentHtml}</div>` +
-      `<div class="q-mini">${escapeHtml(labelText)}</div>`;
+      (q.koHint ? `<div class="q-mini">뜻 힌트: ${escapeHtml(q.koHint)}</div>` : '') +
+      `<div class="q-sentence${sLong}">${sentHtml}</div>`;
     renderChoiceBtns(q.choices);
   } else if (q.hint) {
     qEl.innerHTML =
+      renderTaskPrompt('뜻에 맞는 영어 단어를 골라요', '👀') +
       iconHtml +
-      `<div class="q-hint">${q.hint}</div>` +
-      `<div class="q-blanked${longClass}">${q.main}</div>`;
+      `<div class="q-main${longClass}">${q.main}</div>` +
+      `<div class="q-mini">${escapeHtml(q.hint)}</div>`;
     renderChoiceBtns(q.choices);
   } else {
     qEl.innerHTML =
+      renderTaskPrompt('뜻에 맞는 영어 단어를 골라요', '👉') +
       iconHtml +
       `<div class="q-main${longClass}">${q.main}</div>`;
     renderChoiceBtns(q.choices);

@@ -1,103 +1,111 @@
 # 🎮 어린이 학습 게임 놀이터 (AidenGame)
 
-아이들의 성취감과 자기주도 학습을 최우선으로 하는 적응형 학습 게임 플랫폼입니다.  
-현재 런타임은 루트 기반 정적 HTML/CSS/JavaScript 구조로 운영됩니다.
+AidenGame은 초등 저학년 어린이가 스스로 반복해서 사용하면서 실제 학습 숙련도를 높이고, 학습 완료 후 게임과 현실 보상을 얻는 개인용 학습 게임 플랫폼입니다.
 
-## 🚀 핵심 기능
-
-- **4대 과목**: 국어, 수학, 영어, 과학 학습 게임 제공
-- **적응형 난이도**: 실력 변화에 따라 문제 난이도 자동 조정
-- **보상 루프**: 연속 정답 기반 로켓/보석 보상과 보호자 상점 연동
-- **공용 코어**: 과목별 엔진이 공통 로직(`shared/`)을 재사용
-- **실험 모듈**: Space Explorer와 Ocean Rescue의 별도 런타임·도구 경계 유지
+**제품 방향 SSOT:** [`docs/specs/product/ACTIVE_PRODUCT_SCOPE.md`](docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)
 
 ## 🎯 현재 개발 초점
 
-현재는 신규 기능·콘텐츠·게임성 확장보다 **국어·수학·영어·과학 문제풀이의 신뢰성 안정화**를 우선합니다.
+현재 최우선 개발 영역은 **Math를 첫 vertical slice로 하는 curriculum-aligned skill mastery + adaptive daily learning loop**입니다.
 
-- 네 과목에 동일한 브라우저 진단을 적용해 현재 실패 또는 검증 공백이 가장 큰 과목부터 처리합니다.
-- 각 과목은 상태 계약과 실제 브라우저 흐름을 모두 통과해야 완료됩니다.
-- 첫 과목은 기존 구조 안에서 안정화하고, 두 번째 과목에서 반복이 확인된 경우에만 공용 로직을 추출합니다.
-- 과목 하나가 완료될 때마다 `origin/main`에 게시한 뒤 다음 과목으로 이동합니다.
-- 이 단계가 끝날 때까지 Ocean Rescue와 실험 기능의 신규 개발·구조 이전은 중단합니다. 치명적 회귀·데이터 손상·보안 문제만 별도 예외입니다.
+```text
+skill goal
+→ 문제 풀이
+→ learning evidence
+→ mastery 갱신
+→ adaptive next question
+→ goal 완료
+→ gems + free-time
+→ Ocean Rescue
+```
 
-현재 제품·검증 계약: [`docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md`](docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md)  
-문서 권위와 동결 상태 색인: [`docs/README.md`](docs/README.md)
+- 국어·수학·영어·과학의 기존 핵심 quiz reliability stabilization은 완료된 baseline입니다.
+- 첫 구현 대상은 Math이며, 검증된 skill/mastery 계약만 다른 과목으로 확장합니다.
+- Ocean Rescue는 학습 문제를 내부에 넣는 교육게임이 아니라 **학습 완료 후 즐기는 active reward game**입니다.
+- Space Explorer는 계속 `PAUSED_REFERENCE_ONLY`입니다.
+- 새로운 대형 게임, RPG식 meta progression, backend/cloud 선행 개발, runtime LLM, 전체 framework/TypeScript 통일은 현재 기본 개발 목표가 아닙니다.
 
-## 🧭 현재 엔트리/라우팅 (SSOT)
+## 🚀 핵심 제품 surface
+
+- **Core Quiz:** 국어, 수학, 영어, 과학 학습 surface
+- **Adaptive learning:** 세부 skill mastery, spaced review, 약점 개선 + 성공 경험 균형
+- **Reward loop:** 보석, streak, collection/unlock, 자유시간
+- **Ocean Rescue:** 학습 목표 완료 후 이용하는 보상 게임
+- **Guardian:** skill 성장/약점, 간단한 목표 preset, 현실 보상 상점
+- **Persistence:** local-first, export/import backup 우선
+
+## 📱 기준 사용 환경
+
+- 1차 대상: 가족/개인 사용
+- 초기 기준: 실제 사용하는 초등 저학년 아이의 현재 수준
+- 기준 기기: Galaxy Tab S10급 Android 태블릿
+- UX: landscape-first, portrait/split-screen/resize에서도 핵심 사용 가능
+- 현재 runtime은 정적 웹 중심이며 필요에 따라 feature별 tooling을 다르게 사용할 수 있습니다.
+
+## 🧭 현재 엔트리/라우팅
 
 - 메인 허브: `index.html`
+- 과목별 학습: `domains/{math,english,korean,science}/index.html`
 - 보호자 관리: `domains/reward/guardian/index.html`
-- 우주 탐험 페이지: `experiments/space-explorer/index.html`
-- 우주 탐험 모듈 엔트리: `experiments/space-explorer/main.js`
-- 배포 라우팅 설정: `vercel.json`
-  - 별도 rewrite 없이 정적 파일 경로를 그대로 제공
-  - 루트 허브 링크: `/experiments/space-explorer/index.html`
+- Space Explorer: `experiments/space-explorer/index.html`
+- Ocean Rescue source/package: `domains/ocean-rescue/`
+- Ocean Rescue production artifact: `ocean-rescue/index.html`
+- 배포 라우팅: `vercel.json`
 
-### 운영 / 실험 / 레거시 경로 구분표
+| Surface | 상태 | 역할 |
+|---|---|---|
+| 메인 허브 | 운영중 | 학습·보상·게임 진입점 |
+| Core Quiz 4과목 | 운영중 | adaptive learning의 학습 surface |
+| Guardian / Reward | 운영중 | 성장·목표·보상 관리 |
+| Ocean Rescue | 운영중·active feature | 학습 완료 후 reward game |
+| Space Explorer | 운영중 artifact·개발 동결 | 실험 참고 |
 
-| 구분 | 경로 | 상태 | 용도 |
-| --- | --- | --- | --- |
-| 메인 운영 엔트리 | `index.html` | 운영중 | 과목 선택 허브 및 공용 진입점 |
-| 과목별 페이지 | `domains/{math,english,korean,science}/index.html` | 운영중·현재 우선 | 학습 루프 본편 |
-| 보호자 관리 페이지 | `domains/reward/guardian/index.html` | 운영중 | 난이도, 주간 영단어, 보상 상점 및 성장 요약 관리 |
-| 우주 탐험 실험 페이지 | `experiments/space-explorer/index.html` | 운영중·개발 동결 | 2D/3D 우주 시뮬레이션 및 터치 제스처 실험 |
-| Ocean Rescue standalone | `ocean-rescue/index.html` | 운영중·마이그레이션 동결 | 생성된 production artifact |
-| 과거 보호자/관리 alias | `guardian/index.html`, `admin/index.html` | 없음 | rewrite가 없으므로 사용하지 않음 |
-| 과거 우주 탐험 alias | `/space-explorer.html`, `experiments/space-explorer.html` | 없음 | `vercel.json` rewrite가 없으므로 사용하지 않음 |
+과거 alias나 plan의 WP 번호를 현재 runtime entry 또는 다음 작업의 근거로 사용하지 않습니다.
 
-## 🛠️ 로컬 개발
+## 🎮 Ocean Rescue toolchain
 
-- 메인 런타임은 정적 템플릿 파일을 기준으로 동작합니다.
-- 프로젝트 검증은 루트 `verify.sh`를 사용합니다.
+Ocean Rescue는 제품 차원에서 active feature지만, **현재 기본 구현 우선순위는 Math mastery/adaptive loop**입니다. Ocean Rescue 자체 작업이 명시적으로 선택되었을 때는 가장 가까운 feature/technical spec과 실제 최신 main을 기준으로 수행합니다.
+
+대표 명령:
+
+- `just sync-ocean-rescue-node`
+- `just check-ocean-rescue-toolchain`
+- `just typecheck-ocean-rescue`
+- `just dev-ocean-rescue`
+- `just build-ocean-rescue`
+- `just check-ocean-rescue-drift`
+- `just check-ocean-rescue-rollback`
+
+제약:
+
+- Node는 Ocean Rescue build-time/tooling boundary에 한정합니다.
+- `ocean-rescue/index.html`은 production build pipeline이 생성하는 artifact입니다.
+- generated artifact, provenance, registry identity를 손으로 우회 편집하지 않습니다.
+- Vite/ESM/TypeScript migration 참고는 [`docs/plans/PLAN_ocean_rescue_vite_esm_typescript_migration.md`](docs/plans/PLAN_ocean_rescue_vite_esm_typescript_migration.md)를 사용하되, 그 문서가 현재 제품 우선순위를 소유하지 않습니다.
+
+## 🛠️ 로컬 개발 / 검증
+
+통합 검증:
 
 ```bash
 bash ./verify.sh
 ```
 
-## 🎮 Ocean Rescue toolchain 참고 — 현재 개발 동결
+주요 문서:
 
-아래 명령과 구조는 **현재 작업 목록이 아니라 유지보수·치명적 회귀 대응을 위한 기술 참고**입니다.
-일반 과목 안정화 중에는 사용자가 명시적으로 Ocean Rescue를 재개하거나 허용 예외가 재현된 경우에만 사용합니다.
-
-- **Package boundary:** `domains/ocean-rescue`
-- **Node pin:** `domains/ocean-rescue/.node-version`
-- **Project pnpm:** `packageManager` + `corepack pnpm`
-- **Sync:** `just sync-ocean-rescue-node`
-- **Toolchain check:** `just check-ocean-rescue-toolchain`
-- **Typecheck:** `just typecheck-ocean-rescue`
-- **Development server:** `just dev-ocean-rescue`
-- **Production build:** `just build-ocean-rescue`
-- **Artifact drift:** `just check-ocean-rescue-drift`
-- **Operational rollback:** `just rollback-ocean-rescue-to-legacy`
-- **Rollback verification:** `just check-ocean-rescue-rollback`
-
-제약:
-
-- Node는 Ocean Rescue build-time 전용입니다. 전체 browser runtime은 Node를 요구하지 않습니다.
-- `ocean-rescue/index.html`은 source가 아니라 production build pipeline이 생성하는 artifact입니다.
-- legacy ordered-script 경로는 rollback/proof 목적이며 production ESM 경로와 역할이 다릅니다.
-- 과거 WP 번호나 계획 상태는 현재 실행 순서를 정하지 않습니다.
-- 기술 기준선은 [`docs/plans/PLAN_ocean_rescue_vite_esm_typescript_migration.md`](docs/plans/PLAN_ocean_rescue_vite_esm_typescript_migration.md)에 동결 참고문서로 정리돼 있습니다.
-
-## ✅ 검증 체계
-
-- 테스트: `tests/`
-- 통합 검증: `verify.sh`
-- 현재 실행 규약: `AGENTS.md`
-- 현재 제품 정책: `PROJECT_RULES.md`
-- 현재 일반 과목 안정화 계약: `docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md`
+- 실행 규약: `AGENTS.md`
+- 제품 방향 SSOT: `docs/specs/product/ACTIVE_PRODUCT_SCOPE.md`
+- 아키텍처·품질 경계: `PROJECT_RULES.md`
 - 문서 권위 색인: `docs/README.md`
-- 동결 참고:
-  - `docs/SPACE_EXPLORER_PLAN.md`
-  - `docs/plans/PLAN_ocean_rescue_vite_esm_typescript_migration.md`
-- 세션 연속성: `docs/agent-context/memory/MEMORY.md`
+- 완료된 Core Quiz reliability 계약: `docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md`
+- 세션 handoff: `docs/agent-context/memory/MEMORY.md`
 
 ## 📁 주요 디렉토리
 
-- `/`: 사용자 런타임 HTML/CSS/JS 엔트리
-- `shared/`: 과목 공용 코어 로직 (`domain/`, `ui/`)
-- `domains/`: 과목별 게임 (`math/`, `english/`, `korean/`, `science/`)과 지원 도메인
-- `experiments/`: 실험 모듈 — 현재 신규 개발 동결
+- `/`: 사용자 runtime HTML/CSS/JS entry
+- `shared/`: 과목/제품 공용 domain·UI 로직
+- `domains/`: Core Quiz, reward, Ocean Rescue 등 기능 도메인
+- `experiments/`: 현재 Space Explorer 등 동결 실험 영역
 - `ocean-rescue/`: Ocean Rescue production standalone artifact
-- `docs/`: 현재 authority, 기술 참고, 과거 기록
+- `docs/`: 제품 SSOT, feature spec, 기술 참고
+- `tests/`: 제품·회귀 계약

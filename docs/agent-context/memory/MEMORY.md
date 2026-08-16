@@ -2,42 +2,52 @@
 id: MEMORY
 type: MEM
 status: active
-last_verified: 2026-08-06
+last_verified: 2026-08-16
 ---
 
 # Memory
 
-**SSOT**: `docs/agent-context/memory/MEMORY.md` · 규정: [memory_hygiene.md](../../../.agents/core/memory_hygiene.md) (≤200줄)
+**Product SSOT:** `docs/specs/product/ACTIVE_PRODUCT_SCOPE.md`
 
 ## Current direction
 
-- 현재 최우선 목표는 신규 기능·콘텐츠·게임성보다 일반 과목 문제풀이의 신뢰성 안정화다.
-- 대상은 Math, English, Korean, Science의 운영 문제풀이 흐름이다.
-- 상세 계약은 `docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md`를 따른다.
-- 네 과목 모두 완료되기 전에는 Ocean Rescue와 `experiments/`의 신규 기능·구조 이전을 재개하지 않는다.
-- 사용자가 현재 요청에서 방향을 명시적으로 변경하거나 치명적 회귀·데이터 손상·보안 문제를 별도 failure domain으로 지정한 경우만 예외다.
+- 제품 목표는 초등 저학년 아이가 Galaxy Tab에서 자발적으로 매일 학습하고 실제 skill mastery를 높인 뒤 게임/현실 보상을 얻는 local-first 학습 게임 플랫폼이다.
+- 성공 우선순위는 `자발적 진입 > 독립 사용 > 실제 학습 성취`다.
+- 현재 기본 개발 priority는 **Math curriculum skill → mastery → adaptive daily goal** vertical slice다.
+- Core Quiz 4과목 reliability stabilization은 완료된 baseline이며 같은 결함이 재현될 때만 회귀로 다시 다룬다.
+- Ocean Rescue는 active reward game이다. 학습 문제를 게임 안에 삽입하지 않고, 학습 goal 완료 후 free-time으로 접근한다.
+- Space Explorer는 `PAUSED_REFERENCE_ONLY`다.
 
-## Execution contract
+## Product boundaries
 
-- 다음 작업은 최신 `origin/main`에서 네 과목에 동일한 공통 브라우저 진단을 실행하는 것이다.
-- 첫 `FAIL` 과목을 선택하고, 모두 통과하면 가장 큰 `PASS_WITH_GAP` 과목을 선택한다.
-- 한 실행은 한 failure domain, 한 재현 조건, 한 binary criterion으로 제한한다.
-- 첫 과목은 기존 구조 안에서 안정화하고, 두 번째 과목에서 동일 책임의 중복이 확인된 뒤에만 `shared/` 추출을 검토한다.
-- 과목 하나가 완료될 때마다 직접 영향 회귀를 확인하고 `origin/main`에 게시한다.
+- 세부 skill mastery를 사용하고, 초기 알고리즘은 deterministic/explainable하게 시작한다.
+- correctness, attempts/first-try, response time, practiced time 같은 raw learning evidence를 보존한다.
+- adaptive selection은 약점 개선 + 숙달 skill spaced review + 성공 경험의 균형을 목표로 한다.
+- 아이에게 mastery percentage를 노출하지 않고, 보호자에게 약점/성장을 자세히 보여준다.
+- LLM은 콘텐츠 제작 보조까지만 허용한다. runtime 문제 생성·mastery·next-question 판단에는 사용하지 않는다.
+- game layer는 gems/streak/collection/unlock/현실 보상까지 허용하지만 RPG식 level/stat/quest/meta progression은 비목표다.
+- persistence는 local-first + export/import backup을 먼저 한다. backend/cloud sync는 현재 필수가 아니다.
+- 기준 기기는 Galaxy Tab S10급이며 landscape-first지만 portrait/split-screen/resize에서 핵심 흐름이 깨지지 않아야 한다.
 
 ## Verified baseline
 
-- 비수학 과목의 다음 문제 전환 복구와 네 과목 48px 터치 타깃 보장은 이미 main에 반영됐다.
-- 동일 증상이 최신 main에서 재현되지 않으면 다시 개발 목표로 선택하지 않는다.
-- `tests/test_math_next_question_progression.py`, `tests/test_nonmath_next_question_progression.py`, `tests/test_nonmath_browser_acceptance.py`는 출발점이지만 과목 완료 증명 전체를 대체하지 않는다.
+- `shared/domain/progress-engine.js`에는 과목/level별 attempts, correct, totalTime, weakness tag와 최근 정답 흐름 기반 난이도 계산이 이미 존재한다. 새 mastery 작업은 이를 무조건 폐기하지 않고 현재 ownership과 migration boundary를 먼저 확인한다.
+- `shared/domain/free-time-session.js`에는 독립적인 자유시간 세션 모델이 이미 존재한다. 학습→자유시간 integration에서 새 타이머 모델을 중복 만들지 않는다.
+- Math, English, Korean, Science의 핵심 quiz journey reliability stabilization은 `docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md`에 완료 계약으로 보존된다.
 
-## Next
+## Next execution boundary
 
-- 소스 수정 전에 Math, English, Korean, Science 공통 브라우저 진단을 실행한다.
-- 결과에서 첫 failure domain 하나만 선택한다.
+첫 구현 작업은 Math만 대상으로 한다.
+
+1. 현행 Math 문제/문제 metadata와 현재 curriculum 관련 구조를 read-only inventory한다.
+2. 실제 현재 문제를 표현하는 최소 `skillId` 집합을 현행 초등 교육과정과 대조해 제안한다.
+3. 처음부터 네 과목 taxonomy를 만들지 않는다.
+4. 기존 `ProgressEngine`의 raw evidence 보존/호환 경계를 확인한 뒤 skill mastery v1의 가장 작은 vertical slice를 선택한다.
+
+한 작업에서는 skill taxonomy 전체 + mastery engine + daily goal + reward integration을 동시에 구현하지 않는다.
 
 ## Verify
 
 ```bash
-uv run pytest -q tests/test_core_quiz_reliability_policy.py::test_memory_handoff_tracks_current_product_direction
+uv run pytest -q tests/test_active_product_scope_policy.py
 ```

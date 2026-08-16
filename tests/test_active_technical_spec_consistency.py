@@ -44,7 +44,6 @@ def test_design_reference_uses_current_runtime_entries_without_fake_rewrite() ->
     assert '"rewrites": []' in design
     assert "`/space-explorer.html`" in design
     assert "현재 entry가 아니다" in design
-    assert "순수 시각 리디자인·장식·애니메이션 개선은 안정화 이후" in design
 
     forbidden = (
         "/space-explorer.html` ->",
@@ -89,7 +88,7 @@ def test_orchestration_is_optional_legacy_library_not_execution_authority() -> N
 def test_docs_index_classifies_stable_and_legacy_technical_references() -> None:
     index = read(DOC_INDEX)
 
-    assert "## 4. 안정·legacy 기술 참고" in index
+    assert "안정·legacy 기술 참고" in index
     assert "specs/technical/DESIGN.md" in index
     assert "STABLE_REFERENCE_NOT_CURRENT_PRIORITY" in index
     assert "specs/technical/SPEC_orchestration.md" in index

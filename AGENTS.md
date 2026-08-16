@@ -32,8 +32,9 @@ AidenGame workflow와 product contract를 대체하지 않는 프로젝트 고�
 
 1. 사용자의 현재 요청
 2. 이 문서
-3. `PROJECT_RULES.md`와 대상 기능의 가장 가까운 product/technical spec
-4. 최신 `origin/main`의 코드·테스트·설정
+3. `docs/specs/product/ACTIVE_PRODUCT_SCOPE.md`의 제품 방향
+4. `PROJECT_RULES.md`와 대상 기능의 가장 가까운 product/technical spec
+5. 최신 `origin/main`의 코드·테스트·설정
 
 과거 계획과 완료 보고를 현재 상태의 근거로 사용하지 않는다.
 
@@ -48,15 +49,16 @@ AidenGame workflow와 product contract를 대체하지 않는 프로젝트 고�
 
 ## 3. 현재 제품 방향
 
-현재 기본 작업 선택은 `docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md`를 따른다.
+현재 제품 목표·우선순위·active/frozen feature 상태의 단일 SSOT는 `docs/specs/product/ACTIVE_PRODUCT_SCOPE.md`다.
 
-- 우선 대상은 `domains/math/`, `domains/english/`, `domains/korean/`, `domains/science/`의 일반 문제풀이 신뢰성이다.
-- 범위가 지정되지 않은 “다음 작업”, “이어서 진행”, 로컬 프롬프트 요청은 네 과목 공통 진단 또는 아직 닫히지 않은 일반 문제풀이 failure domain으로 해석한다.
-- 최근 커밋이나 과거 대화가 Ocean Rescue였다는 이유만으로 Ocean Rescue 작업을 재개하지 않는다.
-- 일반 과목 안정화 종료 전에는 Ocean Rescue와 `experiments/`의 신규 기능·구조 이전을 시작하거나 이를 위한 로컬 프롬프트를 발행하지 않는다.
-- 예외는 사용자가 현재 요청에서 개발 방향을 명시적으로 변경했거나, 현재 배포를 막는 치명적 회귀·데이터 손상·보안 문제를 독립 failure domain으로 해결하는 경우다.
-- 기존 테스트 파일이나 과거 PASS 보고만으로 과목 완료를 선언하지 않는다. 최신 main의 상태 계약과 실제 브라우저 증거를 함께 확인한다.
-- 과목별 진행률·다음 과목·완료 체크는 저장소 문서에 누적하지 않는다. 현재 완료 근거는 코드, 테스트, 브라우저 증거, 게시 커밋이다.
+- 범위가 지정되지 않은 “다음 작업”, “이어서 진행”, 로컬 프롬프트 요청은 제품 SSOT의 current development priority에서 시작한다. 현재 기본 방향은 **Math curriculum skill → mastery → adaptive daily goal** vertical slice다.
+- 기존 Math/English/Korean/Science Core Quiz reliability stabilization은 완료된 baseline이다. 동일 결함이 최신 main에서 재현되지 않으면 다시 안정화 작업을 기본 backlog로 만들지 않는다.
+- Ocean Rescue는 더 이상 product-level frozen feature가 아니다. **학습 goal 완료 후 이용하는 active reward game**이며 명시적인 Ocean Rescue 또는 A/B 트랙 요청에서는 가장 가까운 feature/technical spec을 따른다.
+- Ocean Rescue가 active라는 이유만으로 과거 A/B runbook의 `ACTIVE`, WP 번호 또는 migration plan의 다음 항목을 범위 미지정 default next work로 사용하지 않는다.
+- Space Explorer는 `PAUSED_REFERENCE_ONLY`이며 사용자가 현재 제품 방향에서 명시적으로 재개하기 전에는 신규 기능·구조 이전을 시작하지 않는다.
+- 학습 문제를 Ocean Rescue 내부에 억지로 삽입하지 않는다. Core Quiz 학습 완료 → reward/free-time → Ocean Rescue가 제품 관계다.
+- runtime LLM, backend/cloud, RPG식 meta progression, 전 runtime framework/TypeScript 통일은 제품 SSOT가 변경되기 전에는 default expansion target이 아니다.
+- 개별 작업 완료나 atomic next task를 제품 SSOT에 진행률로 누적하지 않는다. 완료 근거는 코드, 테스트, 브라우저 증거, 게시 커밋이다.
 
 ## 4. Git과 workspace
 
@@ -127,19 +129,19 @@ unrelated repair를 자동으로 확장하지 않는다.
 
 ## 6. 프로젝트 경계
 
-- 사용자 런타임은 정적 HTML/CSS/JavaScript다.
+- 사용자 런타임은 정적 HTML/CSS/JavaScript를 기본으로 하되 Ocean Rescue의 기존 build/tooling boundary는 별도로 보존한다.
 - 메인 허브는 `index.html`이다.
 - 과목별 기능은 `domains/`, 공용 로직은 `shared/`에 둔다.
-- 실험은 `experiments/`, 보호자·관리 기능은 `guardian/`, `admin/`에 둔다.
+- 실험은 `experiments/`, 보호자·관리 기능은 가장 가까운 현재 runtime path에 둔다.
 - Next.js, Tauri, 별도 backend API는 현재 범위 밖이다.
-- Ocean Rescue 세부 계약은 사용자가 해당 범위를 명시적으로 재개한 경우 대상 코드에서 가장 가까운 technical spec을 따른다.
+- Ocean Rescue 세부 계약은 해당 범위가 명시적으로 선택된 경우 대상 코드에서 가장 가까운 product/technical spec을 따른다. Ocean Rescue feature 자체는 제품 SSOT에서 active reward game으로 분류된다.
 
 ## 7. 검증과 작업 판정
 
-현재 방향 문서 정합성:
+현재 제품 방향 문서 정합성:
 
 ```bash
-uv run pytest -q tests/test_core_quiz_reliability_policy.py
+uv run pytest -q tests/test_active_product_scope_policy.py
 ```
 
 대표 저장소 명령:
@@ -213,14 +215,15 @@ remote advance, non-fast-forward, unrelated dirty, V3 실패, 새 독립 결함,
 로컬 LLM용 프롬프트는 사용자의 요청과 최신 저장소 증거로 objective, scope와 criterion을 합리적으로 확정할 수 있으면 별도의 의도 재확인·승인 요청 없이 즉시 발행한다.
 
 - 목표와 대상 failure domain 또는 검증 가설, 대상 저장소·기능과 변경 허용 범위, 포함·제외 범위와 변경 금지 계약, primary criterion, 직접 영향 검증, 게시 여부와 예상 최종 상태를 발행 전에 내부적으로 정합성 점검한다.
-- 사소한 모호성은 사용자의 현재 요청, 최신 `origin/main`, 가장 가까운 technical spec과 기존 프로젝트 계약으로 해소하며 확인차 되묻지 않는다.
+- 사소한 모호성은 사용자의 현재 요청, `docs/specs/product/ACTIVE_PRODUCT_SCOPE.md`, 최신 `origin/main`, 가장 가까운 technical spec과 기존 프로젝트 계약으로 해소하며 확인차 되묻지 않는다.
 - “제가 이렇게 해석했습니다. 이대로 진행해도 되는 게 맞습니까?”와 같은 확인 전용 turn, 승인 대기, 범위 재진술 후 재승인을 기본 절차로 만들지 않는다.
 - 사용자가 범위를 수정하면 최신 지시를 즉시 반영하고, 새 지시 자체가 실행 가능하면 다시 승인받지 않는다.
 - 질문은 필수 정보가 없어 실행 자체가 불가능하거나, 서로 양립할 수 없는 해석이 결과를 크게 바꾸거나, user-visible behavior·제품 방향·수정 범위·acceptance criterion·사용자 데이터 무결성 또는 안전 경계를 바꿔야만 완료할 수 있을 때만 `DECISION_REQUIRED`로 제한한다.
 - 로컬 작업자는 `DECISION BOUNDARY` 안의 구현 세부사항을 스스로 결정하며 확인을 요구하지 않는다.
 
-- 프롬프트 발행 전 현재 objective가 `docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md`의 포함 범위인지 확인한다.
-- 포함 범위가 아니고 사용자가 현재 요청에서 방향 변경이나 허용 예외를 명시하지 않았다면 구현 프롬프트를 발행하지 않는다.
+- 프롬프트 발행 전 objective가 사용자의 명시적 범위 또는 `ACTIVE_PRODUCT_SCOPE.md`의 현재 제품 방향/active feature와 정합한지 확인한다.
+- 범위가 지정되지 않았다면 Math mastery/adaptive vertical slice를 기본으로 하고, 과거 runbook·완료 보고·WP 번호만으로 Ocean Rescue/Space Explorer/다른 backlog를 자동 승격하지 않는다.
+- Space Explorer처럼 제품 SSOT에서 frozen인 범위는 사용자가 현재 요청에서 재개를 명시하지 않았다면 구현 프롬프트를 발행하지 않는다.
 - 프롬프트에는 현재 objective, workspace, included/excluded scope, Do / Do not, primary acceptance, direct verification, optional system smoke, stop condition만 전달한다.
 - `DO`에는 단순히 최소 diff를 지시하지 말고, 수정 전 shared owner와 sibling contract를 읽어 under-fixing 여부를 판정하며 같은 root cause·invariant·rollback boundary이면 필요한 production/type/test 범위까지 coherent하게 닫도록 명시한다.
 - `DO_NOT`에는 미래 capability를 위한 speculative abstraction과 unrelated cleanup을 금지하되, 현재 root cause를 닫는 데 필요한 작은 refactor나 testability 개선을 금지하지 않는다.

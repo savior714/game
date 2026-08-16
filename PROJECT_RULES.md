@@ -1,26 +1,20 @@
 # PROJECT_RULES.md — AidenGame 프로젝트 정책
 
-작업 절차는 `AGENTS.md`를 따른다. 이 문서는 제품·아키텍처·품질 경계만 정의한다.
+작업 절차는 `AGENTS.md`를 따른다. **현재 제품 목표·우선순위·active/frozen feature 상태의 단일 SSOT는 `docs/specs/product/ACTIVE_PRODUCT_SCOPE.md`다.** 이 문서는 제품 SSOT를 복제하지 않고 아키텍처·품질·보안 경계를 정의한다.
 
-## 1. 제품 목적
+## 1. 제품 경계
 
-AidenGame은 어린이를 위한 정적 웹 기반 학습 게임 플랫폼이다. 단순한 학습 흐름, 즉각적인 피드백, 성취감, 보호자 통제를 우선한다.
+AidenGame은 어린이를 위한 local-first 웹 기반 학습 게임 플랫폼이다.
 
-### 1.1 현재 최우선 개발 방향
+현재 제품 의미와 개발 sequence는 반드시 `docs/specs/product/ACTIVE_PRODUCT_SCOPE.md`를 읽는다. 특히 다음 관계는 이 문서에서 재정의하지 않는다.
 
-현재 최우선 목표는 신규 기능·콘텐츠·게임성 확장보다 **기존 일반 과목 문제풀이의 신뢰성 안정화**다.
+- skill mastery와 adaptive daily learning
+- Core Quiz → 학습 완료 → reward/free-time → Ocean Rescue 관계
+- Guardian/reward 경계
+- Ocean Rescue active / Space Explorer frozen 상태
+- 현재 milestone 순서와 non-goals
 
-- 대상은 `domains/math/`, `domains/english/`, `domains/korean/`, `domains/science/`의 운영 문제풀이 흐름이다.
-- 네 과목 모두에서 `진입 → 문제 표시 → 답안 처리 → 피드백 → 다음 문제 반복 → 종료 또는 재시작` 흐름이 검증되기 전에는 신규 기능 개발을 재개하지 않는다.
-- 각 과목은 문제 진행·상태 초기화·정답/오답·마지막 문제·재시작 계약과 실제 브라우저 흐름을 모두 통과해야 완료된다.
-- 첫 대상은 과목 이름이나 과거 중요도로 정하지 않는다. 네 과목에 같은 진단을 실행해 현재 재현 실패가 가장 명확한 과목을 선택한다. 모두 통과하면 검증 공백이 가장 큰 과목을 선택한다.
-- 첫 과목은 기존 구조 안에서 안정화한다. 두 번째 과목에서 같은 책임의 중복이 실제로 확인된 경우에만 `shared/` 추출을 검토한다.
-- 진행 중단, 오조작, 중복 입력, 불명확한 disabled/focus/feedback 상태는 신뢰성 범위에 포함한다. 순수 시각 리디자인·장식·애니메이션 개선은 포함하지 않는다.
-- 과목 하나가 완료될 때마다 직접 영향 회귀를 확인하고 `origin/main`에 게시한 뒤 최신 main에서 다음 과목을 진단한다.
-- 이 단계가 종료될 때까지 Ocean Rescue와 `experiments/`의 신규 기능·구조 이전은 중단한다. 현재 배포를 막는 치명적 회귀, 데이터 손상, 보안 문제만 별도 failure domain으로 수정한다.
-
-상세 제품·검증 계약은
-`docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md`를 따른다.
+제품 SSOT가 변경되면 이 파일에는 그 결과로 아키텍처·품질 경계가 실제로 바뀐 경우만 반영한다.
 
 ## 2. 런타임과 경로
 
@@ -31,26 +25,31 @@ AidenGame은 어린이를 위한 정적 웹 기반 학습 게임 플랫폼이다
 | 과목별 게임 | `domains/math/`, `domains/english/`, `domains/korean/`, `domains/science/` |
 | 지원 도메인 | `domains/reward/`, `domains/auth/`, `domains/sync/` |
 | 공용 로직 | `shared/domain/`, `shared/ui/`, `shared/event-bus.js` |
+| Ocean Rescue source/package | `domains/ocean-rescue/` |
+| Ocean Rescue production artifact | `ocean-rescue/index.html` |
 | 실험 | `experiments/` |
-| 보호자·관리 | `guardian/`, `admin/` |
+| 보호자·관리 | `domains/reward/guardian/`, `guardian/`, `admin/` |
 | 테스트 | `tests/` |
 | 검증 | `verify.sh`, `scripts/`, `tools/` |
 
 - 신규 UI와 로직은 가장 가까운 기능 디렉터리에 둔다.
-- 여러 과목이 공유하는 로직만 `shared/`로 올린다.
-- 실험은 안정화 전까지 `experiments/`에 격리한다.
+- 여러 과목/기능이 실제로 공유하는 domain meaning과 로직만 `shared/`로 올린다.
+- `shared/` 추출은 framework 통일보다 skill, mastery, reward, free-time 같은 공통 의미를 우선한다.
+- Space Explorer는 제품 SSOT가 재개시키기 전까지 `experiments/`에 격리한다.
 - 빈 `src/`를 새 runtime SSOT로 사용하지 않는다.
-- Next.js, Tauri, 별도 백엔드 API는 현재 범위에 추가하지 않는다.
+- Next.js, Tauri, 별도 백엔드 API는 현재 범위에 자동 추가하지 않는다.
 - generated artifact와 authoring source를 구분한다.
-- Ocean Rescue는 가장 가까운 technical spec을 따른다.
+- Ocean Rescue는 가장 가까운 product/technical spec과 build pipeline을 따른다.
+- Core Quiz와 Ocean Rescue가 서로 다른 tooling을 사용하는 것은 허용된다. 기술스택 통일 자체를 migration 목표로 만들지 않는다.
 
 ## 3. 기술 스택
 
-- 사용자 런타임: HTML, CSS, JavaScript
+- Core Quiz 사용자 런타임: HTML, CSS, JavaScript
 - 배포: `vercel.json` 기반 정적 호스팅
 - 검증 도구: Python, `uv`, `just`, Ruff, type checker, Pytest
-- Ocean Rescue build tooling은 해당 경로의 lockfile과 spec이 authority다.
+- Ocean Rescue build/runtime tooling은 해당 경로의 lockfile과 가장 가까운 spec이 authority다.
 - dependency·toolchain upgrade는 별도 coherent package로 수행한다.
+- runtime LLM, 별도 backend/cloud는 제품 SSOT에서 명시적으로 범위가 바뀌기 전에는 필수 architecture로 도입하지 않는다.
 
 ## 4. 개발·배포
 
@@ -71,12 +70,12 @@ AidenGame은 어린이를 위한 정적 웹 기반 학습 게임 플랫폼이다
 ## 5. 품질
 
 - 각 실행 작업은 하나의 failure domain, 하나의 검증 가능한 가설, 하나의 binary criterion으로 제한한다.
-- 과목 하나는 게시 단위가 될 수 있지만, 그 안에서 발견된 서로 다른 실패 원인은 순차 작업으로 분리한다.
 - 같은 failure domain을 완결하는 데 필요한 source, caller, test, asset, config는 함께 변경할 수 있다.
 - 수정 전 재현 조건과 단일 판정 기준을 고정하고, 수정 후 해당 가설만 독립 검증한 뒤 다음 failure domain으로 이동한다.
 - 서로 다른 LSP·typecheck·lint 원인이나 unrelated product cleanup을 한 패치에 섞지 않는다.
-- 새 검증은 잡아낼 구체적 failure mode가 있을 때만 추가한다.
+- 새 검증은 잡아낼 구체적 failure mode 또는 안정적으로 보존해야 할 제품 계약이 있을 때만 추가한다.
 - full-suite는 실제 회귀 위험이나 cutover가 요구할 때만 실행한다.
+- 완료된 reliability baseline을 관성적으로 다시 개발 backlog로 만들지 않는다. 동일 결함이 재현될 때 회귀로 다룬다.
 
 ### 5.1 정적 진단 closure
 
@@ -92,11 +91,12 @@ AidenGame은 어린이를 위한 정적 웹 기반 학습 게임 플랫폼이다
 
 - Domain state/object가 의미와 invariant를 소유한다. 외부·저장 표현의 불확실성을 runtime domain 전체에 전파하지 않는다.
 - JSON, localStorage, URL/query, imported content, generated metadata 등 외부 또는 persisted representation은 사용 전에 검증·정규화하고, 계약이 다르면 runtime domain object와 명시적으로 분리한다.
-- 문제·진행·보상·게임 상태의 생성·복원·재시작 경로는 같은 invariant를 보장해야 한다. 복원 경로가 invalid state를 우회 생성하지 않게 한다.
+- 문제·진행·mastery·보상·게임 상태의 생성·복원·재시작 경로는 같은 invariant를 보장해야 한다. 복원 경로가 invalid state를 우회 생성하지 않게 한다.
 - 서로 배타적인 상태와 상태별 필수 값은 가능한 한 독립 boolean/null 조합보다 명시적 tag/state와 transition으로 표현한다.
-- 의미가 다른 ID·code·score·quantity 같은 값의 혼동이 실제 오류가 되는 경우 현재 언어·도구가 지원하는 가장 단순한 semantic representation을 사용한다. TypeScript 전환이나 wrapper 전면 도입을 요구하지 않는다.
+- 의미가 다른 ID·code·skillId·score·quantity 같은 값의 혼동이 실제 오류가 되는 경우 현재 언어·도구가 지원하는 가장 단순한 semantic representation을 사용한다. TypeScript 전환이나 wrapper 전면 도입을 요구하지 않는다.
 - type/JSDoc/schema 오류를 없애기 위해 optional/default/fallback을 임의 추가하거나 unchecked cast·broad object shape로 의미를 약화하지 않는다. producer → boundary/normalizer → domain consumer를 추적해 실제 owner를 고친다.
 - 타입·상태 안정성 작업의 criterion은 “컴파일/검사가 통과한다”가 아니라 이름 붙인 invalid state가 더 이상 trusted runtime에 들어오거나 표현되지 않는다는 직접 증거로 잡는다.
+- 학습 evidence와 derived mastery를 구분한다. 알고리즘을 바꿀 수 있도록 필요한 raw evidence를 derived score로 덮어쓰지 않는다.
 
 대표 명령:
 
@@ -112,27 +112,31 @@ just ci
 
 - 어린이가 이해할 수 있는 짧고 명확한 문구를 사용한다.
 - 실패보다 재시도와 성취 피드백을 강조한다.
-- 터치 환경과 작은 화면을 기본으로 고려한다.
+- 기준 기기는 Galaxy Tab S10급 태블릿이고 landscape-first로 설계하되 portrait/split-screen/resize에서도 핵심 사용이 막히지 않게 한다.
 - 핵심 흐름은 키보드와 보조 기술로도 사용할 수 있어야 한다.
 - 시각 효과가 조작과 가독성을 방해하지 않게 한다.
+- 아이에게 학습 약점 percentage를 직접 노출하는 대신 오늘 목표와 긍정적 progression을 우선한다.
 
 ## 7. 보안
 
 - API 키, 토큰, 쿠키, `.env` 원문을 노출하지 않는다.
 - 인증·동기화·보호자 기능은 권한이 불명확할 때 fail-closed한다.
 - 외부 입력을 검증하고 안전한 DOM API를 사용한다.
+- 가족/개인 local-first 범위를 공개 다중 사용자 서비스로 암묵적으로 확장하지 않는다.
 
 ## 8. 문서
 
-| 목적 | SSOT |
+| 목적 | SSOT / authority |
 |---|---|
 | 실행 규약 | `AGENTS.md` |
-| 프로젝트 정책 | `PROJECT_RULES.md` |
-| 현재 일반 과목 안정화 계약 | `docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md` |
+| **현재 제품 방향** | `docs/specs/product/ACTIVE_PRODUCT_SCOPE.md` |
+| 아키텍처·품질 경계 | `PROJECT_RULES.md` |
+| 완료된 Core Quiz reliability 계약 | `docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md` |
+| Ocean Rescue 제품/기술 계약 | 대상 기능에 가장 가까운 `docs/specs/product/`·`docs/specs/technical/` 문서 |
+| Space Explorer 동결 참고 | `docs/SPACE_EXPLORER_PLAN.md` |
 | exclusive reservation | `agents/workflows/work-package-claim.md` + Issue #1 |
 | Git·publish | `agents/workflows/git.md` |
 | 요구사항·회귀 | `tests/` |
 | 배포 | `vercel.json`과 실제 entry |
-| 기능 설계 | 대상 기능에 가장 가까운 `docs/` 문서 |
 
-과거 Plan·Blueprint 상태 관리와 coordination 문서가 제품 변경보다 우선하지 않는다.
+과거 Plan·Blueprint·runbook의 `ACTIVE`, WP 번호 또는 완료 보고가 `ACTIVE_PRODUCT_SCOPE.md`의 현재 제품 우선순위를 덮어쓰지 않는다.

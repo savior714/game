@@ -17,6 +17,7 @@
 
   const DURATION_MS = 600000;
   const CHARGED_MINUTES = 10;
+  const ALLOWED_DURATIONS = Object.freeze([10, 20, 30]);
   const SCHEMA_VERSION = 1;
 
   const STATUS = Object.freeze({
@@ -40,18 +41,37 @@
     ) {
       return false;
     }
+    if (
+      session.durationMs !== undefined &&
+      !_isFiniteNumber(session.durationMs)
+    ) {
+      return false;
+    }
+    if (
+      session.chargedMinutes !== undefined &&
+      !_isFiniteNumber(session.chargedMinutes)
+    ) {
+      return false;
+    }
     return true;
   }
 
   function _expiredSession(session, now) {
+    const durationMs = _isFiniteNumber(session.durationMs)
+      ? session.durationMs
+      : DURATION_MS;
+    const chargedMinutes = _isFiniteNumber(session.chargedMinutes)
+      ? session.chargedMinutes
+      : CHARGED_MINUTES;
+
     return {
       schemaVersion: session.schemaVersion,
       sessionId: session.sessionId,
       status: STATUS.EXPIRED,
       startedAt: session.startedAt,
       endsAt: session.endsAt,
-      durationMs: session.durationMs,
-      chargedMinutes: session.chargedMinutes,
+      durationMs: durationMs,
+      chargedMinutes: chargedMinutes,
       source: session.source,
       warningEmittedAt: session.warningEmittedAt,
       expiredAt: session.expiredAt == null ? now : session.expiredAt,
@@ -59,22 +79,29 @@
     };
   }
 
-  function start({ now, sessionId, source }) {
+  function start({ now, sessionId, source, durationMinutes = 10 }) {
     if (!_isFiniteNumber(now)) {
       throw new TypeError("start: now must be a finite number");
     }
     if (typeof sessionId !== "string" || sessionId.length === 0) {
       throw new TypeError("start: sessionId must be a non-empty string");
     }
+    const duration = durationMinutes === undefined ? 10 : durationMinutes;
+    if (!ALLOWED_DURATIONS.includes(duration)) {
+      throw new TypeError("start: durationMinutes must be 10, 20, or 30");
+    }
+
+    const durationMs = duration * 60000;
+    const chargedMinutes = duration;
 
     return {
       schemaVersion: SCHEMA_VERSION,
       sessionId: sessionId,
       status: STATUS.RUNNING,
       startedAt: now,
-      endsAt: now + DURATION_MS,
-      durationMs: DURATION_MS,
-      chargedMinutes: CHARGED_MINUTES,
+      endsAt: now + durationMs,
+      durationMs: durationMs,
+      chargedMinutes: chargedMinutes,
       source: source == null ? null : source,
       warningEmittedAt: null,
       expiredAt: null,
@@ -82,7 +109,7 @@
     };
   }
 
-  function startIfInactive({ currentSession, now, sessionId, source }) {
+  function startIfInactive({ currentSession, now, sessionId, source, durationMinutes }) {
     if (currentSession && _isActive(currentSession, now)) {
       return {
         started: false,
@@ -92,7 +119,12 @@
 
     return {
       started: true,
-      session: start({ now: now, sessionId: sessionId, source: source }),
+      session: start({
+        now: now,
+        sessionId: sessionId,
+        source: source,
+        durationMinutes: durationMinutes,
+      }),
     };
   }
 
@@ -117,12 +149,19 @@
       };
     }
 
+    const durationMs = _isFiniteNumber(savedSession.durationMs)
+      ? savedSession.durationMs
+      : DURATION_MS;
+    const chargedMinutes = _isFiniteNumber(savedSession.chargedMinutes)
+      ? savedSession.chargedMinutes
+      : CHARGED_MINUTES;
+
     if (savedSession.status === STATUS.ACKNOWLEDGED) {
-      return { ...savedSession };
+      return { ...savedSession, durationMs, chargedMinutes };
     }
 
     if (savedSession.endsAt > now) {
-      return { ...savedSession };
+      return { ...savedSession, durationMs, chargedMinutes };
     }
 
     return _expiredSession(savedSession, now);
@@ -164,6 +203,7 @@
   return Object.freeze({
     DURATION_MS: DURATION_MS,
     CHARGED_MINUTES: CHARGED_MINUTES,
+    ALLOWED_DURATIONS: ALLOWED_DURATIONS,
     SCHEMA_VERSION: SCHEMA_VERSION,
     STATUS: STATUS,
     start: start,

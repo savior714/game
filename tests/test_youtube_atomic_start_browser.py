@@ -253,12 +253,14 @@ def test_youtube_atomic_start_flow() -> None:
             # Verify reward scripts loaded
             scripts_loaded = page.evaluate("""() => {
               return {
+                FreeTimeAllowance: typeof FreeTimeAllowance !== 'undefined',
                 FreeTimeSession: typeof FreeTimeSession !== 'undefined',
                 ExternalTabLauncher: typeof ExternalTabLauncher !== 'undefined',
                 FreeTimeSessionStartTransaction: typeof FreeTimeSessionStartTransaction !== 'undefined',
                 RewardSystem: typeof RewardSystem !== 'undefined',
               };
             }""")
+            assert scripts_loaded["FreeTimeAllowance"], "FreeTimeAllowance not loaded"
             assert scripts_loaded["FreeTimeSession"], "FreeTimeSession not loaded"
             assert scripts_loaded["ExternalTabLauncher"], (
                 "ExternalTabLauncher not loaded"

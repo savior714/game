@@ -294,7 +294,7 @@ const RewardSystem = (() => {
     }
   }
 
-  function startYouTubeSession() {
+  function startYouTubeSession(durationMinutes) {
     if (typeof FreeTimeSessionStartTransaction === 'undefined') {
       console.error('[RewardSystem] FreeTimeSessionStartTransaction not loaded');
       return { code: 'commit_failed' };
@@ -317,6 +317,8 @@ const RewardSystem = (() => {
       now: Date.now(),
       sessionId: sessionId,
       FreeTimeSession: FreeTimeSession,
+      FreeTimeAllowance: typeof FreeTimeAllowance !== 'undefined' ? FreeTimeAllowance : undefined,
+      durationMinutes: durationMinutes !== undefined ? durationMinutes : 10,
     });
 
     if (result.code === 'started') {

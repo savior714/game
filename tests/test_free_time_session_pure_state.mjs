@@ -550,6 +550,97 @@ run("H: select on acknowledged returns active=false, expired=false, remainingMs=
   assert.equal(sel.status, "acknowledged");
 });
 
+// ── 사례 I — 가변 시간 (10, 20, 30분) 및 검증 실패 계약 ──────
+
+run("I: 20-minute start calculates endsAt and chargedMinutes", () => {
+  const session = FreeTimeSession.start({
+    now: NOW,
+    sessionId: "sess-20m",
+    source: "reward",
+    durationMinutes: 20,
+  });
+  assert.equal(session.chargedMinutes, 20);
+  assert.equal(session.durationMs, 1200000);
+  assert.equal(session.endsAt, NOW + 1200000);
+});
+
+run("I: 30-minute start calculates endsAt and chargedMinutes", () => {
+  const session = FreeTimeSession.start({
+    now: NOW,
+    sessionId: "sess-30m",
+    source: "reward",
+    durationMinutes: 30,
+  });
+  assert.equal(session.chargedMinutes, 30);
+  assert.equal(session.durationMs, 1800000);
+  assert.equal(session.endsAt, NOW + 1800000);
+});
+
+run("I: invalid duration (15 min) throws TypeError", () => {
+  assert.throws(
+    () => {
+      FreeTimeSession.start({
+        now: NOW,
+        sessionId: "sess-bad",
+        source: "reward",
+        durationMinutes: 15,
+      });
+    },
+    { name: "TypeError" }
+  );
+});
+
+run("I: invalid duration (40 min) throws TypeError", () => {
+  assert.throws(
+    () => {
+      FreeTimeSession.start({
+        now: NOW,
+        sessionId: "sess-bad",
+        source: "reward",
+        durationMinutes: 40,
+      });
+    },
+    { name: "TypeError" }
+  );
+});
+
+run("I: invalid duration (string '20') throws TypeError", () => {
+  assert.throws(
+    () => {
+      FreeTimeSession.start({
+        now: NOW,
+        sessionId: "sess-bad",
+        source: "reward",
+        durationMinutes: "20",
+      });
+    },
+    { name: "TypeError" }
+  );
+});
+
+run("I: legacy v1 session restore without durationMs/chargedMinutes defaults gracefully", () => {
+  const legacySession = {
+    schemaVersion: 1,
+    sessionId: "legacy-001",
+    status: "running",
+    startedAt: NOW,
+    endsAt: NOW + 600000,
+    source: "reward",
+  };
+  const restored = FreeTimeSession.restore({
+    savedSession: legacySession,
+    now: NOW + 1000,
+  });
+  assert.equal(restored.status, "running");
+  assert.equal(restored.durationMs, 600000);
+  assert.equal(restored.chargedMinutes, 10);
+  assert.equal(restored.sessionId, "legacy-001");
+});
+
+run("I: ALLOWED_DURATIONS exports [10, 20, 30]", () => {
+  assert.deepEqual(FreeTimeSession.ALLOWED_DURATIONS, [10, 20, 30]);
+});
+
 // ── 결과 ─────────────────────────────────────────────────────
 
 console.log(`\nResults: ${passed} passed, ${failed} failed`);

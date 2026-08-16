@@ -483,6 +483,26 @@ const RewardSystemUI = (() => {
           resultMsg.style.color = '#dc2626';
           resultMsg.textContent = '사용할 시간이 부족해요. 현재 남은 시간을 확인하세요.';
           break;
+        case 'invalid_duration':
+          resultMsg.style.color = '#dc2626';
+          resultMsg.textContent = '올바르지 않은 시간 설정이에요 (10/20/30분).';
+          startBtn.disabled = false;
+          break;
+        case 'exceeds_period_allowance':
+          resultMsg.style.color = '#dc2626';
+          resultMsg.textContent = '현재 시간대(오전/오후 30분) 사용 한도를 초과했어요.';
+          startBtn.disabled = false;
+          break;
+        case 'exceeds_daily_allowance':
+          resultMsg.style.color = '#dc2626';
+          resultMsg.textContent = '오늘 하루 사용 한도(60분)를 초과했어요.';
+          startBtn.disabled = false;
+          break;
+        case 'crosses_boundary':
+          resultMsg.style.color = '#dc2626';
+          resultMsg.textContent = '정오(12:00) 또는 자정(24:00)을 넘는 세션은 시작할 수 없어요.';
+          startBtn.disabled = false;
+          break;
         case 'commit_failed':
         case 'recovery_required':
         case 'corrupt_reward_state':

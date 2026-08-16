@@ -23,6 +23,13 @@ const FREE_TIME_SESSION_PATH = resolve(
   "domain",
   "free-time-session.js",
 );
+const ALLOWANCE_PATH = resolve(
+  __dirname,
+  "..",
+  "shared",
+  "domain",
+  "free-time-allowance.js",
+);
 const TX_PATH = resolve(
   __dirname,
   "..",
@@ -33,9 +40,11 @@ const TX_PATH = resolve(
 
 const REWARD_KEY = "study_rewards";
 const SESSION_KEY = "study_youtube_free_time_session_v1";
+const USAGE_KEY = "study_youtube_free_time_daily_usage_v1";
 const JOURNAL_KEY = "study_youtube_free_time_start_tx_v1";
 
 let FreeTimeSession;
+let FreeTimeAllowance;
 let TxModule;
 
 function loadModule(path) {
@@ -54,6 +63,13 @@ try {
   FreeTimeSession = loadModule(FREE_TIME_SESSION_PATH);
 } catch (e) {
   console.error("Failed to load FreeTimeSession:", e.message);
+  process.exit(1);
+}
+
+try {
+  FreeTimeAllowance = loadModule(ALLOWANCE_PATH);
+} catch (e) {
+  console.error("Failed to load FreeTimeAllowance:", e.message);
   process.exit(1);
 }
 
@@ -181,6 +197,8 @@ function makeDeps(storage, opener, opts = {}) {
     now: opts.now !== undefined ? opts.now : NOW,
     sessionId: opts.sessionId || "sess-001",
     FreeTimeSession: FreeTimeSession,
+    FreeTimeAllowance: FreeTimeAllowance,
+    durationMinutes: opts.durationMinutes,
   };
 }
 
@@ -954,6 +972,232 @@ run("recover with no journal returns no_pending_transaction", () => {
   const storage = new FakeStorage({});
   const result = TxModule.recoverPendingTransaction({ storage });
   assert.equal(result.code, "no_pending_transaction");
+});
+
+// ── L. 30분 가변 시간 시작 및 사용량 정책 트랜잭션 ─────────
+
+const MORNING_9AM = new Date(2026, 7, 16, 9, 0, 0, 0).getTime();
+const AFTERNOON_2PM = new Date(2026, 7, 16, 14, 0, 0, 0).getTime();
+
+run("L: successful 30 minute start deducts exactly 30 inventory and sets usage", () => {
+  const storage = new FakeStorage({
+    [REWARD_KEY]: JSON.stringify({ youtube_minutes: 60 }),
+  });
+  const opener = new FakeOpener();
+  const result = TxModule.attemptStart(
+    makeDeps(storage, opener, { now: MORNING_9AM, durationMinutes: 30 })
+  );
+  assert.equal(result.code, "started");
+  assert.equal(result.session.chargedMinutes, 30);
+  assert.equal(result.session.durationMs, 1800000);
+
+  const reward = JSON.parse(storage.raw(REWARD_KEY));
+  assert.equal(reward.youtube_minutes, 30);
+
+  const usage = JSON.parse(storage.raw(USAGE_KEY));
+  assert.equal(usage.morningMinutes, 30);
+  assert.equal(usage.afternoonMinutes, 0);
+});
+
+run("L: successful afternoon start increments afternoon usage exactly once", () => {
+  const storage = new FakeStorage({
+    [REWARD_KEY]: JSON.stringify({ youtube_minutes: 60 }),
+    [USAGE_KEY]: JSON.stringify({
+      schemaVersion: 1,
+      dateKey: "2026-08-16",
+      morningMinutes: 30,
+      afternoonMinutes: 0,
+    }),
+  });
+  const opener = new FakeOpener();
+  const result = TxModule.attemptStart(
+    makeDeps(storage, opener, { now: AFTERNOON_2PM, durationMinutes: 20 })
+  );
+  assert.equal(result.code, "started");
+
+  const reward = JSON.parse(storage.raw(REWARD_KEY));
+  assert.equal(reward.youtube_minutes, 40);
+
+  const usage = JSON.parse(storage.raw(USAGE_KEY));
+  assert.equal(usage.morningMinutes, 30);
+  assert.equal(usage.afternoonMinutes, 20);
+});
+
+run("L: exceeds_period_allowance leaves inventory and usage unchanged", () => {
+  const initialReward = JSON.stringify({ youtube_minutes: 60 });
+  const initialUsage = JSON.stringify({
+    schemaVersion: 1,
+    dateKey: "2026-08-16",
+    morningMinutes: 30,
+    afternoonMinutes: 0,
+  });
+  const storage = new FakeStorage({
+    [REWARD_KEY]: initialReward,
+    [USAGE_KEY]: initialUsage,
+  });
+  const opener = new FakeOpener();
+  const result = TxModule.attemptStart(
+    makeDeps(storage, opener, { now: MORNING_9AM, durationMinutes: 10 })
+  );
+  assert.equal(result.code, "exceeds_period_allowance");
+  assert.equal(opener.callCount, 0);
+  assert.equal(storage.raw(REWARD_KEY), initialReward);
+  assert.equal(storage.raw(USAGE_KEY), initialUsage);
+  assert.equal(storage.raw(SESSION_KEY), null);
+});
+
+run("L: crosses_boundary leaves inventory and usage unchanged", () => {
+  const time1145 = new Date(2026, 7, 16, 11, 45, 0, 0).getTime();
+  const initialReward = JSON.stringify({ youtube_minutes: 60 });
+  const storage = new FakeStorage({
+    [REWARD_KEY]: initialReward,
+  });
+  const opener = new FakeOpener();
+  const result = TxModule.attemptStart(
+    makeDeps(storage, opener, { now: time1145, durationMinutes: 20 })
+  );
+  assert.equal(result.code, "crosses_boundary");
+  assert.equal(opener.callCount, 0);
+  assert.equal(storage.raw(REWARD_KEY), initialReward);
+  assert.equal(storage.raw(SESSION_KEY), null);
+});
+
+run("L: invalid_duration leaves inventory and usage unchanged", () => {
+  const initialReward = JSON.stringify({ youtube_minutes: 60 });
+  const storage = new FakeStorage({
+    [REWARD_KEY]: initialReward,
+  });
+  const opener = new FakeOpener();
+  const result = TxModule.attemptStart(
+    makeDeps(storage, opener, { now: MORNING_9AM, durationMinutes: 15 })
+  );
+  assert.equal(result.code, "invalid_duration");
+  assert.equal(opener.callCount, 0);
+  assert.equal(storage.raw(REWARD_KEY), initialReward);
+  assert.equal(storage.raw(SESSION_KEY), null);
+});
+
+run("L: retry after success does not double-charge usage or inventory", () => {
+  const storage = new FakeStorage({
+    [REWARD_KEY]: JSON.stringify({ youtube_minutes: 60 }),
+  });
+  const opener = new FakeOpener();
+  TxModule.attemptStart(
+    makeDeps(storage, opener, { now: MORNING_9AM, durationMinutes: 10, sessionId: "sess-1" })
+  );
+  const opener2 = new FakeOpener();
+  const r2 = TxModule.attemptStart(
+    makeDeps(storage, opener2, { now: MORNING_9AM + 1000, durationMinutes: 10, sessionId: "sess-2" })
+  );
+  assert.equal(r2.code, "already_active");
+  assert.equal(opener2.callCount, 0);
+
+  const reward = JSON.parse(storage.raw(REWARD_KEY));
+  assert.equal(reward.youtube_minutes, 50);
+
+  const usage = JSON.parse(storage.raw(USAGE_KEY));
+  assert.equal(usage.morningMinutes, 10);
+});
+
+run("L: usage write failure triggers rollback of reward and usage", () => {
+  const initialReward = JSON.stringify({ youtube_minutes: 60 });
+  const storage = new FakeStorage({
+    [REWARD_KEY]: initialReward,
+  });
+  storage.failSetItem(USAGE_KEY, 1);
+  const opener = new FakeOpener();
+  const result = TxModule.attemptStart(
+    makeDeps(storage, opener, { now: MORNING_9AM, durationMinutes: 10 })
+  );
+  assert.equal(result.code, "commit_failed");
+  assert.equal(opener.closeCount, 1);
+  assert.equal(storage.raw(REWARD_KEY), initialReward);
+  assert.equal(storage.raw(USAGE_KEY), null);
+  assert.equal(storage.raw(SESSION_KEY), null);
+  assert.equal(storage.raw(JOURNAL_KEY), null);
+});
+
+// ── M. 3자 상태 복구 (v2 journal recovery) ───────────────────
+
+run("M: incomplete v2 transaction restores previous reward, usage, and session", () => {
+  const previousRewardRaw = JSON.stringify({ youtube_minutes: 60 });
+  const previousUsageRaw = JSON.stringify({
+    schemaVersion: 1,
+    dateKey: "2026-08-16",
+    morningMinutes: 10,
+    afternoonMinutes: 0,
+  });
+  const targetRewardRaw = JSON.stringify({ youtube_minutes: 30 });
+  const targetUsageRaw = JSON.stringify({
+    schemaVersion: 1,
+    dateKey: "2026-08-16",
+    morningMinutes: 40,
+    afternoonMinutes: 0,
+  });
+  const targetSessionRaw = JSON.stringify(
+    FreeTimeSession.start({ now: MORNING_9AM, sessionId: "sess-crash", source: "reward", durationMinutes: 30 })
+  );
+
+  const storage = new FakeStorage({
+    [REWARD_KEY]: targetRewardRaw,
+    [USAGE_KEY]: targetUsageRaw,
+    [SESSION_KEY]: null, // crashed before session write
+    [JOURNAL_KEY]: JSON.stringify({
+      version: 2,
+      transactionId: "sess-crash",
+      previousRewardRaw,
+      previousSessionRaw: null,
+      previousUsageRaw,
+      targetRewardRaw,
+      targetSessionRaw,
+      targetUsageRaw,
+    }),
+  });
+
+  const result = TxModule.recoverPendingTransaction({ storage });
+  assert.equal(result.code, "rolled_back_incomplete_transaction");
+  assert.equal(storage.raw(REWARD_KEY), previousRewardRaw);
+  assert.equal(storage.raw(USAGE_KEY), previousUsageRaw);
+  assert.equal(storage.raw(SESSION_KEY), null);
+  assert.equal(storage.raw(JOURNAL_KEY), null);
+});
+
+run("M: finalized committed v2 transaction preserves all 3 states", () => {
+  const previousRewardRaw = JSON.stringify({ youtube_minutes: 60 });
+  const previousUsageRaw = null;
+  const targetRewardRaw = JSON.stringify({ youtube_minutes: 30 });
+  const targetUsageRaw = JSON.stringify({
+    schemaVersion: 1,
+    dateKey: "2026-08-16",
+    morningMinutes: 30,
+    afternoonMinutes: 0,
+  });
+  const targetSessionRaw = JSON.stringify(
+    FreeTimeSession.start({ now: MORNING_9AM, sessionId: "sess-fin", source: "reward", durationMinutes: 30 })
+  );
+
+  const storage = new FakeStorage({
+    [REWARD_KEY]: targetRewardRaw,
+    [USAGE_KEY]: targetUsageRaw,
+    [SESSION_KEY]: targetSessionRaw,
+    [JOURNAL_KEY]: JSON.stringify({
+      version: 2,
+      transactionId: "sess-fin",
+      previousRewardRaw,
+      previousSessionRaw: null,
+      previousUsageRaw,
+      targetRewardRaw,
+      targetSessionRaw,
+      targetUsageRaw,
+    }),
+  });
+
+  const result = TxModule.recoverPendingTransaction({ storage });
+  assert.equal(result.code, "finalized_committed_transaction");
+  assert.equal(storage.raw(REWARD_KEY), targetRewardRaw);
+  assert.equal(storage.raw(USAGE_KEY), targetUsageRaw);
+  assert.equal(storage.raw(SESSION_KEY), targetSessionRaw);
+  assert.equal(storage.raw(JOURNAL_KEY), null);
 });
 
 // ── 결과 ─────────────────────────────────────────────────────

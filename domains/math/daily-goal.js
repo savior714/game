@@ -202,16 +202,50 @@
     }
 
     const receiptKey = `aiden_receipt_${goal.rewardReceiptId}`;
+    let alreadyClaimed = false;
+
     if (storage && typeof storage.getItem === 'function') {
       const existingReceipt = storage.getItem(receiptKey);
       if (existingReceipt) {
-        goal.rewardGranted = true;
-        saveDailyGoal(goal, { storage: storage, key: opts.key });
-        return { success: false, reason: 'already_claimed' };
+        alreadyClaimed = true;
       }
     }
 
-    // 영수증 기록
+    if (!alreadyClaimed && rewardSystem && typeof rewardSystem.hasReceipt === 'function') {
+      if (rewardSystem.hasReceipt(goal.rewardReceiptId)) {
+        alreadyClaimed = true;
+      }
+    }
+
+    if (alreadyClaimed) {
+      goal.rewardGranted = true;
+      saveDailyGoal(goal, { storage: storage, key: opts.key });
+      return { success: false, reason: 'already_claimed' };
+    }
+
+    // 보상 시스템 연동 (보석 2개 + 자유시간 10분)
+    if (rewardSystem) {
+      if (typeof rewardSystem.grantWithReceipt === 'function') {
+        const grantRes = rewardSystem.grantWithReceipt(
+          goal.rewardReceiptId,
+          [
+            { type: 'gems', amount: GOAL_REWARD_GEMS },
+            { type: 'youtube', amount: 1 }, // 1단위 = 10분
+          ],
+          { now: now }
+        );
+        if (!grantRes.success && grantRes.alreadyClaimed) {
+          goal.rewardGranted = true;
+          saveDailyGoal(goal, { storage: storage, key: opts.key });
+          return { success: false, reason: 'already_claimed' };
+        }
+      } else if (typeof rewardSystem.add === 'function') {
+        rewardSystem.add('gems', GOAL_REWARD_GEMS);
+        rewardSystem.add('youtube', 1); // 1단위 = 10분
+      }
+    }
+
+    // 영수증 기록 및 목표 상태 저장
     if (storage && typeof storage.setItem === 'function') {
       try {
         const receiptData = {
@@ -230,12 +264,6 @@
 
     goal.rewardGranted = true;
     saveDailyGoal(goal, { storage: storage, key: opts.key });
-
-    // 보상 시스템 연동 (보석 2개 + 유튜브 자유시간 10분)
-    if (rewardSystem && typeof rewardSystem.add === 'function') {
-      rewardSystem.add('gems', GOAL_REWARD_GEMS);
-      rewardSystem.add('youtube', 1); // 1단위 = 10분
-    }
 
     return {
       success: true,

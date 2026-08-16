@@ -6282,12 +6282,53 @@
     return true;
   }
 
+  function checkFreeTimeEntitlement() {
+    try {
+      var rawRewards = localStorage.getItem("study_rewards");
+      if (rawRewards) {
+        var r = JSON.parse(rawRewards);
+        if (r && typeof r === "object" && Number(r.youtube_minutes) >= 10) {
+          return true;
+        }
+      }
+      var rawSession = localStorage.getItem("study_youtube_free_time_session_v1");
+      if (rawSession) {
+        var s = JSON.parse(rawSession);
+        if (s && typeof s.endsAt === "number" && s.endsAt > Date.now() && s.status === "running") {
+          return true;
+        }
+      }
+    } catch (e) {}
+    return false;
+  }
+
   var App = {
     boot: function () {
       var root = document.getElementById("ocean-rescue-root");
       var status = document.getElementById("ocean-rescue-status");
       if (!root || !status) {
         return false;
+      }
+      var gateSection = document.getElementById("ocean-rescue-admission-gate");
+      var isEntitled = checkFreeTimeEntitlement();
+      if (!isEntitled) {
+        root.setAttribute("data-access-denied", "true");
+        root.setAttribute("data-ocean-rescue-ready", "locked");
+        status.textContent = "Ocean Rescue locked";
+        if (gateSection) {
+          gateSection.hidden = false;
+          gateSection.style.display = "flex";
+        }
+        var profileSection = document.getElementById("ocean-rescue-profile-choice");
+        if (profileSection) profileSection.style.display = "none";
+        var missionSection = document.getElementById("ocean-rescue-mission-select");
+        if (missionSection) missionSection.style.display = "none";
+        return false;
+      }
+      root.setAttribute("data-access-denied", "false");
+      if (gateSection) {
+        gateSection.hidden = true;
+        gateSection.style.display = "none";
       }
       if (root.getAttribute("data-ocean-rescue-ready") === "true") {
         bindStaticControls();

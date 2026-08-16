@@ -21,6 +21,7 @@ const RewardSystem = (() => {
       { id: 'bubble', icon: '🫧', label: '비눗방울 게임', desc: '버블팡 한 판 더!', price: 1 }
     ],
     custom_inventory: {},
+    claimed_receipts: {},
     theme: 'modern',
     last_updated: new Date().toISOString()
   };
@@ -49,6 +50,9 @@ const RewardSystem = (() => {
         state = { ...initialState, ...JSON.parse(saved) };
         ensureDefaultShopItems(state);
         if (!state.custom_inventory) state.custom_inventory = {};
+        if (!state.claimed_receipts || typeof state.claimed_receipts !== 'object') {
+          state.claimed_receipts = {};
+        }
         // 로컬/클라우드 병합 과정에서 숫자 필드가 문자열·NaN으로 들어와도 누적이 깨지지 않게 정규화
         state.gems = Number.isFinite(Number(state.gems)) ? Number(state.gems) : 0;
         state.youtube_minutes = Number.isFinite(Number(state.youtube_minutes)) ? Number(state.youtube_minutes) : 0;
@@ -60,6 +64,9 @@ const RewardSystem = (() => {
       }
     } else {
       ensureDefaultShopItems(state);
+      if (!state.claimed_receipts || typeof state.claimed_receipts !== 'object') {
+        state.claimed_receipts = {};
+      }
     }
   }
 
@@ -125,6 +132,72 @@ const RewardSystem = (() => {
     if (type === 'marble') return state.marble_plays >= amount;
     if (type === 'bubble') return state.bubble_plays >= amount;
     return (state.custom_inventory[type] || 0) >= amount;
+  }
+
+  function hasReceipt(receiptId) {
+    if (!receiptId || typeof receiptId !== 'string') return false;
+    return Boolean(state.claimed_receipts && state.claimed_receipts[receiptId]);
+  }
+
+  function grantWithReceipt(receiptId, grants, options) {
+    if (!receiptId || typeof receiptId !== 'string') {
+      return { success: false, reason: 'invalid_receipt_id' };
+    }
+    if (hasReceipt(receiptId)) {
+      return { success: false, reason: 'already_claimed', alreadyClaimed: true };
+    }
+
+    const list = Array.isArray(grants) ? grants : [];
+    let totalGems = 0;
+    let totalYoutubeMinutes = 0;
+
+    for (const g of list) {
+      const type = g.type;
+      const amount = Number.isFinite(Number(g.amount)) ? Number(g.amount) : 0;
+      if (amount <= 0) continue;
+
+      if (type === 'gems') {
+        state.gems = (Number(state.gems) || 0) + amount;
+        totalGems += amount;
+      } else if (type === 'youtube') {
+        state.youtube_minutes = (Number(state.youtube_minutes) || 0) + (amount * 10);
+        totalYoutubeMinutes += (amount * 10);
+      } else if (type === 'snack') {
+        state.snacks = (Number(state.snacks) || 0) + amount;
+      } else if (type === 'marble') {
+        state.marble_plays = (Number(state.marble_plays) || 0) + amount;
+      } else if (type === 'bubble') {
+        state.bubble_plays = (Number(state.bubble_plays) || 0) + amount;
+      } else {
+        if (!state.custom_inventory[type]) state.custom_inventory[type] = 0;
+        state.custom_inventory[type] = (Number(state.custom_inventory[type]) || 0) + amount;
+      }
+    }
+
+    if (!state.claimed_receipts) state.claimed_receipts = {};
+    const now = (options && typeof options.now === 'number') ? options.now : Date.now();
+    state.claimed_receipts[receiptId] = {
+      receiptId: receiptId,
+      grantedAt: now,
+      grants: list,
+    };
+
+    save();
+
+    if (typeof RewardSystemUI !== 'undefined') {
+      const toastParts = [];
+      if (totalGems > 0) toastParts.push(`💎 보석 ${totalGems}개`);
+      if (totalYoutubeMinutes > 0) toastParts.push(`📺 자유시간 ${totalYoutubeMinutes}분`);
+      const toastMsg = toastParts.length > 0 ? `${toastParts.join(' + ')} 획득!` : '보상 획득!';
+      RewardSystemUI.showToast(toastMsg);
+    }
+
+    return {
+      success: true,
+      alreadyClaimed: false,
+      gems: state.gems,
+      youtube_minutes: state.youtube_minutes,
+    };
   }
 
   function consume(type) {
@@ -294,7 +367,7 @@ const RewardSystem = (() => {
   }
 
   return { 
-    init, add, consume, consumeInternal, exchangeGem, startYouTubeSession,
+    init, add, has, hasReceipt, grantWithReceipt, consume, consumeInternal, exchangeGem, startYouTubeSession,
     getState: () => state, 
     setTheme, 
     openShopModal: () => {

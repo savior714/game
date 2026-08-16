@@ -172,3 +172,65 @@ test('MathDailyGoalEngine generates a new goal on the next day', () => {
   assert.equal(goal2.date, '2026-08-17');
   assert.notEqual(goal1.goalId, goal2.goalId);
 });
+
+test('MathDailyGoalEngine integrates with RewardSystem.grantWithReceipt and handles partial-failure recovery', () => {
+  class MockReceiptRewardSystem {
+    constructor() {
+      this.inventory = { gems: 0, youtube_minutes: 0 };
+      this.receipts = new Map();
+    }
+    hasReceipt(id) {
+      return this.receipts.has(id);
+    }
+    grantWithReceipt(receiptId, grants) {
+      if (this.hasReceipt(receiptId)) {
+        return { success: false, reason: 'already_claimed', alreadyClaimed: true };
+      }
+      for (const g of grants) {
+        if (g.type === 'gems') this.inventory.gems += g.amount;
+        if (g.type === 'youtube') this.inventory.youtube_minutes += g.amount * 10;
+      }
+      this.receipts.set(receiptId, grants);
+      return { success: true, alreadyClaimed: false };
+    }
+  }
+
+  const storage = new MockStorage();
+  const rewardSystem = new MockReceiptRewardSystem();
+  const now = Date.parse('2026-08-16T09:00:00.000Z');
+
+  const goal = MathDailyGoalEngine.initOrGetDailyGoal({
+    storage,
+    now,
+    skillCatalog: MathSkills.MATH_SKILLS,
+  });
+  goal.completed = true;
+  goal.currentCount = 5;
+  goal.completedAt = now;
+
+  // 1. Initial claim with grantWithReceipt
+  const claim1 = MathDailyGoalEngine.claimGoalReward({ goal, rewardSystem, storage, now });
+  assert.equal(claim1.success, true);
+  assert.equal(rewardSystem.inventory.gems, 2);
+  assert.equal(rewardSystem.inventory.youtube_minutes, 10);
+  assert.equal(rewardSystem.hasReceipt(goal.rewardReceiptId), true);
+  assert.equal(goal.rewardGranted, true);
+
+  // 2. Partial failure simulation: goal in memory says rewardGranted=false, but RewardSystem has receipt
+  goal.rewardGranted = false;
+  const claim2 = MathDailyGoalEngine.claimGoalReward({ goal, rewardSystem, storage, now });
+  assert.equal(claim2.success, false);
+  assert.equal(claim2.reason, 'already_claimed');
+  assert.equal(rewardSystem.inventory.gems, 2); // Unchanged!
+  assert.equal(rewardSystem.inventory.youtube_minutes, 10); // Unchanged!
+  assert.equal(goal.rewardGranted, true); // Recovered!
+
+  // 3. Partial failure simulation: rewardSystem has no receipt in memory, but storage has receiptKey
+  const freshRewardSystem = new MockReceiptRewardSystem();
+  goal.rewardGranted = false;
+  const claim3 = MathDailyGoalEngine.claimGoalReward({ goal, rewardSystem: freshRewardSystem, storage, now });
+  assert.equal(claim3.success, false);
+  assert.equal(claim3.reason, 'already_claimed');
+  assert.equal(freshRewardSystem.inventory.gems, 0); // No accidental grant!
+  assert.equal(goal.rewardGranted, true);
+});

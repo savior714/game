@@ -79,6 +79,8 @@ function setSubject(sub) {
   if (previewParent) previewParent.style.display = 'block';
   const rewardSection = document.getElementById('reward-custom-section');
   if (rewardSection) rewardSection.style.display = 'block';
+  const backupSection = document.getElementById('local-backup-section');
+  if (backupSection) backupSection.style.display = 'block';
   const growthPanel = document.getElementById('growth-panel');
   if (growthPanel) growthPanel.classList.add('hidden');
 
@@ -175,6 +177,30 @@ document.addEventListener('click', (e) => {
     case 'delete-weekly-word':
       if (window.deleteWeeklyWord) {
         window.deleteWeeklyWord(parseInt(target.dataset.idx, 10));
+      }
+      e.stopPropagation();
+      break;
+    case 'export-backup':
+      if (window.exportBackup) {
+        window.exportBackup();
+      }
+      e.stopPropagation();
+      break;
+    case 'import-backup-trigger':
+      if (window.importBackupTrigger) {
+        window.importBackupTrigger();
+      }
+      e.stopPropagation();
+      break;
+    case 'confirm-restore':
+      if (window.confirmRestore) {
+        window.confirmRestore();
+      }
+      e.stopPropagation();
+      break;
+    case 'cancel-restore':
+      if (window.cancelRestore) {
+        window.cancelRestore();
       }
       e.stopPropagation();
       break;
@@ -651,6 +677,8 @@ function showGrowthTab() {
   document.getElementById('preview-container').parentElement.style.display = 'none';
   document.getElementById('weekly-words-section').style.display = 'none';
   document.getElementById('reward-custom-section').style.display = 'none';
+  const backupSection = document.getElementById('local-backup-section');
+  if (backupSection) backupSection.style.display = 'block';
   document.getElementById('growth-panel').classList.remove('hidden');
 
   // Update tab styles
@@ -1123,3 +1151,185 @@ function renderMathProgressSnapshot() {
 
   container.innerHTML = html;
 }
+
+// ──────────────────────────────────────────
+// 데이터 백업 및 복원 UI 핸들러 (Local Backup & Restore UI)
+// ──────────────────────────────────────────
+let pendingRestorePayload = null;
+
+function exportBackup() {
+  if (!window.LocalBackupCore || typeof window.LocalBackupCore.createBackupSnapshot !== 'function') {
+    alert('백업 모듈을 로드할 수 없습니다.');
+    return;
+  }
+
+  try {
+    const snapshot = window.LocalBackupCore.createBackupSnapshot();
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const filename = `aidengame-backup-${dateStr}.json`;
+    const jsonStr = JSON.stringify(snapshot, null, 2);
+
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    const statusMsg = document.getElementById('backup-status-msg');
+    if (statusMsg) {
+      statusMsg.className = 'mt-4 text-xs font-bold text-[#d7ff00] flex items-center gap-1.5';
+      statusMsg.innerHTML = `<span>✓</span><span>백업 파일(${filename})이 저장되었습니다.</span>`;
+      statusMsg.classList.remove('hidden');
+      setTimeout(() => {
+        statusMsg.classList.add('hidden');
+      }, 4000);
+    }
+  } catch (err) {
+    console.error('[Guardian] Export backup failed:', err);
+    alert('백업 파일 생성 중 오류가 발생했습니다: ' + err.message);
+  }
+}
+
+function importBackupTrigger() {
+  const input = document.getElementById('backup-file-input');
+  if (input) {
+    input.value = '';
+    input.click();
+  }
+}
+
+function onBackupFileSelected(event) {
+  const input = event.target;
+  if (!input || !input.files || input.files.length === 0) return;
+
+  const file = input.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    try {
+      const content = e.target?.result;
+      const parsed = JSON.parse(content);
+
+      if (!window.LocalBackupCore || typeof window.LocalBackupCore.validateBackup !== 'function') {
+        alert('백업 검증 모듈이 로드되지 않았습니다.');
+        input.value = '';
+        return;
+      }
+
+      const validation = window.LocalBackupCore.validateBackup(parsed);
+      if (!validation.valid) {
+        alert('⚠️ 유효하지 않은 백업 파일입니다:\n• ' + validation.errors.join('\n• '));
+        input.value = '';
+        return;
+      }
+
+      pendingRestorePayload = parsed;
+      openRestoreModal(validation.summary);
+    } catch (parseErr) {
+      console.error('[Guardian] JSON parse error on import:', parseErr);
+      alert('백업 파일 형식이 올바르지 않습니다 (JSON 파싱 오류).');
+      input.value = '';
+    }
+  };
+
+  reader.onerror = function () {
+    alert('파일을 읽는 중 오류가 발생했습니다.');
+    input.value = '';
+  };
+
+  reader.readAsText(file);
+}
+
+function openRestoreModal(summary) {
+  const modal = document.getElementById('backup-restore-modal');
+  const summaryEl = document.getElementById('restore-modal-summary');
+  if (!modal || !summaryEl) return;
+
+  let exportedTimeStr = '알 수 없음';
+  if (summary.exportedAt) {
+    try {
+      exportedTimeStr = new Date(summary.exportedAt).toLocaleString('ko-KR');
+    } catch (e) {
+      exportedTimeStr = summary.exportedAt;
+    }
+  }
+
+  summaryEl.innerHTML = `
+    <div class="flex justify-between border-b border-white/10 pb-1.5 mb-1.5">
+      <span class="text-slate-400">백업 생성 시각:</span>
+      <span class="font-bold text-white">${escapeHtml(exportedTimeStr)}</span>
+    </div>
+    <div class="flex justify-between">
+      <span class="text-slate-400">수학 학습 기록:</span>
+      <span class="font-bold text-[#d7ff00]">${summary.mathEvidenceCount}건</span>
+    </div>
+    <div class="flex justify-between">
+      <span class="text-slate-400">오늘의 수학 목표:</span>
+      <span class="font-bold text-white">${summary.hasDailyGoal ? `${escapeHtml(summary.dailyGoalDate)} 목표` : '없음'}</span>
+    </div>
+    <div class="flex justify-between">
+      <span class="text-slate-400">보석 / 자유시간:</span>
+      <span class="font-bold text-white">💎 ${summary.gems}개 / 📺 ${summary.youtubeMinutes}분</span>
+    </div>
+    <div class="flex justify-between">
+      <span class="text-slate-400">등록된 보상 개수:</span>
+      <span class="font-bold text-white">${summary.rewardItemsCount}개</span>
+    </div>
+    <div class="flex justify-between">
+      <span class="text-slate-400">영어 주간 단어:</span>
+      <span class="font-bold text-white">${summary.weeklyWordsCount}개</span>
+    </div>
+  `;
+
+  modal.classList.remove('hidden');
+}
+
+function cancelRestore() {
+  pendingRestorePayload = null;
+  const modal = document.getElementById('backup-restore-modal');
+  if (modal) modal.classList.add('hidden');
+  const input = document.getElementById('backup-file-input');
+  if (input) input.value = '';
+}
+
+function confirmRestore() {
+  if (!pendingRestorePayload) {
+    cancelRestore();
+    return;
+  }
+
+  if (!window.LocalBackupCore || typeof window.LocalBackupCore.restoreBackup !== 'function') {
+    alert('복원 코어 모듈이 로드되지 않았습니다.');
+    cancelRestore();
+    return;
+  }
+
+  try {
+    const result = window.LocalBackupCore.restoreBackup(pendingRestorePayload);
+    if (result.success) {
+      alert('✓ 백업 데이터 복원이 완료되었습니다. 화면을 새로고침합니다.');
+      cancelRestore();
+      window.location.reload();
+    } else {
+      alert('복원 실패:\n' + (result.errors ? result.errors.join('\n') : result.reason));
+      cancelRestore();
+    }
+  } catch (err) {
+    console.error('[Guardian] Restore execution failed:', err);
+    alert('복원 처리 중 예기치 않은 오류가 발생했습니다: ' + err.message);
+    cancelRestore();
+  }
+}
+
+// 전역 window 노출
+window.exportBackup = exportBackup;
+window.importBackupTrigger = importBackupTrigger;
+window.onBackupFileSelected = onBackupFileSelected;
+window.confirmRestore = confirmRestore;
+window.cancelRestore = cancelRestore;

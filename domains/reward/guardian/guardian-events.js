@@ -55,11 +55,21 @@
       'add-custom-reward': () => global.addCustomReward?.(),
       'show-growth': () => global.showGrowthTab?.(),
       'delete-weekly-word': () => global.deleteWeeklyWord?.(Number.parseInt(target.dataset.idx, 10)),
+      'export-backup': () => global.exportBackup?.(),
+      'import-backup-trigger': () => global.importBackupTrigger?.(),
+      'confirm-restore': () => global.confirmRestore?.(),
+      'cancel-restore': () => global.cancelRestore?.(),
     };
 
     const handler = handlers[action];
     if (!handler) return;
     handler();
     event.stopPropagation();
+  });
+
+  doc.addEventListener('change', (event) => {
+    if (event.target?.id === 'backup-file-input' && typeof global.onBackupFileSelected === 'function') {
+      global.onBackupFileSelected(event);
+    }
   });
 })(window);

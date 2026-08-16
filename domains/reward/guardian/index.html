@@ -210,8 +210,6 @@
             </div>
             <button data-action="add-custom-reward" class="bg-[#d7ff00] text-black px-4 py-2 rounded-lg font-black text-sm hover:bg-[#c7ee00] transition-all shadow-[0_0_15px_rgba(215,255,0,0.4)]">추가하기</button>
           </div>
-        </div>
-
         <div id="cr-list" class="space-y-3">
           <!-- Rendered items here -->
         </div>
@@ -241,6 +239,66 @@
       </div>
     </div>
 
+    <!-- Local Backup and Restore Section -->
+    <div class="border-t border-white/10 pt-8" id="local-backup-section">
+      <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2">
+        <span>📦</span> 데이터 백업 및 복원
+      </h3>
+      <div class="bg-[#0e1422]/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10 mb-6">
+        <p class="text-xs text-slate-400 mb-5 leading-relaxed">
+          수학 학습 기록, 일일 목표, 보석 및 보상 설정을 하나의 백업 파일(<code class="text-[#d7ff00] font-mono text-[11px]">.json</code>)로 안전하게 보관하거나 다른 기기에서 복원할 수 있습니다.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-3">
+          <button id="export-backup-btn" data-action="export-backup" class="flex-1 bg-[#d7ff00] text-black px-5 py-3 rounded-xl font-black text-sm hover:bg-[#c7ee00] transition-all shadow-[0_0_15px_rgba(215,255,0,0.3)] flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            <span>백업 파일 저장</span>
+          </button>
+
+          <button id="import-backup-trigger-btn" data-action="import-backup-trigger" class="flex-1 bg-white/10 text-white hover:bg-white/20 border border-white/15 px-5 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2">
+            <svg class="w-4 h-4 text-[#38bdf8]" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+            <span>백업 파일 불러오기</span>
+          </button>
+
+          <input type="file" id="backup-file-input" accept=".json" class="hidden">
+        </div>
+
+        <div id="backup-status-msg" class="mt-4 text-xs font-medium text-slate-400 hidden"></div>
+      </div>
+    </div>
+
+    <!-- Restore Confirmation Modal (Hidden by default) -->
+    <div id="backup-restore-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm hidden" role="dialog" aria-modal="true" aria-labelledby="restore-modal-title">
+      <div class="bg-[#0e1422] border border-white/15 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center justify-center text-lg shrink-0">
+            ⚠️
+          </div>
+          <div>
+            <h4 id="restore-modal-title" class="font-bold text-white text-base">백업 데이터 복원 확인</h4>
+            <p class="text-xs text-slate-400">파일의 내용을 확인한 후 복원을 진행하세요.</p>
+          </div>
+        </div>
+
+        <div id="restore-modal-summary" class="bg-black/30 border border-white/10 rounded-xl p-4 space-y-2 text-xs text-slate-300 font-mono">
+          <!-- JS will render summary here -->
+        </div>
+
+        <div class="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs text-rose-300 leading-relaxed font-medium">
+          ⚠️ <strong>주의:</strong> 현재 기기에 저장된 학습 기록과 보상 데이터가 백업 파일의 내용으로 완전히 교체됩니다. 복원 후 되돌릴 수 없습니다.
+        </div>
+
+        <div class="flex gap-2 justify-end pt-2">
+          <button type="button" data-action="cancel-restore" id="cancel-restore-btn" class="px-4 py-2.5 rounded-xl border border-white/15 text-slate-300 text-sm font-medium hover:bg-white/10 transition-all">
+            취소
+          </button>
+          <button type="button" data-action="confirm-restore" id="confirm-restore-btn" class="px-5 py-2.5 rounded-xl bg-[#d7ff00] text-black text-sm font-black hover:bg-[#c7ee00] transition-all shadow-[0_0_15px_rgba(215,255,0,0.4)]">
+            복원 실행
+          </button>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <script src="../../../shared/domain/progress-engine.js"></script>
@@ -254,6 +312,7 @@
   <script src="../../../domains/math/mastery.js"></script>
   <script src="../../../domains/math/daily-goal.js"></script>
   <script src="../../../domains/math/guardian-summary.js"></script>
+  <script src="local-backup.js"></script>
   <script src="guardian.js"></script>
   <script src="guardian-events.js"></script>
 </body>

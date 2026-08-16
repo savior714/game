@@ -31,7 +31,9 @@ def test_active_product_scope_is_the_single_product_direction_pointer() -> None:
     assert "Math mastery/adaptive loop" in readme
 
 
-def test_scope_encodes_grilled_product_decisions_without_rpg_or_runtime_llm_drift() -> None:
+def test_scope_encodes_grilled_product_decisions_without_rpg_or_runtime_llm_drift() -> (
+    None
+):
     scope = read(ACTIVE_SCOPE)
 
     required = (

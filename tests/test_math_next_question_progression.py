@@ -280,5 +280,7 @@ def test_wrong_answer_reinforcement_replays_exact_recent_problem(
         "level": 0,
         "isWeakness": True,
         "isReinforcement": True,
+        "skillId": "math.add.within_10",
+        "curriculumRef": "2022-2수01-05",
     }
     assert page_errors == []

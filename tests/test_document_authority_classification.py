@@ -9,7 +9,9 @@ DOC_INDEX = ROOT / "docs/README.md"
 ACTIVE_SCOPE = ROOT / "docs/specs/product/ACTIVE_PRODUCT_SCOPE.md"
 SPACE_REFERENCE = ROOT / "docs/SPACE_EXPLORER_PLAN.md"
 OCEAN_REFERENCE = ROOT / "docs/plans/PLAN_ocean_rescue_vite_esm_typescript_migration.md"
-COMPLETED_RELIABILITY = ROOT / "docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md"
+COMPLETED_RELIABILITY = (
+    ROOT / "docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md"
+)
 
 
 def read(path: Path) -> str:
@@ -57,7 +59,9 @@ def test_active_completed_and_frozen_documents_are_classified_separately() -> No
     assert "과거 plan, evidence, 완료 보고, WP 번호" in index
 
 
-def test_active_scope_owns_product_priority_not_completed_or_feature_references() -> None:
+def test_active_scope_owns_product_priority_not_completed_or_feature_references() -> (
+    None
+):
     scope = read(ACTIVE_SCOPE)
     completed = read(COMPLETED_RELIABILITY)
     ocean = read(OCEAN_REFERENCE)

@@ -49,10 +49,36 @@ const NET_STREAK  = 5;
 
 // 강화학습: 틀린 문제 기억
 let wrongPatterns = [];
-let currentQData  = null; // { op, level, a, b, tag, isWeakness }
+let currentQData  = null; // { op, level, a, b, tag, isWeakness, skillId, isReinforcement }
 let recentHistory = []; // 최근 5문제 정답 여부
 let recentQuestions = []; // 최근 10문제 (중복 방지용 키)
 let _lastQuestionKey = ''; // 직전 문제 키 (강화 복습 중복 경계용)
+
+// 커리큘럼 스킬 숙달도 및 일일 목표 상태
+let mathDailyGoal = null;
+let mathMasteryMap = {};
+
+function initMathLearningLoop() {
+  try {
+    if (typeof MathEvidenceStore !== 'undefined' && typeof MathMasteryEngine !== 'undefined' && typeof MathSkills !== 'undefined') {
+      const evidenceList = MathEvidenceStore.getEvidenceList();
+      mathMasteryMap = MathMasteryEngine.computeAllSkillsMastery(MathSkills.MATH_SKILL_ORDER, evidenceList);
+    }
+    if (typeof MathDailyGoalEngine !== 'undefined' && typeof MathSkills !== 'undefined') {
+      mathDailyGoal = MathDailyGoalEngine.initOrGetDailyGoal({
+        masteryMap: mathMasteryMap,
+        skillCatalog: MathSkills.MATH_SKILLS,
+        skillOrder: MathSkills.MATH_SKILL_ORDER,
+      });
+    }
+  } catch (err) {
+    console.warn('[MathEngine] Failed to init learning loop:', err);
+  }
+  if (typeof updateDailyGoalUI === 'function') {
+    updateDailyGoalUI();
+  }
+}
+
 
 /* ═══════════════════════════════════
    통계 (localStorage)
@@ -188,6 +214,22 @@ function _buildEmergencyQuestion() {
 }
 
 function generateQuestion() {
+  if (typeof MathAdaptiveSelector !== 'undefined' && typeof MathSkills !== 'undefined') {
+    const candidate = MathAdaptiveSelector.selectNextQuestion({
+      dailyGoalSkillId: mathDailyGoal ? mathDailyGoal.skillId : null,
+      masteryMap: mathMasteryMap,
+      skillOrder: MathSkills.MATH_SKILL_ORDER,
+      recentQuestions: recentQuestions,
+      lastQuestionKey: _lastQuestionKey,
+      wrongPatterns: wrongPatterns,
+      reinforceProb: REINFORCE_PROB,
+      rng: Math.random,
+      MathSkills: MathSkills,
+    });
+    const level = getDifficultyLevel(candidate.op);
+    return { ...candidate, level };
+  }
+
   for (let tries = 0; tries < 20; tries++) {
     const candidate = _generateCandidate();
     if (_isPrimaryQuestionCandidateAllowed(candidate)) return candidate;
@@ -271,7 +313,18 @@ function askQuestion() {
     const q   = generateQuestion();
     answer    = q.result;
     currentOp = q.op;
-    currentQData = { op: q.op, level: q.level, a: q.a, b: q.b, tag: q.tag, isWeakness: q.isWeakness };
+    const skillId = q.skillId || (typeof MathSkills !== 'undefined' ? MathSkills.classifyMathSkill(q.a, q.b, q.op) : 'math.add.within_10');
+    currentQData = {
+      op: q.op,
+      level: q.level,
+      a: q.a,
+      b: q.b,
+      tag: q.tag,
+      isWeakness: q.isWeakness,
+      skillId: skillId,
+      curriculumRef: q.curriculumRef || '',
+      isReinforcement: Boolean(q.isReinforcement),
+    };
 
     // 중복 방지 큐에 추가
     const qKey = [q.a, q.b].sort((a, b) => a - b).join(',') + q.op;
@@ -311,16 +364,77 @@ function askQuestion() {
 function recordResult(correct, elapsed) {
   const oldLevel = getDifficultyLevel(currentOp);
 
-  // 공통 결과 기록
+  // 1. 공통 레거시 결과 기록 (ProgressEngine)
   ProgressEngine.recordResultCore({
     stats, domainKey: currentOp, level: currentQData.level,
     tag: currentQData.tag, correct, elapsed,
     weaknessesKey: currentQData.tag,
   });
 
+  // 2. 원시 학습 증거 저장 (Durable Raw Evidence)
+  if (typeof MathEvidenceStore !== 'undefined') {
+    try {
+      MathEvidenceStore.appendEvidence({
+        skillId: currentQData.skillId,
+        problemKey: _questionKey(currentQData),
+        op: currentOp,
+        a: currentQData.a,
+        b: currentQData.b,
+        result: answer,
+        correct: correct,
+        firstAttempt: true,
+        attempts: 1,
+        elapsedSeconds: elapsed,
+        isWeakness: currentQData.isWeakness,
+        isReinforcement: currentQData.isReinforcement,
+      });
+    } catch (e) {
+      console.warn('[MathEngine] Failed to append learning evidence:', e);
+    }
+  }
+
+  // 3. 스킬 숙달도 갱신 (Mastery Engine V1)
+  if (typeof MathMasteryEngine !== 'undefined' && typeof MathEvidenceStore !== 'undefined') {
+    try {
+      const evidenceList = MathEvidenceStore.getEvidenceList();
+      mathMasteryMap[currentQData.skillId] = MathMasteryEngine.computeSkillMastery(currentQData.skillId, evidenceList);
+    } catch (e) {
+      console.warn('[MathEngine] Failed to compute mastery:', e);
+    }
+  }
+
+  // 4. 일일 스킬 목표 진행 및 멱등적 보상 지급 (Daily Goal Loop)
+  if (typeof MathDailyGoalEngine !== 'undefined' && mathDailyGoal) {
+    try {
+      const goalRes = MathDailyGoalEngine.recordGoalProgress({
+        goal: mathDailyGoal,
+        skillId: currentQData.skillId,
+        correct: correct,
+        now: Date.now(),
+      });
+
+      if (goalRes.completedJustNow) {
+        const rewardSys = typeof RewardSystem !== 'undefined' ? RewardSystem : null;
+        const claimRes = MathDailyGoalEngine.claimGoalReward({
+          goal: mathDailyGoal,
+          rewardSystem: rewardSys,
+          now: Date.now(),
+        });
+        if (claimRes.success && typeof showDailyGoalCompletedFeedback === 'function') {
+          showDailyGoalCompletedFeedback();
+        }
+      }
+      if (typeof updateDailyGoalUI === 'function') {
+        updateDailyGoalUI();
+      }
+    } catch (e) {
+      console.warn('[MathEngine] Daily goal progress error:', e);
+    }
+  }
+
   // 과목별 고유 로직: 약점 극복 피드백
   const wStats = stats[currentOp].weaknesses[currentQData.tag];
-  if (correct && currentQData.isWeakness && wStats.attempts >= 3 && wStats.correct / wStats.attempts >= 0.8) {
+  if (correct && currentQData.isWeakness && wStats && wStats.attempts >= 3 && wStats.correct / wStats.attempts >= 0.8) {
     showWeaknessClear();
   }
 
@@ -362,6 +476,7 @@ function recordResult(correct, elapsed) {
       a: currentQData.a,
       b: currentQData.b,
       tag: currentQData.tag,
+      skillId: currentQData.skillId,
     });
     if (wrongPatterns.length > MAX_WRONG_PATTERNS) wrongPatterns.pop();
   } else {

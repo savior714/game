@@ -717,3 +717,105 @@ h1 {
   }
 }
 
+/* ── 일일 스킬 목표 위젯 (Daily Goal Widget) ─────────── */
+.daily-goal-container {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 520px;
+  background: rgba(18, 24, 38, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  padding: 12px 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s ease;
+}
+
+.daily-goal-container.goal-completed {
+  border-color: rgba(215, 255, 0, 0.5);
+  box-shadow: 0 8px 30px -4px rgba(215, 255, 0, 0.2), inset 0 0 15px rgba(215, 255, 0, 0.05);
+}
+
+.daily-goal-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.daily-goal-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.daily-goal-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.daily-goal-title {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.daily-goal-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: rgba(255, 107, 53, 0.2);
+  color: #ff8c5a;
+  border: 1px solid rgba(255, 107, 53, 0.3);
+}
+
+.daily-goal-badge.badge-completed {
+  background: rgba(215, 255, 0, 0.18);
+  color: var(--neon-volt);
+  border-color: rgba(215, 255, 0, 0.4);
+}
+
+.daily-goal-desc {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.daily-goal-progress-wrap {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.daily-goal-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff6b35, #d7ff00);
+  border-radius: 9999px;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.daily-goal-counter {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--neon-volt);
+  flex-shrink: 0;
+  padding-left: 6px;
+}
+
+

@@ -130,8 +130,57 @@ function startGame() {
     GrowthVisualizer.resetLevelUpFlag();
   }
 
+  // 학습 루프 및 일일 목표 UI 초기화
+  if (typeof initMathLearningLoop === 'function') {
+    initMathLearningLoop();
+  }
+  updateDailyGoalUI();
+
   askQuestion();
 }
+
+/* ═══════════════════════════════════
+   일일 스킬 목표 UI
+═══════════════════════════════════ */
+function updateDailyGoalUI() {
+  const banner = document.getElementById('daily-goal-banner');
+  if (!banner || !mathDailyGoal) return;
+
+  const descEl = document.getElementById('daily-goal-desc');
+  const countEl = document.getElementById('daily-goal-count');
+  const progressEl = document.getElementById('daily-goal-progress-bar');
+  const statusEl = document.getElementById('daily-goal-status');
+
+  if (descEl) {
+    descEl.textContent = `${mathDailyGoal.skillName || '수학 연습'} 마스터하기`;
+  }
+  if (countEl) {
+    countEl.textContent = `${mathDailyGoal.currentCount} / ${mathDailyGoal.targetCount}`;
+  }
+  if (progressEl) {
+    const pct = Math.min(100, Math.round((mathDailyGoal.currentCount / mathDailyGoal.targetCount) * 100));
+    progressEl.style.width = `${pct}%`;
+  }
+  if (statusEl) {
+    if (mathDailyGoal.completed) {
+      statusEl.textContent = '달성 완료! 🎉';
+      statusEl.classList.add('badge-completed');
+      banner.classList.add('goal-completed');
+    } else {
+      statusEl.textContent = '도전 중';
+      statusEl.classList.remove('badge-completed');
+      banner.classList.remove('goal-completed');
+    }
+  }
+}
+
+function showDailyGoalCompletedFeedback() {
+  spawnConfetti();
+  if (typeof RewardSystemUI !== 'undefined' && typeof RewardSystemUI.showToast === 'function') {
+    RewardSystemUI.showToast('🎯 오늘의 목표 달성! 💎 보석 2개 + 📺 자유시간 10분 획득!');
+  }
+}
+
 
 /* ═══════════════════════════════════
    통계 모달

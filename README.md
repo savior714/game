@@ -85,7 +85,7 @@ Ocean Rescue는 제품 차원에서 active feature지만, **현재 기본 구현
 
 ## 🛠️ 로컬 개발 / 검증
 
-통합 검증:
+통합 검증 (`verify.sh`):
 
 ```bash
 bash ./verify.sh

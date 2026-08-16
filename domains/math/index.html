@@ -38,6 +38,22 @@
 
   <h1>🔢 수학 놀이</h1>
 
+    <!-- 일일 스킬 목표 위젯 -->
+    <div id="daily-goal-banner" class="daily-goal-container" aria-live="polite">
+      <div class="daily-goal-icon" aria-hidden="true">🎯</div>
+      <div class="daily-goal-content">
+        <div class="daily-goal-header">
+          <span class="daily-goal-title">오늘의 목표</span>
+          <span id="daily-goal-status" class="daily-goal-badge">도전 중</span>
+        </div>
+        <div id="daily-goal-desc" class="daily-goal-desc">10 이하의 덧셈 연습하기</div>
+        <div class="daily-goal-progress-wrap" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="5">
+          <div id="daily-goal-progress-bar" class="daily-goal-progress-fill" style="width: 0%;"></div>
+        </div>
+      </div>
+      <div id="daily-goal-count" class="daily-goal-counter">0 / 5</div>
+    </div>
+
     <div id="score-board">
       <div class="score-item">문제 <span id="q-count">1</span> / 10</div>
       <div class="score-item">점수 <span id="q-score">0</span></div>
@@ -113,6 +129,13 @@
   <script src="../../shared/domain/daily-streak.js"></script>
   <script src="../../shared/domain/diversity-reward.js"></script>
   <script src="../../shared/domain/growth-visualizer.js"></script>
+
+  <!-- 수학 스킬, 증거, 숙달도, 적응형 선택, 일일 목표 엔진 -->
+  <script src="skills.js"></script>
+  <script src="evidence.js"></script>
+  <script src="mastery.js"></script>
+  <script src="adaptive-selector.js"></script>
+  <script src="daily-goal.js"></script>
 
   <script src="engine.js"></script>
   <script src="../../shared/ui/particle-pool.js"></script>

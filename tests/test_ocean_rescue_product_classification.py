@@ -6,7 +6,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ACTIVE_SCOPE = ROOT / "docs/specs/product/ACTIVE_PRODUCT_SCOPE.md"
 DOC_INDEX = ROOT / "docs/README.md"
-MIGRATION_REFERENCE = ROOT / "docs/plans/PLAN_ocean_rescue_vite_esm_typescript_migration.md"
+MIGRATION_REFERENCE = (
+    ROOT / "docs/plans/PLAN_ocean_rescue_vite_esm_typescript_migration.md"
+)
 FREEZE_NOTICE = ROOT / "docs/specs/OCEAN_RESCUE_FREEZE_NOTICE.md"
 OCEAN_SPECS = (
     ROOT / "docs/specs/product/AIDENGAME_OCEAN_RESCUE_MVP_PRD.md",

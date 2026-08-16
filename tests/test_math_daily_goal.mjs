@@ -234,3 +234,176 @@ test('MathDailyGoalEngine integrates with RewardSystem.grantWithReceipt and hand
   assert.equal(freshRewardSystem.inventory.gems, 0); // No accidental grant!
   assert.equal(goal.rewardGranted, true);
 });
+
+test('MathDailyGoalEngine Presets: missing preference defaults to standard 5', () => {
+  const storage = new MockStorage();
+  const now = Date.parse('2026-08-16T09:00:00.000Z');
+
+  const pref = MathDailyGoalEngine.loadGoalPreference({ storage });
+  assert.equal(pref.presetId, 'standard');
+
+  const goal = MathDailyGoalEngine.initOrGetDailyGoal({
+    storage,
+    now,
+    skillCatalog: MathSkills.MATH_SKILLS,
+    skillOrder: MathSkills.MATH_SKILL_ORDER,
+  });
+  assert.equal(goal.targetCount, 5);
+});
+
+test('MathDailyGoalEngine Presets: light preset creates new goal with targetCount 3', () => {
+  const storage = new MockStorage();
+  const now = Date.parse('2026-08-16T09:00:00.000Z');
+
+  MathDailyGoalEngine.saveGoalPreference('light', { storage, now });
+  const pref = MathDailyGoalEngine.loadGoalPreference({ storage });
+  assert.equal(pref.presetId, 'light');
+
+  const goal = MathDailyGoalEngine.initOrGetDailyGoal({
+    storage,
+    now,
+    skillCatalog: MathSkills.MATH_SKILLS,
+    skillOrder: MathSkills.MATH_SKILL_ORDER,
+  });
+  assert.equal(goal.targetCount, 3);
+});
+
+test('MathDailyGoalEngine Presets: challenge preset creates new goal with targetCount 7', () => {
+  const storage = new MockStorage();
+  const now = Date.parse('2026-08-16T09:00:00.000Z');
+
+  MathDailyGoalEngine.saveGoalPreference('challenge', { storage, now });
+  const pref = MathDailyGoalEngine.loadGoalPreference({ storage });
+  assert.equal(pref.presetId, 'challenge');
+
+  const goal = MathDailyGoalEngine.initOrGetDailyGoal({
+    storage,
+    now,
+    skillCatalog: MathSkills.MATH_SKILLS,
+    skillOrder: MathSkills.MATH_SKILL_ORDER,
+  });
+  assert.equal(goal.targetCount, 7);
+});
+
+test('MathDailyGoalEngine Presets: skill selection logic remains identical regardless of preset', () => {
+  const now = Date.parse('2026-08-16T09:00:00.000Z');
+  const masteryMap = {
+    'math.add.within_10': { status: 'MASTERED' },
+    'math.add.within_20.carry': { status: 'STRUGGLING', isWeak: true },
+  };
+
+  const storageLight = new MockStorage();
+  MathDailyGoalEngine.saveGoalPreference('light', { storage: storageLight });
+  const goalLight = MathDailyGoalEngine.initOrGetDailyGoal({
+    storage: storageLight,
+    now,
+    masteryMap,
+    skillCatalog: MathSkills.MATH_SKILLS,
+    skillOrder: MathSkills.MATH_SKILL_ORDER,
+  });
+
+  const storageChallenge = new MockStorage();
+  MathDailyGoalEngine.saveGoalPreference('challenge', { storage: storageChallenge });
+  const goalChallenge = MathDailyGoalEngine.initOrGetDailyGoal({
+    storage: storageChallenge,
+    now,
+    masteryMap,
+    skillCatalog: MathSkills.MATH_SKILLS,
+    skillOrder: MathSkills.MATH_SKILL_ORDER,
+  });
+
+  assert.equal(goalLight.skillId, 'math.add.within_20.carry');
+  assert.equal(goalChallenge.skillId, 'math.add.within_20.carry');
+  assert.equal(goalLight.targetCount, 3);
+  assert.equal(goalChallenge.targetCount, 7);
+});
+
+test('MathDailyGoalEngine Presets: malformed or unknown preference fails soft to standard 5', () => {
+  const storage = new MockStorage();
+  const now = Date.parse('2026-08-16T09:00:00.000Z');
+
+  // Unknown presetId
+  storage.setItem(MathDailyGoalEngine.PREFERENCE_STORAGE_KEY, JSON.stringify({ schemaVersion: 1, presetId: 'invalid_super_hard' }));
+  const prefUnknown = MathDailyGoalEngine.loadGoalPreference({ storage });
+  assert.equal(prefUnknown.presetId, 'standard');
+
+  const goalUnknown = MathDailyGoalEngine.initOrGetDailyGoal({
+    storage,
+    now,
+    skillCatalog: MathSkills.MATH_SKILLS,
+  });
+  assert.equal(goalUnknown.targetCount, 5);
+
+  // Corrupted JSON
+  storage.setItem(MathDailyGoalEngine.PREFERENCE_STORAGE_KEY, '{ invalid json');
+  const prefCorrupted = MathDailyGoalEngine.loadGoalPreference({ storage });
+  assert.equal(prefCorrupted.presetId, 'standard');
+
+  const storageCorrupted = new MockStorage();
+  storageCorrupted.setItem(MathDailyGoalEngine.PREFERENCE_STORAGE_KEY, '{ invalid json');
+  const goalCorrupted = MathDailyGoalEngine.initOrGetDailyGoal({
+    storage: storageCorrupted,
+    now,
+    skillCatalog: MathSkills.MATH_SKILLS,
+  });
+  assert.equal(goalCorrupted.targetCount, 5);
+});
+
+test('MathDailyGoalEngine Presets HARD RULE: existing today goal is never rewritten on preference change', () => {
+  const storage = new MockStorage();
+  const now = Date.parse('2026-08-16T09:00:00.000Z');
+
+  // 1. Create standard (5) goal today and progress 2/5
+  const goal = MathDailyGoalEngine.initOrGetDailyGoal({
+    storage,
+    now,
+    skillCatalog: MathSkills.MATH_SKILLS,
+  });
+  assert.equal(goal.targetCount, 5);
+  MathDailyGoalEngine.recordGoalProgress({ goal, skillId: goal.skillId, correct: true, storage, now });
+  MathDailyGoalEngine.recordGoalProgress({ goal, skillId: goal.skillId, correct: true, storage, now });
+  assert.equal(goal.currentCount, 2);
+  assert.equal(goal.completed, false);
+  const initialReceiptId = goal.rewardReceiptId;
+
+  // 2. Guardian changes preference to light (3) or challenge (7)
+  MathDailyGoalEngine.saveGoalPreference('light', { storage });
+
+  // 3. Calling initOrGetDailyGoal on the same day returns the existing goal untouched
+  const todayGoal = MathDailyGoalEngine.initOrGetDailyGoal({
+    storage,
+    now: now + 60000,
+    skillCatalog: MathSkills.MATH_SKILLS,
+  });
+  assert.equal(todayGoal.targetCount, 5); // NOT changed to 3!
+  assert.equal(todayGoal.currentCount, 2);
+  assert.equal(todayGoal.completed, false);
+  assert.equal(todayGoal.rewardReceiptId, initialReceiptId);
+
+  // 4. Next day's goal applies the new light preset (3)
+  const nextDay = now + 86400000;
+  const nextDayGoal = MathDailyGoalEngine.initOrGetDailyGoal({
+    storage,
+    now: nextDay,
+    skillCatalog: MathSkills.MATH_SKILLS,
+  });
+  assert.equal(nextDayGoal.targetCount, 3);
+  assert.equal(nextDayGoal.currentCount, 0);
+});
+
+test('MathDailyGoalEngine Presets: saving preference causes 0 mutation to evidence/mastery/stats/rewards', () => {
+  const storage = new MockStorage();
+  storage.setItem('aiden_math_stats', JSON.stringify({ '+': { levels: {} } }));
+  storage.setItem('aiden_math_learning_evidence_v1', JSON.stringify({ schemaVersion: 1, items: [] }));
+  storage.setItem('study_rewards', JSON.stringify({ gems: 10 }));
+
+  const statsBefore = storage.getItem('aiden_math_stats');
+  const evidenceBefore = storage.getItem('aiden_math_learning_evidence_v1');
+  const rewardsBefore = storage.getItem('study_rewards');
+
+  MathDailyGoalEngine.saveGoalPreference('challenge', { storage });
+
+  assert.equal(storage.getItem('aiden_math_stats'), statsBefore);
+  assert.equal(storage.getItem('aiden_math_learning_evidence_v1'), evidenceBefore);
+  assert.equal(storage.getItem('study_rewards'), rewardsBefore);
+});

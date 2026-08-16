@@ -60,23 +60,32 @@ window.addEventListener('DOMContentLoaded', () => {
 function setSubject(sub) {
   currentSubject = sub;
   
-  // 수학 학습 진도 스냅샷 섹션 노출 제어 (수학만)
+  // 수학 학습 진도 스냅샷 및 일일 목표 프리셋 섹션 노출 제어 (수학만)
   const mathSection = document.getElementById('math-progress-snapshot-section');
   if (mathSection) {
     mathSection.style.display = (sub === 'math') ? 'block' : 'none';
   }
+  const presetsSection = document.getElementById('math-daily-goal-presets-section');
+  if (presetsSection) {
+    presetsSection.style.display = (sub === 'math') ? 'block' : 'none';
+  }
   if (sub === 'math') {
+    renderMathGoalPresets();
     renderMathProgressSnapshot();
   }
+
+  // 레거시 난이도 조절 패널 및 미리보기 (수학에서는 숨김, 타 과목에서만 노출)
+  const diffPanel = document.getElementById('difficulty-control-panel');
+  if (diffPanel) diffPanel.style.display = (sub === 'math') ? 'none' : 'block';
+  const previewSection = document.getElementById('preview-section');
+  if (previewSection) previewSection.style.display = (sub === 'math') ? 'none' : 'block';
 
   // 주간 단어 섹션 노출 제어 (영어만)
   const wwSection = document.getElementById('weekly-words-section');
   if (wwSection) wwSection.style.display = (sub === 'english') ? 'block' : 'none';
   if (sub === 'english') loadWeeklyWords();
 
-  // 다른 패널 복구
-  const previewParent = document.getElementById('preview-container')?.parentElement;
-  if (previewParent) previewParent.style.display = 'block';
+  // 다른 공용 패널 복구
   const rewardSection = document.getElementById('reward-custom-section');
   if (rewardSection) rewardSection.style.display = 'block';
   const backupSection = document.getElementById('local-backup-section');
@@ -95,34 +104,36 @@ function setSubject(sub) {
     t.classList.add('active-tab');
   }
 
-  // 로컬 스토리지에서 현재 레벨 산출
-  const key = STORAGE_KEYS[sub];
-  const statsStr = localStorage.getItem(key);
-  let baseLevel = 0;
-  if (statsStr) {
-    try {
-      const stats = JSON.parse(statsStr);
-      // 첫 번째 도메인 키를 기반으로 베이스 레벨 계산
-      const firstDomain = Object.keys(stats).find(k => k !== '_updated_at' && stats[k].levels);
-      if (firstDomain) {
-        if (window.ProgressEngine) {
-           baseLevel = window.ProgressEngine.getBaseDiffLevel(stats, firstDomain, 4); // minData usually 3~4
-        } else {
-           // Fallback logic
-           for(let i=0; i<6; i++) {
-              if(stats[firstDomain].levels[i].attempts > 3 && (stats[firstDomain].levels[i].correct / stats[firstDomain].levels[i].attempts) >= 0.9) {
-                baseLevel = i+1;
-              } else break;
-           }
+  // 로컬 스토리지에서 현재 레벨 산출 (수학이 아닐 때만 슬라이더 갱신)
+  if (sub !== 'math') {
+    const key = STORAGE_KEYS[sub];
+    const statsStr = localStorage.getItem(key);
+    let baseLevel = 0;
+    if (statsStr) {
+      try {
+        const stats = JSON.parse(statsStr);
+        // 첫 번째 도메인 키를 기반으로 베이스 레벨 계산
+        const firstDomain = Object.keys(stats).find(k => k !== '_updated_at' && stats[k].levels);
+        if (firstDomain) {
+          if (window.ProgressEngine) {
+             baseLevel = window.ProgressEngine.getBaseDiffLevel(stats, firstDomain, 4); // minData usually 3~4
+          } else {
+             // Fallback logic
+             for(let i=0; i<6; i++) {
+                if(stats[firstDomain].levels[i].attempts > 3 && (stats[firstDomain].levels[i].correct / stats[firstDomain].levels[i].attempts) >= 0.9) {
+                  baseLevel = i+1;
+                } else break;
+             }
+          }
         }
-      }
-    } catch(e) {}
-  }
+      } catch(e) {}
+    }
 
-  const sl = document.getElementById('level-slider');
-  if (sl) {
-    sl.value = baseLevel;
-    onSliderChange(baseLevel);
+    const sl = document.getElementById('level-slider');
+    if (sl) {
+      sl.value = baseLevel;
+      onSliderChange(baseLevel);
+    }
   }
 }
 
@@ -147,6 +158,12 @@ document.addEventListener('click', (e) => {
     case 'set-subject':
       if (window.setSubject) {
         window.setSubject(target.dataset.subject);
+      }
+      e.stopPropagation();
+      break;
+    case 'set-math-preset':
+      if (window.onSelectMathPreset) {
+        window.onSelectMathPreset(target.dataset.preset);
       }
       e.stopPropagation();
       break;
@@ -674,7 +691,12 @@ function showGrowthTab() {
   // Hide subject panels, show growth panel
   const mathSection = document.getElementById('math-progress-snapshot-section');
   if (mathSection) mathSection.style.display = 'none';
-  document.getElementById('preview-container').parentElement.style.display = 'none';
+  const presetsSection = document.getElementById('math-daily-goal-presets-section');
+  if (presetsSection) presetsSection.style.display = 'none';
+  const diffPanel = document.getElementById('difficulty-control-panel');
+  if (diffPanel) diffPanel.style.display = 'none';
+  const previewSection = document.getElementById('preview-section');
+  if (previewSection) previewSection.style.display = 'none';
   document.getElementById('weekly-words-section').style.display = 'none';
   document.getElementById('reward-custom-section').style.display = 'none';
   const backupSection = document.getElementById('local-backup-section');
@@ -1327,9 +1349,47 @@ function confirmRestore() {
   }
 }
 
+// ──────────────────────────────────────────
+// 수학 하루 목표 프리셋 렌더링 및 선택 핸들러 (Math Goal Presets)
+// ──────────────────────────────────────────
+const PRESET_ACTIVE_CLASSES = ['bg-[#d7ff00]/15', 'text-[#d7ff00]', 'border-[#d7ff00]/50', 'shadow-[0_0_15px_rgba(215,255,0,0.2)]'];
+const PRESET_INACTIVE_CLASSES = ['bg-white/5', 'text-slate-300', 'border-white/10', 'hover:bg-white/10'];
+
+function renderMathGoalPresets() {
+  let preference = { presetId: 'standard' };
+  if (window.MathDailyGoalEngine && typeof window.MathDailyGoalEngine.loadGoalPreference === 'function') {
+    preference = window.MathDailyGoalEngine.loadGoalPreference();
+  }
+  const currentPresetId = (preference && preference.presetId) ? preference.presetId : 'standard';
+
+  ['light', 'standard', 'challenge'].forEach(presetId => {
+    const btn = document.getElementById(`preset-btn-${presetId}`);
+    if (!btn) return;
+
+    if (presetId === currentPresetId) {
+      btn.classList.add(...PRESET_ACTIVE_CLASSES);
+      btn.classList.remove(...PRESET_INACTIVE_CLASSES);
+      btn.setAttribute('aria-pressed', 'true');
+    } else {
+      btn.classList.remove(...PRESET_ACTIVE_CLASSES);
+      btn.classList.add(...PRESET_INACTIVE_CLASSES);
+      btn.setAttribute('aria-pressed', 'false');
+    }
+  });
+}
+
+function onSelectMathPreset(presetId) {
+  if (window.MathDailyGoalEngine && typeof window.MathDailyGoalEngine.saveGoalPreference === 'function') {
+    window.MathDailyGoalEngine.saveGoalPreference(presetId);
+  }
+  renderMathGoalPresets();
+}
+
 // 전역 window 노출
 window.exportBackup = exportBackup;
 window.importBackupTrigger = importBackupTrigger;
 window.onBackupFileSelected = onBackupFileSelected;
 window.confirmRestore = confirmRestore;
 window.cancelRestore = cancelRestore;
+window.renderMathGoalPresets = renderMathGoalPresets;
+window.onSelectMathPreset = onSelectMathPreset;

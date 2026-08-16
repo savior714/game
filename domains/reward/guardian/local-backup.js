@@ -22,6 +22,7 @@
   const STORAGE_KEYS = Object.freeze({
     MATH_EVIDENCE: 'aiden_math_learning_evidence_v1',
     MATH_DAILY_GOAL: 'aiden_math_daily_goal_v1',
+    MATH_GOAL_PREFERENCE: 'aiden_math_goal_preference_v1',
     STUDY_REWARDS: 'study_rewards',
     RECEIPT_PREFIX: 'aiden_receipt_',
     WEEKLY_WORDS: 'englishWeeklyWords',
@@ -128,6 +129,23 @@
     } else {
       snapshot.datasets.mathDailyGoal = {
         storageKey: STORAGE_KEYS.MATH_DAILY_GOAL,
+        present: false,
+        data: null,
+      };
+    }
+
+    // 2.5 Math Goal Preference
+    const rawGoalPref = storage.getItem(STORAGE_KEYS.MATH_GOAL_PREFERENCE);
+    if (rawGoalPref) {
+      const parsed = _safeJsonParse(rawGoalPref);
+      snapshot.datasets.mathGoalPreference = {
+        storageKey: STORAGE_KEYS.MATH_GOAL_PREFERENCE,
+        present: Boolean(parsed),
+        data: parsed,
+      };
+    } else {
+      snapshot.datasets.mathGoalPreference = {
+        storageKey: STORAGE_KEYS.MATH_GOAL_PREFERENCE,
         present: false,
         data: null,
       };
@@ -311,6 +329,18 @@
       }
     }
 
+    // 2.5 Math Goal Preference 검증
+    if (datasets.mathGoalPreference) {
+      if (datasets.mathGoalPreference.present) {
+        const data = datasets.mathGoalPreference.data;
+        if (!data || typeof data !== 'object' || typeof data.presetId !== 'string') {
+          errors.push('수학 목표 설정 데이터(mathGoalPreference)의 구조가 올바르지 않습니다.');
+        } else {
+          summary.mathGoalPresetId = data.presetId;
+        }
+      }
+    }
+
     // 3. Study Rewards 검증
     if (datasets.studyRewards) {
       if (datasets.studyRewards.present) {
@@ -412,6 +442,7 @@
     const keysToTrack = [
       STORAGE_KEYS.MATH_EVIDENCE,
       STORAGE_KEYS.MATH_DAILY_GOAL,
+      STORAGE_KEYS.MATH_GOAL_PREFERENCE,
       STORAGE_KEYS.STUDY_REWARDS,
       STORAGE_KEYS.WEEKLY_WORDS,
       STORAGE_KEYS.SESSION_LOG,
@@ -457,6 +488,17 @@
           storage.setItem(k, JSON.stringify(datasets.mathDailyGoal.data));
           restoredKeys.push(k);
         } else {
+          storage.removeItem(k);
+        }
+      }
+
+      // 2.5 Math Goal Preference
+      if (datasets.mathGoalPreference !== undefined) {
+        const k = STORAGE_KEYS.MATH_GOAL_PREFERENCE;
+        if (datasets.mathGoalPreference && datasets.mathGoalPreference.present && datasets.mathGoalPreference.data) {
+          storage.setItem(k, JSON.stringify(datasets.mathGoalPreference.data));
+          restoredKeys.push(k);
+        } else if (datasets.mathGoalPreference && datasets.mathGoalPreference.present === false) {
           storage.removeItem(k);
         }
       }

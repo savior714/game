@@ -402,3 +402,85 @@ test('H. Reward idempotency survives backup and restore round-trip', () => {
   assert.equal(restoredRewards.gems, 2);
   assert.equal(restoredRewards.youtube_minutes, 10);
 });
+
+test('I. LocalBackupCore exports and restores mathGoalPreference dataset round-trip', () => {
+  const sourceStorage = createMockStorage();
+  const targetStorage = createMockStorage();
+  const now = Date.now();
+
+  const prefData = {
+    schemaVersion: 1,
+    presetId: 'challenge',
+    updatedAt: new Date(now).toISOString(),
+  };
+  sourceStorage.setItem(LocalBackupCore.STORAGE_KEYS.MATH_GOAL_PREFERENCE, JSON.stringify(prefData));
+
+  // Export
+  const backup = LocalBackupCore.createBackupSnapshot({ storage: sourceStorage, now });
+  assert.equal(backup.datasets.mathGoalPreference.present, true);
+  assert.equal(backup.datasets.mathGoalPreference.data.presetId, 'challenge');
+
+  // Validate
+  const validation = LocalBackupCore.validateBackup(backup);
+  assert.equal(validation.valid, true);
+  assert.equal(validation.summary.mathGoalPresetId, 'challenge');
+
+  // Restore
+  const restoreRes = LocalBackupCore.restoreBackup(backup, { storage: targetStorage });
+  assert.equal(restoreRes.success, true);
+  assert.deepEqual(JSON.parse(targetStorage.getItem(LocalBackupCore.STORAGE_KEYS.MATH_GOAL_PREFERENCE)), prefData);
+});
+
+test('J. LocalBackupCore clears mathGoalPreference when present is false', () => {
+  const targetStorage = createMockStorage({
+    [LocalBackupCore.STORAGE_KEYS.MATH_GOAL_PREFERENCE]: JSON.stringify({ schemaVersion: 1, presetId: 'light' }),
+  });
+
+  const backupWithAbsentPref = {
+    format: 'aidengame-local-backup',
+    schemaVersion: 1,
+    exportedAt: new Date().toISOString(),
+    datasets: {
+      mathGoalPreference: {
+        storageKey: LocalBackupCore.STORAGE_KEYS.MATH_GOAL_PREFERENCE,
+        present: false,
+        data: null,
+      },
+    },
+  };
+
+  const res = LocalBackupCore.restoreBackup(backupWithAbsentPref, { storage: targetStorage });
+  assert.equal(res.success, true);
+  assert.equal(targetStorage.getItem(LocalBackupCore.STORAGE_KEYS.MATH_GOAL_PREFERENCE), null);
+});
+
+test('K. Legacy schema v1 backup without mathGoalPreference keeps existing local preference unchanged', () => {
+  const targetStorage = createMockStorage({
+    [LocalBackupCore.STORAGE_KEYS.MATH_GOAL_PREFERENCE]: JSON.stringify({ schemaVersion: 1, presetId: 'challenge' }),
+    [LocalBackupCore.STORAGE_KEYS.STUDY_REWARDS]: '{"gems":5}',
+  });
+
+  // Older v1 backup that does not have mathGoalPreference dataset key
+  const legacyBackupWithoutPrefDataset = {
+    format: 'aidengame-local-backup',
+    schemaVersion: 1,
+    exportedAt: '2026-08-15T10:00:00.000Z',
+    datasets: {
+      studyRewards: {
+        storageKey: LocalBackupCore.STORAGE_KEYS.STUDY_REWARDS,
+        present: true,
+        data: { gems: 20 },
+      },
+      // mathGoalPreference is UNDEFINED (missing from older backup)
+    },
+  };
+
+  const res = LocalBackupCore.restoreBackup(legacyBackupWithoutPrefDataset, { storage: targetStorage });
+  assert.equal(res.success, true);
+
+  // Rewards should be updated
+  assert.equal(JSON.parse(targetStorage.getItem(LocalBackupCore.STORAGE_KEYS.STUDY_REWARDS)).gems, 20);
+  // Math goal preference MUST remain untouched
+  const pref = JSON.parse(targetStorage.getItem(LocalBackupCore.STORAGE_KEYS.MATH_GOAL_PREFERENCE));
+  assert.equal(pref.presetId, 'challenge');
+});

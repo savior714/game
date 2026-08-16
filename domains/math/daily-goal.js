@@ -16,8 +16,16 @@
   'use strict';
 
   const STORAGE_KEY = 'aiden_math_daily_goal_v1';
+  const PREFERENCE_STORAGE_KEY = 'aiden_math_goal_preference_v1';
   const SCHEMA_VERSION = 1;
+  const PREFERENCE_SCHEMA_VERSION = 1;
   const DEFAULT_TARGET_COUNT = 5;
+  const DEFAULT_PRESET_ID = 'standard';
+  const GOAL_PRESET_TARGETS = Object.freeze({
+    light: 3,
+    standard: 5,
+    challenge: 7,
+  });
   const GOAL_REWARD_GEMS = 2;
   const GOAL_REWARD_FREE_TIME_MINUTES = 10;
 
@@ -30,6 +38,70 @@
   function getTodayDateString(now) {
     const d = typeof now === 'number' ? new Date(now) : new Date();
     return d.toISOString().split('T')[0];
+  }
+
+  function resolveGoalTargetCount(presetId) {
+    if (typeof presetId === 'string' && Object.prototype.hasOwnProperty.call(GOAL_PRESET_TARGETS, presetId)) {
+      return GOAL_PRESET_TARGETS[presetId];
+    }
+    return GOAL_PRESET_TARGETS[DEFAULT_PRESET_ID];
+  }
+
+  function loadGoalPreference(options) {
+    const opts = options || {};
+    const storage = _getStorage(opts.storage);
+    const key = opts.key || PREFERENCE_STORAGE_KEY;
+
+    if (!storage || typeof storage.getItem !== 'function') {
+      return { schemaVersion: PREFERENCE_SCHEMA_VERSION, presetId: DEFAULT_PRESET_ID, updatedAt: null };
+    }
+
+    try {
+      const raw = storage.getItem(key);
+      if (!raw) {
+        return { schemaVersion: PREFERENCE_SCHEMA_VERSION, presetId: DEFAULT_PRESET_ID, updatedAt: null };
+      }
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === 'object' && parsed.schemaVersion === PREFERENCE_SCHEMA_VERSION && typeof parsed.presetId === 'string') {
+        const validPresetId = Object.prototype.hasOwnProperty.call(GOAL_PRESET_TARGETS, parsed.presetId) ? parsed.presetId : DEFAULT_PRESET_ID;
+        return {
+          schemaVersion: PREFERENCE_SCHEMA_VERSION,
+          presetId: validPresetId,
+          updatedAt: typeof parsed.updatedAt === 'string' ? parsed.updatedAt : null,
+        };
+      }
+    } catch (e) {
+      console.warn('[MathDailyGoal] Failed to parse goal preference storage:', e);
+    }
+    return { schemaVersion: PREFERENCE_SCHEMA_VERSION, presetId: DEFAULT_PRESET_ID, updatedAt: null };
+  }
+
+  function saveGoalPreference(presetId, options) {
+    const opts = options || {};
+    const storage = _getStorage(opts.storage);
+    const key = opts.key || PREFERENCE_STORAGE_KEY;
+    const now = typeof opts.now === 'number' ? opts.now : Date.now();
+
+    const validPresetId = (typeof presetId === 'string' && Object.prototype.hasOwnProperty.call(GOAL_PRESET_TARGETS, presetId))
+      ? presetId
+      : DEFAULT_PRESET_ID;
+
+    const payload = {
+      schemaVersion: PREFERENCE_SCHEMA_VERSION,
+      presetId: validPresetId,
+      updatedAt: new Date(now).toISOString(),
+    };
+
+    if (!storage || typeof storage.setItem !== 'function') {
+      return payload;
+    }
+
+    try {
+      storage.setItem(key, JSON.stringify(payload));
+    } catch (e) {
+      console.error('[MathDailyGoal] Failed to save goal preference:', e);
+    }
+    return payload;
   }
 
   function loadDailyGoal(options) {
@@ -126,6 +198,10 @@
       targetSkillId = skillOrder[0] || 'math.add.within_10';
     }
 
+    // 보호자 프리셋 설정에서 목표 문제 수 산출
+    const preference = opts.preference || loadGoalPreference({ storage: storage, key: opts.preferenceKey });
+    const targetCount = resolveGoalTargetCount(preference ? preference.presetId : DEFAULT_PRESET_ID);
+
     const skillMeta = skillCatalog[targetSkillId] || { name: '수학 놀이 목표', shortName: '수학 목표' };
     const goalId = `goal-${today}-${targetSkillId}-v1`;
     const receiptId = `receipt-math-goal-${today}-${targetSkillId}-v1`;
@@ -137,7 +213,7 @@
       skillId: targetSkillId,
       skillName: skillMeta.name || skillMeta.shortName || '수학 연습',
       shortName: skillMeta.shortName || skillMeta.name || '수학 연습',
-      targetCount: DEFAULT_TARGET_COUNT,
+      targetCount: targetCount,
       currentCount: 0,
       completed: false,
       completedAt: null,
@@ -275,13 +351,20 @@
 
   return Object.freeze({
     STORAGE_KEY: STORAGE_KEY,
+    PREFERENCE_STORAGE_KEY: PREFERENCE_STORAGE_KEY,
     SCHEMA_VERSION: SCHEMA_VERSION,
+    PREFERENCE_SCHEMA_VERSION: PREFERENCE_SCHEMA_VERSION,
     DEFAULT_TARGET_COUNT: DEFAULT_TARGET_COUNT,
+    DEFAULT_PRESET_ID: DEFAULT_PRESET_ID,
+    GOAL_PRESET_TARGETS: GOAL_PRESET_TARGETS,
     GOAL_REWARD_GEMS: GOAL_REWARD_GEMS,
     GOAL_REWARD_FREE_TIME_MINUTES: GOAL_REWARD_FREE_TIME_MINUTES,
     getTodayDateString: getTodayDateString,
     loadDailyGoal: loadDailyGoal,
     saveDailyGoal: saveDailyGoal,
+    resolveGoalTargetCount: resolveGoalTargetCount,
+    loadGoalPreference: loadGoalPreference,
+    saveGoalPreference: saveGoalPreference,
     initOrGetDailyGoal: initOrGetDailyGoal,
     recordGoalProgress: recordGoalProgress,
     claimGoalReward: claimGoalReward,

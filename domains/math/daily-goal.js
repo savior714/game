@@ -29,6 +29,9 @@
   const GOAL_REWARD_GEMS = 2;
   const GOAL_REWARD_FREE_TIME_MINUTES = 10;
 
+  const STREAK_STORAGE_KEY = 'aiden_math_streak_v1';
+  const STREAK_SCHEMA_VERSION = 1;
+
   function _getStorage(customStorage) {
     if (customStorage) return customStorage;
     if (typeof localStorage !== 'undefined') return localStorage;
@@ -38,6 +41,154 @@
   function getTodayDateString(now) {
     const d = typeof now === 'number' ? new Date(now) : new Date();
     return d.toISOString().split('T')[0];
+  }
+
+  function calculateStreakDecay(lastObservedDate, lastCompletedDate, today) {
+    if (!lastObservedDate || !today || typeof lastObservedDate !== 'string' || typeof today !== 'string') {
+      return 0;
+    }
+    const dObserved = new Date(lastObservedDate + 'T00:00:00.000Z');
+    const dToday = new Date(today + 'T00:00:00.000Z');
+    if (isNaN(dObserved.getTime()) || isNaN(dToday.getTime())) {
+      return 0;
+    }
+    const diffDays = Math.round((dToday.getTime() - dObserved.getTime()) / (24 * 60 * 60 * 1000));
+    if (diffDays <= 0) {
+      return 0;
+    }
+    // 완료된 날짜 이후 경과한 미완료 일수 산출
+    if (lastCompletedDate === lastObservedDate) {
+      return Math.max(0, diffDays - 1);
+    }
+    // 직전 관측 날짜가 미완료인 경우 해당 날짜 포함 미완료 일수 산출
+    return Math.max(0, diffDays);
+  }
+
+  function loadStreak(options) {
+    const opts = options || {};
+    const storage = _getStorage(opts.storage);
+    const key = opts.key || STREAK_STORAGE_KEY;
+
+    if (!storage || typeof storage.getItem !== 'function') {
+      return null;
+    }
+
+    try {
+      const raw = storage.getItem(key);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (
+        parsed &&
+        typeof parsed === 'object' &&
+        parsed.schemaVersion === STREAK_SCHEMA_VERSION &&
+        typeof parsed.currentStreak === 'number' &&
+        Number.isFinite(parsed.currentStreak) &&
+        typeof parsed.lastObservedDate === 'string'
+      ) {
+        return {
+          schemaVersion: STREAK_SCHEMA_VERSION,
+          currentStreak: Math.max(0, Math.floor(parsed.currentStreak)),
+          lastObservedDate: parsed.lastObservedDate,
+          lastCompletedDate: typeof parsed.lastCompletedDate === 'string' ? parsed.lastCompletedDate : null,
+          updatedAt: typeof parsed.updatedAt === 'string' ? parsed.updatedAt : null,
+        };
+      }
+    } catch (e) {
+      console.warn('[MathDailyGoal] Failed to parse streak storage:', e);
+    }
+    return null;
+  }
+
+  function saveStreak(streakState, options) {
+    const opts = options || {};
+    const storage = _getStorage(opts.storage);
+    const key = opts.key || STREAK_STORAGE_KEY;
+
+    if (!storage || typeof storage.setItem !== 'function' || !streakState) return false;
+
+    try {
+      storage.setItem(key, JSON.stringify(streakState));
+      return true;
+    } catch (e) {
+      console.error('[MathDailyGoal] Failed to save streak:', e);
+      return false;
+    }
+  }
+
+  function initOrGetStreak(options) {
+    const opts = options || {};
+    const now = typeof opts.now === 'number' ? opts.now : Date.now();
+    const today = getTodayDateString(now);
+    const storage = _getStorage(opts.storage);
+    const key = opts.key || STREAK_STORAGE_KEY;
+
+    const existing = loadStreak({ storage: storage, key: key });
+    if (!existing) {
+      // 최초 실행(First-run/Migration): 과거 소급 감점 없이 0일로 안전하게 시작
+      const newStreak = {
+        schemaVersion: STREAK_SCHEMA_VERSION,
+        currentStreak: 0,
+        lastObservedDate: today,
+        lastCompletedDate: null,
+        updatedAt: new Date(now).toISOString(),
+      };
+      saveStreak(newStreak, { storage: storage, key: key });
+      return newStreak;
+    }
+
+    if (existing.lastObservedDate === today) {
+      // 당일 재평가/새로고침: 감점 없음
+      return existing;
+    }
+
+    if (existing.lastObservedDate < today) {
+      // 다음 날 또는 다일 경과: 미완료 캘린더 날짜 수만큼 결정론적 부분 감점(-1/day, 하한 0)
+      const missedDays = calculateStreakDecay(existing.lastObservedDate, existing.lastCompletedDate, today);
+      if (missedDays > 0) {
+        existing.currentStreak = Math.max(0, existing.currentStreak - missedDays);
+      }
+      existing.lastObservedDate = today;
+      existing.updatedAt = new Date(now).toISOString();
+      saveStreak(existing, { storage: storage, key: key });
+      return existing;
+    }
+
+    // 시계 역행 등 비정상 상황에 대한 Fail-soft 복구
+    existing.lastObservedDate = today;
+    existing.updatedAt = new Date(now).toISOString();
+    saveStreak(existing, { storage: storage, key: key });
+    return existing;
+  }
+
+  function recordStreakGoalCompletion(options) {
+    const opts = options || {};
+    const now = typeof opts.now === 'number' ? opts.now : Date.now();
+    const today = getTodayDateString(now);
+    const storage = _getStorage(opts.storage);
+    const key = opts.key || STREAK_STORAGE_KEY;
+
+    const streakState = initOrGetStreak({ storage: storage, key: key, now: now });
+
+    if (streakState.lastCompletedDate === today) {
+      // 같은 날 이미 달성 완료한 경우: 멱등성 유지(중복 증가 차단)
+      return {
+        currentStreak: streakState.currentStreak,
+        incremented: false,
+        streak: streakState,
+      };
+    }
+
+    streakState.currentStreak = streakState.currentStreak + 1;
+    streakState.lastCompletedDate = today;
+    streakState.lastObservedDate = today;
+    streakState.updatedAt = new Date(now).toISOString();
+    saveStreak(streakState, { storage: storage, key: key });
+
+    return {
+      currentStreak: streakState.currentStreak,
+      incremented: true,
+      streak: streakState,
+    };
   }
 
   function resolveGoalTargetCount(presetId) {
@@ -227,7 +378,7 @@
   }
 
   /**
-   * 문제 풀이 결과에 따라 목표 진행도 업데이트
+   * 문제 풀이 결과에 따라 목표 진행도 업데이트 및 목표 완료 시 스트릭 증가
    */
   function recordGoalProgress(options) {
     const opts = options || {};
@@ -238,21 +389,23 @@
     const storage = _getStorage(opts.storage);
 
     if (!goal || !correct || goal.completed) {
-      return { goal: goal, completedJustNow: false };
+      return { goal: goal, completedJustNow: false, streakResult: null };
     }
 
     let completedJustNow = false;
+    let streakResult = null;
     if (skillId === goal.skillId) {
       goal.currentCount = (goal.currentCount || 0) + 1;
       if (goal.currentCount >= goal.targetCount && !goal.completed) {
         goal.completed = true;
         goal.completedAt = now;
         completedJustNow = true;
+        streakResult = recordStreakGoalCompletion({ storage: storage, key: opts.streakKey, now: now });
       }
       saveDailyGoal(goal, { storage: storage, key: opts.key });
     }
 
-    return { goal: goal, completedJustNow: completedJustNow };
+    return { goal: goal, completedJustNow: completedJustNow, streakResult: streakResult };
   }
 
   /**
@@ -352,14 +505,21 @@
   return Object.freeze({
     STORAGE_KEY: STORAGE_KEY,
     PREFERENCE_STORAGE_KEY: PREFERENCE_STORAGE_KEY,
+    STREAK_STORAGE_KEY: STREAK_STORAGE_KEY,
     SCHEMA_VERSION: SCHEMA_VERSION,
     PREFERENCE_SCHEMA_VERSION: PREFERENCE_SCHEMA_VERSION,
+    STREAK_SCHEMA_VERSION: STREAK_SCHEMA_VERSION,
     DEFAULT_TARGET_COUNT: DEFAULT_TARGET_COUNT,
     DEFAULT_PRESET_ID: DEFAULT_PRESET_ID,
     GOAL_PRESET_TARGETS: GOAL_PRESET_TARGETS,
     GOAL_REWARD_GEMS: GOAL_REWARD_GEMS,
     GOAL_REWARD_FREE_TIME_MINUTES: GOAL_REWARD_FREE_TIME_MINUTES,
     getTodayDateString: getTodayDateString,
+    calculateStreakDecay: calculateStreakDecay,
+    loadStreak: loadStreak,
+    saveStreak: saveStreak,
+    initOrGetStreak: initOrGetStreak,
+    recordStreakGoalCompletion: recordStreakGoalCompletion,
     loadDailyGoal: loadDailyGoal,
     saveDailyGoal: saveDailyGoal,
     resolveGoalTargetCount: resolveGoalTargetCount,

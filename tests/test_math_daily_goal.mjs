@@ -407,3 +407,239 @@ test('MathDailyGoalEngine Presets: saving preference causes 0 mutation to eviden
   assert.equal(storage.getItem('aiden_math_learning_evidence_v1'), evidenceBefore);
   assert.equal(storage.getItem('study_rewards'), rewardsBefore);
 });
+
+// ── Math Daily Streak Unit Tests ──────────────────────────────────────────
+
+test('MathDailyGoalEngine Streak 1: first-run initializes streak at 0 without retroactive decay', () => {
+  const storage = new MockStorage();
+  const now = Date.parse('2026-08-16T09:00:00.000Z');
+
+  const streak = MathDailyGoalEngine.initOrGetStreak({ storage, now });
+  assert.equal(streak.schemaVersion, 1);
+  assert.equal(streak.currentStreak, 0);
+  assert.equal(streak.lastObservedDate, '2026-08-16');
+  assert.equal(streak.lastCompletedDate, null);
+});
+
+test('MathDailyGoalEngine Streak 2: real daily goal completion increments streak by 1 exactly once', () => {
+  const storage = new MockStorage();
+  const now = Date.parse('2026-08-16T09:00:00.000Z');
+
+  const goal = MathDailyGoalEngine.initOrGetDailyGoal({ storage, now, skillCatalog: MathSkills.MATH_SKILLS });
+  assert.equal(goal.completed, false);
+
+  // Complete goal with targetCount (5)
+  for (let i = 0; i < 5; i++) {
+    const res = MathDailyGoalEngine.recordGoalProgress({
+      goal,
+      skillId: goal.skillId,
+      correct: true,
+      storage,
+      now: now + i * 1000,
+    });
+    if (i < 4) {
+      assert.equal(res.completedJustNow, false);
+      assert.equal(res.streakResult, null);
+    } else {
+      assert.equal(res.completedJustNow, true);
+      assert.ok(res.streakResult);
+      assert.equal(res.streakResult.currentStreak, 1);
+      assert.equal(res.streakResult.incremented, true);
+    }
+  }
+
+  const streakState = MathDailyGoalEngine.loadStreak({ storage });
+  assert.equal(streakState.currentStreak, 1);
+  assert.equal(streakState.lastCompletedDate, '2026-08-16');
+  assert.equal(streakState.lastObservedDate, '2026-08-16');
+});
+
+test('MathDailyGoalEngine Streak 3: same-day repeated completion or claim does not duplicate increment (Idempotency)', () => {
+  const storage = new MockStorage();
+  const now = Date.parse('2026-08-16T09:00:00.000Z');
+
+  const goal = MathDailyGoalEngine.initOrGetDailyGoal({ storage, now, skillCatalog: MathSkills.MATH_SKILLS });
+  for (let i = 0; i < 5; i++) {
+    MathDailyGoalEngine.recordGoalProgress({ goal, skillId: goal.skillId, correct: true, storage, now });
+  }
+
+  // Streak is 1
+  assert.equal(MathDailyGoalEngine.loadStreak({ storage }).currentStreak, 1);
+
+  // Calling recordStreakGoalCompletion again on same day -> duplicate increment blocked!
+  const dupRes = MathDailyGoalEngine.recordStreakGoalCompletion({ storage, now: now + 5000 });
+  assert.equal(dupRes.currentStreak, 1);
+  assert.equal(dupRes.incremented, false);
+
+  // Calling claimGoalReward again -> does not alter streak
+  const claimRes = MathDailyGoalEngine.claimGoalReward({ goal, storage, now });
+  assert.equal(claimRes.success, true);
+  const secondClaim = MathDailyGoalEngine.claimGoalReward({ goal, storage, now });
+  assert.equal(secondClaim.success, false);
+  assert.equal(MathDailyGoalEngine.loadStreak({ storage }).currentStreak, 1);
+});
+
+test('MathDailyGoalEngine Streak 4: same-day reload / evaluation causes 0 decay', () => {
+  const storage = new MockStorage();
+  const now = Date.parse('2026-08-16T09:00:00.000Z');
+
+  // Existing streak = 3 from earlier
+  storage.setItem(MathDailyGoalEngine.STREAK_STORAGE_KEY, JSON.stringify({
+    schemaVersion: 1,
+    currentStreak: 3,
+    lastObservedDate: '2026-08-16',
+    lastCompletedDate: '2026-08-15',
+    updatedAt: new Date(now).toISOString(),
+  }));
+
+  // Re-evaluating on the same day (e.g. page reload 10 times)
+  for (let t = 0; t < 10; t++) {
+    const s = MathDailyGoalEngine.initOrGetStreak({ storage, now: now + t * 60000 });
+    assert.equal(s.currentStreak, 3);
+  }
+});
+
+test('MathDailyGoalEngine Streak 5: partial goal progress on the day does not increment streak', () => {
+  const storage = new MockStorage();
+  const now = Date.parse('2026-08-16T09:00:00.000Z');
+
+  const goal = MathDailyGoalEngine.initOrGetDailyGoal({ storage, now, skillCatalog: MathSkills.MATH_SKILLS });
+  // 3 out of 5 solved
+  for (let i = 0; i < 3; i++) {
+    MathDailyGoalEngine.recordGoalProgress({ goal, skillId: goal.skillId, correct: true, storage, now });
+  }
+  assert.equal(goal.currentCount, 3);
+  assert.equal(goal.completed, false);
+
+  // Streak initialized at 0, must NOT increment to 1
+  const streak = MathDailyGoalEngine.initOrGetStreak({ storage, now });
+  assert.equal(streak.currentStreak, 0);
+  assert.equal(streak.lastCompletedDate, null);
+});
+
+test('MathDailyGoalEngine Streak 6: incomplete goal causes deterministic -1 decay on the next day', () => {
+  const storage = new MockStorage();
+  const day1 = Date.parse('2026-08-16T09:00:00.000Z');
+  const day2 = Date.parse('2026-08-17T09:00:00.000Z');
+
+  // User had 4 streak on Day 1, but did not complete Day 1 goal
+  storage.setItem(MathDailyGoalEngine.STREAK_STORAGE_KEY, JSON.stringify({
+    schemaVersion: 1,
+    currentStreak: 4,
+    lastObservedDate: '2026-08-16',
+    lastCompletedDate: '2026-08-15',
+    updatedAt: new Date(day1).toISOString(),
+  }));
+
+  // Day 2 arrives
+  const streakDay2 = MathDailyGoalEngine.initOrGetStreak({ storage, now: day2 });
+  assert.equal(streakDay2.currentStreak, 3); // 4 -> 3 (-1 decay)
+  assert.equal(streakDay2.lastObservedDate, '2026-08-17');
+});
+
+test('MathDailyGoalEngine Streak 7: missed day on 0 streak remains 0 (min floor 0, never negative)', () => {
+  const storage = new MockStorage();
+  const day1 = Date.parse('2026-08-16T09:00:00.000Z');
+  const day2 = Date.parse('2026-08-17T09:00:00.000Z');
+
+  storage.setItem(MathDailyGoalEngine.STREAK_STORAGE_KEY, JSON.stringify({
+    schemaVersion: 1,
+    currentStreak: 0,
+    lastObservedDate: '2026-08-16',
+    lastCompletedDate: null,
+  }));
+
+  const streakDay2 = MathDailyGoalEngine.initOrGetStreak({ storage, now: day2 });
+  assert.equal(streakDay2.currentStreak, 0); // max(0, 0 - 1) = 0
+});
+
+test('MathDailyGoalEngine Streak 8: multi-day gap decays only by missed uncompleted calendar days', () => {
+  const storage = new MockStorage();
+
+  // Scenario A: 5 streak on 2026-08-15 (completed). User opens app on 2026-08-19 (missed 16, 17, 18 = 3 days).
+  storage.setItem(MathDailyGoalEngine.STREAK_STORAGE_KEY, JSON.stringify({
+    schemaVersion: 1,
+    currentStreak: 5,
+    lastObservedDate: '2026-08-15',
+    lastCompletedDate: '2026-08-15',
+  }));
+
+  const nowA = Date.parse('2026-08-19T09:00:00.000Z');
+  const streakA = MathDailyGoalEngine.initOrGetStreak({ storage, now: nowA });
+  assert.equal(streakA.currentStreak, 2); // 5 - 3 = 2
+  assert.equal(streakA.lastObservedDate, '2026-08-19');
+
+  // Scenario B: 5 streak on 2026-08-15 (not completed on 15). User opens on 2026-08-19 (missed 15, 16, 17, 18 = 4 days).
+  const storageB = new MockStorage();
+  storageB.setItem(MathDailyGoalEngine.STREAK_STORAGE_KEY, JSON.stringify({
+    schemaVersion: 1,
+    currentStreak: 5,
+    lastObservedDate: '2026-08-15',
+    lastCompletedDate: '2026-08-14',
+  }));
+
+  const streakB = MathDailyGoalEngine.initOrGetStreak({ storage: storageB, now: nowA });
+  assert.equal(streakB.currentStreak, 1); // 5 - 4 = 1
+});
+
+test('MathDailyGoalEngine Streak 9: guardian preset change does not alter existing today goal or streak', () => {
+  const storage = new MockStorage();
+  const now = Date.parse('2026-08-16T09:00:00.000Z');
+
+  // Complete goal of 5 problems
+  const goal = MathDailyGoalEngine.initOrGetDailyGoal({ storage, now, skillCatalog: MathSkills.MATH_SKILLS });
+  for (let i = 0; i < 5; i++) {
+    MathDailyGoalEngine.recordGoalProgress({ goal, skillId: goal.skillId, correct: true, storage, now });
+  }
+  assert.equal(MathDailyGoalEngine.loadStreak({ storage }).currentStreak, 1);
+
+  // Guardian changes preset to challenge (7)
+  MathDailyGoalEngine.saveGoalPreference('challenge', { storage });
+
+  // Streak is still 1, today's goal is still 5 and completed
+  assert.equal(MathDailyGoalEngine.loadStreak({ storage }).currentStreak, 1);
+  const reloadedGoal = MathDailyGoalEngine.loadDailyGoal({ storage });
+  assert.equal(reloadedGoal.targetCount, 5);
+  assert.equal(reloadedGoal.completed, true);
+});
+
+test('MathDailyGoalEngine Streak 10: corrupted streak state fails soft safely', () => {
+  const storage = new MockStorage();
+  const now = Date.parse('2026-08-16T09:00:00.000Z');
+
+  // Corrupt string
+  storage.setItem(MathDailyGoalEngine.STREAK_STORAGE_KEY, '{invalid json');
+  const s1 = MathDailyGoalEngine.initOrGetStreak({ storage, now });
+  assert.equal(s1.currentStreak, 0);
+  assert.equal(s1.lastObservedDate, '2026-08-16');
+
+  // Negative streak or bad schema
+  storage.setItem(MathDailyGoalEngine.STREAK_STORAGE_KEY, JSON.stringify({
+    schemaVersion: 999,
+    currentStreak: -5,
+    lastObservedDate: 12345,
+  }));
+  const s2 = MathDailyGoalEngine.initOrGetStreak({ storage, now });
+  assert.equal(s2.currentStreak, 0);
+  assert.equal(s2.lastObservedDate, '2026-08-16');
+});
+
+test('MathDailyGoalEngine Streak 11: streak operations cause 0 artificial mutation to stats/evidence/mastery/session log', () => {
+  const storage = new MockStorage();
+  const now = Date.parse('2026-08-16T09:00:00.000Z');
+
+  storage.setItem('aiden_math_stats', JSON.stringify({ '+': { levels: {} } }));
+  storage.setItem('aiden_math_learning_evidence_v1', JSON.stringify({ schemaVersion: 1, items: [] }));
+  storage.setItem('aiden_session_log', JSON.stringify([{ session: 1 }]));
+
+  const statsBefore = storage.getItem('aiden_math_stats');
+  const evidenceBefore = storage.getItem('aiden_math_learning_evidence_v1');
+  const sessionBefore = storage.getItem('aiden_session_log');
+
+  MathDailyGoalEngine.initOrGetStreak({ storage, now });
+  MathDailyGoalEngine.recordStreakGoalCompletion({ storage, now });
+
+  assert.equal(storage.getItem('aiden_math_stats'), statsBefore);
+  assert.equal(storage.getItem('aiden_math_learning_evidence_v1'), evidenceBefore);
+  assert.equal(storage.getItem('aiden_session_log'), sessionBefore);
+});

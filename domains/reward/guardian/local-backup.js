@@ -23,6 +23,7 @@
     MATH_EVIDENCE: 'aiden_math_learning_evidence_v1',
     MATH_DAILY_GOAL: 'aiden_math_daily_goal_v1',
     MATH_GOAL_PREFERENCE: 'aiden_math_goal_preference_v1',
+    MATH_STREAK: 'aiden_math_streak_v1',
     STUDY_REWARDS: 'study_rewards',
     RECEIPT_PREFIX: 'aiden_receipt_',
     WEEKLY_WORDS: 'englishWeeklyWords',
@@ -151,6 +152,23 @@
       };
     }
 
+    // 2.6 Math Streak
+    const rawStreak = storage.getItem(STORAGE_KEYS.MATH_STREAK);
+    if (rawStreak) {
+      const parsed = _safeJsonParse(rawStreak);
+      snapshot.datasets.mathStreak = {
+        storageKey: STORAGE_KEYS.MATH_STREAK,
+        present: Boolean(parsed),
+        data: parsed,
+      };
+    } else {
+      snapshot.datasets.mathStreak = {
+        storageKey: STORAGE_KEYS.MATH_STREAK,
+        present: false,
+        data: null,
+      };
+    }
+
     // 3. Study Rewards
     const rawRewards = storage.getItem(STORAGE_KEYS.STUDY_REWARDS);
     if (rawRewards) {
@@ -259,6 +277,9 @@
       mathEvidenceCount: 0,
       hasDailyGoal: false,
       dailyGoalDate: null,
+      mathGoalPresetId: null,
+      hasMathStreak: false,
+      mathCurrentStreak: 0,
       gems: 0,
       youtubeMinutes: 0,
       rewardItemsCount: 0,
@@ -337,6 +358,19 @@
           errors.push('수학 목표 설정 데이터(mathGoalPreference)의 구조가 올바르지 않습니다.');
         } else {
           summary.mathGoalPresetId = data.presetId;
+        }
+      }
+    }
+
+    // 2.6 Math Streak 검증
+    if (datasets.mathStreak) {
+      if (datasets.mathStreak.present) {
+        const data = datasets.mathStreak.data;
+        if (!data || typeof data !== 'object' || typeof data.currentStreak !== 'number') {
+          errors.push('수학 연속 학습 데이터(mathStreak)의 구조가 올바르지 않습니다.');
+        } else {
+          summary.hasMathStreak = true;
+          summary.mathCurrentStreak = data.currentStreak;
         }
       }
     }
@@ -443,6 +477,7 @@
       STORAGE_KEYS.MATH_EVIDENCE,
       STORAGE_KEYS.MATH_DAILY_GOAL,
       STORAGE_KEYS.MATH_GOAL_PREFERENCE,
+      STORAGE_KEYS.MATH_STREAK,
       STORAGE_KEYS.STUDY_REWARDS,
       STORAGE_KEYS.WEEKLY_WORDS,
       STORAGE_KEYS.SESSION_LOG,
@@ -499,6 +534,17 @@
           storage.setItem(k, JSON.stringify(datasets.mathGoalPreference.data));
           restoredKeys.push(k);
         } else if (datasets.mathGoalPreference && datasets.mathGoalPreference.present === false) {
+          storage.removeItem(k);
+        }
+      }
+
+      // 2.6 Math Streak
+      if (datasets.mathStreak !== undefined) {
+        const k = STORAGE_KEYS.MATH_STREAK;
+        if (datasets.mathStreak && datasets.mathStreak.present && datasets.mathStreak.data) {
+          storage.setItem(k, JSON.stringify(datasets.mathStreak.data));
+          restoredKeys.push(k);
+        } else if (datasets.mathStreak && datasets.mathStreak.present === false) {
           storage.removeItem(k);
         }
       }

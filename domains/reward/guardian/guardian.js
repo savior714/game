@@ -937,6 +937,7 @@ function renderMathProgressSnapshot() {
   let skillOrder = [];
   let masteryMap = {};
   let dailyGoal = null;
+  let streakState = null;
   const now = Date.now();
 
   try {
@@ -950,8 +951,15 @@ function renderMathProgressSnapshot() {
     if (window.MathMasteryEngine && typeof window.MathMasteryEngine.computeAllSkillsMastery === 'function') {
       masteryMap = window.MathMasteryEngine.computeAllSkillsMastery(skillOrder, evidenceList, now);
     }
-    if (window.MathDailyGoalEngine && typeof window.MathDailyGoalEngine.loadDailyGoal === 'function') {
-      dailyGoal = window.MathDailyGoalEngine.loadDailyGoal();
+    if (window.MathDailyGoalEngine) {
+      if (typeof window.MathDailyGoalEngine.loadDailyGoal === 'function') {
+        dailyGoal = window.MathDailyGoalEngine.loadDailyGoal();
+      }
+      if (typeof window.MathDailyGoalEngine.initOrGetStreak === 'function') {
+        streakState = window.MathDailyGoalEngine.initOrGetStreak({ now: now });
+      } else if (typeof window.MathDailyGoalEngine.loadStreak === 'function') {
+        streakState = window.MathDailyGoalEngine.loadStreak();
+      }
     }
   } catch (err) {
     console.warn('[Guardian] Failed to read canonical math state:', err);
@@ -965,6 +973,7 @@ function renderMathProgressSnapshot() {
       evidenceList: evidenceList,
       masteryMap: masteryMap,
       dailyGoal: dailyGoal,
+      streakState: streakState,
       now: now,
     });
   }
@@ -993,8 +1002,9 @@ function renderMathProgressSnapshot() {
     </div>
   `;
 
-  // 2. 오늘의 목표 카드 (Today's Goal Card)
+  // 2. 오늘의 목표 카드 (Today's Goal Card) + 연속 학습 스트릭 (Streak Card)
   const todayGoal = snapshot.todayGoal;
+  const streakInfo = snapshot.streak || { currentStreak: 0, todayStatusText: '아직 시작 전' };
   html += `
     <div class="bg-[#0e1422]/90 backdrop-blur-xl rounded-2xl p-5 shadow-2xl border border-white/10">
       <div class="flex items-center justify-between mb-3">
@@ -1026,6 +1036,16 @@ function renderMathProgressSnapshot() {
           아이가 수학 놀이를 시작하면 오늘의 맞춤형 스킬 목표가 자동으로 추천됩니다.
         </p>
       `}
+      <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
+        <div class="flex items-center gap-1.5 text-slate-300">
+          <span class="text-sm">🔥</span>
+          <span class="font-bold text-slate-400">연속 학습:</span>
+          <span class="font-mono font-bold text-[#d7ff00] text-sm" id="guardian-math-streak-val">${streakInfo.currentStreak}일</span>
+        </div>
+        <div class="text-slate-400">
+          오늘: <span class="font-medium text-slate-200" id="guardian-math-streak-status">${escapeHtml(streakInfo.todayStatusText)}</span>
+        </div>
+      </div>
     </div>
   `;
 
@@ -1298,6 +1318,10 @@ function openRestoreModal(summary) {
     <div class="flex justify-between">
       <span class="text-slate-400">보석 / 자유시간:</span>
       <span class="font-bold text-white">💎 ${summary.gems}개 / 📺 ${summary.youtubeMinutes}분</span>
+    </div>
+    <div class="flex justify-between">
+      <span class="text-slate-400">수학 연속 학습:</span>
+      <span class="font-bold text-white">${summary.hasMathStreak ? `🔥 ${summary.mathCurrentStreak}일` : '기존 유지'}</span>
     </div>
     <div class="flex justify-between">
       <span class="text-slate-400">등록된 보상 개수:</span>

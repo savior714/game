@@ -484,3 +484,93 @@ test('K. Legacy schema v1 backup without mathGoalPreference keeps existing local
   const pref = JSON.parse(targetStorage.getItem(LocalBackupCore.STORAGE_KEYS.MATH_GOAL_PREFERENCE));
   assert.equal(pref.presetId, 'challenge');
 });
+
+test('L. LocalBackupCore exports and restores mathStreak dataset round-trip', () => {
+  const sourceStorage = createMockStorage({
+    [LocalBackupCore.STORAGE_KEYS.MATH_STREAK]: JSON.stringify({
+      schemaVersion: 1,
+      currentStreak: 7,
+      lastObservedDate: '2026-08-16',
+      lastCompletedDate: '2026-08-16',
+      updatedAt: '2026-08-16T12:00:00.000Z',
+    }),
+  });
+
+  const snapshot = LocalBackupCore.createBackupSnapshot({ storage: sourceStorage });
+  assert.equal(snapshot.datasets.mathStreak.present, true);
+  assert.equal(snapshot.datasets.mathStreak.data.currentStreak, 7);
+
+  const targetStorage = createMockStorage();
+  const restoreRes = LocalBackupCore.restoreBackup(snapshot, { storage: targetStorage });
+  assert.equal(restoreRes.success, true);
+
+  const restored = JSON.parse(targetStorage.getItem(LocalBackupCore.STORAGE_KEYS.MATH_STREAK));
+  assert.equal(restored.schemaVersion, 1);
+  assert.equal(restored.currentStreak, 7);
+  assert.equal(restored.lastObservedDate, '2026-08-16');
+  assert.equal(restored.lastCompletedDate, '2026-08-16');
+});
+
+test('M. LocalBackupCore clears mathStreak when present is false', () => {
+  const targetStorage = createMockStorage({
+    [LocalBackupCore.STORAGE_KEYS.MATH_STREAK]: JSON.stringify({
+      schemaVersion: 1,
+      currentStreak: 4,
+      lastObservedDate: '2026-08-16',
+      lastCompletedDate: '2026-08-16',
+    }),
+  });
+
+  const backupWithAbsentStreak = {
+    format: 'aidengame-local-backup',
+    schemaVersion: 1,
+    exportedAt: new Date().toISOString(),
+    datasets: {
+      mathStreak: {
+        storageKey: LocalBackupCore.STORAGE_KEYS.MATH_STREAK,
+        present: false,
+        data: null,
+      },
+    },
+  };
+
+  const res = LocalBackupCore.restoreBackup(backupWithAbsentStreak, { storage: targetStorage });
+  assert.equal(res.success, true);
+  assert.equal(targetStorage.getItem(LocalBackupCore.STORAGE_KEYS.MATH_STREAK), null);
+});
+
+test('N. Legacy schema v1 backup without mathStreak keeps existing local streak unchanged', () => {
+  const targetStorage = createMockStorage({
+    [LocalBackupCore.STORAGE_KEYS.MATH_STREAK]: JSON.stringify({
+      schemaVersion: 1,
+      currentStreak: 5,
+      lastObservedDate: '2026-08-16',
+      lastCompletedDate: '2026-08-16',
+    }),
+    [LocalBackupCore.STORAGE_KEYS.STUDY_REWARDS]: '{"gems":10}',
+  });
+
+  // Older backup without mathStreak dataset
+  const legacyBackupWithoutStreak = {
+    format: 'aidengame-local-backup',
+    schemaVersion: 1,
+    exportedAt: '2026-08-15T10:00:00.000Z',
+    datasets: {
+      studyRewards: {
+        storageKey: LocalBackupCore.STORAGE_KEYS.STUDY_REWARDS,
+        present: true,
+        data: { gems: 25 },
+      },
+    },
+  };
+
+  const res = LocalBackupCore.restoreBackup(legacyBackupWithoutStreak, { storage: targetStorage });
+  assert.equal(res.success, true);
+
+  // Rewards updated
+  assert.equal(JSON.parse(targetStorage.getItem(LocalBackupCore.STORAGE_KEYS.STUDY_REWARDS)).gems, 25);
+  // Math streak must remain unchanged
+  const streak = JSON.parse(targetStorage.getItem(LocalBackupCore.STORAGE_KEYS.MATH_STREAK));
+  assert.equal(streak.currentStreak, 5);
+  assert.equal(streak.lastCompletedDate, '2026-08-16');
+});

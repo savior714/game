@@ -295,3 +295,68 @@ test('F. Read-only guarantee: input arrays, objects, and evidence store are not 
   assert.equal(dailyGoal.currentCount, 2);
   assert.equal(dailyGoal.completed, false);
 });
+
+test('G. Streak projection: buildGuardianMathSnapshot projects streak count and status text from dailyGoal', () => {
+  const streakState = {
+    schemaVersion: 1,
+    currentStreak: 4,
+    lastObservedDate: '2026-08-16',
+    lastCompletedDate: '2026-08-15',
+  };
+
+  // Case 1: Daily goal in progress
+  const inProgressGoal = {
+    date: '2026-08-16',
+    goalId: 'g1',
+    skillId: 'math.add.within_10',
+    targetCount: 5,
+    currentCount: 2,
+    completed: false,
+  };
+
+  const snapshot1 = MathGuardianSummary.buildGuardianMathSnapshot({
+    skillCatalog: MathSkills.MATH_SKILLS,
+    dailyGoal: inProgressGoal,
+    streakState: streakState,
+  });
+
+  assert.equal(snapshot1.streak.currentStreak, 4);
+  assert.equal(snapshot1.streak.todayStatusText, '목표 진행 중');
+
+  // Case 2: Daily goal completed
+  const completedGoal = {
+    date: '2026-08-16',
+    goalId: 'g1',
+    skillId: 'math.add.within_10',
+    targetCount: 5,
+    currentCount: 5,
+    completed: true,
+  };
+
+  const snapshot2 = MathGuardianSummary.buildGuardianMathSnapshot({
+    skillCatalog: MathSkills.MATH_SKILLS,
+    dailyGoal: completedGoal,
+    streakState: { ...streakState, currentStreak: 5, lastCompletedDate: '2026-08-16' },
+  });
+
+  assert.equal(snapshot2.streak.currentStreak, 5);
+  assert.equal(snapshot2.streak.todayStatusText, '오늘 목표 완료');
+
+  // Case 3: Daily goal not started yet
+  const notStartedGoal = {
+    date: '2026-08-16',
+    goalId: 'g1',
+    skillId: 'math.add.within_10',
+    targetCount: 5,
+    currentCount: 0,
+    completed: false,
+  };
+
+  const snapshot3 = MathGuardianSummary.buildGuardianMathSnapshot({
+    skillCatalog: MathSkills.MATH_SKILLS,
+    dailyGoal: notStartedGoal,
+    streakState: streakState,
+  });
+
+  assert.equal(snapshot3.streak.todayStatusText, '아직 시작 전');
+});

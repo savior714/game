@@ -266,6 +266,25 @@
       };
     }
 
+    // 연속 학습 스트릭 프로젝션 (Read-Only)
+    const streakState = opts.streakState || null;
+    let currentStreak = 0;
+    let streakStatusText = '아직 시작 전';
+
+    if (streakState && typeof streakState.currentStreak === 'number' && Number.isFinite(streakState.currentStreak)) {
+      currentStreak = Math.max(0, Math.floor(streakState.currentStreak));
+    }
+
+    if (todayGoalSummary.hasGoal) {
+      if (todayGoalSummary.completed) {
+        streakStatusText = '오늘 목표 완료';
+      } else if (todayGoalSummary.currentCount > 0) {
+        streakStatusText = '목표 진행 중';
+      } else {
+        streakStatusText = '아직 시작 전';
+      }
+    }
+
     // 전체 요약 집계
     const totalEvidenceCount = validEvidences.length;
     const practicedSkillCount = skillSnapshots.filter(s => s.totalAttempts > 0).length;
@@ -285,6 +304,12 @@
         totalSkillCount: skillOrder.length,
       }),
       todayGoal: Object.freeze(todayGoalSummary),
+      streak: Object.freeze({
+        currentStreak: currentStreak,
+        todayStatusText: streakStatusText,
+        lastCompletedDate: streakState && typeof streakState.lastCompletedDate === 'string' ? streakState.lastCompletedDate : null,
+        lastObservedDate: streakState && typeof streakState.lastObservedDate === 'string' ? streakState.lastObservedDate : null,
+      }),
       attentionSkills: Object.freeze(attentionSkills),
       masteredSkills: Object.freeze(masteredSkills),
       skillSnapshots: Object.freeze(skillSnapshots),

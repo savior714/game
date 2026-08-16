@@ -172,6 +172,18 @@ function updateDailyGoalUI() {
       banner.classList.remove('goal-completed');
     }
   }
+
+  const streakEl = document.getElementById('daily-goal-streak');
+  if (streakEl) {
+    let count = 0;
+    if (typeof mathStreakState !== 'undefined' && mathStreakState && typeof mathStreakState.currentStreak === 'number') {
+      count = mathStreakState.currentStreak;
+    } else if (typeof MathDailyGoalEngine !== 'undefined' && typeof MathDailyGoalEngine.initOrGetStreak === 'function') {
+      const s = MathDailyGoalEngine.initOrGetStreak();
+      count = s ? s.currentStreak : 0;
+    }
+    streakEl.textContent = `🔥 ${count}일 연속`;
+  }
 }
 
 function showDailyGoalCompletedFeedback() {

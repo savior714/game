@@ -57,6 +57,7 @@ let _lastQuestionKey = ''; // 직전 문제 키 (강화 복습 중복 경계용)
 // 커리큘럼 스킬 숙달도 및 일일 목표 상태
 let mathDailyGoal = null;
 let mathMasteryMap = {};
+let mathStreakState = null;
 
 function initMathLearningLoop() {
   try {
@@ -64,12 +65,17 @@ function initMathLearningLoop() {
       const evidenceList = MathEvidenceStore.getEvidenceList();
       mathMasteryMap = MathMasteryEngine.computeAllSkillsMastery(MathSkills.MATH_SKILL_ORDER, evidenceList);
     }
-    if (typeof MathDailyGoalEngine !== 'undefined' && typeof MathSkills !== 'undefined') {
-      mathDailyGoal = MathDailyGoalEngine.initOrGetDailyGoal({
-        masteryMap: mathMasteryMap,
-        skillCatalog: MathSkills.MATH_SKILLS,
-        skillOrder: MathSkills.MATH_SKILL_ORDER,
-      });
+    if (typeof MathDailyGoalEngine !== 'undefined') {
+      if (typeof MathSkills !== 'undefined') {
+        mathDailyGoal = MathDailyGoalEngine.initOrGetDailyGoal({
+          masteryMap: mathMasteryMap,
+          skillCatalog: MathSkills.MATH_SKILLS,
+          skillOrder: MathSkills.MATH_SKILL_ORDER,
+        });
+      }
+      if (typeof MathDailyGoalEngine.initOrGetStreak === 'function') {
+        mathStreakState = MathDailyGoalEngine.initOrGetStreak({ now: Date.now() });
+      }
     }
   } catch (err) {
     console.warn('[MathEngine] Failed to init learning loop:', err);
@@ -414,6 +420,9 @@ function recordResult(correct, elapsed) {
       });
 
       if (goalRes.completedJustNow) {
+        if (typeof MathDailyGoalEngine.initOrGetStreak === 'function') {
+          mathStreakState = MathDailyGoalEngine.initOrGetStreak({ now: Date.now() });
+        }
         const rewardSys = typeof RewardSystem !== 'undefined' ? RewardSystem : null;
         const claimRes = MathDailyGoalEngine.claimGoalReward({
           goal: mathDailyGoal,

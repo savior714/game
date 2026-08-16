@@ -784,6 +784,20 @@ h1 {
   border-color: rgba(215, 255, 0, 0.4);
 }
 
+.daily-goal-streak-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: rgba(255, 140, 0, 0.15);
+  color: #ffaa00;
+  border: 1px solid rgba(255, 170, 0, 0.3);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+
 .daily-goal-desc {
   font-size: 0.95rem;
   font-weight: 700;

@@ -1,7 +1,7 @@
 # AidenGame Ocean Rescue — Development Architecture
 
-- **Version:** 1.4
-- **Date:** 2026-08-03
+- **Version:** 1.5
+- **Date:** 2026-08-25
 - **Status:** CANONICAL
 - **Owner:** Ocean Rescue development tooling
 - **Parent product spec:** `../product/AIDENGAME_OCEAN_RESCUE_MVP_PRD.md`
@@ -16,13 +16,13 @@
 - **Development bundler:** Vite (PLANNED)
 - **Package manager:** pnpm
 - **Deployment artifact:** single standalone HTML file
-- **Last external status verification:** 2026-08-03
+- **Last external status verification:** 2026-08-25
 
 ### Current package, Node, and development-server boundary
 
 - **Package boundary:** `domains/ocean-rescue`
-- **Node:** 24.18.0
-- **pnpm:** 11.17.0
+- **Node:** 24.19.0
+- **pnpm:** 11.20.0
 - **Vite:** 8.1.5
 - **TypeScript:** 7.0.2
 - **Pixi package metadata:** 8.19.0
@@ -507,15 +507,15 @@ Two different comparisons must not be conflated:
 - A package upgrade and an architecture cutover are grouped only when they share the same objective and rollback boundary.
 - Toolchain changes must not alter gameplay, atlas, or standalone deployment contracts.
 
-### 10.2 External status verified on 2026-08-03
+### 10.2 External status verified on 2026-08-25
 
 | Tool | Repository state | Official observation | Architecture decision |
 |---|---|---|---|
 | Vite | Installed as exact devDependency `8.1.5` under `domains/ocean-rescue` | Official release policy lists `vite@8.1` as the regular-patch line; Vite 8.1 was announced 2026-06-23 | Locked to exact 8.1.5 in package metadata; development-server compatibility lane complete (WP-11) |
 | PixiJS | Vendored 8.19.0; package metadata pins exact 8.19.0 | Official June 2026 post publishes 8.19.0, while the official versions page still labels 8.18.1 as stable | Keep 8.19.0; import and production cutover is WP-40 |
 | TypeScript | Installed as exact devDependency `7.0.2` | Version selection is implementation-time and lockfile-controlled | Locked to exact 7.0.2; `checkJs: false` baseline only |
-| pnpm | Pinned `packageManager` `11.17.0`; `pnpm-lock.yaml` authority | Active package manager; exact version now pinned | Exact pin enforced via corepack |
-| Node.js | Pinned `.node-version` `24.18.0` | Build-time runtime must use an active supported line | Pinned exact 24.18.0 for build-time only |
+| pnpm | Pinned `packageManager` `11.20.0`; `pnpm-lock.yaml` authority | Active package manager; exact version now pinned | Exact pin enforced via corepack |
+| Node.js | Pinned `.node-version` `24.19.0` | Build-time runtime must use an active supported line | Pinned exact 24.19.0 for build-time only |
 
 Official references:
 
@@ -658,3 +658,123 @@ The following changes require revision of this architecture specification:
 - fundamental reassignment of Node and Python responsibilities.
 
 Ordinary module migration and bounded controller extraction follow the migration plan without requiring a spec revision.
+
+---
+
+## 17. AI Studio non-canonical implementation lane
+
+This section defines the **non-canonical** AI Studio development workflow. It is a local tooling contract, not a runtime or production architecture change.
+
+### 17.1 Purpose
+
+Enable the user to leverage Google AI Studio (Gemini) free Build quota for implementing Ocean Rescue vertical slices, while maintaining canonical repository integrity through deterministic local preparation and validated ingestion.
+
+### 17.2 Core principles
+
+- **GitHub import/sync is NOT the canonical workflow.** The repository is not directly entrusted to AI Studio.
+- **Work unit = 30–90 second playable vertical slice**, not a single file.
+- **Local deterministic flatpack** is created by the prepare tool and handed to the user.
+- **User transports flatpack to AI Studio** via paste / file attachment — no undocumented API dependency.
+- **AI Studio (Gemini) acts as primary designer/implementer** inside the vertical slice.
+- **Result returns as ZIP export** from AI Studio.
+- **ZIP is untrusted candidate** — never canonical truth.
+- **Local ingest validates exact-base and boundaries** before applying to an isolated BUILD worktree.
+
+### 17.3 Tooling: `scripts/ocean_rescue/ocean_ai.py`
+
+A stdlib-centric Python CLI with two commands:
+
+```
+ocean_ai.py prepare --spec <task.json> --out <dir>
+ocean_ai.py ingest --manifest <manifest.json> --zip <result.zip>
+```
+
+#### Prepare v1 contract
+
+- Input: ephemeral `task.json` (not checked in) with:
+  - `taskId`, `goal`, `acceptanceCriteria`
+  - `mutablePaths`, `readOnlyPaths`, `allowNewUnder`, `guidancePaths`
+  - `verificationCommands` (argv arrays)
+- Output in `<dir>`:
+  1. **Packet manifest** (`manifest.json`): machine-readable, includes exact base SHA, file roles, byte lengths, SHA-256, encoding
+  2. **Flatpack** (`packet.txt`): single text file for AI Studio containing START/EXECUTION contract, task goal, acceptance, protected-surface rules, included-file manifest, file contents (binary as base64), restore instructions, package/toolchain preservation instructions, receipt generation instruction, CHANGED/VERIFIED/KNOWN_LIMITATIONS/BOUNDARY_CHANGE_PROPOSAL sections
+- Deterministic: same BASE + same spec + same bytes → byte-identical `packet.txt` and `manifest.json`
+- Binary assets: lossless base64 in flatpack, SHA-256/length in manifest, only explicitly selected assets included
+- Exclusions: `node_modules`, `.git`, secrets, cache, unrelated generated artifacts
+- PixiJS guidance: selectively from pinned `node_modules/pixi.js/skills` or trusted current source, not full llms.txt
+
+#### Ingest v1 contract
+
+- **Preconditions (fail-closed):**
+  - Current HEAD == manifest admitted base
+  - Pre-ingest worktree clean
+- **ZIP validation (fail-closed on any):**
+  - Absolute path rejection
+  - `../` traversal rejection
+  - Normalized duplicate path rejection
+  - Symlink/special-file trick rejection
+  - Exactly one receipt file
+  - Receipt `packetId`/`base` match local manifest
+  - Deterministic candidate workspace root discovery
+- **Candidate boundary enforcement:**
+  - `READ_ONLY` files must be byte-identical to original
+  - Only existing `MUTABLE` files may change
+  - v1: no deletion of existing repo files (architecture changes → boundary proposal)
+  - New files only under `allowNewUnder`
+  - Unexpected files → fail-closed
+  - AI Studio React scaffold / package / toolchain files outside boundary → reject
+  - Protected surface mutation → reject
+- **Atomic apply:** Full structural/boundary validation passes BEFORE any worktree mutation
+- **Verification:** Runs manifest/spec `verificationCommands` (argv arrays). Failure → clear error, no PASS reported.
+- **No commit/push/history manipulation** — final publication owned by existing repository BUILD/Git contract.
+
+### 17.4 Security / Scope
+
+- **Explicit include only** — "only what's needed" not "everything except secrets"
+- **Never in packet / never to external AI:**
+  - Secrets, API keys, credentials, `.env`
+  - `.git` content
+  - Other AidenGame domains
+  - Unnecessary history/evidence/runbook
+- **Path resolution:** Symlinks cannot escape repository root
+
+### 17.5 Protected surfaces (require BOUNDARY_CHANGE_PROPOSAL)
+
+- Pointer normalization authority
+- Global application phase-transition authority
+- Progression persistence/schema authority
+- Package/dependency/toolchain
+- Vite/build/standalone packaging
+- Ocean Rescue outside AidenGame
+
+### 17.6 Test proof requirements (implemented in `tests/`)
+
+**PREPARE:**
+- Same input twice → packet/manifest byte-identical
+- Base SHA accuracy
+- Text round-trip integrity
+- Binary round-trip representation accuracy
+- SHA/length accuracy
+- Mutable/read-only role accuracy
+- Repo-outside path rejection
+- Traversal/symlink escape rejection
+- Duplicate/overlapping role rejection
+- Missing input rejection
+- Forbidden secret-like / `.git` / `node_modules` input rejection or clear fail-closed
+
+**INGEST:**
+- Valid ZIP acceptance
+- Wrong `packetId` rejection
+- Wrong `base` rejection
+- Stale current HEAD rejection
+- Dirty pre-ingest worktree rejection
+- Traversal ZIP rejection
+- Duplicate normalized ZIP entry rejection
+- Symlink ZIP entry rejection
+- `READ_ONLY` mutation rejection
+- Unexpected React/package/scaffold file rejection
+- Unauthorized new path rejection
+- Allowed new path acceptance
+- Protected surface mutation rejection
+- Verification command failure propagation
+- Zero worktree mutation before full validation passes

@@ -1,8 +1,8 @@
 # AidenGame: Octonauts Ocean Rescue — MVP 통합 PRD
 
-- **Version:** v0.2 — Grill-me 통합 제품·상호작용 명세
-- **Date:** 2026-07-31
-- **Status:** MVP 핵심 게임 흐름과 세 미션의 구조 조작 계약 확정 / 구현 전 미결정 항목 분리
+- **Version:** v1.0 — Gameplay direction + AI Studio handoff foundation
+- **Date:** 2026-08-25
+- **Status:** Gameplay direction 확정 / AI Studio non-canonical implementation lane 정의 / Foundation tooling v1 구현 완료
 - **Deployment:** 자녀 1인용 비공개·비상업 개인 게임
 - **Primary device:** Galaxy Tab S10급 가로 화면 태블릿
 - **Build constraint:** 개발 소스는 모듈화할 수 있으나 최종 배포물은 단일 HTML
@@ -12,15 +12,132 @@
 
 ## 1. Product statement
 
-6–7세 어린이가 옥토넛 신입 대원 **Aiden**이 되어 좋아하는 GUP을 선택하고, 2.5D 횡스크롤 바닷속 에피소드에서 탭·드래그 구조 도구를 직접 조작해 해양 생물을 안전하게 구조하는 개인용 게임.
+6–7세 어린이가 옥토넛 신입 대원 **Aiden**이 되어 좋아하는 GUP을 선택하고, 2.5D 횡스크롤 바닷속 에피소드에서 **손가락으로 GUP을 직접 조종**하며 **맥락적 액션(Boost / Scan / Rescue)** 하나로 구조 도구를 직접 조작해 해양 생물을 안전하게 구조하는 개인용 게임.
 
 ## 2. Product goals
 
 1. 어린이가 별도 설명 없이도 짧은 시각 안내를 보고 구조 조작을 이해한다.
 2. 실패가 미션 중단이나 평가로 이어지지 않고, 현재 단계의 재시도와 점진적 도움으로 이어진다.
-3. 이동 구간보다 구조 행동과 구조 결과를 핵심 경험으로 둔다.
+3. **이동 구간은 구조로 가는 여정이며, 좋은 travel play가 Rescue Readiness를 올린다.**
 4. 구조된 생물이 안전을 되찾고 서식처나 가족에게 돌아가는 결과까지 보여준다.
 5. 한 미션을 4–6분 안에 완료하고 즉시 재플레이하거나 다음 미션을 선택할 수 있다.
+
+## 3. AI Studio development contract (non-canonical implementation lane)
+
+사용자는 Google AI Studio의 무료 Build 사용량을 최대한 실제 개발에 쓰고 싶다.
+
+### 선택된 방식
+
+- **GitHub import/sync를 canonical workflow로 사용하지 않는다.**
+- **Repository를 AI Studio에 직접 맡기지 않는다.**
+- **작업 단위는 파일 하나가 아니라 30~90초 playable vertical slice다.**
+- **Local에서 deterministic flatpack 하나를 만든다.**
+- **사용자가 그 text를 AI Studio에 전달한다.** 전송 방식은 paste/file attachment 등 현재 UI가 허용하는 수단일 뿐이며, tooling은 undocumented AI Studio upload API에 의존하지 않는다.
+- **AI Studio에서 Gemini가 설계/구현/preview/iteration을 적극적으로 수행한다.**
+- **결과는 AI Studio의 ZIP export로 회수한다.**
+- **ZIP은 untrusted candidate이며 canonical truth가 아니다.**
+- **Local ingest가 exact-base와 boundary를 검증한 후에만 isolated BUILD worktree에 적용한다.**
+
+### AI Studio의 역할과 경계
+
+- **AI Studio는 vertical slice 안에서는 주 설계/구현 주체다.**
+- **Local에서 gameplay API를 미리 과도하게 설계해 Gemini의 역할을 축소하지 않는다.**
+
+### 허용되는 Protected surface 변경 제안
+
+Gemini가 다음과 같은 protected surface 변경이 필요하다고 판단하는 것은 허용:
+
+- Pointer normalization authority
+- Global application phase-transition authority
+- Progression persistence/schema authority
+- Package/dependency/toolchain
+- Vite/build/standalone packaging
+- Ocean Rescue 바깥 AidenGame
+
+하지만 이를 candidate에 조용히 변경하면 안 된다. 그 경우 **BOUNDARY_CHANGE_PROPOSAL로 이유/제안만 반환**하게 한다.
+
+## 3. Gameplay balance and identity
+
+### 3.1 Gameplay balance
+
+Ocean Rescue의 게임플레이 비중:
+- **Action 45%** — 손가락으로 GUP 직접 조종, 맥락적 액션(Boost/Scan/Rescue) 수행
+- **Main Rescue 40%** — 구조 도구 직접 조작(밧줄 자르기, 바위 옮기기, 잔해 견인)
+- **World Growth 15%** — 최초 구조 시 지역 회복, 구조한 동물 이후 월드에 등장, 다음 해역 해금
+
+### 3.2 Mission identity — 같은 조작 언어, 다른 구조 능력
+
+세 미션은 서로 다른 게임이 아니다. **같은 조작 언어 안에서 서로 다른 구조 능력**을 사용한다.
+
+| Mission | Identity | Core ability |
+|---------|----------|--------------|
+| Sea Turtle | **Precision** | 찾아가서 밧줄을 정확하게 잘라 풀어주기 |
+| Crab | **Handling** | Grabber로 잡아서 옮기기 |
+| Young Whale | **Towing / Momentum** | 연결하고 직접 끌어서 길 만들기 |
+
+### 3.3 Core experience principles
+
+- **GUP을 아이가 손가락으로 직접 조종한다** — 단순 자동전진 관람 + 상하 보조조작을 중심 gameplay로 유지하지 않는다.
+- **한 시점의 contextual action은 최대 하나다** — 예: BOOST / SCAN / RESCUE.
+- **Contextual button 자체가 QTE나 주 gameplay가 되어서는 안 된다.**
+- **구조물은 아이가 직접 조작한다.**
+
+## 4. Mission episode pacing (대략 4–6분)
+
+```
+Launch → Action 1 → Discovery → Action 2 → Main Rescue → 짧은 동행/안전지역 이동 → World Reaction
+```
+
+## 5. Rescue Readiness
+
+- 이번 mission session에만 존재하는 **내부 연속 상태**다.
+- 아이에게 숫자, 점수, %, 별, 등급으로 **보여주지 않는다**.
+- 화면에서는 **실제 구조 장비가 준비되는 것**으로 표현한다.
+- **좋은 travel play가 readiness를 올린다.**
+- **이미 준비 완료된 장비 milestone은 이후 실수로 다시 꺼지지 않는다.**
+- **Collision은 아직 확정되지 않은 다음 준비 진행만 조금 늦출 수 있다.**
+- **Readiness bonus와 실패 반복 시 adaptive assistance는 서로 다른 개념이다.**
+- **Readiness가 낮아도 구조 성공이나 world progression을 막지 않는다.**
+
+## 6. Mistake philosophy
+
+- **Game over 없음**
+- **Lives 없음**
+- **별점/랭크/실패 횟수 없음**
+- **전체 mission restart 강제 없음**
+- **실수는 잠깐 늦추지만 이미 이룬 성취를 빼앗지 않는다.**
+- **항상 현재 위치에서 회복 가능해야 한다.**
+- **Travel collision은 짧은 밀림/흔들림/감속 후 다시 플레이로 복귀한다.**
+- **Rescue interaction에서 반복적으로 어려워하면 tolerance/target/help를 점진적으로 넓힐 수 있다.**
+- **이미 완료한 구조 단계는 실패 때문에 되돌리지 않는다.**
+
+## 7. World progression
+
+- **Canonical progression은 최초 mission completion이 움직인다.**
+- **최초 구조 → 해당 지역 회복 → 구조한 동물이 이후 world에 존재 → 다음 구조 signal/해역 unlock.**
+- **같은 mission 반복 횟수 grind로 다음 progression을 열지 않는다.**
+- **Replay는 전에 구조한 동물 재등장, 더 건강한 환경, ambient life 등으로 살아있는 world를 보여준다.**
+- **Replay 횟수 XP나 hidden grind를 만들지 않는다.**
+- **Readiness 수준에 따라 canonical world recovery 양을 차등하지 않는다.**
+
+## 8. Superseded legacy contracts
+
+기존 PRD 중 아래 의미는 새 계약으로 **supersede**된다:
+
+- ~~travel이 사실상 자동전진 보조 구간이라는 계약~~
+- ~~이동 성과가 이후 gameplay에 아무 영향이 없다는 계약~~
+- ~~세 mission 환경 차이가 시각/음향뿐이라는 계약~~
+
+## 9. Maintained important existing intents
+
+유지할 중요한 기존 의도:
+- 6–7세 어린이
+- Galaxy Tab S10급 landscape-first
+- 4–6분 mission
+- 구조 실패로 아이를 평가하거나 mission을 막지 않음
+- 직접 구조
+- GUP 간 stat/power 차이를 gameplay progression의 중심으로 만들지 않음
+- 점수/별/등급/leaderboard 없음
 
 ## 3. Non-goals
 
@@ -39,12 +156,18 @@ MVP에는 다음 요소를 넣지 않는다.
 - 도감
 - 방 꾸미기
 - 반복 플레이 랜덤 변형
+- **Game over / Lives / 전체 mission restart 강제**
+- **Readiness를 숫자/점수/%/별/등급으로 노출**
+- **같은 mission 반복 횟수 grind로 progression 해금**
+- **Readiness 수준에 따른 canonical world recovery 차등**
+- **Travel을 단순 자동전진 관람 + 상하 보조조작으로만 구성**
+- **Contextual button을 QTE나 주 gameplay로 만듦**
 
 ---
 
-## 4. Target experience
+## 10. Target experience
 
-### 4.1 Target user
+### 10.1 Target user
 
 - 연령: 6–7세
 - 플레이어 이름: **Aiden**으로 고정
@@ -53,7 +176,7 @@ MVP에는 다음 요소를 넣지 않는다.
   - Beaver
   - Red panda
 
-### 4.2 Session structure
+### 10.2 Session structure
 
 - 미션 길이: 4–6분
 - 플레이와 컷신 목표 비율: 약 70:30
@@ -62,15 +185,15 @@ MVP에는 다음 요소를 넣지 않는다.
 - 2.5D 시각 스타일
 - 가로 화면 전용
 
-### 4.3 Core loop
+### 10.3 Core loop
 
-`미션 선택 → GUP 선택 → 출동 → 자동 전진·회피 → 구조 현장 진입 → 구조 도구 조작 → 생물의 안전 확인 → 생태 메시지 → 동료·생물 후일담 → 다음 미션 해금 또는 재플레이`
+`미션 선택 → GUP 선택 → 출동 → Action 1 (직접 조종) → Discovery → Action 2 → Main Rescue (구조 도구 직접 조작) → 생물의 안전 확인 → 생태 메시지 → 동료·생물 후일담 → World Reaction → 다음 미션 해금 또는 재플레이`
 
 ---
 
-## 5. Progression and replay
+## 11. Progression and replay
 
-### 5.1 Mission order
+### 11.1 Mission order
 
 미션은 고정 순서로 해금한다.
 
@@ -78,7 +201,7 @@ MVP에는 다음 요소를 넣지 않는다.
 2. Crab rescue
 3. Young whale rescue
 
-### 5.2 First completion
+### 11.2 First completion
 
 최초 완료 시:
 
@@ -89,7 +212,7 @@ MVP에는 다음 요소를 넣지 않는다.
 5. 다음 미션이 존재하면 `Next Mission Unlocked!`
 6. `Continue` / `Replay`
 
-### 5.3 Continue
+### 11.3 Continue
 
 `Continue`를 누르면:
 
@@ -101,7 +224,7 @@ MVP에는 다음 요소를 넣지 않는다.
 - 아이가 직접 미션 카드를 선택한다.
 - `New!` 표시는 해당 미션을 처음 열어본 뒤 제거한다.
 
-### 5.4 Replay
+### 11.4 Replay
 
 - 완료된 미션은 언제든 다시 플레이할 수 있다.
 - 완료 카드의 `Replay`는 현재 GUP을 유지한 채 같은 미션을 다시 시작한다.
@@ -109,23 +232,33 @@ MVP에는 다음 요소를 넣지 않는다.
 - 재플레이에서는 이미 획득한 해금 카드를 다시 표시하지 않는다.
 - 장애물 위치와 구조 순서는 동일하게 유지한다.
 
+### 11.5 World progression (canonical)
+
+- **최초 mission completion이 canonical progression을 움직인다.**
+- **최초 구조 → 해당 지역 회복 → 구조한 동물이 이후 world에 존재 → 다음 구조 signal/해역 unlock.**
+- **같은 mission 반복 횟수 grind로 다음 progression을 열지 않는다.**
+- **Replay는 전에 구조한 동물 재등장, 더 건강한 환경, ambient life 등으로 살아있는 world를 보여준다.**
+- **Replay 횟수 XP나 hidden grind를 만들지 않는다.**
+- **Readiness 수준에 따라 canonical world recovery 양을 차등하지 않는다.**
+
 ---
 
-## 6. GUP selection and launch
+## 12. GUP selection and launch
 
-### 6.1 Available GUPs
+### 12.1 Available GUPs
 
 - GUP-C
 - GUP-I
 - GUP-X
 
-### 6.2 GUP gameplay contract
+### 12.2 GUP gameplay contract
 
 - 모든 GUP은 모든 미션을 동일하게 완료할 수 있다.
 - 속도, 충돌 판정, 구조 성능, 조작 난이도 차이는 없다.
 - 차이는 외형과 소리뿐이다.
+- **GUP 간 stat/power 차이를 gameplay progression의 중심으로 만들지 않는다.**
 
-### 6.3 Selection flow
+### 12.3 Selection flow
 
 미션 카드를 누르면 항상 GUP 선택 화면을 보여준다.
 
@@ -135,7 +268,7 @@ MVP에는 다음 요소를 넣지 않는다.
 - `Launch`를 눌러 출동한다.
 - 선택 결과를 `Last GUP`으로 저장한다.
 
-### 6.4 Re-entrancy protection
+### 12.4 Re-entrancy protection
 
 `Launch`, `Continue`, `Replay`, `Restart`, `Exit` 등 상태를 변경하는 버튼은:
 
@@ -144,23 +277,23 @@ MVP에는 다음 요소를 넣지 않는다.
 - 고정 시간 쿨다운이 아니라 실제 상태 전환 완료를 잠금 해제 기준으로 사용한다.
 - 중복 미션 시작, 중복 저장, 연속 화면 전환을 허용하지 않는다.
 
-### 6.5 Launch sequence
+### 12.5 Launch sequence
 
 `Launch` 이후:
 
 1. 옥토포드 출동구가 열린다.
 2. 선택한 GUP이 바다로 출발한다.
 3. 동료가 구조 대상, 문제, 첫 행동을 한 문장으로 안내한다.
-4. 총 5–7초 뒤 자동 전진 플레이를 시작한다.
+4. 총 5–7초 뒤 **Action 1 (직접 조종) 플레이를 시작한다.**
 5. 화면 탭으로 출동 연출을 건너뛸 수 있다.
 
 미션별 브리핑:
 
-- **Mission 1 / Peso:** `A sea turtle is trapped in a net. Let’s find it and cut the ropes!`
-- **Mission 2 / Tweak:** `A crab is trapped under some rocks. Let’s move them with the grabber!`
-- **Mission 3 / Captain Barnacles:** `A young whale’s path is blocked. Let’s tow the debris away!`
+- **Mission 1 / Peso:** `A sea turtle is trapped in a net. Let's find it and cut the ropes!`
+- **Mission 2 / Tweak:** `A crab is trapped under some rocks. Let's move them with the grabber!`
+- **Mission 3 / Captain Barnacles:** `A young whale's path is blocked. Let's tow the debris away!`
 
-### 6.6 Goal banner
+### 12.6 Goal banner
 
 플레이 시작 직후 화면 상단에 약 3초간 표시한다.
 
@@ -172,19 +305,27 @@ MVP에는 다음 요소를 넣지 않는다.
 
 ---
 
-## 7. Common travel segment
+## 13. Action segments (Travel + Action beats)
 
-### 7.1 Duration and obstacles
+### 13.1 Structure
 
-각 미션의 자동 전진 구간:
+각 미션은 두 개의 **Action beat**로 구성된다:
 
-- 목표 시간: 약 40–50초
-- 고정 지형 장애물: 5개
-- 평균 간격: 약 7–10초
-- 위치와 순서는 고정
-- 세 미션의 속도와 기본 난이도는 동일
+- **Action 1** (Launch 직후): 손가락으로 GUP 직접 조종, 장애물 회피, Boost/Scan 사용
+- **Discovery**: 구조 대상 발견, 카메라 전환, 상황 안내
+- **Action 2**: 두 번째 직접 조종 구간, Main Rescue 진입 전 준비
+- **Main Rescue**: 구조 도구 직접 조작 (핵심 40% 경험)
 
-### 7.2 Mission environments
+### 13.2 Action beat 공통 계약
+
+- **GUP을 아이가 손가락으로 직접 조종한다** — 단순 자동전진 관람 + 상하 보조조작이 아니다.
+- **한 시점의 contextual action은 최대 하나** — BOOST / SCAN / RESCUE 중 하나.
+- **Contextual button 자체가 QTE나 주 gameplay가 되어서는 안 된다.**
+- **좋은 travel play가 Rescue Readiness를 올린다.**
+- **Collision은 아직 확정되지 않은 다음 준비 진행만 조금 늦출 수 있다.**
+- **이미 준비 완료된 장비 milestone은 이후 실수로 다시 꺼지지 않는다.**
+
+### 13.3 Mission environments
 
 #### Mission 1 — Coral reef
 
@@ -205,43 +346,15 @@ MVP에는 다음 요소를 넣지 않는다.
 - 큰 암벽
 - 좁아 보이는 통로
 
-환경 차이는 시각·음향 연출에만 영향을 준다.
+**환경 차이는 시각·음향뿐만 아니라 장애물 배치와 Action beat 리듬에도 영향을 준다.**
 
-### 7.3 Decorative sea life
+### 13.4 Player control
 
-- 물고기 떼, 해파리, 작은 게 등은 장식으로만 등장한다.
-- GUP과 가까워지면 옆으로 피한다.
-- 충돌, 감속, 점수, 수집 판정을 만들지 않는다.
-- 탭 상호작용을 제공하지 않는다.
-- 실제 장애물은 고정 지형뿐이다.
+- **Relative vertical drag**: 화면 안에서 위·아래로 드래그하면 이동량에 비례해 GUP 높이가 변함. 손가락을 놓으면 현재 높이를 유지. 자동 중앙 복귀 없음. 관성 이동 없음.
+- **Contextual action (단일 버튼)**: 화면 우측에 맥락적 액션 버튼 하나만 표시. Boost(가속), Scan(구조 대상 탐지), Rescue(구조 도구 전환) 중 현재 상황에 맞는 하나만 활성화.
+- **Tap assist**: 화면의 원하는 높이를 탭하면 GUP이 해당 높이로 부드럽게 이동. 수평 이동은 계속 유지. 탭 목표가 유효 범위를 벗어나면 범위 안으로 보정. 이동 중 드래그가 시작되면 탭 이동을 즉시 취소하고 수동 조작으로 전환.
 
-### 7.4 Auto-forward
-
-- GUP은 수평 방향으로 자동 전진한다.
-- 아무 입력이 없어도 현재 높이를 유지하며 계속 이동한다.
-- 충돌이 반복되어도 결국 구조 현장에 도착한다.
-- 이동 성과는 점수, 보상, 미션 결과에 영향을 주지 않는다.
-
-### 7.5 Relative vertical drag
-
-- 화면 안에서 위·아래로 드래그하면 이동량에 비례해 GUP 높이가 변한다.
-- 손가락을 놓으면 현재 높이를 유지한다.
-- 자동 중앙 복귀는 없다.
-- 관성 이동은 없다.
-- 다시 드래그하면 현재 위치에서 이어서 움직인다.
-- 화면 상·하단 유효 이동 범위에서 부드럽게 제한한다.
-
-### 7.6 Tap assist
-
-- 화면의 원하는 높이를 탭하면 GUP이 해당 높이로 부드럽게 이동한다.
-- 수평 자동 전진은 계속 유지한다.
-- 탭 목표가 유효 범위를 벗어나면 범위 안으로 보정한다.
-- 이동 중 드래그가 시작되면 탭 이동을 즉시 취소하고 수동 조작으로 전환한다.
-- 탭 이동 후 도착한 높이를 유지한다.
-- 장애물을 자동으로 피하지 않는다.
-- 장애물과 만나면 드래그와 동일한 충돌 규칙을 적용한다.
-
-### 7.7 Collision response
+### 13.5 Collision response
 
 고정 지형과 충돌하면:
 
@@ -254,15 +367,23 @@ MVP에는 다음 요소를 넣지 않는다.
 - 감속 후 정상 속도로 자동 회복한다.
 - 동일 장애물과의 즉시 연속 충돌을 막기 위해 약 0.7초간 재충돌 판정을 비활성화한다.
 
-충돌로 발생하지 않는 것:
-
+**충돌로 발생하지 않는 것:**
 - 체력 감소
 - GUP 손상
 - 미션 실패
 - 이동 구간 재시작
 - 구조 현장 진입 차단
+- **이미 확정된 Readiness milestone 감소**
 
-### 7.8 Companion speech during travel
+**충돌의 효과:**
+- **아직 확정되지 않은 다음 Readiness 진행만 조금 늦출 수 있다.**
+
+### 13.6 Companion speech during Action
+
+- 출동 직후 브리핑 이후에는 추가 주행 대사를 넣지 않는다.
+- 충돌 시 짧은 비언어 놀람 소리만 허용.
+- 장애물 회피를 칭찬하거나 평가하지 않는다.
+- 바닷속 환경음과 GUP 엔진음을 중심으로 구성한다.
 
 - 출동 직후 브리핑 이후에는 추가 주행 대사를 넣지 않는다.
 - 충돌 시 짧은 비언어 놀람 소리만 허용한다.
@@ -271,7 +392,46 @@ MVP에는 다음 요소를 넣지 않는다.
 
 ---
 
-## 8. Rescue site transition
+## 14. Rescue Readiness
+
+- 이번 mission session에만 존재하는 **내부 연속 상태**다.
+- 아이에게 숫자, 점수, %, 별, 등급으로 **보여주지 않는다**.
+- 화면에서는 **실제 구조 장비가 준비되는 것**으로 표현한다 (예: 커터 칼날이 빛남, 그래버 암이 예열됨, 견인 윈치가 돌아감).
+- **좋은 travel play (충돌 회피, 부드러운 조종, Scan 활용)가 readiness를 올린다.**
+- **이미 준비 완료된 장비 milestone은 이후 실수로 다시 꺼지지 않는다.**
+- **Collision은 아직 확정되지 않은 다음 준비 진행만 조금 늦출 수 있다.**
+- **Readiness bonus (좋은 travel play로 인한 가속)와 실패 반복 시 adaptive assistance (판정 범위 확대)는 서로 다른 개념이다.**
+- **Readiness가 낮아도 구조 성공이나 world progression을 막지 않는다.** — 단지 구조 도구가 덜 준비된 상태에서 시작할 뿐이다.
+
+---
+
+## 15. Mistake philosophy
+
+- **Game over 없음**
+- **Lives 없음**
+- **별점/랭크/실패 횟수 없음**
+- **전체 mission restart 강제 없음**
+- **실수는 잠깐 늦추지만 이미 이룬 성취를 빼앗지 않는다.**
+- **항상 현재 위치에서 회복 가능해야 한다.**
+- **Travel collision은 짧은 밀림/흔들림/감속 후 다시 플레이로 복귀한다.**
+- **Rescue interaction에서 반복적으로 어려워하면 현재 구현처럼 tolerance/target/help를 점진적으로 넓힐 수 있다.**
+- **이미 완료한 구조 단계는 실패 때문에 되돌리지 않는다.**
+- **Adaptive assistance는 아이의 성공을 돕는 것이고, Readiness는 travel play의 품질을 반영하는 것이다. 둘을 혼동하지 않는다.**
+
+---
+
+## 16. World progression (canonical)
+
+- **Canonical progression은 최초 mission completion이 움직인다.**
+- **최초 구조 → 해당 지역 회복 → 구조한 동물이 이후 world에 존재 → 다음 구조 signal/해역 unlock.**
+- **같은 mission 반복 횟수 grind로 다음 progression을 열지 않는다.**
+- **Replay는 전에 구조한 동물 재등장, 더 건강한 환경, ambient life 등으로 살아있는 world를 보여준다.**
+- **Replay 횟수 XP나 hidden grind를 만들지 않는다.**
+- **Readiness 수준에 따라 canonical world recovery 양을 차등하지 않는다.**
+
+---
+
+## 17. Rescue site transition
 
 구조 대상이 화면에 들어오면:
 
@@ -905,7 +1065,9 @@ START
   → OCTOPOD_MISSION_SELECT
   → GUP_SELECT
   → LAUNCH_SEQUENCE
-  → TRAVEL
+  → ACTION_1 (직접 조종 + contextual action)
+  → DISCOVERY (구조 대상 발견)
+  → ACTION_2 (직접 조종 + contextual action)
   → RESCUE_SITE_TRANSITION
   → RESCUE_TUTORIAL
   → RESCUE_STEP_1
@@ -915,6 +1077,7 @@ START
   → ECOLOGY_MESSAGE
   → COMPANION_EPILOGUE
   → ANIMAL_EPILOGUE
+  → WORLD_REACTION (지역 회복, 동물 등장, 다음 해역 unlock)
   → RESULT_CARD
       ├─ CONTINUE → OCTOPOD_MISSION_SELECT
       └─ REPLAY → LAUNCH_SEQUENCE
@@ -952,54 +1115,72 @@ ANY_ACTIVE_STATE
 
 - GUP-C, GUP-I, GUP-X가 모든 미션에서 동일한 규칙과 난이도로 완료 가능하다.
 - GUP 선택 차이가 외형과 소리 외의 판정에 영향을 주지 않는다.
+- GUP 간 stat/power 차이를 gameplay progression의 중심으로 만들지 않는다.
 
-### 24.3 Travel
+### 24.3 Action segments (Travel + Action beats)
 
-- 각 미션에는 약 40–50초의 자동 전진과 고정 장애물 5개가 있다.
-- 아무 입력이 없어도 구조 현장에 도착한다.
+- 각 미션은 Launch → Action 1 → Discovery → Action 2 → Main Rescue 구조를 가진다.
+- Action beat에서 GUP을 손가락으로 직접 조종한다 (자동전진 관람이 아님).
+- 한 시점의 contextual action은 최대 하나 (BOOST / SCAN / RESCUE).
+- Contextual button 자체가 QTE나 주 gameplay가 되지 않는다.
+- 좋은 travel play (충돌 회피, 부드러운 조종, Scan 활용)가 Rescue Readiness를 올린다.
 - 충돌은 약 1초 감속만 만들고 미션을 실패시키지 않는다.
-- 탭 보조와 드래그는 동일한 충돌 규칙을 사용한다.
+- 충돌은 이미 확정된 Readiness milestone을 감소시키지 않는다.
+- 충돌은 아직 확정되지 않은 다음 Readiness 진행만 조금 늦춘다.
 - 배경 생물은 충돌이나 수집 판정을 만들지 않는다.
+- 장애물 위치와 순서는 고정.
 
-### 24.4 Rescue failure isolation
+### 24.4 Rescue Readiness
+
+- 내부 연속 상태이며 아이에게 숫자/점수/%/별/등급으로 보이지 않는다.
+- 화면에서 실제 구조 장비 준비 상태로 표현된다.
+- 이미 준비 완료된 장비 milestone은 이후 실수로 다시 꺼지지 않는다.
+- Readiness가 낮아도 구조 성공이나 world progression을 막지 않는다.
+- Readiness bonus와 adaptive assistance는 서로 다른 개념이다.
+
+### 24.5 Rescue failure isolation
 
 - 잘못된 구조 입력은 현재 구조 단계만 되돌린다.
 - 이전 성공 단계는 유지한다.
 - 시스템의 pointer cancellation은 실패로 기록하지 않는다.
 - Pause로 취소된 입력은 실패로 기록하지 않는다.
 - 반복 실패 도움은 현재 단계에만 적용되고 성공 후 초기화된다.
+- 이미 완료한 구조 단계는 실패 때문에 되돌리지 않는다.
 
-### 24.5 Mission-specific criteria
+### 24.6 Mission-specific criteria
 
-#### Mission 1
+#### Mission 1 (Sea Turtle — Precision)
 
 - 밧줄은 고정 순서로 하나씩 활성화된다.
 - 넓은 추적 허용 범위가 적용된다.
 - 탭 시작점·끝점 대안 입력으로도 완료 가능하다.
+- 각 밧줄이 잘릴 때마다 거북이가 점차 긴장을 품.
+- 세 번째 밧줄이 잘리면 완전히 자유로워진다.
 
-#### Mission 2
+#### Mission 2 (Crab — Handling)
 
 - 바위를 약 0.4초 홀드해야 잡힌다.
 - 바위 중심점이 보관 구역 안에 있을 때만 성공한다.
 - 보관 구역 밖에서 놓으면 현재 바위만 원위치로 돌아간다.
 - 탭 바위·탭 구역 대안 입력으로도 완료 가능하다.
+- 바위 제거 시 게의 반응이 단계별로 진행된다.
 
-#### Mission 3
+#### Mission 3 (Young Whale — Towing / Momentum)
 
-- 견인줄은 잔해에만 연결할 수 있다.
+- 견인줄은 잔해에만 연결할 수 있다 (고래에 연결 불가).
 - 잔해 3개는 고정 순서로 제거된다.
 - 안전 지점에 도달해야 견인이 성공한다.
 - 견인 실패 시 현재 잔해와 GUP만 시작 위치로 돌아가고 연결은 유지된다.
 - 고래는 통로가 열린 뒤 스스로 빠져나간다.
 
-### 24.6 Audio resilience
+### 24.7 Audio resilience
 
 - 영어 자막은 항상 표시된다.
 - TTS 실패가 미션 진행을 막지 않는다.
 - Pause 후 현재 문장이 처음부터 재생된다.
 - 음량 설정이 새로고침 후 유지된다.
 
-### 24.7 Pause and environment recovery
+### 24.8 Pause and environment recovery
 
 - Pause는 모든 활성 게임 상태에서 동작한다.
 - Resume은 3초 카운트다운 후 실행된다.
@@ -1008,7 +1189,7 @@ ANY_ACTIVE_STATE
 - 최소 화면 크기 미만에서는 게임이 진행되지 않는다.
 - 전체화면 실패 또는 해제 자체는 미션을 차단하지 않는다.
 
-### 24.8 Input safety
+### 24.9 Input safety
 
 - 게임 조작은 한 번에 한 포인터만 소유한다.
 - Pause 입력은 활성 게임 포인터보다 우선한다.
@@ -1017,7 +1198,7 @@ ANY_ACTIVE_STATE
 - 여백에서 시작한 입력은 무시된다.
 - 캔버스 내부 브라우저 제스처가 게임 입력을 방해하지 않는다.
 
-### 24.9 No evaluation mechanics
+### 24.10 No evaluation mechanics
 
 다음 UI와 로직이 존재하지 않는다.
 
@@ -1028,6 +1209,8 @@ ANY_ACTIVE_STATE
 - 체력
 - 실패 횟수
 - 순위표
+- Game over
+- Lives
 
 ---
 
@@ -1103,3 +1286,36 @@ v0.2에서 추가로 닫힌 주요 요구사항:
 - single-pointer, pointer cancellation, UI pointer ownership
 - 버튼 연타 re-entrancy 방지
 - 저장 대상과 비저장 중간 상태 구분
+
+---
+
+## 28. Change summary from v0.2 to v1.0 (Gameplay direction + AI Studio handoff foundation)
+
+v1.0에서 확정된 주요 변경사항:
+
+### Gameplay direction (supersedes legacy contracts)
+
+- **Gameplay balance 명시**: Action 45% / Main Rescue 40% / World Growth 15%
+- **Mission identity 정의**: Sea Turtle=Precision, Crab=Handling, Young Whale=Towing/Momentum — 같은 조작 언어, 다른 구조 능력
+- **Core experience principles**: GUP 직접 조종, 단일 contextual action, 구조물 직접 조작
+- **Episode pacing 구조**: Launch → Action 1 → Discovery → Action 2 → Main Rescue → World Reaction
+- **Rescue Readiness 시스템**: 내부 연속 상태, 장비 준비 시각화, travel play 연동, milestone 보호, collision 효과 제한
+- **Mistake philosophy 명시**: Game over/lives/점수/별/등급/강제 restart 없음, 성취 보존, 현재 위치 회복
+- **World progression**: 최초 completion만 canonical progression 이동, replay는 살아있는 world 표현, grind 없음
+- **Superseded legacy contracts**: 자동전진 보조 구간, 이동 성과 무영향, 환경 차이 시각/음향만
+
+### AI Studio non-canonical implementation lane
+
+- GitHub import/sync를 canonical workflow로 사용하지 않음
+- 로컬 deterministic flatpack으로 AI Studio와 상호작용
+- 작업 단위: 30-90초 playable vertical slice
+- AI Studio는 vertical slice 안 주 설계/구현 주체
+- ZIP export 회수 → 로컬 ingest가 exact-base/boundary 검증 후 isolated BUILD worktree에 적용
+- Protected surface 변경 시 BOUNDARY_CHANGE_PROPOSAL로만 반환
+
+### Foundation tooling v1 (scripts/ocean_rescue/)
+
+- `ocean_ai.py prepare --spec <task.json> --out <dir>` — deterministic packet + manifest 생성
+- `ocean_ai.py ingest --manifest <manifest.json> --zip <result.zip>` — 검증 후 isolated worktree 적용
+- Deterministic/security/freshness 계약 자동 테스트로 증명
+- Python stdlib 중심, 새 dependency 없음

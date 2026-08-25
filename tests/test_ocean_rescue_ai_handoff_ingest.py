@@ -180,7 +180,12 @@ def test_ingest_wrong_base_rejected():
 
 
 def test_ingest_stale_head_rejected():
-    """Stale current HEAD (not matching manifest base) is rejected."""
+    """Stale current HEAD (not matching manifest base) is rejected.
+
+    Simulated by tampering manifest.baseSha instead of creating a git
+    commit: the test must never mutate repository history or destroy
+    uncommitted worktree state.
+    """
     with tempfile.TemporaryDirectory() as d:
         d = Path(d)
         spec = {
@@ -199,31 +204,21 @@ def test_ingest_stale_head_rejected():
         manifest_path = d / "manifest.json"
         manifest = json.loads(manifest_path.read_text())
 
-        # Modify a file to change HEAD
-        test_file = REPO_ROOT / "test_stale_head.txt"
-        test_file.write_text("stale")
-        subprocess.run(["git", "add", "test_stale_head.txt"], cwd=REPO_ROOT, check=True)
-        subprocess.run(["git", "commit", "-m", "stale"], cwd=REPO_ROOT, check=True)
+        # Tamper the manifest base so current HEAD != admitted base.
+        stale_manifest = dict(manifest)
+        stale_manifest["baseSha"] = "0" * 40
+        manifest_path.write_text(json.dumps(stale_manifest))
 
-        try:
-            files = {
-                f["path"]: (REPO_ROOT / f["path"]).read_bytes()
-                for f in manifest["files"]
-            }
-            receipt = {"packetId": manifest["packetId"], "base": manifest["baseSha"]}
-            zip_path = d / "result.zip"
-            create_test_zip(zip_path, files, receipt)
+        files = {
+            f["path"]: (REPO_ROOT / f["path"]).read_bytes() for f in manifest["files"]
+        }
+        receipt = {"packetId": manifest["packetId"], "base": manifest["baseSha"]}
+        zip_path = d / "result.zip"
+        create_test_zip(zip_path, files, receipt)
 
-            code, _, stderr = run_ingest(manifest_path, zip_path)
-            assert code != 0
-            assert "HEAD" in stderr
-        finally:
-            # Clean up
-            subprocess.run(
-                ["git", "reset", "--hard", "HEAD~1"], cwd=REPO_ROOT, check=True
-            )
-            if test_file.exists():
-                test_file.unlink()
+        code, _, stderr = run_ingest(manifest_path, zip_path)
+        assert code != 0
+        assert "HEAD" in stderr
 
 
 def test_ingest_dirty_worktree_rejected():
@@ -427,36 +422,41 @@ def test_ingest_unauthorized_new_path_rejected():
 
 
 def test_ingest_allowed_new_path_accepted():
-    """New files under allow_new_under are accepted."""
-    with tempfile.TemporaryDirectory() as d:
-        d = Path(d)
-        spec = {
-            "task_id": "test-ingest-011",
-            "goal": "Test goal",
-            "acceptance_criteria": ["Criterion 1"],
-            "mutable_paths": ["AGENTS.md"],
-            "read_only_paths": [],
-            "allow_new_under": ["scripts/ocean_rescue"],
-            "guidance_paths": [],
-            "verification_commands": [],
-        }
-        code, _, _ = run_prepare(spec, d)
-        assert code == 0
+    """New files under allow_new_under are accepted; test cleans up its residue."""
+    created = REPO_ROOT / "scripts" / "ocean_rescue" / "new_allowed_file.py"
+    try:
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            spec = {
+                "task_id": "test-ingest-011",
+                "goal": "Test goal",
+                "acceptance_criteria": ["Criterion 1"],
+                "mutable_paths": ["AGENTS.md"],
+                "read_only_paths": [],
+                "allow_new_under": ["scripts/ocean_rescue"],
+                "guidance_paths": [],
+                "verification_commands": [],
+            }
+            code, _, _ = run_prepare(spec, d)
+            assert code == 0
 
-        manifest_path = d / "manifest.json"
-        manifest = json.loads(manifest_path.read_text())
+            manifest_path = d / "manifest.json"
+            manifest = json.loads(manifest_path.read_text())
 
-        files = {
-            "AGENTS.md": (REPO_ROOT / "AGENTS.md").read_bytes(),
-            "scripts/ocean_rescue/new_allowed_file.py": b"# new file",
-        }
-        receipt = {"packetId": manifest["packetId"], "base": manifest["baseSha"]}
-        zip_path = d / "result.zip"
-        create_test_zip(zip_path, files, receipt)
+            files = {
+                "AGENTS.md": (REPO_ROOT / "AGENTS.md").read_bytes(),
+                "scripts/ocean_rescue/new_allowed_file.py": b"# new file",
+            }
+            receipt = {"packetId": manifest["packetId"], "base": manifest["baseSha"]}
+            zip_path = d / "result.zip"
+            create_test_zip(zip_path, files, receipt)
 
-        code, stdout, stderr = run_ingest(manifest_path, zip_path)
-        assert code == 0, f"Ingest failed: {stderr}"
-        assert "SUCCESS" in stdout
+            code, stdout, stderr = run_ingest(manifest_path, zip_path)
+            assert code == 0, f"Ingest failed: {stderr}"
+            assert "SUCCESS" in stdout
+            assert created.read_bytes() == b"# new file"
+    finally:
+        created.unlink(missing_ok=True)
 
 
 def test_ingest_verification_failure_propagated():

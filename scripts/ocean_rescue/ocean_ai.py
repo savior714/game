@@ -1,555 +1,452 @@
 #!/usr/bin/env python3
-"""
-Ocean Rescue AI Studio Handoff CLI
-
-prepare: Create deterministic flatpack + manifest for AI Studio
-ingest:  Validate and apply AI Studio ZIP result to isolated BUILD worktree
-"""
+"""Deterministic, fail-closed Ocean Rescue <-> AI Studio handoff CLI."""
+from __future__ import annotations
 
 import argparse
 import base64
 import hashlib
 import json
-import os
+import re
+import stat
+import subprocess
 import sys
 import zipfile
-import subprocess
-import tempfile
-import shutil
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, asdict, field
-from datetime import datetime, timezone
+from pathlib import Path, PurePosixPath
+
+ROOT = Path(__file__).resolve().parents[2]
+PIXI_SKILLS = "domains/ocean-rescue/node_modules/pixi.js/skills/"
+FORBIDDEN_PARTS = {".git", "__pycache__", ".pytest_cache"}
+PROTECTED = {
+    "domains/ocean-rescue/package.json",
+    "domains/ocean-rescue/pnpm-lock.yaml",
+    "domains/ocean-rescue/tsconfig.json",
+    "domains/ocean-rescue/vite.config.ts",
+    "domains/ocean-rescue/vite.bundle.ts",
+    "domains/ocean-rescue/vite.production.config.ts",
+    "domains/ocean-rescue/vite.shadow.config.ts",
+    "domains/ocean-rescue/src/build-manifest.json",
+    "domains/ocean-rescue/src/build-manifest.legacy.json",
+    "domains/ocean-rescue/src/contracts/pointer-input.ts",
+    "domains/ocean-rescue/src/pointer-input.js",
+    "domains/ocean-rescue/src/state/state.ts",
+    "domains/ocean-rescue/src/state.js",
+    "domains/ocean-rescue/src/missions.js",
+}
+BAD_NEW_NAMES = {
+    "package.json", "package-lock.json", "npm-shrinkwrap.json", "yarn.lock",
+    "bun.lock", "bun.lockb", "pnpm-lock.yaml", "tsconfig.json",
+    "vite.config.ts", "vite.config.js", "App.tsx", "main.tsx",
+}
+SECRET_SUFFIXES = (".pem", ".key", ".p12", ".pfx")
 
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-OCEAN_RESCUE_ROOT = REPO_ROOT / "domains" / "ocean-rescue"
+def fail(message):
+    print(f"FAIL: {message}", file=sys.stderr)
+    return 1
 
 
-@dataclass
-class FileEntry:
-    path: str
-    role: str  # MUTABLE, READ_ONLY, GUIDANCE
-    byte_length: int
-    sha256: str
-    encoding: str  # "utf-8" or "base64"
-    content: Optional[str] = None  # Only in flatpack
-
-
-@dataclass
-class Manifest:
-    packet_id: str
-    base_sha: str
-    created_at: str
-    spec: Dict[str, Any]
-    files: List[FileEntry]
-
-
-@dataclass
-class TaskSpec:
-    task_id: str
-    goal: str
-    acceptance_criteria: List[str]
-    mutable_paths: List[str]
-    read_only_paths: List[str]
-    allow_new_under: List[str] = field(default_factory=list)
-    guidance_paths: List[str] = field(default_factory=list)
-    verification_commands: List[List[str]] = field(default_factory=list)
-
-
-def get_repo_base_sha() -> str:
-    """Get current repository HEAD SHA."""
-    result = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        cwd=REPO_ROOT,
-        capture_output=True,
-        text=True,
-        check=True
-    )
-    return result.stdout.strip()
-
-
-def compute_sha256(data: bytes) -> str:
+def digest(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def read_file_bytes(path: Path) -> bytes:
-    return path.read_bytes()
+def git(*args):
+    return subprocess.run(
+        ["git", *args], cwd=ROOT, capture_output=True, text=True, check=True
+    ).stdout.strip()
 
 
-def read_file_text(path: Path) -> str:
-    return path.read_text(encoding="utf-8")
+def canonical(raw):
+    if not isinstance(raw, str) or not raw:
+        raise ValueError("Path must be a non-empty string")
+    value = raw.replace("\\", "/")
+    if value.startswith("/") or re.match(r"^[A-Za-z]:/", value):
+        raise ValueError(f"Path escapes repository: {raw}")
+    parts = value.split("/")
+    if any(part in {"", ".", ".."} for part in parts):
+        raise ValueError(f"Path must be canonical and traversal-free: {raw}")
+    return PurePosixPath(value).as_posix()
 
 
-def is_binary_file(path: Path) -> bool:
-    """Heuristic: treat as binary if not valid UTF-8 or contains null bytes."""
+def repo_file(path):
+    rel = canonical(path)
+    resolved = (ROOT / rel).resolve()
     try:
-        data = path.read_bytes()
-        if b"\x00" in data:
+        resolved.relative_to(ROOT.resolve())
+    except ValueError as exc:
+        raise ValueError(f"Path escapes repository: {rel}") from exc
+    return resolved
+
+
+def secret_like(path):
+    for part in (p.lower() for p in PurePosixPath(path).parts):
+        if (
+            part.startswith(".env") or part.endswith(".env")
+            or part.startswith("secret") or part.startswith("credential")
+            or part in {"id_rsa", "id_ed25519"}
+            or part.endswith(SECRET_SUFFIXES)
+        ):
             return True
-        data.decode("utf-8")
-        return False
-    except UnicodeDecodeError:
-        return True
+    return False
 
 
-def normalize_repo_path(path: str) -> str:
-    """Normalize to repository-relative POSIX path."""
-    return path.replace("\\", "/").lstrip("./")
+def validate_path(path, role):
+    rel = canonical(path)
+    parts = set(PurePosixPath(rel).parts)
+    if parts & FORBIDDEN_PARTS:
+        raise ValueError(f"Forbidden path in spec: {rel}")
+    if secret_like(rel):
+        raise ValueError(f"Secret-like path is forbidden: {rel}")
+    if "node_modules" in parts and not (
+        role == "GUIDANCE" and rel.startswith(PIXI_SKILLS)
+    ):
+        raise ValueError(f"Forbidden node_modules path in spec: {rel}")
+    if role == "MUTABLE" and rel in PROTECTED:
+        raise ValueError(f"Protected surface cannot be MUTABLE: {rel}")
+    return rel
 
 
-def resolve_and_validate_path(repo_root: Path, rel_path: str) -> Path:
-    """Resolve repository-relative path and ensure it stays within repo."""
-    rel_path = normalize_repo_path(rel_path)
-    abs_path = (repo_root / rel_path).resolve()
-    repo_root_resolved = repo_root.resolve()
+def normalize_spec(data):
+    required = {
+        "task_id", "goal", "acceptance_criteria", "mutable_paths",
+        "read_only_paths",
+    }
+    missing = required - set(data)
+    if missing:
+        raise ValueError(f"Missing task spec fields: {sorted(missing)}")
+    if not str(data["task_id"]).strip() or not str(data["goal"]).strip():
+        raise ValueError("task_id and goal must not be empty")
+    if not data["acceptance_criteria"]:
+        raise ValueError("acceptance_criteria must not be empty")
+    commands = data.get("verification_commands", [])
+    if any(not isinstance(cmd, list) or not cmd for cmd in commands):
+        raise ValueError("verification_commands must contain non-empty argv arrays")
+    spec = {
+        "task_id": data["task_id"],
+        "goal": data["goal"],
+        "acceptance_criteria": list(data["acceptance_criteria"]),
+        "mutable_paths": sorted(validate_path(p, "MUTABLE") for p in data["mutable_paths"]),
+        "read_only_paths": sorted(validate_path(p, "READ_ONLY") for p in data["read_only_paths"]),
+        "allow_new_under": sorted(canonical(p) for p in data.get("allow_new_under", [])),
+        "guidance_paths": sorted(validate_path(p, "GUIDANCE") for p in data.get("guidance_paths", [])),
+        "verification_commands": [list(cmd) for cmd in commands],
+    }
+    roles = [set(spec[k]) for k in ("mutable_paths", "read_only_paths", "guidance_paths")]
+    if roles[0] & roles[1] or roles[0] & roles[2] or roles[1] & roles[2]:
+        raise ValueError("Path may appear in only one MUTABLE/READ_ONLY/GUIDANCE role")
+    for path in spec["allow_new_under"]:
+        parts = set(PurePosixPath(path).parts)
+        if secret_like(path) or parts & FORBIDDEN_PARTS or "node_modules" in parts:
+            raise ValueError(f"Forbidden allow-new path: {path}")
+        if path in PROTECTED:
+            raise ValueError(f"Protected surface cannot be allow-new: {path}")
+    return spec
+
+
+def encode_file(path, role):
+    source = repo_file(path)
+    if not source.exists():
+        raise FileNotFoundError(f"Specified path does not exist: {path}")
+    if not source.is_file():
+        raise ValueError(f"Path is not a file: {path}")
+    data = source.read_bytes()
     try:
-        abs_path.relative_to(repo_root_resolved)
-    except ValueError:
-        raise ValueError(f"Path escapes repository: {rel_path}")
-    return abs_path
+        text = data.decode("utf-8")
+        binary = "\x00" in text
+    except UnicodeDecodeError:
+        binary = True
+        text = ""
+    return {
+        "path": path,
+        "role": role,
+        "byte_length": len(data),
+        "sha256": digest(data),
+        "encoding": "base64" if binary else "utf-8",
+        "content": base64.b64encode(data).decode("ascii") if binary else text,
+    }
 
 
-def collect_files(spec: TaskSpec) -> List[FileEntry]:
-    """Collect all files specified in the task spec."""
+def collect(spec):
     files = []
-    seen_paths = set()
-
-    def add_file(rel_path: str, role: str):
-        norm = normalize_repo_path(rel_path)
-        if norm in seen_paths:
-            raise ValueError(f"Duplicate path in spec: {norm}")
-        seen_paths.add(norm)
-
-        abs_path = resolve_and_validate_path(REPO_ROOT, norm)
-        if not abs_path.exists():
-            raise FileNotFoundError(f"Specified path does not exist: {norm}")
-        if not abs_path.is_file():
-            raise ValueError(f"Path is not a file: {norm}")
-
-        data = read_file_bytes(abs_path)
-        sha = compute_sha256(data)
-        is_bin = is_binary_file(abs_path)
-
-        entry = FileEntry(
-            path=norm,
-            role=role,
-            byte_length=len(data),
-            sha256=sha,
-            encoding="base64" if is_bin else "utf-8",
-            content=base64.b64encode(data).decode("ascii") if is_bin else data.decode("utf-8")
-        )
-        files.append(entry)
-
-    # Check for overlaps between roles
-    mutable_set = set(normalize_repo_path(p) for p in spec.mutable_paths)
-    readonly_set = set(normalize_repo_path(p) for p in spec.read_only_paths)
-    guidance_set = set(normalize_repo_path(p) for p in spec.guidance_paths)
-    allow_new_set = set(normalize_repo_path(p) for p in spec.allow_new_under)
-
-    overlap = mutable_set & readonly_set
-    if overlap:
-        raise ValueError(f"Paths listed as both MUTABLE and READ_ONLY: {overlap}")
-    overlap = mutable_set & guidance_set
-    if overlap:
-        raise ValueError(f"Paths listed as both MUTABLE and GUIDANCE: {overlap}")
-    overlap = readonly_set & guidance_set
-    if overlap:
-        raise ValueError(f"Paths listed as both READ_ONLY and GUIDANCE: {overlap}")
-
-    # Check forbidden paths
-    forbidden_prefixes = [".git", "node_modules", "__pycache__", ".pytest_cache"]
-    for p in list(mutable_set) + list(readonly_set) + list(guidance_set):
-        for forbidden in forbidden_prefixes:
-            if p.startswith(forbidden + "/") or p == forbidden:
-                raise ValueError(f"Forbidden path in spec: {p} (matches {forbidden})")
-
-    for p in spec.mutable_paths:
-        add_file(p, "MUTABLE")
-    for p in spec.read_only_paths:
-        add_file(p, "READ_ONLY")
-    for p in spec.guidance_paths:
-        add_file(p, "GUIDANCE")
-
+    for role, key in (
+        ("MUTABLE", "mutable_paths"),
+        ("READ_ONLY", "read_only_paths"),
+        ("GUIDANCE", "guidance_paths"),
+    ):
+        files.extend(encode_file(path, role) for path in spec[key])
     return files
 
 
-def generate_packet_id(base_sha: str, spec: TaskSpec) -> str:
-    """Generate deterministic packet ID from base SHA and spec content."""
-    spec_json = json.dumps({
-        "task_id": spec.task_id,
-        "goal": spec.goal,
-        "acceptance_criteria": spec.acceptance_criteria,
-        "mutable_paths": sorted(spec.mutable_paths),
-        "read_only_paths": sorted(spec.read_only_paths),
-        "allow_new_under": sorted(spec.allow_new_under),
-        "guidance_paths": sorted(spec.guidance_paths),
-    }, sort_keys=True, separators=(",", ":"))
-    combined = f"{base_sha}|{spec_json}"
-    return compute_sha256(combined.encode())[:16]
-
-
-def build_flatpack(manifest: Manifest, spec: TaskSpec) -> str:
-    """Build the single flatpack text file for AI Studio."""
-    lines = []
-    lines.append("=" * 60)
-    lines.append("OCEAN RESCUE AI STUDIO HANDOFF PACKET")
-    lines.append("=" * 60)
-    lines.append("")
-    lines.append("## START/EXECUTION CONTRACT")
-    lines.append("")
-    lines.append("This packet contains a complete vertical slice task for Ocean Rescue.")
-    lines.append("You are the primary designer/implementer for this slice.")
-    lines.append("")
-    lines.append("## CURRENT TASK GOAL")
-    lines.append("")
-    lines.append(spec.goal)
-    lines.append("")
-    lines.append("## ACCEPTANCE CRITERIA")
-    lines.append("")
-    for i, criterion in enumerate(spec.acceptance_criteria, 1):
-        lines.append(f"{i}. {criterion}")
-    lines.append("")
-    lines.append("## PROTECTED SURFACE RULES")
-    lines.append("")
-    lines.append("The following surfaces are PROTECTED. If you need changes,")
-    lines.append("return a BOUNDARY_CHANGE_PROPOSAL section with rationale.")
-    lines.append("Do NOT silently modify these in the candidate ZIP.")
-    lines.append("")
-    lines.append("- Pointer normalization authority")
-    lines.append("- Global application phase-transition authority")
-    lines.append("- Progression persistence/schema authority")
-    lines.append("- Package/dependency/toolchain")
-    lines.append("- Vite/build/standalone packaging")
-    lines.append("- Ocean Rescue outside AidenGame")
-    lines.append("")
-    lines.append("## INCLUDED FILE MANIFEST")
-    lines.append("")
-    lines.append(f"Base SHA: {manifest.base_sha}")
-    lines.append(f"Packet ID: {manifest.packet_id}")
-    lines.append(f"Created: {manifest.created_at}")
-    lines.append(f"File count: {len(manifest.files)}")
-    lines.append("")
-    for f in manifest.files:
-        lines.append(f"- {f.path} [{f.role}] {f.byte_length} bytes SHA256={f.sha256[:16]}...")
-    lines.append("")
-    lines.append("## FILE CONTENTS")
-    lines.append("")
-    for f in manifest.files:
-        lines.append(f"--- FILE: {f.path} [{f.role}] ---")
-        lines.append(f"ENCODING: {f.encoding}")
-        lines.append(f"SHA256: {f.sha256}")
-        lines.append(f"BYTES: {f.byte_length}")
-        lines.append("CONTENT:")
-        if f.content:
-            lines.append(f.content)
-        lines.append("--- END FILE ---")
-        lines.append("")
-    lines.append("## RESTORATION INSTRUCTIONS")
-    lines.append("")
-    lines.append("When producing the result ZIP:")
-    lines.append("1. Restore all files to their exact original relative paths.")
-    lines.append("2. Binary files (base64) must be decoded back to exact original bytes.")
-    lines.append("3. Text files must preserve exact UTF-8 encoding.")
-    lines.append("4. Do NOT rename, reorganize, or change directory structure.")
-    lines.append("")
-    lines.append("## PACKAGE/TOOLCHAIN PRESERVATION")
-    lines.append("")
-    lines.append("CRITICAL: Do NOT change the following to your default React scaffold:")
-    lines.append("- Package manager: pnpm (locked to 11.20.0)")
-    lines.append("- Node: 24.19.0")
-    lines.append("- Vite: 8.1.5")
-    lines.append("- TypeScript: 7.0.2")
-    lines.append("- PixiJS: 8.19.0 (pinned)")
-    lines.append("- Build output: single standalone HTML (browser/PixiJS)")
-    lines.append("- No React, Next.js, Phaser, Godot, Unity, Tauri, backend")
-    lines.append("")
-    lines.append("## RECEIPT GENERATION")
-    lines.append("")
-    lines.append("Your result ZIP MUST contain a receipt file at:")
-    lines.append("  .ocean-rescue-ai-receipt.json")
-    lines.append("")
-    lines.append("With this exact content:")
-    lines.append(f'{{"packetId": "{manifest.packet_id}", "base": "{manifest.base_sha}"}}')
-    lines.append("")
-    lines.append("## CHANGED / VERIFIED / KNOWN_LIMITATIONS / BOUNDARY_CHANGE_PROPOSAL")
-    lines.append("")
-    lines.append("In your response ZIP, include a file:")
-    lines.append("  .ocean-rescue-ai-changes.json")
-    lines.append("")
-    lines.append("With structure:")
-    lines.append('{"changed": [], "verified": [], "knownLimitations": [], "boundaryChangeProposals": []}')
-    lines.append("")
-    lines.append("Each changed entry: {\"path\": \"...\", \"summary\": \"...\"}")
-    lines.append("Each boundaryChangeProposal: {\"surface\": \"...\", \"rationale\": \"...\", \"proposedChange\": \"...\"}")
-    lines.append("")
-    lines.append("=" * 60)
-    lines.append("END OF PACKET")
-    lines.append("=" * 60)
-    return "\n".join(lines)
-
-
-def write_manifest(manifest: Manifest, path: Path):
-    """Write machine-readable manifest JSON."""
-    data = {
-        "packetId": manifest.packet_id,
-        "baseSha": manifest.base_sha,
-        "createdAt": manifest.created_at,
-        "spec": manifest.spec,
-        "files": [asdict(f) for f in manifest.files]
+def identity(base, spec, files):
+    return {
+        "baseSha": base,
+        "spec": spec,
+        "files": [
+            {
+                "path": f["path"], "role": f["role"],
+                "byteLength": f["byte_length"], "sha256": f["sha256"],
+                "encoding": f["encoding"],
+            }
+            for f in files
+        ],
     }
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False))
 
 
-def load_spec_from_json(path: Path) -> TaskSpec:
-    """Load task spec from JSON file."""
-    data = json.loads(path.read_text(encoding="utf-8"))
-    return TaskSpec(**data)
+def packet_id(base, spec, files):
+    raw = json.dumps(identity(base, spec, files), sort_keys=True, separators=(",", ":"))
+    return digest(raw.encode())[:16]
 
 
-def cmd_prepare(args: argparse.Namespace) -> int:
-    spec = load_spec_from_json(Path(args.spec).resolve())
-    base_sha = get_repo_base_sha()
-    packet_id = generate_packet_id(base_sha, spec)
-    created_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-
-    files = collect_files(spec)
-
-    manifest = Manifest(
-        packet_id=packet_id,
-        base_sha=base_sha,
-        created_at=created_at,
-        spec=asdict(spec),
-        files=files
+def flatpack(manifest, files):
+    spec = manifest["spec"]
+    out = [
+        "=" * 60, "OCEAN RESCUE AI STUDIO HANDOFF PACKET", "=" * 60, "",
+        "## START/EXECUTION CONTRACT", "",
+        "You are the primary designer/implementer for this bounded playable vertical slice.",
+        "Preserve the existing browser/PixiJS/Vite architecture; do not scaffold React or another app.",
+        "", "## CURRENT TASK GOAL", "", spec["goal"], "",
+        "## ACCEPTANCE CRITERIA", "",
+    ]
+    out.extend(f"{i}. {c}" for i, c in enumerate(spec["acceptance_criteria"], 1))
+    out += [
+        "", "## PROTECTED SURFACES", "",
+        "Protected surfaces are proposal-only: pointer normalization; global phase transitions; progression persistence/schema; package/dependency/toolchain; Vite/build/standalone packaging; AidenGame outside this slice.",
+        "If needed, return BOUNDARY_CHANGE_PROPOSAL instead of silently modifying them.",
+        "", "## INCLUDED FILE MANIFEST", "",
+        f"Base SHA: {manifest['baseSha']}", f"Packet ID: {manifest['packetId']}",
+        f"Source commit time: {manifest['createdAt']}", f"File count: {len(files)}", "",
+    ]
+    out.extend(
+        f"- {f['path']} [{f['role']}] {f['byte_length']} bytes SHA256={f['sha256']}"
+        for f in files
     )
+    out += ["", "## FILE CONTENTS", ""]
+    for f in files:
+        out += [
+            f"--- FILE: {f['path']} [{f['role']}] ---",
+            f"ENCODING: {f['encoding']}", f"SHA256: {f['sha256']}",
+            f"BYTES: {f['byte_length']}", "CONTENT:", f["content"],
+            "--- END FILE ---", "",
+        ]
+    receipt = json.dumps(
+        {"packetId": manifest["packetId"], "base": manifest["baseSha"]},
+        separators=(",", ":"),
+    )
+    out += [
+        "## RESULT ZIP CONTRACT", "",
+        "Preserve MUTABLE and READ_ONLY repository-relative paths exactly.",
+        "GUIDANCE is reference-only and MUST NOT be emitted into the result ZIP.",
+        "Do not add package/toolchain/build or React/Next.js/Phaser/Godot/Unity/Tauri/backend scaffolding.",
+        "The project root MUST contain .ocean-rescue-ai-receipt.json with:",
+        receipt,
+        "Optionally include .ocean-rescue-ai-changes.json for CHANGED / VERIFIED / KNOWN_LIMITATIONS / BOUNDARY_CHANGE_PROPOSAL.",
+        "", "=" * 60, "END OF PACKET", "=" * 60, "",
+    ]
+    return "\n".join(out)
 
-    out_dir = Path(args.out).resolve()
-    out_dir.mkdir(parents=True, exist_ok=True)
 
-    manifest_path = out_dir / "manifest.json"
-    flatpack_path = out_dir / "packet.txt"
-
-    write_manifest(manifest, manifest_path)
-    flatpack_content = build_flatpack(manifest, spec)
-    flatpack_path.write_text(flatpack_content, encoding="utf-8")
-
-    print(f"Prepared packet: {packet_id}")
-    print(f"Base SHA: {base_sha}")
-    print(f"Output: {out_dir}")
-    print(f"  manifest.json ({manifest_path.stat().st_size} bytes)")
-    print(f"  packet.txt ({flatpack_path.stat().st_size} bytes)")
+def prepare(args):
+    try:
+        raw = json.loads(Path(args.spec).resolve().read_text(encoding="utf-8"))
+        spec = normalize_spec(raw)
+        base = git("rev-parse", "HEAD")
+        created = git("show", "-s", "--format=%cI", base)
+        files = collect(spec)
+        packet = packet_id(base, spec, files)
+        manifest = {
+            "packetId": packet, "baseSha": base, "createdAt": created, "spec": spec,
+            "files": [{k: v for k, v in f.items() if k != "content"} for f in files],
+        }
+        out = Path(args.out).resolve()
+        out.mkdir(parents=True, exist_ok=True)
+        (out / "manifest.json").write_text(
+            json.dumps(manifest, sort_keys=True, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        (out / "packet.txt").write_text(flatpack(manifest, files), encoding="utf-8")
+    except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError, subprocess.CalledProcessError) as exc:
+        return fail(str(exc))
+    print(f"Prepared packet: {packet}\nBase SHA: {base}\nOutput: {out}")
     return 0
 
 
-def validate_zip_structure(zip_path: Path) -> Tuple[List[str], Dict[str, Any]]:
-    """Validate ZIP structure and return (file_list, receipt)."""
-    with zipfile.ZipFile(zip_path, 'r') as zf:
-        # Check for absolute paths, traversal, duplicates
-        seen = set()
-        for info in zf.infolist():
-            name = info.filename
-            # Absolute path
-            if name.startswith("/") or (len(name) > 1 and name[1] == ":"):
-                raise ValueError(f"Absolute path in ZIP: {name}")
-            # Traversal
-            if ".." in name.split("/"):
-                raise ValueError(f"Path traversal in ZIP: {name}")
-            # Normalized duplicate
-            norm = os.path.normpath(name)
-            if norm in seen:
+def zip_path(name):
+    value = name.replace("\\", "/")
+    if value.startswith("/") or re.match(r"^[A-Za-z]:/", value):
+        raise ValueError(f"Absolute path in ZIP: {name}")
+    trimmed = value[:-1] if value.endswith("/") else value
+    parts = trimmed.split("/")
+    if ".." in parts:
+        raise ValueError(f"Path traversal in ZIP: {name}")
+    if not trimmed or any(p in {"", "."} for p in parts):
+        raise ValueError(f"Non-canonical path in ZIP: {name}")
+    return PurePosixPath(trimmed).as_posix()
+
+
+def inspect_zip(path):
+    with zipfile.ZipFile(path, "r") as archive:
+        members = {}
+        receipts = []
+        for info in archive.infolist():
+            norm = zip_path(info.filename)
+            if norm in members:
                 raise ValueError(f"Duplicate normalized path in ZIP: {norm}")
-            seen.add(norm)
-            # Symlink/special file (check external_attr)
-            if info.external_attr & 0xA0000000:  # Symlink flag
-                raise ValueError(f"Symlink in ZIP: {name}")
+            mode = (info.external_attr >> 16) & 0xFFFF
+            if stat.S_IFMT(mode) not in {0, stat.S_IFREG, stat.S_IFDIR}:
+                raise ValueError(f"Special file in ZIP is forbidden: {info.filename}")
+            members[norm] = info
+            if PurePosixPath(norm).name == ".ocean-rescue-ai-receipt.json":
+                receipts.append(norm)
+        if len(receipts) != 1:
+            raise ValueError(f"Expected exactly one receipt file, found {len(receipts)}")
+        receipt_path = receipts[0]
+        parent = PurePosixPath(receipt_path).parent.as_posix()
+        prefix = "" if parent == "." else parent + "/"
+        try:
+            receipt = json.loads(archive.read(members[receipt_path]).decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ValueError("Receipt is not valid UTF-8 JSON") from exc
+        candidate = {}
+        for norm, info in members.items():
+            if info.is_dir():
+                continue
+            if prefix:
+                if not norm.startswith(prefix):
+                    raise ValueError(f"ZIP file exists outside candidate root: {norm}")
+                rel = norm[len(prefix):]
+            else:
+                rel = norm
+            if PurePosixPath(rel).name in {
+                ".ocean-rescue-ai-receipt.json", ".ocean-rescue-ai-changes.json"
+            }:
+                continue
+            rel = canonical(rel)
+            if rel in candidate:
+                raise ValueError(f"Duplicate candidate path in ZIP: {rel}")
+            candidate[rel] = archive.read(info)
+        return candidate, receipt
 
-        # Find receipt
-        receipt_names = [n for n in zf.namelist() if n.endswith(".ocean-rescue-ai-receipt.json")]
-        if len(receipt_names) != 1:
-            raise ValueError(f"Expected exactly one receipt file, found {len(receipt_names)}")
-        receipt_name = receipt_names[0]
-        with zf.open(receipt_name) as f:
-            receipt = json.load(f)
 
-        return zf.namelist(), receipt
+def validate_manifest(manifest):
+    spec = normalize_spec(manifest["spec"])
+    if spec != manifest["spec"]:
+        raise ValueError("Manifest spec is not canonical")
+    files = manifest["files"]
+    if len({f["path"] for f in files}) != len(files):
+        raise ValueError("Manifest contains duplicate file paths")
+    expected_roles = {}
+    for role, key in (("MUTABLE", "mutable_paths"), ("READ_ONLY", "read_only_paths"), ("GUIDANCE", "guidance_paths")):
+        expected_roles.update({p: role for p in spec[key]})
+    if set(expected_roles) != {f["path"] for f in files}:
+        raise ValueError("Manifest file set does not match spec")
+    if any(expected_roles[f["path"]] != f["role"] for f in files):
+        raise ValueError("Manifest file role does not match spec")
+    expected = digest(
+        json.dumps(identity(manifest["baseSha"], spec, files), sort_keys=True, separators=(",", ":")).encode()
+    )[:16]
+    if manifest["packetId"] != expected:
+        raise ValueError("Manifest packetId does not match manifest contents")
+    return spec
 
 
-def run_verification_commands(commands: List[List[str]], cwd: Path) -> Tuple[bool, str]:
-    """Run verification commands and return (success, output)."""
-    for cmd in commands:
+def under(path, roots):
+    return any(path.startswith(root.rstrip("/") + "/") for root in roots)
+
+
+def run_verify(commands):
+    for command in commands:
         try:
             result = subprocess.run(
-                cmd,
-                cwd=cwd,
-                capture_output=True,
-                text=True,
-                timeout=120
+                command, cwd=ROOT, capture_output=True, text=True, timeout=120
             )
-            if result.returncode != 0:
-                return False, f"Command failed: {' '.join(cmd)}\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
-        except subprocess.TimeoutExpired:
-            return False, f"Command timed out: {' '.join(cmd)}"
-        except Exception as e:
-            return False, f"Command error: {' '.join(cmd)}: {e}"
-    return True, "All verification commands passed"
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return False, f"Command error: {command}: {exc}"
+        if result.returncode:
+            return False, f"Command failed: {' '.join(command)}\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
+    return True, ""
 
 
-def cmd_ingest(args: argparse.Namespace) -> int:
-    manifest_path = Path(args.manifest).resolve()
-    zip_path = Path(args.zip).resolve()
-
-    # Load manifest
-    manifest_data = json.loads(manifest_path.read_text(encoding="utf-8"))
-    manifest = Manifest(
-        packet_id=manifest_data["packetId"],
-        base_sha=manifest_data["baseSha"],
-        created_at=manifest_data["createdAt"],
-        spec=manifest_data["spec"],
-        files=[FileEntry(**f) for f in manifest_data["files"]]
-    )
-
-    # Preconditions
-    current_sha = get_repo_base_sha()
-    if current_sha != manifest.base_sha:
-        print(f"FAIL: Current HEAD ({current_sha}) != manifest base ({manifest.base_sha})", file=sys.stderr)
-        return 1
-
-    # Check worktree clean (tracked files only; untracked files like new test files are OK)
-    result = subprocess.run(
-        ["git", "status", "--porcelain", "--untracked-files=no"],
-        cwd=REPO_ROOT,
-        capture_output=True,
-        text=True
-    )
-    if result.stdout.strip():
-        print(f"FAIL: Worktree not clean:\n{result.stdout}", file=sys.stderr)
-        return 1
-
-    # Validate ZIP
+def ingest(args):
     try:
-        zip_files, receipt = validate_zip_structure(zip_path)
-    except ValueError as e:
-        print(f"FAIL: ZIP validation failed: {e}", file=sys.stderr)
-        return 1
-
-    # Verify receipt
-    if receipt.get("packetId") != manifest.packet_id:
-        print(f"FAIL: Receipt packetId mismatch: {receipt.get('packetId')} != {manifest.packet_id}", file=sys.stderr)
-        return 1
-    if receipt.get("base") != manifest.base_sha:
-        print(f"FAIL: Receipt base mismatch: {receipt.get('base')} != {manifest.base_sha}", file=sys.stderr)
-        return 1
-
-    # Extract to temp dir for validation
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmp_path = Path(tmpdir)
-        with zipfile.ZipFile(zip_path, 'r') as zf:
-            zf.extractall(tmp_path)
-
-        # Find candidate workspace root (directory containing the repo files)
-        # Look for a directory that matches the repo structure
-        candidate_root = None
-        for item in tmp_path.iterdir():
-            if item.is_dir():
-                # Check if this looks like our repo structure
-                if (item / ".git").exists() or (item / "domains").exists() or (item / "scripts").exists():
-                    candidate_root = item
-                    break
-        if candidate_root is None:
-            # Try tmp_path itself
-            candidate_root = tmp_path
-
-        # Validate candidate boundary
-        spec = TaskSpec(**manifest.spec)
-        mutable_set = set(normalize_repo_path(p) for p in spec.mutable_paths)
-        readonly_set = set(normalize_repo_path(p) for p in spec.read_only_paths)
-        allow_new_set = set(normalize_repo_path(p) for p in spec.allow_new_under)
-
-        # Check each file in candidate
-        for rel_path in zip_files:
-            if rel_path.endswith(".ocean-rescue-ai-receipt.json") or rel_path.endswith(".ocean-rescue-ai-changes.json"):
-                continue
-            norm = normalize_repo_path(rel_path)
-
-            candidate_file = candidate_root / rel_path
-            if not candidate_file.exists() or not candidate_file.is_file():
-                continue
-
-            if norm in readonly_set:
-                # Must be byte-identical
-                original_file = REPO_ROOT / norm
-                if not original_file.exists():
-                    print(f"FAIL: READ_ONLY file missing in repo: {norm}", file=sys.stderr)
-                    return 1
-                orig_bytes = read_file_bytes(original_file)
-                cand_bytes = read_file_bytes(candidate_file)
-                if orig_bytes != cand_bytes:
-                    print(f"FAIL: READ_ONLY file mutated: {norm}", file=sys.stderr)
-                    return 1
-
-            elif norm in mutable_set:
-                # OK to change
+        manifest = json.loads(Path(args.manifest).resolve().read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return fail(f"Manifest validation failed: {exc}")
+    current = git("rev-parse", "HEAD")
+    if current != manifest.get("baseSha"):
+        return fail(f"Current HEAD ({current}) != manifest base ({manifest.get('baseSha')})")
+    try:
+        spec = validate_manifest(manifest)
+    except (ValueError, TypeError, KeyError) as exc:
+        return fail(f"Manifest validation failed: {exc}")
+    status = subprocess.run(
+        ["git", "status", "--porcelain"], cwd=ROOT, capture_output=True, text=True
+    ).stdout
+    if status.strip():
+        return fail(f"Worktree not clean:\n{status}")
+    try:
+        candidate, receipt = inspect_zip(Path(args.zip).resolve())
+    except (OSError, ValueError, zipfile.BadZipFile) as exc:
+        return fail(f"ZIP validation failed: {exc}")
+    if receipt.get("packetId") != manifest["packetId"]:
+        return fail(f"Receipt packetId mismatch: {receipt.get('packetId')} != {manifest['packetId']}")
+    if receipt.get("base") != manifest["baseSha"]:
+        return fail(f"Receipt base mismatch: {receipt.get('base')} != {manifest['baseSha']}")
+    mutable = set(spec["mutable_paths"])
+    read_only = set(spec["read_only_paths"])
+    guidance = set(spec["guidance_paths"])
+    allow_new = set(spec["allow_new_under"])
+    originals = {f["path"]: f for f in manifest["files"]}
+    pending = []
+    try:
+        for rel, data in candidate.items():
+            if rel in guidance:
+                raise ValueError(f"GUIDANCE file must not be emitted in candidate: {rel}")
+            if rel in PROTECTED:
+                target = ROOT / rel
+                if not target.exists() or target.read_bytes() != data:
+                    raise ValueError(f"Protected surface mutation rejected: {rel}")
+            if rel in read_only:
+                target = ROOT / rel
+                if not target.exists() or target.read_bytes() != data:
+                    raise ValueError(f"READ_ONLY file mutated: {rel}")
+            elif rel in mutable:
                 pass
-
-            elif any(norm.startswith(p.rstrip("/") + "/") for p in allow_new_set):
-                # OK - new file under allowed directory
-                pass
-
+            elif under(rel, allow_new):
+                if PurePosixPath(rel).name in BAD_NEW_NAMES:
+                    raise ValueError(f"Unexpected scaffold/toolchain file: {rel}")
+                if (ROOT / rel).exists():
+                    raise ValueError(f"Existing file under allow-new requires MUTABLE role: {rel}")
             else:
-                # Unexpected file
-                print(f"FAIL: Unexpected file in candidate: {norm}", file=sys.stderr)
-                return 1
-
-            # Check for React/scaffold files outside boundary
-            scaffold_patterns = ["package.json", "tsconfig.json", "vite.config.ts", "index.html", "src/main.tsx", "src/App.tsx"]
-            for pattern in scaffold_patterns:
-                if norm.endswith(pattern) and norm not in mutable_set and not any(norm.startswith(p.rstrip("/") + "/") for p in allow_new_set):
-                    print(f"FAIL: Unexpected scaffold file: {norm}", file=sys.stderr)
-                    return 1
-
-        # All structural validation passed - now apply to current worktree
-        print("Validation passed. Applying changes...")
-        for rel_path in zip_files:
-            if rel_path.endswith(".ocean-rescue-ai-receipt.json") or rel_path.endswith(".ocean-rescue-ai-changes.json"):
-                continue
-            norm = normalize_repo_path(rel_path)
-            candidate_file = candidate_root / rel_path
-            if not candidate_file.exists() or not candidate_file.is_file():
-                continue
-
-            target_file = REPO_ROOT / norm
-            target_file.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(candidate_file, target_file)
-
-    # Run verification commands
-    spec_obj = TaskSpec(**manifest.spec)
-    success, output = run_verification_commands(spec_obj.verification_commands, REPO_ROOT)
-    if not success:
-        print(f"FAIL: Verification failed:\n{output}", file=sys.stderr)
-        return 1
-
+                raise ValueError(f"Unexpected file in candidate: {rel}")
+            entry = originals.get(rel)
+            if entry and entry["role"] == "READ_ONLY" and digest(data) != entry["sha256"]:
+                raise ValueError(f"READ_ONLY file hash mismatch: {rel}")
+            pending.append((ROOT / rel, data))
+    except (OSError, ValueError) as exc:
+        return fail(str(exc))
+    for target, data in pending:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+    ok, output = run_verify(spec["verification_commands"])
+    if not ok:
+        return fail(f"Verification failed:\n{output}")
     print("SUCCESS: Ingest complete. Changes applied to worktree.")
-    print("Run git diff to review, then commit/push per repository contract.")
     return 0
 
 
 def main():
-    parser = argparse.ArgumentParser(prog="ocean_ai.py", description="Ocean Rescue AI Studio Handoff CLI")
+    parser = argparse.ArgumentParser(prog="ocean_ai.py")
     sub = parser.add_subparsers(dest="command", required=True)
-
-    p_prepare = sub.add_parser("prepare", help="Create flatpack + manifest for AI Studio")
-    p_prepare.add_argument("--spec", required=True, help="Path to task.json")
-    p_prepare.add_argument("--out", required=True, help="Output directory")
-    p_prepare.set_defaults(func=cmd_prepare)
-
-    p_ingest = sub.add_parser("ingest", help="Validate and apply AI Studio ZIP result")
-    p_ingest.add_argument("--manifest", required=True, help="Path to manifest.json from prepare")
-    p_ingest.add_argument("--zip", required=True, help="Path to result ZIP from AI Studio")
-    p_ingest.set_defaults(func=cmd_ingest)
-
+    prep = sub.add_parser("prepare")
+    prep.add_argument("--spec", required=True)
+    prep.add_argument("--out", required=True)
+    prep.set_defaults(func=prepare)
+    take = sub.add_parser("ingest")
+    take.add_argument("--manifest", required=True)
+    take.add_argument("--zip", required=True)
+    take.set_defaults(func=ingest)
     args = parser.parse_args()
     return args.func(args)
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

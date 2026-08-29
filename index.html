@@ -226,7 +226,6 @@
             <span class="text-slate-600">|</span>
             <span>아이들을 위한 인터랙티브 학습 놀이터</span>
           </div>
-
           <div class="flex items-center gap-4 text-xs font-semibold text-slate-400">
             <a href="./domains/reward/guardian/index.html" class="hover:text-white transition-colors">보호자 관리</a>
             <span class="text-slate-600">·</span>
@@ -264,32 +263,29 @@
   <script src="domains/reward/reward_ui.js"></script>
   <script src="domains/reward/reward.js"></script>
 
-  <!-- Ocean Rescue Entitlement Gate Controller -->
+  <!-- Ocean Rescue Daily Goal Gate Controller -->
   <script>
+    function hasCompletedTodayMathGoal(now = Date.now()) {
+      try {
+        const rawGoal = localStorage.getItem('aiden_math_daily_goal_v1');
+        if (!rawGoal) return false;
+
+        const goal = JSON.parse(rawGoal);
+        if (!goal || typeof goal !== 'object') return false;
+
+        const today = new Date(now).toISOString().split('T')[0];
+        return goal.schemaVersion === 1 && goal.date === today && goal.completed === true;
+      } catch (e) {
+        return false;
+      }
+    }
+
     function updateOceanRescueCardState() {
       const card = document.getElementById('ocean-rescue-card');
       const actionText = document.getElementById('ocean-rescue-card-action-text');
       if (!card || !actionText) return;
 
-      let hasEntitlement = false;
-      try {
-        const rawRewards = localStorage.getItem('study_rewards');
-        if (rawRewards) {
-          const r = JSON.parse(rawRewards);
-          if (r && typeof r === 'object' && Number(r.youtube_minutes) >= 10) {
-            hasEntitlement = true;
-          }
-        }
-        if (!hasEntitlement) {
-          const rawSession = localStorage.getItem('study_youtube_free_time_session_v1');
-          if (rawSession) {
-            const s = JSON.parse(rawSession);
-            if (s && typeof s.endsAt === 'number' && s.endsAt > Date.now() && s.status === 'running') {
-              hasEntitlement = true;
-            }
-          }
-        }
-      } catch (e) {}
+      const hasEntitlement = hasCompletedTodayMathGoal();
 
       if (hasEntitlement) {
         card.setAttribute('data-locked', 'false');

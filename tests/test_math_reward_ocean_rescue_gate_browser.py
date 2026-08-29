@@ -57,7 +57,7 @@ def test_ocean_rescue_gated_on_fresh_state_and_direct_navigation(
 ) -> None:
     page = tablet_context.new_page()
 
-    # 1. Fresh state: Open Main Hub
+    # 1. Fresh state: Main Hub is the single admission gate.
     page.goto(f"{static_server}/index.html")
     page.wait_for_selector("#ocean-rescue-card", state="visible", timeout=5000)
 
@@ -67,20 +67,19 @@ def test_ocean_rescue_gated_on_fresh_state_and_direct_navigation(
     action_text = page.locator("#ocean-rescue-card-action-text")
     expect(action_text).to_contain_text("오늘 목표 완료 시 오픈")
 
-    # Click on locked card should prevent navigation
+    # Click on locked card should prevent navigation.
     card.click()
     assert "/index.html" in page.url
 
-    # 2. Direct navigation attempt to /ocean-rescue/index.html without entitlement
+    # 2. Ocean Rescue itself no longer owns a second free-time admission gate.
     page.goto(f"{static_server}/ocean-rescue/index.html")
-    page.wait_for_selector("#ocean-rescue-root", state="attached", timeout=5000)
+    page.wait_for_selector(
+        "#ocean-rescue-root[data-ocean-rescue-ready='true']", timeout=10000
+    )
 
     root = page.locator("#ocean-rescue-root")
-    expect(root).to_have_attribute("data-access-denied", "true")
-
-    gate = page.locator("#ocean-rescue-admission-gate")
-    expect(gate).to_be_visible()
-    expect(gate).to_contain_text("오늘의 목표를 완료하면 열려요")
+    expect(root).to_have_attribute("data-ocean-rescue-ready", "true")
+    assert root.get_attribute("data-access-denied") != "true"
 
 
 def test_math_goal_completion_unlocks_ocean_rescue_end_to_end(
@@ -122,7 +121,7 @@ def test_math_goal_completion_unlocks_ocean_rescue_end_to_end(
     assert rewards["gems"] >= 2
     assert rewards["youtube_minutes"] >= 10
 
-    # 3. Return to Main Hub -> Ocean Rescue card must be unlocked
+    # 3. Return to Main Hub -> Ocean Rescue card must be unlocked by goal completion.
     page.goto(f"{static_server}/index.html")
     page.wait_for_selector("#ocean-rescue-card", state="visible", timeout=5000)
 
@@ -132,22 +131,23 @@ def test_math_goal_completion_unlocks_ocean_rescue_end_to_end(
     action_text = page.locator("#ocean-rescue-card-action-text")
     expect(action_text).to_have_text("탐험 미션 시작")
 
-    # 4. Click Ocean Rescue card -> navigates to /ocean-rescue/index.html and starts game
+    # 4. Click Ocean Rescue card -> navigates to /ocean-rescue/index.html and starts game.
     card.click()
     page.wait_for_selector(
         "#ocean-rescue-root[data-ocean-rescue-ready='true']", timeout=10000
     )
 
     root = page.locator("#ocean-rescue-root")
-    expect(root).to_have_attribute("data-access-denied", "false")
     expect(root).to_have_attribute("data-ocean-rescue-ready", "true")
+    assert root.get_attribute("data-access-denied") != "true"
 
-    # 5. Reload /ocean-rescue/index.html -> stays unlocked
+    # 5. Reload /ocean-rescue/index.html -> stays ready; no second entitlement check.
     page.reload()
     page.wait_for_selector(
         "#ocean-rescue-root[data-ocean-rescue-ready='true']", timeout=10000
     )
-    expect(root).to_have_attribute("data-access-denied", "false")
+    expect(root).to_have_attribute("data-ocean-rescue-ready", "true")
+    assert root.get_attribute("data-access-denied") != "true"
 
     # 6. Revisit Math -> reward amount unchanged (no duplicate grant)
     page.goto(f"{static_server}/domains/math/index.html")

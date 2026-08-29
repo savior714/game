@@ -25,22 +25,20 @@ ESCALATE_IF:
 <condition proving the selected fidelity cannot decide PRIMARY_CRITERION; otherwise NONE>
 
 WORKSPACE:
-- SOURCE_WORKTREE: /Users/seungjulee/Desktop/Dev/.worktrees/game/<task-slug>
-- Open VS Code, OpenCode, LSP, uv/pnpm, tests, Docker, browser tooling, and generators from SOURCE_WORKTREE itself.
-- Do not mix the main checkout, worktree, symlink aliases, /tmp, or /private/tmp paths.
+- Use the current repository authority for workspace and isolation requirements.
 
 IN_SCOPE:
 - <root-cause owner, directly coupled caller/type/test/asset/config needed to close the same invariant>
 
 OUT_OF_SCOPE:
-- <different root cause, rollback boundary, future capability, or unrelated cleanup>
+- <different root cause, acceptance criterion, future capability, or unrelated finding; leave it residual/out of scope>
 
 DO:
 1. Fetch latest origin/main and confirm the current failure/expected contract plus PRIMARY_CRITERION before editing.
 2. Select VERIFICATION_STRATEGY and PRIMARY_FIDELITY according to `agents/RISK_DIRECTED_VERIFICATION.md`; do not default to test-first merely because code will change.
-3. Preserve unrelated work and create the isolated source worktree under the stable WORKSPACE path, never under OS temp.
+3. Preserve unrelated work.
 4. Read the closest implementation, contract, tests, shared owner, and sibling surfaces that consume the same invariant. This inventory is read-only until root-cause ownership is established.
-5. Record only the static/test/runtime baseline needed to interpret PRIMARY_CRITERION and direct impact from SOURCE_WORKTREE.
+5. Record only the static/test/runtime baseline needed to interpret PRIMARY_CRITERION and direct impact from the current task workspace.
 6. Choose the minimum coherent, root-cause-complete change for OBJECTIVE. Do not optimize for minimum LOC or minimum file count.
 7. If the same root cause + invariant + rollback boundary requires a shared owner, directly coupled caller/type/fixture/test change, include those pieces in this package. If any discovered sibling needs an independent implementation or criterion, leave it as a separate failure domain.
 8. Avoid under-fixing: do not add repeated leaf guards, duplicate normalization/validation/state rules, or a caller-specific workaround when the confirmed defect belongs to a shared owner.
@@ -50,14 +48,10 @@ DO:
 12. Run the focused verification bundle that directly decides PRIMARY_CRITERION and direct-impact closure. If the chosen layer cannot observe the failure mode, escalate only as specified by ESCALATE_IF.
 13. Fix every static error introduced by the change and every error in modified or directly affected modules.
 14. If a repository-wide/static gate exposes an independent failure domain, record it separately. Do not absorb or fix it inside this package unless it is proven to share the same root cause, invariant, rollback boundary, and primary criterion.
-15. Before publish, fetch origin/main again.
-16. Reapply onto latest main in another stable worktree and reverify the primary criterion/direct closure; adapt if related code moved.
-17. Push fast-forward and retry after another session wins the push race.
-18. Remove only clean, published worktrees created by this task; do not force-remove dirty or unpublished worktrees. Use git worktree prune only for stale metadata whose path is already gone.
+15. If publication is authorized or required, follow the current repository publication authority and its stop conditions.
+16. Report any independent finding as residual/out of scope instead of expanding this task.
 
 DO_NOT:
-- create a source checkout/worktree under /tmp, /private/tmp, $TMPDIR, or mktemp
-- run LSP, package manager, tests, Docker, browser tooling, or generators from a different checkout than SOURCE_WORKTREE
 - use generic `write tests first`, RED/GREEN ceremony, test count, or coverage as a success criterion
 - accept a lower-fidelity GREEN when it cannot observe the actual browser/rendering/input/persistence failure mode
 - optimize for the smallest diff when that leaves the confirmed shared root cause or invariant drift in place

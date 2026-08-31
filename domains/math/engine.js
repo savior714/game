@@ -223,6 +223,7 @@ function generateQuestion() {
   if (typeof MathAdaptiveSelector !== 'undefined' && typeof MathSkills !== 'undefined') {
     const candidate = MathAdaptiveSelector.selectNextQuestion({
       dailyGoalSkillId: mathDailyGoal ? mathDailyGoal.skillId : null,
+      dailyGoalCompleted: mathDailyGoal ? Boolean(mathDailyGoal.completed) : false,
       masteryMap: mathMasteryMap,
       skillOrder: MathSkills.MATH_SKILL_ORDER,
       recentQuestions: recentQuestions,

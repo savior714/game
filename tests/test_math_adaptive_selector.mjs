@@ -66,3 +66,25 @@ test('MathAdaptiveSelector reinforces wrong patterns when wrong patterns are sup
 
   assert.ok(reinforcedCount > 10, `Reinforcement occurred only ${reinforcedCount} times`);
 });
+
+test('MathAdaptiveSelector guarantees 100% target skill supply when dailyGoalCompleted is false even with weak/review skills', () => {
+  const masteryMap = {
+    'math.add.within_10': { status: 'MASTERED', isWeak: false },
+    'math.add.within_20.carry': { status: 'STRUGGLING', isWeak: true },
+    'math.multiply.basic_facts': { status: 'NEEDS_REVIEW', isDueForReview: true },
+  };
+
+  const targetSkill = 'math.add.within_20.carry';
+
+  for (let i = 0; i < 30; i++) {
+    const q = MathAdaptiveSelector.selectNextQuestion({
+      dailyGoalSkillId: targetSkill,
+      dailyGoalCompleted: false,
+      masteryMap: masteryMap,
+      MathSkills: MathSkills,
+      skillOrder: ['math.add.within_10', 'math.add.within_20.carry', 'math.multiply.basic_facts'],
+    });
+
+    assert.equal(q.skillId, targetSkill, `Expected ${targetSkill} but got ${q.skillId} on iteration ${i}`);
+  }
+});

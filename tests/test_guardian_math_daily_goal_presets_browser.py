@@ -148,7 +148,8 @@ def test_guardian_math_presets_existing_goal_stability(
     page.evaluate(
         """() => {
         const now = Date.now();
-        const today = new Date(now).toISOString().split('T')[0];
+        const d = new Date(now);
+        const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         const goalData = {
           schemaVersion: 1,
           date: today,

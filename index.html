@@ -262,6 +262,7 @@
   <script src="domains/reward/free-time-session-start-transaction.js"></script>
   <script src="domains/reward/reward_ui.js"></script>
   <script src="domains/reward/reward.js"></script>
+  <script src="domains/math/daily-goal.js"></script>
 
   <!-- Ocean Rescue Daily Goal Gate Controller -->
   <script>
@@ -273,7 +274,16 @@
         const goal = JSON.parse(rawGoal);
         if (!goal || typeof goal !== 'object') return false;
 
-        const today = new Date(now).toISOString().split('T')[0];
+        let today;
+        if (typeof MathDailyGoalEngine !== 'undefined' && typeof MathDailyGoalEngine.getTodayDateString === 'function') {
+          today = MathDailyGoalEngine.getTodayDateString(now);
+        } else {
+          const d = typeof now === 'number' ? new Date(now) : (now instanceof Date ? now : new Date());
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          today = `${year}-${month}-${day}`;
+        }
         return goal.schemaVersion === 1 && goal.date === today && goal.completed === true;
       } catch (e) {
         return false;
@@ -283,7 +293,7 @@
     function updateOceanRescueCardState() {
       const card = document.getElementById('ocean-rescue-card');
       const actionText = document.getElementById('ocean-rescue-card-action-text');
-      if (!card || !actionText) return;
+      if (!card || !actionText) return false;
 
       const hasEntitlement = hasCompletedTodayMathGoal();
 
@@ -298,23 +308,34 @@
         actionText.textContent = '🔒 오늘 목표 완료 시 오픈';
         actionText.className = 'text-xs font-bold tracking-wider text-slate-400';
       }
+      return hasEntitlement;
     }
 
     document.addEventListener('DOMContentLoaded', function() {
       updateOceanRescueCardState();
       window.addEventListener('storage', updateOceanRescueCardState);
       window.addEventListener('cloud-sync-complete', updateOceanRescueCardState);
+      window.addEventListener('pageshow', updateOceanRescueCardState);
+      document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'visible') {
+          updateOceanRescueCardState();
+        }
+      });
 
       const card = document.getElementById('ocean-rescue-card');
       if (card) {
         card.addEventListener('click', function(e) {
-          if (card.getAttribute('data-locked') === 'true') {
+          const isUnlocked = hasCompletedTodayMathGoal();
+          if (!isUnlocked) {
             e.preventDefault();
+            updateOceanRescueCardState();
             if (typeof RewardSystemUI !== 'undefined' && typeof RewardSystemUI.showToast === 'function') {
               RewardSystemUI.showToast('🔒 오늘의 퀴즈 목표를 완료하면 바다 구조대가 열려요!');
             } else {
               alert('🔒 오늘의 퀴즈 목표를 완료하면 바다 구조대가 열려요!');
             }
+          } else {
+            updateOceanRescueCardState();
           }
         });
       }

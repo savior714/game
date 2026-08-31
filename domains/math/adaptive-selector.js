@@ -43,9 +43,13 @@
   /**
    * 가중치 기반 카테고리/스킬 선택
    */
-  function _pickSkillId({ dailyGoalSkillId, masteryMap, skillOrder, rng }) {
+  function _pickSkillId({ dailyGoalSkillId, isGoalActive, masteryMap, skillOrder, rng }) {
     const skills = skillOrder || [];
     const targetSkillId = dailyGoalSkillId || skills[0] || 'math.add.within_10';
+
+    if (isGoalActive && dailyGoalSkillId) {
+      return { skillId: dailyGoalSkillId, category: 'target' };
+    }
 
     const weakSkills = [];
     const reviewSkills = [];
@@ -114,6 +118,7 @@
    * 적응형 다음 문항 선택 및 생성
    * @param {Object} params
    * @param {string} [params.dailyGoalSkillId]
+   * @param {boolean} [params.dailyGoalCompleted]
    * @param {Object} [params.masteryMap]
    * @param {Array<string>} [params.skillOrder]
    * @param {Array<string>} [params.recentQuestions]
@@ -136,26 +141,33 @@
     const lastQuestionKey = typeof p.lastQuestionKey === 'string' ? p.lastQuestionKey : '';
     const wrongPatterns = Array.isArray(p.wrongPatterns) ? p.wrongPatterns : [];
     const reinforceProb = typeof p.reinforceProb === 'number' ? p.reinforceProb : 0.45;
+    const isGoalActive = Boolean(p.dailyGoalSkillId && p.dailyGoalCompleted === false);
 
     // 1. 오답 정확 재출제 (강화 복습)
     if (wrongPatterns.length > 0 && rng() < reinforceProb) {
-      const wrong = wrongPatterns[Math.floor(rng() * wrongPatterns.length)];
-      const result = wrong.op === '+' ? wrong.a + wrong.b : (wrong.op === '-' ? wrong.a - wrong.b : wrong.a * wrong.b);
-      const skillId = wrong.skillId || MathSkills.classifyMathSkill(wrong.a, wrong.b, wrong.op);
-      const candidate = {
-        a: wrong.a,
-        b: wrong.b,
-        op: wrong.op,
-        result: result,
-        skillId: skillId,
-        tag: wrong.tag || MathSkills.extractLegacyTag(wrong.a, wrong.b, wrong.op),
-        curriculumRef: (MathSkills.MATH_SKILLS[skillId] && MathSkills.MATH_SKILLS[skillId].curriculumRef) || '',
-        isWeakness: true,
-        isReinforcement: true,
-      };
+      const eligiblePatterns = isGoalActive
+        ? wrongPatterns.filter(w => (w.skillId || MathSkills.classifyMathSkill(w.a, w.b, w.op)) === p.dailyGoalSkillId)
+        : wrongPatterns;
 
-      if (_questionKey(candidate) !== lastQuestionKey) {
-        return candidate;
+      if (eligiblePatterns.length > 0) {
+        const wrong = eligiblePatterns[Math.floor(rng() * eligiblePatterns.length)];
+        const result = wrong.op === '+' ? wrong.a + wrong.b : (wrong.op === '-' ? wrong.a - wrong.b : wrong.a * wrong.b);
+        const skillId = wrong.skillId || MathSkills.classifyMathSkill(wrong.a, wrong.b, wrong.op);
+        const candidate = {
+          a: wrong.a,
+          b: wrong.b,
+          op: wrong.op,
+          result: result,
+          skillId: skillId,
+          tag: wrong.tag || MathSkills.extractLegacyTag(wrong.a, wrong.b, wrong.op),
+          curriculumRef: (MathSkills.MATH_SKILLS[skillId] && MathSkills.MATH_SKILLS[skillId].curriculumRef) || '',
+          isWeakness: true,
+          isReinforcement: true,
+        };
+
+        if (_questionKey(candidate) !== lastQuestionKey) {
+          return candidate;
+        }
       }
     }
 
@@ -164,6 +176,7 @@
     for (let tries = 0; tries < 20; tries++) {
       const selection = _pickSkillId({
         dailyGoalSkillId: p.dailyGoalSkillId,
+        isGoalActive: isGoalActive,
         masteryMap: p.masteryMap,
         skillOrder: skillOrder,
         rng: rng,
@@ -183,6 +196,7 @@
     for (let fallbackTries = 0; fallbackTries < 20; fallbackTries++) {
       const selection = _pickSkillId({
         dailyGoalSkillId: p.dailyGoalSkillId,
+        isGoalActive: isGoalActive,
         masteryMap: p.masteryMap,
         skillOrder: skillOrder,
         rng: rng,

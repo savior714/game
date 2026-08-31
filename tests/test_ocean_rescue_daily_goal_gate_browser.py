@@ -12,7 +12,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 @pytest.fixture
 def local_server():
-    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(ROOT))
+    handler = functools.partial(
+        http.server.SimpleHTTPRequestHandler, directory=str(ROOT)
+    )
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -27,17 +29,20 @@ def _set_goal(page, *, completed, date_offset_days=0):
     page.evaluate(
         """({ completed, dateOffsetDays }) => {
           const date = new Date();
-          date.setUTCDate(date.getUTCDate() + dateOffsetDays);
-          const day = date.toISOString().split('T')[0];
+          date.setDate(date.getDate() + dateOffsetDays);
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const dayStr = `${year}-${month}-${day}`;
           localStorage.setItem('aiden_math_daily_goal_v1', JSON.stringify({
             schemaVersion: 1,
-            date: day,
+            date: dayStr,
             targetCount: 5,
             currentCount: completed ? 5 : 0,
             completed,
             completedAt: completed ? Date.now() : null,
             rewardGranted: completed,
-            rewardReceiptId: completed ? `math_daily_goal:${day}:1` : null
+            rewardReceiptId: completed ? `math_daily_goal:${dayStr}:1` : null
           }));
         }""",
         {"completed": completed, "dateOffsetDays": date_offset_days},

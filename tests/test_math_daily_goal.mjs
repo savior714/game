@@ -643,3 +643,17 @@ test('MathDailyGoalEngine Streak 11: streak operations cause 0 artificial mutati
   assert.equal(storage.getItem('aiden_math_learning_evidence_v1'), evidenceBefore);
   assert.equal(storage.getItem('aiden_session_log'), sessionBefore);
 });
+
+test('MathDailyGoalEngine getTodayDateString resolves local calendar date YYYY-MM-DD', () => {
+  const localDate = new Date(2026, 8, 1, 8, 30, 0); // Month index 8 is September (2026-09-01)
+  const dateStr = MathDailyGoalEngine.getTodayDateString(localDate);
+  assert.equal(dateStr, '2026-09-01');
+
+  // Verify number timestamp works identically
+  const dateStrFromTimestamp = MathDailyGoalEngine.getTodayDateString(localDate.getTime());
+  assert.equal(dateStrFromTimestamp, '2026-09-01');
+
+  // Single digit month and day padding check
+  const paddedDate = new Date(2026, 0, 5, 12, 0, 0); // 2026-01-05
+  assert.equal(MathDailyGoalEngine.getTodayDateString(paddedDate), '2026-01-05');
+});

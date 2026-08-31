@@ -53,10 +53,12 @@ def test_child_math_streak_display_and_reload_persistence(static_server: str) ->
         page.evaluate(
             """
             () => {
+              const d = new Date();
+              const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
               localStorage.setItem('aiden_math_streak_v1', JSON.stringify({
                 schemaVersion: 1,
                 currentStreak: 3,
-                lastObservedDate: new Date().toISOString().split('T')[0],
+                lastObservedDate: today,
                 lastCompletedDate: null,
                 updatedAt: new Date().toISOString()
               }));
@@ -134,7 +136,12 @@ def test_real_daily_goal_completion_increments_streak_and_idempotency(
         assert streak_raw is not None
         streak_data = json.loads(streak_raw)
         assert streak_data["currentStreak"] == 1
-        today_str = page.evaluate("() => new Date().toISOString().split('T')[0]")
+        today_str = page.evaluate(
+            """() => {
+              const d = new Date();
+              return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            }"""
+        )
         assert streak_data["lastCompletedDate"] == today_str
 
         # Solve 6th question -> streak remains 1 (idempotent, no duplicate increment)
@@ -177,17 +184,17 @@ def test_guardian_math_streak_same_display_and_read_only(
         )
         page = context.new_page()
 
-        today_str = "2026-08-16"
-
-        # Seed completed goal and streak 4 into storage
+        # Seed completed goal and streak 4 into storage for local today
         page.goto(f"{static_server}/index.html")
         page.evaluate(
-            f"""
-            () => {{
-              localStorage.setItem('aiden_math_daily_goal_v1', JSON.stringify({{
+            """
+            () => {
+              const d = new Date();
+              const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+              localStorage.setItem('aiden_math_daily_goal_v1', JSON.stringify({
                 schemaVersion: 1,
-                date: '{today_str}',
-                goalId: 'goal-{today_str}-test',
+                date: today,
+                goalId: `goal-${today}-test`,
                 skillId: 'math.add.within_10',
                 skillName: '10 이하의 덧셈',
                 targetCount: 5,
@@ -196,15 +203,15 @@ def test_guardian_math_streak_same_display_and_read_only(
                 completedAt: Date.now(),
                 rewardGranted: true,
                 rewardReceiptId: 'receipt-1'
-              }}));
-              localStorage.setItem('aiden_math_streak_v1', JSON.stringify({{
+              }));
+              localStorage.setItem('aiden_math_streak_v1', JSON.stringify({
                 schemaVersion: 1,
                 currentStreak: 4,
-                lastObservedDate: '{today_str}',
-                lastCompletedDate: '{today_str}',
+                lastObservedDate: today,
+                lastCompletedDate: today,
                 updatedAt: new Date().toISOString()
-              }}));
-            }}
+              }));
+            }
             """
         )
 
@@ -242,10 +249,12 @@ def test_guardian_preset_selection_does_not_mutate_streak_or_stats(
         page.evaluate(
             """
             () => {
+              const d = new Date();
+              const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
               localStorage.setItem('aiden_math_streak_v1', JSON.stringify({
                 schemaVersion: 1,
                 currentStreak: 5,
-                lastObservedDate: new Date().toISOString().split('T')[0],
+                lastObservedDate: today,
                 lastCompletedDate: null,
                 updatedAt: new Date().toISOString()
               }));

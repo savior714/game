@@ -15,7 +15,15 @@ def run_prepare(spec: dict, out_dir: Path) -> subprocess.CompletedProcess[str]:
     spec_path = out_dir / "spec.json"
     spec_path.write_text(json.dumps(spec), encoding="utf-8")
     return subprocess.run(
-        ["python3", str(SCRIPT), "prepare", "--spec", str(spec_path), "--out", str(out_dir)],
+        [
+            "python3",
+            str(SCRIPT),
+            "prepare",
+            "--spec",
+            str(spec_path),
+            "--out",
+            str(out_dir),
+        ],
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
@@ -74,7 +82,10 @@ def write_result_zip(
 
 
 def test_prepare_outputs_are_byte_deterministic() -> None:
-    with tempfile.TemporaryDirectory() as first, tempfile.TemporaryDirectory() as second:
+    with (
+        tempfile.TemporaryDirectory() as first,
+        tempfile.TemporaryDirectory() as second,
+    ):
         first_path = Path(first)
         second_path = Path(second)
         assert run_prepare(base_spec(), first_path).returncode == 0
@@ -88,7 +99,10 @@ def test_prepare_outputs_are_byte_deterministic() -> None:
 
 
 def test_packet_identity_includes_verification_commands() -> None:
-    with tempfile.TemporaryDirectory() as first, tempfile.TemporaryDirectory() as second:
+    with (
+        tempfile.TemporaryDirectory() as first,
+        tempfile.TemporaryDirectory() as second,
+    ):
         one = base_spec()
         two = base_spec()
         one["verification_commands"] = [["python3", "-c", "print(1)"]]
@@ -193,7 +207,9 @@ def test_untracked_pre_ingest_worktree_is_rejected() -> None:
         assert run_prepare(base_spec(), out_path).returncode == 0
         packet = manifest(out_path)
         result_zip = out_path / "result.zip"
-        write_result_zip(result_zip, packet, {"AGENTS.md": (REPO_ROOT / "AGENTS.md").read_bytes()})
+        write_result_zip(
+            result_zip, packet, {"AGENTS.md": (REPO_ROOT / "AGENTS.md").read_bytes()}
+        )
         marker.write_text("dirty", encoding="utf-8")
         try:
             result = run_ingest(out_path / "manifest.json", result_zip)

@@ -2,6 +2,7 @@ import "./render-runtime.js";
 import "./terrain.js";
 import "./gups.js";
 import "../travel-scene.js";
+import "../presentation/travel-actor-presentation.js";
 
 const TravelScene = window.OceanRescue?.TravelScene;
 

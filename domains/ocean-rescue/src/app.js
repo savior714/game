@@ -7,6 +7,7 @@
   var Gups = window.OceanRescue.Gups;
   var Launch = window.OceanRescue.Launch;
   var Travel = window.OceanRescue.Travel || null;
+  var SeaTurtleDiscovery = window.OceanRescue.SeaTurtleDiscovery || null;
   var Terrain = window.OceanRescue.Terrain || null;
   var Rescue = window.OceanRescue.Rescue || null;
   var SeaTurtle = window.OceanRescue.SeaTurtle || null;
@@ -407,7 +408,9 @@
   var activeTravelRunId = null;
   var travelFrameId = null;
   var travelLastTimestamp = null;
+  var travelLastY = null;
   var travelInputBound = false;
+  var travelScanButtonBound = false;
   var travelCanvas = null;
   var travelPaintCanvas = null;
 
@@ -1237,6 +1240,33 @@
     return true;
   }
 
+  function bindTravelScanButton() {
+    if (travelScanButtonBound) {
+      return;
+    }
+    var scanBtn = document.getElementById("ocean-rescue-travel-scan");
+    if (!scanBtn) {
+      return;
+    }
+    scanBtn.addEventListener("pointerdown", function (event) {
+      event.stopPropagation();
+    });
+    scanBtn.addEventListener("pointerup", function (event) {
+      event.stopPropagation();
+    });
+    scanBtn.addEventListener("pointermove", function (event) {
+      event.stopPropagation();
+    });
+    scanBtn.addEventListener("click", function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (SeaTurtleDiscovery && SeaTurtleDiscovery.getSnapshot().active) {
+        SeaTurtleDiscovery.triggerScan();
+      }
+    });
+    travelScanButtonBound = true;
+  }
+
   function syncTravelProgress(travelSnapshot) {
     var els = resolveTravelProgressElements();
     if (els === null) {
@@ -1245,6 +1275,10 @@
     var snapshot = State.getSnapshot();
     if (snapshot.phase !== State.Phases.TRAVEL) {
       hideTravelProgress();
+      var scanBtnHidden = document.getElementById("ocean-rescue-travel-scan");
+      if (scanBtnHidden) {
+        scanBtnHidden.hidden = true;
+      }
       return false;
     }
     var progress = computeTravelProgress(travelSnapshot);
@@ -1258,6 +1292,20 @@
     els.bar.value = progress.percent;
     els.value.textContent = String(progress.percent) + "%";
     setTravelProgressDiagnostics(els.root, "active", progress);
+
+    bindTravelScanButton();
+    var scanBtn = document.getElementById("ocean-rescue-travel-scan");
+    if (scanBtn) {
+      var progression = Missions ? Missions.getSnapshot() : null;
+      var missionId = progression ? progression.selectedMissionId : null;
+      if (missionId === "sea-turtle" && SeaTurtleDiscovery && SeaTurtleDiscovery.getSnapshot().active) {
+        var discSnap = SeaTurtleDiscovery.getSnapshot();
+        var showScan = discSnap.scanEligible && !discSnap.scanning && !discSnap.readyForRescue;
+        scanBtn.hidden = !showScan;
+      } else {
+        scanBtn.hidden = true;
+      }
+    }
     return true;
   }
 
@@ -1285,12 +1333,22 @@
     }
     Travel.start();
     startTerrainRuntime();
+
+    var progression = Missions ? Missions.getSnapshot() : null;
+    var selectedMissionId = progression ? progression.selectedMissionId : null;
+    if (selectedMissionId === "sea-turtle" && SeaTurtleDiscovery) {
+      SeaTurtleDiscovery.start();
+    } else if (SeaTurtleDiscovery) {
+      SeaTurtleDiscovery.stop();
+    }
+
     hideTravelProgress();
     showTravelProgress(Travel.getSnapshot());
     travelRunIdCounter += 1;
     var runId = travelRunIdCounter;
     activeTravelRunId = runId;
     travelLastTimestamp = null;
+    travelLastY = null;
     if (travelFrameId !== null && typeof window.cancelAnimationFrame === "function") {
       window.cancelAnimationFrame(travelFrameId);
     }
@@ -1300,6 +1358,7 @@
     travelCanvas = inputCanvas;
     travelPaintCanvas = resolvePaintCanvas();
     bindTravelPointerInput(inputCanvas);
+    bindTravelScanButton();
 
     if (typeof window.requestAnimationFrame === "function") {
       travelFrameId = window.requestAnimationFrame(function (timestamp) {
@@ -1333,14 +1392,34 @@
     if (travelLastTimestamp !== null) {
       var deltaMs = timestamp - travelLastTimestamp;
       if (deltaMs > 0) {
+        var terrainMultiplier = 1;
         if (Terrain && Terrain.getSnapshot().active) {
           var terrainStepTravelSnapshot = Travel.getSnapshot();
           Terrain.step(deltaMs, terrainStepTravelSnapshot);
           var terrainFrameSnapshot = Terrain.getSnapshot();
-          Travel.step(deltaMs, terrainFrameSnapshot.forwardSpeedMultiplier);
-        } else {
-          Travel.step(deltaMs);
+          terrainMultiplier = terrainFrameSnapshot.forwardSpeedMultiplier;
         }
+
+        var discoveryMultiplier = 1;
+        var missionSnapshot = Missions ? Missions.getSnapshot() : null;
+        if (missionSnapshot && missionSnapshot.selectedMissionId === "sea-turtle" && SeaTurtleDiscovery && SeaTurtleDiscovery.getSnapshot().active) {
+          var currentTravelSnap = Travel.getSnapshot();
+          var currentTravelY = currentTravelSnap.y;
+          var derivedVy = 0;
+          if (travelLastY !== null && deltaMs > 0 && deltaMs <= 100) {
+            derivedVy = ((currentTravelSnap.y - travelLastY) / (deltaMs / 1000));
+          }
+          travelLastY = currentTravelY;
+          var terrainSnap = Terrain && Terrain.getSnapshot() ? Terrain.getSnapshot() : null;
+          var motionContext = {
+            verticalVelocity: derivedVy,
+            isColliding: terrainSnap ? terrainSnap.collisionActive : false
+          };
+          SeaTurtleDiscovery.step(deltaMs, currentTravelSnap, terrainSnap, motionContext);
+          discoveryMultiplier = SeaTurtleDiscovery.getSnapshot().forwardSpeedMultiplier;
+        }
+
+        Travel.step(deltaMs, terrainMultiplier * discoveryMultiplier);
       }
     }
     travelLastTimestamp = timestamp;
@@ -1624,6 +1703,11 @@
     var mission = missionById(progression.selectedMissionId);
     if (mission === null) {
       return false;
+    }
+    if (mission.id === "sea-turtle" && SeaTurtleDiscovery && SeaTurtleDiscovery.getSnapshot().active) {
+      if (!SeaTurtleDiscovery.getSnapshot().readyForRescue) {
+        return false;
+      }
     }
     var content = Rescue.getMissionContent(mission.id);
     if (content === null) {

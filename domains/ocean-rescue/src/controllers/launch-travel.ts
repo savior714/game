@@ -574,6 +574,32 @@ export function installLaunchTravelController(
     }
   }
 
+  let travelScanButtonBound = false;
+  let travelLastY: number | null = null;
+
+  function bindTravelScanButton(): void {
+    if (travelScanButtonBound) {
+      return;
+    }
+    const scanBtn = document.getElementById("ocean-rescue-travel-scan");
+    if (!scanBtn) {
+      return;
+    }
+    scanBtn.addEventListener("pointerdown", (event) => event.stopPropagation());
+    scanBtn.addEventListener("pointerup", (event) => event.stopPropagation());
+    scanBtn.addEventListener("pointermove", (event) => event.stopPropagation());
+    scanBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const STD = (window as unknown as { OceanRescue?: { SeaTurtleDiscovery?: { getSnapshot: () => { active: boolean }; triggerScan: () => boolean } } })
+        .OceanRescue?.SeaTurtleDiscovery;
+      if (STD && STD.getSnapshot().active) {
+        STD.triggerScan();
+      }
+    });
+    travelScanButtonBound = true;
+  }
+
   function hideTravelProgress(): boolean {
     const elements = resolveTravelProgressElements();
     if (elements === null) {
@@ -584,6 +610,10 @@ export function installLaunchTravelController(
     elements.bar.value = 0;
     elements.value.textContent = "0%";
     setTravelProgressDiagnostics(elements.root, "hidden", { valid: false });
+    const scanBtn = document.getElementById("ocean-rescue-travel-scan");
+    if (scanBtn) {
+      scanBtn.hidden = true;
+    }
     return true;
   }
 
@@ -607,6 +637,21 @@ export function installLaunchTravelController(
     elements.bar.value = progress.percent;
     elements.value.textContent = String(progress.percent) + "%";
     setTravelProgressDiagnostics(elements.root, "active", progress);
+
+    bindTravelScanButton();
+    const scanBtn = document.getElementById("ocean-rescue-travel-scan");
+    if (scanBtn) {
+      const STD = (window as unknown as { OceanRescue?: { SeaTurtleDiscovery?: { getSnapshot: () => { active: boolean; scanEligible: boolean; scanning: boolean; readyForRescue: boolean } } } })
+        .OceanRescue?.SeaTurtleDiscovery;
+      const missionId = Missions.getSnapshot().selectedMissionId;
+      if (missionId === "sea-turtle" && STD && STD.getSnapshot().active) {
+        const discSnap = STD.getSnapshot();
+        const showScan = discSnap.scanEligible && !discSnap.scanning && !discSnap.readyForRescue;
+        scanBtn.hidden = !showScan;
+      } else {
+        scanBtn.hidden = true;
+      }
+    }
     return true;
   }
 
@@ -760,12 +805,39 @@ export function installLaunchTravelController(
     if (travelLastTimestamp !== null) {
       const deltaMs = timestamp - travelLastTimestamp;
       if (deltaMs > 0) {
+        let terrainMultiplier = 1;
         if (Terrain?.getSnapshot().active) {
           Terrain.step(deltaMs, Travel.getSnapshot());
-          Travel.step(deltaMs, Terrain.getSnapshot().forwardSpeedMultiplier);
-        } else {
-          Travel.step(deltaMs);
+          terrainMultiplier = Terrain.getSnapshot().forwardSpeedMultiplier;
         }
+
+        let discoveryMultiplier = 1;
+        const STD = (window as unknown as {
+          OceanRescue?: {
+            SeaTurtleDiscovery?: {
+              getSnapshot: () => { active: boolean; forwardSpeedMultiplier: number };
+              step: (deltaMs: number, travel: unknown, terrain: unknown, motion: unknown) => void;
+            };
+          };
+        }).OceanRescue?.SeaTurtleDiscovery;
+        const missionId = Missions.getSnapshot().selectedMissionId;
+        if (missionId === "sea-turtle" && STD && STD.getSnapshot().active) {
+          const currentTravel = Travel.getSnapshot();
+          let derivedVy = 0;
+          if (travelLastY !== null && deltaMs > 0 && deltaMs <= 100) {
+            derivedVy = (currentTravel.y - travelLastY) / (deltaMs / 1000);
+          }
+          travelLastY = currentTravel.y;
+          const terrainSnap = Terrain?.getSnapshot() ?? null;
+          const motionContext = {
+            verticalVelocity: derivedVy,
+            isColliding: Boolean(terrainSnap?.collisionActive),
+          };
+          STD.step(deltaMs, currentTravel, terrainSnap, motionContext);
+          discoveryMultiplier = STD.getSnapshot().forwardSpeedMultiplier;
+        }
+
+        Travel.step(deltaMs, terrainMultiplier * discoveryMultiplier);
       }
     }
     travelLastTimestamp = timestamp;
@@ -790,6 +862,24 @@ export function installLaunchTravelController(
     }
     Travel.start();
     startTerrainRuntime();
+
+    const STD = (window as unknown as {
+      OceanRescue?: {
+        SeaTurtleDiscovery?: {
+          start: () => void;
+          stop: () => void;
+        };
+      };
+    }).OceanRescue?.SeaTurtleDiscovery;
+    const missionId = Missions.getSnapshot().selectedMissionId;
+    if (missionId === "sea-turtle" && STD) {
+      STD.start();
+    } else if (STD) {
+      STD.stop();
+    }
+    travelLastY = null;
+    bindTravelScanButton();
+
     hideTravelProgress();
     syncTravelProgress(Travel.getSnapshot());
     travelRunIdCounter += 1;

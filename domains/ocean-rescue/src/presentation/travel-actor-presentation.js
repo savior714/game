@@ -266,6 +266,9 @@ function syncActor(timeMs, deltaMs) {
   setDiagnostic("data-travel-scene-gup-actor-pitch", visualPitch.toFixed(4));
   setDiagnostic("data-travel-scene-gup-propulsion-visible", String(propulsionSprite.visible));
   syncParallax(travelSnapshot);
+  if (root.SeaTurtleDiscoveryPresentation && root.SeaTurtleDiscovery) {
+    root.SeaTurtleDiscoveryPresentation.sync(root.SeaTurtleDiscovery.getSnapshot(), travelSnapshot);
+  }
 }
 
 function requestActorFrame() {
@@ -334,6 +337,9 @@ function sync(travelSnapshot, terrainSnapshot) {
     legacyHullSprite.visible = false;
   }
   syncActor(performance.now(), 16);
+  if (root.SeaTurtleDiscoveryPresentation && root.SeaTurtleDiscovery) {
+    root.SeaTurtleDiscoveryPresentation.sync(root.SeaTurtleDiscovery.getSnapshot(), latestTravelSnapshot);
+  }
   return result;
 }
 
@@ -364,6 +370,9 @@ function exit() {
   if (propulsionSprite) {
     propulsionSprite.visible = false;
   }
+  if (root.SeaTurtleDiscoveryPresentation) {
+    root.SeaTurtleDiscoveryPresentation.remove();
+  }
   return baseTravelScene.exit();
 }
 
@@ -371,6 +380,9 @@ function destroy() {
   cancelActorFrame();
   resetParallax();
   removeActor();
+  if (root.SeaTurtleDiscoveryPresentation) {
+    root.SeaTurtleDiscoveryPresentation.remove();
+  }
   mounted = false;
   active = false;
   paused = false;

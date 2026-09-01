@@ -231,6 +231,10 @@ def _wait_for_collision(pg, timeout_s=25):
 def _wait_for_arrival(pg, timeout_s=70):
     start = time.time()
     while time.time() - start < timeout_s:
+        # Contextual scan interaction for Sea Turtle discovery slice
+        scan_btn = pg.locator("#ocean-rescue-travel-scan")
+        if scan_btn.is_visible():
+            scan_btn.click()
         state = pg.evaluate(
             """() => {
           const root = document.getElementById('ocean-rescue-root');

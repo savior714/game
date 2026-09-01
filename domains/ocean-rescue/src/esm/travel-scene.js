@@ -3,6 +3,7 @@ import "./terrain.js";
 import "./gups.js";
 import "../travel-scene.js";
 import "../presentation/travel-actor-presentation.js";
+import "../presentation/sea-turtle-discovery-presentation.js";
 
 const TravelScene = window.OceanRescue?.TravelScene;
 

@@ -11,6 +11,7 @@ import "./missions.js";
 import "./gups.js";
 import "./launch.js";
 import "./travel.js";
+import "../sea-turtle-discovery.js";
 import "./terrain.js";
 import "./rescue.js";
 import "./sea-turtle.js";

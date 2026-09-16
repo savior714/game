@@ -1,22 +1,21 @@
 /**
- * English definitions copied verbatim from the 8/14 Thursday spelling-test sheet.
- * Only words 3–12; words 1 (Antarctica) and 2 (survive) are excluded per the sheet.
+ * English definitions copied verbatim from the 9/18 Friday spelling-test sheet (Vocabulary B Unit 2).
  * The printed wording and punctuation are intentionally preserved.
  */
 (function (root) {
   'use strict';
 
   const definitions = Object.freeze({
-    belly: 'the part of the body below the chest and above the legs',
-    glide: 'to move easily without stopping and without effort or noise',
-    sleek: 'smooth or shiny',
-    waterproof: 'not allowing water to go through',
-    huddle: 'to move close together',
-    feather: 'one of the soft and light parts of a bird that grows from the skin and covers the body',
-    throat: 'the space inside the neck down which food and air can go through',
-    waddle: 'to walk using short steps while rocking from side to side',
-    fuzzy: 'furry, hairy',
-    hunt: 'to chase and try to catch and kill an animal or bird for food',
+    across: 'from one side to the other side',
+    surround: 'to be on all sides',
+    relaxing: 'helping you to rest',
+    peaceful: 'calm and not violent',
+    mystery: 'a puzzle or secret',
+    clear: 'see-through',
+    bottom: 'the lowest part of something',
+    explore: 'to look around and discover',
+    calm: 'not moving much',
+    imagine: 'to picture in your mind',
   });
 
   function getDefinition(rawWord) {
@@ -39,7 +38,7 @@
   }
 
   root.EnglishWeeklyWordDefinitions = Object.freeze({
-    batchId: '2026-08-14',
+    batchId: '2026-09-18',
     all: definitions,
     get: getDefinition,
     applyToQuestion,

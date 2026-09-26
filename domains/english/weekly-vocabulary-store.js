@@ -139,13 +139,17 @@
     var items = SEED_ITEMS.map(function (seed) {
       return createItem(sId, seed);
     });
+    var defaultUpdatedIso = '2026-09-18T00:00:00.000Z';
+    var defaultUpdatedMs = new Date(defaultUpdatedIso).getTime();
     return {
       schemaVersion: SCHEMA_VERSION,
       setId: sId,
+      testDate: sId,
       title: sId + ' 주간 영단어',
       items: items,
-      registeredAt: '2026-09-18T00:00:00.000Z',
-      updatedAt: '2026-09-18T00:00:00.000Z'
+      _updated_at: defaultUpdatedMs,
+      registeredAt: defaultUpdatedIso,
+      updatedAt: defaultUpdatedIso
     };
   }
 
@@ -251,13 +255,25 @@
     if (!rawSet || typeof rawSet !== 'object') {
       throw new Error('Invalid CurrentWeeklyVocabularySet schema');
     }
+    var now = new Date();
+    var nowIso = now.toISOString();
+    var nowMs = now.getTime();
+    var updatedMs = typeof rawSet._updated_at === 'number' && !isNaN(rawSet._updated_at)
+      ? rawSet._updated_at
+      : (rawSet.updatedAt ? new Date(rawSet.updatedAt).getTime() : nowMs);
+    var updatedIso = rawSet.updatedAt || new Date(updatedMs).toISOString();
+
     var set = {
       schemaVersion: rawSet.schemaVersion || SCHEMA_VERSION,
-      setId: String(rawSet.setId || DEFAULT_SET_ID).trim(),
-      title: rawSet.title || (String(rawSet.setId || DEFAULT_SET_ID).trim() + ' 주간 영단어'),
+      setId: String(rawSet.setId || rawSet.testDate || DEFAULT_SET_ID).trim(),
+      testDate: String(rawSet.testDate || rawSet.setId || DEFAULT_SET_ID).trim(),
+      title: rawSet.title || (String(rawSet.setId || rawSet.testDate || DEFAULT_SET_ID).trim() + ' 주간 영단어'),
+      revision: typeof rawSet.revision === 'number' ? rawSet.revision : 1,
+      contentFingerprint: rawSet.contentFingerprint || '',
       items: Array.isArray(rawSet.items) ? rawSet.items.slice() : [],
-      registeredAt: rawSet.registeredAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      _updated_at: updatedMs,
+      registeredAt: rawSet.registeredAt || updatedIso,
+      updatedAt: updatedIso
     };
     if (!validateSet(set)) {
       throw new Error('Invalid CurrentWeeklyVocabularySet schema');
@@ -269,10 +285,6 @@
       return createItem(set.setId, it);
     });
 
-    set.updatedAt = new Date().toISOString();
-    if (!set.registeredAt) {
-      set.registeredAt = set.updatedAt;
-    }
     try {
       storage.setItem(CANONICAL_STORAGE_KEY, JSON.stringify(set));
       // legacy compatibility projection 동기화
@@ -280,6 +292,8 @@
       storage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(legacyProj));
       if (typeof window !== 'undefined' && window.SyncEngine && typeof window.SyncEngine.pushStats === 'function') {
         try {
+          // Push both canonical store and legacy projection to cloud
+          window.SyncEngine.pushStats(CANONICAL_STORAGE_KEY, set);
           window.SyncEngine.pushStats(LEGACY_STORAGE_KEY, legacyProj);
         } catch (syncErr) {}
       }

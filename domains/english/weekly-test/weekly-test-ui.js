@@ -388,6 +388,20 @@
         }
       }
     });
+
+    // 클라우드 동기화 완료 시 실시간 세트 갱신 처리
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener('weekly-vocabulary-synced', function () {
+        var freshSet = Engine.buildTestSet();
+        // 첫 문제 미답변 상태이거나, 결과 화면이거나, setId가 바뀌었으면 최신 세트로 즉시 rebind
+        var noAnswersGiven = !session || !session.answers || Object.keys(session.answers).length === 0;
+        if (noAnswersGiven || (session && (session.status === 'completed' || session.setId !== freshSet.setId))) {
+          testSet = freshSet;
+          Engine.clearSession();
+          startNewTest();
+        }
+      });
+    }
   }
 
   if (document.readyState === 'loading') {

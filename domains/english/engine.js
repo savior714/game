@@ -70,6 +70,9 @@ let wrongPatterns  = [];
 let recentHistory  = []; // 최근 5문제 정답 여부
 let recentQuestions = []; // 최근 10단어 (중복 방지용 키)
 let weeklyWords = []; // 보호자가 등록한 주간 시험 단어
+if (typeof window !== 'undefined') {
+  window.getWeeklyWords = () => weeklyWords;
+}
 let weeklyTypeHistory = {}; // 단어/아이템별 출제 유형 기록
 
 function loadWeeklyWords() {
@@ -115,6 +118,12 @@ function loadWeeklyWords() {
   }
 }
 loadWeeklyWords();
+
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  window.addEventListener('weekly-vocabulary-synced', () => {
+    loadWeeklyWords();
+  });
+}
 
 /* ═══════════════════════════════════
    통계 (localStorage)

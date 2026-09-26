@@ -152,41 +152,61 @@ window.SyncEngine = (() => {
       if (error || !data) return;
 
       let hasUpdates = false;
+      let hasWeeklyUpdate = false;
       for (const row of data) {
         const localRaw = localStorage.getItem(row.data_key);
         let localTime = 0;
+        let localParsed = null;
         if (localRaw) {
           try {
-             const parsed = JSON.parse(localRaw);
-             localTime = parsed._updated_at || 0;
+             localParsed = JSON.parse(localRaw);
+             localTime = localParsed._updated_at || (localParsed.updatedAt ? new Date(localParsed.updatedAt).getTime() : 0);
           } catch(e){}
         }
 
-        const dbTime = row.payload._updated_at || new Date(row.updated_at).getTime();
+        const dbTime = row.payload._updated_at || (row.payload.updatedAt ? new Date(row.payload.updatedAt).getTime() : 0) || new Date(row.updated_at).getTime();
 
         // 최종 완료 기록을 우선시하되, 주요 통계는 병합 처리
         if (dbTime > localTime) {
           let toStore = row.payload;
-          let localParsed = {};
-          if (localRaw) {
-            try {
-              localParsed = JSON.parse(localRaw);
-            } catch (e) {
-              localParsed = {};
-            }
-          }
+          let safeLocal = localParsed || {};
 
           if (row.data_key === 'study_rewards') {
-            toStore = mergeStudyRewardsPayload(localParsed, row.payload);
+            toStore = mergeStudyRewardsPayload(safeLocal, row.payload);
           } else if (row.data_key.endsWith('GameStats')) {
-            toStore = mergeGameStatsPayload(localParsed, row.payload);
+            toStore = mergeGameStatsPayload(safeLocal, row.payload);
+          } else if (row.data_key === 'aiden_canonical_weekly_vocabulary_v1') {
+            // Canonical weekly vocabulary update
+            // Also synchronize legacy projection 'englishWeeklyWords'
+            if (window.WeeklyVocabularyStore && typeof window.WeeklyVocabularyStore.toLegacyProjection === 'function') {
+              try {
+                const legacyProj = window.WeeklyVocabularyStore.toLegacyProjection(row.payload);
+                localStorage.setItem('englishWeeklyWords', JSON.stringify(legacyProj));
+              } catch (e) {}
+            } else if (Array.isArray(row.payload.items)) {
+              try {
+                const legacyProj = row.payload.items.map(it => ({
+                  en: it.word || it.answer,
+                  ko: it.ko || '',
+                  icon: it.icon || ''
+                }));
+                localStorage.setItem('englishWeeklyWords', JSON.stringify(legacyProj));
+              } catch (e) {}
+            }
+            hasWeeklyUpdate = true;
           }
           localStorage.setItem(row.data_key, JSON.stringify(toStore));
           hasUpdates = true;
-        } else if (localTime > dbTime && localRaw) {
+        } else if (localTime > dbTime && localRaw && localParsed) {
           // 로컬이 더 최신이면 클라우드로 푸시 큐 등록
-          pushStats(row.data_key, JSON.parse(localRaw)); 
+          pushStats(row.data_key, localParsed); 
         }
+      }
+
+      if (hasWeeklyUpdate) {
+        window.dispatchEvent(new CustomEvent('weekly-vocabulary-synced', {
+          detail: { source: 'cloud-pull' }
+        }));
       }
 
       // 동기화 완료 후 UI를 리로드하거나 이벤트를 방출하여 화면 갱신 유도
@@ -208,12 +228,21 @@ window.SyncEngine = (() => {
     }
   }
 
+  const DEFAULT_PULL_KEYS = [
+    'study_rewards',
+    'mathGameStats',
+    'englishGameStats',
+    'koreanGameStats',
+    'scienceGameStats',
+    'aiden_canonical_weekly_vocabulary_v1'
+  ];
+
   // 이벤트 리스너: 온라인  복구 및 로그인 시 큐 전송
   window.addEventListener('online', flushQueue);
   window.addEventListener('auth-changed', () => {
     flushQueue();
-    // 접속 중인 페이지가 쓰는 주요 Key들을 풀링 (예시로 기본 공통키만 명시)
-    pullAndMerge(['study_rewards', 'mathGameStats', 'englishGameStats', 'koreanGameStats', 'scienceGameStats']);
+    // 접속 중인 페이지가 쓰는 주요 Key들을 풀링 (기본 공통키 + 주간 영단어 단일 진실 소스)
+    pullAndMerge(DEFAULT_PULL_KEYS);
   });
 
   return { pushStats, pullAndMerge };

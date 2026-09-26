@@ -437,6 +437,52 @@ body {
   color: var(--neon-volt);
 }
 
+/* Weekly Test Direct Button inside Featured Card */
+.weekly-test-direct-mount {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1.5px dashed rgba(7, 9, 14, 0.25);
+}
+
+.weekly-test-direct-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.85rem 1.15rem;
+  min-height: 56px;
+  background: rgba(7, 9, 14, 0.88);
+  border: 1.5px solid #07090e;
+  border-radius: 16px;
+  color: var(--neon-volt);
+  text-decoration: none;
+  font-weight: 800;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.weekly-test-direct-btn:hover {
+  background: #07090e;
+  color: #ffffff;
+  transform: translateY(-2px) scale(1.015);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.weekly-test-direct-btn .wt-badge-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.weekly-test-direct-btn .wt-direct-tag {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(215, 255, 0, 0.2);
+  color: var(--neon-volt);
+  border: 1px solid rgba(215, 255, 0, 0.4);
+}
+
 @media (max-width: 640px) {
   .core-subject-grid {
     grid-template-columns: 1fr;

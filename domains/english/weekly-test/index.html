@@ -45,30 +45,11 @@
       <p class="wt-subtitle">영어 정의를 보고 단어 전체를 직접 입력하세요</p>
     </header>
 
-    <!-- ── 시험 시작 화면 ── -->
-    <div id="start-screen" class="wt-card">
-      <div class="wt-start-info">
-        <p><strong id="test-title">9월 18일 금요일 주간 영단어</strong></p>
-        <p style="margin-top: 8px;"><span id="test-total">10개 단어</span></p>
-        <p style="margin-top: 12px;">영어 정의를 보고 단어의 철자를 직접 입력합니다.<br>
-        시험이 끝날 때까지 정답을 알려주지 않습니다.<br>
-        대소문자는 구분하지 않습니다.</p>
-      </div>
-
-      <div id="resume-banner" style="display: none;">
-        진행 중인 시험이 있습니다.
-      </div>
-
-      <div class="wt-btn-row">
-        <button id="start-btn" class="wt-btn wt-btn-primary">시험 시작</button>
-        <button id="continue-btn" class="wt-btn wt-btn-secondary" style="display: none;">이어서 하기</button>
-      </div>
-    </div>
-
-    <!-- ── 시험 화면 ── -->
-    <div id="test-screen" class="wt-card" style="display: none;">
+    <!-- ── 시험 진행 화면 ── -->
+    <div id="test-screen" class="wt-card">
       <div class="wt-q-header">
         <span id="q-number" class="wt-q-number">1 / 10</span>
+        <span class="wt-q-badge">스펠링 직접 입력</span>
       </div>
 
       <div class="wt-progress-wrap">
@@ -76,6 +57,7 @@
       </div>
 
       <div class="wt-prompt-box">
+        <div class="wt-prompt-label">ENGLISH DEFINITION</div>
         <p id="q-prompt" class="wt-prompt">from one side to the other side</p>
       </div>
 
@@ -84,54 +66,93 @@
           type="text"
           id="answer-input"
           class="wt-input"
-          placeholder="영어 단어 입력"
+          placeholder="영어 단어 입력..."
           autocomplete="off"
           autocapitalize="none"
           autocorrect="off"
           spellcheck="false"
           writingsuggestions="false"
-          enterkeyhint="next"
+          enterkeyhint="done"
           aria-label="영어 답 입력"
         >
-        <p id="empty-msg" class="wt-empty-msg">단어를 입력해 주세요</p>
+        <p id="empty-msg" class="wt-empty-msg" style="display: none;">단어를 입력해 주세요</p>
       </div>
 
-      <p class="wt-hint">Enter를 누르면 다음 문제로 이동합니다</p>
-
-      <div class="wt-nav-row">
-        <button id="prev-btn" class="wt-btn wt-btn-secondary">이전</button>
+      <!-- 피드백 영역 -->
+      <div id="feedback-box" class="wt-feedback-box" style="display: none;">
+        <div id="feedback-correct" class="wt-feedback-correct" style="display: none;">
+          <span class="wt-feedback-icon">✅</span>
+          <span class="wt-feedback-text">정답입니다! 완벽해요 ✨</span>
+        </div>
+        <div id="feedback-wrong" class="wt-feedback-wrong" style="display: none;">
+          <div class="wt-feedback-wrong-header">
+            <span class="wt-feedback-icon">❌</span>
+            <span class="wt-feedback-text">철자를 확인해보세요!</span>
+          </div>
+          <div id="spelling-diff-container" class="wt-diff-container"></div>
+        </div>
       </div>
-    </div>
 
-    <!-- ── 답안 확인 화면 ── -->
-    <div id="review-screen" class="wt-card" style="display: none;">
-      <h2 class="wt-review-title">답안을 확인하세요</h2>
-      <p class="wt-review-sub">번호를 누르면 다시 수정할 수 있습니다</p>
-
-      <div id="review-list" class="wt-review-list"></div>
-
-      <div id="unanswered-warning"></div>
-
-      <div class="wt-btn-row">
-        <button id="submit-btn" class="wt-btn wt-btn-primary">최종 제출</button>
+      <!-- 액션 버튼 행 -->
+      <div class="wt-action-row">
+        <button id="check-btn" class="wt-btn wt-btn-check">
+          <span>정답 확인</span>
+          <span class="wt-btn-kbd">Enter ↵</span>
+        </button>
+        <button id="next-btn" class="wt-btn wt-btn-next" style="display: none;">
+          <span>다음 문제</span>
+          <span class="wt-btn-kbd">Enter ↵</span>
+        </button>
       </div>
     </div>
 
     <!-- ── 결과 화면 ── -->
     <div id="result-screen" class="wt-card" style="display: none;">
-      <div class="wt-result-score" id="result-score">8 / 10</div>
-      <div class="wt-result-pct" id="result-pct">80%</div>
-      <div class="wt-result-time" id="result-time">소요 시간: 2분 30초</div>
+      <div class="wt-result-header">
+        <h2 id="result-title" class="wt-result-title">주간 영단어 시험 완료! 🎉</h2>
+        <p class="wt-result-sub">이번 세트의 결과를 확인해보세요.</p>
+      </div>
 
-      <div id="result-detail" class="wt-result-detail"></div>
+      <div class="wt-result-score-card">
+        <div class="wt-result-score-main">
+          <span class="wt-score-label">맞힌 개수</span>
+          <span class="wt-result-score" id="result-score">8 / 10</span>
+        </div>
+        <div class="wt-result-pct-badge" id="result-pct">80%</div>
+      </div>
+
+      <!-- 오답 중심 결과 영역 -->
+      <div id="wrong-section" class="wt-wrong-section">
+        <h3 class="wt-wrong-section-title">틀린 단어 오답 노트</h3>
+        <p class="wt-wrong-section-desc">오답 단어의 철자 차이를 다시 한번 눈으로 익혀보세요.</p>
+        <div id="wrong-list" class="wt-wrong-list"></div>
+      </div>
+
+      <!-- 만점 축하 메시지 -->
+      <div id="perfect-msg" class="wt-perfect-card" style="display: none;">
+        <div class="wt-perfect-emoji">🌟</div>
+        <h3>모든 단어를 맞혔어요!</h3>
+        <p>10개 단어의 철자를 모두 정확히 작성했습니다. 최고예요!</p>
+      </div>
 
       <div class="wt-btn-row">
-        <button id="retry-wrong-btn" class="wt-btn wt-btn-danger">틀린 단어 다시 쓰기</button>
-        <button id="result-restart-btn" class="wt-btn wt-btn-secondary">시험 다시 보기</button>
+        <button id="result-restart-btn" class="wt-btn wt-btn-restart">
+          <span>🔄 시험 다시 보기</span>
+        </button>
+        <a href="../../../index.html" class="wt-btn wt-btn-home">
+          <span>🏠 메인 홈으로</span>
+        </a>
       </div>
     </div>
   </div>
 
+  <!-- Shared Learning Evidence Scripts -->
+  <script src="../../../shared/event-bus.js"></script>
+  <script src="../../../shared/domain/milestone-tracker.js"></script>
+  <script src="../../../shared/domain/daily-streak.js"></script>
+  <script src="../../../shared/domain/diversity-reward.js"></script>
+
+  <!-- Weekly Test Scripts -->
   <script src="../weekly-word-definitions.js"></script>
   <script src="weekly-test-engine.js"></script>
   <script src="weekly-test-ui.js"></script>

@@ -8,7 +8,81 @@
 
   function normalizeAnswer(raw) {
     if (typeof raw !== 'string') return '';
-    return raw.trim().normalize('NFKC').toLowerCase();
+    return raw.normalize('NFKC').trim().replace(/\s+/g, ' ').toLowerCase();
+  }
+
+  function shuffleArray(arr) {
+    var array = arr.slice();
+    for (var i = array.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = array[i];
+      array[i] = array[j];
+      array[j] = temp;
+    }
+    return array;
+  }
+
+  function computeSpellingDiff(rawGiven, rawExpected) {
+    var given = normalizeAnswer(rawGiven);
+    var expected = normalizeAnswer(rawExpected);
+    var n = given.length;
+    var m = expected.length;
+
+    var dp = [];
+    for (var i = 0; i <= n; i++) {
+      dp[i] = [];
+      for (var j = 0; j <= m; j++) {
+        dp[i][j] = 0;
+      }
+    }
+    for (var i = 0; i <= n; i++) dp[i][0] = i;
+    for (var j = 0; j <= m; j++) dp[0][j] = j;
+
+    for (var i = 1; i <= n; i++) {
+      for (var j = 1; j <= m; j++) {
+        if (given[i - 1] === expected[j - 1]) {
+          dp[i][j] = dp[i - 1][j - 1];
+        } else {
+          var costSub = dp[i - 1][j - 1] + 1;
+          var costDel = dp[i - 1][j] + 1; // deletion from given (extra character in given)
+          var costIns = dp[i][j - 1] + 1; // insertion into given (missing character in given)
+          dp[i][j] = Math.min(costSub, costDel, costIns);
+        }
+      }
+    }
+
+    var ops = [];
+    var ci = n;
+    var cj = m;
+    while (ci > 0 || cj > 0) {
+      if (ci > 0 && cj > 0 && given[ci - 1] === expected[cj - 1] && dp[ci][cj] === dp[ci - 1][cj - 1]) {
+        ops.push({ type: 'match', char: given[ci - 1] });
+        ci--;
+        cj--;
+      } else if (ci > 0 && cj > 0 && dp[ci][cj] === dp[ci - 1][cj - 1] + 1) {
+        ops.push({
+          type: 'substitution',
+          givenChar: given[ci - 1],
+          expectedChar: expected[cj - 1]
+        });
+        ci--;
+        cj--;
+      } else if (ci > 0 && dp[ci][cj] === dp[ci - 1][cj] + 1) {
+        ops.push({
+          type: 'extra',
+          char: given[ci - 1]
+        });
+        ci--;
+      } else {
+        ops.push({
+          type: 'missing',
+          char: expected[cj - 1]
+        });
+        cj--;
+      }
+    }
+    ops.reverse();
+    return ops;
   }
 
   function buildTestSet() {
@@ -31,10 +105,12 @@
     };
   }
 
-  function createSession(testSet) {
+  function createSession(testSet, options) {
     var now = new Date().toISOString();
+    var shouldShuffle = (options && options.shuffle !== undefined) ? options.shuffle : true;
+    var items = shouldShuffle ? shuffleArray(testSet.items) : testSet.items.slice();
     var answers = {};
-    testSet.items.forEach(function (item) {
+    items.forEach(function (item) {
       answers[item.id] = '';
     });
     return {
@@ -43,8 +119,14 @@
       status: 'in_progress',
       currentIndex: 0,
       answers: answers,
-      items: testSet.items.map(function (item) {
-        return { id: item.id, answer: item.answer, prompt: item.prompt, acceptedAnswers: item.acceptedAnswers };
+      results: [],
+      items: items.map(function (item) {
+        return {
+          id: item.id,
+          answer: item.answer,
+          prompt: item.prompt,
+          acceptedAnswers: item.acceptedAnswers || []
+        };
       }),
       startedAt: now,
       updatedAt: now
@@ -91,7 +173,8 @@
   function gradeSession(testSet, session) {
     var results = [];
     var correctCount = 0;
-    testSet.items.forEach(function (item) {
+    var items = session.items && session.items.length > 0 ? session.items : testSet.items;
+    items.forEach(function (item) {
       var given = session.answers[item.id] || '';
       var isCorrect = gradeAnswer(item, given);
       if (isCorrect) correctCount++;
@@ -105,8 +188,8 @@
     });
     return {
       schemaVersion: SCHEMA_VERSION,
-      setId: testSet.setId,
-      total: testSet.items.length,
+      setId: session.setId || testSet.setId,
+      total: items.length,
       correct: correctCount,
       elapsedMs: session.startedAt ? (new Date().getTime() - new Date(session.startedAt).getTime()) : 0,
       results: results,
@@ -134,21 +217,10 @@
     }
   }
 
-  function buildWrongWordSet(result) {
-    var wrong = result.results.filter(function (r) { return !r.correct; });
-    return {
-      schemaVersion: SCHEMA_VERSION,
-      setId: result.setId + '_retry_' + Date.now(),
-      title: '틀린 단어 다시 쓰기',
-      promptMode: PROMPT_MODE,
-      items: wrong.map(function (r) {
-        return { id: r.id, answer: r.answer, prompt: r.prompt, acceptedAnswers: [] };
-      })
-    };
-  }
-
   root.WeeklyTestEngine = Object.freeze({
     normalizeAnswer: normalizeAnswer,
+    shuffleArray: shuffleArray,
+    computeSpellingDiff: computeSpellingDiff,
     buildTestSet: buildTestSet,
     createSession: createSession,
     saveSession: saveSession,
@@ -158,7 +230,6 @@
     gradeSession: gradeSession,
     saveResult: saveResult,
     getResults: getResults,
-    buildWrongWordSet: buildWrongWordSet,
     SESSION_KEY: SESSION_KEY,
     RESULTS_KEY: RESULTS_KEY
   });

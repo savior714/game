@@ -615,31 +615,41 @@ function deleteCustomReward(id) {
 // ──────────────────────────────────────────
 let weeklyWords = [];
 function loadWeeklyWords() {
-  const saved = localStorage.getItem('englishWeeklyWords');
-  weeklyWords = saved ? JSON.parse(saved) : [];
+  if (typeof WeeklyVocabularyStore !== 'undefined' && typeof WeeklyVocabularyStore.getCurrentSet === 'function') {
+    const current = WeeklyVocabularyStore.getCurrentSet();
+    const setIdEl = document.getElementById('ww-set-id');
+    if (setIdEl && current && current.setId) {
+      setIdEl.textContent = current.setId;
+    }
+    weeklyWords = (current && Array.isArray(current.items)) ? current.items : [];
+  } else {
+    const saved = localStorage.getItem('englishWeeklyWords');
+    weeklyWords = saved ? JSON.parse(saved) : [];
+  }
   renderWeeklyWords();
 }
 function saveWeeklyWords() {
-  localStorage.setItem('englishWeeklyWords', JSON.stringify(weeklyWords));
-  if (window.SyncEngine) window.SyncEngine.pushStats('englishWeeklyWords', weeklyWords);
+  // Read-only state in current slice: canonical store is the single source of truth.
+  // Legacy mutation is disabled to prevent split-brain before OCR slice.
 }
 function renderWeeklyWords() {
   const container = document.getElementById('ww-list');
   if (!container) return;
   if (weeklyWords.length === 0) {
-    container.innerHTML = '<div class="text-center py-4 text-xs text-gray-400 italic">추가된 단어가 없습니다.</div>';
+    container.innerHTML = '<div class="text-center py-4 text-xs text-slate-500 italic">등록된 주간 단어가 없습니다.</div>';
     return;
   }
   container.innerHTML = weeklyWords.map((w, idx) => `
-    <div class="flex items-center justify-between bg-blue-50/50 p-2.5 rounded-xl border border-blue-100/50">
+    <div class="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10">
       <div class="flex items-center gap-3 min-w-0">
         ${w.icon ? `<span class="text-lg shrink-0">${w.icon}</span>` : ''}
         <div class="min-w-0">
-          <div class="font-bold text-sm text-blue-900 truncate">${w.en}</div>
-          <div class="text-[10px] text-blue-600 truncate">${w.ko}</div>
+          <div class="font-bold text-sm text-sky-300 truncate">${w.word || w.en}</div>
+          ${w.academyDescription ? `<div class="text-xs text-slate-300 truncate font-mono mt-0.5">${w.academyDescription}</div>` : ''}
+          ${w.ko ? `<div class="text-[11px] text-slate-400 truncate mt-0.5">${w.ko}</div>` : ''}
         </div>
       </div>
-      <button data-action="delete-weekly-word" data-idx="${idx}" class="text-gray-400 hover:text-red-500 transition p-1">
+      <button data-action="delete-weekly-word" data-idx="${idx}" class="text-gray-400 hover:text-red-400 transition p-1" title="삭제">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
       </button>
     </div>
@@ -669,18 +679,43 @@ function addWeeklyWord() {
     return;
   }
   var normalized = resolved.en;
-  var isDuplicate = weeklyWords.some(function(w) { return w.en === normalized; });
+  var isDuplicate = weeklyWords.some(function(w) { return (w.word || w.en) === normalized; });
   if (isDuplicate) {
     alert('이미 등록된 단어입니다.');
     return;
   }
-  weeklyWords.push({ en: resolved.en, ko: resolved.ko, icon: resolved.icon });
-  saveWeeklyWords(); renderWeeklyWords();
+  if (typeof WeeklyVocabularyStore !== 'undefined' && typeof WeeklyVocabularyStore.getCurrentSet === 'function') {
+    var current = WeeklyVocabularyStore.getCurrentSet();
+    var newItem = WeeklyVocabularyStore.createItem(current.setId, {
+      word: resolved.en,
+      academyDescription: resolved.en,
+      ko: resolved.ko,
+      icon: resolved.icon
+    });
+    current.items.push(newItem);
+    WeeklyVocabularyStore.saveCurrentSet(current);
+    loadWeeklyWords();
+  } else {
+    weeklyWords.push({ en: resolved.en, ko: resolved.ko, icon: resolved.icon });
+    saveWeeklyWords();
+    renderWeeklyWords();
+  }
   document.getElementById('ww-en').value = '';
 }
 function deleteWeeklyWord(idx) {
   if (confirm('이 단어를 주간 시험 목록에서 삭제할까요?')) {
-    weeklyWords.splice(idx, 1); saveWeeklyWords(); renderWeeklyWords();
+    if (typeof WeeklyVocabularyStore !== 'undefined' && typeof WeeklyVocabularyStore.getCurrentSet === 'function') {
+      var current = WeeklyVocabularyStore.getCurrentSet();
+      if (current && Array.isArray(current.items)) {
+        current.items.splice(idx, 1);
+        WeeklyVocabularyStore.saveCurrentSet(current);
+        loadWeeklyWords();
+        return;
+      }
+    }
+    weeklyWords.splice(idx, 1);
+    saveWeeklyWords();
+    renderWeeklyWords();
   }
 }
 

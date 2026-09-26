@@ -218,7 +218,13 @@
         <span>📝</span> 영어 주간 시험 단어 (집중 학습)
       </h3>
       <div class="bg-[#0e1422]/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10">
-        <p class="text-xs text-slate-400 mb-4">입력한 단어가 게임 중 <strong class="text-[#38bdf8] font-bold">60% 이상의 확률</strong>로 자주 등장합니다. (영유/학원 주간 숙제용)</p>
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-semibold text-sky-300 flex items-center gap-1.5">
+            <span>📋</span> 현재 시험지 세트: <span id="ww-set-id" class="text-white font-mono">2026-09-18</span>
+          </span>
+          <span class="text-[10px] px-2 py-0.5 rounded bg-sky-950/60 border border-sky-500/30 text-sky-300 font-semibold">단일 진실 소스 연동</span>
+        </div>
+        <p class="text-xs text-slate-400 mb-4">입력한 단어가 주간 시험 및 일반 영어 게임 중 <strong class="text-[#38bdf8] font-bold">60% 이상의 확률</strong>로 자주 등장합니다. (영유/학원 주간 숙제용)</p>
         
         <div class="flex flex-col gap-3 bg-white/5 p-4 rounded-xl mb-6 border border-white/10">
           <div class="flex gap-2">
@@ -230,7 +236,7 @@
 
         <div id="ww-list" class="space-y-2">
           <!-- Weekly words will be rendered here -->
-          <div class="text-center py-4 text-xs text-slate-500 italic">추가된 단어가 없습니다.</div>
+          <div class="text-center py-4 text-xs text-slate-500 italic">등록된 주간 단어가 없습니다.</div>
         </div>
       </div>
     </div>
@@ -354,6 +360,7 @@
   <script src="../../../domains/auth/auth.js"></script>
   <script src="../../../domains/sync/sync-engine.js"></script>
   <script src="../../../domains/english/words.js"></script>
+  <script src="../../../domains/english/weekly-vocabulary-store.js"></script>
   <script src="../../../shared/domain/growth-visualizer.js"></script>
   <script src="../../../domains/math/skills.js"></script>
   <script src="../../../domains/math/evidence.js"></script>

@@ -70,11 +70,39 @@ let wrongPatterns  = [];
 let recentHistory  = []; // 최근 5문제 정답 여부
 let recentQuestions = []; // 최근 10단어 (중복 방지용 키)
 let weeklyWords = []; // 보호자가 등록한 주간 시험 단어
-let weeklyTypeHistory = {}; // 단어별 출제 유형 기록 {'apple': 'spelling'}
+let weeklyTypeHistory = {}; // 단어/아이템별 출제 유형 기록
 
 function loadWeeklyWords() {
+  if (typeof WeeklyVocabularyStore !== 'undefined' && typeof WeeklyVocabularyStore.getCurrentSet === 'function') {
+    try {
+      const canonical = WeeklyVocabularyStore.getCurrentSet();
+      if (canonical && Array.isArray(canonical.items) && canonical.items.length > 0) {
+        weeklyWords = canonical.items.map(it => ({
+          weeklyItemId: it.itemId,
+          word: it.word,
+          academyDescription: it.academyDescription,
+          en: it.word,
+          ko: it.ko || '',
+          icon: it.icon || ''
+        }));
+        return;
+      }
+    } catch (e) {}
+  }
   const saved = localStorage.getItem('englishWeeklyWords');
-  weeklyWords = saved ? JSON.parse(saved) : [];
+  try {
+    const parsed = saved ? JSON.parse(saved) : [];
+    weeklyWords = (Array.isArray(parsed) ? parsed : []).map(w => ({
+      weeklyItemId: w.weeklyItemId || null,
+      word: w.word || w.en || '',
+      academyDescription: w.academyDescription || null,
+      en: w.en || w.word || '',
+      ko: w.ko || '',
+      icon: w.icon || ''
+    }));
+  } catch (e) {
+    weeklyWords = [];
+  }
 }
 loadWeeklyWords();
 
@@ -133,7 +161,7 @@ function pickCategory() {
 const Q_TYPE_ORDER = ['kor2word', 'spelling', 'minimal_pair', 'sentence', 'shopping_dialogue', 'typing'];
 const WEEKLY_Q_TYPE_ORDER = ['kor2word', 'spelling', 'minimal_pair', 'sentence', 'typing'];
 
-function pickQuestionType(level) {
+function _defaultPickQuestionType(level) {
   const rows = {
     0: [0.55, 0.45, 0, 0, 0, 0],
     1: [0.40, 0.33, 0.12, 0.08, 0.07, 0],
@@ -151,9 +179,14 @@ function pickQuestionType(level) {
   }
   return 'kor2word';
 }
+var pickQuestionType = _defaultPickQuestionType;
+if (typeof window !== 'undefined') {
+  window.pickQuestionType = pickQuestionType;
+}
 
 function pickWeeklyQuestionType(level) {
-  const type = pickQuestionType(level);
+  const activePicker = (typeof window !== 'undefined' && window.pickQuestionType) ? window.pickQuestionType : pickQuestionType;
+  const type = activePicker(level);
   if (WEEKLY_Q_TYPE_ORDER.indexOf(type) !== -1) return type;
   return 'spelling';
 }
@@ -283,25 +316,46 @@ function _generateCandidate() {
   if (weeklyWords.length > 0 && Math.random() < 0.6) {
     loadWeeklyWords(); // 실시간 데이터 반영 (나갔다 들어올 때 등)
     // 오답 기록이 있는 주간 단어 우선 순위 부여
-    const wrongWeekly = wrongPatterns.find(p => p.isWeekly && weeklyWords.some(w => w.en === p.en));
+    const wrongWeekly = wrongPatterns.find(p => p.isWeekly && weeklyWords.some(w => (w.weeklyItemId && p.weeklyItemId ? w.weeklyItemId === p.weeklyItemId : (w.en || w.word) === p.en)));
     const w = wrongWeekly 
-      ? weeklyWords.find(ww => ww.en === wrongWeekly.en)
+      ? weeklyWords.find(ww => (ww.weeklyItemId && wrongWeekly.weeklyItemId ? ww.weeklyItemId === wrongWeekly.weeklyItemId : (ww.en || ww.word) === wrongWeekly.en))
       : weeklyWords[Math.floor(Math.random() * weeklyWords.length)];
     
+    const wordSpelling = w.word || w.en;
     const diff = getDifficultyLevel(currentCat);
-    const wordData = [w.en, w.ko, w.icon || "", diff];
+    const wordData = [wordSpelling, w.ko || '', w.icon || "", diff];
     
     // 유형 순환 (주간 단어는 유형 다각도 노출)
+    const historyKey = w.weeklyItemId || wordSpelling;
     let type = pickWeeklyQuestionType(diff);
-    if (weeklyTypeHistory[w.en] !== undefined) {
-      const idx = WEEKLY_Q_TYPE_ORDER.indexOf(weeklyTypeHistory[w.en]);
+    const activePicker = (typeof window !== 'undefined' && window.pickQuestionType) ? window.pickQuestionType : pickQuestionType;
+    const isCustomPicker = activePicker !== _defaultPickQuestionType;
+    if (!isCustomPicker && weeklyTypeHistory[historyKey] !== undefined) {
+      const idx = WEEKLY_Q_TYPE_ORDER.indexOf(weeklyTypeHistory[historyKey]);
       const next = WEEKLY_Q_TYPE_ORDER[(idx + 1 + WEEKLY_Q_TYPE_ORDER.length) % WEEKLY_Q_TYPE_ORDER.length];
       type = next;
     }
-    weeklyTypeHistory[w.en] = type;
+    weeklyTypeHistory[historyKey] = type;
 
-    const res = buildQuestion(type, wordData, { cat: currentCat });
-    return { ...res, _cat: currentCat, _level: diff, _wordEn: res.type === 'shopping_dialogue' ? wEn(wordData) + '_' + (res.id || '') : w.en, isWeekly: true };
+    const meta = {
+      cat: currentCat,
+      isWeekly: true,
+      weeklyItemId: w.weeklyItemId || null,
+      word: wordSpelling,
+      academyDescription: w.academyDescription || null
+    };
+
+    const res = buildQuestion(type, wordData, meta);
+    return {
+      ...res,
+      _cat: currentCat,
+      _level: diff,
+      _wordEn: res.type === 'shopping_dialogue' ? wEn(wordData) + '_' + (res.id || '') : wordSpelling,
+      isWeekly: true,
+      weeklyItemId: w.weeklyItemId || null,
+      word: wordSpelling,
+      academyDescription: w.academyDescription || (res.englishDefinition || null)
+    };
   }
 
   // 1. 약점 단어 강화 (30% 확률)
@@ -326,14 +380,35 @@ function _generateCandidate() {
   if (wrongPatterns.length > 0 && Math.random() < REINFORCE_PROB) {
     const p = wrongPatterns[Math.floor(Math.random() * wrongPatterns.length)];
     let word = null;
+    let meta = { cat: p.cat };
     if (p.isWeekly) {
-      const ww = weeklyWords.find(w => w.en === p.en);
-      if (ww) word = [ww.en, ww.ko, ww.icon || "", p.level];
+      const ww = weeklyWords.find(w => (w.weeklyItemId && p.weeklyItemId ? w.weeklyItemId === p.weeklyItemId : (w.word || w.en) === p.en));
+      if (ww) {
+        const wordSpelling = ww.word || ww.en;
+        word = [wordSpelling, ww.ko || '', ww.icon || "", p.level];
+        meta = {
+          cat: p.cat,
+          isWeekly: true,
+          weeklyItemId: ww.weeklyItemId || null,
+          word: wordSpelling,
+          academyDescription: ww.academyDescription || null
+        };
+      }
     }
     if (!word) word = WORDS[p.cat].words.find(w => wEn(w) === p.en) || pickWord(p.cat, p.level);
     
-    const res = buildQuestion(p.isWeekly ? pickWeeklyQuestionType(p.level) : pickQuestionType(p.level), word, { cat: p.cat });
-    return { ...res, _cat: p.cat, _level: p.level, _wordEn: res.type === 'shopping_dialogue' ? wEn(word) + '_' + (res.id || '') : wEn(word), isWeekly: p.isWeekly };
+    const res = buildQuestion(p.isWeekly ? pickWeeklyQuestionType(p.level) : pickQuestionType(p.level), word, meta);
+    const wordSpelling = wEn(word);
+    return {
+      ...res,
+      _cat: p.cat,
+      _level: p.level,
+      _wordEn: res.type === 'shopping_dialogue' ? wordSpelling + '_' + (res.id || '') : wordSpelling,
+      isWeekly: Boolean(p.isWeekly),
+      weeklyItemId: meta.weeklyItemId || (res.weeklyItemId || null),
+      word: wordSpelling,
+      academyDescription: meta.academyDescription || (res.englishDefinition || null)
+    };
   }
 
   const cat  = pickCategory();
@@ -429,10 +504,20 @@ function recordResult(correct, elapsed) {
 
   // 틀린 패턴 기록
   if (!correct) {
-    wrongPatterns.unshift({ cat: currentCat, level: currentWordData.level, en: currentWordData.en, isWeekly: currentWordData.isWeekly });
+    wrongPatterns.unshift({
+      cat: currentCat,
+      level: currentWordData.level,
+      en: currentWordData.en,
+      isWeekly: currentWordData.isWeekly,
+      weeklyItemId: currentWordData.weeklyItemId || null
+    });
     if (wrongPatterns.length > MAX_WRONG_PATTERNS) wrongPatterns.pop();
   } else {
-    const idx = wrongPatterns.findIndex(p => p.en === currentWordData.en);
+    const idx = wrongPatterns.findIndex(p => (
+      p.weeklyItemId && currentWordData.weeklyItemId
+        ? p.weeklyItemId === currentWordData.weeklyItemId
+        : p.en === currentWordData.en
+    ));
     if (idx !== -1) wrongPatterns.splice(idx, 1);
   }
   recentHistory.push(correct); if (recentHistory.length > 5) recentHistory.shift();

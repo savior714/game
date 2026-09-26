@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import http.server
 import json
-import shutil
-import subprocess
 from pathlib import Path
+import shutil
+import socketserver
+import subprocess
+import threading
 
+from playwright.sync_api import Page, expect, sync_playwright
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -224,3 +228,113 @@ def test_weekly_test_ui_composing_and_guard_contracts() -> None:
     # diff 렌더링 시 innerHTML 사용자 입력 interpolation 금지
     assert "createElement" in ui_code
     assert "textContent" in ui_code
+
+
+class QuietHandler(http.server.SimpleHTTPRequestHandler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=str(ROOT), **kwargs)
+
+    def log_message(self, format, *args):
+        pass
+
+
+@pytest.fixture(scope="module")
+def static_server():
+    socketserver.TCPServer.allow_reuse_address = True
+    server = socketserver.TCPServer(("127.0.0.1", 0), QuietHandler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    host, port = server.server_address
+    yield f"http://{host}:{port}"
+    server.shutdown()
+    server.server_close()
+    thread.join(timeout=2)
+
+
+@pytest.fixture
+def page():
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
+        context = browser.new_context(
+            viewport={"width": 1280, "height": 720},
+            locale="ko-KR",
+            timezone_id="Asia/Seoul",
+        )
+        browser_page = context.new_page()
+        yield browser_page
+        context.close()
+        browser.close()
+
+
+def test_weekly_test_browser_flow(static_server: str, page: Page) -> None:
+    page_errors: list[str] = []
+    console_errors: list[str] = []
+    failed_requests: list[str] = []
+
+    page.on("pageerror", lambda error: page_errors.append(str(error)))
+    page.on(
+        "console",
+        lambda msg: console_errors.append(msg.text) if msg.type == "error" else None,
+    )
+    page.on(
+        "requestfailed",
+        lambda req: failed_requests.append(f"{req.url} {req.failure}"),
+    )
+
+    # 1. 메인 진입 후 주간 영단어 시험 카드 클릭
+    page.goto(f"{static_server}/index.html")
+    weekly_card = page.locator('a[href="./domains/english/weekly-test/index.html"]')
+    expect(weekly_card).to_be_visible()
+    weekly_card.click()
+
+    # 2. weekly-test 진입 및 1번 문제 즉시 노출 & autofocus
+    page.wait_for_selector("#test-screen", state="visible")
+    expect(page.locator("#q-number")).to_have_text("1 / 10")
+    input_el = page.locator("#answer-input")
+    expect(input_el).to_be_visible()
+    expect(input_el).to_be_focused()
+
+    # 3. 오답 입력 -> diff 시각화 및 자동 이동 중단
+    input_el.fill("completelywrong")
+    page.locator("#check-btn").click()
+
+    expect(page.locator("#feedback-box")).to_be_visible()
+    expect(page.locator("#feedback-wrong")).to_be_visible()
+    expect(page.locator("#spelling-diff-container")).to_be_visible()
+    expect(page.locator("#next-btn")).to_be_visible()
+
+    # 4. 수동 다음 문제 클릭
+    page.locator("#next-btn").click()
+    expect(page.locator("#q-number")).to_have_text("2 / 10")
+
+    # 5. 나머지 9문제 정답 입력 (자동 이동)
+    for q_idx in range(2, 11):
+        expect(input_el).to_be_visible()
+        curr_answer = page.evaluate(
+            "() => { const s = WeeklyTestEngine.loadSession(); return s.items[s.currentIndex].answer; }"
+        )
+        input_el.fill(curr_answer)
+        page.locator("#check-btn").click()
+        if q_idx < 10:
+            page.wait_for_function(
+                f"() => WeeklyTestEngine.loadSession().currentIndex === {q_idx}",
+                timeout=5000,
+            )
+
+    # 6. 결과 화면 도달 및 점수 확인
+    expect(page.locator("#result-screen")).to_be_visible(timeout=5000)
+    expect(page.locator("#result-score")).to_have_text("9 / 10")
+    expect(page.locator("#wrong-section")).to_be_visible()
+
+    # 7. 시험 다시 보기
+    restart_btn = page.locator("#result-restart-btn")
+    expect(restart_btn).to_be_visible()
+    restart_btn.click()
+
+    expect(page.locator("#test-screen")).to_be_visible()
+    expect(page.locator("#q-number")).to_have_text("1 / 10")
+    expect(input_el).to_be_focused()
+
+    assert len(page_errors) == 0, f"page errors: {page_errors}"
+    assert len(console_errors) == 0, f"console errors: {console_errors}"
+    assert len(failed_requests) == 0, f"failed requests: {failed_requests}"

@@ -189,7 +189,7 @@ function askQuestion() {
   
   // 상태 동기화 (engine.js에서 전달받은 메타데이터 사용)
   currentCat = q._cat;
-  currentWordData = { cat: q._cat, level: q._level, en: q._wordEn, isWeakness: q.isWeakness, isWeekly: q.isWeekly };
+  currentWordData = { cat: q._cat, level: q._level, en: q._wordEn, isWeakness: q.isWeakness, isWeekly: q.isWeekly, weeklyItemId: q.weeklyItemId || null };
   answer = q.answer;
 
   (DOM.qCount || document.getElementById('q-count')).textContent    = currentQ + 1;

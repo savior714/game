@@ -86,9 +86,36 @@
   }
 
   function buildTestSet() {
+    var canonicalSet = null;
+    if (root.WeeklyVocabularyStore && typeof root.WeeklyVocabularyStore.getCurrentSet === 'function') {
+      try {
+        canonicalSet = root.WeeklyVocabularyStore.getCurrentSet();
+      } catch (e) {
+        canonicalSet = null;
+      }
+    }
+
+    if (canonicalSet && Array.isArray(canonicalSet.items) && canonicalSet.items.length > 0) {
+      var items = canonicalSet.items.map(function (it) {
+        return {
+          id: it.itemId,
+          answer: it.word,
+          prompt: it.academyDescription,
+          acceptedAnswers: it.acceptedAnswers || []
+        };
+      });
+      return {
+        schemaVersion: SCHEMA_VERSION,
+        setId: canonicalSet.setId,
+        title: canonicalSet.title || (canonicalSet.setId + ' 주간 영단어'),
+        promptMode: PROMPT_MODE,
+        items: items
+      };
+    }
+
     var src = (root.EnglishWeeklyWordDefinitions && root.EnglishWeeklyWordDefinitions.all) || {};
     var batchId = (root.EnglishWeeklyWordDefinitions && root.EnglishWeeklyWordDefinitions.batchId) || 'unknown';
-    var items = Object.keys(src).map(function (word) {
+    var fallbackItems = Object.keys(src).map(function (word) {
       return {
         id: word,
         answer: word,
@@ -101,7 +128,7 @@
       setId: batchId,
       title: batchId + ' 주간 영단어',
       promptMode: PROMPT_MODE,
-      items: items
+      items: fallbackItems
     };
   }
 

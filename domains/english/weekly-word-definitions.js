@@ -5,74 +5,77 @@
 (function (root) {
   'use strict';
 
-  const fallbackDefinitions = Object.freeze({
-    across: 'from one side to the other side',
-    surround: 'to be on all sides',
-    relaxing: 'helping you to rest',
-    peaceful: 'calm and not violent',
-    mystery: 'a puzzle or secret',
-    clear: 'see-through',
-    bottom: 'the lowest part of something',
-    explore: 'to look around and discover',
-    calm: 'not moving much',
-    imagine: 'to picture in your mind',
-  });
-
   function getCanonicalSet() {
-    if (root.WeeklyVocabularyStore && typeof root.WeeklyVocabularyStore.getCurrentSet === 'function') {
+    if (root && root.WeeklyVocabularyStore && typeof root.WeeklyVocabularyStore.getCurrentSet === 'function') {
       try {
         return root.WeeklyVocabularyStore.getCurrentSet();
       } catch (e) {
         return null;
       }
     }
+    if (typeof globalThis !== 'undefined' && globalThis.WeeklyVocabularyStore && typeof globalThis.WeeklyVocabularyStore.getCurrentSet === 'function') {
+      try {
+        return globalThis.WeeklyVocabularyStore.getCurrentSet();
+      } catch (e) {
+        return null;
+      }
+    }
+    if (typeof require === 'function') {
+      try {
+        var store = require('./weekly-vocabulary-store.js');
+        if (store && typeof store.getCurrentSet === 'function') {
+          return store.getCurrentSet();
+        }
+      } catch (e) {}
+    }
     return null;
   }
 
   function getBatchId() {
-    const current = getCanonicalSet();
-    return (current && current.setId) || '2026-09-18';
+    var current = getCanonicalSet();
+    return (current && current.setId) || 'none';
   }
 
   function getAllDefinitions() {
-    const current = getCanonicalSet();
+    var current = getCanonicalSet();
     if (current && Array.isArray(current.items)) {
-      const map = {};
+      var map = {};
       current.items.forEach(function (item) {
-        if (!map[item.word]) {
-          map[item.word] = item.academyDescription;
+        var w = item.word || item.answer;
+        var d = item.academyDescription !== undefined ? item.academyDescription : item.prompt;
+        if (w && !map[w]) {
+          map[w] = d || '';
         }
       });
       return Object.freeze(map);
     }
-    return fallbackDefinitions;
+    return Object.freeze({});
   }
 
   function getDefinition(rawWord) {
     if (typeof rawWord !== 'string') return null;
-    const normalized = rawWord.trim().normalize('NFKC').toLowerCase();
-    const current = getCanonicalSet();
+    var normalized = rawWord.trim().normalize('NFKC').toLowerCase();
+    var current = getCanonicalSet();
     if (current && Array.isArray(current.items)) {
-      for (let i = 0; i < current.items.length; i++) {
-        if (current.items[i].word.trim().normalize('NFKC').toLowerCase() === normalized) {
-          return current.items[i].academyDescription;
+      for (var i = 0; i < current.items.length; i++) {
+        var itemWord = String(current.items[i].word || current.items[i].answer || '').trim().normalize('NFKC').toLowerCase();
+        if (itemWord === normalized) {
+          return current.items[i].academyDescription !== undefined ? current.items[i].academyDescription : current.items[i].prompt;
         }
       }
-      return null;
     }
-    return fallbackDefinitions[normalized] || null;
+    return null;
   }
 
   function applyToQuestion(question, word, meta) {
-    const englishWord = Array.isArray(word) ? word[0] : word;
-    const koreanMeaning = Array.isArray(word) ? word[1] : null;
-    // selected weekly item의 academyDescription이 전달된 경우 global map lookup을 우회하여 정확한 sense 보존
-    const definition = (meta && meta.academyDescription)
-      ? meta.academyDescription
+    var englishWord = Array.isArray(word) ? word[0] : word;
+    var koreanMeaning = Array.isArray(word) ? word[1] : null;
+    var definition = (meta && (meta.academyDescription !== undefined ? meta.academyDescription : meta.prompt))
+      ? (meta.academyDescription !== undefined ? meta.academyDescription : meta.prompt)
       : getDefinition(englishWord);
     if (!question || !definition) return question;
 
-    const enriched = { ...question, englishDefinition: definition };
+    var enriched = Object.assign({}, question, { englishDefinition: definition });
     if (meta && meta.weeklyItemId) enriched.weeklyItemId = meta.weeklyItemId;
     if (meta && meta.word) enriched.word = meta.word;
     if (meta && meta.isWeekly !== undefined) enriched.isWeekly = meta.isWeekly;
@@ -83,7 +86,8 @@
     return enriched;
   }
 
-  root.EnglishWeeklyWordDefinitions = Object.freeze({
+  var targetRoot = root || (typeof globalThis !== 'undefined' ? globalThis : window);
+  targetRoot.EnglishWeeklyWordDefinitions = Object.freeze({
     get batchId() {
       return getBatchId();
     },
@@ -91,14 +95,14 @@
       return getAllDefinitions();
     },
     get: getDefinition,
-    applyToQuestion,
+    applyToQuestion: applyToQuestion,
   });
 
   if (typeof buildQuestion === 'function') {
-    const buildQuestionWithoutEnglishDefinition = buildQuestion;
+    var buildQuestionWithoutEnglishDefinition = buildQuestion;
     buildQuestion = function (type, word, meta) {
-      const question = buildQuestionWithoutEnglishDefinition(type, word, meta);
+      var question = buildQuestionWithoutEnglishDefinition(type, word, meta);
       return applyToQuestion(question, word, meta);
     };
   }
-})(window);
+})(typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : this));

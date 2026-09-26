@@ -117,14 +117,17 @@
   }
 
   function createItem(setId, rawItem) {
-    var word = String(rawItem.word || rawItem.en || '').trim();
-    var desc = String(rawItem.academyDescription || rawItem.description || '');
+    var word = String(rawItem.word || rawItem.answer || rawItem.en || '').trim();
+    var desc = String(rawItem.academyDescription !== undefined ? rawItem.academyDescription : (rawItem.prompt !== undefined ? rawItem.prompt : (rawItem.description || '')));
     var sId = String(setId || DEFAULT_SET_ID).trim();
-    var id = rawItem.itemId || createItemId(sId, word, desc);
+    var id = rawItem.itemId || rawItem.id || createItemId(sId, word, desc);
     return {
       itemId: id,
+      id: id,
       word: word,
+      answer: word,
       academyDescription: desc,
+      prompt: desc,
       ko: rawItem.ko || '',
       icon: rawItem.icon || '',
       acceptedAnswers: Array.isArray(rawItem.acceptedAnswers) ? rawItem.acceptedAnswers.slice() : []
@@ -141,21 +144,25 @@
       setId: sId,
       title: sId + ' 주간 영단어',
       items: items,
+      registeredAt: '2026-09-18T00:00:00.000Z',
       updatedAt: '2026-09-18T00:00:00.000Z'
     };
   }
 
   function validateSet(set) {
     if (!set || typeof set !== 'object') return false;
-    if (set.schemaVersion !== SCHEMA_VERSION) return false;
+    if (set.schemaVersion !== SCHEMA_VERSION && set.schemaVersion !== 1 && set.schemaVersion !== undefined) return false;
     if (typeof set.setId !== 'string' || !set.setId.trim()) return false;
     if (!Array.isArray(set.items) || set.items.length === 0) return false;
     for (var i = 0; i < set.items.length; i++) {
       var item = set.items[i];
       if (!item || typeof item !== 'object') return false;
-      if (typeof item.itemId !== 'string' || !item.itemId) return false;
-      if (typeof item.word !== 'string' || !item.word.trim()) return false;
-      if (typeof item.academyDescription !== 'string') return false;
+      var id = item.itemId || item.id;
+      if (id !== undefined && (typeof id !== 'string' || !id)) return false;
+      var word = item.word || item.answer;
+      if (typeof word !== 'string' || !word.trim()) return false;
+      var desc = item.academyDescription !== undefined ? item.academyDescription : item.prompt;
+      if (typeof desc !== 'string') return false;
     }
     return true;
   }
@@ -164,7 +171,7 @@
     if (!canonicalSet || !Array.isArray(canonicalSet.items)) return [];
     return canonicalSet.items.map(function (it) {
       return {
-        en: it.word,
+        en: it.word || it.answer,
         ko: it.ko || '',
         icon: it.icon || ''
       };
@@ -240,18 +247,42 @@
     return bootstrap(customStorage);
   }
 
-  function saveCurrentSet(set, customStorage) {
+  function saveCurrentSet(rawSet, customStorage) {
+    if (!rawSet || typeof rawSet !== 'object') {
+      throw new Error('Invalid CurrentWeeklyVocabularySet schema');
+    }
+    var set = {
+      schemaVersion: rawSet.schemaVersion || SCHEMA_VERSION,
+      setId: String(rawSet.setId || DEFAULT_SET_ID).trim(),
+      title: rawSet.title || (String(rawSet.setId || DEFAULT_SET_ID).trim() + ' 주간 영단어'),
+      items: Array.isArray(rawSet.items) ? rawSet.items.slice() : [],
+      registeredAt: rawSet.registeredAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
     if (!validateSet(set)) {
       throw new Error('Invalid CurrentWeeklyVocabularySet schema');
     }
     var storage = _getStorage(customStorage);
     if (!storage) return false;
 
+    set.items = set.items.map(function (it) {
+      return createItem(set.setId, it);
+    });
+
     set.updatedAt = new Date().toISOString();
+    if (!set.registeredAt) {
+      set.registeredAt = set.updatedAt;
+    }
     try {
       storage.setItem(CANONICAL_STORAGE_KEY, JSON.stringify(set));
       // legacy compatibility projection 동기화
-      storage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(toLegacyProjection(set)));
+      var legacyProj = toLegacyProjection(set);
+      storage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(legacyProj));
+      if (typeof window !== 'undefined' && window.SyncEngine && typeof window.SyncEngine.pushStats === 'function') {
+        try {
+          window.SyncEngine.pushStats(LEGACY_STORAGE_KEY, legacyProj);
+        } catch (syncErr) {}
+      }
       return true;
     } catch (e) {
       return false;

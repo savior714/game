@@ -87,20 +87,33 @@
 
   function buildTestSet() {
     var canonicalSet = null;
-    if (root.WeeklyVocabularyStore && typeof root.WeeklyVocabularyStore.getCurrentSet === 'function') {
+    if (root && root.WeeklyVocabularyStore && typeof root.WeeklyVocabularyStore.getCurrentSet === 'function') {
       try {
         canonicalSet = root.WeeklyVocabularyStore.getCurrentSet();
       } catch (e) {
         canonicalSet = null;
       }
+    } else if (typeof globalThis !== 'undefined' && globalThis.WeeklyVocabularyStore && typeof globalThis.WeeklyVocabularyStore.getCurrentSet === 'function') {
+      try {
+        canonicalSet = globalThis.WeeklyVocabularyStore.getCurrentSet();
+      } catch (e) {
+        canonicalSet = null;
+      }
+    } else if (typeof require === 'function') {
+      try {
+        var store = require('../weekly-vocabulary-store.js');
+        if (store && typeof store.getCurrentSet === 'function') {
+          canonicalSet = store.getCurrentSet();
+        }
+      } catch (e) {}
     }
 
     if (canonicalSet && Array.isArray(canonicalSet.items) && canonicalSet.items.length > 0) {
       var items = canonicalSet.items.map(function (it) {
         return {
-          id: it.itemId,
-          answer: it.word,
-          prompt: it.academyDescription,
+          id: it.itemId || it.id,
+          answer: it.word || it.answer,
+          prompt: it.academyDescription !== undefined ? it.academyDescription : it.prompt,
           acceptedAnswers: it.acceptedAnswers || []
         };
       });
@@ -113,22 +126,12 @@
       };
     }
 
-    var src = (root.EnglishWeeklyWordDefinitions && root.EnglishWeeklyWordDefinitions.all) || {};
-    var batchId = (root.EnglishWeeklyWordDefinitions && root.EnglishWeeklyWordDefinitions.batchId) || 'unknown';
-    var fallbackItems = Object.keys(src).map(function (word) {
-      return {
-        id: word,
-        answer: word,
-        prompt: src[word],
-        acceptedAnswers: []
-      };
-    });
     return {
       schemaVersion: SCHEMA_VERSION,
-      setId: batchId,
-      title: batchId + ' 주간 영단어',
+      setId: 'none',
+      title: '주간 영단어',
       promptMode: PROMPT_MODE,
-      items: fallbackItems
+      items: []
     };
   }
 
@@ -167,12 +170,16 @@
     } catch (e) {}
   }
 
-  function loadSession() {
+  function loadSession(expectedSetId) {
     try {
       var raw = localStorage.getItem(SESSION_KEY);
       if (!raw) return null;
       var parsed = JSON.parse(raw);
       if (!parsed || parsed.schemaVersion !== SCHEMA_VERSION) return null;
+      if (expectedSetId && parsed.setId !== expectedSetId) {
+        clearSession();
+        return null;
+      }
       return parsed;
     } catch (e) {
       return null;

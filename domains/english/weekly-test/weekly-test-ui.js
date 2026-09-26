@@ -329,7 +329,7 @@
 
   function init() {
     testSet = Engine.buildTestSet();
-    var savedSession = Engine.loadSession();
+    var savedSession = Engine.loadSession(testSet.setId);
 
     if (
       savedSession &&

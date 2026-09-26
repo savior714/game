@@ -30,6 +30,7 @@ WORDS_JS = ROOT / "domains/english/words.js"
 ADVANCED_JS = ROOT / "domains/english/advanced-questions.js"
 PROGRESS_JS = ROOT / "shared/domain/progress-engine.js"
 ENGINE_JS = ROOT / "domains/english/engine.js"
+GUARDIAN_JS = ROOT / "domains/reward/guardian/guardian.js"
 
 
 def _node() -> str:
@@ -346,3 +347,292 @@ console.log(JSON.stringify({{
     assert payload["stillCanonical"] is True
     assert payload["notStale"] is True
     assert payload["brokenCanonicalSafe"] is True
+
+
+def test_guardian_word_admission_and_unknown_words() -> None:
+    """Verifies that Guardian admits valid English words even if not in WORDS catalog,
+    while enriching known catalog words, and synchronizes to canonical store and SyncEngine.
+    """
+    harness = f"""
+const window = globalThis;
+window.addEventListener = function () {{}};
+const storageMap = {{}};
+const localStorage = {{
+  getItem(k) {{ return Object.prototype.hasOwnProperty.call(storageMap, k) ? storageMap[k] : null; }},
+  setItem(k, v) {{ storageMap[k] = String(v); }},
+  removeItem(k) {{ delete storageMap[k]; }}
+}};
+
+let pushedSyncKey = null;
+let pushedSyncData = null;
+window.SyncEngine = {{
+  pushStats(k, v) {{
+    pushedSyncKey = k;
+    pushedSyncData = v;
+  }}
+}};
+
+const elements = {{}};
+window.document = {{
+  getElementById(id) {{
+    if (!elements[id]) {{
+      elements[id] = {{ value: '', innerHTML: '', textContent: '', style: {{}} }};
+    }}
+    return elements[id];
+  }},
+  querySelectorAll() {{ return []; }},
+  addEventListener() {{}}
+}};
+
+{STORE_JS.read_text(encoding="utf-8")}
+{WORDS_JS.read_text(encoding="utf-8")}
+if (typeof WORDS !== 'undefined') window.WORDS = WORDS;
+{GUARDIAN_JS.read_text(encoding="utf-8")}
+
+// 1. resolveWeeklyWord resolution tests
+const knownResolved = resolveWeeklyWord('apple', window.WORDS);
+const unknownResolved = resolveWeeklyWord('curiosity', window.WORDS);
+const hyphenResolved = resolveWeeklyWord('well-being', window.WORDS);
+const invalidResolved = resolveWeeklyWord('1234invalid!', window.WORDS);
+
+// 2. addWeeklyWord for word NOT in WORDS catalog
+document.getElementById('ww-en').value = 'curiosity';
+addWeeklyWord();
+
+const canonicalAfterAdd = window.WeeklyVocabularyStore.getCurrentSet();
+const curiosityItem = canonicalAfterAdd.items.find(it => it.word === 'curiosity');
+
+console.log(JSON.stringify({{
+  knownResolved,
+  unknownResolved,
+  hyphenResolved,
+  invalidResolved,
+  hasCuriosity: Boolean(curiosityItem),
+  curiosityItem,
+  pushedSyncKey,
+  pushedSyncCount: Array.isArray(pushedSyncData) ? pushedSyncData.length : null
+}}));
+"""
+    result = subprocess.run(
+        [_node(), "-e", harness],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    payload = json.loads(result.stdout)
+
+    # 1. Catalog enrichment for known word
+    assert payload["knownResolved"]["en"] == "apple"
+    assert payload["knownResolved"]["ko"] == "사과"
+    assert payload["knownResolved"]["icon"] == "🍎"
+
+    # 2. Admission for valid word NOT in WORDS catalog
+    assert payload["unknownResolved"]["en"] == "curiosity"
+    assert payload["unknownResolved"]["ko"] == ""
+
+    # 3. Hyphenated word admission
+    assert payload["hyphenResolved"]["en"] == "well-being"
+
+    # 4. Invalid token rejected
+    assert payload["invalidResolved"] is None
+
+    # 5. Successfully added to canonical store and pushed to SyncEngine
+    assert payload["hasCuriosity"] is True
+    assert payload["curiosityItem"]["word"] == "curiosity"
+    assert payload["curiosityItem"]["answer"] == "curiosity"
+    assert payload["pushedSyncKey"] == "englishWeeklyWords"
+    assert payload["pushedSyncCount"] is not None
+
+
+def test_primary_criterion_weekly_set_a_to_b_replacement_and_no_leakage() -> None:
+    """PRIMARY CRITERION verification:
+    1. Register Set A (1 word in WORDS, 1 word NOT in WORDS, verbatim prompts).
+    2. Verify General English and Weekly Test both consume Set A.
+    3. Start Weekly Test session on Set A.
+    4. Replace with Set B (different words and prompts).
+    5. Verify both consumers now use Set B without code changes.
+    6. Verify Set A prompts/answers do not remain in current test set.
+    7. Verify prior Set A session is identified as stale and discarded cleanly.
+    8. Verify spelling test grading and diff behavior on Set B.
+    """
+    harness = f"""
+const window = globalThis;
+const storageMap = {{}};
+const localStorage = {{
+  getItem(k) {{ return Object.prototype.hasOwnProperty.call(storageMap, k) ? storageMap[k] : null; }},
+  setItem(k, v) {{ storageMap[k] = String(v); }},
+  removeItem(k) {{ delete storageMap[k]; }}
+}};
+
+{STORE_JS.read_text(encoding="utf-8")}
+{DEFINITIONS_JS.read_text(encoding="utf-8")}
+{TEST_ENGINE_JS.read_text(encoding="utf-8")}
+{PROGRESS_JS.read_text(encoding="utf-8")}
+{WORDS_JS.read_text(encoding="utf-8")}
+{ADVANCED_JS.read_text(encoding="utf-8")}
+{ENGINE_JS.read_text(encoding="utf-8")}
+
+const Store = window.WeeklyVocabularyStore;
+const Engine = window.WeeklyTestEngine;
+
+// ── STEP 1: Register Set A ──
+// 'apple' is in WORDS catalog; 'curiosity' is NOT in WORDS catalog
+const setA = {{
+  schemaVersion: 1,
+  setId: 'set-a-school-week-1',
+  title: 'Week 1 School Test',
+  items: [
+    {{
+      answer: 'apple',
+      prompt: 'a round fruit with red or green skin',
+      ko: '사과',
+      icon: '🍎'
+    }},
+    {{
+      answer: 'curiosity',
+      prompt: 'a strong desire to know or learn something',
+      ko: '호기심',
+      icon: '🔍'
+    }}
+  ]
+}};
+Store.saveCurrentSet(setA);
+
+// Consumer 1: General English reads Set A
+loadWeeklyWords();
+const generalEnglishWordsSetA = weeklyWords.slice();
+
+// Consumer 2: Weekly Test reads Set A
+const testSetA = Engine.buildTestSet();
+const sessionA = Engine.createSession(testSetA, {{ shuffle: false }});
+sessionA.answers[testSetA.items[0].id] = 'apple';
+Engine.saveSession(sessionA);
+
+// ── STEP 2: Replace with Set B (No code changes, pure runtime replacement) ──
+// 'banana' is in WORDS catalog; 'galaxy' is NOT in WORDS catalog
+const setB = {{
+  schemaVersion: 1,
+  setId: 'set-b-school-week-2',
+  title: 'Week 2 School Test',
+  items: [
+    {{
+      answer: 'banana',
+      prompt: 'a long curved fruit with a yellow skin',
+      ko: '바나나',
+      icon: '🍌'
+    }},
+    {{
+      answer: 'galaxy',
+      prompt: 'a system of millions or billions of stars',
+      ko: '은하',
+      icon: '🌌'
+    }}
+  ]
+}};
+Store.saveCurrentSet(setB);
+
+// Consumer 1: General English reloads and consumes Set B
+loadWeeklyWords();
+const generalEnglishWordsSetB = weeklyWords.slice();
+
+// Consumer 2: Weekly Test builds Set B
+const testSetB = Engine.buildTestSet();
+
+// Stale session validation: previous session was for set-a, now expected set-b
+const loadedSessionStale = Engine.loadSession(testSetB.setId);
+
+// Create fresh session for Set B and grade
+const sessionB = Engine.createSession(testSetB, {{ shuffle: false }});
+sessionB.answers[testSetB.items[0].id] = 'banana';   // correct
+sessionB.answers[testSetB.items[1].id] = 'galaxi';   // typo ('i' for 'y')
+const gradedB = Engine.gradeSession(testSetB, sessionB);
+
+// Diff test for typo on 'galaxy'
+const galaxyDiff = Engine.computeSpellingDiff('galaxi', 'galaxy');
+
+console.log(JSON.stringify({{
+  generalEnglishSetA: generalEnglishWordsSetA.map(w => ({{ word: w.word, desc: w.academyDescription }})),
+  testSetA: {{
+    setId: testSetA.setId,
+    items: testSetA.items.map(it => ({{ id: it.id, answer: it.answer, prompt: it.prompt }}))
+  }},
+  generalEnglishSetB: generalEnglishWordsSetB.map(w => ({{ word: w.word, desc: w.academyDescription }})),
+  testSetB: {{
+    setId: testSetB.setId,
+    items: testSetB.items.map(it => ({{ id: it.id, answer: it.answer, prompt: it.prompt }}))
+  }},
+  loadedSessionStale,
+  gradedB: {{
+    total: gradedB.total,
+    correct: gradedB.correct,
+    results: gradedB.results
+  }},
+  galaxyDiff
+}}));
+"""
+    result = subprocess.run(
+        [_node(), "-e", harness],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    payload = json.loads(result.stdout)
+
+    # 1. Set A consumed by both
+    eng_a = payload["generalEnglishSetA"]
+    assert len(eng_a) == 2
+    assert {w["word"] for w in eng_a} == {"apple", "curiosity"}
+    assert {w["desc"] for w in eng_a} == {
+        "a round fruit with red or green skin",
+        "a strong desire to know or learn something",
+    }
+
+    test_a = payload["testSetA"]
+    assert test_a["setId"] == "set-a-school-week-1"
+    assert len(test_a["items"]) == 2
+    assert {it["answer"] for it in test_a["items"]} == {"apple", "curiosity"}
+    apple_item_a = next(it for it in test_a["items"] if it["answer"] == "apple")
+    assert apple_item_a["prompt"] == "a round fruit with red or green skin"
+    curiosity_item_a = next(it for it in test_a["items"] if it["answer"] == "curiosity")
+    assert curiosity_item_a["prompt"] == "a strong desire to know or learn something"
+
+    # 2. Set B replaces Set A without code changes
+    eng_b = payload["generalEnglishSetB"]
+    assert len(eng_b) == 2
+    assert {w["word"] for w in eng_b} == {"banana", "galaxy"}
+    assert not any(w["word"] in ("apple", "curiosity") for w in eng_b)
+
+    test_b = payload["testSetB"]
+    assert test_b["setId"] == "set-b-school-week-2"
+    assert len(test_b["items"]) == 2
+    assert {it["answer"] for it in test_b["items"]} == {"banana", "galaxy"}
+    assert not any(it["answer"] in ("apple", "curiosity") for it in test_b["items"])
+    assert not any(
+        it["prompt"]
+        in (
+            "a round fruit with red or green skin",
+            "a strong desire to know or learn something",
+        )
+        for it in test_b["items"]
+    )
+
+    # 3. Stale Set A session discarded cleanly
+    assert payload["loadedSessionStale"] is None
+
+    # 4. Grading on Set B: 1 correct, 1 wrong
+    graded_b = payload["gradedB"]
+    assert graded_b["total"] == 2
+    assert graded_b["correct"] == 1
+    banana_result = next(r for r in graded_b["results"] if r["answer"] == "banana")
+    assert banana_result["correct"] is True
+    galaxy_result = next(r for r in graded_b["results"] if r["answer"] == "galaxy")
+    assert galaxy_result["correct"] is False
+    assert galaxy_result["given"] == "galaxi"
+
+    # 5. Diff output accurately identifies substitution of 'i' for 'y'
+    sub_ops = [op for op in payload["galaxyDiff"] if op["type"] == "substitution"]
+    assert len(sub_ops) == 1
+    assert sub_ops[0]["givenChar"] == "i"
+    assert sub_ops[0]["expectedChar"] == "y"

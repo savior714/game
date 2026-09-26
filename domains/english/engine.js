@@ -77,14 +77,19 @@ function loadWeeklyWords() {
     try {
       const canonical = WeeklyVocabularyStore.getCurrentSet();
       if (canonical && Array.isArray(canonical.items) && canonical.items.length > 0) {
-        weeklyWords = canonical.items.map(it => ({
-          weeklyItemId: it.itemId,
-          word: it.word,
-          academyDescription: it.academyDescription,
-          en: it.word,
-          ko: it.ko || '',
-          icon: it.icon || ''
-        }));
+        weeklyWords = canonical.items.map(it => {
+          const w = it.word || it.answer || '';
+          const desc = it.academyDescription !== undefined ? it.academyDescription : (it.prompt || '');
+          const id = it.itemId || it.id;
+          return {
+            weeklyItemId: id,
+            word: w,
+            academyDescription: desc,
+            en: w,
+            ko: it.ko || '',
+            icon: it.icon || ''
+          };
+        });
         return;
       }
     } catch (e) {}
@@ -92,14 +97,19 @@ function loadWeeklyWords() {
   const saved = localStorage.getItem('englishWeeklyWords');
   try {
     const parsed = saved ? JSON.parse(saved) : [];
-    weeklyWords = (Array.isArray(parsed) ? parsed : []).map(w => ({
-      weeklyItemId: w.weeklyItemId || null,
-      word: w.word || w.en || '',
-      academyDescription: w.academyDescription || null,
-      en: w.en || w.word || '',
-      ko: w.ko || '',
-      icon: w.icon || ''
-    }));
+    weeklyWords = (Array.isArray(parsed) ? parsed : []).map(w => {
+      const wordVal = w.word || w.answer || w.en || '';
+      const descVal = w.academyDescription !== undefined ? w.academyDescription : (w.prompt || null);
+      const idVal = w.weeklyItemId || w.itemId || w.id || null;
+      return {
+        weeklyItemId: idVal,
+        word: wordVal,
+        academyDescription: descVal,
+        en: wordVal,
+        ko: w.ko || '',
+        icon: w.icon || ''
+      };
+    });
   } catch (e) {
     weeklyWords = [];
   }

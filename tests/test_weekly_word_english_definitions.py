@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
+STORE_JS = ROOT / "domains/english/weekly-vocabulary-store.js"
 DEFINITIONS_JS = ROOT / "domains/english/weekly-word-definitions.js"
 INDEX_HTML = ROOT / "domains/english/index.html"
 
@@ -37,6 +38,7 @@ def _node() -> str:
 def test_definition_catalog_and_question_enrichment_are_exact() -> None:
     harness = f"""
 const window = globalThis;
+{STORE_JS.read_text(encoding="utf-8")}
 function buildQuestion(type, word) {{
   if (type === 'spelling') return {{ type, hint: word[1], word: word[0] }};
   if (type === 'sentence') return {{ type, koHint: word[1], word: word[0] }};

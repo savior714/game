@@ -65,8 +65,10 @@ HARNESS = r"""
   results.caseB_arrayUnchanged = weeklyWords.length === beforeLen;
 
   var unknownResolved = resolveWeeklyWord('zzweeklyunknownword', WORDS);
-  results.caseC_returnsNull = unknownResolved === null;
+  results.caseC_admitsUnknownWord = Boolean(unknownResolved && unknownResolved.en === 'zzweeklyunknownword' && unknownResolved.ko === '');
   results.caseC_arrayUnchanged = weeklyWords.length === beforeLen;
+  var invalidResolved = resolveWeeklyWord('1234invalid!', WORDS);
+  results.caseC_rejectsInvalid = invalidResolved === null;
 
   var r1 = resolveWeeklyWord('apple', WORDS);
   var r2 = resolveWeeklyWord('apple', WORDS);
@@ -158,8 +160,9 @@ def test_caseB_array_unchanged(results: dict) -> None:
     assert results["caseB_arrayUnchanged"] is True
 
 
-def test_caseC_returns_null(results: dict) -> None:
-    assert results["caseC_returnsNull"] is True
+def test_caseC_admits_unknown_words_without_gate(results: dict) -> None:
+    assert results["caseC_admitsUnknownWord"] is True
+    assert results["caseC_rejectsInvalid"] is True
 
 
 def test_caseC_array_unchanged(results: dict) -> None:

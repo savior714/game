@@ -20,6 +20,7 @@ WEEKLY_TEST_INDEX_HTML = ROOT / "domains/english/weekly-test/index.html"
 WEEKLY_TEST_ENGINE_JS = ROOT / "domains/english/weekly-test/weekly-test-engine.js"
 WEEKLY_TEST_UI_JS = ROOT / "domains/english/weekly-test/weekly-test-ui.js"
 DEFINITIONS_JS = ROOT / "domains/english/weekly-word-definitions.js"
+STORE_JS = ROOT / "domains/english/weekly-vocabulary-store.js"
 
 
 def _node() -> str:
@@ -170,6 +171,7 @@ console.log(JSON.stringify({{
 def test_weekly_test_engine_session_and_shuffle() -> None:
     harness = f"""
 const window = globalThis;
+{STORE_JS.read_text(encoding="utf-8")}
 {DEFINITIONS_JS.read_text(encoding="utf-8")}
 {WEEKLY_TEST_ENGINE_JS.read_text(encoding="utf-8")}
 

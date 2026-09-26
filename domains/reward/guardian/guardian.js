@@ -629,8 +629,23 @@ function loadWeeklyWords() {
   renderWeeklyWords();
 }
 function saveWeeklyWords() {
-  // Read-only state in current slice: canonical store is the single source of truth.
-  // Legacy mutation is disabled to prevent split-brain before OCR slice.
+  if (typeof WeeklyVocabularyStore !== 'undefined' && typeof WeeklyVocabularyStore.getCurrentSet === 'function') {
+    var current = WeeklyVocabularyStore.getCurrentSet();
+    current.items = weeklyWords.map(function (w) {
+      return WeeklyVocabularyStore.createItem(current.setId, w);
+    });
+    WeeklyVocabularyStore.saveCurrentSet(current);
+  } else {
+    localStorage.setItem('englishWeeklyWords', JSON.stringify(weeklyWords));
+  }
+  if (window.SyncEngine && typeof window.SyncEngine.pushStats === 'function') {
+    var legacyProj = (typeof WeeklyVocabularyStore !== 'undefined' && typeof WeeklyVocabularyStore.toLegacyProjection === 'function')
+      ? WeeklyVocabularyStore.toLegacyProjection({ items: weeklyWords })
+      : weeklyWords;
+    try {
+      window.SyncEngine.pushStats('englishWeeklyWords', legacyProj);
+    } catch (e) {}
+  }
 }
 function renderWeeklyWords() {
   const container = document.getElementById('ww-list');
@@ -644,8 +659,8 @@ function renderWeeklyWords() {
       <div class="flex items-center gap-3 min-w-0">
         ${w.icon ? `<span class="text-lg shrink-0">${w.icon}</span>` : ''}
         <div class="min-w-0">
-          <div class="font-bold text-sm text-sky-300 truncate">${w.word || w.en}</div>
-          ${w.academyDescription ? `<div class="text-xs text-slate-300 truncate font-mono mt-0.5">${w.academyDescription}</div>` : ''}
+          <div class="font-bold text-sm text-sky-300 truncate">${w.word || w.en || w.answer}</div>
+          ${(w.academyDescription || w.prompt) ? `<div class="text-xs text-slate-300 truncate font-mono mt-0.5">${w.academyDescription || w.prompt}</div>` : ''}
           ${w.ko ? `<div class="text-[11px] text-slate-400 truncate mt-0.5">${w.ko}</div>` : ''}
         </div>
       </div>
@@ -660,26 +675,27 @@ function resolveWeeklyWord(rawInput, wordsCatalog) {
   var normalized = rawInput.trim().normalize('NFKC').toLowerCase();
   if (!normalized) return null;
   if (!/^[a-z]+(?:[-'][a-z]+)*$/.test(normalized)) return null;
-  var categories = Object.keys(wordsCatalog);
+  var catalog = wordsCatalog || (typeof WORDS !== 'undefined' ? WORDS : (typeof window !== 'undefined' && window.WORDS ? window.WORDS : {}));
+  var categories = wordsCatalog ? Object.keys(wordsCatalog) : Object.keys(catalog);
   for (var c = 0; c < categories.length; c++) {
-    var words = wordsCatalog[categories[c]].words;
+    var words = (catalog[categories[c]] && catalog[categories[c]].words) || [];
     for (var i = 0; i < words.length; i++) {
       if (words[i][0] === normalized) {
         return { en: words[i][0], ko: words[i][1], icon: words[i][2] };
       }
     }
   }
-  return null;
+  return { en: normalized, ko: '', icon: '' };
 }
 function addWeeklyWord() {
   var rawEn = document.getElementById('ww-en').value;
   var resolved = resolveWeeklyWord(rawEn, window.WORDS || {});
   if (!resolved) {
-    alert('게임 단어 사전에 없는 단어입니다.');
+    alert('올바른 영단어 형식이 아닙니다.');
     return;
   }
   var normalized = resolved.en;
-  var isDuplicate = weeklyWords.some(function(w) { return (w.word || w.en) === normalized; });
+  var isDuplicate = weeklyWords.some(function(w) { return (w.word || w.en || w.answer) === normalized; });
   if (isDuplicate) {
     alert('이미 등록된 단어입니다.');
     return;

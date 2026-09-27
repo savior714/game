@@ -103,7 +103,7 @@ CREATE OR REPLACE FUNCTION public._register_weekly_english_set_internal(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
     C_CHANGE_THRESHOLD CONSTANT INT := 3;
@@ -220,7 +220,7 @@ BEGIN
             );
         END IF;
 
-        v_p_hash := substr(encode(digest(v_prompt, 'sha256'), 'hex'), 1, 8);
+        v_p_hash := substr(encode(sha256(v_prompt::bytea), 'hex'), 1, 8);
         v_item_id := lower(v_test_date || '-' || v_ans || '-' || v_p_hash);
 
         v_canonical_items := v_canonical_items || jsonb_build_object(
@@ -536,7 +536,7 @@ CREATE OR REPLACE FUNCTION public.register_weekly_english_set(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
     v_token_hash TEXT;
@@ -549,7 +549,7 @@ BEGIN
         );
     END IF;
 
-    v_token_hash := encode(digest(trim(p_agent_token), 'sha256'), 'hex');
+    v_token_hash := encode(sha256(trim(p_agent_token)::bytea), 'hex');
 
     SELECT user_id INTO v_user_id
     FROM public.weekly_ingestion_tokens
@@ -582,7 +582,7 @@ CREATE OR REPLACE FUNCTION public.register_weekly_english_set_as_guardian(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
     v_user_id UUID;
@@ -609,7 +609,7 @@ CREATE OR REPLACE FUNCTION public.list_weekly_english_agent_tokens()
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
     v_user_id UUID;
@@ -644,7 +644,7 @@ CREATE OR REPLACE FUNCTION public.revoke_weekly_english_agent_token(
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path = public, extensions, pg_temp
 AS $$
 DECLARE
     v_user_id UUID;
@@ -708,3 +708,176 @@ CREATE POLICY "Authenticated users can update non-server-authoritative data"
         auth.uid() = user_id
         AND data_key NOT IN ('aiden_canonical_weekly_vocabulary_v1', 'englishWeeklyWords')
     );
+
+
+-- ══════════════════════════════════════════════════════════════
+-- 7. Portable Native SHA-256 RPC Definitions
+-- ══════════════════════════════════════════════════════════════
+
+CREATE OR REPLACE FUNCTION public._compute_weekly_content_fingerprint(p_items JSONB)
+RETURNS TEXT
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+DECLARE
+    v_joined TEXT;
+BEGIN
+    SELECT string_agg(
+        (elem->>'word') || '|' ||
+        (elem->>'prompt') || '|' ||
+        (COALESCE(elem->>'ko', '')) || '|' ||
+        (COALESCE(elem->>'icon', '')),
+        ';' ORDER BY (elem->>'word'), (elem->>'prompt')
+    )
+    INTO v_joined
+    FROM jsonb_array_elements(p_items) AS elem;
+
+    RETURN encode(sha256(COALESCE(v_joined, '')::bytea), 'hex');
+END;
+$$;
+
+
+CREATE OR REPLACE FUNCTION public.create_weekly_english_agent_token(
+    p_description TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions, pg_temp
+AS $$
+DECLARE
+    v_user_id UUID;
+    v_plaintext TEXT;
+    v_token_hash TEXT;
+    v_token_id UUID;
+BEGIN
+    v_user_id := auth.uid();
+    IF v_user_id IS NULL THEN
+        RETURN jsonb_build_object(
+            'status', 'UNAUTHORIZED',
+            'message', 'Authentication required to create agent tokens'
+        );
+    END IF;
+
+    v_plaintext := 'weit_' || replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '');
+    v_token_hash := encode(sha256(v_plaintext::bytea), 'hex');
+
+    INSERT INTO public.weekly_ingestion_tokens (
+        user_id, token_hash, scope, description, is_revoked
+    ) VALUES (
+        v_user_id, v_token_hash, 'weekly_english_ingestion', p_description, FALSE
+    )
+    RETURNING id INTO v_token_id;
+
+    RETURN jsonb_build_object(
+        'status', 'CREATED',
+        'tokenId', v_token_id,
+        'token', v_plaintext,
+        'scope', 'weekly_english_ingestion',
+        'message', 'Save this token now. It cannot be retrieved again.'
+    );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.create_weekly_english_agent_token(TEXT) TO authenticated;
+
+
+CREATE OR REPLACE FUNCTION public.get_current_weekly_english_set(p_agent_token TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions, pg_temp
+AS $$
+DECLARE
+    v_token_hash TEXT;
+    v_user_id UUID;
+    v_current_payload JSONB;
+BEGIN
+    IF p_agent_token IS NULL OR trim(p_agent_token) = '' THEN
+        RETURN jsonb_build_object(
+            'status', 'UNAUTHORIZED',
+            'message', 'Agent token is required'
+        );
+    END IF;
+
+    v_token_hash := encode(sha256(trim(p_agent_token)::bytea), 'hex');
+
+    SELECT user_id INTO v_user_id
+    FROM public.weekly_ingestion_tokens
+    WHERE token_hash = v_token_hash
+      AND is_revoked = FALSE
+      AND (expires_at IS NULL OR expires_at > NOW())
+      AND scope = 'weekly_english_ingestion';
+
+    IF v_user_id IS NULL THEN
+        RETURN jsonb_build_object(
+            'status', 'UNAUTHORIZED',
+            'message', 'Invalid, expired, or revoked token'
+        );
+    END IF;
+
+    SELECT payload INTO v_current_payload
+    FROM public.user_data
+    WHERE user_id = v_user_id
+      AND data_key = 'aiden_canonical_weekly_vocabulary_v1';
+
+    IF v_current_payload IS NULL THEN
+        RETURN jsonb_build_object(
+            'status', 'NOT_FOUND',
+            'message', 'No canonical weekly vocabulary set registered for this user'
+        );
+    END IF;
+
+    RETURN jsonb_build_object(
+        'status', 'OK',
+        'currentSet', v_current_payload,
+        'set', v_current_payload
+    );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_current_weekly_english_set(TEXT) TO anon, authenticated;
+
+
+CREATE OR REPLACE FUNCTION public.revoke_weekly_ingestion_token(p_agent_token TEXT)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions, pg_temp
+AS $$
+DECLARE
+    v_token_hash TEXT;
+    v_rows_affected INTEGER;
+BEGIN
+    IF p_agent_token IS NULL OR trim(p_agent_token) = '' THEN
+        RETURN jsonb_build_object(
+            'status', 'UNAUTHORIZED',
+            'message', 'Agent token is required'
+        );
+    END IF;
+
+    v_token_hash := encode(sha256(trim(p_agent_token)::bytea), 'hex');
+
+    UPDATE public.weekly_ingestion_tokens
+    SET is_revoked = TRUE
+    WHERE token_hash = v_token_hash
+      AND is_revoked = FALSE;
+
+    GET DIAGNOSTICS v_rows_affected = ROW_COUNT;
+
+    IF v_rows_affected = 0 THEN
+        RETURN jsonb_build_object(
+            'status', 'NOT_FOUND',
+            'message', 'Token not found or already revoked'
+        );
+    END IF;
+
+    RETURN jsonb_build_object(
+        'status', 'REVOKED',
+        'message', 'Token has been revoked'
+    );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.revoke_weekly_ingestion_token(TEXT) TO anon, authenticated;
+

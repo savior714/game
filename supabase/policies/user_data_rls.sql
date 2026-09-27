@@ -2,18 +2,17 @@
 -- Server-authoritative keys ('aiden_canonical_weekly_vocabulary_v1', 'englishWeeklyWords')
 -- are blocked from ordinary direct table upsert. They MUST go through designated SECURITY DEFINER RPCs.
 
+DO $$ 
+DECLARE 
+  pol RECORD;
+BEGIN 
+  FOR pol IN SELECT policyname FROM pg_policies WHERE tablename = 'user_data' AND schemaname = 'public' LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I ON public.user_data', pol.policyname);
+  END LOOP;
+END $$;
+
 -- Enable RLS on user_data table
 ALTER TABLE public.user_data ENABLE ROW LEVEL SECURITY;
-
--- Drop existing policies if they exist (for idempotent migration)
-DROP POLICY IF EXISTS "Users can only view their own data" ON public.user_data;
-DROP POLICY IF EXISTS "Users can only insert their own data" ON public.user_data;
-DROP POLICY IF EXISTS "Users can only update their own data" ON public.user_data;
-DROP POLICY IF EXISTS "Users can only delete their own data" ON public.user_data;
-DROP POLICY IF EXISTS "Users can insert via upsert" ON public.user_data;
-DROP POLICY IF EXISTS "Authenticated users can upsert own data" ON public.user_data;
-DROP POLICY IF EXISTS "Authenticated users can insert non-server-authoritative data" ON public.user_data;
-DROP POLICY IF EXISTS "Authenticated users can update non-server-authoritative data" ON public.user_data;
 
 -- Policy 1: Users can SELECT only their own data
 CREATE POLICY "Users can only view their own data"

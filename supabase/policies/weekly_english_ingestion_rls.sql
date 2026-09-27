@@ -58,6 +58,8 @@ GRANT SELECT, INSERT ON public.weekly_vocabulary_history TO authenticated;
 -- ── 4. Grants on SECURITY DEFINER RPC Functions ─────────────
 -- External agents connect via Supabase HTTPS RPC using anon publishable key
 -- and provide their scoped capability token as an argument.
-GRANT EXECUTE ON FUNCTION public.register_weekly_english_set(TEXT, JSONB) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.register_weekly_english_set(TEXT, JSONB, JSONB) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_current_weekly_english_set(TEXT) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.revoke_weekly_ingestion_token(TEXT) TO anon, authenticated;
+-- Token provisioning requires authenticated guardian
+GRANT EXECUTE ON FUNCTION public.create_weekly_english_agent_token(TEXT) TO authenticated;

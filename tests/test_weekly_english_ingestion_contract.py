@@ -10,7 +10,9 @@ Verifies:
    - Step 5: General English and Weekly Test both consume Set A
    - Step 6: Idempotency (same date + same content => NO_OP, no revision bump)
    - Step 7: Revision (same date + 1 item change => REGISTERED_REVISION, rollback preserved)
-   - Step 8: Suspicious conflict (same date + large conflict => NEEDS_CONFIRMATION, current unchanged)
+   - Step 8: Suspicious conflict (same date + large symmetric diff => NEEDS_CONFIRMATION)
+   - Step 8b: Confirmed override => REGISTERED_CONFIRMED_REVISION
+   - Step 8c: Stale confirmation => CONFIRMATION_STALE
    - Step 9: New week (different date Set B => REGISTERED_NEW, both consumers consume Set B)
 2. SECURITY PRIMARY CHECKS:
    - Invalid token rejected (UNAUTHORIZED)
@@ -20,10 +22,22 @@ Verifies:
    - Malformed/ambiguous candidate rejected, current unchanged
    - No service-role key committed or exposed
    - search_path pinned and SECURITY DEFINER safe
-3. DIRECT ENTRY & CONSUMER CLOSURE:
-   - Direct entry to English loads Auth & SyncEngine
-   - Direct entry to Weekly Test loads Auth & SyncEngine
-   - Live refresh event rebinds consumers cleanly
+3. VALIDATION (004 closure):
+   - Item count range: 7 reject, 8 accept, 12 accept, 13+ NEEDS_CONFIRMATION
+   - Calendar date validation: 2026-99-99 rejected
+   - Duplicate pair detection: identical (answer, prompt) rejected
+   - Same word different prompt (multi-sense): allowed
+4. FRESHNESS (server-authoritative):
+   - Stale local future timestamp cannot overwrite remote
+   - Remote hydrate preserves remote version
+   - Local mutation gets fresh timestamp
+5. SOURCE FIDELITY:
+   - Prompt exact text preservation required
+   - Answer case normalization acceptable
+6. SYMMETRIC CONFLICT DETECTION:
+   - Deletion counted in diff
+   - 5 pairs modified (10 sym diff) → NEEDS_CONFIRMATION
+7. DIRECT ENTRY & CONSUMER CLOSURE
 """
 
 from __future__ import annotations
@@ -36,9 +50,11 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-MIGRATION_SQL = ROOT / "supabase/migrations/003_create_weekly_english_ingestion.sql"
+MIGRATION_003 = ROOT / "supabase/migrations/003_create_weekly_english_ingestion.sql"
+MIGRATION_004 = ROOT / "supabase/migrations/004_weekly_ingestion_closure.sql"
 RLS_SQL = ROOT / "supabase/policies/weekly_english_ingestion_rls.sql"
 SYNC_ENGINE_JS = ROOT / "domains/sync/sync-engine.js"
+STORE_JS = ROOT / "domains/english/weekly-vocabulary-store.js"
 ENGLISH_INDEX = ROOT / "domains/english/index.html"
 WEEKLY_TEST_INDEX = ROOT / "domains/english/weekly-test/index.html"
 HARNESS_MJS = ROOT / "tests/fixtures/weekly_english_ingestion_harness.mjs"
@@ -61,32 +77,56 @@ def test_sql_security_invariants_and_least_privilege() -> None:
     - No service_role key mentioned
     - Scoped strictly to canonical weekly key and legacy projection
     """
-    sql_text = MIGRATION_SQL.read_text(encoding="utf-8")
+    sql_003 = MIGRATION_003.read_text(encoding="utf-8")
+    sql_004 = MIGRATION_004.read_text(encoding="utf-8")
     rls_text = RLS_SQL.read_text(encoding="utf-8")
 
-    # 1. Pinned search_path
-    assert "SET search_path = public, pg_temp" in sql_text
-    assert "SECURITY DEFINER" in sql_text
+    # 1. Pinned search_path in both migrations
+    for sql_text, name in [(sql_003, "003"), (sql_004, "004")]:
+        assert "SET search_path = public, pg_temp" in sql_text, (
+            f"{name}: missing pinned search_path"
+        )
+        assert "SECURITY DEFINER" in sql_text, f"{name}: missing SECURITY DEFINER"
 
     # 2. SHA-256 hashing
-    assert "digest(" in sql_text
-    assert "'sha256'" in sql_text
+    assert "digest(" in sql_003
+    assert "'sha256'" in sql_003
 
     # 3. No service role key
-    assert (
-        "service_role" not in sql_text.lower()
-        or "grant all on public.user_data to service_role" not in sql_text.lower()
-    )
-    assert "sb_secret" not in sql_text
+    for sql_text, name in [(sql_003, "003"), (sql_004, "004")]:
+        assert "sb_secret" not in sql_text, f"{name}: service key leak"
 
     # 4. RLS enabled on all new tables
     assert "ENABLE ROW LEVEL SECURITY" in rls_text
     assert "weekly_ingestion_tokens" in rls_text
     assert "weekly_vocabulary_history" in rls_text
 
-    # 5. Scoped data keys in migration
-    assert "aiden_canonical_weekly_vocabulary_v1" in sql_text
-    assert "englishWeeklyWords" in sql_text
+    # 5. Token provisioning RPC exists in 004
+    assert "create_weekly_english_agent_token" in sql_004
+    assert "gen_random_bytes" in sql_004
+
+    # 6. Confirmation parameter in 004
+    assert "p_confirmation" in sql_004
+    assert "CONFIRMATION_STALE" in sql_004
+    assert "REGISTERED_CONFIRMED_REVISION" in sql_004
+
+    # 7. Symmetric diff in 004
+    assert "v_added_count" in sql_004
+    assert "v_removed_count" in sql_004
+    assert "v_sym_diff_count" in sql_004
+
+    # 8. Calendar date validation in 004
+    assert "v_parsed_date" in sql_004
+
+    # 9. Duplicate pair detection in 004
+    assert "v_dup_count" in sql_004
+
+    # 10. Item count constants in 004
+    assert "C_NORMAL_ITEM_MAX" in sql_004
+    assert "C_ATYPICAL_ITEM_MAX" in sql_004
+
+    # 11. Mutation authority tag in 004
+    assert "_mutationAuthority" in sql_004
 
 
 def test_no_secret_hardcoded_in_repository() -> None:
@@ -120,40 +160,31 @@ def test_direct_entry_html_includes_sync_bootstrap() -> None:
         assert "sync-engine.js" in html, f"{html_name} lacks sync-engine.js bootstrap"
 
 
-def test_sync_engine_pulls_canonical_weekly_key_and_resolves_timestamps() -> None:
-    """Verifies sync-engine.js includes canonical key and handles ms / ISO timestamps."""
+def test_sync_engine_server_authoritative_weekly_key() -> None:
+    """Verifies sync-engine.js treats canonical weekly key as server-authoritative."""
     sync_code = SYNC_ENGINE_JS.read_text(encoding="utf-8")
 
     assert "aiden_canonical_weekly_vocabulary_v1" in sync_code
     assert "weekly-vocabulary-synced" in sync_code
-    # Timestamp reconciliation logic present
-    assert "_updated_at" in sync_code
-    assert "updatedAt" in sync_code
+    assert "SERVER_AUTHORITATIVE_KEYS" in sync_code
+    # Must not push server-authoritative keys back via LWW
+    assert "Never push server-authoritative keys" in sync_code
+
+
+def test_vocabulary_store_has_hydrate_and_mutation_functions() -> None:
+    """Verifies weekly-vocabulary-store.js exports hydrateFromRemote and saveLocalMutation."""
+    store_code = STORE_JS.read_text(encoding="utf-8")
+
+    assert "hydrateFromRemote" in store_code
+    assert "saveLocalMutation" in store_code
+    assert "_mutationAuthority" in store_code
 
 
 # ── Full Primary Criterion End-to-End Simulation ────────────
 
 
 def test_primary_criterion_full_lifecycle_and_security_gate() -> None:
-    """Full implementation of PRIMARY_CRITERION and SECURITY PRIMARY CHECKS:
-    Starting condition: localStorage and remote current have old set.
-    Step 1: Register Set A (10 pairs) with scoped agent token.
-    Step 2: Read-back verified (byte and semantic equivalence).
-    Step 3: Stale local session syncs from remote.
-    Step 4: Local canonical store updated to Set A.
-    Step 5: General English and Weekly Test both consume Set A.
-    Step 6: Idempotency (same date + same content => NO_OP, no revision bump).
-    Step 7: Revision (same date + 1 item change => REGISTERED_REVISION, rollback preserved).
-    Step 8: Suspicious conflict (same date + large conflict => NEEDS_CONFIRMATION, current unchanged).
-    Step 9: New week (different date Set B => REGISTERED_NEW, both consumers use Set B).
-
-    Security Checks:
-    - Invalid token rejected (UNAUTHORIZED)
-    - Revoked token rejected (UNAUTHORIZED)
-    - Ambiguous candidate rejected, current unchanged
-    - Incomplete/missing prompt/answer rejected, current unchanged
-    - Cross-user data isolation (tokens mapped to specific user_id)
-    """
+    """Full lifecycle test with all closure fixes applied."""
     result = subprocess.run(
         [_node(), str(HARNESS_MJS)],
         check=True,
@@ -200,11 +231,21 @@ def test_primary_criterion_full_lifecycle_and_security_gate() -> None:
     assert step7["readBackVerified"] is True
     assert payload["historyCount"] >= 2  # Rollback preserved
 
-    # Step 8: Suspicious conflict on same date => NEEDS_CONFIRMATION, current unchanged
+    # Step 8: Suspicious conflict on same date => NEEDS_CONFIRMATION with fingerprints
     step8 = payload["step8"]
     assert step8["status"] == "NEEDS_CONFIRMATION"
-    assert step8["conflictDiffCount"] == 5
+    assert payload["conflictHasActiveFingerprint"] is True
+    assert payload["conflictHasCandidateFingerprint"] is True
     assert payload["conflictCurrentUnchanged"] is True
+
+    # Step 8b: Confirmed override => REGISTERED_CONFIRMED_REVISION
+    step8b = payload["step8b"]
+    assert step8b["status"] == "REGISTERED_CONFIRMED_REVISION"
+    assert step8b["revision"] == 3
+    assert step8b["readBackVerified"] is True
+
+    # Step 8c: Stale confirmation => CONFIRMATION_STALE
+    assert payload["step8cStaleConfirmation"] == "CONFIRMATION_STALE"
 
     # Step 9: New week => REGISTERED_NEW, both consumers consume Set B
     step9 = payload["step9"]
@@ -217,3 +258,40 @@ def test_primary_criterion_full_lifecycle_and_security_gate() -> None:
 
     # Cross-user isolation
     assert payload["otherUserIsolated"] is True
+
+    # ── VALIDATION ASSERTIONS ────────────────────────────────
+    # Item count range (#7)
+    assert payload["reject7items"] == "REJECTED_INVALID"
+    assert payload["accept8items"] in ("REGISTERED_NEW", "REGISTERED_REVISION")
+    assert payload["atypical13items"] == "NEEDS_CONFIRMATION"
+    assert payload["atypical13reason"] == "ATYPICAL_ITEM_COUNT"
+
+    # Calendar date validation (#9)
+    assert payload["invalidCalendarDate"] == "REJECTED_INVALID"
+
+    # Duplicate pair detection (#8)
+    assert payload["duplicatePairRejected"] == "REJECTED_INVALID"
+
+    # Multi-sense allowed
+    assert payload["multiSenseAllowed"] is True
+
+    # ── FRESHNESS ASSERTIONS ─────────────────────────────────
+    # Stale local with future timestamp overwritten by remote hydrate (#4)
+    assert payload["staleLocalOverwritten"] is True
+    # Remote version preserved on hydrate (#5)
+    assert payload["remoteVersionPreserved"] is True
+    # Local mutation gets fresh timestamp (#5)
+    assert payload["localMutationFreshTs"] is True
+
+    # ── SOURCE FIDELITY ASSERTIONS ───────────────────────────
+    # Prompt case change detected as fidelity violation (#10)
+    assert payload["sourceFidelityFailsOnCaseChange"] is True
+    # Answer case normalization is acceptable
+    assert payload["sourceFidelityOkWithAnswerCaseChange"] is True
+
+    # ── SYMMETRIC DIFF ASSERTIONS ────────────────────────────
+    # Deletion-only scenario counted (#3)
+    assert payload["deletion1Item"] in ("REGISTERED_REVISION", "REGISTERED_NEW")
+    # 5 pairs modified → needs confirmation (#3)
+    assert payload["modified5PairsNeedsConf"] == "NEEDS_CONFIRMATION"
+    assert payload["modified5PairsSymDiff"] == 10  # 5 added + 5 removed

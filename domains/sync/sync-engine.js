@@ -137,7 +137,15 @@ window.SyncEngine = (() => {
     if (updated) saveQueue(q);
   }
 
+  // Server-authoritative keys: these must only be mutated through server RPC,
+  // never pushed back to cloud via generic LWW sync.
+  const SERVER_AUTHORITATIVE_KEYS = new Set([
+    'aiden_canonical_weekly_vocabulary_v1',
+    'englishWeeklyWords'
+  ]);
+
   // 서버의 최신 데이터를 가져와서 로컬 localStorage 교체 (최종 기록 우선)
+  // canonical weekly vocabulary는 server-authoritative: 항상 remote가 authority.
   async function pullAndMerge(keysToPull) {
     const user = window.Auth?.getUser();
     if (!user || !navigator.onLine || !window.supabaseClient) return;
@@ -166,18 +174,12 @@ window.SyncEngine = (() => {
 
         const dbTime = row.payload._updated_at || (row.payload.updatedAt ? new Date(row.payload.updatedAt).getTime() : 0) || new Date(row.updated_at).getTime();
 
-        // 최종 완료 기록을 우선시하되, 주요 통계는 병합 처리
-        if (dbTime > localTime) {
-          let toStore = row.payload;
-          let safeLocal = localParsed || {};
-
-          if (row.data_key === 'study_rewards') {
-            toStore = mergeStudyRewardsPayload(safeLocal, row.payload);
-          } else if (row.data_key.endsWith('GameStats')) {
-            toStore = mergeGameStatsPayload(safeLocal, row.payload);
-          } else if (row.data_key === 'aiden_canonical_weekly_vocabulary_v1') {
-            // Canonical weekly vocabulary update
-            // Also synchronize legacy projection 'englishWeeklyWords'
+        // Server-authoritative keys: always accept remote, never push local back (#4)
+        if (SERVER_AUTHORITATIVE_KEYS.has(row.data_key)) {
+          if (row.data_key === 'aiden_canonical_weekly_vocabulary_v1') {
+            // Always hydrate from remote for canonical weekly set
+            localStorage.setItem(row.data_key, JSON.stringify(row.payload));
+            // Synchronize legacy projection
             if (window.WeeklyVocabularyStore && typeof window.WeeklyVocabularyStore.toLegacyProjection === 'function') {
               try {
                 const legacyProj = window.WeeklyVocabularyStore.toLegacyProjection(row.payload);
@@ -194,6 +196,22 @@ window.SyncEngine = (() => {
               } catch (e) {}
             }
             hasWeeklyUpdate = true;
+            hasUpdates = true;
+          }
+          // For englishWeeklyWords: do nothing here; it's synced as a projection above
+          // Never push server-authoritative keys back to cloud via LWW
+          continue;
+        }
+
+        // 최종 완료 기록을 우선시하되, 주요 통계는 병합 처리
+        if (dbTime > localTime) {
+          let toStore = row.payload;
+          let safeLocal = localParsed || {};
+
+          if (row.data_key === 'study_rewards') {
+            toStore = mergeStudyRewardsPayload(safeLocal, row.payload);
+          } else if (row.data_key.endsWith('GameStats')) {
+            toStore = mergeGameStatsPayload(safeLocal, row.payload);
           }
           localStorage.setItem(row.data_key, JSON.stringify(toStore));
           hasUpdates = true;

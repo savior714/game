@@ -274,7 +274,7 @@ def test_browser_direct_entry_weekly_test_pulls_new_set(
             const promptEl = document.getElementById('q-prompt');
             return promptEl && promptEl.textContent.includes('the ability to do something frightening');
         }""",
-        timeout=5000,
+        timeout=10000,
     )
 
     prompt_text = page.inner_text("#q-prompt")

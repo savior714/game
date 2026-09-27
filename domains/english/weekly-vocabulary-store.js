@@ -251,17 +251,61 @@
     return bootstrap(customStorage);
   }
 
-  function saveCurrentSet(rawSet, customStorage) {
+  /**
+   * hydrateFromRemote: Store a remote-originated payload into localStorage.
+   * Preserves all remote timestamps exactly as-is.
+   * Does NOT push to cloud (it came FROM cloud).
+   */
+  function hydrateFromRemote(remotePayload, customStorage) {
+    if (!remotePayload || typeof remotePayload !== 'object') {
+      throw new Error('Invalid remote payload for hydration');
+    }
+    var set = {
+      schemaVersion: remotePayload.schemaVersion || SCHEMA_VERSION,
+      setId: String(remotePayload.setId || remotePayload.testDate || DEFAULT_SET_ID).trim(),
+      testDate: String(remotePayload.testDate || remotePayload.setId || DEFAULT_SET_ID).trim(),
+      title: remotePayload.title || (String(remotePayload.setId || remotePayload.testDate || DEFAULT_SET_ID).trim() + ' 주간 영단어'),
+      revision: typeof remotePayload.revision === 'number' ? remotePayload.revision : 1,
+      contentFingerprint: remotePayload.contentFingerprint || '',
+      items: Array.isArray(remotePayload.items) ? remotePayload.items.slice() : [],
+      _updated_at: remotePayload._updated_at,
+      registeredAt: remotePayload.registeredAt,
+      updatedAt: remotePayload.updatedAt,
+      _mutationAuthority: remotePayload._mutationAuthority || 'server_rpc'
+    };
+    if (!validateSet(set)) {
+      throw new Error('Invalid remote payload schema');
+    }
+    var storage = _getStorage(customStorage);
+    if (!storage) return false;
+
+    set.items = set.items.map(function (it) {
+      return createItem(set.setId, it);
+    });
+
+    try {
+      storage.setItem(CANONICAL_STORAGE_KEY, JSON.stringify(set));
+      var legacyProj = toLegacyProjection(set);
+      storage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(legacyProj));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
+   * saveLocalMutation: Store a locally-mutated payload.
+   * Generates fresh timestamp (new mutation version).
+   * Does NOT push to cloud for server-authoritative keys.
+   * Guardian local edits should go through server RPC instead.
+   */
+  function saveLocalMutation(rawSet, customStorage) {
     if (!rawSet || typeof rawSet !== 'object') {
       throw new Error('Invalid CurrentWeeklyVocabularySet schema');
     }
     var now = new Date();
     var nowIso = now.toISOString();
     var nowMs = now.getTime();
-    var updatedMs = typeof rawSet._updated_at === 'number' && !isNaN(rawSet._updated_at)
-      ? rawSet._updated_at
-      : (rawSet.updatedAt ? new Date(rawSet.updatedAt).getTime() : nowMs);
-    var updatedIso = rawSet.updatedAt || new Date(updatedMs).toISOString();
 
     var set = {
       schemaVersion: rawSet.schemaVersion || SCHEMA_VERSION,
@@ -271,9 +315,10 @@
       revision: typeof rawSet.revision === 'number' ? rawSet.revision : 1,
       contentFingerprint: rawSet.contentFingerprint || '',
       items: Array.isArray(rawSet.items) ? rawSet.items.slice() : [],
-      _updated_at: updatedMs,
-      registeredAt: rawSet.registeredAt || updatedIso,
-      updatedAt: updatedIso
+      _updated_at: nowMs,
+      registeredAt: rawSet.registeredAt || nowIso,
+      updatedAt: nowIso,
+      _mutationAuthority: 'local_guardian'
     };
     if (!validateSet(set)) {
       throw new Error('Invalid CurrentWeeklyVocabularySet schema');
@@ -287,12 +332,10 @@
 
     try {
       storage.setItem(CANONICAL_STORAGE_KEY, JSON.stringify(set));
-      // legacy compatibility projection 동기화
       var legacyProj = toLegacyProjection(set);
       storage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(legacyProj));
       if (typeof window !== 'undefined' && window.SyncEngine && typeof window.SyncEngine.pushStats === 'function') {
         try {
-          // Push both canonical store and legacy projection to cloud
           window.SyncEngine.pushStats(CANONICAL_STORAGE_KEY, set);
           window.SyncEngine.pushStats(LEGACY_STORAGE_KEY, legacyProj);
         } catch (syncErr) {}
@@ -301,6 +344,22 @@
     } catch (e) {
       return false;
     }
+  }
+
+  /**
+   * saveCurrentSet: Backward-compatible wrapper.
+   * Detects remote vs local origin by _mutationAuthority tag.
+   * - Remote payloads (server_rpc): delegates to hydrateFromRemote
+   * - Local payloads: delegates to saveLocalMutation
+   */
+  function saveCurrentSet(rawSet, customStorage) {
+    if (!rawSet || typeof rawSet !== 'object') {
+      throw new Error('Invalid CurrentWeeklyVocabularySet schema');
+    }
+    if (rawSet._mutationAuthority === 'server_rpc') {
+      return hydrateFromRemote(rawSet, customStorage);
+    }
+    return saveLocalMutation(rawSet, customStorage);
   }
 
   return Object.freeze({
@@ -315,6 +374,8 @@
     toLegacyProjection: toLegacyProjection,
     bootstrap: bootstrap,
     getCurrentSet: getCurrentSet,
+    hydrateFromRemote: hydrateFromRemote,
+    saveLocalMutation: saveLocalMutation,
     saveCurrentSet: saveCurrentSet
   });
 });

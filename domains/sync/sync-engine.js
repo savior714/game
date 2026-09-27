@@ -1,6 +1,13 @@
 window.SyncEngine = (() => {
   const QUEUE_KEY = 'sync_queue';
 
+  // Server-authoritative keys: these must only be mutated through server RPC,
+  // never pushed back to cloud via generic LWW sync.
+  const SERVER_AUTHORITATIVE_KEYS = new Set([
+    'aiden_canonical_weekly_vocabulary_v1',
+    'englishWeeklyWords'
+  ]);
+
   const DEFAULT_STUDY_SHOP_ITEMS = [
     { id: 'youtube', icon: '📺', label: '유튜브 10분', desc: '좋아하는 영상 시청', price: 1 },
     { id: 'snack', icon: '🍪', label: '간식 1개', desc: '맛있는 간식 시간', price: 1 },
@@ -88,7 +95,20 @@ window.SyncEngine = (() => {
   
   function getQueue() {
     try {
-      return JSON.parse(localStorage.getItem(QUEUE_KEY) || '{}');
+      const raw = localStorage.getItem(QUEUE_KEY);
+      if (!raw) return {};
+      const q = JSON.parse(raw);
+      let cleaned = false;
+      for (const k of Object.keys(q)) {
+        if (SERVER_AUTHORITATIVE_KEYS.has(k)) {
+          delete q[k];
+          cleaned = true;
+        }
+      }
+      if (cleaned) {
+        localStorage.setItem(QUEUE_KEY, JSON.stringify(q));
+      }
+      return q;
     } catch { return {}; }
   }
 
@@ -98,6 +118,7 @@ window.SyncEngine = (() => {
 
   // Supabase에 데이터 Push 
   async function pushToSupabase(key, payload) {
+    if (SERVER_AUTHORITATIVE_KEYS.has(key)) return false;
     const user = window.Auth?.getUser();
     if (!user || !window.supabaseClient) return false;
     
@@ -127,6 +148,11 @@ window.SyncEngine = (() => {
     let updated = false;
 
     for (const k of keys) {
+      if (SERVER_AUTHORITATIVE_KEYS.has(k)) {
+        delete q[k];
+        updated = true;
+        continue;
+      }
       const success = await pushToSupabase(k, q[k]);
       if (success) {
         delete q[k];
@@ -136,13 +162,6 @@ window.SyncEngine = (() => {
     
     if (updated) saveQueue(q);
   }
-
-  // Server-authoritative keys: these must only be mutated through server RPC,
-  // never pushed back to cloud via generic LWW sync.
-  const SERVER_AUTHORITATIVE_KEYS = new Set([
-    'aiden_canonical_weekly_vocabulary_v1',
-    'englishWeeklyWords'
-  ]);
 
   // 서버의 최신 데이터를 가져와서 로컬 localStorage 교체 (최종 기록 우선)
   // canonical weekly vocabulary는 server-authoritative: 항상 remote가 authority.
@@ -235,6 +254,8 @@ window.SyncEngine = (() => {
   }
 
   function pushStats(key, data) {
+    if (SERVER_AUTHORITATIVE_KEYS.has(key)) return;
+    if (!data) return;
     if (!data._updated_at) data._updated_at = Date.now();
     const q = getQueue();
     q[key] = data;
@@ -263,5 +284,13 @@ window.SyncEngine = (() => {
     pullAndMerge(DEFAULT_PULL_KEYS);
   });
 
-  return { pushStats, pullAndMerge };
+  return {
+    pushStats,
+    pullAndMerge,
+    flushQueue,
+    getQueue,
+    pushToSupabase,
+    SERVER_AUTHORITATIVE_KEYS
+  };
 })();
+

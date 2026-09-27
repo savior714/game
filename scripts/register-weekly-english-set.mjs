@@ -236,7 +236,7 @@ export async function executeIngestionFlow({
 
   const allowedStatuses = [
     'REGISTERED_NEW', 'REGISTERED_REVISION', 'REGISTERED_CONFIRMED_REVISION',
-    'NO_OP', 'NEEDS_CONFIRMATION', 'CONFIRMATION_STALE',
+    'NO_OP', 'NEEDS_CONFIRMATION', 'CONFIRMATION_STALE', 'REJECTED_CONFIRMATION',
     'REJECTED_INVALID', 'UNAUTHORIZED'
   ];
   if (!regRes || !allowedStatuses.includes(regRes.status)) {
@@ -247,7 +247,7 @@ export async function executeIngestionFlow({
   }
 
   // If requires confirmation, stale, invalid or unauthorized, return immediately
-  if (['NEEDS_CONFIRMATION', 'CONFIRMATION_STALE', 'REJECTED_INVALID', 'UNAUTHORIZED'].includes(regRes.status)) {
+  if (['NEEDS_CONFIRMATION', 'CONFIRMATION_STALE', 'REJECTED_CONFIRMATION', 'REJECTED_INVALID', 'UNAUTHORIZED'].includes(regRes.status)) {
     return regRes;
   }
 

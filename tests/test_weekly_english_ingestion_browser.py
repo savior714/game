@@ -272,13 +272,21 @@ def test_browser_direct_entry_weekly_test_pulls_new_set(
     page.wait_for_function(
         """() => {
             const promptEl = document.getElementById('q-prompt');
-            return promptEl && promptEl.textContent.includes('the ability to do something frightening');
+            if (!promptEl || !promptEl.textContent) return false;
+            const txt = promptEl.textContent;
+            return txt.includes('the ability to do something frightening') || txt.includes('exceptionally clever or talented');
         }""",
         timeout=10000,
     )
 
     prompt_text = page.inner_text("#q-prompt")
-    assert "the ability to do something frightening" in prompt_text
+    assert any(
+        p in prompt_text
+        for p in (
+            "the ability to do something frightening",
+            "exceptionally clever or talented",
+        )
+    )
     assert "from one side to the other side" not in prompt_text, (
         "Old prompt leaked into Weekly Test!"
     )

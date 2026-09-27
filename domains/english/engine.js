@@ -72,6 +72,7 @@ let recentQuestions = []; // 최근 10단어 (중복 방지용 키)
 let weeklyWords = []; // 보호자가 등록한 주간 시험 단어
 if (typeof window !== 'undefined') {
   window.getWeeklyWords = () => weeklyWords;
+  window.loadWeeklyWords = loadWeeklyWords;
 }
 let weeklyTypeHistory = {}; // 단어/아이템별 출제 유형 기록
 

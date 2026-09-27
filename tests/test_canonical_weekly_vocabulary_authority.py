@@ -355,7 +355,21 @@ def test_guardian_word_admission_and_unknown_words() -> None:
     """
     harness = f"""
 const window = globalThis;
+window.alert = function () {{}};
+window.confirm = function () {{ return true; }};
 window.addEventListener = function () {{}};
+if (typeof navigator !== 'undefined') {{
+  try {{
+    Object.defineProperty(navigator, 'onLine', {{ value: true, configurable: true, writable: true }});
+  }} catch (e) {{
+    navigator.onLine = true;
+  }}
+}} else {{
+  window.navigator = {{ onLine: true }};
+}}
+window.Auth = {{
+  getUser() {{ return {{ id: 'guardian-user-1' }}; }}
+}};
 const storageMap = {{}};
 const localStorage = {{
   getItem(k) {{ return Object.prototype.hasOwnProperty.call(storageMap, k) ? storageMap[k] : null; }},
@@ -369,6 +383,53 @@ window.SyncEngine = {{
   pushStats(k, v) {{
     pushedSyncKey = k;
     pushedSyncData = v;
+  }}
+}};
+
+let rpcCalledWith = null;
+let serverPayload = null;
+window.supabaseClient = {{
+  async rpc(fn, args) {{
+    if (fn === 'register_weekly_english_set_as_guardian') {{
+      rpcCalledWith = args;
+      const current = window.WeeklyVocabularyStore.getCurrentSet();
+      serverPayload = {{
+        schemaVersion: 1,
+        setId: current.setId,
+        revision: (current.revision || 1) + 1,
+        _mutationAuthority: 'server_rpc',
+        items: args.p_candidate.items.map(it => ({{
+          itemId: `${{current.setId}}_${{it.word}}`,
+          word: it.word,
+          answer: it.word,
+          prompt: it.academyDescription || it.word,
+          academyDescription: it.academyDescription || it.word,
+          ko: it.ko || '',
+          icon: it.icon || ''
+        }}))
+      }};
+      return {{ data: {{ status: 'REGISTERED_REVISION' }}, error: null }};
+    }}
+    return {{ data: null, error: new Error('Unknown RPC') }};
+  }},
+  from(tbl) {{
+    return {{
+      select(cols) {{
+        return {{
+          eq(col1, val1) {{
+            return {{
+              eq(col2, val2) {{
+                return {{
+                  async single() {{
+                    return {{ data: {{ payload: serverPayload }}, error: null }};
+                  }}
+                }};
+              }}
+            }};
+          }}
+        }};
+      }}
+    }};
   }}
 }};
 
@@ -389,29 +450,32 @@ window.document = {{
 if (typeof WORDS !== 'undefined') window.WORDS = WORDS;
 {GUARDIAN_JS.read_text(encoding="utf-8")}
 
-// 1. resolveWeeklyWord resolution tests
-const knownResolved = resolveWeeklyWord('apple', window.WORDS);
-const unknownResolved = resolveWeeklyWord('curiosity', window.WORDS);
-const hyphenResolved = resolveWeeklyWord('well-being', window.WORDS);
-const invalidResolved = resolveWeeklyWord('1234invalid!', window.WORDS);
+(async () => {{
+  // 1. resolveWeeklyWord resolution tests
+  const knownResolved = resolveWeeklyWord('apple', window.WORDS);
+  const unknownResolved = resolveWeeklyWord('curiosity', window.WORDS);
+  const hyphenResolved = resolveWeeklyWord('well-being', window.WORDS);
+  const invalidResolved = resolveWeeklyWord('1234invalid!', window.WORDS);
 
-// 2. addWeeklyWord for word NOT in WORDS catalog
-document.getElementById('ww-en').value = 'curiosity';
-addWeeklyWord();
+  // 2. addWeeklyWord for word NOT in WORDS catalog
+  document.getElementById('ww-en').value = 'curiosity';
+  await addWeeklyWord();
 
-const canonicalAfterAdd = window.WeeklyVocabularyStore.getCurrentSet();
-const curiosityItem = canonicalAfterAdd.items.find(it => it.word === 'curiosity');
+  const canonicalAfterAdd = window.WeeklyVocabularyStore.getCurrentSet();
+  const curiosityItem = canonicalAfterAdd.items.find(it => it.word === 'curiosity');
 
-console.log(JSON.stringify({{
-  knownResolved,
-  unknownResolved,
-  hyphenResolved,
-  invalidResolved,
-  hasCuriosity: Boolean(curiosityItem),
-  curiosityItem,
-  pushedSyncKey,
-  pushedSyncCount: Array.isArray(pushedSyncData) ? pushedSyncData.length : null
-}}));
+  console.log(JSON.stringify({{
+    knownResolved,
+    unknownResolved,
+    hyphenResolved,
+    invalidResolved,
+    hasCuriosity: Boolean(curiosityItem),
+    curiosityItem,
+    pushedSyncKey,
+    rpcCalled: Boolean(rpcCalledWith),
+    mutationAuthority: canonicalAfterAdd._mutationAuthority
+  }}));
+}})();
 """
     result = subprocess.run(
         [_node(), "-e", harness],
@@ -437,12 +501,13 @@ console.log(JSON.stringify({{
     # 4. Invalid token rejected
     assert payload["invalidResolved"] is None
 
-    # 5. Successfully added to canonical store and pushed to SyncEngine
+    # 5. Successfully added via server RPC and hydrated into canonical store (no generic pushStats)
     assert payload["hasCuriosity"] is True
     assert payload["curiosityItem"]["word"] == "curiosity"
     assert payload["curiosityItem"]["answer"] == "curiosity"
-    assert payload["pushedSyncKey"] == "englishWeeklyWords"
-    assert payload["pushedSyncCount"] is not None
+    assert payload["rpcCalled"] is True
+    assert payload["pushedSyncKey"] is None
+    assert payload["mutationAuthority"] == "server_rpc"
 
 
 def test_primary_criterion_weekly_set_a_to_b_replacement_and_no_leakage() -> None:

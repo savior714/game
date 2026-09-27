@@ -295,3 +295,71 @@ def test_primary_criterion_full_lifecycle_and_security_gate() -> None:
     # 5 pairs modified → needs confirmation (#3)
     assert payload["modified5PairsNeedsConf"] == "NEEDS_CONFIRMATION"
     assert payload["modified5PairsSymDiff"] == 10  # 5 added + 5 removed
+
+    # ── OPERATIONAL CLOSURE ASSERTIONS ───────────────────────
+    # Write path enforcement
+    assert payload["pushStatsCanonicalBlocked"] is True
+    assert payload["preExistingQueuePurged"] is True
+
+    # Atypical confirmation fail-closed
+    assert payload["atypical13EmptyConfRejected"] is True
+    assert payload["atypical13WrongCandFpRejected"] is True
+    assert payload["atypical13ValidConfAccepted"] is True
+    assert payload["newDateAtypicalInvalidRejected"] is True
+    assert payload["newDateAtypicalValidAccepted"] is True
+    assert payload["firstEverAtypicalNeedsConf"] is True
+    assert payload["firstEverAtypicalEmptyConfRejected"] is True
+    assert payload["firstEverAtypicalValidConfAccepted"] is True
+
+    # Guardian manual editing server RPC integration
+    assert payload["guardianAddMutationSuccess"] is True
+    assert payload["guardianAddHydrated"] is True
+    assert payload["guardianAddServerOriginPreserved"] is True
+    assert payload["guardianDelMutationSuccess"] is True
+    assert payload["guardianDelHydrated"] is True
+
+    # Agent onboarding token minting
+    assert payload["tokenMintCreated"] is True
+
+
+def test_guardian_ui_and_token_onboarding_elements() -> None:
+    """Verifies Guardian UI contains agent token management elements and server mutation bindings."""
+    guardian_html = (ROOT / "domains/reward/guardian/index.html").read_text(
+        encoding="utf-8"
+    )
+    guardian_js = (ROOT / "domains/reward/guardian/guardian.js").read_text(
+        encoding="utf-8"
+    )
+
+    # HTML elements
+    assert "ww-agent-token-section" in guardian_html
+    assert "agent-token-mint-result" in guardian_html
+    assert "agent-token-desc-input" in guardian_html
+    assert "agent-token-list-container" in guardian_html
+    assert 'data-action="mint-agent-token"' in guardian_html
+    assert 'data-action="copy-minted-token"' in guardian_html
+
+    # JS bindings
+    assert "mutateWeeklyWordsAsGuardian" in guardian_js
+    assert "register_weekly_english_set_as_guardian" in guardian_js
+    assert "loadAgentTokens" in guardian_js
+    assert "mintAgentToken" in guardian_js
+    assert "revokeAgentToken" in guardian_js
+    assert "copyMintedToken" in guardian_js
+    # Ensure no generic pushStats in saveLocalMutation or guardian
+    assert "SyncEngine.pushStats('englishWeeklyWords'" not in guardian_js
+
+
+def test_write_path_server_authoritative_block() -> None:
+    """Verifies that generic write paths block server-authoritative keys."""
+    sync_code = SYNC_ENGINE_JS.read_text(encoding="utf-8")
+    store_code = STORE_JS.read_text(encoding="utf-8")
+
+    # pushStats must block server authoritative keys
+    assert "SERVER_AUTHORITATIVE_KEYS.has(key)" in sync_code
+    # pushToSupabase must block server authoritative keys
+    assert "SERVER_AUTHORITATIVE_KEYS.has(key)" in sync_code
+    # getQueue and flushQueue must clean server authoritative keys
+    assert "SERVER_AUTHORITATIVE_KEYS.has(k)" in sync_code
+    # WeeklyVocabularyStore.saveLocalMutation must not pushStats
+    assert "window.SyncEngine.pushStats" not in store_code

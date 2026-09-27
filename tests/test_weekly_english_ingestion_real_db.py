@@ -21,6 +21,7 @@ Verifies:
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 
 import pytest
@@ -55,10 +56,15 @@ def _is_pg_available() -> bool:
         return False
 
 
-pytestmark = pytest.mark.skipif(
-    not _is_pg_available(),
-    reason="PostgreSQL test container (aiden-test-pg) is not available",
-)
+def setup_module() -> None:
+    if not _is_pg_available():
+        if os.environ.get("WEEKLY_INGESTION_REAL_DB_REQUIRED") == "1":
+            pytest.fail(
+                "PostgreSQL test container (aiden-test-pg) is required by "
+                "WEEKLY_INGESTION_REAL_DB_REQUIRED=1 but is not available"
+            )
+        else:
+            pytest.skip("PostgreSQL test container (aiden-test-pg) is not available")
 
 
 def _exec_psql(sql: str, user_id: str | None = None) -> str:
@@ -194,6 +200,9 @@ def test_real_db_token_provisioning_and_security() -> None:
 
     # 2. Authenticated mint
     user_id = "11111111-1111-1111-1111-111111111111"
+    _exec_psql(
+        f"DELETE FROM public.weekly_ingestion_tokens WHERE user_id = '{user_id}'::uuid;"
+    )
     mint_sql = (
         "SELECT public.create_weekly_english_agent_token('Primary Agent Token')::text;"
     )
@@ -248,6 +257,12 @@ def test_real_db_cross_user_isolation() -> None:
     """Verifies that User A's token cannot read or modify User B's vocabulary."""
     user_a = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
     user_b = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+
+    _exec_psql(f"""
+        DELETE FROM public.user_data WHERE user_id IN ('{user_a}'::uuid, '{user_b}'::uuid);
+        DELETE FROM public.weekly_ingestion_tokens WHERE user_id IN ('{user_a}'::uuid, '{user_b}'::uuid);
+        DELETE FROM public.weekly_vocabulary_history WHERE user_id IN ('{user_a}'::uuid, '{user_b}'::uuid);
+    """)
 
     # Create tokens for User A and User B
     token_a = json.loads(
@@ -314,6 +329,12 @@ def test_real_db_primary_lifecycle_e2e() -> None:
     10. New test date (Set B) -> REGISTERED_NEW (rev 1)
     """
     user_id = "cccccccc-cccc-cccc-cccc-cccccccccccc"
+
+    _exec_psql(f"""
+        DELETE FROM public.user_data WHERE user_id = '{user_id}'::uuid;
+        DELETE FROM public.weekly_vocabulary_history WHERE user_id = '{user_id}'::uuid;
+        DELETE FROM public.weekly_ingestion_tokens WHERE user_id = '{user_id}'::uuid;
+    """)
 
     # Step 1: Mint token
     mint_res = json.loads(
@@ -453,6 +474,7 @@ def test_real_db_primary_lifecycle_e2e() -> None:
     # Step 8: Confirmed override
     confirmation = json.dumps(
         {
+            "reason": "LARGE_SYMMETRIC_DIFF",
             "expectedActiveFingerprint": active_fp_rev2,
             "expectedActiveRevision": 2,
             "candidateFingerprint": candidate_fp,
@@ -504,6 +526,7 @@ def test_real_db_primary_lifecycle_e2e() -> None:
 
     stale_conf = json.dumps(
         {
+            "reason": "LARGE_SYMMETRIC_DIFF",
             "expectedActiveFingerprint": active_fp_rev2,  # Stale: pointing to rev 2 instead of rev 4
             "expectedActiveRevision": 2,
             "candidateFingerprint": preview["candidateFingerprint"],
@@ -534,6 +557,13 @@ def test_real_db_primary_lifecycle_e2e() -> None:
 def test_real_db_validations_and_rollback() -> None:
     """Verifies that invalid candidate inputs fail-closed and roll back cleanly."""
     user_id = "dddddddd-dddd-dddd-dddd-dddddddddddd"
+
+    _exec_psql(f"""
+        DELETE FROM public.user_data WHERE user_id = '{user_id}'::uuid;
+        DELETE FROM public.weekly_vocabulary_history WHERE user_id = '{user_id}'::uuid;
+        DELETE FROM public.weekly_ingestion_tokens WHERE user_id = '{user_id}'::uuid;
+    """)
+
     token = json.loads(
         _exec_psql(
             "SELECT public.create_weekly_english_agent_token('Validation Test')::text;",
@@ -649,3 +679,471 @@ def test_real_db_validations_and_rollback() -> None:
         )
     )
     assert res_multi["status"] == "REGISTERED_NEW"
+
+
+# ── 6. RLS Direct Upsert Authority Enforcement ─────────────────
+
+
+def test_real_db_direct_user_data_upsert_blocked_by_rls() -> None:
+    """Verifies:
+    1. Authenticated user cannot directly UPSERT into aiden_canonical_weekly_vocabulary_v1
+    2. Authenticated user cannot directly UPSERT into englishWeeklyWords
+    3. Normal non-authoritative keys (e.g., mathGameStats) are permitted
+    """
+    user_id = "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee"
+    _exec_psql(f"DELETE FROM public.user_data WHERE user_id = '{user_id}'::uuid;")
+
+    # 1. Direct UPSERT on canonical key blocked
+    sql_canonical = f"""
+    SET ROLE authenticated;
+    SET request.jwt.claim.sub = '{user_id}';
+    INSERT INTO public.user_data (user_id, data_key, payload)
+    VALUES ('{user_id}'::uuid, 'aiden_canonical_weekly_vocabulary_v1', '{{"hacked": true}}'::jsonb)
+    ON CONFLICT (user_id, data_key) DO UPDATE SET payload = EXCLUDED.payload;
+    RESET ROLE;
+    """
+    res_can = subprocess.run(
+        [
+            "docker",
+            "exec",
+            "-i",
+            CONTAINER_NAME,
+            "psql",
+            "-U",
+            DB_USER,
+            "-d",
+            DB_NAME,
+            "-A",
+            "-t",
+            "-q",
+        ],
+        input=sql_canonical,
+        capture_output=True,
+        text=True,
+    )
+    assert (
+        res_can.returncode != 0
+        or "violates row-level security policy" in res_can.stderr
+    )
+
+    # 2. Direct UPSERT on legacy projection blocked
+    sql_legacy = f"""
+    SET ROLE authenticated;
+    SET request.jwt.claim.sub = '{user_id}';
+    INSERT INTO public.user_data (user_id, data_key, payload)
+    VALUES ('{user_id}'::uuid, 'englishWeeklyWords', '[]'::jsonb)
+    ON CONFLICT (user_id, data_key) DO UPDATE SET payload = EXCLUDED.payload;
+    RESET ROLE;
+    """
+    res_leg = subprocess.run(
+        [
+            "docker",
+            "exec",
+            "-i",
+            CONTAINER_NAME,
+            "psql",
+            "-U",
+            DB_USER,
+            "-d",
+            DB_NAME,
+            "-A",
+            "-t",
+            "-q",
+        ],
+        input=sql_legacy,
+        capture_output=True,
+        text=True,
+    )
+    assert (
+        res_leg.returncode != 0
+        or "violates row-level security policy" in res_leg.stderr
+    )
+
+    # 3. Normal key permitted
+    sql_normal = f"""
+    SET ROLE authenticated;
+    SET request.jwt.claim.sub = '{user_id}';
+    INSERT INTO public.user_data (user_id, data_key, payload)
+    VALUES ('{user_id}'::uuid, 'mathGameStats', '{{"score": 100}}'::jsonb)
+    ON CONFLICT (user_id, data_key) DO UPDATE SET payload = EXCLUDED.payload;
+    RESET ROLE;
+    """
+    _exec_psql(sql_normal)
+    normal_row = json.loads(
+        _exec_psql(
+            f"SELECT payload::text FROM public.user_data WHERE user_id = '{user_id}'::uuid AND data_key = 'mathGameStats';"
+        )
+    )
+    assert normal_row["score"] == 100
+
+
+# ── 7. Guardian Manual Modification RPC ─────────────────────────
+
+
+def test_real_db_guardian_mutation_e2e() -> None:
+    """Verifies that Guardian manual edits go through designated server RPC,
+    write through SECURITY DEFINER, preserve _mutationAuthority='server_rpc',
+    and fail clearly when unauthenticated.
+    """
+    user_id = "ffffffff-ffff-ffff-ffff-ffffffffffff"
+    _exec_psql(f"""
+        DELETE FROM public.user_data WHERE user_id = '{user_id}'::uuid;
+        DELETE FROM public.weekly_vocabulary_history WHERE user_id = '{user_id}'::uuid;
+    """)
+
+    # 1. Unauthenticated call fails
+    cand_10 = json.dumps({"testDate": "2026-09-25", "items": SAMPLE_10_ITEMS})
+    unauth_res = json.loads(
+        _exec_psql(
+            f"SELECT public.register_weekly_english_set_as_guardian('{cand_10}'::jsonb)::text;",
+            user_id="",
+        )
+    )
+    assert unauth_res["status"] == "UNAUTHORIZED"
+
+    # 2. Authenticated Guardian creates set
+    auth_sql = f"""
+    SET ROLE authenticated;
+    SET request.jwt.claim.sub = '{user_id}';
+    SELECT public.register_weekly_english_set_as_guardian('{cand_10}'::jsonb)::text;
+    RESET ROLE;
+    """
+    res_reg = json.loads(_exec_psql(auth_sql))
+    assert res_reg["status"] == "REGISTERED_NEW"
+    assert res_reg["revision"] == 1
+
+    # Verify user_data payload has _mutationAuthority = 'server_rpc'
+    row = json.loads(
+        _exec_psql(
+            f"SELECT payload::text FROM public.user_data WHERE user_id = '{user_id}'::uuid AND data_key = 'aiden_canonical_weekly_vocabulary_v1';"
+        )
+    )
+    assert row["_mutationAuthority"] == "server_rpc"
+    assert row["revision"] == 1
+    assert len(row["items"]) == 10
+
+
+# ── 8. ATYPICAL_ITEM_COUNT Fail-Closed Confirmations ────────────
+
+
+def test_real_db_atypical_confirmation_fail_closed_and_accept() -> None:
+    """Verifies atypical confirmation paths fail-closed on malformed/stale confirmations
+    and succeed only with strict valid confirmation.
+    """
+    user_id = "12121212-1212-1212-1212-121212121212"
+    _exec_psql(f"""
+        DELETE FROM public.user_data WHERE user_id = '{user_id}'::uuid;
+        DELETE FROM public.weekly_vocabulary_history WHERE user_id = '{user_id}'::uuid;
+        DELETE FROM public.weekly_ingestion_tokens WHERE user_id = '{user_id}'::uuid;
+    """)
+
+    token = json.loads(
+        _exec_psql(
+            "SELECT public.create_weekly_english_agent_token('Atypical Test')::text;",
+            user_id=user_id,
+        )
+    )["token"]
+
+    # 1. Baseline 10 items
+    cand_10 = json.dumps({"testDate": "2026-09-25", "items": SAMPLE_10_ITEMS})
+    res_10 = json.loads(
+        _exec_psql(
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_10}'::jsonb)::text;"
+        )
+    )
+    assert res_10["status"] == "REGISTERED_NEW"
+    active_fp = res_10["contentFingerprint"]
+    active_rev = res_10["revision"]
+
+    # 2. 13 items candidate on same date
+    extra_3 = [
+        {"word": "word11", "academyDescription": "d11"},
+        {"word": "word12", "academyDescription": "d12"},
+        {"word": "word13", "academyDescription": "d13"},
+    ]
+    cand_13 = json.dumps({"testDate": "2026-09-25", "items": SAMPLE_10_ITEMS + extra_3})
+
+    # Needs confirmation without payload
+    res_needs = json.loads(
+        _exec_psql(
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_13}'::jsonb)::text;"
+        )
+    )
+    assert res_needs["status"] == "NEEDS_CONFIRMATION"
+    assert res_needs["reason"] == "ATYPICAL_ITEM_COUNT"
+    candidate_fp = res_needs["candidateFingerprint"]
+
+    # Empty confirmation -> REJECTED_CONFIRMATION
+    res_empty = json.loads(
+        _exec_psql(
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_13}'::jsonb, '{{}}'::jsonb)::text;"
+        )
+    )
+    assert res_empty["status"] == "REJECTED_CONFIRMATION"
+
+    # Wrong reason -> REJECTED_CONFIRMATION
+    bad_reason_conf = json.dumps(
+        {
+            "reason": "LARGE_SYMMETRIC_DIFF",
+            "candidateFingerprint": candidate_fp,
+            "expectedActiveFingerprint": active_fp,
+            "expectedActiveRevision": active_rev,
+        }
+    )
+    res_bad_reason = json.loads(
+        _exec_psql(
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_13}'::jsonb, '{bad_reason_conf}'::jsonb)::text;"
+        )
+    )
+    assert res_bad_reason["status"] == "REJECTED_CONFIRMATION"
+
+    # Wrong candidate fingerprint -> CONFIRMATION_STALE or REJECTED_CONFIRMATION
+    wrong_cand_conf = json.dumps(
+        {
+            "reason": "ATYPICAL_ITEM_COUNT",
+            "candidateFingerprint": "wrong_fingerprint_hash_value",
+            "expectedActiveFingerprint": active_fp,
+            "expectedActiveRevision": active_rev,
+        }
+    )
+    res_wrong_cand = json.loads(
+        _exec_psql(
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_13}'::jsonb, '{wrong_cand_conf}'::jsonb)::text;"
+        )
+    )
+    assert res_wrong_cand["status"] in ("CONFIRMATION_STALE", "REJECTED_CONFIRMATION")
+
+    # Stale active revision -> CONFIRMATION_STALE
+    stale_active_conf = json.dumps(
+        {
+            "reason": "ATYPICAL_ITEM_COUNT",
+            "candidateFingerprint": candidate_fp,
+            "expectedActiveFingerprint": active_fp,
+            "expectedActiveRevision": 999,
+        }
+    )
+    res_stale_active = json.loads(
+        _exec_psql(
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_13}'::jsonb, '{stale_active_conf}'::jsonb)::text;"
+        )
+    )
+    assert res_stale_active["status"] == "CONFIRMATION_STALE"
+
+    # Valid confirmation -> REGISTERED_CONFIRMED_REVISION
+    valid_conf = json.dumps(
+        {
+            "reason": "ATYPICAL_ITEM_COUNT",
+            "candidateFingerprint": candidate_fp,
+            "expectedActiveFingerprint": active_fp,
+            "expectedActiveRevision": active_rev,
+        }
+    )
+    res_valid = json.loads(
+        _exec_psql(
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_13}'::jsonb, '{valid_conf}'::jsonb)::text;"
+        )
+    )
+    assert res_valid["status"] == "REGISTERED_CONFIRMED_REVISION"
+    assert res_valid["itemCount"] == 13
+
+
+def test_real_db_new_date_atypical_confirmation() -> None:
+    """Verifies atypical confirmation on different date behaves fail-closed and registers new week."""
+    user_id = "34343434-3434-3434-3434-343434343434"
+    _exec_psql(f"""
+        DELETE FROM public.user_data WHERE user_id = '{user_id}'::uuid;
+        DELETE FROM public.weekly_vocabulary_history WHERE user_id = '{user_id}'::uuid;
+        DELETE FROM public.weekly_ingestion_tokens WHERE user_id = '{user_id}'::uuid;
+    """)
+
+    token = json.loads(
+        _exec_psql(
+            "SELECT public.create_weekly_english_agent_token('New Date Atypical')::text;",
+            user_id=user_id,
+        )
+    )["token"]
+
+    # Existing active set on 2026-09-25
+    cand_10 = json.dumps({"testDate": "2026-09-25", "items": SAMPLE_10_ITEMS})
+    res_prev = json.loads(
+        _exec_psql(
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_10}'::jsonb)::text;"
+        )
+    )
+    active_fp = res_prev["contentFingerprint"]
+    active_rev = res_prev["revision"]
+
+    # 13 items on new date 2026-10-02
+    extra_3 = [
+        {"word": "word11", "academyDescription": "d11"},
+        {"word": "word12", "academyDescription": "d12"},
+        {"word": "word13", "academyDescription": "d13"},
+    ]
+    cand_new_13 = json.dumps(
+        {"testDate": "2026-10-02", "items": SAMPLE_10_ITEMS + extra_3}
+    )
+
+    res_needs = json.loads(
+        _exec_psql(
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_new_13}'::jsonb)::text;"
+        )
+    )
+    assert res_needs["status"] == "NEEDS_CONFIRMATION"
+    assert res_needs["reason"] == "ATYPICAL_ITEM_COUNT"
+    candidate_fp = res_needs["candidateFingerprint"]
+
+    # Invalid confirmation rejected
+    res_bad = json.loads(
+        _exec_psql(
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_new_13}'::jsonb, '{{}}'::jsonb)::text;"
+        )
+    )
+    assert res_bad["status"] == "REJECTED_CONFIRMATION"
+
+    # Valid confirmation accepted -> REGISTERED_NEW
+    valid_conf = json.dumps(
+        {
+            "reason": "ATYPICAL_ITEM_COUNT",
+            "candidateFingerprint": candidate_fp,
+            "expectedActiveFingerprint": active_fp,
+            "expectedActiveRevision": active_rev,
+        }
+    )
+    res_valid = json.loads(
+        _exec_psql(
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_new_13}'::jsonb, '{valid_conf}'::jsonb)::text;"
+        )
+    )
+    assert res_valid["status"] == "REGISTERED_CONFIRMED_REVISION"
+    assert res_valid["setId"] == "2026-10-02"
+    assert res_valid["itemCount"] == 13
+
+
+def test_real_db_first_ever_atypical_confirmation() -> None:
+    """Verifies first-ever atypical candidate (no prior active set) requires confirmation and accepts."""
+    user_id = "56565656-5656-5656-5656-565656565656"
+    _exec_psql(f"""
+        DELETE FROM public.user_data WHERE user_id = '{user_id}'::uuid;
+        DELETE FROM public.weekly_vocabulary_history WHERE user_id = '{user_id}'::uuid;
+        DELETE FROM public.weekly_ingestion_tokens WHERE user_id = '{user_id}'::uuid;
+    """)
+
+    token = json.loads(
+        _exec_psql(
+            "SELECT public.create_weekly_english_agent_token('First Ever Atypical')::text;",
+            user_id=user_id,
+        )
+    )["token"]
+
+    extra_3 = [
+        {"word": "word11", "academyDescription": "d11"},
+        {"word": "word12", "academyDescription": "d12"},
+        {"word": "word13", "academyDescription": "d13"},
+    ]
+    cand_first_13 = json.dumps(
+        {"testDate": "2026-09-25", "items": SAMPLE_10_ITEMS + extra_3}
+    )
+
+    res_needs = json.loads(
+        _exec_psql(
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_first_13}'::jsonb)::text;"
+        )
+    )
+    assert res_needs["status"] == "NEEDS_CONFIRMATION"
+    assert res_needs["reason"] == "ATYPICAL_ITEM_COUNT"
+    candidate_fp = res_needs["candidateFingerprint"]
+
+    # Empty confirmation rejected
+    res_empty = json.loads(
+        _exec_psql(
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_first_13}'::jsonb, '{{}}'::jsonb)::text;"
+        )
+    )
+    assert res_empty["status"] == "REJECTED_CONFIRMATION"
+
+    # Valid confirmation for first-ever set (no active set to match)
+    valid_conf = json.dumps(
+        {
+            "reason": "ATYPICAL_ITEM_COUNT",
+            "candidateFingerprint": candidate_fp,
+        }
+    )
+    res_valid = json.loads(
+        _exec_psql(
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_first_13}'::jsonb, '{valid_conf}'::jsonb)::text;"
+        )
+    )
+    assert res_valid["status"] == "REGISTERED_CONFIRMED_REVISION"
+    assert res_valid["itemCount"] == 13
+
+
+# ── 9. Token Management RPCs (Onboarding & Revocation) ──────────
+
+
+def test_real_db_token_list_and_revoke_rpc() -> None:
+    """Verifies list_weekly_english_agent_tokens and revoke_weekly_english_agent_token RPCs."""
+    user_id = "78787878-7878-7878-7878-787878787878"
+    _exec_psql(
+        f"DELETE FROM public.weekly_ingestion_tokens WHERE user_id = '{user_id}'::uuid;"
+    )
+
+    # Mint token 1
+    mint_res = json.loads(
+        _exec_psql(
+            "SELECT public.create_weekly_english_agent_token('Onboarding Agent Token')::text;",
+            user_id=user_id,
+        )
+    )
+    token_id = mint_res["tokenId"]
+    token = mint_res["token"]
+
+    # List tokens via RPC
+    list_res = json.loads(
+        _exec_psql(
+            "SELECT public.list_weekly_english_agent_tokens()::text;",
+            user_id=user_id,
+        )
+    )
+    assert list_res["status"] == "OK"
+    assert len(list_res["tokens"]) == 1
+    t0 = list_res["tokens"][0]
+    assert t0["id"] == token_id
+    assert t0["isRevoked"] is False
+
+    # Revoke token via RPC
+    revoke_res = json.loads(
+        _exec_psql(
+            f"SELECT public.revoke_weekly_english_agent_token('{token_id}'::uuid)::text;",
+            user_id=user_id,
+        )
+    )
+    assert revoke_res["status"] == "REVOKED"
+
+    # Verify ingestion with revoked token is UNAUTHORIZED
+    cand_10 = json.dumps({"testDate": "2026-09-25", "items": SAMPLE_10_ITEMS})
+    res_ingest = json.loads(
+        _exec_psql(
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_10}'::jsonb)::text;"
+        )
+    )
+    assert res_ingest["status"] == "UNAUTHORIZED"
+
+
+# ── 10. Fail-Closed Acceptance Verification Mode ────────────────
+
+
+def test_real_db_required_mode_fails_when_unavailable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Verifies that when WEEKLY_INGESTION_REAL_DB_REQUIRED=1 and the DB is unavailable,
+    the suite fails closed rather than skipping.
+    """
+    import sys
+
+    mod = sys.modules[__name__]
+    monkeypatch.setenv("WEEKLY_INGESTION_REAL_DB_REQUIRED", "1")
+    monkeypatch.setattr(mod, "_is_pg_available", lambda: False)
+    with pytest.raises(
+        pytest.fail.Exception, match="required by WEEKLY_INGESTION_REAL_DB_REQUIRED"
+    ):
+        setup_module()

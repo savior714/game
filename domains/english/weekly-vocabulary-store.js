@@ -334,12 +334,6 @@
       storage.setItem(CANONICAL_STORAGE_KEY, JSON.stringify(set));
       var legacyProj = toLegacyProjection(set);
       storage.setItem(LEGACY_STORAGE_KEY, JSON.stringify(legacyProj));
-      if (typeof window !== 'undefined' && window.SyncEngine && typeof window.SyncEngine.pushStats === 'function') {
-        try {
-          window.SyncEngine.pushStats(CANONICAL_STORAGE_KEY, set);
-          window.SyncEngine.pushStats(LEGACY_STORAGE_KEY, legacyProj);
-        } catch (syncErr) {}
-      }
       return true;
     } catch (e) {
       return false;

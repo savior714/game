@@ -83,7 +83,10 @@ function setSubject(sub) {
   // 주간 단어 섹션 노출 제어 (영어만)
   const wwSection = document.getElementById('weekly-words-section');
   if (wwSection) wwSection.style.display = (sub === 'english') ? 'block' : 'none';
-  if (sub === 'english') loadWeeklyWords();
+  if (sub === 'english') {
+    loadGuardianWeeklyWords();
+    loadAgentTokens();
+  }
 
   // 다른 공용 패널 복구
   const rewardSection = document.getElementById('reward-custom-section');
@@ -194,6 +197,24 @@ document.addEventListener('click', (e) => {
     case 'delete-weekly-word':
       if (window.deleteWeeklyWord) {
         window.deleteWeeklyWord(parseInt(target.dataset.idx, 10));
+      }
+      e.stopPropagation();
+      break;
+    case 'mint-agent-token':
+      if (window.mintAgentToken) {
+        window.mintAgentToken();
+      }
+      e.stopPropagation();
+      break;
+    case 'copy-minted-token':
+      if (window.copyMintedToken) {
+        window.copyMintedToken();
+      }
+      e.stopPropagation();
+      break;
+    case 'revoke-agent-token':
+      if (window.revokeAgentToken) {
+        window.revokeAgentToken(target.dataset.tokenId);
       }
       e.stopPropagation();
       break;
@@ -613,48 +634,125 @@ function deleteCustomReward(id) {
 // ──────────────────────────────────────────
 // 영어 주간 시험 단어 관리 (Weekly Words)
 // ──────────────────────────────────────────
-let weeklyWords = [];
-function loadWeeklyWords() {
+let guardianWeeklyWords = [];
+
+function loadGuardianWeeklyWords() {
   if (typeof WeeklyVocabularyStore !== 'undefined' && typeof WeeklyVocabularyStore.getCurrentSet === 'function') {
     const current = WeeklyVocabularyStore.getCurrentSet();
     const setIdEl = document.getElementById('ww-set-id');
     if (setIdEl && current && current.setId) {
       setIdEl.textContent = current.setId;
     }
-    weeklyWords = (current && Array.isArray(current.items)) ? current.items : [];
+    guardianWeeklyWords = (current && Array.isArray(current.items)) ? current.items : [];
   } else {
     const saved = localStorage.getItem('englishWeeklyWords');
-    weeklyWords = saved ? JSON.parse(saved) : [];
+    guardianWeeklyWords = saved ? JSON.parse(saved) : [];
   }
   renderWeeklyWords();
 }
-function saveWeeklyWords() {
-  if (typeof WeeklyVocabularyStore !== 'undefined' && typeof WeeklyVocabularyStore.getCurrentSet === 'function') {
-    var current = WeeklyVocabularyStore.getCurrentSet();
-    current.items = weeklyWords.map(function (w) {
-      return WeeklyVocabularyStore.createItem(current.setId, w);
-    });
-    WeeklyVocabularyStore.saveCurrentSet(current);
-  } else {
-    localStorage.setItem('englishWeeklyWords', JSON.stringify(weeklyWords));
+
+/**
+ * Guardian manual modification path:
+ * Must mutate via server RPC (register_weekly_english_set_as_guardian),
+ * read-back from cloud, and hydrateFromRemote into local store.
+ * Fails clearly when offline or not authenticated rather than queueing canonical mutations.
+ */
+async function mutateWeeklyWordsAsGuardian(itemsModifierFn) {
+  const user = window.Auth?.getUser();
+  if (!navigator.onLine || !user || !window.supabaseClient) {
+    alert('주간 단어 수정은 온라인 연결 및 보호자 로그인이 필요합니다.');
+    return false;
   }
-  if (window.SyncEngine && typeof window.SyncEngine.pushStats === 'function') {
-    var legacyProj = (typeof WeeklyVocabularyStore !== 'undefined' && typeof WeeklyVocabularyStore.toLegacyProjection === 'function')
-      ? WeeklyVocabularyStore.toLegacyProjection({ items: weeklyWords })
-      : weeklyWords;
-    try {
-      window.SyncEngine.pushStats('englishWeeklyWords', legacyProj);
-    } catch (e) {}
+
+  if (typeof WeeklyVocabularyStore === 'undefined' || typeof WeeklyVocabularyStore.getCurrentSet !== 'function') {
+    alert('주간 단어 저장소를 불러올 수 없습니다.');
+    return false;
+  }
+
+  const current = WeeklyVocabularyStore.getCurrentSet();
+  const itemsCopy = (current.items || []).slice();
+  const modifiedItems = itemsModifierFn(itemsCopy);
+  if (!modifiedItems) return false;
+
+  const candidate = {
+    testDate: current.testDate || current.setId,
+    items: modifiedItems.map(it => ({
+      word: it.word || it.answer || it.en,
+      academyDescription: it.academyDescription || it.prompt || it.word || it.answer || it.en,
+      ko: it.ko || '',
+      icon: it.icon || ''
+    }))
+  };
+
+  try {
+    let { data, error } = await window.supabaseClient.rpc('register_weekly_english_set_as_guardian', {
+      p_candidate: candidate
+    });
+
+    if (error) {
+      alert('단어 수정 실패: ' + (error.message || '서버 오류'));
+      return false;
+    }
+
+    if (data && data.status === 'NEEDS_CONFIRMATION') {
+      const ok = confirm((data.message || '단어 수 또는 내용 변경 확인이 필요합니다.') + '\n\n변경을 승인하고 계속할까요?');
+      if (!ok) return false;
+
+      const confirmationPayload = {
+        reason: data.reason,
+        candidateFingerprint: data.candidateFingerprint,
+        expectedActiveFingerprint: data.activeFingerprint,
+        expectedActiveRevision: data.activeRevision
+      };
+
+      const res2 = await window.supabaseClient.rpc('register_weekly_english_set_as_guardian', {
+        p_candidate: candidate,
+        p_confirmation: confirmationPayload
+      });
+
+      if (res2.error) {
+        alert('확인 승인 실패: ' + res2.error.message);
+        return false;
+      }
+      data = res2.data;
+    }
+
+    const acceptedStatuses = ['REGISTERED_NEW', 'REGISTERED_REVISION', 'REGISTERED_CONFIRMED_REVISION', 'NO_OP'];
+    if (!data || !acceptedStatuses.includes(data.status)) {
+      alert('단어 등록 실패: ' + (data?.message || data?.status || '알 수 없는 오류'));
+      return false;
+    }
+
+    // Read-back from user_data and hydrate
+    const { data: rowData, error: readErr } = await window.supabaseClient
+      .from('user_data')
+      .select('payload')
+      .eq('user_id', user.id)
+      .eq('data_key', 'aiden_canonical_weekly_vocabulary_v1')
+      .single();
+
+    if (rowData && rowData.payload) {
+      WeeklyVocabularyStore.hydrateFromRemote(rowData.payload);
+    }
+
+    loadGuardianWeeklyWords();
+    window.dispatchEvent(new CustomEvent('weekly-vocabulary-synced', { detail: { source: 'guardian-edit' } }));
+    return true;
+  } catch (err) {
+    console.error('Guardian mutation error:', err);
+    alert('단어 수정 중 오류가 발생했습니다: ' + err.message);
+    return false;
   }
 }
+
 function renderWeeklyWords() {
   const container = document.getElementById('ww-list');
   if (!container) return;
-  if (weeklyWords.length === 0) {
+  if (guardianWeeklyWords.length === 0) {
     container.innerHTML = '<div class="text-center py-4 text-xs text-slate-500 italic">등록된 주간 단어가 없습니다.</div>';
     return;
   }
-  container.innerHTML = weeklyWords.map((w, idx) => `
+  container.innerHTML = guardianWeeklyWords.map((w, idx) => `
     <div class="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10">
       <div class="flex items-center gap-3 min-w-0">
         ${w.icon ? `<span class="text-lg shrink-0">${w.icon}</span>` : ''}
@@ -670,6 +768,7 @@ function renderWeeklyWords() {
     </div>
   `).join('');
 }
+
 function resolveWeeklyWord(rawInput, wordsCatalog) {
   if (typeof rawInput !== 'string') return null;
   var normalized = rawInput.trim().normalize('NFKC').toLowerCase();
@@ -687,53 +786,201 @@ function resolveWeeklyWord(rawInput, wordsCatalog) {
   }
   return { en: normalized, ko: '', icon: '' };
 }
-function addWeeklyWord() {
-  var rawEn = document.getElementById('ww-en').value;
+
+async function addWeeklyWord() {
+  var inputEl = document.getElementById('ww-en');
+  var rawEn = inputEl ? inputEl.value : '';
   var resolved = resolveWeeklyWord(rawEn, window.WORDS || {});
   if (!resolved) {
     alert('올바른 영단어 형식이 아닙니다.');
     return;
   }
   var normalized = resolved.en;
-  var isDuplicate = weeklyWords.some(function(w) { return (w.word || w.en || w.answer) === normalized; });
+  var isDuplicate = guardianWeeklyWords.some(function(w) { return (w.word || w.en || w.answer) === normalized; });
   if (isDuplicate) {
     alert('이미 등록된 단어입니다.');
     return;
   }
-  if (typeof WeeklyVocabularyStore !== 'undefined' && typeof WeeklyVocabularyStore.getCurrentSet === 'function') {
-    var current = WeeklyVocabularyStore.getCurrentSet();
-    var newItem = WeeklyVocabularyStore.createItem(current.setId, {
+
+  const success = await mutateWeeklyWordsAsGuardian(function(items) {
+    const current = WeeklyVocabularyStore.getCurrentSet();
+    const newItem = WeeklyVocabularyStore.createItem(current.setId, {
       word: resolved.en,
       academyDescription: resolved.en,
       ko: resolved.ko,
       icon: resolved.icon
     });
-    current.items.push(newItem);
-    WeeklyVocabularyStore.saveCurrentSet(current);
-    loadWeeklyWords();
-  } else {
-    weeklyWords.push({ en: resolved.en, ko: resolved.ko, icon: resolved.icon });
-    saveWeeklyWords();
-    renderWeeklyWords();
+    items.push(newItem);
+    return items;
+  });
+
+  if (success && inputEl) {
+    inputEl.value = '';
   }
-  document.getElementById('ww-en').value = '';
 }
-function deleteWeeklyWord(idx) {
+
+async function deleteWeeklyWord(idx) {
   if (confirm('이 단어를 주간 시험 목록에서 삭제할까요?')) {
-    if (typeof WeeklyVocabularyStore !== 'undefined' && typeof WeeklyVocabularyStore.getCurrentSet === 'function') {
-      var current = WeeklyVocabularyStore.getCurrentSet();
-      if (current && Array.isArray(current.items)) {
-        current.items.splice(idx, 1);
-        WeeklyVocabularyStore.saveCurrentSet(current);
-        loadWeeklyWords();
+    await mutateWeeklyWordsAsGuardian(function(items) {
+      items.splice(idx, 1);
+      return items;
+    });
+  }
+}
+
+// ──────────────────────────────────────────
+// 외부 Agent 토큰 발급 및 관리 (Onboarding UI)
+// ──────────────────────────────────────────
+async function loadAgentTokens() {
+  const container = document.getElementById('agent-token-list-container');
+  if (!container) return;
+  const user = window.Auth?.getUser();
+  if (!user || !window.supabaseClient) {
+    container.innerHTML = '<div class="text-center py-2 text-[11px] text-slate-500 italic">로그인 후 연동 토큰을 관리할 수 있습니다.</div>';
+    return;
+  }
+
+  try {
+    const { data, error } = await window.supabaseClient.rpc('list_weekly_english_agent_tokens');
+    if (!error && data && data.status === 'OK' && Array.isArray(data.tokens)) {
+      renderAgentTokens(data.tokens);
+      return;
+    }
+
+    // Fallback: direct table select if RPC unavailable
+    const { data: tableRows, error: tblErr } = await window.supabaseClient
+      .from('weekly_ingestion_tokens')
+      .select('id, description, is_revoked, created_at, expires_at')
+      .order('created_at', { ascending: false });
+
+    if (!tblErr && Array.isArray(tableRows)) {
+      renderAgentTokens(tableRows);
+      return;
+    }
+
+    container.innerHTML = '<div class="text-center py-2 text-[11px] text-slate-500 italic">토큰 목록을 불러오지 못했습니다.</div>';
+  } catch (e) {
+    container.innerHTML = '<div class="text-center py-2 text-[11px] text-slate-500 italic">토큰 목록 조회 중 오류 발생</div>';
+  }
+}
+
+function renderAgentTokens(tokens) {
+  const container = document.getElementById('agent-token-list-container');
+  if (!container) return;
+  if (!tokens || tokens.length === 0) {
+    container.innerHTML = '<div class="text-center py-2 text-[11px] text-slate-500 italic">발급된 에이전트 토큰이 없습니다.</div>';
+    return;
+  }
+
+  container.innerHTML = tokens.map(t => {
+    const isRev = (t.isRevoked !== undefined) ? t.isRevoked : t.is_revoked;
+    const rawDate = t.createdAt || t.created_at;
+    const created = rawDate ? new Date(rawDate).toLocaleDateString() : '-';
+    const desc = t.description || '외부 단어 등록 에이전트';
+    const id = t.id;
+
+    return `
+      <div class="flex items-center justify-between p-2.5 rounded-lg bg-white/5 border border-white/10 ${isRev ? 'opacity-40' : ''}">
+        <div class="min-w-0 pr-2">
+          <div class="font-bold text-slate-200 text-xs truncate">${desc}</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">발급일: ${created} | 상태: ${isRev ? '<span class="text-red-400 font-bold">취소됨</span>' : '<span class="text-emerald-400 font-bold">활성</span>'}</div>
+        </div>
+        ${!isRev ? `
+          <button data-action="revoke-agent-token" data-token-id="${id}" class="px-2.5 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 rounded text-[10px] font-bold shrink-0 transition">
+            취소
+          </button>
+        ` : '<span class="text-[10px] text-slate-500 shrink-0">취소됨</span>'}
+      </div>
+    `;
+  }).join('');
+}
+
+async function mintAgentToken() {
+  const user = window.Auth?.getUser();
+  if (!navigator.onLine || !user || !window.supabaseClient) {
+    alert('토큰 발급은 온라인 연결 및 보호자 로그인이 필요합니다.');
+    return;
+  }
+
+  const descInput = document.getElementById('agent-token-desc-input');
+  const desc = descInput ? descInput.value.trim() : '';
+
+  try {
+    const { data, error } = await window.supabaseClient.rpc('create_weekly_english_agent_token', {
+      p_description: desc || null
+    });
+
+    if (error || !data || data.status !== 'CREATED') {
+      alert('토큰 발급 실패: ' + (error?.message || data?.message || '알 수 없는 오류'));
+      return;
+    }
+
+    // Display plaintext token once. Never save plaintext token to localStorage or DB!
+    const resultBox = document.getElementById('agent-token-mint-result');
+    const tokenInput = document.getElementById('agent-minted-token-input');
+    if (resultBox && tokenInput) {
+      tokenInput.value = data.token;
+      resultBox.classList.remove('hidden');
+    }
+
+    if (descInput) descInput.value = '';
+    loadAgentTokens();
+  } catch (e) {
+    alert('토큰 발급 중 오류 발생: ' + e.message);
+  }
+}
+
+function copyMintedToken() {
+  const tokenInput = document.getElementById('agent-minted-token-input');
+  if (!tokenInput || !tokenInput.value) return;
+  navigator.clipboard.writeText(tokenInput.value).then(() => {
+    alert('토큰이 클립보드에 복사되었습니다. 안전한 곳에 저장하세요!');
+  }).catch(() => {
+    tokenInput.select();
+    document.execCommand('copy');
+    alert('토큰이 복사되었습니다.');
+  });
+}
+
+async function revokeAgentToken(tokenId) {
+  if (!tokenId) return;
+  if (!confirm('이 에이전트 토큰을 취소할까요? 취소 후에는 이 토큰으로 주간 단어를 등록할 수 없습니다.')) return;
+  const user = window.Auth?.getUser();
+  if (!user || !window.supabaseClient) return;
+
+  try {
+    const { data, error } = await window.supabaseClient.rpc('revoke_weekly_english_agent_token', {
+      p_token_id: tokenId
+    });
+
+    if (error || !data || (data.status !== 'REVOKED' && !data.revoked)) {
+      // Fallback to table update
+      const { error: updErr } = await window.supabaseClient
+        .from('weekly_ingestion_tokens')
+        .update({ is_revoked: true })
+        .eq('id', tokenId)
+        .eq('user_id', user.id);
+
+      if (updErr) {
+        alert('토큰 취소 실패: ' + updErr.message);
         return;
       }
     }
-    weeklyWords.splice(idx, 1);
-    saveWeeklyWords();
-    renderWeeklyWords();
+    loadAgentTokens();
+  } catch (e) {
+    alert('토큰 취소 중 오류 발생: ' + e.message);
   }
 }
+
+window.loadGuardianWeeklyWords = loadGuardianWeeklyWords;
+if (!window.loadWeeklyWords) window.loadWeeklyWords = loadGuardianWeeklyWords;
+window.addWeeklyWord = addWeeklyWord;
+window.deleteWeeklyWord = deleteWeeklyWord;
+window.mutateWeeklyWordsAsGuardian = mutateWeeklyWordsAsGuardian;
+window.loadAgentTokens = loadAgentTokens;
+window.mintAgentToken = mintAgentToken;
+window.copyMintedToken = copyMintedToken;
+window.revokeAgentToken = revokeAgentToken;
 
 // ──────────────────────────────────────────
 // 주간 성장 요약 (Weekly Growth Summary)

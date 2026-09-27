@@ -44,6 +44,14 @@ typecheck:
 test:
     uv run pytest tests
 
+# Disposable PostgreSQL test environment setup for weekly ingestion
+test-pg-setup:
+    @bash scripts/setup_test_db.sh
+
+# Run real database acceptance tests (fails closed if container is not available)
+test-real-db:
+    WEEKLY_INGESTION_REAL_DB_REQUIRED=1 uv run pytest tests/test_weekly_english_ingestion_real_db.py -v
+
 # Rebuild the canonical Ocean Rescue standalone artifact (Vite production bundle)
 build-ocean-rescue:
     @just check-ocean-rescue-node-version

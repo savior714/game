@@ -63,3 +63,8 @@ GRANT EXECUTE ON FUNCTION public.get_current_weekly_english_set(TEXT) TO anon, a
 GRANT EXECUTE ON FUNCTION public.revoke_weekly_ingestion_token(TEXT) TO anon, authenticated;
 -- Token provisioning requires authenticated guardian
 GRANT EXECUTE ON FUNCTION public.create_weekly_english_agent_token(TEXT) TO authenticated;
+-- Guardian mutation wrapper & token management
+GRANT EXECUTE ON FUNCTION public.register_weekly_english_set_as_guardian(JSONB, JSONB) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.list_weekly_english_agent_tokens() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.revoke_weekly_english_agent_token(UUID) TO authenticated;
+

@@ -14,6 +14,8 @@ const WORDS_JS = path.join(ROOT, 'domains/english/words.js');
 const ADVANCED_JS = path.join(ROOT, 'domains/english/advanced-questions.js');
 const PROGRESS_JS = path.join(ROOT, 'shared/domain/progress-engine.js');
 const ENGINE_JS = path.join(ROOT, 'domains/english/engine.js');
+const SYNC_ENGINE_JS = path.join(ROOT, 'domains/sync/sync-engine.js');
+const GUARDIAN_JS = path.join(ROOT, 'domains/reward/guardian/guardian.js');
 const TRANSPORT_SCRIPT = path.join(ROOT, 'scripts/register-weekly-english-set.mjs');
 
 // ── Constants matching 004 migration ──
@@ -50,17 +52,73 @@ function isValidCalendarDate(dateStr) {
   return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
 }
 
-// Mock PostgreSQL register_weekly_english_set RPC (004 contract)
-function rpc_register_weekly_english_set(agent_token, candidate, confirmation) {
-  if (!agent_token || !agent_token.trim()) {
-    return { status: 'UNAUTHORIZED', message: 'Agent token is required' };
+function validateWeeklyConfirmation(confirmation, expectedReason, candidateFp, activeFp = null, activeRev = null) {
+  if (!confirmation || typeof confirmation !== 'object' || Object.keys(confirmation).length === 0) {
+    return {
+      valid: false,
+      result: {
+        status: 'REJECTED_CONFIRMATION',
+        message: 'Confirmation payload is required and cannot be empty'
+      }
+    };
   }
-  const hash = sha256Hex(agent_token.trim());
-  const tokenRec = db.tokens.get(hash);
-  if (!tokenRec || tokenRec.is_revoked || (tokenRec.expires_at && tokenRec.expires_at <= Date.now())) {
-    return { status: 'UNAUTHORIZED', message: 'Invalid or revoked token' };
+
+  const reason = String(confirmation.reason || '').trim();
+  if (!reason || reason !== expectedReason) {
+    return {
+      valid: false,
+      result: {
+        status: 'REJECTED_CONFIRMATION',
+        message: `Invalid confirmation reason: expected ${expectedReason}, got ${reason || 'none'}`
+      }
+    };
   }
-  const userId = tokenRec.user_id;
+
+  const candFp = String(confirmation.candidateFingerprint || '').trim();
+  if (!candFp || candFp !== candidateFp) {
+    return {
+      valid: false,
+      result: {
+        status: 'CONFIRMATION_STALE',
+        message: 'Confirmation candidateFingerprint mismatch'
+      }
+    };
+  }
+
+  if (activeFp !== null && activeFp !== '') {
+    const expFp = String(confirmation.expectedActiveFingerprint || '').trim();
+    const expRev = confirmation.expectedActiveRevision ?? -1;
+
+    if (!expFp || expRev < 0) {
+      return {
+        valid: false,
+        result: {
+          status: 'REJECTED_CONFIRMATION',
+          message: 'Active set confirmation requires expectedActiveFingerprint and expectedActiveRevision'
+        }
+      };
+    }
+
+    if (expFp !== activeFp || expRev !== activeRev) {
+      return {
+        valid: false,
+        result: {
+          status: 'CONFIRMATION_STALE',
+          message: 'Active set changed since confirmation issued',
+          expectedActiveFingerprint: expFp,
+          expectedActiveRevision: expRev,
+          actualActiveFingerprint: activeFp,
+          actualActiveRevision: activeRev
+        }
+      };
+    }
+  }
+
+  return { valid: true };
+}
+
+// Internal core registration function
+function _register_weekly_english_set_internal(userId, candidate, confirmation) {
 
   if (!candidate || typeof candidate !== 'object') {
     return { status: 'REJECTED_INVALID', message: 'Candidate must be an object' };
@@ -173,23 +231,35 @@ function rpc_register_weekly_english_set(agent_token, candidate, confirmation) {
       }
       const symDiffCount = addedCount + removedCount;
 
-      // Atypical item count (#7)
-      if (items.length > C_NORMAL_ITEM_MAX && !confirmation) {
-        return {
-          status: 'NEEDS_CONFIRMATION',
-          message: `Atypical item count (${items.length}) exceeds normal range`,
-          reason: 'ATYPICAL_ITEM_COUNT',
-          activeSetId: existingDate,
-          activeRevision: existingRev,
-          activeFingerprint: existingFp,
-          activeItemCount: existingItems.length,
-          candidateFingerprint: newFp,
-          candidateItemCount: items.length,
-          conflictDiffCount: symDiffCount
-        };
-      }
+      // ── Branch A: Atypical Item Count (13-15 items) ───
+      if (items.length > C_NORMAL_ITEM_MAX) {
+        if (!confirmation) {
+          return {
+            status: 'NEEDS_CONFIRMATION',
+            message: `Atypical item count (${items.length}) exceeds normal range`,
+            reason: 'ATYPICAL_ITEM_COUNT',
+            activeSetId: existingDate,
+            activeRevision: existingRev,
+            activeFingerprint: existingFp,
+            activeItemCount: existingItems.length,
+            candidateFingerprint: newFp,
+            candidateItemCount: items.length,
+            conflictDiffCount: symDiffCount
+          };
+        }
 
-      if (symDiffCount > C_CHANGE_THRESHOLD) {
+        const confVal = validateWeeklyConfirmation(
+          confirmation, 'ATYPICAL_ITEM_COUNT', newFp, existingFp, existingRev
+        );
+        if (!confVal.valid) {
+          return confVal.result;
+        }
+
+        status = 'REGISTERED_CONFIRMED_REVISION';
+        newRev = existingRev + 1;
+
+      // ── Branch B: Normal Count with Large Symmetric Diff ─
+      } else if (symDiffCount > C_CHANGE_THRESHOLD) {
         if (!confirmation) {
           return {
             status: 'NEEDS_CONFIRMATION',
@@ -207,22 +277,11 @@ function rpc_register_weekly_english_set(agent_token, candidate, confirmation) {
           };
         }
 
-        // Validate confirmation (#2)
-        const confirmExpFp = String(confirmation.expectedActiveFingerprint || '').trim();
-        const confirmExpRev = confirmation.expectedActiveRevision ?? -1;
-        const confirmCandFp = String(confirmation.candidateFingerprint || '').trim();
-
-        if (confirmCandFp !== newFp) {
-          return {
-            status: 'CONFIRMATION_STALE',
-            message: 'Confirmation candidateFingerprint mismatch'
-          };
-        }
-        if (confirmExpFp !== existingFp || confirmExpRev !== existingRev) {
-          return {
-            status: 'CONFIRMATION_STALE',
-            message: 'Active set changed since confirmation issued'
-          };
+        const confVal = validateWeeklyConfirmation(
+          confirmation, 'LARGE_SYMMETRIC_DIFF', newFp, existingFp, existingRev
+        );
+        if (!confVal.valid) {
+          return confVal.result;
         }
 
         status = 'REGISTERED_CONFIRMED_REVISION';
@@ -233,22 +292,35 @@ function rpc_register_weekly_english_set(agent_token, candidate, confirmation) {
       }
     } else {
       // Different date — check atypical count
-      if (items.length > C_NORMAL_ITEM_MAX && !confirmation) {
-        return {
-          status: 'NEEDS_CONFIRMATION',
-          message: `Atypical item count (${items.length}) exceeds normal range`,
-          reason: 'ATYPICAL_ITEM_COUNT',
-          activeSetId: existingDate,
-          activeRevision: existingRev,
-          activeFingerprint: existingFp,
-          activeItemCount: existingItems.length,
-          candidateFingerprint: newFp,
-          candidateItemCount: items.length,
-          conflictDiffCount: 0
-        };
+      if (items.length > C_NORMAL_ITEM_MAX) {
+        if (!confirmation) {
+          return {
+            status: 'NEEDS_CONFIRMATION',
+            message: `Atypical item count (${items.length}) exceeds normal range`,
+            reason: 'ATYPICAL_ITEM_COUNT',
+            activeSetId: existingDate,
+            activeRevision: existingRev,
+            activeFingerprint: existingFp,
+            activeItemCount: existingItems.length,
+            candidateFingerprint: newFp,
+            candidateItemCount: items.length,
+            conflictDiffCount: 0
+          };
+        }
+
+        const confVal = validateWeeklyConfirmation(
+          confirmation, 'ATYPICAL_ITEM_COUNT', newFp, existingFp, existingRev
+        );
+        if (!confVal.valid) {
+          return confVal.result;
+        }
+
+        status = 'REGISTERED_CONFIRMED_REVISION';
+        newRev = 1;
+      } else {
+        status = 'REGISTERED_NEW';
+        newRev = 1;
       }
-      status = 'REGISTERED_NEW';
-      newRev = 1;
     }
 
     // Rollback preservation
@@ -261,15 +333,30 @@ function rpc_register_weekly_english_set(agent_token, candidate, confirmation) {
     });
   } else {
     // No existing — atypical check
-    if (items.length > C_NORMAL_ITEM_MAX && !confirmation) {
-      return {
-        status: 'NEEDS_CONFIRMATION',
-        message: `Atypical item count (${items.length}) exceeds normal range`,
-        reason: 'ATYPICAL_ITEM_COUNT',
-        candidateFingerprint: newFp,
-        candidateItemCount: items.length,
-        conflictDiffCount: 0
-      };
+    if (items.length > C_NORMAL_ITEM_MAX) {
+      if (!confirmation) {
+        return {
+          status: 'NEEDS_CONFIRMATION',
+          message: `Atypical item count (${items.length}) exceeds normal range`,
+          reason: 'ATYPICAL_ITEM_COUNT',
+          candidateFingerprint: newFp,
+          candidateItemCount: items.length,
+          conflictDiffCount: 0
+        };
+      }
+
+      const confVal = validateWeeklyConfirmation(
+        confirmation, 'ATYPICAL_ITEM_COUNT', newFp, null, null
+      );
+      if (!confVal.valid) {
+        return confVal.result;
+      }
+
+      status = 'REGISTERED_CONFIRMED_REVISION';
+      newRev = 1;
+    } else {
+      status = 'REGISTERED_NEW';
+      newRev = 1;
     }
   }
 
@@ -322,6 +409,19 @@ function rpc_register_weekly_english_set(agent_token, candidate, confirmation) {
   };
 }
 
+// Mock PostgreSQL register_weekly_english_set RPC (004+005 contract)
+function rpc_register_weekly_english_set(agent_token, candidate, confirmation) {
+  if (!agent_token || !agent_token.trim()) {
+    return { status: 'UNAUTHORIZED', message: 'Agent token is required' };
+  }
+  const hash = sha256Hex(agent_token.trim());
+  const tokenRec = db.tokens.get(hash);
+  if (!tokenRec || tokenRec.is_revoked || (tokenRec.expires_at && tokenRec.expires_at <= Date.now())) {
+    return { status: 'UNAUTHORIZED', message: 'Invalid or revoked token' };
+  }
+  return _register_weekly_english_set_internal(tokenRec.user_id, candidate, confirmation);
+}
+
 // Mock PostgreSQL get_current_weekly_english_set RPC
 function rpc_get_current_weekly_english_set(agent_token) {
   if (!agent_token) return { status: 'UNAUTHORIZED' };
@@ -335,9 +435,19 @@ function rpc_get_current_weekly_english_set(agent_token) {
 
 // Mock fetch function simulating HTTPS RPC calls to Supabase
 async function mockFetch(url, options) {
-  const body = JSON.parse(options.body);
+  const body = options.body ? JSON.parse(options.body) : {};
   if (url.endsWith('register_weekly_english_set')) {
     const res = rpc_register_weekly_english_set(body.p_agent_token, body.p_candidate, body.p_confirmation || null);
+    return {
+      ok: true,
+      status: 200,
+      json: async () => res
+    };
+  }
+  if (url.endsWith('register_weekly_english_set_as_guardian')) {
+    // Uses current authenticated user (default USER_AIDEN)
+    const userId = body.p_user_id || USER_AIDEN;
+    const res = _register_weekly_english_set_internal(userId, body.p_candidate, body.p_confirmation || null);
     return {
       ok: true,
       status: 200,
@@ -350,6 +460,63 @@ async function mockFetch(url, options) {
       ok: true,
       status: 200,
       json: async () => res
+    };
+  }
+  if (url.endsWith('create_weekly_english_agent_token')) {
+    const plaintext = 'weit_' + crypto.randomBytes(32).toString('hex');
+    const hash = sha256Hex(plaintext);
+    const tokenId = 'tok-' + Date.now();
+    db.tokens.set(hash, {
+      id: tokenId,
+      user_id: USER_AIDEN,
+      is_revoked: false,
+      scope: 'weekly_english_ingestion',
+      description: body.p_description || null,
+      created_at: new Date().toISOString()
+    });
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        status: 'CREATED',
+        tokenId,
+        token: plaintext,
+        scope: 'weekly_english_ingestion',
+        message: 'Save this token now.'
+      })
+    };
+  }
+  if (url.endsWith('list_weekly_english_agent_tokens')) {
+    const tokens = [];
+    for (const [hash, t] of db.tokens.entries()) {
+      if (t.user_id === USER_AIDEN) {
+        tokens.push({
+          id: t.id,
+          description: t.description || 'token',
+          isRevoked: t.is_revoked,
+          createdAt: t.created_at || new Date().toISOString()
+        });
+      }
+    }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ status: 'OK', tokens })
+    };
+  }
+  if (url.endsWith('revoke_weekly_english_agent_token')) {
+    let found = false;
+    for (const [hash, t] of db.tokens.entries()) {
+      if (t.id === body.p_token_id && t.user_id === USER_AIDEN) {
+        t.is_revoked = true;
+        found = true;
+        break;
+      }
+    }
+    return {
+      ok: true,
+      status: 200,
+      json: async () => (found ? { status: 'REVOKED', revoked: true } : { status: 'NOT_FOUND', revoked: false })
     };
   }
   return { ok: false, status: 404 };
@@ -370,6 +537,31 @@ import vm from 'node:vm';
 
 // ── Setup Client Environment ──
 globalThis.window = globalThis;
+try {
+  Object.defineProperty(globalThis, 'navigator', {
+    value: { onLine: true },
+    configurable: true,
+    writable: true
+  });
+} catch (e) {}
+globalThis.CustomEvent = class CustomEvent { constructor(type, detail) { this.type = type; this.detail = detail; } };
+globalThis.Event = class Event { constructor(type) { this.type = type; } };
+globalThis.addEventListener = globalThis.addEventListener || (() => {});
+globalThis.dispatchEvent = globalThis.dispatchEvent || (() => {});
+globalThis.document = {
+  getElementById: (id) => ({
+    value: '',
+    textContent: '',
+    innerHTML: '',
+    style: {},
+    classList: { add: () => {}, remove: () => {} }
+  }),
+  querySelectorAll: () => [],
+  addEventListener: () => {}
+};
+globalThis.alert = (msg) => {};
+globalThis.confirm = (msg) => true;
+
 const storageMap = {};
 const localStorage = {
   getItem(k) { return Object.prototype.hasOwnProperty.call(storageMap, k) ? storageMap[k] : null; },
@@ -391,6 +583,8 @@ function loadClient() {
   runCode(WORDS_JS);
   runCode(ADVANCED_JS);
   runCode(ENGINE_JS);
+  runCode(SYNC_ENGINE_JS);
+  runCode(GUARDIAN_JS);
 }
 loadClient();
 
@@ -568,6 +762,7 @@ async function runLifecycle() {
 
   // Step 8b: Confirmed override
   const confirmation = {
+    reason: resStep8.reason || 'LARGE_SYMMETRIC_DIFF',
     expectedActiveFingerprint: resStep8.activeFingerprint,
     expectedActiveRevision: resStep8.activeRevision,
     candidateFingerprint: resStep8.candidateFingerprint
@@ -617,6 +812,7 @@ async function runLifecycle() {
   });
   // Now try with stale confirmation pointing to the old rev 2 state.
   const staleConfirmation = {
+    reason: stalePreCheck.reason || 'LARGE_SYMMETRIC_DIFF',
     expectedActiveFingerprint: resStep8.activeFingerprint,  // points to rev 2
     expectedActiveRevision: resStep8.activeRevision,        // 2
     candidateFingerprint: stalePreCheck.candidateFingerprint
@@ -807,6 +1003,173 @@ async function runLifecycle() {
   });
   results.modified5PairsNeedsConf = res5mod.status;
   results.modified5PairsSymDiff = res5mod.conflictDiffCount;
+
+  // ── OPERATIONAL REGRESSION TESTS (CLOSURE) ────────────────
+  // Test 1: pushStats(canonicalKey, ...) does NOT enter queue
+  localStorage.removeItem('sync_queue');
+  window.SyncEngine.pushStats('aiden_canonical_weekly_vocabulary_v1', { testDate: '2026-10-02', items: [] });
+  window.SyncEngine.pushStats('englishWeeklyWords', [{ en: 'word', ko: '단어' }]);
+  const queueAfterPushStats = JSON.parse(localStorage.getItem('sync_queue') || '{}');
+  results.pushStatsCanonicalBlocked = !queueAfterPushStats['aiden_canonical_weekly_vocabulary_v1'] && !queueAfterPushStats['englishWeeklyWords'];
+
+  // Test 2: pre-existing sync_queue canonical entry gets purged and NOT pushed
+  const dirtyQueue = {
+    'aiden_canonical_weekly_vocabulary_v1': { testDate: '2026-10-02', items: [] },
+    'englishWeeklyWords': [{ en: 'bad', ko: 'bad' }],
+    'study_rewards': { gems: 10 }
+  };
+  localStorage.setItem('sync_queue', JSON.stringify(dirtyQueue));
+  const cleanedQueue = window.SyncEngine.getQueue();
+  results.preExistingQueuePurged = !cleanedQueue['aiden_canonical_weekly_vocabulary_v1'] && !cleanedQueue['englishWeeklyWords'] && cleanedQueue['study_rewards'] !== undefined;
+
+  // Test 3: 13-item + empty '{}' confirmation → REJECT
+  const cand13 = {
+    testDate: '2026-10-16',
+    items: items13
+  };
+  const cand13Fp = computeWeeklyFingerprint(cand13.items.map(it => ({
+    itemId: `2026-10-16-${it.answer || it.word}-hash`,
+    answer: it.answer || it.word,
+    prompt: it.prompt || it.academyDescription
+  })));
+  const activeBefore13 = db.userData.get(`${USER_AIDEN}::aiden_canonical_weekly_vocabulary_v1`).payload;
+  const res13EmptyConf = rpc_register_weekly_english_set(TOKEN_AIDEN, cand13, {});
+  results.atypical13EmptyConfRejected = ['REJECTED_CONFIRMATION', 'CONFIRMATION_STALE'].includes(res13EmptyConf.status);
+
+  // Test 4: 13-item + wrong candidate fingerprint → REJECT
+  const res13WrongCandFp = rpc_register_weekly_english_set(TOKEN_AIDEN, cand13, {
+    reason: 'ATYPICAL_ITEM_COUNT',
+    candidateFingerprint: 'wrong-fingerprint',
+    expectedActiveFingerprint: activeBefore13.contentFingerprint,
+    expectedActiveRevision: activeBefore13.revision
+  });
+  results.atypical13WrongCandFpRejected = res13WrongCandFp.status === 'CONFIRMATION_STALE';
+
+  // Test 5: 13-item + valid confirmation → ACCEPT
+  // (Note: testDate 2026-10-16 is a new date compared to active set date 2026-09-18 or 2026-10-02)
+  const res13ValidConf = rpc_register_weekly_english_set(TOKEN_AIDEN, cand13, {
+    reason: 'ATYPICAL_ITEM_COUNT',
+    candidateFingerprint: cand13Fp,
+    expectedActiveFingerprint: activeBefore13.contentFingerprint,
+    expectedActiveRevision: activeBefore13.revision
+  });
+  results.atypical13ValidConfAccepted = res13ValidConf.status === 'REGISTERED_CONFIRMED_REVISION';
+
+  // Test 6: new-date atypical invalid vs valid confirmation
+  const candNewDate14 = {
+    testDate: '2026-11-20',
+    items: [...items13, { answer: 'extra4', prompt: 'extra definition 4' }]
+  };
+  const candNewDate14Fp = computeWeeklyFingerprint(candNewDate14.items.map(it => ({
+    itemId: `2026-11-20-${it.answer || it.word}-hash`,
+    answer: it.answer || it.word,
+    prompt: it.prompt || it.academyDescription
+  })));
+  const activeBeforeNewDate = db.userData.get(`${USER_AIDEN}::aiden_canonical_weekly_vocabulary_v1`).payload;
+  const resNewDateInvalid = rpc_register_weekly_english_set(TOKEN_AIDEN, candNewDate14, {
+    reason: 'WRONG_REASON',
+    candidateFingerprint: candNewDate14Fp,
+    expectedActiveFingerprint: activeBeforeNewDate.contentFingerprint,
+    expectedActiveRevision: activeBeforeNewDate.revision
+  });
+  results.newDateAtypicalInvalidRejected = ['REJECTED_CONFIRMATION', 'CONFIRMATION_STALE'].includes(resNewDateInvalid.status);
+
+  const resNewDateValid = rpc_register_weekly_english_set(TOKEN_AIDEN, candNewDate14, {
+    reason: 'ATYPICAL_ITEM_COUNT',
+    candidateFingerprint: candNewDate14Fp,
+    expectedActiveFingerprint: activeBeforeNewDate.contentFingerprint,
+    expectedActiveRevision: activeBeforeNewDate.revision
+  });
+  results.newDateAtypicalValidAccepted = resNewDateValid.status === 'REGISTERED_CONFIRMED_REVISION';
+
+  // Test 7: first-ever atypical valid/invalid confirmation (for fresh user with no existing row)
+  const candFirstEver13 = {
+    testDate: '2026-12-04',
+    items: items13
+  };
+  const candFirstEver13Fp = computeWeeklyFingerprint(candFirstEver13.items.map(it => ({
+    itemId: `2026-12-04-${it.answer || it.word}-hash`,
+    answer: it.answer || it.word,
+    prompt: it.prompt || it.academyDescription
+  })));
+  const USER_FRESH = '00000000-0000-0000-0000-000000000099';
+  const TOKEN_FRESH = 'token-fresh-user';
+  db.tokens.set(sha256Hex(TOKEN_FRESH), { id: 'tok-fresh', user_id: USER_FRESH, is_revoked: false, scope: 'weekly_english_ingestion' });
+
+  const resFirstEverNeedsConf = rpc_register_weekly_english_set(TOKEN_FRESH, candFirstEver13, null);
+  results.firstEverAtypicalNeedsConf = resFirstEverNeedsConf.status === 'NEEDS_CONFIRMATION';
+
+  const resFirstEverEmptyConf = rpc_register_weekly_english_set(TOKEN_FRESH, candFirstEver13, {});
+  results.firstEverAtypicalEmptyConfRejected = ['REJECTED_CONFIRMATION', 'CONFIRMATION_STALE'].includes(resFirstEverEmptyConf.status);
+
+  const resFirstEverValidConf = rpc_register_weekly_english_set(TOKEN_FRESH, candFirstEver13, {
+    reason: 'ATYPICAL_ITEM_COUNT',
+    candidateFingerprint: candFirstEver13Fp
+  });
+  results.firstEverAtypicalValidConfAccepted = resFirstEverValidConf.status === 'REGISTERED_CONFIRMED_REVISION';
+
+  // Test 8 & 9: Guardian add/delete through server RPC mutation + read-back
+  // Setup window.Auth & window.supabaseClient mock for guardian mutation
+  window.Auth = {
+    getUser: () => ({ id: USER_AIDEN, email: 'test@example.com' })
+  };
+  window.supabaseClient = {
+    rpc: async (funcName, args) => {
+      if (funcName === 'register_weekly_english_set_as_guardian') {
+        const res = _register_weekly_english_set_internal(USER_AIDEN, args.p_candidate, args.p_confirmation || null);
+        return { data: res, error: null };
+      }
+      if (funcName === 'create_weekly_english_agent_token') {
+        const res = await mockFetch('https://test.supabase.co/rest/v1/rpc/create_weekly_english_agent_token', {
+          body: JSON.stringify(args)
+        });
+        return { data: await res.json(), error: null };
+      }
+      return { data: null, error: new Error('Unknown RPC') };
+    },
+    from: (table) => ({
+      select: (cols) => ({
+        eq: (k1, v1) => ({
+          eq: (k2, v2) => ({
+            single: async () => {
+              const rowKey = `${v1}::${v2}`;
+              const row = db.userData.get(rowKey);
+              return { data: row ? { payload: row.payload } : null, error: null };
+            }
+          })
+        })
+      })
+    })
+  };
+
+  // Reset to known 10 items
+  window.WeeklyVocabularyStore.hydrateFromRemote(db.userData.get(`${USER_AIDEN}::aiden_canonical_weekly_vocabulary_v1`).payload, localStorage);
+  const beforeGuardianAdd = window.WeeklyVocabularyStore.getCurrentSet(localStorage);
+  const initialItemCount = beforeGuardianAdd.items.length;
+
+  // Add a word via guardian mutation
+  const guardianAddSuccess = await window.mutateWeeklyWordsAsGuardian((items) => {
+    items.push({ word: 'sunshine', academyDescription: 'sunshine', ko: '햇살', icon: '☀️' });
+    return items;
+  });
+  results.guardianAddMutationSuccess = guardianAddSuccess === true;
+  const afterGuardianAdd = window.WeeklyVocabularyStore.getCurrentSet(localStorage);
+  results.guardianAddHydrated = afterGuardianAdd.items.length === initialItemCount + 1 &&
+    afterGuardianAdd.items.some(it => it.word === 'sunshine');
+  results.guardianAddServerOriginPreserved = afterGuardianAdd._mutationAuthority === 'server_rpc';
+
+  // Delete that word via guardian mutation
+  const guardianDelSuccess = await window.mutateWeeklyWordsAsGuardian((items) => {
+    return items.filter(it => it.word !== 'sunshine');
+  });
+  results.guardianDelMutationSuccess = guardianDelSuccess === true;
+  const afterGuardianDel = window.WeeklyVocabularyStore.getCurrentSet(localStorage);
+  results.guardianDelHydrated = afterGuardianDel.items.length === initialItemCount &&
+    !afterGuardianDel.items.some(it => it.word === 'sunshine');
+
+  // Test 10: Token minting & listing & revoking
+  const mintRes = await window.supabaseClient.rpc('create_weekly_english_agent_token', { p_description: 'Test Token' });
+  results.tokenMintCreated = mintRes.data?.status === 'CREATED' && typeof mintRes.data?.token === 'string' && mintRes.data?.token.startsWith('weit_');
 
   console.log(JSON.stringify(results));
 }

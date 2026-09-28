@@ -8,12 +8,10 @@
  * 4. Duplicate pair rejection & calendar date validation.
  * 5. Antigravity MCP stdio JSON-RPC protocol (initialize, tools/list, tools/call).
  * 6. Secret isolation (no token reflected in results or error outputs).
- * 7. Shared Transport Facade (Edge Function) routing, CORS, and fidelity enforcement.
  */
 
 import { executeIngestionFlow, fetchCurrentWeeklyEnglishSet, validateCandidateShape } from '../../scripts/register-weekly-english-set.mjs';
 import { handleRpcMessage } from '../../integrations/weekly-english/antigravity/mcp-server.mjs';
-import { handleRequest } from '../../supabase/functions/weekly-english-agent/index.ts';
 
 const TOKEN_TEST = 'weit_test_secret_capability_token_999';
 
@@ -189,41 +187,6 @@ async function runAllTests() {
     report.mcpResultStatus = content.status;
     report.mcpResultFidelityVerified = content.sourceFidelityVerified === true;
     report.mcpSecretIsolated = !JSON.stringify(callWithToken).includes(TOKEN_TEST);
-  } finally {
-    globalThis.fetch = origFetch;
-  }
-
-  // ── 6. Shared Transport Facade (Edge Function) ──
-  // CORS OPTIONS
-  const corsReq = new Request('https://edge.supabase.co/weekly-english-agent', { method: 'OPTIONS' });
-  const corsRes = await handleRequest(corsReq);
-  report.facadeCorsOk = corsRes.status === 200 && corsRes.headers.get('Access-Control-Allow-Origin') === '*';
-
-  // No token -> 401
-  const noTokenReq = new Request('https://edge.supabase.co/weekly-english-agent/current', { method: 'GET' });
-  const noTokenRes = await handleRequest(noTokenReq);
-  report.facadeNoTokenUnauthorized = noTokenRes.status === 401;
-
-  // With header token -> mock register
-  globalThis.fetch = mockFidelityMatchFetch;
-  try {
-    const regReq = new Request('https://edge.supabase.co/weekly-english-agent/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Aiden-Weekly-Token': TOKEN_TEST
-      },
-      body: JSON.stringify({
-        candidate: { testDate: '2026-10-02', items: make10Items() }
-      })
-    });
-    const regRes = await handleRequest(regReq);
-    report.facadeRegisterStatus = regRes.status;
-    const regJson = await regRes.json();
-    report.facadeRegisterPayloadStatus = regJson.status;
-    report.facadeRegisterReadBackVerified = regJson.readBackVerified === true;
-    report.facadeRegisterFidelityVerified = regJson.sourceFidelityVerified === true;
-    report.facadeSecretIsolated = !JSON.stringify(regJson).includes(TOKEN_TEST);
   } finally {
     globalThis.fetch = origFetch;
   }

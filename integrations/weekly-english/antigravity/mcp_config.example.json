@@ -3,12 +3,10 @@
     "weekly-english": {
       "command": "node",
       "args": [
-        "integrations/weekly-english/antigravity/mcp-server.mjs"
+        "/absolute/path/to/game/integrations/weekly-english/antigravity/mcp-server.mjs"
       ],
       "env": {
-        "WEEKLY_AGENT_TOKEN": "YOUR_WEEKLY_AGENT_TOKEN_HERE",
-        "SUPABASE_URL": "https://rxjefpmvlygunrukccgg.supabase.co",
-        "SUPABASE_ANON_KEY": "sb_publishable_86T5zbV_IUXZDvQig6mofg_tlHYeHVx"
+        "WEEKLY_AGENT_TOKEN": "weit_YOUR_TOKEN"
       }
     }
   }

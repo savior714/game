@@ -1,13 +1,12 @@
-"""Tests for Weekly English Photo Agent, Shared Facade, and Platform Adapters.
+"""Tests for Weekly English Antigravity MCP Adapter and Canonical Ingestion Flow.
 
 Verifies:
-1. Reference transport source fidelity bug fix & CLI exit code semantics.
+1. Reference transport source fidelity contract & CLI exit code semantics.
 2. Candidate shape, calendar date, item count, and duplicate pair validation.
 3. Secret isolation: capability token is never reflected or serialized.
-4. ChatGPT OpenAPI schema and configuration artifacts.
-5. Antigravity MCP server stdio protocol, tool registration, and configs.
-6. Shared Transport Facade (Edge Function) routing, CORS, and fidelity enforcement.
-7. Live Supabase RPC connectivity and authentication rejection.
+4. Antigravity MCP server stdio protocol, tool registration, and configs.
+5. Canonical integration topology regression guard: Antigravity local MCP is the sole agent lane.
+6. Live Supabase RPC connectivity and authentication rejection.
 """
 
 from __future__ import annotations
@@ -24,9 +23,9 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 CLI_SCRIPT = ROOT / "scripts/register-weekly-english-set.mjs"
 RUNNER_MJS = ROOT / "tests/fixtures/test_photo_agent_runner.mjs"
-CHATGPT_DIR = ROOT / "integrations/weekly-english/chatgpt"
 ANTIGRAVITY_DIR = ROOT / "integrations/weekly-english/antigravity"
-EDGE_FUNCTION = ROOT / "supabase/functions/weekly-english-agent/index.ts"
+CHATGPT_DIR = ROOT / "integrations/weekly-english/chatgpt"
+EDGE_FUNCTION_DIR = ROOT / "supabase/functions/weekly-english-agent"
 
 LIVE_SUPABASE_URL = "https://rxjefpmvlygunrukccgg.supabase.co"
 LIVE_ANON_KEY = "sb_publishable_86T5zbV_IUXZDvQig6mofg_tlHYeHVx"
@@ -40,7 +39,7 @@ def _node() -> str:
 
 
 def test_runner_comprehensive_suite() -> None:
-    """Run Node-based suite verifying transport, fidelity, MCP, and Edge Function."""
+    """Run Node-based suite verifying transport, fidelity, secret isolation, and MCP protocol."""
     node = _node()
     res = subprocess.run(
         [node, "--experimental-strip-types", str(RUNNER_MJS)],
@@ -64,12 +63,12 @@ def test_runner_comprehensive_suite() -> None:
     assert report["rejectMissingPrompt"] is True
     assert report["rejectAmbiguities"] is True
 
-    # 2. Source fidelity bug fix: mismatch -> terminal failure
+    # 2. Source fidelity: mismatch -> terminal failure
     assert report["fidelityMismatchStatus"] == "SOURCE_FIDELITY_VERIFICATION_FAILED"
     assert report["fidelityMismatchVerifiedFalse"] is True
     assert report["fidelityMismatchReadBackVerified"] is True
 
-    # 3. Source fidelity match -> success
+    # 3. Source fidelity: match -> success
     assert report["fidelityMatchStatus"] == "REGISTERED_NEW"
     assert report["fidelityMatchVerifiedTrue"] is True
     assert report["fidelityMatchReadBackVerified"] is True
@@ -86,15 +85,6 @@ def test_runner_comprehensive_suite() -> None:
     assert report["mcpResultStatus"] == "REGISTERED_NEW"
     assert report["mcpResultFidelityVerified"] is True
     assert report["mcpSecretIsolated"] is True
-
-    # 6. Shared Transport Facade Edge Function
-    assert report["facadeCorsOk"] is True
-    assert report["facadeNoTokenUnauthorized"] is True
-    assert report["facadeRegisterStatus"] == 200
-    assert report["facadeRegisterPayloadStatus"] == "REGISTERED_NEW"
-    assert report["facadeRegisterReadBackVerified"] is True
-    assert report["facadeRegisterFidelityVerified"] is True
-    assert report["facadeSecretIsolated"] is True
 
 
 def test_reference_cli_exit_code_on_fidelity_failure(tmp_path: Path) -> None:
@@ -121,7 +111,6 @@ def test_reference_cli_exit_code_on_fidelity_failure(tmp_path: Path) -> None:
         encoding="utf-8",
     )
 
-    # Use a small node wrapper that intercepts fetch to return mismatched prompt text
     wrapper = tmp_path / "test_cli_fidelity.mjs"
     wrapper.write_text(
         f"""
@@ -173,37 +162,6 @@ process.exit(isSuccess ? 0 : 2);
     assert output["readBackVerified"] is True
 
 
-def test_chatgpt_adapter_openapi_and_docs() -> None:
-    """Verify OpenAPI YAML schema and instructions for ChatGPT Custom GPT."""
-    openapi_file = CHATGPT_DIR / "openapi.yaml"
-    instructions_file = CHATGPT_DIR / "instructions.md"
-    setup_file = CHATGPT_DIR / "setup.md"
-
-    assert openapi_file.is_file(), "openapi.yaml missing"
-    assert instructions_file.is_file(), "chatgpt instructions.md missing"
-    assert setup_file.is_file(), "chatgpt setup.md missing"
-
-    content = openapi_file.read_text(encoding="utf-8")
-    assert "openapi: 3." in content
-    assert "registerWeeklyEnglishCandidate" in content
-    assert "getCurrentWeeklyEnglishSet" in content
-    assert "X-Aiden-Weekly-Token" in content
-    assert "WeeklyTokenAuth" in content
-    assert "rxjefpmvlygunrukccgg.supabase.co" in content
-
-    # Crucial security assertion: token/secret must NEVER be in request body or query parameter
-    assert "p_agent_token" not in content, "p_agent_token leaked in OpenAPI schema"
-    assert "token:" not in content, "token parameter leaked in OpenAPI schema"
-
-    instr = instructions_file.read_text(encoding="utf-8")
-    assert "주간 영어 시험지 사진" in instr
-    assert "등록 완료" in instr
-    assert "2차 시각 대조" in instr
-
-    setup = setup_file.read_text(encoding="utf-8")
-    assert "X-Aiden-Weekly-Token" in setup
-
-
 def test_antigravity_mcp_adapter_artifacts() -> None:
     """Verify Antigravity MCP server, example configuration, and instructions."""
     server_file = ANTIGRAVITY_DIR / "mcp-server.mjs"
@@ -217,7 +175,12 @@ def test_antigravity_mcp_adapter_artifacts() -> None:
     # Example config must NOT contain real credentials
     config_data = json.loads(config_file.read_text(encoding="utf-8"))
     env_cfg = config_data["mcpServers"]["weekly-english"]["env"]
-    assert env_cfg["WEEKLY_AGENT_TOKEN"] == "YOUR_WEEKLY_AGENT_TOKEN_HERE"
+    assert env_cfg["WEEKLY_AGENT_TOKEN"] in (
+        "weit_YOUR_TOKEN",
+        "YOUR_WEEKLY_AGENT_TOKEN_HERE",
+    )
+    # Verify no real secret token pattern
+    assert not env_cfg["WEEKLY_AGENT_TOKEN"].startswith("weit_sec_")
 
     instr = instructions_file.read_text(encoding="utf-8")
     assert "register_weekly_english_candidate" in instr
@@ -268,15 +231,56 @@ def test_antigravity_mcp_stdio_roundtrip() -> None:
         proc.wait(timeout=5)
 
 
-def test_shared_edge_function_file_structure() -> None:
-    """Verify Supabase Edge Function source file."""
-    assert EDGE_FUNCTION.is_file(), "Edge Function index.ts missing"
-    code = EDGE_FUNCTION.read_text(encoding="utf-8")
-    assert "X-Aiden-Weekly-Token" in code
-    assert "register_weekly_english_set" in code
-    assert "get_current_weekly_english_set" in code
-    assert "verifySourceFidelity" in code
-    assert "SOURCE_FIDELITY_VERIFICATION_FAILED" in code
+def test_canonical_integration_topology_regression_guard() -> None:
+    """Regression guard: Antigravity local MCP is the sole canonical agent path.
+
+    Enforces:
+    - Antigravity adapter artifacts exist.
+    - Reference transport script exists.
+    - Custom GPT adapter directory does NOT exist.
+    - Weekly-English agent Edge Function directory does NOT exist.
+    - Antigravity MCP directly imports and reuses canonical reference transport.
+    - Antigravity MCP does not proxy through HTTP or Edge Functions.
+    """
+    # 1. Official Antigravity MCP exists
+    assert (ANTIGRAVITY_DIR / "mcp-server.mjs").is_file(), (
+        "Antigravity MCP server must exist"
+    )
+    assert (ANTIGRAVITY_DIR / "mcp_config.example.json").is_file(), (
+        "Antigravity example config must exist"
+    )
+    assert (ANTIGRAVITY_DIR / "instructions.md").is_file(), (
+        "Antigravity instructions must exist"
+    )
+
+    # 2. Canonical reference transport exists
+    assert CLI_SCRIPT.is_file(), (
+        "Reference transport scripts/register-weekly-english-set.mjs must exist"
+    )
+
+    # 3. Aborted Custom GPT lane must NOT exist
+    assert not CHATGPT_DIR.exists(), (
+        f"Custom GPT directory {CHATGPT_DIR} must be removed"
+    )
+    assert not (ROOT / "integrations/weekly-english/chatgpt/openapi.yaml").exists()
+
+    # 4. Aborted Edge Function facade must NOT exist
+    assert not EDGE_FUNCTION_DIR.exists(), (
+        f"Edge function directory {EDGE_FUNCTION_DIR} must be removed"
+    )
+
+    # 5. MCP imports reference transport directly and does not call Edge Functions
+    mcp_code = (ANTIGRAVITY_DIR / "mcp-server.mjs").read_text(encoding="utf-8")
+    assert "executeIngestionFlow" in mcp_code, "MCP must import executeIngestionFlow"
+    assert "fetchCurrentWeeklyEnglishSet" in mcp_code, (
+        "MCP must import fetchCurrentWeeklyEnglishSet"
+    )
+    assert "register-weekly-english-set.mjs" in mcp_code, (
+        "MCP must import from register-weekly-english-set.mjs"
+    )
+    assert "functions/v1/weekly-english-agent" not in mcp_code, (
+        "MCP must not call Edge Function"
+    )
 
 
 def test_live_supabase_rpc_invalid_token_rejection() -> None:
@@ -298,6 +302,5 @@ def test_live_supabase_rpc_invalid_token_rejection() -> None:
             assert data.get("status") == "UNAUTHORIZED"
             assert "token" in data.get("message", "").lower()
     except urllib.error.HTTPError as e:
-        # In case the RPC returns 401 HTTP status
         body = json.loads(e.read().decode("utf-8"))
         assert body.get("status") == "UNAUTHORIZED" or e.code == 401

@@ -1,0 +1,250 @@
+openapi: 3.1.0
+info:
+  title: AidenGame Weekly English Ingestion API
+  description: Secure transport facade for canonical weekly English vocabulary candidate registration and read-back.
+  version: 1.0.0
+servers:
+  - url: https://rxjefpmvlygunrukccgg.supabase.co/functions/v1/weekly-english-agent
+    description: Production Supabase Edge Function Transport Facade
+
+security:
+  - WeeklyTokenAuth: []
+
+paths:
+  /register:
+    post:
+      operationId: registerWeeklyEnglishCandidate
+      summary: Register weekly English vocabulary candidate
+      description: |
+        Registers candidate test items after two-pass visual verification.
+        Performs atomic canonical update, server read-back, and exact source-fidelity check.
+      security:
+        - WeeklyTokenAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterCandidateRequest'
+      responses:
+        '200':
+          description: Registration completed, confirmation requested, or idempotent no-op.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  $ref: '#/components/schemas/RegisterSuccessResponse'
+                  $ref: '#/components/schemas/NeedsConfirmationResponse'
+        '400':
+          description: Invalid candidate shape or constraints violation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing or invalid capability token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Read-back mismatch or source fidelity verification failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /current:
+    get:
+      operationId: getCurrentWeeklyEnglishSet
+      summary: Get current active weekly English vocabulary set
+      description: Retrieves the currently active canonical weekly vocabulary set from Supabase.
+      security:
+        - WeeklyTokenAuth: []
+      responses:
+        '200':
+          description: Currently active weekly vocabulary set.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentSetResponse'
+        '401':
+          description: Missing or invalid capability token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    WeeklyTokenAuth:
+      type: apiKey
+      in: header
+      name: X-Aiden-Weekly-Token
+      description: Scoped capability token for weekly English ingestion.
+
+  schemas:
+    RegisterCandidateRequest:
+      type: object
+      required:
+        - candidate
+      properties:
+        candidate:
+          $ref: '#/components/schemas/CandidatePayload'
+        confirmation:
+          $ref: '#/components/schemas/ConfirmationPayload'
+
+    CandidatePayload:
+      type: object
+      required:
+        - testDate
+        - items
+      properties:
+        schemaVersion:
+          type: integer
+          default: 1
+          description: Schema version of candidate payload.
+        testDate:
+          type: string
+          pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+          description: Test date printed on worksheet in YYYY-MM-DD format.
+          example: '2026-10-02'
+        items:
+          type: array
+          description: List of 8 to 15 prompt and answer pairs.
+          items:
+            $ref: '#/components/schemas/CandidateItem'
+        ambiguities:
+          type: array
+          items:
+            type: string
+          description: Visual ambiguities detected during extraction.
+
+    CandidateItem:
+      type: object
+      required:
+        - answer
+        - prompt
+      properties:
+        answer:
+          type: string
+          description: Word spelling exactly as printed/resolved from worksheet.
+          example: 'courage'
+        prompt:
+          type: string
+          description: Prompt definition text preserving exact source fidelity.
+          example: 'the ability to do something frightening'
+        ko:
+          type: string
+          description: Optional Korean meaning if printed on worksheet.
+        icon:
+          type: string
+          description: Optional emoji icon.
+
+    ConfirmationPayload:
+      type: object
+      required:
+        - reason
+        - candidateFingerprint
+      properties:
+        reason:
+          type: string
+          description: Backend confirmation reason passed verbatim from previous response.
+        candidateFingerprint:
+          type: string
+          description: Content fingerprint of candidate payload.
+        expectedActiveFingerprint:
+          type: string
+          description: Expected fingerprint of active set when overriding.
+        expectedActiveRevision:
+          type: integer
+          description: Expected revision number of active set.
+
+    RegisterSuccessResponse:
+      type: object
+      required:
+        - status
+        - readBackVerified
+        - sourceFidelityVerified
+      properties:
+        status:
+          type: string
+          enum: [REGISTERED_NEW, REGISTERED_REVISION, REGISTERED_CONFIRMED_REVISION, NO_OP]
+        setId:
+          type: string
+        testDate:
+          type: string
+        revision:
+          type: integer
+        itemCount:
+          type: integer
+        contentFingerprint:
+          type: string
+        readBackVerified:
+          type: boolean
+          example: true
+        sourceFidelityVerified:
+          type: boolean
+          example: true
+
+    NeedsConfirmationResponse:
+      type: object
+      required:
+        - status
+        - reason
+        - candidateFingerprint
+      properties:
+        status:
+          type: string
+          enum: [NEEDS_CONFIRMATION, CONFIRMATION_STALE, REJECTED_CONFIRMATION]
+        reason:
+          type: string
+        message:
+          type: string
+        candidateFingerprint:
+          type: string
+        expectedActiveFingerprint:
+          type: string
+        expectedActiveRevision:
+          type: integer
+
+    CurrentSetResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          example: 'OK'
+        currentSet:
+          type: object
+          properties:
+            schemaVersion:
+              type: integer
+            setId:
+              type: string
+            testDate:
+              type: string
+            title:
+              type: string
+            revision:
+              type: integer
+            contentFingerprint:
+              type: string
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/CandidateItem'
+
+    ErrorResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          example: 'REJECTED_INVALID'
+        message:
+          type: string
+        reason:
+          type: string

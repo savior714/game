@@ -288,6 +288,10 @@ def test_primary_criterion_full_lifecycle_and_security_gate() -> None:
     assert payload["sourceFidelityFailsOnCaseChange"] is True
     # Answer case normalization is acceptable
     assert payload["sourceFidelityOkWithAnswerCaseChange"] is True
+    # Transport flow promotes fidelity failure to terminal failure status
+    assert payload["sourceFidelityTerminalStatus"] == "SOURCE_FIDELITY_VERIFICATION_FAILED"
+    assert payload["sourceFidelityVerifiedFalse"] is True
+    assert payload["sourceFidelityReadBackVerifiedTrue"] is True
 
     # ── SYMMETRIC DIFF ASSERTIONS ────────────────────────────
     # Deletion-only scenario counted (#3)

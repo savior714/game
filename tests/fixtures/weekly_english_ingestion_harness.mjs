@@ -967,6 +967,47 @@ async function runLifecycle() {
   );
   results.sourceFidelityOkWithAnswerCaseChange = fidelityCheckOk.ok;
 
+  // Verify executeIngestionFlow promotes fidelity failure to terminal failure
+  const fidelityFlowCandidate = JSON.parse(JSON.stringify(setA_candidate));
+  const mockFidelityFetch = async (url) => {
+    if (url.includes('register_weekly_english_set')) {
+      return {
+        ok: true,
+        json: async () => ({
+          status: 'REGISTERED_NEW',
+          setId: '2026-09-25',
+          revision: 1,
+          itemCount: 10,
+          contentFingerprint: 'dummy'
+        })
+      };
+    }
+    if (url.includes('get_current_weekly_english_set')) {
+      const alteredSet = JSON.parse(JSON.stringify(fidelityFlowCandidate));
+      alteredSet.items[0].prompt = alteredSet.items[0].prompt.toUpperCase();
+      return {
+        ok: true,
+        json: async () => ({
+          status: 'OK',
+          currentSet: alteredSet
+        })
+      };
+    }
+    return { ok: false };
+  };
+
+  const resFidelityFlow = await transport.executeIngestionFlow({
+    candidate: fidelityFlowCandidate,
+    token: TOKEN_AIDEN,
+    supabaseUrl: 'https://test.supabase.co',
+    anonKey: 'anon-key',
+    fetchFn: mockFidelityFetch
+  });
+
+  results.sourceFidelityTerminalStatus = resFidelityFlow.status;
+  results.sourceFidelityVerifiedFalse = resFidelityFlow.sourceFidelityVerified === false;
+  results.sourceFidelityReadBackVerifiedTrue = resFidelityFlow.readBackVerified === true;
+
   // ── SYMMETRIC DIFF TESTS ──────────────────────────────────
   // deletion-only scenario: 10 → 9 (remove 1 item)
   // Reset to a known 10-item state

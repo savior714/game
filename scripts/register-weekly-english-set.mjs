@@ -169,6 +169,57 @@ export function verifySourceFidelity(candidate, readBackSet) {
   return { ok: true };
 }
 
+/**
+ * Fetch current weekly English set from Supabase RPC via agent capability token.
+ */
+export async function fetchCurrentWeeklyEnglishSet({
+  token,
+  supabaseUrl,
+  anonKey,
+  fetchFn = globalThis.fetch
+}) {
+  if (!token || typeof token !== 'string' || !token.trim()) {
+    return {
+      status: 'UNAUTHORIZED',
+      message: 'Scoped agent token is required'
+    };
+  }
+
+  const cleanUrl = String(supabaseUrl || '').replace(/\/$/, '');
+  const rpcReadBackUrl = `${cleanUrl}/rest/v1/rpc/get_current_weekly_english_set`;
+
+  const headers = {
+    'apikey': anonKey,
+    'Authorization': `Bearer ${anonKey}`,
+    'Content-Type': 'application/json'
+  };
+
+  try {
+    const res = await fetchFn(rpcReadBackUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        p_agent_token: token.trim()
+      })
+    });
+    if (!res.ok) {
+      const errText = await res.text();
+      return {
+        status: res.status === 401 ? 'UNAUTHORIZED' : 'ERROR',
+        httpStatus: res.status,
+        message: `Failed to fetch current weekly set: ${errText}`
+      };
+    }
+    const data = await res.json();
+    return data;
+  } catch (err) {
+    return {
+      status: 'NETWORK_ERROR',
+      message: err.message
+    };
+  }
+}
+
 export async function executeIngestionFlow({
   candidate,
   token,
@@ -194,7 +245,6 @@ export async function executeIngestionFlow({
 
   const cleanUrl = String(supabaseUrl || '').replace(/\/$/, '');
   const rpcRegisterUrl = `${cleanUrl}/rest/v1/rpc/register_weekly_english_set`;
-  const rpcReadBackUrl = `${cleanUrl}/rest/v1/rpc/get_current_weekly_english_set`;
 
   const headers = {
     'apikey': anonKey,
@@ -254,29 +304,20 @@ export async function executeIngestionFlow({
   // 2. Perform Read-Back Verification for Successful Registrations
   let readBackSet;
   try {
-    const rbRes = await fetchFn(rpcReadBackUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        p_agent_token: token.trim()
-      })
+    const rbRes = await fetchCurrentWeeklyEnglishSet({
+      token,
+      supabaseUrl,
+      anonKey,
+      fetchFn
     });
-    if (!rbRes.ok) {
-      const rbErr = await rbRes.text();
+    if (rbRes.status !== 'OK' || !rbRes.currentSet) {
       return {
         status: 'READ_BACK_FAILED',
-        httpStatus: rbRes.status,
-        message: `Failed to read-back after registration: ${rbErr}`
+        httpStatus: rbRes.httpStatus,
+        message: rbRes.message || `Invalid read-back response structure: ${JSON.stringify(rbRes)}`
       };
     }
-    const rbJson = await rbRes.json();
-    if (!rbJson || rbJson.status !== 'OK' || !rbJson.currentSet) {
-      return {
-        status: 'READ_BACK_FAILED',
-        message: `Invalid read-back response structure: ${JSON.stringify(rbJson)}`
-      };
-    }
-    readBackSet = rbJson.currentSet;
+    readBackSet = rbRes.currentSet;
   } catch (err) {
     return {
       status: 'READ_BACK_NETWORK_ERROR',
@@ -297,6 +338,21 @@ export async function executeIngestionFlow({
 
   // 4. Source fidelity verification (exact prompt text)
   const fidelityCheck = verifySourceFidelity(candidate, readBackSet);
+  if (!fidelityCheck.ok) {
+    return {
+      status: 'SOURCE_FIDELITY_VERIFICATION_FAILED',
+      reason: fidelityCheck.reason,
+      setId: regRes.setId,
+      testDate: regRes.testDate || regRes.setId,
+      revision: regRes.revision,
+      itemCount: regRes.itemCount,
+      contentFingerprint: regRes.contentFingerprint,
+      readBackVerified: true,
+      sourceFidelityVerified: false,
+      sourceFidelityReason: fidelityCheck.reason,
+      readBackSet
+    };
+  }
 
   return {
     status: regRes.status,
@@ -307,8 +363,7 @@ export async function executeIngestionFlow({
     contentFingerprint: regRes.contentFingerprint,
     updatedAt: regRes.updatedAt,
     readBackVerified: true,
-    sourceFidelityVerified: fidelityCheck.ok,
-    sourceFidelityReason: fidelityCheck.ok ? undefined : fidelityCheck.reason
+    sourceFidelityVerified: true
   };
 }
 
@@ -370,7 +425,14 @@ async function main() {
 
   console.log(JSON.stringify(result, null, 2));
 
-  if (['REGISTERED_NEW', 'REGISTERED_REVISION', 'REGISTERED_CONFIRMED_REVISION', 'NO_OP'].includes(result.status) && result.readBackVerified) {
+  const isSuccess = [
+    'REGISTERED_NEW',
+    'REGISTERED_REVISION',
+    'REGISTERED_CONFIRMED_REVISION',
+    'NO_OP'
+  ].includes(result.status) && result.readBackVerified === true && result.sourceFidelityVerified === true;
+
+  if (isSuccess) {
     process.exit(0);
   } else {
     process.exit(2);

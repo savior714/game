@@ -108,6 +108,51 @@ const RewardSystemUI = (() => {
         opacity: 1;
         transform: translateX(-50%) translateY(0);
       }
+
+      /* 미니게임 모달 (Marble / Bubble) */
+      .reward-marble-modal,
+      .reward-bubble-modal {
+        padding: 16px;
+        box-sizing: border-box;
+        overflow-y: auto;
+      }
+      .reward-marble-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        width: 100%;
+        max-width: 960px;
+        box-sizing: border-box;
+        margin: auto;
+      }
+      .reward-mini-game-frame {
+        width: min(94vw, 960px);
+        height: min(80vh, 680px);
+        height: min(80dvh, 680px);
+        max-width: 100%;
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        background: #0f121c;
+      }
+      .btn-close-marble {
+        padding: 12px 24px;
+        background: rgba(255, 255, 255, 0.15);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 99px;
+        cursor: pointer;
+        backdrop-filter: blur(10px);
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 700;
+        transition: background 0.2s ease, transform 0.15s ease;
+      }
+      .btn-close-marble:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-1px);
+      }
     `;
     document.head.appendChild(style);
   }
@@ -746,8 +791,8 @@ const RewardSystemUI = (() => {
     overlay.style.backgroundColor = 'rgba(0,0,0,0.92)';
     overlay.innerHTML = `
       <div class="reward-marble-content">
-         <iframe src="${marbleUrl}" style="width:360px; height:560px; border:none; border-radius:20px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);"></iframe>
-          <button class="btn-close-marble" data-action="close-overlay">학습으로 돌아가기</button>
+         <iframe src="${marbleUrl}" class="reward-mini-game-frame" title="마블 머지 게임"></iframe>
+         <button class="btn-close-marble" data-action="close-overlay">학습으로 돌아가기</button>
       </div>
     `;
     document.body.appendChild(overlay);
@@ -766,8 +811,8 @@ const RewardSystemUI = (() => {
     overlay.style.backgroundColor = 'rgba(0,0,0,0.92)';
     overlay.innerHTML = `
       <div class="reward-marble-content">
-         <iframe src="${bubbleUrl}" style="width:360px; height:560px; border:none; border-radius:20px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);"></iframe>
-          <button class="btn-close-marble" data-action="close-overlay">학습으로 돌아가기</button>
+         <iframe src="${bubbleUrl}" class="reward-mini-game-frame" title="버블팡 게임"></iframe>
+         <button class="btn-close-marble" data-action="close-overlay">학습으로 돌아가기</button>
       </div>
     `;
     document.body.appendChild(overlay);
@@ -1085,6 +1130,10 @@ const RewardSystemUI = (() => {
     openYoutubeModal, openSnackModal, openMarbleModal, openBubbleModal, openCustomModal, renderFreeTimeTimerUI, renderExpiredFreeTimeSessionUI
   };
 })();
+
+if (typeof window !== 'undefined') {
+  window.RewardSystemUI = RewardSystemUI;
+}
 
 (function registerGuardianNav() {
   function guardianPageUrl() {

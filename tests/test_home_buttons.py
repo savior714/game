@@ -87,3 +87,12 @@ def test_guardian_go_home_target_path():
 
     assert "window.location.href = '../../../index.html';" in guardian_js
     assert "global.location.href = '../../../index.html';" in guardian_events
+
+
+def test_reward_minigame_home_buttons_have_top_target():
+    """Ensure Marble and Bubble HUD home and brand links use target='_top' to prevent iframe nesting."""
+    for rel_path in ("experiments/marble/index.html", "experiments/bubble/index.html"):
+        content = (REPO_ROOT / rel_path).read_text(encoding="utf-8")
+        assert 'href="../../index.html" target="_top"' in content, (
+            f"Expected target='_top' on ../../index.html links in {rel_path}"
+        )

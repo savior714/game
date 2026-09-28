@@ -580,17 +580,26 @@ def test_real_db_validations_and_rollback() -> None:
     )
     assert res_base["status"] in ("REGISTERED_NEW", "NO_OP")
 
-    # 1. Reject < 8 items (7 items)
-    cand_7 = json.dumps({"testDate": "2026-09-25", "items": SAMPLE_10_ITEMS[:7]})
+    # 1. Reject empty items
+    cand_empty = json.dumps({"testDate": "2026-09-25", "items": []})
+    res_empty = json.loads(
+        _exec_psql(
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_empty}'::jsonb)::text;"
+        )
+    )
+    assert res_empty["status"] == "REJECTED_INVALID"
+    assert "empty" in res_empty["message"].lower()
+
+    # 2. Accept 7 items (unbounded lower limit)
+    cand_7 = json.dumps({"testDate": "2026-10-07", "items": SAMPLE_10_ITEMS[:7]})
     res_7 = json.loads(
         _exec_psql(
             f"SELECT public.register_weekly_english_set('{token}', '{cand_7}'::jsonb)::text;"
         )
     )
-    assert res_7["status"] == "REJECTED_INVALID"
-    assert "items count" in res_7["message"].lower()
+    assert res_7["status"] == "REGISTERED_NEW"
 
-    # 2. Accept 8 items
+    # 3. Accept 8 items
     cand_8 = json.dumps({"testDate": "2026-10-08", "items": SAMPLE_10_ITEMS[:8]})
     res_8 = json.loads(
         _exec_psql(
@@ -599,22 +608,11 @@ def test_real_db_validations_and_rollback() -> None:
     )
     assert res_8["status"] == "REGISTERED_NEW"
 
-    # 3. Accept 12 items
-    extra_2 = [
+    # 4. Accept 13 items directly without confirmation
+    extra_3 = [
         {"word": "word11", "meaning": "m11", "academyDescription": "m11"},
         {"word": "word12", "meaning": "m12", "academyDescription": "m12"},
-    ]
-    cand_12 = json.dumps({"testDate": "2026-10-12", "items": SAMPLE_10_ITEMS + extra_2})
-    res_12 = json.loads(
-        _exec_psql(
-            f"SELECT public.register_weekly_english_set('{token}', '{cand_12}'::jsonb)::text;"
-        )
-    )
-    assert res_12["status"] == "REGISTERED_NEW"
-
-    # 4. 13-15 items requires confirmation (atypical item count)
-    extra_3 = extra_2 + [
-        {"word": "word13", "meaning": "m13", "academyDescription": "m13"}
+        {"word": "word13", "meaning": "m13", "academyDescription": "m13"},
     ]
     cand_13 = json.dumps({"testDate": "2026-10-13", "items": SAMPLE_10_ITEMS + extra_3})
     res_13 = json.loads(
@@ -622,23 +620,45 @@ def test_real_db_validations_and_rollback() -> None:
             f"SELECT public.register_weekly_english_set('{token}', '{cand_13}'::jsonb)::text;"
         )
     )
-    assert res_13["status"] == "NEEDS_CONFIRMATION"
-    assert res_13["reason"] == "ATYPICAL_ITEM_COUNT"
+    assert res_13["status"] == "REGISTERED_NEW"
+    assert res_13["itemCount"] == 13
 
-    # 5. > 15 items rejected unconditionally
-    extra_6 = extra_2 + [
-        {"word": "word13", "meaning": "m13", "academyDescription": "m13"},
-        {"word": "word14", "meaning": "m14", "academyDescription": "m14"},
-        {"word": "word15", "meaning": "m15", "academyDescription": "m15"},
-        {"word": "word16", "meaning": "m16", "academyDescription": "m16"},
+    # 5. Accept 26 items directly without confirmation
+    items_26 = [
+        {"word": f"word{i}", "academyDescription": f"desc{i}"} for i in range(26)
     ]
-    cand_16 = json.dumps({"testDate": "2026-10-16", "items": SAMPLE_10_ITEMS + extra_6})
-    res_16 = json.loads(
+    cand_26 = json.dumps({"testDate": "2026-10-26", "items": items_26})
+    res_26 = json.loads(
         _exec_psql(
-            f"SELECT public.register_weekly_english_set('{token}', '{cand_16}'::jsonb)::text;"
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_26}'::jsonb)::text;"
         )
     )
-    assert res_16["status"] == "REJECTED_INVALID"
+    assert res_26["status"] == "REGISTERED_NEW"
+    assert res_26["itemCount"] == 26
+
+    # Verify canonical payload, legacy projection, and read-back for 26 items
+    read_back_26 = json.loads(
+        _exec_psql(
+            f"SELECT public.get_current_weekly_english_set('{token}')::text;",
+            user_id=user_id,
+        )
+    )
+    assert read_back_26["status"] == "OK"
+    assert len(read_back_26["currentSet"]["items"]) == 26
+
+    canonical_row = json.loads(
+        _exec_psql(
+            f"SELECT payload::text FROM public.user_data WHERE user_id = '{user_id}'::uuid AND data_key = 'aiden_canonical_weekly_vocabulary_v1';"
+        )
+    )
+    assert len(canonical_row["items"]) == 26
+
+    legacy_row = json.loads(
+        _exec_psql(
+            f"SELECT payload::text FROM public.user_data WHERE user_id = '{user_id}'::uuid AND data_key = 'englishWeeklyWords';"
+        )
+    )
+    assert len(legacy_row) == 26
 
     # 6. Reject invalid calendar date (2026-99-99)
     cand_bad_date = json.dumps({"testDate": "2026-99-99", "items": SAMPLE_10_ITEMS})
@@ -823,12 +843,12 @@ def test_real_db_guardian_mutation_e2e() -> None:
     assert len(row["items"]) == 10
 
 
-# ── 8. ATYPICAL_ITEM_COUNT Fail-Closed Confirmations ────────────
+# ── 8. LARGE_SYMMETRIC_DIFF Confirmations & Unbounded 26 Items ──
 
 
-def test_real_db_atypical_confirmation_fail_closed_and_accept() -> None:
-    """Verifies atypical confirmation paths fail-closed on malformed/stale confirmations
-    and succeed only with strict valid confirmation.
+def test_real_db_large_symmetric_diff_confirmation_fail_closed_and_accept() -> None:
+    """Verifies large symmetric diff (>3 items modified on same date) requires confirmation,
+    fails closed on malformed/stale confirmations, and succeeds only with strict valid confirmation.
     """
     user_id = "12121212-1212-1212-1212-121212121212"
     _exec_psql(f"""
@@ -839,7 +859,7 @@ def test_real_db_atypical_confirmation_fail_closed_and_accept() -> None:
 
     token = json.loads(
         _exec_psql(
-            "SELECT public.create_weekly_english_agent_token('Atypical Test')::text;",
+            "SELECT public.create_weekly_english_agent_token('Large Diff Test')::text;",
             user_id=user_id,
         )
     )["token"]
@@ -855,28 +875,26 @@ def test_real_db_atypical_confirmation_fail_closed_and_accept() -> None:
     active_fp = res_10["contentFingerprint"]
     active_rev = res_10["revision"]
 
-    # 2. 13 items candidate on same date
-    extra_3 = [
-        {"word": "word11", "academyDescription": "d11"},
-        {"word": "word12", "academyDescription": "d12"},
-        {"word": "word13", "academyDescription": "d13"},
-    ]
-    cand_13 = json.dumps({"testDate": "2026-09-25", "items": SAMPLE_10_ITEMS + extra_3})
+    # 2. Modify 5 items on same date (large symmetric diff: 5 added + 5 removed = 10 > 3)
+    modified_items = [
+        {"word": f"modword{i}", "academyDescription": f"moddesc{i}"} for i in range(5)
+    ] + SAMPLE_10_ITEMS[5:]
+    cand_large = json.dumps({"testDate": "2026-09-25", "items": modified_items})
 
     # Needs confirmation without payload
     res_needs = json.loads(
         _exec_psql(
-            f"SELECT public.register_weekly_english_set('{token}', '{cand_13}'::jsonb)::text;"
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_large}'::jsonb)::text;"
         )
     )
     assert res_needs["status"] == "NEEDS_CONFIRMATION"
-    assert res_needs["reason"] == "ATYPICAL_ITEM_COUNT"
+    assert res_needs["reason"] == "LARGE_SYMMETRIC_DIFF"
     candidate_fp = res_needs["candidateFingerprint"]
 
     # Empty confirmation -> REJECTED_CONFIRMATION
     res_empty = json.loads(
         _exec_psql(
-            f"SELECT public.register_weekly_english_set('{token}', '{cand_13}'::jsonb, '{{}}'::jsonb)::text;"
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_large}'::jsonb, '{{}}'::jsonb)::text;"
         )
     )
     assert res_empty["status"] == "REJECTED_CONFIRMATION"
@@ -884,7 +902,7 @@ def test_real_db_atypical_confirmation_fail_closed_and_accept() -> None:
     # Wrong reason -> REJECTED_CONFIRMATION
     bad_reason_conf = json.dumps(
         {
-            "reason": "LARGE_SYMMETRIC_DIFF",
+            "reason": "ATYPICAL_ITEM_COUNT",
             "candidateFingerprint": candidate_fp,
             "expectedActiveFingerprint": active_fp,
             "expectedActiveRevision": active_rev,
@@ -892,7 +910,7 @@ def test_real_db_atypical_confirmation_fail_closed_and_accept() -> None:
     )
     res_bad_reason = json.loads(
         _exec_psql(
-            f"SELECT public.register_weekly_english_set('{token}', '{cand_13}'::jsonb, '{bad_reason_conf}'::jsonb)::text;"
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_large}'::jsonb, '{bad_reason_conf}'::jsonb)::text;"
         )
     )
     assert res_bad_reason["status"] == "REJECTED_CONFIRMATION"
@@ -900,7 +918,7 @@ def test_real_db_atypical_confirmation_fail_closed_and_accept() -> None:
     # Wrong candidate fingerprint -> CONFIRMATION_STALE or REJECTED_CONFIRMATION
     wrong_cand_conf = json.dumps(
         {
-            "reason": "ATYPICAL_ITEM_COUNT",
+            "reason": "LARGE_SYMMETRIC_DIFF",
             "candidateFingerprint": "wrong_fingerprint_hash_value",
             "expectedActiveFingerprint": active_fp,
             "expectedActiveRevision": active_rev,
@@ -908,7 +926,7 @@ def test_real_db_atypical_confirmation_fail_closed_and_accept() -> None:
     )
     res_wrong_cand = json.loads(
         _exec_psql(
-            f"SELECT public.register_weekly_english_set('{token}', '{cand_13}'::jsonb, '{wrong_cand_conf}'::jsonb)::text;"
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_large}'::jsonb, '{wrong_cand_conf}'::jsonb)::text;"
         )
     )
     assert res_wrong_cand["status"] in ("CONFIRMATION_STALE", "REJECTED_CONFIRMATION")
@@ -916,7 +934,7 @@ def test_real_db_atypical_confirmation_fail_closed_and_accept() -> None:
     # Stale active revision -> CONFIRMATION_STALE
     stale_active_conf = json.dumps(
         {
-            "reason": "ATYPICAL_ITEM_COUNT",
+            "reason": "LARGE_SYMMETRIC_DIFF",
             "candidateFingerprint": candidate_fp,
             "expectedActiveFingerprint": active_fp,
             "expectedActiveRevision": 999,
@@ -924,7 +942,7 @@ def test_real_db_atypical_confirmation_fail_closed_and_accept() -> None:
     )
     res_stale_active = json.loads(
         _exec_psql(
-            f"SELECT public.register_weekly_english_set('{token}', '{cand_13}'::jsonb, '{stale_active_conf}'::jsonb)::text;"
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_large}'::jsonb, '{stale_active_conf}'::jsonb)::text;"
         )
     )
     assert res_stale_active["status"] == "CONFIRMATION_STALE"
@@ -932,7 +950,7 @@ def test_real_db_atypical_confirmation_fail_closed_and_accept() -> None:
     # Valid confirmation -> REGISTERED_CONFIRMED_REVISION
     valid_conf = json.dumps(
         {
-            "reason": "ATYPICAL_ITEM_COUNT",
+            "reason": "LARGE_SYMMETRIC_DIFF",
             "candidateFingerprint": candidate_fp,
             "expectedActiveFingerprint": active_fp,
             "expectedActiveRevision": active_rev,
@@ -940,15 +958,16 @@ def test_real_db_atypical_confirmation_fail_closed_and_accept() -> None:
     )
     res_valid = json.loads(
         _exec_psql(
-            f"SELECT public.register_weekly_english_set('{token}', '{cand_13}'::jsonb, '{valid_conf}'::jsonb)::text;"
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_large}'::jsonb, '{valid_conf}'::jsonb)::text;"
         )
     )
     assert res_valid["status"] == "REGISTERED_CONFIRMED_REVISION"
-    assert res_valid["itemCount"] == 13
+    assert res_valid["itemCount"] == 10
+    assert res_valid["revision"] == 2
 
 
-def test_real_db_new_date_atypical_confirmation() -> None:
-    """Verifies atypical confirmation on different date behaves fail-closed and registers new week."""
+def test_real_db_new_date_unbounded_26_items_no_confirmation() -> None:
+    """Verifies 26 items on a new date registers directly without confirmation."""
     user_id = "34343434-3434-3434-3434-343434343434"
     _exec_psql(f"""
         DELETE FROM public.user_data WHERE user_id = '{user_id}'::uuid;
@@ -958,7 +977,7 @@ def test_real_db_new_date_atypical_confirmation() -> None:
 
     token = json.loads(
         _exec_psql(
-            "SELECT public.create_weekly_english_agent_token('New Date Atypical')::text;",
+            "SELECT public.create_weekly_english_agent_token('New Date 26 Items')::text;",
             user_id=user_id,
         )
     )["token"]
@@ -970,57 +989,37 @@ def test_real_db_new_date_atypical_confirmation() -> None:
             f"SELECT public.register_weekly_english_set('{token}', '{cand_10}'::jsonb)::text;"
         )
     )
-    active_fp = res_prev["contentFingerprint"]
-    active_rev = res_prev["revision"]
+    assert res_prev["status"] == "REGISTERED_NEW"
 
-    # 13 items on new date 2026-10-02
-    extra_3 = [
-        {"word": "word11", "academyDescription": "d11"},
-        {"word": "word12", "academyDescription": "d12"},
-        {"word": "word13", "academyDescription": "d13"},
+    # 26 items on new date 2026-10-02 -> direct REGISTERED_NEW
+    items_26 = [
+        {"word": f"newword{i}", "academyDescription": f"newdesc{i}"} for i in range(26)
     ]
-    cand_new_13 = json.dumps(
-        {"testDate": "2026-10-02", "items": SAMPLE_10_ITEMS + extra_3}
-    )
+    cand_new_26 = json.dumps({"testDate": "2026-10-02", "items": items_26})
 
-    res_needs = json.loads(
+    res_26 = json.loads(
         _exec_psql(
-            f"SELECT public.register_weekly_english_set('{token}', '{cand_new_13}'::jsonb)::text;"
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_new_26}'::jsonb)::text;"
         )
     )
-    assert res_needs["status"] == "NEEDS_CONFIRMATION"
-    assert res_needs["reason"] == "ATYPICAL_ITEM_COUNT"
-    candidate_fp = res_needs["candidateFingerprint"]
+    assert res_26["status"] == "REGISTERED_NEW"
+    assert res_26["setId"] == "2026-10-02"
+    assert res_26["itemCount"] == 26
+    assert res_26["revision"] == 1
 
-    # Invalid confirmation rejected
-    res_bad = json.loads(
+    # Verify storage & read-back
+    read_back = json.loads(
         _exec_psql(
-            f"SELECT public.register_weekly_english_set('{token}', '{cand_new_13}'::jsonb, '{{}}'::jsonb)::text;"
+            f"SELECT public.get_current_weekly_english_set('{token}')::text;",
+            user_id=user_id,
         )
     )
-    assert res_bad["status"] == "REJECTED_CONFIRMATION"
-
-    # Valid confirmation accepted -> REGISTERED_NEW
-    valid_conf = json.dumps(
-        {
-            "reason": "ATYPICAL_ITEM_COUNT",
-            "candidateFingerprint": candidate_fp,
-            "expectedActiveFingerprint": active_fp,
-            "expectedActiveRevision": active_rev,
-        }
-    )
-    res_valid = json.loads(
-        _exec_psql(
-            f"SELECT public.register_weekly_english_set('{token}', '{cand_new_13}'::jsonb, '{valid_conf}'::jsonb)::text;"
-        )
-    )
-    assert res_valid["status"] == "REGISTERED_CONFIRMED_REVISION"
-    assert res_valid["setId"] == "2026-10-02"
-    assert res_valid["itemCount"] == 13
+    assert read_back["status"] == "OK"
+    assert len(read_back["currentSet"]["items"]) == 26
 
 
-def test_real_db_first_ever_atypical_confirmation() -> None:
-    """Verifies first-ever atypical candidate (no prior active set) requires confirmation and accepts."""
+def test_real_db_first_ever_unbounded_26_items_no_confirmation() -> None:
+    """Verifies first-ever candidate with 26 items registers directly without confirmation."""
     user_id = "56565656-5656-5656-5656-565656565656"
     _exec_psql(f"""
         DELETE FROM public.user_data WHERE user_id = '{user_id}'::uuid;
@@ -1030,51 +1029,35 @@ def test_real_db_first_ever_atypical_confirmation() -> None:
 
     token = json.loads(
         _exec_psql(
-            "SELECT public.create_weekly_english_agent_token('First Ever Atypical')::text;",
+            "SELECT public.create_weekly_english_agent_token('First Ever 26 Items')::text;",
             user_id=user_id,
         )
     )["token"]
 
-    extra_3 = [
-        {"word": "word11", "academyDescription": "d11"},
-        {"word": "word12", "academyDescription": "d12"},
-        {"word": "word13", "academyDescription": "d13"},
+    items_26 = [
+        {"word": f"firstword{i}", "academyDescription": f"firstdesc{i}"}
+        for i in range(26)
     ]
-    cand_first_13 = json.dumps(
-        {"testDate": "2026-09-25", "items": SAMPLE_10_ITEMS + extra_3}
-    )
+    cand_first_26 = json.dumps({"testDate": "2026-09-25", "items": items_26})
 
-    res_needs = json.loads(
+    res = json.loads(
         _exec_psql(
-            f"SELECT public.register_weekly_english_set('{token}', '{cand_first_13}'::jsonb)::text;"
+            f"SELECT public.register_weekly_english_set('{token}', '{cand_first_26}'::jsonb)::text;"
         )
     )
-    assert res_needs["status"] == "NEEDS_CONFIRMATION"
-    assert res_needs["reason"] == "ATYPICAL_ITEM_COUNT"
-    candidate_fp = res_needs["candidateFingerprint"]
+    assert res["status"] == "REGISTERED_NEW"
+    assert res["itemCount"] == 26
+    assert res["revision"] == 1
 
-    # Empty confirmation rejected
-    res_empty = json.loads(
+    # Verify storage & read-back
+    read_back = json.loads(
         _exec_psql(
-            f"SELECT public.register_weekly_english_set('{token}', '{cand_first_13}'::jsonb, '{{}}'::jsonb)::text;"
+            f"SELECT public.get_current_weekly_english_set('{token}')::text;",
+            user_id=user_id,
         )
     )
-    assert res_empty["status"] == "REJECTED_CONFIRMATION"
-
-    # Valid confirmation for first-ever set (no active set to match)
-    valid_conf = json.dumps(
-        {
-            "reason": "ATYPICAL_ITEM_COUNT",
-            "candidateFingerprint": candidate_fp,
-        }
-    )
-    res_valid = json.loads(
-        _exec_psql(
-            f"SELECT public.register_weekly_english_set('{token}', '{cand_first_13}'::jsonb, '{valid_conf}'::jsonb)::text;"
-        )
-    )
-    assert res_valid["status"] == "REGISTERED_CONFIRMED_REVISION"
-    assert res_valid["itemCount"] == 13
+    assert read_back["status"] == "OK"
+    assert len(read_back["currentSet"]["items"]) == 26
 
 
 # ── 9. Token Management RPCs (Onboarding & Revocation) ──────────

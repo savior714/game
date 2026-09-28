@@ -52,12 +52,21 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 MIGRATION_003 = ROOT / "supabase/migrations/003_create_weekly_english_ingestion.sql"
 MIGRATION_004 = ROOT / "supabase/migrations/004_weekly_ingestion_closure.sql"
+MIGRATION_005 = (
+    ROOT
+    / "supabase/migrations/005_weekly_ingestion_authority_and_confirmation_closure.sql"
+)
+MIGRATION_006 = (
+    ROOT / "supabase/migrations/006_weekly_vocabulary_item_count_unbounded.sql"
+)
 RLS_SQL = ROOT / "supabase/policies/weekly_english_ingestion_rls.sql"
 SYNC_ENGINE_JS = ROOT / "domains/sync/sync-engine.js"
 STORE_JS = ROOT / "domains/english/weekly-vocabulary-store.js"
 ENGLISH_INDEX = ROOT / "domains/english/index.html"
 WEEKLY_TEST_INDEX = ROOT / "domains/english/weekly-test/index.html"
 HARNESS_MJS = ROOT / "tests/fixtures/weekly_english_ingestion_harness.mjs"
+TRANSPORT_MJS = ROOT / "scripts/register-weekly-english-set.mjs"
+MCP_SERVER_MJS = ROOT / "integrations/weekly-english/antigravity/mcp-server.mjs"
 
 
 def _node() -> str:
@@ -260,11 +269,15 @@ def test_primary_criterion_full_lifecycle_and_security_gate() -> None:
     assert payload["otherUserIsolated"] is True
 
     # ── VALIDATION ASSERTIONS ────────────────────────────────
-    # Item count range (#7)
-    assert payload["reject7items"] == "REJECTED_INVALID"
+    # Item count unbounded & empty check (#7)
+    assert payload["emptyItemsRejected"] == "REJECTED_INVALID"
+    assert payload["accept7items"] in ("REGISTERED_NEW", "REGISTERED_REVISION")
     assert payload["accept8items"] in ("REGISTERED_NEW", "REGISTERED_REVISION")
-    assert payload["atypical13items"] == "NEEDS_CONFIRMATION"
-    assert payload["atypical13reason"] == "ATYPICAL_ITEM_COUNT"
+    assert payload["accept13items"] in ("REGISTERED_NEW", "REGISTERED_REVISION")
+    assert payload["accept26items"] in ("REGISTERED_NEW", "REGISTERED_REVISION")
+    assert payload["accept26itemCount"] == 26
+    assert payload["accept26ReadBackVerified"] is True
+    assert payload["accept26SourceFidelityVerified"] is True
 
     # Calendar date validation (#9)
     assert payload["invalidCalendarDate"] == "REJECTED_INVALID"
@@ -307,15 +320,12 @@ def test_primary_criterion_full_lifecycle_and_security_gate() -> None:
     assert payload["pushStatsCanonicalBlocked"] is True
     assert payload["preExistingQueuePurged"] is True
 
-    # Atypical confirmation fail-closed
-    assert payload["atypical13EmptyConfRejected"] is True
-    assert payload["atypical13WrongCandFpRejected"] is True
-    assert payload["atypical13ValidConfAccepted"] is True
-    assert payload["newDateAtypicalInvalidRejected"] is True
-    assert payload["newDateAtypicalValidAccepted"] is True
-    assert payload["firstEverAtypicalNeedsConf"] is True
-    assert payload["firstEverAtypicalEmptyConfRejected"] is True
-    assert payload["firstEverAtypicalValidConfAccepted"] is True
+    # Large diff confirmation fail-closed
+    assert payload["largeDiffEmptyConfRejected"] is True
+    assert payload["largeDiffWrongCandFpRejected"] is True
+    assert payload["largeDiffWrongReasonRejected"] is True
+    assert payload["largeDiffStaleActiveRevRejected"] is True
+    assert payload["largeDiffValidConfAccepted"] is True
 
     # Guardian manual editing server RPC integration
     assert payload["guardianAddMutationSuccess"] is True
@@ -369,3 +379,64 @@ def test_write_path_server_authoritative_block() -> None:
     assert "SERVER_AUTHORITATIVE_KEYS.has(k)" in sync_code
     # WeeklyVocabularyStore.saveLocalMutation must not pushStats
     assert "window.SyncEngine.pushStats" not in store_code
+
+
+def test_transport_validate_candidate_shape_unbounded_and_empty_check() -> None:
+    """Verifies scripts/register-weekly-english-set.mjs validates non-empty items
+    and accepts 26 items without arbitrary count limits.
+    """
+    harness = f"""
+import {{ validateCandidateShape }} from '{TRANSPORT_MJS.as_posix()}';
+
+const items26 = Array.from({{ length: 26 }}, (_, i) => ({{
+  answer: `word${{i}}`,
+  prompt: `definition ${{i}}`
+}}));
+
+const resEmpty = validateCandidateShape({{
+  testDate: '2026-11-06',
+  items: []
+}});
+
+const res26 = validateCandidateShape({{
+  testDate: '2026-11-06',
+  items: items26
+}});
+
+console.log(JSON.stringify({{
+  emptyValid: resEmpty.valid,
+  emptyError: resEmpty.error,
+  valid26: res26.valid
+}}));
+"""
+    result = subprocess.run(
+        [_node(), "--input-type=module", "-e", harness],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    payload = json.loads(result.stdout)
+    assert payload["emptyValid"] is False
+    assert "empty" in payload["emptyError"].lower()
+    assert payload["valid26"] is True
+
+
+def test_antigravity_mcp_schema_has_no_8_15_limitation() -> None:
+    """Regression test: MCP server schema and descriptions must not contain obsolete 8-15 limitation."""
+    mcp_code = MCP_SERVER_MJS.read_text(encoding="utf-8")
+    assert "8-15" not in mcp_code
+    assert "8 to 15" not in mcp_code
+    assert "Complete weekly vocabulary set" in mcp_code
+
+
+def test_sql_006_unbounded_item_count_contract() -> None:
+    """Verifies migration 006 supersedes _register_weekly_english_set_internal without count upper bounds."""
+    sql_006 = MIGRATION_006.read_text(encoding="utf-8")
+    assert "SET search_path = public, extensions, pg_temp" in sql_006
+    assert "SECURITY DEFINER" in sql_006
+    assert "_register_weekly_english_set_internal" in sql_006
+    assert "C_NORMAL_ITEM_MAX" not in sql_006
+    assert "C_ATYPICAL_ITEM_MAX" not in sql_006
+    assert "v_item_count = 0" in sql_006
+    assert "LARGE_SYMMETRIC_DIFF" in sql_006

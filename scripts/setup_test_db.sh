@@ -72,7 +72,8 @@ for migration in \
   "${REPO_ROOT}/supabase/migrations/002_create_merge_game_stats_function.sql" \
   "${REPO_ROOT}/supabase/migrations/003_create_weekly_english_ingestion.sql" \
   "${REPO_ROOT}/supabase/migrations/004_weekly_ingestion_closure.sql" \
-  "${REPO_ROOT}/supabase/migrations/005_weekly_ingestion_authority_and_confirmation_closure.sql"
+  "${REPO_ROOT}/supabase/migrations/005_weekly_ingestion_authority_and_confirmation_closure.sql" \
+  "${REPO_ROOT}/supabase/migrations/006_weekly_vocabulary_item_count_unbounded.sql"
 do
   echo "  Applying $(basename "${migration}")..."
   docker exec -i "${CONTAINER_NAME}" psql -U "${DB_USER}" -d "${DB_NAME}" -q < "${migration}"

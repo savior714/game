@@ -31,7 +31,7 @@ const TOOLS = [
             testDate: { type: 'string', description: 'YYYY-MM-DD test date printed on worksheet' },
             items: {
               type: 'array',
-              description: 'Array of 8-15 items mapping answer to prompt.',
+              description: 'Complete weekly vocabulary set extracted from one or more worksheet pages.',
               items: {
                 type: 'object',
                 properties: {

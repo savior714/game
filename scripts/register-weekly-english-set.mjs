@@ -15,13 +15,6 @@
 
 import { readFileSync } from 'node:fs';
 
-// ── Constants ────────────────────────────────────────────────
-const NORMAL_ITEM_MIN = 8;
-const NORMAL_ITEM_MAX = 12;
-const ATYPICAL_ITEM_MAX = 15;
-
-export { NORMAL_ITEM_MIN, NORMAL_ITEM_MAX, ATYPICAL_ITEM_MAX };
-
 export function normalizeText(str) {
   return String(str || '').trim().toLowerCase();
 }
@@ -54,12 +47,8 @@ export function validateCandidateShape(candidate) {
   if (!Array.isArray(candidate.items)) {
     return { valid: false, error: 'Candidate items must be an array' };
   }
-  // Item count range (#7): hard reject outside 8-15
-  if (candidate.items.length < NORMAL_ITEM_MIN || candidate.items.length > ATYPICAL_ITEM_MAX) {
-    return {
-      valid: false,
-      error: `Candidate items count (${candidate.items.length}) is outside allowed bounds (${NORMAL_ITEM_MIN}-${ATYPICAL_ITEM_MAX})`
-    };
+  if (candidate.items.length === 0) {
+    return { valid: false, error: 'Candidate items array must not be empty' };
   }
 
   // Per-item validation

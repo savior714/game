@@ -4,7 +4,7 @@
 Verifies against the live production Supabase instance (rxjefpmvlygunrukccgg):
 1. Authority: Direct user_data upsert of canonical weekly keys blocked by RLS.
 2. Token Lifecycle: Minting, single plaintext exposure, hash storage, invalid token rejection, revocation.
-3. Ingestion Lifecycle: Full state machine (NEW -> NO_OP -> REVISION -> NEEDS_CONFIRMATION -> CONFIRMED -> ATYPICAL -> NEW_DATE).
+3. Ingestion Lifecycle: Full state machine (NEW -> NO_OP -> REVISION -> NEEDS_CONFIRMATION -> CONFIRMED -> 26_ITEMS_UNBOUNDED -> NEW_DATE).
 4. Guardian Verification: Guardian RPC mutation & token management.
 5. Browser Consumer Verification: Direct entry to domains/english and weekly-test with server-canonical wins.
 """
@@ -386,66 +386,53 @@ def run_live_verification(email: str, password: str) -> None:
     )
     print("✓ Stale confirmation failed-closed: CONFIRMATION_STALE")
 
-    # 13 items atypical candidate
-    extra_3 = [
-        {"word": "word11", "prompt": "desc11", "ko": "11", "icon": "11"},
-        {"word": "word12", "prompt": "desc12", "ko": "12", "icon": "12"},
-        {"word": "word13", "prompt": "desc13", "ko": "13", "icon": "13"},
+    # Empty items array -> REJECTED_INVALID (must not be empty)
+    cand_empty = {"testDate": test_date_1, "items": []}
+    status, reg_empty = http_req(
+        "/rest/v1/rpc/register_weekly_english_set",
+        method="POST",
+        payload={
+            "p_agent_token": agent_token,
+            "p_candidate": cand_empty,
+        },
+    )
+    assert status == 200 and reg_empty.get("status") == "REJECTED_INVALID", (
+        f"Empty candidate rejection expected, got {reg_empty}"
+    )
+    print("✓ Empty items array candidate rejected: REJECTED_INVALID")
+
+    # 26 items candidate on new test date -> REGISTERED_NEW without item-count confirmation
+    items_26 = [
+        {
+            "word": f"word{i:02d}",
+            "prompt": f"description for word {i:02d}",
+            "ko": f"뜻{i:02d}",
+            "icon": "📚",
+        }
+        for i in range(1, 27)
     ]
-    cand_13 = {"testDate": test_date_1, "items": SAMPLE_10_ITEMS + extra_3}
-    status, reg_13 = http_req(
+    cand_26 = {"testDate": test_date_2, "items": items_26}
+    status, reg_26 = http_req(
         "/rest/v1/rpc/register_weekly_english_set",
         method="POST",
-        payload={
-            "p_agent_token": agent_token,
-            "p_candidate": cand_13,
-            "p_confirmation": {},
-        },
+        payload={"p_agent_token": agent_token, "p_candidate": cand_26},
     )
-    assert status == 200 and reg_13.get("status") == "REJECTED_CONFIRMATION", (
-        f"13-item empty confirmation rejection expected, got {reg_13}"
+    assert status == 200 and reg_26.get("status") == "REGISTERED_NEW", (
+        f"26-item REGISTERED_NEW failed: {reg_26}"
     )
-    print("✓ 13-item atypical candidate with empty confirmation rejected")
+    assert reg_26.get("itemCount") == 26, f"Expected 26 items, got {reg_26.get('itemCount')}"
+    assert reg_26["revision"] == 1
+    print("✓ 26-item candidate registered on new test date without count confirmation: REGISTERED_NEW (rev 1, itemCount 26)")
 
-    # 13 items with correct confirmation -> accepted
-    fp_13 = compute_fp(cand_13["items"])
-    conf_13 = {
-        "reason": "ATYPICAL_ITEM_COUNT",
-        "candidateFingerprint": fp_13,
-        "expectedActiveFingerprint": active_fp,
-        "expectedActiveRevision": active_rev,
-    }
-    status, reg_13_ok = http_req(
-        "/rest/v1/rpc/register_weekly_english_set",
-        method="POST",
-        payload={
-            "p_agent_token": agent_token,
-            "p_candidate": cand_13,
-            "p_confirmation": conf_13,
-        },
+    # Verify read-back preserves all 26 items
+    status, read_back = http_req(
+        f"/rest/v1/rpc/get_current_weekly_english_set?p_agent_token={agent_token}",
+        method="GET",
     )
-    assert (
-        status == 200 and reg_13_ok.get("status") == "REGISTERED_CONFIRMED_REVISION"
-    ), f"13-item confirmation failed: {reg_13_ok}"
-    active_fp = reg_13_ok["contentFingerprint"]
-    active_rev = reg_13_ok["revision"]
-    assert active_rev == 4
-    print(
-        f"✓ 13-item atypical candidate accepted with valid confirmation (rev {active_rev})"
-    )
-
-    # New test date -> REGISTERED_NEW
-    cand_new_date = {"testDate": test_date_2, "items": SAMPLE_10_ITEMS}
-    status, reg_new_date = http_req(
-        "/rest/v1/rpc/register_weekly_english_set",
-        method="POST",
-        payload={"p_agent_token": agent_token, "p_candidate": cand_new_date},
-    )
-    assert status == 200 and reg_new_date.get("status") == "REGISTERED_NEW", (
-        f"New date REGISTERED_NEW failed: {reg_new_date}"
-    )
-    assert reg_new_date["revision"] == 1
-    print("✓ Different test date registered: REGISTERED_NEW (rev 1)")
+    assert status == 200 and read_back.get("status") == "OK", f"Read-back failed: {read_back}"
+    rb_items = read_back.get("data", {}).get("canonical", {}).get("items", [])
+    assert len(rb_items) == 26, f"Expected 26 items in read-back, got {len(rb_items)}"
+    print("✓ 26 items preserved in canonical read-back without truncation")
 
     # 5. Section 7: Guardian RPC Verification
     print("\n[Step 5] Verifying Guardian RPC Operations...")

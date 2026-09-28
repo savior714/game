@@ -20,9 +20,6 @@ const TRANSPORT_SCRIPT = path.join(ROOT, 'scripts/register-weekly-english-set.mj
 
 // ── Constants matching 004 migration ──
 const C_CHANGE_THRESHOLD = 3;
-const C_NORMAL_ITEM_MIN = 8;
-const C_NORMAL_ITEM_MAX = 12;
-const C_ATYPICAL_ITEM_MAX = 15;
 
 // ── In-Memory Postgres DB Mock simulating 003+004 migration exactly ──
 const db = {
@@ -139,9 +136,8 @@ function _register_weekly_english_set_internal(userId, candidate, confirmation) 
   if (!Array.isArray(items)) {
     return { status: 'REJECTED_INVALID', message: 'Candidate items must be an array' };
   }
-  // Item count (#7)
-  if (items.length < C_NORMAL_ITEM_MIN || items.length > C_ATYPICAL_ITEM_MAX) {
-    return { status: 'REJECTED_INVALID', message: `Candidate items count out of allowed bounds (${C_NORMAL_ITEM_MIN}-${C_ATYPICAL_ITEM_MAX})` };
+  if (items.length === 0) {
+    return { status: 'REJECTED_INVALID', message: 'Candidate items array must not be empty' };
   }
 
   const canonicalItems = [];
@@ -231,35 +227,8 @@ function _register_weekly_english_set_internal(userId, candidate, confirmation) 
       }
       const symDiffCount = addedCount + removedCount;
 
-      // ── Branch A: Atypical Item Count (13-15 items) ───
-      if (items.length > C_NORMAL_ITEM_MAX) {
-        if (!confirmation) {
-          return {
-            status: 'NEEDS_CONFIRMATION',
-            message: `Atypical item count (${items.length}) exceeds normal range`,
-            reason: 'ATYPICAL_ITEM_COUNT',
-            activeSetId: existingDate,
-            activeRevision: existingRev,
-            activeFingerprint: existingFp,
-            activeItemCount: existingItems.length,
-            candidateFingerprint: newFp,
-            candidateItemCount: items.length,
-            conflictDiffCount: symDiffCount
-          };
-        }
-
-        const confVal = validateWeeklyConfirmation(
-          confirmation, 'ATYPICAL_ITEM_COUNT', newFp, existingFp, existingRev
-        );
-        if (!confVal.valid) {
-          return confVal.result;
-        }
-
-        status = 'REGISTERED_CONFIRMED_REVISION';
-        newRev = existingRev + 1;
-
-      // ── Branch B: Normal Count with Large Symmetric Diff ─
-      } else if (symDiffCount > C_CHANGE_THRESHOLD) {
+      // ── Large Symmetric Diff Check ──
+      if (symDiffCount > C_CHANGE_THRESHOLD) {
         if (!confirmation) {
           return {
             status: 'NEEDS_CONFIRMATION',
@@ -291,36 +260,9 @@ function _register_weekly_english_set_internal(userId, candidate, confirmation) 
         newRev = existingRev + 1;
       }
     } else {
-      // Different date — check atypical count
-      if (items.length > C_NORMAL_ITEM_MAX) {
-        if (!confirmation) {
-          return {
-            status: 'NEEDS_CONFIRMATION',
-            message: `Atypical item count (${items.length}) exceeds normal range`,
-            reason: 'ATYPICAL_ITEM_COUNT',
-            activeSetId: existingDate,
-            activeRevision: existingRev,
-            activeFingerprint: existingFp,
-            activeItemCount: existingItems.length,
-            candidateFingerprint: newFp,
-            candidateItemCount: items.length,
-            conflictDiffCount: 0
-          };
-        }
-
-        const confVal = validateWeeklyConfirmation(
-          confirmation, 'ATYPICAL_ITEM_COUNT', newFp, existingFp, existingRev
-        );
-        if (!confVal.valid) {
-          return confVal.result;
-        }
-
-        status = 'REGISTERED_CONFIRMED_REVISION';
-        newRev = 1;
-      } else {
-        status = 'REGISTERED_NEW';
-        newRev = 1;
-      }
+      // Different date: clean new week activation
+      status = 'REGISTERED_NEW';
+      newRev = 1;
     }
 
     // Rollback preservation
@@ -332,32 +274,9 @@ function _register_weekly_english_set_internal(userId, candidate, confirmation) 
       is_current: false
     });
   } else {
-    // No existing — atypical check
-    if (items.length > C_NORMAL_ITEM_MAX) {
-      if (!confirmation) {
-        return {
-          status: 'NEEDS_CONFIRMATION',
-          message: `Atypical item count (${items.length}) exceeds normal range`,
-          reason: 'ATYPICAL_ITEM_COUNT',
-          candidateFingerprint: newFp,
-          candidateItemCount: items.length,
-          conflictDiffCount: 0
-        };
-      }
-
-      const confVal = validateWeeklyConfirmation(
-        confirmation, 'ATYPICAL_ITEM_COUNT', newFp, null, null
-      );
-      if (!confVal.valid) {
-        return confVal.result;
-      }
-
-      status = 'REGISTERED_CONFIRMED_REVISION';
-      newRev = 1;
-    } else {
-      status = 'REGISTERED_NEW';
-      newRev = 1;
-    }
+    // No existing current set
+    status = 'REGISTERED_NEW';
+    newRev = 1;
   }
 
   const nowIso = new Date().toISOString();
@@ -868,11 +787,19 @@ async function runLifecycle() {
 
   // ── VALIDATION TESTS ──────────────────────────────────────
   // 7 items → reject
+  // Empty items → reject
+  const resEmptyItems = await transport.executeIngestionFlow({
+    candidate: { testDate: '2026-10-09', items: [] },
+    token: TOKEN_AIDEN, supabaseUrl: 'https://test.supabase.co', anonKey: 'anon-key', fetchFn: mockFetch
+  });
+  results.emptyItemsRejected = resEmptyItems.status;
+
+  // 7 items → accepted without arbitrary lower bound
   const res7items = await transport.executeIngestionFlow({
     candidate: { testDate: '2026-10-09', items: setB_candidate.items.slice(0, 7) },
     token: TOKEN_AIDEN, supabaseUrl: 'https://test.supabase.co', anonKey: 'anon-key', fetchFn: mockFetch
   });
-  results.reject7items = res7items.status;
+  results.accept7items = res7items.status;
 
   // 8 items → accept
   const res8items = await transport.executeIngestionFlow({
@@ -881,7 +808,7 @@ async function runLifecycle() {
   });
   results.accept8items = res8items.status;
 
-  // 13 items → needs confirmation (atypical)
+  // 13 items → accepted directly (no ATYPICAL_ITEM_COUNT confirmation)
   const items13 = [...setB_candidate.items,
     { answer: 'extra1', prompt: 'extra definition 1' },
     { answer: 'extra2', prompt: 'extra definition 2' },
@@ -891,8 +818,46 @@ async function runLifecycle() {
     candidate: { testDate: '2026-10-16', items: items13 },
     token: TOKEN_AIDEN, supabaseUrl: 'https://test.supabase.co', anonKey: 'anon-key', fetchFn: mockFetch
   });
-  results.atypical13items = res13items.status;
-  results.atypical13reason = res13items.reason;
+  results.accept13items = res13items.status;
+
+  // 26 items → accepted directly with full read-back and source-fidelity
+  const items26 = [
+    { answer: 'across', prompt: 'from one side to the other side' },
+    { answer: 'surround', prompt: 'to be on all sides' },
+    { answer: 'relaxing', prompt: 'helping you to rest' },
+    { answer: 'peaceful', prompt: 'calm and not violent' },
+    { answer: 'mystery', prompt: 'a puzzle or secret' },
+    { answer: 'clear', prompt: 'see-through' },
+    { answer: 'bottom', prompt: 'the lowest part of something' },
+    { answer: 'explore', prompt: 'to look around and discover' },
+    { answer: 'calm', prompt: 'not moving much' },
+    { answer: 'imagine', prompt: 'to picture in your mind' },
+    { answer: 'courage', prompt: 'the ability to do something frightening' },
+    { answer: 'brilliant', prompt: 'exceptionally clever or talented' },
+    { answer: 'harvest', prompt: 'the process of gathering crops' },
+    { answer: 'whisper', prompt: 'to speak very softly' },
+    { answer: 'journey', prompt: 'an act of traveling from one place to another' },
+    { answer: 'ancient', prompt: 'belonging to the very distant past' },
+    { answer: 'treasure', prompt: 'a quantity of precious metals, gems, or other valuable objects' },
+    { answer: 'shelter', prompt: 'a place giving temporary protection from bad weather or danger' },
+    { answer: 'shadow', prompt: 'a dark area or shape produced by a body coming between rays of light and a surface' },
+    { answer: 'glance', prompt: 'take a brief or hurried look' },
+    { answer: 'furious', prompt: 'extremely angry' },
+    { answer: 'delight', prompt: 'great pleasure' },
+    { answer: 'comfort', prompt: 'a state of physical ease and freedom from pain or constraint' },
+    { answer: 'brave', prompt: 'ready to face and endure danger or pain' },
+    { answer: 'gentle', prompt: 'mild in temperament or behavior' },
+    { answer: 'honest', prompt: 'free of deceit and untruthful' }
+  ];
+  const res26items = await transport.executeIngestionFlow({
+    candidate: { testDate: '2026-11-06', items: items26 },
+    token: TOKEN_AIDEN, supabaseUrl: 'https://test.supabase.co', anonKey: 'anon-key', fetchFn: mockFetch
+  });
+  results.step26 = res26items;
+  results.accept26items = res26items.status;
+  results.accept26itemCount = res26items.itemCount;
+  results.accept26ReadBackVerified = res26items.readBackVerified;
+  results.accept26SourceFidelityVerified = res26items.sourceFidelityVerified;
 
   // Invalid calendar date
   const resInvalidDate = await transport.executeIngestionFlow({
@@ -1063,91 +1028,64 @@ async function runLifecycle() {
   const cleanedQueue = window.SyncEngine.getQueue();
   results.preExistingQueuePurged = !cleanedQueue['aiden_canonical_weekly_vocabulary_v1'] && !cleanedQueue['englishWeeklyWords'] && cleanedQueue['study_rewards'] !== undefined;
 
-  // Test 3: 13-item + empty '{}' confirmation → REJECT
-  const cand13 = {
-    testDate: '2026-10-16',
-    items: items13
+  // Test 3: Large symmetric diff on same date (5 pairs modified) requires confirmation
+  const activeBeforeConf = db.userData.get(`${USER_AIDEN}::aiden_canonical_weekly_vocabulary_v1`).payload;
+  const candLargeDiff = {
+    testDate: activeBeforeConf.testDate,
+    items: [
+      { answer: 'mod1', prompt: 'definition 1' },
+      { answer: 'mod2', prompt: 'definition 2' },
+      { answer: 'mod3', prompt: 'definition 3' },
+      { answer: 'mod4', prompt: 'definition 4' },
+      { answer: 'mod5', prompt: 'definition 5' },
+      ...activeBeforeConf.items.slice(5)
+    ]
   };
-  const cand13Fp = computeWeeklyFingerprint(cand13.items.map(it => ({
-    itemId: `2026-10-16-${it.answer || it.word}-hash`,
-    answer: it.answer || it.word,
-    prompt: it.prompt || it.academyDescription
+  const candLargeDiffFp = computeWeeklyFingerprint(candLargeDiff.items.map(it => ({
+    itemId: `${activeBeforeConf.testDate}-${it.answer}-hash`,
+    answer: it.answer,
+    prompt: it.prompt
   })));
-  const activeBefore13 = db.userData.get(`${USER_AIDEN}::aiden_canonical_weekly_vocabulary_v1`).payload;
-  const res13EmptyConf = rpc_register_weekly_english_set(TOKEN_AIDEN, cand13, {});
-  results.atypical13EmptyConfRejected = ['REJECTED_CONFIRMATION', 'CONFIRMATION_STALE'].includes(res13EmptyConf.status);
 
-  // Test 4: 13-item + wrong candidate fingerprint → REJECT
-  const res13WrongCandFp = rpc_register_weekly_english_set(TOKEN_AIDEN, cand13, {
-    reason: 'ATYPICAL_ITEM_COUNT',
+  // Test 3a: empty confirmation rejected
+  const resEmptyConf = rpc_register_weekly_english_set(TOKEN_AIDEN, candLargeDiff, {});
+  results.largeDiffEmptyConfRejected = ['REJECTED_CONFIRMATION', 'CONFIRMATION_STALE'].includes(resEmptyConf.status);
+
+  // Test 4: wrong candidate fingerprint rejected
+  const resWrongCandFp = rpc_register_weekly_english_set(TOKEN_AIDEN, candLargeDiff, {
+    reason: 'LARGE_SYMMETRIC_DIFF',
     candidateFingerprint: 'wrong-fingerprint',
-    expectedActiveFingerprint: activeBefore13.contentFingerprint,
-    expectedActiveRevision: activeBefore13.revision
+    expectedActiveFingerprint: activeBeforeConf.contentFingerprint,
+    expectedActiveRevision: activeBeforeConf.revision
   });
-  results.atypical13WrongCandFpRejected = res13WrongCandFp.status === 'CONFIRMATION_STALE';
+  results.largeDiffWrongCandFpRejected = resWrongCandFp.status === 'CONFIRMATION_STALE';
 
-  // Test 5: 13-item + valid confirmation → ACCEPT
-  // (Note: testDate 2026-10-16 is a new date compared to active set date 2026-09-18 or 2026-10-02)
-  const res13ValidConf = rpc_register_weekly_english_set(TOKEN_AIDEN, cand13, {
-    reason: 'ATYPICAL_ITEM_COUNT',
-    candidateFingerprint: cand13Fp,
-    expectedActiveFingerprint: activeBefore13.contentFingerprint,
-    expectedActiveRevision: activeBefore13.revision
-  });
-  results.atypical13ValidConfAccepted = res13ValidConf.status === 'REGISTERED_CONFIRMED_REVISION';
-
-  // Test 6: new-date atypical invalid vs valid confirmation
-  const candNewDate14 = {
-    testDate: '2026-11-20',
-    items: [...items13, { answer: 'extra4', prompt: 'extra definition 4' }]
-  };
-  const candNewDate14Fp = computeWeeklyFingerprint(candNewDate14.items.map(it => ({
-    itemId: `2026-11-20-${it.answer || it.word}-hash`,
-    answer: it.answer || it.word,
-    prompt: it.prompt || it.academyDescription
-  })));
-  const activeBeforeNewDate = db.userData.get(`${USER_AIDEN}::aiden_canonical_weekly_vocabulary_v1`).payload;
-  const resNewDateInvalid = rpc_register_weekly_english_set(TOKEN_AIDEN, candNewDate14, {
+  // Test 5: wrong reason rejected
+  const resWrongReason = rpc_register_weekly_english_set(TOKEN_AIDEN, candLargeDiff, {
     reason: 'WRONG_REASON',
-    candidateFingerprint: candNewDate14Fp,
-    expectedActiveFingerprint: activeBeforeNewDate.contentFingerprint,
-    expectedActiveRevision: activeBeforeNewDate.revision
+    candidateFingerprint: candLargeDiffFp,
+    expectedActiveFingerprint: activeBeforeConf.contentFingerprint,
+    expectedActiveRevision: activeBeforeConf.revision
   });
-  results.newDateAtypicalInvalidRejected = ['REJECTED_CONFIRMATION', 'CONFIRMATION_STALE'].includes(resNewDateInvalid.status);
+  results.largeDiffWrongReasonRejected = resWrongReason.status === 'REJECTED_CONFIRMATION';
 
-  const resNewDateValid = rpc_register_weekly_english_set(TOKEN_AIDEN, candNewDate14, {
-    reason: 'ATYPICAL_ITEM_COUNT',
-    candidateFingerprint: candNewDate14Fp,
-    expectedActiveFingerprint: activeBeforeNewDate.contentFingerprint,
-    expectedActiveRevision: activeBeforeNewDate.revision
+  // Test 6: stale active revision rejected
+  const resStaleRev = rpc_register_weekly_english_set(TOKEN_AIDEN, candLargeDiff, {
+    reason: 'LARGE_SYMMETRIC_DIFF',
+    candidateFingerprint: candLargeDiffFp,
+    expectedActiveFingerprint: activeBeforeConf.contentFingerprint,
+    expectedActiveRevision: 99999
   });
-  results.newDateAtypicalValidAccepted = resNewDateValid.status === 'REGISTERED_CONFIRMED_REVISION';
+  results.largeDiffStaleActiveRevRejected = resStaleRev.status === 'CONFIRMATION_STALE';
 
-  // Test 7: first-ever atypical valid/invalid confirmation (for fresh user with no existing row)
-  const candFirstEver13 = {
-    testDate: '2026-12-04',
-    items: items13
-  };
-  const candFirstEver13Fp = computeWeeklyFingerprint(candFirstEver13.items.map(it => ({
-    itemId: `2026-12-04-${it.answer || it.word}-hash`,
-    answer: it.answer || it.word,
-    prompt: it.prompt || it.academyDescription
-  })));
-  const USER_FRESH = '00000000-0000-0000-0000-000000000099';
-  const TOKEN_FRESH = 'token-fresh-user';
-  db.tokens.set(sha256Hex(TOKEN_FRESH), { id: 'tok-fresh', user_id: USER_FRESH, is_revoked: false, scope: 'weekly_english_ingestion' });
-
-  const resFirstEverNeedsConf = rpc_register_weekly_english_set(TOKEN_FRESH, candFirstEver13, null);
-  results.firstEverAtypicalNeedsConf = resFirstEverNeedsConf.status === 'NEEDS_CONFIRMATION';
-
-  const resFirstEverEmptyConf = rpc_register_weekly_english_set(TOKEN_FRESH, candFirstEver13, {});
-  results.firstEverAtypicalEmptyConfRejected = ['REJECTED_CONFIRMATION', 'CONFIRMATION_STALE'].includes(resFirstEverEmptyConf.status);
-
-  const resFirstEverValidConf = rpc_register_weekly_english_set(TOKEN_FRESH, candFirstEver13, {
-    reason: 'ATYPICAL_ITEM_COUNT',
-    candidateFingerprint: candFirstEver13Fp
+  // Test 7: valid confirmation accepted
+  const resValidConf = rpc_register_weekly_english_set(TOKEN_AIDEN, candLargeDiff, {
+    reason: 'LARGE_SYMMETRIC_DIFF',
+    candidateFingerprint: candLargeDiffFp,
+    expectedActiveFingerprint: activeBeforeConf.contentFingerprint,
+    expectedActiveRevision: activeBeforeConf.revision
   });
-  results.firstEverAtypicalValidConfAccepted = resFirstEverValidConf.status === 'REGISTERED_CONFIRMED_REVISION';
+  results.largeDiffValidConfAccepted = resValidConf.status === 'REGISTERED_CONFIRMED_REVISION';
 
   // Test 8 & 9: Guardian add/delete through server RPC mutation + read-back
   // Setup window.Auth & window.supabaseClient mock for guardian mutation

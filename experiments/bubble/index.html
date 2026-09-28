@@ -74,9 +74,9 @@
     transform: translateY(-1px);
   }
   #hud{
-    position:fixed; top:0; left:0; right:0; z-index:5;
+    position:fixed; top:62px; left:0; right:0; z-index:5;
     display:flex; justify-content:center; align-items:flex-start;
-    gap:clamp(8px,2vw,18px); padding:14px 12px;
+    gap:clamp(8px,2vw,18px); padding:6px 12px;
     pointer-events:none;
   }
   .card{
@@ -568,6 +568,7 @@ function startGame(){
   score = 0; shownScore = -1; timeLeft = GAME_TIME; shownSec = -1;
   combo = 0; comboTimer = 0; maxCombo = 0; popped = 0; missed = 0;
   bubbles = []; pending = []; texts = []; shake = 0; spawnTimer = 0;
+  ui.timeCard.classList.remove('danger');
   for (let i = 0; i < 4; i++){ spawnBubble(); bubbles[bubbles.length-1].y = H + rand(20, 160); }
   ui.menu.classList.add('hidden'); ui.over.classList.add('hidden'); ui.pauseOv.classList.add('hidden');
   ui.hud.classList.remove('hidden'); document.body.classList.add('playing');
@@ -619,7 +620,10 @@ function setPaused(v){
   if (state !== 'playing') return;
   paused = v;
   ui.pauseOv.classList.toggle('hidden', !v);
-  if (!v) uiSound();
+  if (!v){
+    lastT = performance.now();
+    uiSound();
+  }
 }
 
 $('startBtn').onclick  = startGame;
@@ -634,15 +638,245 @@ $('soundBtn').onclick  = () => {
   $('soundBtn').textContent = soundOn ? '🔊' : '🔇';
   if (AC) master.gain.setTargetAtTime(soundOn ? 1 : 0, AC.currentTime, .03);
 };
-document.addEventListener('visibilitychange', () => { if (document.hidden) setPaused(true); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) setPaused(true);
+  else lastT = performance.now();
+});
 addEventListener('keydown', e => {
   if (e.code === 'Escape' || e.code === 'KeyP'){ if (state === 'playing') setPaused(!paused); }
 });
 
+/* ---------- 루프 ---------- */
+let rafId = null;
+let lastT = 0;
+let isRunning = false;
+let frameCount = 0;
+
+function update(dt){
+  // 1. 구름 이동
+  clouds.forEach(c => {
+    c.x += c.v * dt;
+    if (c.x - 80 * c.s > W){
+      c.x = -80 * c.s;
+      c.y = rand(H * .05, H * .42);
+    }
+  });
+
+  // 2. 파티클
+  for (let i = particles.length - 1; i >= 0; i--){
+    const p = particles[i];
+    p.age += dt;
+    if (p.age >= p.life){ particles.splice(i, 1); continue; }
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy += 220 * dt;
+  }
+
+  // 3. 링 효과
+  for (let i = rings.length - 1; i >= 0; i--){
+    const r = rings[i];
+    r.age += dt;
+    if (r.age >= r.life){ rings.splice(i, 1); }
+  }
+
+  // 4. 플로팅 텍스트
+  for (let i = texts.length - 1; i >= 0; i--){
+    const t = texts[i];
+    t.age += dt;
+    if (t.age >= t.life){ texts.splice(i, 1); continue; }
+    t.y += t.vy * dt;
+  }
+
+  // 5. 폭죽/컨페티
+  for (let i = confetti.length - 1; i >= 0; i--){
+    const c = confetti[i];
+    c.age += dt;
+    if (c.age >= c.life){ confetti.splice(i, 1); continue; }
+    c.x += c.vx * dt;
+    c.y += c.vy * dt;
+    c.vy += 320 * dt;
+    c.rot += c.vr * dt;
+  }
+
+  // 6. 화면 흔들림 감쇠
+  if (shake > 0) shake = Math.max(0, shake - dt);
+
+  // 일시정지 중이면 게임 플레이 상태 진행은 중단
+  if (paused && state === 'playing') return;
+
+  clock += dt;
+
+  // 7. 무지개 연쇄 폭발
+  for (let i = pending.length - 1; i >= 0; i--){
+    const item = pending[i];
+    if (clock >= item.at){
+      pending.splice(i, 1);
+      if (bubbles.includes(item.b)){
+        chainCount++;
+        popBubble(item.b, chainCount);
+      }
+    }
+  }
+
+  // 8. 콤보 타이머 감쇠
+  if (comboTimer > 0){
+    comboTimer -= dt;
+    if (comboTimer <= 0){
+      combo = 0;
+      comboTimer = 0;
+      refreshCombo();
+    }
+  }
+
+  // 9. 게임 진행 시간 및 방울 스폰
+  if (state === 'playing'){
+    timeLeft -= dt;
+    if (timeLeft <= 0){
+      timeLeft = 0;
+      endGame();
+    }
+    const sec = Math.max(0, Math.ceil(timeLeft));
+    if (sec !== shownSec){
+      shownSec = sec;
+      ui.time.textContent = sec;
+      if (sec <= 10 && timeLeft > 0){
+        ui.timeCard.classList.add('danger');
+        tickSound();
+      } else {
+        ui.timeCard.classList.remove('danger');
+      }
+    }
+
+    spawnTimer -= dt;
+    if (spawnTimer <= 0){
+      spawnBubble();
+      const progress = 1 - timeLeft / GAME_TIME;
+      spawnTimer = rand(0.55, 1.1) / (1 + progress * 0.4);
+    }
+  } else if (state === 'menu'){
+    if (bubbles.length < 6){
+      spawnBubble();
+    }
+  }
+
+  // 10. 방울 이동 및 화면 밖 제거
+  for (let i = bubbles.length - 1; i >= 0; i--){
+    const b = bubbles[i];
+    b.baseX += b.drift * dt;
+    b.y += b.vy * dt;
+    b.x = b.baseX + Math.sin(clock * b.wf + b.phase) * b.amp;
+
+    if (b.baseX < b.r + 5){ b.baseX = b.r + 5; b.drift = Math.abs(b.drift); }
+    else if (b.baseX > W - b.r - 5){ b.baseX = W - b.r - 5; b.drift = -Math.abs(b.drift); }
+
+    if (b.y + b.r < -20){
+      bubbles.splice(i, 1);
+      if (state === 'playing'){
+        missed++;
+      }
+    }
+  }
+}
+
+function render(){
+  ctx.save();
+  if (shake > 0){
+    const s = (shake / 0.3) * 8;
+    ctx.translate(rand(-s, s), rand(-s, s));
+  }
+
+  drawBackground(clock);
+  bubbles.forEach(b => drawBubble(b, clock));
+
+  // 링 효과 렌더링
+  rings.forEach(r => {
+    const progress = r.age / r.life;
+    const alpha = Math.max(0, 1 - progress);
+    const radius = r.r0 + progress * 24;
+    ctx.save();
+    ctx.strokeStyle = `hsla(${r.hue}, 95%, 75%, ${alpha * 0.8})`;
+    ctx.lineWidth = Math.max(1, 3 * (1 - progress));
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, radius, 0, TAU);
+    ctx.stroke();
+    ctx.restore();
+  });
+
+  // 파티클 렌더링
+  particles.forEach(p => {
+    const alpha = Math.max(0, 1 - p.age / p.life);
+    ctx.fillStyle = `hsla(${p.hue}, 90%, 65%, ${alpha})`;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, Math.max(0.5, p.r * alpha), 0, TAU);
+    ctx.fill();
+  });
+
+  // 컨페티 렌더링
+  confetti.forEach(c => {
+    const alpha = Math.max(0, 1 - c.age / c.life);
+    ctx.save();
+    ctx.translate(c.x, c.y);
+    ctx.rotate(c.rot);
+    ctx.fillStyle = c.c;
+    ctx.globalAlpha = alpha;
+    ctx.fillRect(-c.w / 2, -c.h / 2, c.w, c.h);
+    ctx.restore();
+  });
+
+  // 플로팅 텍스트 렌더링
+  texts.forEach(t => {
+    const progress = t.age / t.life;
+    const alpha = Math.max(0, 1 - progress);
+    ctx.save();
+    ctx.font = t.big ? "bold 32px 'Jua', sans-serif" : "bold 22px 'Jua', sans-serif";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = t.color;
+    ctx.globalAlpha = alpha;
+    ctx.shadowColor = 'rgba(29,63,110,0.5)';
+    ctx.shadowBlur = 6;
+    ctx.fillText(t.txt, t.x, t.y);
+    ctx.restore();
+  });
+
+  ctx.restore();
+}
+
+function loop(now){
+  if (!isRunning) isRunning = true;
+
+  if (rafId !== null){
+    cancelAnimationFrame(rafId);
+    rafId = null;
+  }
+
+  frameCount++;
+  window._frameCount = frameCount;
+
+  if (!lastT) lastT = now;
+  const dt = Math.min((now - lastT) / 1000, 0.1);
+  lastT = now;
+
+  update(dt);
+  render();
+
+  rafId = requestAnimationFrame(loop);
+}
+
+function startLoop(){
+  if (isRunning && rafId !== null) return;
+  isRunning = true;
+  lastT = 0;
+  if (rafId !== null){
+    cancelAnimationFrame(rafId);
+  }
+  rafId = requestAnimationFrame(loop);
+}
+
 /* ---------- 시작 ---------- */
 resize(); initClouds(); goMenu();
 $('soundBtn').textContent = soundOn ? '🔊' : '🔇';
-requestAnimationFrame(loop);
+startLoop();
 </script>
 </body>
 </html>

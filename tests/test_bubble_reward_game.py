@@ -19,6 +19,21 @@ def test_bubble_game_entry_exists():
     )
 
 
+def test_bubble_game_animation_loop_contract():
+    """Ensure experiments/bubble/index.html defines loop, update, render and startLoop lifecycle."""
+    content = BUBBLE_INDEX.read_text(encoding="utf-8")
+    assert "function loop(" in content, "Bubble game must define loop function"
+    assert "function update(" in content, "Bubble game must define update function"
+    assert "function render(" in content, "Bubble game must define render function"
+    assert "function startLoop(" in content, (
+        "Bubble game must define startLoop function"
+    )
+    assert "startLoop();" in content, "Bubble game must initiate startLoop"
+    assert "cancelAnimationFrame(rafId)" in content, (
+        "Bubble game loop must guard against duplicate requestAnimationFrame chains"
+    )
+
+
 def test_reward_system_bubble_integration():
     """Ensure RewardSystem includes bubble item and bubble_plays handling."""
     reward_content = REWARD_SCRIPT.read_text(encoding="utf-8")

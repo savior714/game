@@ -107,7 +107,10 @@ def test_reference_cli_exit_code_on_fidelity_failure(tmp_path: Path) -> None:
         {"answer": "ancient", "prompt": "belonging to the very distant past"},
         {"answer": "curiosity", "prompt": "a strong desire to know or learn"},
         {"answer": "horizon", "prompt": "the line at which earth and sky meet"},
-        {"answer": "journey", "prompt": "an act of traveling from one place to another"},
+        {
+            "answer": "journey",
+            "prompt": "an act of traveling from one place to another",
+        },
         {"answer": "treasure", "prompt": "a quantity of precious items"},
         {"answer": "whisper", "prompt": "speak very softly"},
         {"answer": "glacier", "prompt": "a slowly moving mass of ice"},
@@ -234,7 +237,12 @@ def test_antigravity_mcp_stdio_roundtrip() -> None:
 
     try:
         # 1. initialize
-        init_req = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}) + "\n"
+        init_req = (
+            json.dumps(
+                {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}
+            )
+            + "\n"
+        )
         proc.stdin.write(init_req)
         proc.stdin.flush()
         line = proc.stdout.readline()
@@ -242,7 +250,12 @@ def test_antigravity_mcp_stdio_roundtrip() -> None:
         assert init_res["result"]["serverInfo"]["name"] == "aiden-weekly-english-mcp"
 
         # 2. tools/list
-        list_req = json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}) + "\n"
+        list_req = (
+            json.dumps(
+                {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}}
+            )
+            + "\n"
+        )
         proc.stdin.write(list_req)
         proc.stdin.flush()
         line = proc.stdout.readline()
@@ -274,7 +287,9 @@ def test_live_supabase_rpc_invalid_token_rejection() -> None:
         "Authorization": f"Bearer {LIVE_ANON_KEY}",
         "Content-Type": "application/json",
     }
-    payload = json.dumps({"p_agent_token": "weit_unauthorized_probe_token"}).encode("utf-8")
+    payload = json.dumps({"p_agent_token": "weit_unauthorized_probe_token"}).encode(
+        "utf-8"
+    )
     req = urllib.request.Request(url, data=payload, headers=headers, method="POST")
 
     try:

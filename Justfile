@@ -5,8 +5,11 @@ default:
 
 # --- Bootstrap kernel ---
 
-verify:
-    @bash verify.sh
+verify *args="":
+    @bash verify.sh {{args}}
+
+verify-all:
+    @VERIFY_ALL_TESTS=1 bash verify.sh
 
 lint-turn-end:
     @echo "Turn-end gate (AidenGame)"
@@ -41,8 +44,21 @@ typecheck:
         exit 1; \
     fi
 
+# Fast unit & contract tests (excludes browser and live, timeout=30s)
 test:
     uv run pytest tests
+
+# Browser automation E2E tests (Playwright) with 60s timeout
+test-browser:
+    uv run pytest -m browser -o "addopts=-q --timeout=60" tests
+
+# Live external and real DB tests with 60s timeout
+test-live:
+    uv run pytest -m live -o "addopts=-q --timeout=60" tests
+
+# Full test suite across all tiers with 60s timeout safety
+test-all:
+    uv run pytest -m "" -o "addopts=-q --timeout=60" tests
 
 # Disposable PostgreSQL test environment setup for weekly ingestion
 test-pg-setup:

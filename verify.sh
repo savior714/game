@@ -98,16 +98,72 @@ run_lint() {
     fi
 }
 
+CORE_POLICY_TESTS=(
+    "tests/test_active_product_scope_policy.py"
+    "tests/test_core_agent_contract_consistency.py"
+    "tests/test_auxiliary_core_contract_consistency.py"
+    "tests/test_document_authority_classification.py"
+    "tests/test_git_workflow_guardrails.py"
+    "tests/test_readme_identity.py"
+    "tests/test_verification_pipeline_guardrails.py"
+)
+
 run_tests() {
     echo -e "\n\033[0;36m=== Tests ===\033[0m"
-    if command -v just >/dev/null 2>&1; then
-        just test
-    elif command -v uv >/dev/null 2>&1; then
-        uv run pytest tests
+
+    if [[ "${VERIFY_ALL_TESTS:-0}" == "1" || "${1:-}" == "--all" ]]; then
+        echo -e "\033[0;33m[Running full test suite (all tests, timeout=60s)]\033[0m"
+        if command -v uv >/dev/null 2>&1; then
+            uv run pytest -m "" -o "addopts=-q --timeout=60" tests
+        elif command -v pytest >/dev/null 2>&1; then
+            PYTHONPATH=. pytest -m "" -o "addopts=-q --timeout=60" tests
+        else
+            echo -e "\033[0;31m[ERROR] required test tool unavailable: install uv or pytest\033[0m" >&2
+            return 1
+        fi
+        return
+    fi
+
+    local target_tests=()
+    for test_file in "${CORE_POLICY_TESTS[@]}"; do
+        if [[ -f "$test_file" ]]; then
+            target_tests+=("$test_file")
+        fi
+    done
+
+    # Collect changed test files if TDD gate was skipped or did not set CHANGED_TEST_FILES
+    local changed_tests="${CHANGED_TEST_FILES:-}"
+    if [[ -z "$changed_tests" && "$TDD_GATE_ENABLED" != "1" ]]; then
+        changed_tests="$(git diff --name-only "$TDD_GATE_BASE_REF" 2>/dev/null | rg '^tests/.*\.py$' || true)"
+    fi
+
+    if [[ -n "$changed_tests" ]]; then
+        while IFS= read -r file; do
+            [[ -z "$file" || ! -f "$file" ]] && continue
+            local duplicate=0
+            for existing in "${target_tests[@]}"; do
+                if [[ "$existing" == "$file" ]]; then
+                    duplicate=1
+                    break
+                fi
+            done
+            if [[ "$duplicate" -eq 0 ]]; then
+                target_tests+=("$file")
+            fi
+        done <<< "$changed_tests"
+    fi
+
+    echo -e "\033[0;32m[Running essential tests: ${#target_tests[@]} file(s)]\033[0m"
+    for t in "${target_tests[@]}"; do
+        echo -e "  - \033[0;90m$t\033[0m"
+    done
+
+    if command -v uv >/dev/null 2>&1; then
+        uv run pytest -o "addopts=-q --timeout=30" "${target_tests[@]}"
     elif command -v pytest >/dev/null 2>&1; then
-        PYTHONPATH=. pytest tests
+        PYTHONPATH=. pytest -o "addopts=-q --timeout=30" "${target_tests[@]}"
     else
-        echo -e "\033[0;31m[ERROR] required test tool unavailable: install just, uv, or pytest\033[0m" >&2
+        echo -e "\033[0;31m[ERROR] required test tool unavailable: install uv or pytest\033[0m" >&2
         return 1
     fi
 }
@@ -127,6 +183,6 @@ run_korean_check() {
 tdd_gate_check
 run_lint
 run_korean_check
-run_tests
+run_tests "${@:-}"
 
 echo -e "\n\033[0;32m✅ AidenGame verification complete.\033[0m"

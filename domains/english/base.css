@@ -46,6 +46,79 @@ body {
   overflow-x: hidden;
 }
 
+/* ── Compact Learning HUD (Single Top Chrome Owner) ──────── */
+.study-compact-hud {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.4rem 0.75rem;
+  margin-bottom: 1.25rem;
+  background: rgba(14, 18, 28, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  min-height: 44px;
+  position: relative;
+  z-index: 20;
+}
+
+.compact-hud-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #F8FAFC;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.compact-hud-home:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: var(--neon-volt, #d7ff00);
+}
+
+.compact-hud-home .home-arrow {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.study-compact-hud .compact-hud-title,
+.study-compact-hud h1 {
+  font-size: 1.05rem !important;
+  font-weight: 800 !important;
+  color: #FFFFFF !important;
+  margin: 0 !important;
+  padding: 0 0.5rem !important;
+  text-align: center !important;
+  text-transform: none !important;
+  text-shadow: none !important;
+  letter-spacing: -0.01em !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  flex: 1 1 auto !important;
+}
+
+.compact-hud-reward-mount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  min-height: 36px;
+}
+
 /* ── Unified Console HUD (Top Bar as .home-link) ─────────── */
 .home-link.console-hud {
   width: 100%;

@@ -58,9 +58,39 @@ const RewardSystemUI = (() => {
     style.id = 'reward-critical-css';
     style.innerHTML = `
       #reward-inventory {
-        position: fixed; top: 0; left: 0; width: 100%; z-index: 1000;
-        opacity: 0; visibility: visible; display: flex; justify-content: center;
-        min-height: 48px; pointer-events: none; transition: opacity 0.4s ease;
+        position: static;
+        width: auto;
+        opacity: 0; visibility: visible; display: flex; align-items: center; justify-content: center;
+        min-height: auto; pointer-events: none; transition: opacity 0.3s ease;
+      }
+      #reward-inventory.is-integrated,
+      .hud-reward-mount #reward-inventory,
+      .compact-hud-reward-mount #reward-inventory {
+        position: static !important;
+        background: transparent !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        width: auto !important;
+        min-height: auto !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        z-index: auto !important;
+        display: flex !important;
+        align-items: center !important;
+      }
+      #reward-inventory.reward-surface-gem-only {
+        display: inline-flex !important;
+        align-items: center !important;
+        width: auto !important;
+      }
+      #reward-inventory.reward-surface-gem-only .gem-only-content {
+        display: inline-flex !important;
+        align-items: center !important;
+        width: auto !important;
+        gap: 0 !important;
       }
       #reward-inventory .inventory-content,
       #reward-inventory .inventory-left {
@@ -199,13 +229,51 @@ const RewardSystemUI = (() => {
     }
   }
 
+  function resolveMainHubUrl() {
+    const mountTarget = document.getElementById('reward-inventory-mount');
+    if (mountTarget && mountTarget.dataset.hubHref) {
+      return mountTarget.dataset.hubHref;
+    }
+    try {
+      return new URL('../../index.html#reward-inventory-mount', getGlobalBaseUrl()).href;
+    } catch (e) {
+      return '../../index.html#reward-inventory-mount';
+    }
+  }
+
   function injectInventoryBar(state) {
     if (document.getElementById('reward-inventory')) return;
     const mountTarget = document.getElementById('reward-inventory-mount');
+    if (!mountTarget) {
+      // Invariant: 보상 UI는 해당 화면이 명시적으로 제공하는 surface 안에서만 렌더링한다.
+      // mount가 없는 화면(게임, 몰입형 화면 등)에서는 전역 고정 바를 자동 생성하지 않는다.
+      return;
+    }
+
+    const surfaceMode = mountTarget.dataset.rewardSurface || 'full';
     const bar = document.createElement('div');
     bar.id = 'reward-inventory';
+    bar.classList.add('is-integrated');
     if (state.theme === 'analog') bar.classList.add('theme-analog');
-    if (mountTarget) bar.classList.add('is-integrated');
+    bar.dataset.surfaceMode = surfaceMode;
+
+    if (surfaceMode === 'gem-only') {
+      bar.classList.add('reward-surface-gem-only');
+      const hubUrl = resolveMainHubUrl();
+      bar.innerHTML = `
+        <div class="inventory-content gem-only-content">
+          <a href="${hubUrl}" class="inventory-item gem-item compact-gem-link" data-type="gems" data-action="go-main-reward" aria-label="보석 ${state.gems}개, 보상 화면으로 이동">
+            <span class="icon">💎</span> <span class="val" id="inv-gems">${state.gems}</span>
+          </a>
+        </div>
+      `;
+      mountTarget.appendChild(bar);
+      bar.style.opacity = '1';
+      bar.classList.add('ready');
+      applyBodyTopOffset();
+      return;
+    }
+
     bar.style.opacity = '0';
     let html = `
       <div class="inventory-content">
@@ -246,11 +314,7 @@ const RewardSystemUI = (() => {
     `;
     bar.innerHTML = html;
     bar.dataset.shopItemsSig = JSON.stringify(state.shop_items || []);
-    if (mountTarget) {
-      mountTarget.appendChild(bar);
-    } else {
-      document.body.prepend(bar);
-    }
+    mountTarget.appendChild(bar);
     applyBodyTopOffset();
 
     if (!authListenerBound) {
@@ -262,35 +326,14 @@ const RewardSystemUI = (() => {
         }
       });
     }
-
-    if (!resizeBound) {
-      window.addEventListener('resize', applyBodyTopOffset);
-      resizeBound = true;
-    }
   }
 
   function applyBodyTopOffset() {
     const bar = document.getElementById('reward-inventory');
-    if (!bar || !document.body) return;
-
-    if (bar.classList.contains('is-integrated') || window.getComputedStyle(bar).position !== 'fixed') {
-      bar.classList.add('ready');
-      bar.style.opacity = '1';
-      document.documentElement.style.setProperty('--reward-bar-height', '0px');
-      return;
-    }
-
-    const currentPaddingTop = parseFloat(window.getComputedStyle(document.body).paddingTop) || 0;
-    const basePaddingTop = Number(document.body.dataset.basePaddingTop || currentPaddingTop);
-    document.body.dataset.basePaddingTop = String(basePaddingTop);
-
-    const barHeight = Math.ceil(bar.getBoundingClientRect().height);
-    if (barHeight === 0) return;
-
-    document.body.style.paddingTop = `${basePaddingTop + barHeight}px`;
-    document.documentElement.style.setProperty('--reward-bar-height', `${barHeight}px`);
-    document.documentElement.style.setProperty('--base-padding-top', `${basePaddingTop}px`);
+    if (!bar) return;
     bar.classList.add('ready');
+    bar.style.opacity = '1';
+    document.documentElement.style.setProperty('--reward-bar-height', '0px');
   }
 
   let currentActiveSession = null;
@@ -389,6 +432,13 @@ const RewardSystemUI = (() => {
 
   /** shop_items 변경(항목 추가·삭제·아이콘 등) 시 바 DOM을 상태와 맞춤 */
   function syncInventoryBarWithState(state) {
+    const mountTarget = document.getElementById('reward-inventory-mount');
+    if (!mountTarget) return;
+    const surfaceMode = mountTarget.dataset.rewardSurface || 'full';
+    if (surfaceMode === 'gem-only') {
+      updateUI(state);
+      return;
+    }
     const sig = JSON.stringify(state.shop_items || []);
     const bar = document.getElementById('reward-inventory');
     if (bar && bar.dataset.shopItemsSig === sig) return;
@@ -905,6 +955,13 @@ const RewardSystemUI = (() => {
           RewardSystem.openShopModal();
         }
         e.stopPropagation();
+        break;
+      case 'go-main-reward':
+        {
+          const dest = target.getAttribute('href') || resolveMainHubUrl();
+          window.location.href = dest;
+          e.stopPropagation();
+        }
         break;
       case 'consume':
         if (typeof RewardSystem !== 'undefined' && RewardSystem.consume) {

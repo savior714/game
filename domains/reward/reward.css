@@ -8,28 +8,160 @@
   --reward-accent: #f97316; /* Orange 500 */
 }
 
-/* 1. 인벤토리 바 (Inventory Bar) */
+/* 1. 인벤토리 바 (Inventory Bar - Contextual Single-Owner Surface) */
 #reward-inventory {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  z-index: 1000;
-  background: var(--reward-bg);
-  backdrop-filter: blur(12px) saturate(180%);
-  border-bottom: 1px solid var(--reward-border);
+  position: static;
+  width: auto;
+  z-index: auto;
+  background: transparent;
   display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 8px 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  padding: 0;
   font-family: 'Pretendard', sans-serif;
-  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), padding 0.3s ease;
-  will-change: transform, opacity;
+  transition: opacity 0.3s ease;
   opacity: 0; /* JS에서 ready 클래스가 붙을 때까지 숨김 */
 }
 
 #reward-inventory.ready {
   opacity: 1 !important;
+}
+
+#reward-inventory.is-integrated,
+.hud-reward-mount #reward-inventory,
+.compact-hud-reward-mount #reward-inventory {
+  position: static !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  width: auto !important;
+  min-height: auto !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  z-index: auto !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+#reward-inventory.reward-surface-gem-only {
+  display: inline-flex !important;
+  align-items: center !important;
+  width: auto !important;
+}
+
+#reward-inventory.reward-surface-gem-only .gem-only-content {
+  display: inline-flex !important;
+  align-items: center !important;
+  width: auto !important;
+  gap: 0 !important;
+}
+
+.compact-gem-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.35rem !important;
+  padding: 0.35rem 0.75rem !important;
+  min-height: 36px !important;
+  border-radius: 9999px !important;
+  background: rgba(215, 255, 0, 0.12) !important;
+  border: 1px solid rgba(215, 255, 0, 0.35) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 0 12px rgba(215, 255, 0, 0.12) !important;
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.compact-gem-link:hover {
+  background: rgba(215, 255, 0, 0.2) !important;
+  border-color: rgba(215, 255, 0, 0.5) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 0 16px rgba(215, 255, 0, 0.25) !important;
+}
+
+.compact-gem-link .val {
+  color: var(--neon-volt, #d7ff00) !important;
+  font-family: var(--font-mono, monospace) !important;
+  font-weight: 800 !important;
+}
+
+/* ── Contextual Compact Learning HUD Container ── */
+.study-compact-hud {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.4rem 0.75rem;
+  margin-bottom: 1.25rem;
+  background: rgba(14, 18, 28, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  min-height: 44px;
+  position: relative;
+  z-index: 20;
+}
+
+.compact-hud-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #F8FAFC;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.compact-hud-home:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: var(--neon-volt, #d7ff00);
+}
+
+.compact-hud-home .home-arrow {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.study-compact-hud .compact-hud-title,
+.study-compact-hud h1 {
+  font-size: 1.05rem !important;
+  font-weight: 800 !important;
+  color: #FFFFFF !important;
+  margin: 0 !important;
+  padding: 0 0.5rem !important;
+  text-align: center !important;
+  text-transform: none !important;
+  text-shadow: none !important;
+  letter-spacing: -0.01em !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  flex: 1 1 auto !important;
+}
+
+.compact-hud-reward-mount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  min-height: 36px;
 }
 
 .inventory-content {

@@ -77,46 +77,6 @@ window.SyncEngine = (() => {
     };
   }
 
-  /** 과목별 게임 통계(attempts, correct 등)를 합산하여 머지 (데이터 손실 방지) */
-  function mergeGameStatsPayload(local, remote) {
-    const L = local && typeof local === 'object' ? local : {};
-    const R = remote && typeof remote === 'object' ? remote : {};
-    const merged = {};
-
-    const domainKeys = new Set([...Object.keys(L), ...Object.keys(R)].filter(k => k !== '_updated_at'));
-    domainKeys.forEach(dk => {
-      const lDom = L[dk] || { levels: {}, weaknesses: {} };
-      const rDom = R[dk] || { levels: {}, weaknesses: {} };
-      merged[dk] = { levels: {}, weaknesses: {} };
-
-      // Levels 0-6 합산
-      const allLevels = new Set([...Object.keys(lDom.levels || {}), ...Object.keys(rDom.levels || {})]);
-      allLevels.forEach(lvIdx => {
-        const lvsL = lDom.levels?.[lvIdx] || { attempts: 0, correct: 0, totalTime: 0 };
-        const lvsR = rDom.levels?.[lvIdx] || { attempts: 0, correct: 0, totalTime: 0 };
-        merged[dk].levels[lvIdx] = {
-          attempts: (lvsL.attempts || 0) + (lvsR.attempts || 0),
-          correct: (lvsL.correct || 0) + (lvsR.correct || 0),
-          totalTime: (lvsL.totalTime || 0) + (lvsR.totalTime || 0)
-        };
-      });
-
-      // Weaknesses 합산
-      const wKeys = new Set([...Object.keys(lDom.weaknesses || {}), ...Object.keys(rDom.weaknesses || {})]);
-      wKeys.forEach(wk => {
-        const wl = lDom.weaknesses?.[wk] || { attempts: 0, correct: 0 };
-        const wr = rDom.weaknesses?.[wk] || { attempts: 0, correct: 0 };
-        merged[dk].weaknesses[wk] = {
-          attempts: (wl.attempts || 0) + (wr.attempts || 0),
-          correct: (wl.correct || 0) + (wr.correct || 0)
-        };
-      });
-    });
-
-    merged._updated_at = Math.max(L._updated_at || 0, R._updated_at || 0);
-    return merged;
-  }
-  
   function normalizePulledRows(data) {
     const rowsByKey = new Map(data.map((row) => [row.data_key, row]));
     const normalized = data.filter(
@@ -271,7 +231,7 @@ window.SyncEngine = (() => {
           continue;
         }
 
-        // 최종 완료 기록을 우선시하되, 주요 통계는 병합 처리
+        // study_rewards는 보존 병합하고, subject stats는 현재 full-snapshot 계약대로 LWW 처리한다.
         if (dbTime > localTime) {
           let toStore = row.payload;
           let safeLocal = localParsed || {};

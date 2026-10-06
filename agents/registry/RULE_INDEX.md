@@ -13,11 +13,15 @@ last_verified: 2026-08-06
 
 | 문서 | 역할 |
 |---|---|
-| [`AGENTS.md`](../../AGENTS.md) | 실행 우선순위, 작업 선택, Git·검증·보고 계약 |
+| [`AGENTS.md`](../../AGENTS.md) | 권위 순서, 권위 라우팅, 실행·workspace 경계, Git-native 작업 실행 |
 | [`PROJECT_RULES.md`](../../PROJECT_RULES.md) | 제품·아키텍처·품질 경계 |
-| [`CORE_QUIZ_RELIABILITY_STABILIZATION.md`](../../docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md) | 현재 일반 과목 안정화 제품·검증 계약 |
+| [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md) | 현재 제품 방향·우선순위·active/frozen feature의 단일 SSOT |
+| [`CORE_QUIZ_RELIABILITY_STABILIZATION.md`](../../docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md) | 완료된 일반 과목 안정화 제품·검증 계약 |
 | [`MEMORY.md`](../../docs/agent-context/memory/MEMORY.md) | 새 세션 handoff와 다음 실행 경계 |
 | [`README.md`](../../README.md) | 사용자·개발자용 저장소 진입점 |
+
+`AGENTS.md`는 위임된 owner의 내용을 복제하지 않는다. 질문이 있으면 `AGENTS.md` §2의 권위 라우팅에서
+해당 owner를 먼저 찾는다.
 
 ## 2. Registry
 
@@ -48,6 +52,12 @@ last_verified: 2026-08-06
 
 `routing.md`는 현재 세션의 수동 도구·컨텍스트 선택 규칙이며 자동 route CLI나 manifest를 전제하지 않는다.
 
+## 3.1 Project 규칙
+
+- [`PARALLEL_TRACKS.md`](../project/PARALLEL_TRACKS.md) — 상시 병렬 A/B 개발 트랙과 트랙 런북 계약
+- [`LOCAL_LLM_DELEGATION.md`](../project/LOCAL_LLM_DELEGATION.md) — 로컬 실행 프롬프트 발행 원칙과 구성
+- [`PROFILE.md`](../project/PROFILE.md) — 프로젝트 명령·stack 요약
+
 ## 4. Domain 규칙
 
 현재 존재하는 domain rule은 브라우저 테스트용
@@ -60,4 +70,4 @@ last_verified: 2026-08-06
 실제 목록과 사용 조건은
 [`WORKFLOW_AND_SKILL_INDEX.md`](WORKFLOW_AND_SKILL_INDEX.md)를 따른다.
 
-workflow 또는 skill이 현재 제품 방향과 충돌하면 `AGENTS.md`와 현재 안정화 spec이 우선한다.
+workflow 또는 skill이 현재 제품 방향과 충돌하면 `AGENTS.md`의 권위 라우팅이 지정한 owner가 우선한다.

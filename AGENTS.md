@@ -1,250 +1,156 @@
-# AGENTS.md — AidenGame 저장소 계약
+# AGENTS.md — AidenGame agent kernel
 
-이 문서는 AidenGame 저장소에만 해당하는 계약만 담는다. 일반적인 에이전트 행동은 시스템 프롬프트를 따른다.
+<!-- Language: ko -->
 
-## 0. Web GPT canonical overlay (2026-08-08)
+이 문서는 저장소 전체 에이전트가 알아야 하는 최소 우선순위, 권위 라우팅, 실행 경계만 소유한다.
+제품·아키텍처·검증·Git·개발의 세부 계약은 각 subject owner가 소유한다. 이 문서는 질문을 owner에게
+라우팅할 뿐 그 내용을 복제하지 않는다.
 
-전역 개발 원칙은 Codex의 `developer_instructions`가 담당한다. 이 절은 기존
-AidenGame workflow와 product contract를 대체하지 않는 프로젝트 고유 불변식이다.
+## 0. 프로젝트 불변식
 
-- 브라우저/PixiJS architecture와 standalone deployable-artifact contract는
-  명시적 변경이 없는 한 보존한다. 새 engine, Next.js, separate backend,
-  runtime-critical external network dependency를 도입하지 않는다.
-- implementation, documentation, test, required runtime/development path에 paid
-  tool, asset, service, API, font, plan을 도입하지 않는다.
-- `flake.nix`가 존재해도 Nix는 active toolchain이 아니다. 정책 변경 없이는
-  `flake.lock` 생성, Nix pin upgrade/recommendation, Nix reproducibility work를
-  하지 않는다.
-- canonical manual visual-asset handoff를 보존한다:
-  untrusted inbox/source → structural/security validation → actual game scale proof
-  → required explicit approval → canonical source registration → canonical artifact
-  regeneration → PixiJS/runtime verification.
+- 브라우저/PixiJS architecture와 standalone deployable-artifact contract를 명시적 변경 없이 보존한다.
+  새 engine, Next.js, separate backend, runtime-critical external network dependency를 도입하지 않는다.
+- implementation, documentation, test, required runtime/development path에 paid tool, asset, service,
+  API, font, plan을 도입하지 않는다. `flake.nix`가 존재해도 Nix는 active toolchain이 아니며, 정책 변경
+  없이는 `flake.lock` 생성과 Nix pin·reproducibility 작업을 하지 않는다.
+- deterministic source → raster/atlas → registry → bundle → standalone artifact chain을 보존한다.
+  canonical pipeline을 우회하려고 hash, provenance, registry identity, atlas metadata, generated bundle
+  output을 손으로 편집하지 않는다.
+- canonical manual visual-asset handoff를 보존한다: untrusted inbox/source → structural/security
+  validation → actual game scale proof → required explicit approval → canonical source registration →
+  canonical artifact regeneration → PixiJS/runtime verification.
+  상세 계약은
+  [`AIDENGAME_OCEAN_RESCUE_MANUAL_SVG_ASSET_HANDOFF.md`](docs/specs/technical/AIDENGAME_OCEAN_RESCUE_MANUAL_SVG_ASSET_HANDOFF.md)가
+  소유한다.
 - local text-only LLM이 approved SVG artwork를 조용히 재설계하게 하지 않는다.
-- deterministic source → raster/atlas → registry → bundle → standalone artifact
-  chain을 보존한다.
-- canonical pipeline을 우회하려고 hash, provenance, registry identity, atlas
-  metadata, generated bundle output을 손으로 편집하지 않는다.
-- repository가 exact pin과 deterministic build step을 선언하면 이 문서의 오래된
-  버전 대신 현재 선언을 따른다. unrelated asset/gameplay fix 중 renderer,
-  dependency, tooling을 바꾸지 않는다.
+- 저장소가 exact pin과 deterministic build step을 선언하면 이 문서의 오래된 버전 대신 현재 선언을
+  따른다. unrelated asset/gameplay fix 중 renderer, dependency, tooling을 바꾸지 않는다.
 
-## 1. 적용 순서
+## 1. 권위 순서와 언어
+
+충돌 시 다음 순서를 적용한다.
 
 1. 사용자의 현재 요청
 2. 이 문서
-3. `docs/specs/product/ACTIVE_PRODUCT_SCOPE.md`의 제품 방향
-4. `PROJECT_RULES.md`와 대상 기능의 가장 가까운 product/technical spec
-5. 최신 `origin/main`의 코드·테스트·설정
+3. 이 문서가 위임한 subject owner: `PROJECT_RULES.md`, 제품 SSOT, §2 표의 owner
+4. 최신 `origin/main`의 코드·테스트·설정·runtime 증거
 
-과거 계획과 완료 보고를 현재 상태의 근거로 사용하지 않는다.
+1–3은 instruction이고 4는 implementation evidence다. evidence와 활성 contract가 다르면 어느 쪽도
+자동으로 다시 쓰지 말고 불일치를 조사한다. 과거 계획, 완료 보고, WP 문서는 현재 상태의 근거가 아니다.
 
-## 2. WP 계획과 상태
+응답 언어와 artifact 언어는 서로 독립이다.
 
-- `WP-33E` 같은 이름은 대화와 실행 보고에서 사용하는 작업 라벨이다.
-- 사용자가 저장소 문서화를 명시적으로 요청하지 않는 한 WP 계획·다음 WP·진행 상태·완료 상태는 대화에서만 관리한다.
-- 일반 WP 작업을 위해 `docs/plans/PLAN_ocean_rescue_wp*.md` 또는 상태 전용 `docs/evidence/` 문서를 생성·수정하지 않는다.
-- 테스트는 제품 동작·타입·빌드·배포 계약을 검증하며 `다음 WP`, `현재 WP`, `WP COMPLETE` 같은 일정 상태를 검증하지 않는다.
-- 기존 migration plan과 과거 WP 문서는 참고 자료일 뿐 현재 일정의 권위가 아니다.
-- Blueprint 절차는 사용자가 저장소 Blueprint를 명시적으로 요청한 경우에만 적용한다.
+- **응답 언어** — 채팅과 최종 보고는 한국어가 기본이다. 사용자의 현재 채팅 언어나 명시적 요청만 바꾼다.
+- **artifact 언어** — 코드·주석·문서·제품 카피는 각 subject owner를 따른다. `<!-- Language: ko -->`
+  표식은 그 artifact의 prose 언어만 선언하며 응답 언어를 바꾸지 않는다.
 
-## 3. 현재 제품 방향
+## 2. 권위 라우팅
 
-현재 제품 목표·우선순위·active/frozen feature 상태의 단일 SSOT는 `docs/specs/product/ACTIVE_PRODUCT_SCOPE.md`다.
+| 질문 | Owner |
+|---|---|
+| 현재 제품 목표·우선순위·active/frozen feature 상태 | [`ACTIVE_PRODUCT_SCOPE.md`](docs/specs/product/ACTIVE_PRODUCT_SCOPE.md) |
+| 아키텍처·경로·품질·보안 경계 | [`PROJECT_RULES.md`](PROJECT_RULES.md) |
+| 실행 순서·workspace lifecycle·commit·게시 절차 | [`execution.md`](agents/core/execution.md) |
+| 검증 선택·검증 계층·PASS/BLOCKED 판정 | [`verification.md`](agents/core/verification.md) |
+| 판단 원칙·YAGNI·변경 범위 경계 | [`principles.md`](agents/core/principles.md) |
+| 보고 형식과 PASS/BLOCKED 근거 | [`reporting.md`](agents/core/reporting.md) |
+| Git 파괴적 안전 판정 | [`git.md`](agents/workflows/git.md) |
+| exclusive 자원 reservation | [`work-package-claim.md`](agents/workflows/work-package-claim.md) |
+| 상시 병렬 A/B 개발 트랙과 트랙 런북 | [`PARALLEL_TRACKS.md`](agents/project/PARALLEL_TRACKS.md) |
+| 계획·WP 상태·저장소 Blueprint | [`planning.md`](agents/core/planning.md) |
+| 로컬 실행 프롬프트 발행 | [`LOCAL_LLM_DELEGATION.md`](agents/project/LOCAL_LLM_DELEGATION.md) |
+| 브라우저 실행 증거 | [`playwright.md`](agents/workflows/playwright.md) |
+| 도구·컨텍스트 선택 | [`routing.md`](agents/core/routing.md) |
+| 실제 구현 상태 | 코드·테스트·설정·runtime 증거 |
 
-- 범위가 지정되지 않은 “다음 작업”, “이어서 진행”, 로컬 프롬프트 요청은 제품 SSOT의 current development priority에서 시작한다. 현재 기본 방향은 **Math curriculum skill → mastery → adaptive daily goal** vertical slice다.
-- 기존 Math/English/Korean/Science Core Quiz reliability stabilization은 완료된 baseline이다. 동일 결함이 최신 main에서 재현되지 않으면 다시 안정화 작업을 기본 backlog로 만들지 않는다.
-- Ocean Rescue는 더 이상 product-level frozen feature가 아니다. **학습 goal 완료 후 이용하는 active reward game**이며 명시적인 Ocean Rescue 또는 A/B 트랙 요청에서는 가장 가까운 feature/technical spec을 따른다.
-- Ocean Rescue가 active라는 이유만으로 과거 A/B runbook의 `ACTIVE`, WP 번호 또는 migration plan의 다음 항목을 범위 미지정 default next work로 사용하지 않는다.
-- Space Explorer는 `PAUSED_REFERENCE_ONLY`이며 사용자가 현재 제품 방향에서 명시적으로 재개하기 전에는 신규 기능·구조 이전을 시작하지 않는다.
-- 학습 문제를 Ocean Rescue 내부에 억지로 삽입하지 않는다. Core Quiz 학습 완료 → reward/free-time → Ocean Rescue가 제품 관계다.
-- runtime LLM, backend/cloud, RPG식 meta progression, 전 runtime framework/TypeScript 통일은 제품 SSOT가 변경되기 전에는 default expansion target이 아니다.
-- 개별 작업 완료나 atomic next task를 제품 SSOT에 진행률로 누적하지 않는다. 완료 근거는 코드, 테스트, 브라우저 증거, 게시 커밋이다.
+전체 문서 색인은 [`RULE_INDEX.md`](agents/registry/RULE_INDEX.md)를 따른다.
+현재 failure domain에 직접 관련된 owner만 읽는다.
 
-## 4. Git과 workspace
+## 3. 실행·workspace 경계
 
-- 통합·게시 기준은 `origin/main`이며 기본 게시 방식은 `main` fast-forward push다. PR·feature branch는 사용자가 요청한 경우에만 사용한다.
-- mutation은 최신 `origin/main`에서 만든 isolated worktree 또는 동등한 격리 공간에서 수행한다.
-- 기본 worktree 경로는 `/Users/seungjulee/Desktop/Dev/.worktrees/game/<task-slug>`다. 저장소 위치가 다르면 같은 개발 루트의 안정적인 `.worktrees/game/<task-slug>` sibling 경로를 사용한다.
-- 새 primary/reapply task worktree는 생성과 동시에 `git worktree add --lock --reason`으로 잠가 현재 활성 workspace임을 Git metadata에 남긴다.
-- lock reason에는 owner/tool, task 식별자, 생성 시각과 phase 같은 짧은 운영 식별자만 기록하고 PII, secret 또는 prompt 원문을 넣지 않는다.
-- 게시에 성공하고 worktree가 clean이며 HEAD가 최신 `origin/main`에 포함되고 자신이 만든 worktree임을 확인한 뒤에만 unlock 후 plain `git worktree remove`로 회수한다. 중단·dirty·unpublished worktree는 unlock하거나 제거하지 않는다.
-- `git worktree remove --force`와 worktree 경로의 `rm -rf`는 사용하지 않는다. `git worktree prune`은 이미 경로가 사라진 stale metadata 정리에만 사용한다.
-- source worktree를 `/tmp`, `/private/tmp`, `${TMPDIR}`, `mktemp` 아래에 만들지 않는다.
-- IDE, LSP, uv, pnpm, Docker, 브라우저 E2E, generated artifact 검증은 모두 실제 작업 worktree 하나를 동일한 workspace root와 CWD로 사용한다.
-- unrelated dirty state를 보존한다. force push, history rewrite, `--no-verify`, 필수 검증 우회는 금지한다.
-- 게시 전 최신 `origin/main`을 다시 확인한다. non-fast-forward가 발생하면 최신 main에 재적용하고 직접 영향 검증을 다시 실행한다.
-- 비중첩 remote advance와 다른 세션의 선행 게시는 blocker가 아니다. 최신 main 재적용, V1·필수 V2 재실행, 게시 재시도를 반복한다.
-- 상세 생성·재적용·cleanup 절차는 `agents/workflows/git.md`를 따른다.
+작업 모드는 호출한 프롬프트가 정한다.
 
-## 5. 병렬 실행과 reservation
+- `MODE: BUILD` — 범위가 지정된 구현 작업을 수행한다. 사용자 지정 구현에 저장소 수준의 추가 승인
+  게이트를 추가하지 않는다. runtime이 read-only/Plan mode이면 그 mode를 존중하고, 저장소 지침이
+  mutation을 승인한다고 가장하지 않는다.
+- `MODE: PLAN_ONLY` — materially uncertain한 부분을 read-only로 조사하고 추적 상태를 변경하지 않는다.
 
-일반 작업은 reservation 없이 격리된 worktree에서 병렬 실행한다. 다음 자원이 실제로 겹칠 때만 `agents/workflows/work-package-claim.md`와 Issue #1을 사용한다.
+`BUILD` mutation은 최신 `origin/main`에서 잘라낸 격리 workspace에서 수행하며 tracking `main`에서
+수행하지 않는다. workspace 생성·lock·재적용·정리 절차는
+[`execution.md`](agents/core/execution.md)가, 그 상태 전이가 안전한지는
+[`git.md`](agents/workflows/git.md)가 소유한다.
 
-- 같은 semantic hotspot 또는 shared contract
-- 같은 generated bundle·atlas·registry·publication destination
-- 같은 browser/runtime identity, fixed port, profile, output directory
-- 같은 migration·schema 자원
+조사 범위는 쓰기 권한을 넓히지 않는다. task, lane, execution, workspace, branch/ref, commit,
+publication은 서로 다른 identity이며 task가 새 branch를 필요로 하지는 않는다. 사용자가 지정한
+범위에 새 우선순위·거버넌스 게이트를 추가하지 않는다.
 
-같은 파일이라는 이유만으로 reservation하지 않는다. reservation에는 `WORK / OWNER / EXPIRES / SCOPE`만 사용한다.
+### Bounded execution invariants
 
-### AidenGame 상시 병렬 A/B 개발 트랙
+1. **Proof stop rule** — 가장 가까운 정직한 proof가 통과하면, 아직 미해결인 필수 결정의 결과를 바꿀 수
+   있을 때만 검증을 넓힌다. 확신 보강, 디렉터리 근접성, 키워드 일치를 이유로 suite를 넓히지 않는다.
+2. **Differential failure gate** — 새로 만난 실패를 편집 전에 분류한다. 현재 변경이 만든 실패는 현재
+   failure domain으로 닫는다. 시작·clean revision에서도 재현되는 실패는 현재 claim을 막지 않는 한
+   흡수하지 않는다. 아직 분류되지 않으면 가장 작은 판별 read-only 관측을 먼저 수행한다.
+3. **Observation integrity** — 음성 증거는 성공한 관측이 부재를 확립할 때만 유효하다. 실패하거나
+   불완전한 측정은 `ERROR`/`UNKNOWN`으로 남긴다. 합성 proof 상태는 올바른 기준선과 비교하고 시나리오를
+   격리하며, 그 상태가 proof 소유임이 증명된 뒤에만 정리한다.
+4. **Decision-monotonic re-entry** — 직접 증거로 확립된 사실을 재사용한다. 권위, evidence 경계, 사용자
+   지시, 도구 결과가 실질적으로 바뀐 경우에만 재확인한다. 재시작, compaction, 새 호출, 단순한 의심은
+   완료된 작업을 반복할 이유가 아니다. 별도 decision registry를 두지 않는다.
+5. **Closure-first scope control** — 현재 task가 만들거나 직접 대체한 상태만 정리한다. 발견된 개선은
+   근접하다는 이유만으로 현재 task에 편입되지 않는다. 선언한 fix surface 중 하나라도 열려 있으면
+   결과는 `PARTIAL`이며 남은 위치를 `file:line`으로 밝힌다.
+6. **Revision-bound evidence** — 증거는 실제 관측한 revision에 묶인다. `origin/main` SHA 이동만으로
+   완료된 의미 작업이나 영향 없는 proof가 무효가 되지 않는다. 다음 결정이 현재 원격 상태에 실제로
+   의존할 때만 권위를 다시 관측하고, 이미 충족된 결과는 가장 작은 확인 후 중복 mutation을 멈춘다.
+7. **Stop discipline** — bounded outcome, required proof, required publication/read-back, task-owned
+   cleanup이 끝나면 멈춘다. 확신 보강용 fetch·proof 재실행·인접 정리를 덧붙이지 않는다. 정리만 실패했다면
+   그 경계만 다시 연다.
 
-사용자가 `A트랙` 또는 `B트랙`이라고 지시하면 아래 정의를 고정된 의미로 사용한다. 새 세션이나 후속 작업에서 어느 하위 분야를 뜻하는지 다시 묻지 않는다. 명시적인 A/B 트랙 요청은 §3의 범위 미지정 “다음 작업”과 달리 사용자가 현재 요청에서 개발 범위를 지정한 것으로 본다. 최신 `origin/main`과 가장 가까운 technical spec을 읽고 해당 트랙의 쓰기 범위 안에서 다른 트랙과 독립적으로 완료할 수 있는 가치가 가장 높은 다음 작업 하나를 선정한다.
+## 4. Git-native 작업 실행
 
-- **A — 게임 런타임·플레이**: 실제 게임 실행 중 플레이어에게 일어나는 동작을 소유한다. 전투, 월드, 엔티티, 인벤토리, 진행, 경제·보상 규칙, 상태 머신(FSM), HUD, 입력·상호작용, controller, pause/timer/resume, 런타임 상태 전이, 실제 브라우저 플레이 동작과 DragonBones 등 이미 확정된 자산 계약을 소비하는 런타임 loader·renderer가 A다. 자산을 어떻게 제작·생성하는지보다 게임이 그 자산을 어떻게 읽고 표시하고 플레이 규칙에 연결하는지가 A의 책임이다.
-- **B — 에셋·콘텐츠 제작/생성 파이프라인**: 게임 자산의 제작 원본부터 생성·검증·게시 가능한 산출물까지의 생산 체인을 소유한다. DragonBones/GIMP 제작 도구, source/review/handoff 자산, asset metadata·schema, exporter·CLI, preview·validator, atlas·registry·manifest 생성, provenance, deterministic generation/rebuild, 생성 산출물의 무결성 검증이 B다. `domains/ocean-rescue/assets/source/**`, `assets/review/**`, `assets/handoff/**`, `assets/generated/**`처럼 생산 체인에 속하는 자산 경로는 기본적으로 B 의미 영역으로 본다.
+1. 사용자의 bounded task에서 시작하거나, autonomous 구현이 명시적으로 요청된 경우 현재 저장소 권위에서
+   도출한 bounded task 하나에서 시작한다.
+2. 최신 `origin/main` 권위를 확립하고 격리된 task-owned workspace에서 작업하며 foreign·dirty·in-flight
+   state를 보존한다.
+3. 독립 작업은 semantic·proof·mutation·integration 경계가 실질적으로 독립일 때만 병렬 실행한다.
+   파일이 다르다는 사실은 독립의 증거가 아니고, 파일이 겹친다는 사실만으로 충돌도 아니다.
+4. 의미적 신선도, proof 신선도, 게시 신선도를 분리해 판단하고 영향 없는 proof는 재사용한다.
+5. 권한이 있는 mutation은 최소 root-cause-complete 구현 → 가장 가까운 정직한 proof → task-owned 잔여
+   정리 → 게시 자격 → non-force 게시 → 정확한 remote read-back → task-owned workspace close 순서로
+   닫고 현재 세션에서 결과를 직접 보고한다.
+6. `origin/main` 이동과 다른 세션의 선행 게시는 blocker가 아니다. 최신 main에 재적용하고 영향받은
+   proof만 다시 실행한 뒤 최소한의 게시 rebinding으로 재시도한다.
+7. retired coordination queue, reservation, relay·report transport 같은 대안 control plane을 다시
+   도입하지 않는다. Git-native 실행이 반드시 처리해야 하는 실패 클래스가 실제로 증명될 때만 가장 작은
+   수단만 추가한다.
 
-A/B 경계 운영 규칙:
+구체 명령·gate·정리 절차는 [`execution.md`](agents/core/execution.md)가 소유한다.
 
-- 다른 트랙의 코드·자산·테스트는 원인과 소비/생산 계약 확인을 위해 읽을 수 있지만 수정하지 않는다.
-- `asset metadata/schema → manifest/atlas/registry → runtime loader/renderer`처럼 B가 생산하고 A가 소비하는 계약은 두 트랙이 동시에 수정하지 않는다.
-- 생산 계약 변경이 필요하면 B가 metadata/schema와 생성·검증 체인을 먼저 확정하고 직접 검증한 뒤 `origin/main`에 게시한다. 그 다음 A가 게시된 계약만 기준으로 loader/renderer 소비 변경을 별도 단일 작업으로 수행한다.
-- A 작업자는 런타임 문제를 닫기 위해 B의 schema·manifest 형식·생성기를 임의로 바꾸지 않는다. B 작업자는 파이프라인 문제를 닫기 위해 A의 플레이 상태·controller·런타임 loader 동작까지 확장하지 않는다.
-- 예상 쓰기 범위가 A와 B 양쪽에 걸치면 현재 상시 병렬 작업으로 실행하지 않는다. 생산측 선행 계약 또는 소비측 후속 작업으로 분리하고, 현재 트랙에서 독립 완료 가능한 다른 후보를 선택할 수 있다.
-- root dependency/toolchain, 공용 lockfile, 저장소 전체 CI·verify 설정처럼 양쪽 트랙이 함께 소비하는 변경은 A/B 상시 병렬 작업 밖의 직렬 통합 작업으로 처리한다.
-- 단순한 `origin/main` 선행이나 non-fast-forward는 트랙 충돌이 아니다. 최신 main에 재적용했을 때 파일·계약 중첩이 없고 V1·필수 V2가 유지되면 정상 병렬 진행으로 본다.
-- 실제 충돌이 발견되면 추상적인 예방 규칙을 늘리지 않는다. 반복된 실제 사례를 근거로 특정 경로의 소유권, 생산/소비 순서, 공용 직렬 영역 등 필요한 경계만 최소한으로 보정한다.
-- 사용자가 `A트랙/B트랙에서 이어갈 다음 작업을 분석`하라고 하면 전투·HUD·DragonBones·atlas 같은 하위 분야를 다시 선택하라고 묻지 않는다. 최신 저장소 상태와 최근 완료 작업을 기준으로 해당 트랙 안에서 독립적으로 닫히는 다음 단일 failure domain을 스스로 선택한다. 로컬 프롬프트가 요청된 경우 작업 선택까지 먼저 수행하고 §8의 즉시 발행 원칙에 따라 재확인 없이 프롬프트를 발행한다.
+## 5. 증거와 외부 사실
 
-### 명시적 트랙 런북의 10개 순차 작업 리필
+- 파일·경로·symbol·명령·워크플로의 존재를 확인하기 전에 결함이나 capability를 단정하지 않는다.
+- 검색 결과·요약·캐시·도구 출력은 발견 후보이지 권위가 아니다. PASS와 증거 의미는
+  [`verification.md`](agents/core/verification.md)가 소유한다.
+- URL·경로·파일명·API slug·host·도구 식별자는 검색 결과, 현재 공식 href, provenance이 있는 저장소
+  URL, 사용자로부터 실제로 얻은 것만 사용한다. 직접 만들어내지 않는다. 무효한 URL은 그 URL만
+  무효화하며 provider나 capability 부재를 증거하지 않는다.
+- 실행하지 않은 검증을 PASS로 보고하지 않는다. workaround, fail-open fallback, broad ignore, 검사 대상
+  축소, baseline·snapshot 갱신으로 실패를 숨기지 않는다.
+- `BLOCKED`는 [`verification.md`](agents/core/verification.md)가 정의한 허용 사유에만 사용한다.
+  remote advance, non-fast-forward, unrelated dirty, 시스템 smoke 실패, 새 독립 결함, 다른 세션의 선행
+  게시는 blocker가 아니다.
+- 연구·Blueprint·업로드 source·채팅 산출물은 그 자체로 evidence다. 구현이 새로 정한 제품·도메인·
+  아키텍처 의미를 의존하기 전에 해당 canonical owner에 이미 반영됐는지 확인하고, 없으면 먼저 반영한다.
 
-사용자가 특정 A/B 트랙의 런북을 **작성하거나 갱신**하라고 명시적으로 요청한
-경우에만, 일반적인 transient queue 금지의 제한적 예외로 해당 런북의 pending
-작업 목록을 최신 origin/main, 트랙 계약, 직접 테스트·runtime 근거, 관련 최근
-commit에서 다시 구성한다.
+## 6. 거버넌스
 
-- dependency 순서로 한 번에 하나씩 실행 가능한 pending work package를 **정확히
-  10개** 유지한다.
-- 완료된 항목은 목록에서 제거하고 완료 이력으로 남겨 수를 채우지 않는다.
-- 미완료이거나 보완이 필요한 항목은 기존 문구를 유지하지 않는다. 누락된
-  behavior·invariant·evidence gap·verification을 제목과 criterion에 명시한
-  새 보완 work package로 교체해 목록에 다시 넣는다.
-- 각 항목은 하나의 failure domain, primary criterion, bounded write boundary,
-  direct verification을 가져야 한다.
-- 비워진 자리는 최신 근거가 있는 항목만으로 채운다. stale label, 모호한
-  placeholder, fabricated work로 10개를 채우지 않는다.
+새 coordination 규칙·validator·상태 머신·완료 보고 필드는 실제 충돌이 반복 재현되고 worktree, 고유
+runtime identity, 게시 전 overlap 확인으로 닫히지 않을 때만 추가한다. 실제 충돌 사례 없이 추상적인 예방
+규칙을 늘리지 않고, 반복된 사례가 있을 때 필요한 경계만 최소한으로 보정한다.
 
-이 절은 명시적인 트랙 런북 작성·갱신 요청에만 적용하며, 일반 task 실행이나
-unrelated repair를 자동으로 확장하지 않는다.
+## 7. 완료 보고
 
-## 6. 프로젝트 경계
-
-- 사용자 런타임은 정적 HTML/CSS/JavaScript를 기본으로 하되 Ocean Rescue의 기존 build/tooling boundary는 별도로 보존한다.
-- 메인 허브는 `index.html`이다.
-- 과목별 기능은 `domains/`, 공용 로직은 `shared/`에 둔다.
-- 실험은 `experiments/`, 보호자·관리 기능은 가장 가까운 현재 runtime path에 둔다.
-- Next.js, Tauri, 별도 backend API는 현재 범위 밖이다.
-- Ocean Rescue 세부 계약은 해당 범위가 명시적으로 선택된 경우 대상 코드에서 가장 가까운 product/technical spec을 따른다. Ocean Rescue feature 자체는 제품 SSOT에서 active reward game으로 분류된다.
-
-## 7. 검증과 작업 판정
-
-현재 제품 방향 문서 정합성:
-
-```bash
-uv run pytest -q tests/test_active_product_scope_policy.py
-```
-
-대표 저장소 명령:
-
-```bash
-just verify
-just lint
-just typecheck
-just test
-just ci
-```
-
-### 위험 기반 개발·테스트 선택
-
-정통 TDD를 모든 변경에 일률적으로 강제하지 않는다. TDD를 생략하는 것은 무검증 개발을 허용한다는 뜻이 아니다.
-
-- 화면 구성, 스타일, 애니메이션, 조작감, 게임 감각, 콘텐츠 표현, 탐색적 신규 기능과 단순 dependency/toolchain 승격은 먼저 구현하고 실제 브라우저·입력·렌더링으로 직접 확인한 뒤 안정된 계약만 회귀 테스트로 고정할 수 있다.
-- 입력 한 번에 효과 한 번, 이벤트 중복 연결, 점수·진행·저장 데이터, 복잡한 상태 전이, 재시작·복구, 공유 controller, 사용자 데이터 손상 가능성과 이미 발생한 회귀 버그는 테스트 우선 또는 구현과 동시에 테스트한다.
-- 시각적 품질과 재미를 단위 테스트로 대신하지 않는다. 반대로 자동 검증 가능한 핵심 계약을 수동 확인만으로 남기지 않는다.
-- 테스트는 구현 구조를 복제하지 않고 사용자에게 중요한 동작과 재발 방지에 집중한다.
-- 모든 변경은 수정 전 재현 조건 또는 기대 동작과 단일 판정 기준을 정하고, 수정 후 해당 failure domain을 가장 짧은 독립 검증으로 판정한다.
-- 형식적인 RED 증명, 고정 횟수 반복, 전 과목·전체 suite 실행을 모든 작업의 기본 절차로 삼지 않는다. 현재 위험이나 실제 불안정성이 요구할 때만 넓힌다.
-
-### 형제 화면·공유 소유자 사전 점검
-
-과목별 화면이나 공용 UI·controller의 동작을 수정하기 전에는 같은 사용자 계약을 제공하는 형제 범위를 읽기 전용으로 점검한다.
-
-- 기본 형제 범위는 `domains/math/`, `domains/korean/`, `domains/english/`, `domains/science/`의 대응 control·flow와 이를 소유하는 `shared/` 구현이다.
-- 재시작, 통계, 점수, 진행, 저장, 입력 이벤트처럼 같은 기능을 제공하는 위치와 동일 button/event binding을 먼저 검색한다.
-- 이 점검은 누락·중복 소유자를 찾기 위한 조사 범위이며 authorized write scope를 자동으로 넓히지 않는다.
-- 같은 shared owner의 한 수정으로 같은 root cause와 rollback boundary를 함께 닫을 수 있을 때만 하나의 failure domain에 포함한다.
-- 과목별 독립 wiring이나 다른 root cause가 확인되면 현재 대상만 수정·검증하고 나머지는 `DISCOVERED_FAILURE` 또는 별도 objective로 분리한다.
-- 현재 대상은 실제 사용자 입력 경로로 검증하며, 입력 한 번에 handler·render·request 같은 직접 효과가 정확히 한 번만 발생해야 한다.
-
-### YAGNI와 변경 범위
-
-- YAGNI는 아직 요구되지 않은 미래 capability, speculative abstraction, extension point와 unrelated cleanup을 만들지 않는 원칙이다. 현재 확인된 root cause를 최소 LOC나 최소 파일 수로만 봉합하라는 뜻이 아니다.
-- 목표는 `minimum diff`가 아니라 `minimum coherent, root-cause-complete change`다. 파일 수보다 root cause, invariant, ownership, rollback boundary와 primary criterion의 일치 여부로 package 경계를 정한다.
-- 같은 root cause와 invariant를 공유하고 한 shared owner에서 함께 닫을 수 있다면 production owner, 직접 sibling caller, type/contract, fixture와 focused regression은 하나의 failure domain에 포함할 수 있다.
-- leaf local guard를 반복하거나 동일 normalization·validation·state rule을 여러 caller에 복제하는 방식, shared owner 결함을 남긴 채 한 화면만 우회하는 방식은 under-fixing 신호로 취급한다.
-- 현재 invariant를 명확히 표현하고 testability를 확보하기 위한 작은 refactor는 YAGNI 위반이 아니다. 반면 미래 variation을 예상한 generalization, 현재 failure domain과 무관한 cleanup과 대형 재설계는 분리한다.
-- sibling inventory는 넓게 수행할 수 있지만 mutation scope는 자동으로 넓히지 않는다. 같은 root cause·invariant·rollback boundary로 한 focused verification 아래 함께 판정할 수 없는 발견은 별도 failure domain으로 남긴다.
-
-현재 작업 결과는 다음 두 항목으로만 판정한다.
-
-- `PRIMARY_CRITERION`: 현재 단일 가설을 직접 판정하는 기준
-- `DIRECT_IMPACT_CLOSURE`: 수정 파일과 직접 영향 범위의 lint·type·focused regression
-
-검증 계층:
-
-- V0 `BASELINE`: 수정 전 결함 재현
-- V1 `PRIMARY`: 단일 가설 판정
-- V2 `DIRECT`: 수정 파일과 직접 영향 closure
-- V3 `SYSTEM_SMOKE`: 독립 결함 탐색; 현재 작업 PASS를 취소하지 않음
-- V4 `RELEASE`: 명시적인 release candidate에서만 수행
-
-현재 변경이 정상이어도 실패할 수 있는 broad smoke, full suite 또는 다른 과목·실험 영역의 실패는 primary criterion이 될 수 없다. V3에서 발견된 독립 실패는 현재 작업의 PASS를 취소하지 않고 `DISCOVERED_FAILURE`로 분리한다.
-
-변경 위험에 직접 대응하는 가장 작은 검증부터 시작하며 모든 명령을 일괄 실행하지 않는다.
-
-수정 파일과 직접 영향 모듈의 LSP·typecheck·lint 오류는 0이어야 한다. 환경·workspace·SDK·cache·generated/vendor 오분석을 production code 변경으로 우회하지 않는다.
-
-workaround, fail-open fallback, broad ignore, 검사 대상 축소, baseline·snapshot 갱신, unrelated cleanup으로 실패를 숨기지 않는다. 실행하지 못한 V1·필수 V2 criterion은 PASS로 보고하지 않는다.
-
-`BLOCKED`는 `DECISION_REQUIRED`, `PRIMARY_UNEVALUABLE`, `SEMANTIC_OVERLAP`, `SAFETY_BOUNDARY`, 또는 V1·필수 V2 실패를 현재 failure domain 안에서 안전하게 닫을 수 없는 경우에만 사용한다.
-
-remote advance, non-fast-forward, unrelated dirty, V3 실패, 새 독립 결함, 다른 세션의 선행 게시는 blocker가 아니다.
-
-## 8. 로컬 에이전트 위임
-
-로컬 LLM용 프롬프트는 사용자의 요청과 최신 저장소 증거로 objective, scope와 criterion을 합리적으로 확정할 수 있으면 별도의 의도 재확인·승인 요청 없이 즉시 발행한다.
-
-- 목표와 대상 failure domain 또는 검증 가설, 대상 저장소·기능과 변경 허용 범위, 포함·제외 범위와 변경 금지 계약, primary criterion, 직접 영향 검증, 게시 여부와 예상 최종 상태를 발행 전에 내부적으로 정합성 점검한다.
-- 사소한 모호성은 사용자의 현재 요청, `docs/specs/product/ACTIVE_PRODUCT_SCOPE.md`, 최신 `origin/main`, 가장 가까운 technical spec과 기존 프로젝트 계약으로 해소하며 확인차 되묻지 않는다.
-- “제가 이렇게 해석했습니다. 이대로 진행해도 되는 게 맞습니까?”와 같은 확인 전용 turn, 승인 대기, 범위 재진술 후 재승인을 기본 절차로 만들지 않는다.
-- 사용자가 범위를 수정하면 최신 지시를 즉시 반영하고, 새 지시 자체가 실행 가능하면 다시 승인받지 않는다.
-- 질문은 필수 정보가 없어 실행 자체가 불가능하거나, 서로 양립할 수 없는 해석이 결과를 크게 바꾸거나, user-visible behavior·제품 방향·수정 범위·acceptance criterion·사용자 데이터 무결성 또는 안전 경계를 바꿔야만 완료할 수 있을 때만 `DECISION_REQUIRED`로 제한한다.
-- 로컬 작업자는 `DECISION BOUNDARY` 안의 구현 세부사항을 스스로 결정하며 확인을 요구하지 않는다.
-
-- 프롬프트 발행 전 objective가 사용자의 명시적 범위 또는 `ACTIVE_PRODUCT_SCOPE.md`의 현재 제품 방향/active feature와 정합한지 확인한다.
-- 범위가 지정되지 않았다면 Math mastery/adaptive vertical slice를 기본으로 하고, 과거 runbook·완료 보고·WP 번호만으로 Ocean Rescue/Space Explorer/다른 backlog를 자동 승격하지 않는다.
-- Space Explorer처럼 제품 SSOT에서 frozen인 범위는 사용자가 현재 요청에서 재개를 명시하지 않았다면 구현 프롬프트를 발행하지 않는다.
-- 프롬프트에는 현재 objective, workspace, included/excluded scope, Do / Do not, primary acceptance, direct verification, optional system smoke, stop condition만 전달한다.
-- `DO`에는 단순히 최소 diff를 지시하지 말고, 수정 전 shared owner와 sibling contract를 읽어 under-fixing 여부를 판정하며 같은 root cause·invariant·rollback boundary이면 필요한 production/type/test 범위까지 coherent하게 닫도록 명시한다.
-- `DO_NOT`에는 미래 capability를 위한 speculative abstraction과 unrelated cleanup을 금지하되, 현재 root cause를 닫는 데 필요한 작은 refactor나 testability 개선을 금지하지 않는다.
-- acceptance는 증상 한 건의 GREEN뿐 아니라 shared root cause가 leaf workaround로 남지 않았는지와 동일 invariant가 새로 중복 구현되지 않았는지를 포함한다.
-- 현재 package에 필요한 delta만 포함하고 최대 700줄을 넘기지 않는다.
-- source workspace는 안정적인 `.worktrees/game/<task-slug>` 하나로 고정한다.
-- 일반 병렬 prompt에는 reservation metadata를 넣지 않는다.
-- WP 작업 프롬프트에는 계획 파일·WP 상태·상태 전용 evidence 생성을 포함하지 않는다.
-
-## 9. 거버넌스
-
-새 coordination 규칙·validator·상태 머신·완료 보고 필드는 실제 충돌이 반복 재현되고 worktree·고유 runtime identity·게시 전 overlap 확인으로 해결되지 않을 때만 추가한다.
-
-## 10. 완료 보고
-
-```text
-RESULT: PASS | BLOCKED
-PRIMARY_VERIFY: PASS | FAIL | NOT_RUN
-DIRECT_VERIFY: PASS | FAIL | NOT_RUN
-PUBLISH: PUBLISHED | NOT_APPLICABLE | BLOCKED
-DISCOVERED_FAILURE: <독립 failure domain 또는 NONE>
-```
-
-실제 게시 시에만 `COMMIT`, 허용된 blocker로 중단할 때만 `BLOCKER`와 `NEXT`를 추가한다.
+형식과 PASS/BLOCKED 근거는 [`reporting.md`](agents/core/reporting.md)가 유일하게 소유한다.
+이 문서는 완료 판정을 다시 정의하지 않는다. 실제 게시 시에만 `COMMIT`, 허용된 blocker로 중단할 때만
+`BLOCKER`와 `NEXT`를 추가한다.

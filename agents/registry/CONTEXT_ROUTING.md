@@ -25,7 +25,8 @@ last_verified: 2026-08-07
 |---|---|
 | 제품·아키텍처 경계 | `PROJECT_RULES.md`와 가장 가까운 spec |
 | same hotspot·canonical runtime·generated artifact reservation | [`work-package-claim.md`](../workflows/work-package-claim.md), Issue #1 |
-| Git·dirty·remote advance·publish | [`git.md`](../workflows/git.md) |
+| Git·dirty·remote advance·publish | [`git.md`](../workflows/git.md) + [`execution.md`](../core/execution.md) |
+| 상시 병렬 A/B 트랙 | [`PARALLEL_TRACKS.md`](../project/PARALLEL_TRACKS.md) |
 | 로컬 프롬프트 | [`TASK_DELTA_TEMPLATE.md`](../prompts/TASK_DELTA_TEMPLATE.md) |
 | 프로젝트 명령·stack | [`PROFILE.md`](../project/PROFILE.md) |
 | 문서만 변경 | 참조되는 문서만 |

@@ -57,7 +57,26 @@ verify_with:
 - 대형 파일을 전체 교체해야 하면 원본과 후보 diff를 먼저 확인한다.
 - generated artifact는 source와 build pipeline으로만 갱신한다.
 
-## 5. 질문과 context gap
+## 5. YAGNI와 변경 범위 경계
+
+- YAGNI는 아직 요구되지 않은 미래 capability, speculative abstraction, extension point와 unrelated
+  cleanup을 만들지 않는 원칙이다. 현재 확인된 root cause를 최소 LOC나 최소 파일 수로만 봉합하라는
+  뜻은 아니다.
+- 목표는 `minimum diff`가 아니라 `minimum coherent, root-cause-complete change`다. 파일 수보다 root
+  cause, invariant, ownership, rollback boundary와 primary criterion의 일치 여부로 package 경계를 정한다.
+- 같은 root cause와 invariant를 공유하고 한 shared owner에서 함께 닫을 수 있다면 production owner,
+  직접 sibling caller, type/contract, fixture와 focused regression은 하나의 failure domain에 포함할 수
+  있다.
+- leaf local guard를 반복하거나 동일 normalization·validation·state rule을 여러 caller에 복제하는 방식,
+  shared owner 결함을 남긴 채 한 화면만 우회하는 방식은 under-fixing 신호로 취급한다.
+- 현재 invariant를 명확히 표현하고 testability를 확보하기 위한 작은 refactor는 YAGNI 위반이 아니다.
+  반면 미래 variation을 예상한 generalization, 현재 failure domain과 무관한 cleanup과 대형 재설계는
+  분리한다.
+- sibling inventory는 넓게 수행할 수 있지만 mutation scope는 자동으로 넓히지 않는다. 같은 root
+  cause·invariant·rollback boundary로 한 focused 검증 아래 함께 판정할 수 없는 발견은 별도 failure
+  domain으로 남긴다.
+
+## 6. 질문과 context gap
 
 불확실성이 있다는 이유만으로 항상 질문하지 않는다.
 
@@ -70,7 +89,7 @@ verify_with:
 경미한 세부사항은 합리적 가정이나 명시적 placeholder로 처리한다.
 이미 답을 얻은 질문을 반복하지 않는다.
 
-## 6. 계획과 문서
+## 7. 계획과 문서
 
 - 일반 계획과 다음 작업은 채팅에서 관리한다.
 - 사용자가 저장소 Blueprint를 명시적으로 요청한 경우에만 plan 파일을 만든다.
@@ -80,7 +99,7 @@ verify_with:
 
 상세 규칙은 [`planning.md`](planning.md)를 따른다.
 
-## 7. 검증 가능한 완료
+## 8. 검증 가능한 완료
 
 - 버그 수정은 재현 조건이 사라졌는지 같은 기준으로 확인한다.
 - 상태·ownership 변경은 source와 caller, cleanup, 직접 회귀를 함께 검증한다.
@@ -90,7 +109,7 @@ verify_with:
 
 전체 검증을 관성적으로 실행하지 않고 위험에 직접 대응하는 가장 작은 검증부터 확장한다.
 
-## 8. 우회와 실패의 정직한 처리
+## 9. 우회와 실패의 정직한 처리
 
 - broad ignore, 검사 범위 축소, snapshot 갱신, fail-open fallback으로 만든 녹색 결과를 정상 해결로 보고하지 않는다.
 - 환경 문제를 production code 변경으로 덮지 않는다.
@@ -98,7 +117,7 @@ verify_with:
 - 임시 우회를 사용했다면 무엇을 우회했는지와 남은 근본 원인을 설명한다.
 - 완료 후 불필요한 선택 질문이나 장기 backlog를 자동으로 붙이지 않는다.
 
-## 9. 보안과 개인정보
+## 10. 보안과 개인정보
 
 - API key, token, cookie, password, `.env` 원문을 출력하거나 문서화하지 않는다.
 - 민감값이 노출됐을 가능성이 있으면 값을 재인용하지 않는다.

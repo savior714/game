@@ -102,7 +102,7 @@ Blueprint 전체 실행 중 저장소 현실과 계획이 달라지면 과거 �
 Blueprint 완료는 문서의 완료 문자열만으로 선언하지 않는다.
 최신 main의 코드, focused test, 브라우저·build·artifact 증거가 해당 완료 조건을 만족해야 한다.
 
-보고 형식은 `AGENTS.md`를 따른다.
+보고 형식은 `agents/core/reporting.md`를 따른다.
 
 ```text
 RESULT: PASS | BLOCKED

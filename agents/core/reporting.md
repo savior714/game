@@ -4,7 +4,7 @@ scope:
 always_apply: false
 priority: 1
 domain: core
-last_verified: 2026-08-06
+last_verified: 2026-10-06
 verify_with:
 - uv run pytest -q tests/test_core_agent_contract_consistency.py
 ---
@@ -12,7 +12,7 @@ verify_with:
 
 # AidenGame 보고 규칙
 
-이 문서는 진행·완료·중단 보고의 최소 계약을 정의한다.
+이 문서는 진행·완료·중단 보고의 최소 계약을 정의하며 보고 형식의 유일한 owner다.
 실행 규칙은 [`AGENTS.md`](../../AGENTS.md), 검증 판정은 [`verification.md`](verification.md)를 따른다.
 
 ## 1. 기본 형식
@@ -20,13 +20,19 @@ verify_with:
 ```text
 RESULT: PASS | BLOCKED
 CHANGE: <무엇을 바꿨는지 한 문장>
-VERIFY: <실행한 판정 기준과 결과 한 문장>
+PRIMARY_VERIFY: PASS | FAIL | NOT_RUN
+DIRECT_VERIFY: PASS | FAIL | NOT_RUN
+PUBLISH: PUBLISHED | NOT_APPLICABLE | BLOCKED
+DISCOVERED_FAILURE: <독립 failure domain 또는 NONE>
 ```
 
+- `PRIMARY_VERIFY`와 `DIRECT_VERIFY`는 `verification.md`의 `PRIMARY_CRITERION`과
+  `DIRECT_IMPACT_CLOSURE`에 대응한다. 실행하지 않은 criterion은 `NOT_RUN`으로 적는다.
 - 실제 게시 시에만 `COMMIT`을 추가한다.
 - 중단 시에만 `BLOCKER`와 `NEXT`를 추가한다.
 - 변경하지 않았다면 `CHANGE: 변경 없음`으로 명확히 적는다.
 - claim, lease, task key, activation SHA 같은 내부 조정 메타데이터를 반복하지 않는다.
+- `DISCOVERED_FAILURE`는 현재 작업의 PASS를 취소하지 않고 독립 failure domain으로 분리한 발견이다.
 
 ## 2. PASS 조건
 
@@ -48,8 +54,11 @@ VERIFY: <실행한 판정 기준과 결과 한 문장>
 ```text
 RESULT: BLOCKED
 CHANGE: <안전하게 완료한 범위 또는 변경 없음>
-VERIFY: <확인한 사실>
-BLOCKER: <재현 가능한 차단 원인>
+PRIMARY_VERIFY: <NOT_RUN 또는 FAIL과 이유>
+DIRECT_VERIFY: <NOT_RUN 또는 FAIL과 이유>
+PUBLISH: NOT_APPLICABLE | BLOCKED
+DISCOVERED_FAILURE: <독립 failure domain 또는 NONE>
+BLOCKER: <재현 가능한 차단 사유 코드와 원인>
 NEXT: <재개에 필요한 단일 조건>
 ```
 
@@ -60,6 +69,9 @@ NEXT: <재개에 필요한 단일 조건>
 - out of scope
 - 로컬에서는 아마 통과할 것임
 - 과거 테스트가 PASS했음
+
+또한 remote advance, non-fast-forward, unrelated dirty state, V3 시스템 smoke 실패, 새 독립 결함, 다른
+세션의 선행 게시는 `verification.md` §10에서 정의한 대로 blocker가 아니다.
 
 다른 원인의 오류라면 현재 failure domain의 판정과 분리해 정확히 보고하고, PASS 조건과 충돌하면 BLOCKED로 종료한다.
 
@@ -79,7 +91,7 @@ NEXT: <재개에 필요한 단일 조건>
 
 ## 5. 검증 표현
 
-`VERIFY`에는 실제로 실행하거나 직접 대조한 방법을 구분해서 적는다.
+`PRIMARY_VERIFY`와 `DIRECT_VERIFY`에는 실제로 실행하거나 직접 대조한 방법을 구분해서 적는다.
 
 예:
 

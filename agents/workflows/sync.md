@@ -45,8 +45,10 @@ spec alignment CLI가 아니다.
 
 ## 4. 문서별 역할
 
-- `AGENTS.md`: 실행·Git·검증·보고 계약
+- `AGENTS.md`: 권위 순서, 권위 라우팅, 실행·workspace 경계
 - `PROJECT_RULES.md`: 제품·아키텍처·품질 경계
+- `agents/core/verification.md`·`agents/core/reporting.md`: 검증 판정과 보고 형식
+- `agents/core/execution.md`·`agents/workflows/git.md`: workspace·게시 절차와 Git 파괴적 안전
 - product spec: 사용자 동작과 수용 기준
 - technical spec: runtime boundary와 trade-off
 - `MEMORY.md`: 현재 방향과 다음 실행 경계

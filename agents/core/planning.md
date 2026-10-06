@@ -143,8 +143,14 @@ Blueprint는 단일 실행 경로를 제공해야 한다.
 
 ## 8. 상태와 완료
 
+`WP-33E` 같은 이름은 대화와 실행 보고에서 사용하는 작업 라벨이다.
+
 일반 WP 일정, 다음 작업, 과목별 진행 상태는 대화에서 관리한다.
-상태 전용 plan/evidence를 만들지 않는다.
+사용자가 저장소 문서화를 명시적으로 요청하지 않는 한 WP 계획·다음 WP·진행 상태·완료 상태 문서를
+생성·수정하지 않는다.
+일반 WP 작업을 위해 `docs/plans/PLAN_ocean_rescue_wp*.md`나 상태 전용 `docs/evidence/` 문서를 만들지
+않는다.
+기존 migration plan과 과거 WP 문서는 참고 자료일 뿐 현재 일정의 권위가 아니다.
 
 제품 테스트는 다음을 검증한다.
 
@@ -173,7 +179,7 @@ uv run pytest -q tests/test_planning_workflow_consistency.py
 uv run pytest -q tests/test_agent_registry_consistency.py
 ```
 
-최종 보고는 `AGENTS.md` 형식을 따른다.
+최종 보고는 [`reporting.md`](reporting.md) 형식을 따른다.
 실제 게시 시에만 커밋 SHA를 기록한다.
 
 ## 10. Review backlog에서 실행 후보 공급

@@ -31,7 +31,8 @@ workflow는 작업 방식을 보조하며 현재 제품 우선순위를 바꾸�
 | 모듈 구조 심화 검토 | [`improve-codebase-architecture.md`](../workflows/improve-codebase-architecture.md) | [`improve-codebase-architecture/SKILL.md`](../skills/improve-codebase-architecture/SKILL.md) |
 | 실제 브라우저 검증 | [`playwright.md`](../workflows/playwright.md) | [`testing/playwright.md`](../domains/testing/playwright.md) |
 | 사용자가 명시한 Blueprint 계획 | [`plan.md`](../workflows/plan.md) | — |
-| 커밋·게시 절차 | [`git.md`](../workflows/git.md) | — |
+| 커밋·게시 절차 | [`execution.md`](../core/execution.md) | — |
+| Git 파괴적 안전 판정 | [`git.md`](../workflows/git.md) | — |
 | 세션 handoff | [`go.md`](../workflows/go.md) | — |
 | 사용자가 명시한 과거 plan 정리 | [`archive.md`](../workflows/archive.md) | — |
 | 워크 패키지 선점 | [`work-package-claim.md`](../workflows/work-package-claim.md) | — |
@@ -41,5 +42,5 @@ workflow는 작업 방식을 보조하며 현재 제품 우선순위를 바꾸�
 1. 현재 objective와 직접 일치하는 workflow 하나만 고른다.
 2. 동행 skill이 있으면 workflow와 skill을 함께 읽는다.
 3. 현재 작업에 소비되지 않는 workflow를 연쇄적으로 읽지 않는다.
-4. workflow 본문이 `AGENTS.md`, `PROJECT_RULES.md`, 현재 product spec과 충돌하면 상위 문서를 따른다.
+4. workflow 본문이 `AGENTS.md`의 권위 라우팅이 지정한 owner, `PROJECT_RULES.md`, 현재 product spec과 충돌하면 해당 owner를 따른다.
 5. workflow에 오래된 명령·경로가 있으면 현재 디스크에서 존재 여부를 확인하고, 없으면 실행 조건으로 사용하지 않는다.

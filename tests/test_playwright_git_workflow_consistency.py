@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PLAYWRIGHT_WORKFLOW = ROOT / ".agents/workflows/playwright.md"
 PLAYWRIGHT_RULE = ROOT / ".agents/domains/testing/playwright.md"
 GIT_WORKFLOW = ROOT / ".agents/workflows/git.md"
+EXECUTION_RULE = ROOT / ".agents/core/execution.md"
 FILES = (PLAYWRIGHT_WORKFLOW, PLAYWRIGHT_RULE, GIT_WORKFLOW)
 CURRENT_SPEC = "docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md"
 
@@ -73,28 +74,57 @@ def test_playwright_workflow_matches_static_aidengame_runtime() -> None:
         assert value not in combined
 
 
-def test_git_workflow_matches_main_fast_forward_policy() -> None:
+def test_git_workflow_is_a_minimal_destructive_safety_kernel() -> None:
     workflow = read(GIT_WORKFLOW)
+
+    assert "소유권 × 의도 × 복구 가능성" in workflow
+    assert "명령 blacklist 없음" in workflow
+    assert "안전은 명령 문자열이 아니라 상태 전이에 대한 것이다" in workflow
+    assert "이 저장소가 금지하는 전이" in workflow
+    assert "공유 ref에 대한 force push와 공유 history rewrite" in workflow
+    assert (
+        "`--no-verify` 또는 동등한 우회로 필수 검증과 commit gate를 건너뛰는 것"
+        in workflow
+    )
+    assert "launcher, queue," in workflow
+    assert "../core/execution.md" in workflow
+    assert "../core/verification.md" in workflow
+
+    for delegated in (
+        "main fast-forward push",
+        "worktree add",
+        "just commit-gate",
+        "git push origin",
+    ):
+        assert delegated not in workflow, delegated
+
+
+def test_execution_owns_workspace_commit_and_publication_procedure() -> None:
+    execution = read(EXECUTION_RULE)
     justfile = read(ROOT / "Justfile")
 
-    assert "통합·게시 기준은 `origin/main`" in workflow
-    assert "main fast-forward push" in workflow
-    assert "PR·feature branch는 사용자가 명시적으로 요청한 경우에만" in workflow
-    assert "force push, history rewrite, `--no-verify`는 금지" in workflow
-    assert "unrelated dirty state를 보존" in workflow
-    assert "정확한 파일 경로" in workflow
-    assert "원격 이동 자체만으로 BLOCKED 처리하지 않는다." in workflow
-    assert "force=false" in workflow
-    assert "게시하지 않은 작업에는 `COMMIT`을 적지 않는다." in workflow
+    assert "통합·게시 기준은 `origin/main`" in execution
+    assert "main fast-forward push" in execution
+    assert "PR·feature branch는" in execution
+    assert "사용자가 명시적으로 요청한 경우에만" in execution
+    assert "force push, history rewrite, `--no-verify`는 금지한다." in execution
+    assert "unrelated dirty state를 보존" in execution
+    assert "정확한 파일 경로" in execution
+    assert "원격 이동 자체만으로 자동 중단하거나 BLOCKED 처리하지 않는다." in execution
+    assert "`force=false`로 ref를 이동한다" in execution
+    assert "게시하지 않은 작업에는 `COMMIT`을 적지 않는다." in execution
+    assert "git worktree add" in execution
+    assert "--lock" in execution
+    assert "git worktree remove" in execution
 
     assert "commit-gate-hard:" in justfile
     assert "commit-gate-soft:" in justfile
-    assert "just commit-gate-hard" in workflow
-    assert "just commit-gate-soft" in workflow
+    assert "just commit-gate-hard" in execution
+    assert "just commit-gate-soft" in execution
 
 
-def test_git_workflow_removes_foreign_paths_and_verification_bypass() -> None:
-    workflow = read(GIT_WORKFLOW)
+def test_git_and_execution_docs_remove_foreign_paths_and_verification_bypass() -> None:
+    combined = read(GIT_WORKFLOW) + "\n" + read(EXECUTION_RULE)
     forbidden = (
         "apps/renderer",
         "fix(backend)",
@@ -111,4 +141,4 @@ def test_git_workflow_removes_foreign_paths_and_verification_bypass() -> None:
         "Blueprint 참조",
     )
     for value in forbidden:
-        assert value not in workflow
+        assert value not in combined

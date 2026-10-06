@@ -27,8 +27,28 @@ def test_active_product_scope_is_the_single_product_direction_pointer() -> None:
 
     assert "ACTIVE_PRODUCT_SCOPE.md" in docs_index
     assert "현재 제품 방향 단일 SSOT" in docs_index
-    assert "Math curriculum skill → mastery → adaptive daily goal" in agents
+    assert "ACTIVE_PRODUCT_SCOPE.md" in agents
     assert "Math mastery/adaptive loop" in readme
+
+
+def test_agents_kernel_routes_instead_of_restating_delegated_contracts() -> None:
+    agents = read("AGENTS.md")
+
+    assert "권위 순서" in agents
+    assert "권위 라우팅" in agents
+    assert "Bounded execution invariants" in agents
+    assert ACTIVE_SCOPE in agents
+
+    for restated in (
+        "Math curriculum skill → mastery → adaptive daily goal",
+        "reliability stabilization은 완료된 baseline",
+        "PAUSED_REFERENCE_ONLY",
+        "V0 `BASELINE`",
+        "just commit-gate-hard",
+        "git worktree add",
+        "WORKTREE_ROOT=",
+    ):
+        assert restated not in agents, restated
 
 
 def test_scope_encodes_grilled_product_decisions_without_rpg_or_runtime_llm_drift() -> (
@@ -65,13 +85,13 @@ def test_scope_encodes_grilled_product_decisions_without_rpg_or_runtime_llm_drif
 def test_core_quiz_reliability_is_completed_reference_not_current_priority() -> None:
     completed = read(COMPLETED_RELIABILITY)
     docs_index = read("docs/README.md")
-    agents = read("AGENTS.md")
+    scope = read(ACTIVE_SCOPE)
 
     assert "Status:** `COMPLETED_REFERENCE`" in completed
     assert ACTIVE_SCOPE in completed
     assert "더 이상 현재 개발 우선순위나 다음 작업을 소유하지 않는다" in completed
     assert "`COMPLETED_REFERENCE`" in docs_index
-    assert "reliability stabilization은 완료된 baseline" in agents
+    assert "reliability stabilization은 완료된 baseline" in scope
 
 
 def test_memory_handoff_tracks_active_scope_and_stays_compact() -> None:

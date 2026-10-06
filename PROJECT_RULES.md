@@ -57,15 +57,14 @@ AidenGame은 어린이를 위한 local-first 웹 기반 학습 게임 플랫폼�
 - `main` fast-forward push가 기본이다.
 - PR·feature branch는 요청 시에만 사용한다.
 - 일반 작업은 안정적인 프로젝트 전용 경로의 isolated worktree에서 reservation 없이 병렬 실행한다.
-- source checkout/worktree는 `/tmp`, `/private/tmp`, `${TMPDIR}`, `mktemp` 하위에 만들지 않는다.
-- 기본 worktree root는 `/Users/seungjulee/Desktop/Dev/.worktrees/game/<task-slug>`이며, 실제 저장소가 다른 개발 루트에 있으면 같은 상위 디렉터리의 안정적인 `.worktrees/game/<task-slug>` sibling 경로를 사용한다.
-- VS Code·OpenCode·LSP·`uv`·`pnpm`·Docker·브라우저 E2E·generated artifact 검증은 모두 실제 작업 worktree 하나를 동일한 workspace root와 CWD로 사용한다. main checkout, worktree, symlink alias, `/tmp`와 `/private/tmp` 경로를 혼합하지 않는다.
-- OS temp는 prompt transport, patch/diff, 다운로드·압축 해제, 테스트 fixture와 폐기 가능한 비소스 산출물에만 사용한다. 그 안의 source tree를 LSP나 프로젝트 실행 루트로 사용하지 않는다.
 - hotspot·runtime identity·generated artifact처럼 충돌 비용이 큰 자원만 `agents/workflows/work-package-claim.md`로 예약한다.
+- IDE·LSP·package manager·브라우저·generator는 실제 작업 worktree 하나를 동일한 workspace root와 CWD로 사용한다. main checkout, worktree, symlink alias, OS 임시 경로를 혼합하지 않는다.
 - 게시 직전 최신 main에 재적용하고 focused verification과 정적 진단 closure를 다시 실행한다.
 - generated artifact는 source of truth와 build pipeline을 통해 갱신한다.
 - 원격 상태나 필수 검증이 불명확하면 publish하지 않는다.
-- 게시 또는 중단 후 자신이 만든 worktree만 제거하고 `git worktree prune`을 실행한다.
+
+경로·lock·재적용·cleanup의 실제 절차는 `agents/core/execution.md` §6–§7이 소유하고, 파괴적 Git 전이의
+안전 판정은 `agents/workflows/git.md`가 소유한다. 이 문서는 두 절차 문서를 복제하지 않는다.
 
 ## 5. 품질
 
@@ -79,13 +78,13 @@ AidenGame은 어린이를 위한 local-first 웹 기반 학습 게임 플랫폼�
 
 ### 5.1 정적 진단 closure
 
-- 작업 시작 시 안정적인 worktree root에서 관련 LSP·typecheck·lint baseline을 확인한다.
-- 현재 변경으로 새로 생긴 오류와 수정 파일·직접 영향 모듈의 오류는 현재 package에서 반드시 수정한다.
-- 저장소 정적 게이트가 다른 기존 오류를 드러내면 현재 원인과 섞어 대규모 수정하지 않는다. 현재 failure domain을 같은 진단으로 독립 검증한 뒤 다음 정적 failure domain 하나를 선택해 순차 해결한다.
-- 잘못된 workspace root, SDK/interpreter, 누락된 의존성, stale cache/index, generated/vendor 오분석이 원인이면 production code를 억지로 바꾸지 않고 환경·설정을 수정한 뒤 동일 진단을 재실행한다.
-- broad ignore, `type: ignore`, `noqa`, ESLint disable, 검사 대상 축소, baseline·snapshot 갱신으로 녹색을 만들지 않는다.
+정적 진단 closure의 절차와 판정은 `agents/core/verification.md` §7이 소유한다. 이 문서는 다음 경계만 유지한다.
+
+- 현재 변경과 직접 영향 범위의 정적 오류가 0이어야 최종 PASS가 허용된다.
 - LSP·typecheck·lint 오류를 “pre-existing” 또는 “out of scope”라는 이유만으로 보고하고 PASS하지 않는다.
-- 최종 PASS는 현재 변경과 직접 영향 범위의 정적 오류가 0이고 이번 작업에 요구되는 저장소 정적 게이트가 통과한 경우에만 허용한다. 안전하게 해결할 수 없는 정적 오류가 남으면 정확한 재현 명령과 원인을 포함해 `BLOCKED`로 보고한다.
+- broad ignore, `type: ignore`, `noqa`, ESLint disable, 검사 대상 축소, baseline·snapshot 갱신으로 녹색을 만들지 않는다.
+- 잘못된 workspace root, SDK/interpreter, 누락된 의존성, stale cache/index, generated/vendor 오분석이 원인이면 production code를 억지로 바꾸지 않고 환경·설정을 수정한 뒤 동일 진단을 재실행한다.
+- 안전하게 해결할 수 없는 정적 오류가 남으면 정확한 재현 명령과 원인을 포함해 `BLOCKED`로 보고한다.
 
 ### 5.2 Domain meaning and representation boundaries
 
@@ -128,14 +127,19 @@ just ci
 
 | 목적 | SSOT / authority |
 |---|---|
-| 실행 규약 | `AGENTS.md` |
+| 실행 규약·권위 라우팅 | `AGENTS.md` |
 | **현재 제품 방향** | `docs/specs/product/ACTIVE_PRODUCT_SCOPE.md` |
 | 아키텍처·품질 경계 | `PROJECT_RULES.md` |
+| 검증 선택·검증 계층·PASS/BLOCKED 판정 | `agents/core/verification.md` |
+| 보고 형식 | `agents/core/reporting.md` |
+| workspace·commit·게시 lifecycle | `agents/core/execution.md` |
+| Git 파괴적 안전 판정 | `agents/workflows/git.md` |
+| 상시 병렬 A/B 개발 트랙 | `agents/project/PARALLEL_TRACKS.md` |
+| 로컬 실행 프롬프트 | `agents/project/LOCAL_LLM_DELEGATION.md` |
 | 완료된 Core Quiz reliability 계약 | `docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md` |
 | Ocean Rescue 제품/기술 계약 | 대상 기능에 가장 가까운 `docs/specs/product/`·`docs/specs/technical/` 문서 |
 | Space Explorer 동결 참고 | `docs/SPACE_EXPLORER_PLAN.md` |
 | exclusive reservation | `agents/workflows/work-package-claim.md` + Issue #1 |
-| Git·publish | `agents/workflows/git.md` |
 | 요구사항·회귀 | `tests/` |
 | 배포 | `vercel.json`과 실제 entry |
 

@@ -8,6 +8,30 @@ window.SyncEngine = (() => {
     'englishWeeklyWords'
   ]);
 
+  // Current subject stats keys used by ProgressEngine.createStatsKey().
+  // Legacy *GameStats keys remain read-only migration inputs so existing cloud data
+  // can be recovered once without becoming the runtime storage authority again.
+  const CANONICAL_STATS_KEYS = Object.freeze([
+    'aiden_math_stats',
+    'aiden_english_stats',
+    'aiden_korean_stats',
+    'aiden_science_stats'
+  ]);
+
+  const LEGACY_STATS_KEY_MAP = Object.freeze({
+    mathGameStats: 'aiden_math_stats',
+    englishGameStats: 'aiden_english_stats',
+    koreanGameStats: 'aiden_korean_stats',
+    scienceGameStats: 'aiden_science_stats'
+  });
+
+  const DEFAULT_PULL_KEYS = [
+    'study_rewards',
+    ...CANONICAL_STATS_KEYS,
+    ...Object.keys(LEGACY_STATS_KEY_MAP),
+    'aiden_canonical_weekly_vocabulary_v1'
+  ];
+
   const DEFAULT_STUDY_SHOP_ITEMS = [
     { id: 'youtube', icon: '📺', label: '유튜브 10분', desc: '좋아하는 영상 시청', price: 1 },
     { id: 'snack', icon: '🍪', label: '간식 1개', desc: '맛있는 간식 시간', price: 1 },
@@ -93,6 +117,28 @@ window.SyncEngine = (() => {
     return merged;
   }
   
+  function normalizePulledRows(data) {
+    const rowsByKey = new Map(data.map((row) => [row.data_key, row]));
+    const normalized = data.filter(
+      (row) => !Object.prototype.hasOwnProperty.call(LEGACY_STATS_KEY_MAP, row.data_key)
+    );
+
+    for (const [legacyKey, canonicalKey] of Object.entries(LEGACY_STATS_KEY_MAP)) {
+      // Canonical cloud data always wins. Legacy data is only a fallback for users
+      // whose older row has not yet been migrated.
+      if (rowsByKey.has(canonicalKey)) continue;
+      const legacyRow = rowsByKey.get(legacyKey);
+      if (!legacyRow) continue;
+      normalized.push({
+        ...legacyRow,
+        data_key: canonicalKey,
+        legacy_source_key: legacyKey
+      });
+    }
+
+    return normalized;
+  }
+
   function getQueue() {
     try {
       const raw = localStorage.getItem(QUEUE_KEY);
@@ -178,9 +224,12 @@ window.SyncEngine = (() => {
 
       if (error || !data) return;
 
+      const pulledRows = normalizePulledRows(data);
+
       let hasUpdates = false;
       let hasWeeklyUpdate = false;
-      for (const row of data) {
+      for (const row of pulledRows) {
+        const isLegacyFallback = Boolean(row.legacy_source_key);
         const localRaw = localStorage.getItem(row.data_key);
         let localTime = 0;
         let localParsed = null;
@@ -229,14 +278,23 @@ window.SyncEngine = (() => {
 
           if (row.data_key === 'study_rewards') {
             toStore = mergeStudyRewardsPayload(safeLocal, row.payload);
-          } else if (row.data_key.endsWith('GameStats')) {
-            toStore = mergeGameStatsPayload(safeLocal, row.payload);
           }
           localStorage.setItem(row.data_key, JSON.stringify(toStore));
           hasUpdates = true;
+
+          // Migrate a legacy-only cloud row into the canonical key. The legacy row is
+          // intentionally left untouched; once the canonical row exists it wins on all
+          // future pulls and the fallback becomes inert.
+          if (isLegacyFallback) {
+            pushStats(row.data_key, toStore);
+          }
         } else if (localTime > dbTime && localRaw && localParsed) {
           // 로컬이 더 최신이면 클라우드로 푸시 큐 등록
-          pushStats(row.data_key, localParsed); 
+          pushStats(row.data_key, localParsed);
+        } else if (isLegacyFallback && localRaw && localParsed) {
+          // Equal timestamps can occur after earlier migrations. Ensure the canonical
+          // cloud row exists without rewriting local progress.
+          pushStats(row.data_key, localParsed);
         }
       }
 
@@ -266,15 +324,6 @@ window.SyncEngine = (() => {
       flushQueue();
     }
   }
-
-  const DEFAULT_PULL_KEYS = [
-    'study_rewards',
-    'mathGameStats',
-    'englishGameStats',
-    'koreanGameStats',
-    'scienceGameStats',
-    'aiden_canonical_weekly_vocabulary_v1'
-  ];
 
   // 이벤트 리스너: 온라인  복구 및 로그인 시 큐 전송
   window.addEventListener('online', flushQueue);

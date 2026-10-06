@@ -108,8 +108,11 @@ generated/vendor 오분석을 production code 변경으로 우회하지 않는�
 uv run pytest -q tests/test_active_product_scope_policy.py
 ```
 
-현재 일반 과목의 subject completion contract는
-[`CORE_QUIZ_RELIABILITY_STABILIZATION.md`](../../docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md)를 따른다.
+현재 제품 방향과 개발 우선순위는
+[`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)의 current development priority가
+소유한다. 이 문서는 그 방향을 다시 서술하지 않는다. 일반 과목 reliability 완료 계약이 필요할 때만
+[`CORE_QUIZ_RELIABILITY_STABILIZATION.md`](../../docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md)를
+함께 읽는다.
 
 ## 6. 저장소 대표 명령
 

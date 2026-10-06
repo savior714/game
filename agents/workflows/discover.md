@@ -16,11 +16,17 @@ domain: workflow
 ## 1. 사용 조건
 
 - 사용자가 개선 후보나 기술 부채 탐색을 명시적으로 요청함
-- 현재 기능 안정화 중 다음 failure domain을 증거로 선택해야 함
+- [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)의 current development
+  priority에서 아직 닫히지 않은 failure domain을 증거로 선택해야 함
 - 테스트·문서·도구의 반복 drift를 감사해야 함
 - 특정 영역의 구조적 마찰을 우선순위화해야 함
 
-범위가 없는 “다음 작업”은 discover 메뉴가 아니라 현재 [`CORE_QUIZ_RELIABILITY_STABILIZATION.md`](../../docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md) 공통 진단으로 해석한다.
+범위가 없는 “다음 작업”은 discover 메뉴가 아니라
+[`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)의 current development priority에서
+아직 닫히지 않은 failure domain을 고르는 것으로 해석한다. 이 문서는 그 방향을 다시 서술하지 않는다. 네 과목
+Core Quiz reliability 완료 계약이 필요할 때만
+[`CORE_QUIZ_RELIABILITY_STABILIZATION.md`](../../docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md)를
+함께 읽는다.
 
 ## 2. 기본 원칙
 

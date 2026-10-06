@@ -79,7 +79,9 @@ source와 runtime 증거만으로 원인이 구분되지 않을 때 가설을 �
 
 ## 6. AidenGame 과목 진단
 
-현재 기본 대상은 Math, English, Korean, Science다.
+현재 개발 대상과 우선순위는
+[`ACTIVE_PRODUCT_SCOPE.md`](../../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)의 current development priority가
+소유한다. 이 문서는 그 방향을 다시 서술하지 않는다.
 
 확인 항목:
 

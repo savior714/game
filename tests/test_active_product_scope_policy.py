@@ -40,6 +40,20 @@ DIRECTION_OWNER_EXEMPT = (
     "docs/specs/product/AIDENGAME_YOUTUBE_FREE_TIME_SESSION.md",
 )
 
+BROAD_DIRECTION_SENTENCES = (
+    # Level A. Exact direction-restatement shapes that must not survive anywhere
+    # under agents/** or docs/specs/technical/**, delegated or not. Each entry is a
+    # whole direction claim, never bare subject vocabulary, so naming a subject is
+    # not a violation.
+    "Math, English, Korean, Science",
+    "현재 기본 대상은",
+    "현재 기본 개발 방향은",
+    "일반 과목 안정화 중",
+    "현재 기능 안정화 중",
+    "안정화 우선순위",
+    "안정화 방향",
+)
+
 RESTATED_DIRECTION_SENTENCES = (
     "현재 기본 방향은 Math, English, Korean, Science 일반 문제풀이 신뢰성 안정화다",
     "현재 기본 개발 방향은 일반 과목 문제풀이 안정화",
@@ -83,6 +97,34 @@ DELEGATED_DIRECTION_DOCS = (
 )
 
 
+COMPLETION_PHASES = ("안정화 중", "안정화 방향", "안정화 계약", "안정화 우선순위")
+
+# Documents that carry direction restatements while never having been part of
+# DELEGATED_DIRECTION_DOCS. Level A exists because these fell through the narrow
+# delegated list and no sentence check reached them.
+RESIDUAL_DIRECTION_DOCS = (
+    "agents/core/verification.md",
+    "agents/skills/diagnose/SKILL.md",
+    "agents/workflows/discover.md",
+)
+
+# Subject vocabulary that level A must keep out of scope. Naming subjects, headings,
+# and a completed-reference contrast is not direction ownership.
+SUBJECT_VOCABULARY_ANCHORS = (
+    ("agents/core/verification.md", "일반 과목 JavaScript/UI"),
+    ("agents/core/verification.md", "일반 과목 관련 기존 출발점"),
+    ("agents/core/reporting.md", "네 과목 런타임 안정화"),
+    ("agents/workflows/diagnose.md", "일반 과목 브라우저 문제"),
+    ("agents/workflows/playwright.md", "일반 과목 공통 흐름"),
+    ("agents/domains/testing/playwright.md", "일반 과목 최소 관찰값"),
+    ("agents/skills/diagnose/SKILL.md", "일반 과목에서는"),
+    ("agents/skills/review/SKILL.md", "### 일반 과목"),
+    ("agents/skills/refactor/SKILL.md", "일반 과목 공용화"),
+    ("agents/skills/improve-codebase-architecture/SKILL.md", "### 일반 과목"),
+    ("agents/registry/RULE_INDEX.md", "완료된 일반 과목 안정화 제품·검증 계약"),
+)
+
+
 def scoped_documents() -> list[str]:
     documents = []
     for pattern in ("agents/**/*.md", "docs/specs/technical/*.md"):
@@ -93,7 +135,41 @@ def scoped_documents() -> list[str]:
     return documents
 
 
-def test_subordinate_docs_route_direction_to_ssot_instead_of_restating_it() -> None:
+def test_broad_level_reaches_documents_the_delegated_list_omitted() -> None:
+    broad = scoped_documents()
+
+    assert len(broad) > len(DELEGATED_DIRECTION_DOCS)
+    outside_delegated = set(broad) - set(DELEGATED_DIRECTION_DOCS)
+    for relative in RESIDUAL_DIRECTION_DOCS:
+        assert relative in broad, f"{relative} must be swept by the broad level"
+        assert relative in outside_delegated, (
+            f"{relative} is delegated; it cannot prove the blind spot"
+        )
+
+
+def test_broad_level_rejects_restated_direction_in_any_scoped_document() -> None:
+    documents = scoped_documents()
+
+    assert documents
+    for relative in documents:
+        text = read(relative)
+        for restated in BROAD_DIRECTION_SENTENCES:
+            assert restated not in text, (
+                f"{relative}: restates product direction -> {restated}"
+            )
+
+
+def test_broad_level_keeps_subject_vocabulary_out_of_direction_scope() -> None:
+    for relative, anchor in SUBJECT_VOCABULARY_ANCHORS:
+        text = read(relative)
+        assert anchor in text, f"{relative}: lost subject vocabulary -> {anchor}"
+        for restated in BROAD_DIRECTION_SENTENCES:
+            assert restated not in text, (
+                f"{relative}: subject vocabulary must not read as direction -> {anchor}"
+            )
+
+
+def test_delegated_docs_carry_no_direction_sentence_or_progress_phase() -> None:
     documents = [
         relative
         for relative in scoped_documents()
@@ -103,7 +179,7 @@ def test_subordinate_docs_route_direction_to_ssot_instead_of_restating_it() -> N
     assert sorted(documents) == sorted(DELEGATED_DIRECTION_DOCS)
     for relative in documents:
         text = read(relative)
-        for restated in RESTATED_DIRECTION_SENTENCES:
+        for restated in (*RESTATED_DIRECTION_SENTENCES, *COMPLETION_PHASES):
             assert restated not in text, (
                 f"{relative}: restates product direction -> {restated}"
             )
@@ -133,12 +209,10 @@ def test_direction_routing_targets_actually_name_the_ssot() -> None:
 
 
 def test_completed_reliability_contract_is_not_used_as_current_direction() -> None:
-    completion_phrases = ("안정화 중", "안정화 방향", "안정화 계약", "안정화 우선순위")
-
     offenders = [
         (relative, phrase)
         for relative in DELEGATED_DIRECTION_DOCS
-        for phrase in completion_phrases
+        for phrase in COMPLETION_PHASES
         if phrase in read(relative)
     ]
 

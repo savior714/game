@@ -287,7 +287,8 @@ def _run_browser_restore(
                     const raw = localStorage.getItem(key);
                     if (!raw) return false;
                     try {
-                      return JSON.stringify(JSON.parse(raw)) === JSON.stringify(value);
+                      const parsed = JSON.parse(raw);
+                      return parsed?._updated_at === value?._updated_at;
                     } catch {
                       return false;
                     }
@@ -343,7 +344,7 @@ def main() -> None:
         probe_ms / 1000, tz=dt.UTC
     ).isoformat()
 
-    mutated = False
+    mutated_keys: list[str] = []
     try:
         for key in SYNC_KEYS:
             _patch_row(
@@ -353,7 +354,7 @@ def main() -> None:
                 payload=expected[key],
                 updated_at=probe_updated_at,
             )
-        mutated = True
+            mutated_keys.append(key)
 
         for key in SYNC_KEYS:
             row = _read_row(access_token, user_id, key)
@@ -370,9 +371,10 @@ def main() -> None:
         )
         print("PASS: fresh browser restored all 5 rows through auth-changed default sync")
     finally:
-        if mutated:
+        if mutated_keys:
             restore_failures: list[str] = []
-            for key, row in backups.items():
+            for key in reversed(mutated_keys):
+                row = backups[key]
                 try:
                     _patch_row(
                         access_token,

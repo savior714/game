@@ -47,12 +47,13 @@ MEMORY는 200줄 이하로 유지하고 현재 product spec 링크와 다음 단
 
 범위가 별도로 지정되지 않았다면 다음을 전달한다.
 
-- 현재 우선순위: Math, English, Korean, Science 일반 문제풀이 신뢰성
-- 동결 범위: Ocean Rescue와 `experiments/` 신규 기능·구조 이전
-- 다음 실행: 최신 main에서 네 과목 공통 브라우저 진단 또는 아직 닫히지 않은 첫 failure domain
+- 제품 방향: [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)의 current development priority를 링크로 전달한다.
+- 동결 범위: 그 SSOT가 동결로 표시한 표면의 신규 기능·구조 이전
+- 다음 실행: 최신 main에서 아직 닫히지 않은 첫 failure domain
 - 완료 근거: 코드, focused test, 실제 브라우저 증거, 게시 커밋
 
-최근 커밋이 Ocean Rescue라는 이유로 다음 세션에 해당 작업을 지시하지 않는다.
+우선순위와 동결 표면을 이 문서가 다시 나열하지 않는다. 최근 커밋이나 과거 계획이 특정 기능을 이유로 다음
+세션에 그 작업을 지시하지 않는다.
 
 ## 4. 이관 출력
 

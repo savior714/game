@@ -24,9 +24,9 @@ domain: workflow
 
 ## 2. 현재 제품 경계
 
-- 일반 과목 첫 안정화 과목에서는 선제 architecture 통합을 하지 않는다.
+- 첫 대표 과목에서는 선제 architecture 통합을 하지 않는다.
 - 두 번째 과목에서 동일 책임이 확인된 뒤 shared seam을 검토한다.
-- Ocean Rescue와 실험 기능의 신규 architecture 이전은 현재 동결한다.
+- [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)가 동결로 표시한 표면의 신규 architecture 이전은 하지 않는다.
 - file length나 AI 탐색 편의만으로 production boundary를 바꾸지 않는다.
 
 ## 3. 검토 순서

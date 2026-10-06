@@ -25,10 +25,11 @@ verify_with:
 
 ## 2. 현재 목표 우선
 
-범위가 없는 다음 작업은 현재 product spec을 따른다.
-현재 기본 방향은 Math, English, Korean, Science 일반 문제풀이 신뢰성 안정화다.
+범위가 없는 다음 작업은 현재 제품 방향의 단일 SSOT인
+[`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)의 current development priority에서
+시작한다. 이 문서는 그 방향을 다시 서술하지 않는다.
 
-- Ocean Rescue와 `experiments/` 신규 기능·구조 이전은 동결한다.
+- SSOT가 명시한 active/frozen feature 상태를 따른다. Ocean Rescue와 `experiments/`처럼 동결된 표면의 신규 기능·구조 이전은 자동 재개하지 않는다.
 - 최근 커밋이나 과거 계획이 특정 기능이라는 이유로 자동 재개하지 않는다.
 - 사용자가 현재 요청에서 방향을 명시적으로 변경하면 그 요청이 우선한다.
 - 치명적 운영 회귀, 데이터 손상, 보안 문제는 독립 failure domain으로 예외 처리할 수 있다.

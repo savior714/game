@@ -14,10 +14,10 @@ domain: workflow
 이 워크플로우는 사용자가 **저장소에 Blueprint 또는 plan 문서를 만들라고 명시적으로 요청한 경우에만** 적용한다.
 일반적인 “계획해줘”, “다음 작업 정리”, “이어서 진행”, 로컬 프롬프트 요청은 채팅에서 처리하며 plan 파일을 만들지 않는다.
 
-현재 일반 과목 안정화 방향과 실행 우선순위는
-[`AGENTS.md`](../../AGENTS.md),
-[`PROJECT_RULES.md`](../../PROJECT_RULES.md),
-[`CORE_QUIZ_RELIABILITY_STABILIZATION.md`](../../docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md)를 따른다.
+현재 제품 방향과 실행 우선순위는 [`AGENTS.md`](../../AGENTS.md),
+[`PROJECT_RULES.md`](../../PROJECT_RULES.md), 그리고 제품 방향의 단일 SSOT인
+[`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)를 따른다. 이 문서는 그 방향을
+다시 서술하지 않는다.
 
 ## 1. 진입 조건
 

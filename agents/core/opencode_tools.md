@@ -41,8 +41,9 @@ verify_with:
 7. diff scope와 최신 remote main을 확인한다.
 8. fast-forward로만 게시한다.
 
-범위가 없는 요청은 현재 일반 과목 안정화 방향을 따른다.
-Ocean Rescue와 실험 기능을 최근 커밋만 보고 자동 재개하지 않는다.
+범위가 없는 요청은 [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)의
+current development priority에서 시작한다. 이 문서는 그 방향을 다시 서술하지 않는다.
+SSOT가 동결로 표시한 표면은 최근 커밋만 보고 자동 재개하지 않는다.
 
 ## 4. 읽기와 검색
 

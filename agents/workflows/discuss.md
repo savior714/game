@@ -54,14 +54,14 @@ domain: workflow
 
 ## 5. 현재 AidenGame 기본 방향
 
-현재 확정된 방향은 `docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md`에 있다.
+현재 확정된 방향은 [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)에 있다.
+이 문서는 그 방향을 다시 서술하지 않는다. 네 과목 Core Quiz reliability 완료 계약이 필요할 때만
+`docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md`를 함께 읽는다.
 
-- 일반 과목 문제풀이 신뢰성 우선
-- 네 과목 모두 안정화 후 신규 기능 재개
-- Ocean Rescue와 실험 기능 구조 이전 동결
+방향과 무관하게 항상 유지하는 실행 규칙이다.
+
 - 상태 계약과 실제 브라우저 증거 병행
-- 첫 과목은 공통 진단 결과로 선택
-- 두 번째 과목에서 반복이 확인된 뒤에만 공용화 검토
+- 공용화는 동일 책임이 실제 반복된 뒤에만 검토
 - 오조작을 유발하는 UI/UX 포함, 순수 시각 개선 제외
 - 과목 단위 게시
 

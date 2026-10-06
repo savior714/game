@@ -11,6 +11,7 @@ GO_WORKFLOW = ROOT / ".agents/workflows/go.md"
 ARCHIVE_WORKFLOW = ROOT / ".agents/workflows/archive.md"
 WORKFLOW_FILES = (PLANNING, PLAN_WORKFLOW, GO_WORKFLOW, ARCHIVE_WORKFLOW)
 CURRENT_SPEC = "docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md"
+ACTIVE_SCOPE = "docs/specs/product/ACTIVE_PRODUCT_SCOPE.md"
 
 
 def read(path: Path) -> str:
@@ -51,11 +52,12 @@ def test_chat_planning_is_default_and_blueprint_is_explicit_only() -> None:
     assert "일반적인 “계획해줘”, “다음 작업 정리”, “이어서 진행”" in workflow
 
 
-def test_planning_preserves_current_product_direction_and_atomic_work() -> None:
+def test_planning_routes_product_direction_to_ssot_and_keeps_atomic_work() -> None:
     combined = "\n".join(read(path) for path in (PLANNING, PLAN_WORKFLOW, GO_WORKFLOW))
 
     assert CURRENT_SPEC in combined
-    assert "Math, English, Korean, Science" in combined
+    assert ACTIVE_SCOPE in combined
+    assert "current development priority" in combined
     assert "한 failure domain" in combined
     assert "한 binary criterion" in combined
     assert "Ocean Rescue" in combined

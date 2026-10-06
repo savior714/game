@@ -34,10 +34,12 @@ domain: workflow
 
 ## 3. 현재 제품 방향
 
-범위가 지정되지 않은 review follow-up은 일반 과목 안정화 우선순위를 따른다.
+범위가 지정되지 않은 review follow-up은
+[`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)의 current development priority를
+따른다. 이 문서는 그 방향을 다시 서술하지 않는다.
 
-- 동결된 Ocean Rescue·실험 기능의 신규 구조 개선을 자동 권장하지 않는다.
-- 일반 과목에서 수정 범위가 넓어지면 첫 사용자 failure domain을 우선한다.
+- SSOT가 동결로 표시한 표면의 신규 구조 개선을 자동 권장하지 않는다.
+- 수정 범위가 넓어지면 첫 사용자 failure domain을 우선한다.
 - 공용화는 두 번째 실제 과목에서 동일 책임이 확인된 경우에만 검토한다.
 
 ## 4. 결과 형식

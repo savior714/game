@@ -28,11 +28,11 @@ domain: workflow
 
 ## 2. 현재 범위
 
-일반 과목 안정화 중에는:
+다음 규칙은 제품 방향과 무관하게 유지한다.
 
 - 첫 대표 과목을 선제적으로 shared engine으로 이전하지 않는다.
 - 두 번째 과목에서 동일 책임이 실제 반복된 뒤에만 공용화를 검토한다.
-- 동결된 Ocean Rescue와 실험 기능의 신규 ownership 이전을 자동 재개하지 않는다.
+- [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)가 동결로 표시한 표면의 신규 ownership 이전을 자동 재개하지 않는다.
 - 순수 시각 정리와 미래 확장용 abstraction을 우선하지 않는다.
 
 ## 3. 분석

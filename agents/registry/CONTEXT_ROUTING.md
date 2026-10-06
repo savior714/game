@@ -16,7 +16,8 @@ last_verified: 2026-08-07
 
 `사용자의 현재 요청 → AGENTS.md → PROJECT_RULES.md와 가장 가까운 product/technical spec → 최신 code/tests/config`
 
-현재 일반 과목 안정화 계약은
+현재 제품 방향은 [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)이고,
+네 과목 Core Quiz reliability 완료 계약은
 [`CORE_QUIZ_RELIABILITY_STABILIZATION.md`](../../docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md)다.
 
 ## 2. 작업 유형별 추가 문서
@@ -37,24 +38,24 @@ read-only 분석과 일반 병렬 mutation에는 reservation 문서나 board를 
 
 | 대상 경로 또는 요청 | 추가로 읽을 문서 | 기본 동작 |
 |---|---|---|
-| `domains/math/`, `domains/english/`, `domains/korean/`, `domains/science/` | 현재 안정화 spec, 직접 관련 test | 네 과목 공통 진단과 과목별 completion contract를 따른다. |
+| `domains/math/`, `domains/english/`, `domains/korean/`, `domains/science/` | 제품 방향 SSOT, 직접 관련 test | SSOT가 지정한 과목의 failure domain과 과목별 completion contract를 따른다. |
 | `tests/**/*browser*`, Playwright 사용 테스트 | [`playwright.md`](../domains/testing/playwright.md) | 실제 브라우저 입력, page error, request failure, 반복 실행을 검증한다. |
 | `tests/`의 기타 파일 | [`verification.md`](../core/verification.md) | 현재 failure domain을 잡는 focused assertion만 추가한다. |
 | `docs/`, `README.md`, `AGENTS.md`, `PROJECT_RULES.md`, `agents/` | 가장 가까운 authority 문서 | 링크, 우선순위, 현재 제품 방향, 실제 명령 존재 여부를 함께 검증한다. |
 | `domains/ocean-rescue/`, `ocean-rescue/` | 가장 가까운 Ocean Rescue technical spec | 사용자가 현재 요청에서 재개했거나 허용 예외가 성립할 때만 작업한다. |
-| `experiments/` | 가장 가까운 실험 문서 | 일반 과목 안정화 종료 전에는 신규 기능·구조 이전을 시작하지 않는다. |
+| `experiments/` | 가장 가까운 실험 문서 | 제품 방향 SSOT가 해당 표면을 동결로 표시하면 신규 기능·구조 이전을 시작하지 않는다. |
 | `Justfile`, `verify.sh`, `scripts/` | [`verification.md`](../core/verification.md)와 실제 파일 | 문서에 적힌 명령이 현재 파일에 존재하는지 먼저 확인한다. |
 
 ## 4. 범위가 없는 요청
 
 “다음 작업”, “이어서 진행”, “로컬 프롬프트”처럼 범위가 없는 요청은 다음 순서로 해석한다.
 
-1. 최신 `origin/main`에서 네 과목 공통 브라우저 진단
-2. 첫 `FAIL` 과목 선택
-3. 모두 통과하면 가장 큰 `PASS_WITH_GAP` 과목 선택
-4. 한 failure domain만 수정하고 독립 검증
+1. [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)의 current development priority에서 시작 대상을 고른다.
+2. 최신 `origin/main`에서 그 대상의 실제 결함을 재현한다.
+3. 한 failure domain만 수정하고 독립 검증한다.
 
-최근 커밋이 Ocean Rescue라는 이유로 해당 작업을 자동 재개하지 않는다.
+대상 과목·기능 목록과 실행 순서는 이 문서가 아니라 SSOT가 소유한다. 최근 커밋이나 과거 계획이 특정 기능을
+이유로 자동 재개하지 않는다.
 
 ## 5. 컨텍스트 예산
 

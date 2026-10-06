@@ -20,6 +20,7 @@ FILES = (
     REVIEW_SKILL,
 )
 CURRENT_SPEC = "docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md"
+ACTIVE_SCOPE = "docs/specs/product/ACTIVE_PRODUCT_SCOPE.md"
 
 
 def read(path: Path) -> str:
@@ -86,7 +87,8 @@ def test_diagnose_uses_feedback_loop_without_forced_checkpoints() -> None:
     skill = read(DIAGNOSE_SKILL)
     combined = workflow + "\n" + skill
 
-    assert CURRENT_SPEC in workflow
+    assert ACTIVE_SCOPE in workflow
+    assert CURRENT_SPEC not in workflow
     assert "빠르고 반복 가능한 PASS/FAIL 신호" in skill
     assert "가설 개수" in workflow
     assert "형식적으로 강제하지 않는다" in workflow

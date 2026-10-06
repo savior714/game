@@ -95,7 +95,7 @@ package를 수정할 때는 변경한 component의 focused test부터 실행한�
 - 모든 작업을 analyzer → dispatcher → auditor → fixer → final auditor로 강제
 - task tool이나 특정 subagent runtime이 항상 존재한다고 가정
 - orchestration result status를 product completion 근거로 사용
-- package 사용을 위해 일반 과목 안정화 범위를 확장
+- package 사용을 위해 제품 방향 SSOT가 정한 범위를 임의로 확장
 
 ## 8. 향후 처리
 

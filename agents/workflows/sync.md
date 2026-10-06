@@ -59,9 +59,9 @@ spec alignment CLI가 아니다.
 
 ## 5. 현재 동결 정책
 
-일반 과목 안정화 중:
+[`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)가 동결로 표시한 표면에 대해:
 
-- Ocean Rescue와 `experiments/` 기술 문서는 reference-only 상태를 유지한다.
+- 해당 표면의 기술 문서는 reference-only 상태를 유지한다.
 - 과거 plan의 next WP를 현재 작업으로 복원하지 않는다.
 - 문서 drift를 이유로 동결된 runtime migration을 자동 재개하지 않는다.
 

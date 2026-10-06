@@ -45,9 +45,10 @@ domain: workflow
 
 ## 4. 현재 제품 방향 적용
 
-범위가 지정되지 않은 조사는 일반 과목 안정화 계약을 기준으로 한다.
+범위가 지정되지 않은 조사는 [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)의
+current development priority를 기준으로 한다. 이 문서는 그 방향을 다시 서술하지 않는다.
 
-- 네 과목의 실제 runtime failure와 test coverage gap을 구분한다.
+- SSOT가 지정한 대상 과목의 실제 runtime failure와 test coverage gap을 구분한다.
 - 이미 해결된 next progression과 touch target을 재현 없이 다시 결함으로 선언하지 않는다.
 - Ocean Rescue·실험 기능은 동결 정책 위반 여부만 조사할 수 있으며, 자동 구현 재개로 이어가지 않는다.
 

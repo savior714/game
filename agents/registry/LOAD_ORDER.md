@@ -28,8 +28,11 @@ last_verified: 2026-08-06
 2. [`PROJECT_RULES.md`](../../PROJECT_RULES.md)
 3. [`MEMORY.md`](../../docs/agent-context/memory/MEMORY.md)
 
-현재 기본 개발 방향은 일반 과목 문제풀이 안정화이므로, 범위가 지정되지 않은 다음 작업이나 로컬 프롬프트 요청에서는
-[`CORE_QUIZ_RELIABILITY_STABILIZATION.md`](../../docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md)를 추가로 읽는다.
+현재 제품 방향·우선순위·active/frozen feature 상태의 단일 SSOT는
+[`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)다.
+범위가 지정되지 않은 다음 작업이나 로컬 프롬프트 요청에서는 이 SSOT를 추가로 읽고, 그 방향을 이 문서에서 다시
+서술하지 않는다. 네 과목 Core Quiz reliability 완료 계약이 필요할 때만
+[`CORE_QUIZ_RELIABILITY_STABILIZATION.md`](../../docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md)를 읽는다.
 
 ## 3. 작업 착수
 

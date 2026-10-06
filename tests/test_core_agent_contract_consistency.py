@@ -11,6 +11,7 @@ VERIFICATION = ROOT / ".agents/core/verification.md"
 REPORTING = ROOT / ".agents/core/reporting.md"
 CORE_FILES = (PRINCIPLES, EXECUTION, VERIFICATION, REPORTING)
 CURRENT_SPEC = "docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md"
+ACTIVE_SCOPE = "docs/specs/product/ACTIVE_PRODUCT_SCOPE.md"
 
 
 def read(path: Path) -> str:
@@ -34,11 +35,12 @@ def test_core_contract_links_resolve() -> None:
             assert target.exists(), f"{core_file}: broken link -> {target}"
 
 
-def test_core_contract_uses_current_aidengame_scope() -> None:
+def test_core_contract_routes_product_direction_to_ssot() -> None:
     combined = "\n".join(read(path) for path in CORE_FILES)
 
     assert CURRENT_SPEC in combined
-    assert "Math, English, Korean, Science" in combined
+    assert ACTIVE_SCOPE in combined
+    assert "Math, English, Korean, Science" not in combined
     assert "Ocean Rescue" in combined
     assert "experiments/" in combined
     assert "한 failure domain" in combined

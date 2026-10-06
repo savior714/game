@@ -31,6 +31,120 @@ def test_active_product_scope_is_the_single_product_direction_pointer() -> None:
     assert "Math mastery/adaptive loop" in readme
 
 
+DIRECTION_OWNER_EXEMPT = (
+    # The SSOT itself, plus documents that name subjects rather than restating direction.
+    ACTIVE_SCOPE,
+    "docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md",
+    "docs/specs/product/AIDENGAME_OCEAN_RESCUE_MVP_PRD.md",
+    "docs/specs/product/AIDENGAME_OCEAN_RESCUE_RENDERING_MVP.md",
+    "docs/specs/product/AIDENGAME_YOUTUBE_FREE_TIME_SESSION.md",
+)
+
+RESTATED_DIRECTION_SENTENCES = (
+    "현재 기본 방향은 Math, English, Korean, Science 일반 문제풀이 신뢰성 안정화다",
+    "현재 기본 개발 방향은 일반 과목 문제풀이 안정화",
+    "범위가 없는 요청은 현재 일반 과목 안정화 방향을 따른다",
+    "현재 기본 개발 방향은 일반 과목",
+    "일반 과목 문제풀이 신뢰성 우선",
+    "네 과목 모두 안정화 후 신규 기능 재개",
+    "현재 우선순위: Math, English, Korean, Science",
+    "현재 확정된 방향은 `docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md`에 있다",
+    "범위가 없는 진단은 `docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md`를 따른다",
+    "범위가 지정되지 않은 조사는 일반 과목 안정화 계약을 기준으로 한다",
+    "범위가 지정되지 않은 review follow-up은 일반 과목 안정화 우선순위를 따른다",
+    "현재 일반 과목 안정화 계약은",
+    "현재 일반 과목 안정화 방향과 실행 우선순위는",
+    "범위가 없는 다음 작업은 일반 과목 공통 브라우저 진단으로 시작한다",
+    "현재 기본 대상은 Math, English, Korean, Science",
+    "첫 실행은 네 과목 공통 진단",
+)
+
+
+DELEGATED_DIRECTION_DOCS = (
+    "agents/core/principles.md",
+    "agents/core/planning.md",
+    "agents/core/routing.md",
+    "agents/core/opencode_tools.md",
+    "agents/core/error_patterns.md",
+    "agents/registry/LOAD_ORDER.md",
+    "agents/registry/CONTEXT_ROUTING.md",
+    "agents/registry/WORKFLOW_AND_SKILL_INDEX.md",
+    "agents/workflows/go.md",
+    "agents/workflows/plan.md",
+    "agents/workflows/diagnose.md",
+    "agents/workflows/investigate.md",
+    "agents/workflows/discuss.md",
+    "agents/workflows/review.md",
+    "agents/workflows/refactor.md",
+    "agents/workflows/sync.md",
+    "agents/workflows/improve-codebase-architecture.md",
+    "agents/skills/discover/SKILL.md",
+    "docs/specs/technical/SPEC_orchestration.md",
+)
+
+
+def scoped_documents() -> list[str]:
+    documents = []
+    for pattern in ("agents/**/*.md", "docs/specs/technical/*.md"):
+        for path in sorted(ROOT.glob(pattern)):
+            relative = path.relative_to(ROOT).as_posix()
+            if relative not in DIRECTION_OWNER_EXEMPT:
+                documents.append(relative)
+    return documents
+
+
+def test_subordinate_docs_route_direction_to_ssot_instead_of_restating_it() -> None:
+    documents = [
+        relative
+        for relative in scoped_documents()
+        if relative in DELEGATED_DIRECTION_DOCS
+    ]
+
+    assert sorted(documents) == sorted(DELEGATED_DIRECTION_DOCS)
+    for relative in documents:
+        text = read(relative)
+        for restated in RESTATED_DIRECTION_SENTENCES:
+            assert restated not in text, (
+                f"{relative}: restates product direction -> {restated}"
+            )
+
+
+def test_direction_routing_targets_actually_name_the_ssot() -> None:
+    documents = scoped_documents()
+
+    routed = [
+        relative
+        for relative in documents
+        if "ACTIVE_PRODUCT_SCOPE.md" in read(relative)
+    ]
+
+    assert len(routed) >= 15
+    for relative in documents:
+        text = read(relative)
+        if ACTIVE_SCOPE not in text:
+            continue
+        for raw_target in re.findall(r"\[[^\]]+\]\(([^)]+)\)", text):
+            target = raw_target.split("#", 1)[0]
+            if not target or "://" in target:
+                continue
+            assert (ROOT / relative).parent.joinpath(target).resolve().is_file(), (
+                f"{relative}: broken direction link -> {target}"
+            )
+
+
+def test_completed_reliability_contract_is_not_used_as_current_direction() -> None:
+    completion_phrases = ("안정화 중", "안정화 방향", "안정화 계약", "안정화 우선순위")
+
+    offenders = [
+        (relative, phrase)
+        for relative in DELEGATED_DIRECTION_DOCS
+        for phrase in completion_phrases
+        if phrase in read(relative)
+    ]
+
+    assert offenders == []
+
+
 def test_agents_kernel_routes_instead_of_restating_delegated_contracts() -> None:
     agents = read("AGENTS.md")
 

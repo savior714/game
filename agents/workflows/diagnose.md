@@ -28,10 +28,11 @@ domain: workflow
 
 ## 2. 현재 제품 방향
 
-범위가 지정되지 않은 진단은 `docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md`를 따른다.
+범위가 지정되지 않은 진단은 [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)의
+current development priority에서 대상을 고른다. 이 문서는 그 방향을 다시 서술하지 않는다.
 
-- Math, English, Korean, Science 일반 문제풀이를 우선한다.
-- Ocean Rescue와 `experiments/` 신규 기능·구조 이전은 자동 재개하지 않는다.
+- SSOT가 정한 개발 sequence에서 아직 닫히지 않은 failure domain을 먼저 본다.
+- SSOT가 동결로 표시한 표면의 신규 기능·구조 이전은 자동 재개하지 않는다.
 - 동결 범위는 사용자의 현재 명시적 요청 또는 치명적 운영 회귀·데이터 손상·보안 문제일 때만 예외로 다룬다.
 - 과거 보고에 등장한 오류는 최신 main에서 같은 조건으로 재현되는지 먼저 확인한다.
 

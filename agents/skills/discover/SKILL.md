@@ -15,7 +15,7 @@ workflow 진입점은 [`discover.md`](../../workflows/discover.md)다.
 범위는 다음 중 하나로 고정한다.
 
 - 사용자가 지정한 과목·기능·경로
-- 현재 일반 과목 안정화에서 아직 검증되지 않은 contract
+- [`ACTIVE_PRODUCT_SCOPE.md`](../../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)의 current development priority에서 아직 검증되지 않은 contract
 - 반복된 문서·agent workflow drift
 - 최근 변경의 직접 영향 영역
 

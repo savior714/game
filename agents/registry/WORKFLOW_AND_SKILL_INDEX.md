@@ -12,8 +12,8 @@ workflow는 작업 방식을 보조하며 현재 제품 우선순위를 바꾸�
 
 ## 1. 현재 방향 gate
 
-- 범위가 없는 다음 작업은 일반 과목 공통 브라우저 진단으로 시작한다.
-- Ocean Rescue와 `experiments/`는 사용자가 현재 요청에서 재개하거나 허용 예외가 성립할 때만 다룬다.
+- 범위가 없는 다음 작업은 [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)의 current development priority에서 시작한다.
+- SSOT가 동결로 표시한 표면은 사용자가 현재 요청에서 재개하거나 허용 예외가 성립할 때만 다룬다.
 - `/plan` 또는 계획 관련 표현만으로 저장소에 plan 문서를 만들지 않는다. 사용자가 저장소 Blueprint를 명시적으로 요청한 경우만 허용한다.
 - workflow가 요구하는 명령이나 파일이 실제 저장소에 없으면 추측으로 대체하지 않는다.
 

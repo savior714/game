@@ -57,7 +57,7 @@ verify_with:
 | 브라우저 테스트 | 직접 관련 entry, [`playwright.md`](../domains/testing/playwright.md), 실제 browser evidence |
 | `docs/`, `.agents/`, README, 최상위 규칙 | authority 문서, 링크 대상, 실제 명령, drift guard |
 | `domains/ocean-rescue/`, `ocean-rescue/` | 사용자의 명시적 재개 또는 허용 예외 확인 후 가장 가까운 technical spec |
-| `experiments/` | 일반 과목 안정화 동결 정책과 가장 가까운 기술 참고 |
+| `experiments/` | 제품 방향 SSOT의 해당 표면 상태와 가장 가까운 기술 참고 |
 | `Justfile`, `verify.sh`, `scripts/` | 실제 recipe·script와 직접 영향 테스트 |
 
 추가 문서는 기본적으로 다음 세 종류만 읽는다.

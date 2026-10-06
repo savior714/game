@@ -66,8 +66,8 @@ verify_with:
 **방지:**
 
 - `AGENTS.md`, `PROJECT_RULES.md`, 현재 product spec을 먼저 확인한다.
-- 범위가 없는 작업은 네 과목 공통 진단 또는 아직 닫히지 않은 일반 문제풀이 failure domain으로 해석한다.
-- 사용자의 명시적 방향 변경이나 허용 예외가 없으면 Ocean Rescue·실험 구조 이전을 재개하지 않는다.
+- 범위가 없는 작업은 [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)의 current development priority에서 아직 닫히지 않은 failure domain을 고르는 것으로 해석한다.
+- 사용자의 명시적 방향 변경이나 허용 예외가 없으면 SSOT가 동결로 표시한 표면의 구조 이전을 재개하지 않는다.
 
 ## 6. 해결된 결함 재작업
 

@@ -59,14 +59,18 @@ verify_with:
 
 ## 3. 현재 제품 방향 적용
 
-범위가 없는 계획과 다음 작업 요청은
-[`CORE_QUIZ_RELIABILITY_STABILIZATION.md`](../../docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md)를 따른다.
+범위가 없는 계획과 다음 작업 요청은 제품 방향의 단일 SSOT인
+[`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)의 current development priority에서
+시작한다. 이 문서는 그 방향을 다시 서술하지 않는다.
 
-- Math, English, Korean, Science 일반 문제풀이를 우선한다.
-- 첫 실행은 네 과목 공통 진단 또는 아직 닫히지 않은 첫 failure domain이다.
-- Ocean Rescue와 `experiments/` 신규 기능·구조 이전은 동결한다.
-- 최근 커밋이나 과거 계획이 Ocean Rescue라는 이유로 자동 재개하지 않는다.
+- SSOT가 정한 개발 sequence와 active/frozen feature 상태를 따른다.
+- 첫 실행은 아직 닫히지 않은 첫 failure domain이다.
+- SSOT가 동결로 표시한 표면의 신규 기능·구조 이전은 자동 재개하지 않는다.
+- 최근 커밋이나 과거 계획이 특정 기능을 이유로 자동 재개하지 않는다.
 - 이미 해결된 결함은 최신 main에서 재현되지 않으면 다시 목표로 선택하지 않는다.
+- 네 과목 Core Quiz 문제풀이 reliability 계약은
+  [`CORE_QUIZ_RELIABILITY_STABILIZATION.md`](../../docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md)의
+  `COMPLETED_REFERENCE` 완료 계약으로만 참조하며 진행 국면의 근거로 쓰지 않는다.
 
 사용자가 현재 요청에서 방향을 명시적으로 변경하면 그 요청이 우선한다.
 

@@ -40,6 +40,15 @@ SUPABASE_URL = "https://rxjefpmvlygunrukccgg.supabase.co"
 ANON_KEY = "sb_publishable_86T5zbV_IUXZDvQig6mofg_tlHYeHVx"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
+
+class LiveSyncVerificationError(RuntimeError):
+    """Non-strippable failure for live verification invariants.
+
+    Safety gates here must never be bare ``assert`` statements. Python removes
+    ``assert`` under ``-O``/``PYTHONOPTIMIZE``, which turns the mutation opt-in and
+    the rollback checks into a fail-open path against real production user data.
+    """
+
 SYNC_KEYS = (
     "study_rewards",
     "aiden_math_stats",
@@ -119,8 +128,10 @@ def _auth(email: str, password: str) -> tuple[str, str, str]:
         method="POST",
         payload={"email": email, "password": password},
     )
-    assert status == 200 and isinstance(body, dict), f"auth failed: HTTP {status} {body}"
-    assert "access_token" in body and "user" in body, f"auth response incomplete: {body}"
+    if status != 200 or not isinstance(body, dict):
+        raise LiveSyncVerificationError(f"auth failed: HTTP {status} {body}")
+    if "access_token" not in body or "user" not in body:
+        raise LiveSyncVerificationError(f"auth response incomplete: {body}")
     return body["access_token"], body.get("refresh_token", ""), body["user"]["id"]
 
 
@@ -137,12 +148,12 @@ def _row_query(user_id: str, key: str) -> str:
 
 def _read_row(token: str, user_id: str, key: str) -> dict | None:
     status, body = _request(_row_query(user_id, key), token=token)
-    assert status == 200 and isinstance(body, list), (
-        f"read failed for {key}: HTTP {status} {body}"
-    )
+    if status != 200 or not isinstance(body, list):
+        raise LiveSyncVerificationError(f"read failed for {key}: HTTP {status} {body}")
     if not body:
         return None
-    assert len(body) == 1, f"expected one row for {key}, got {len(body)}"
+    if len(body) != 1:
+        raise LiveSyncVerificationError(f"expected one row for {key}, got {len(body)}")
     return body[0]
 
 
@@ -164,14 +175,15 @@ def _patch_row(
         payload={"payload": payload, "updated_at": updated_at},
         prefer="return=representation",
     )
-    assert status in (200, 204), f"patch failed for {key}: HTTP {status} {body}"
+    if status not in (200, 204):
+        raise LiveSyncVerificationError(f"patch failed for {key}: HTTP {status} {body}")
     if status == 204:
         row = _read_row(token, user_id, key)
-        assert row is not None
+        if row is None:
+            raise LiveSyncVerificationError(f"patch for {key} returned no row to verify")
         return row
-    assert isinstance(body, list) and len(body) == 1, (
-        f"patch response invalid for {key}: {body}"
-    )
+    if not isinstance(body, list) or len(body) != 1:
+        raise LiveSyncVerificationError(f"patch response invalid for {key}: {body}")
     return body[0]
 
 
@@ -303,9 +315,14 @@ def _run_browser_restore(
                 )""",
                 list(SYNC_KEYS),
             )
-            assert restored == expected, "browser restore payload mismatch"
-            assert not page_errors, f"browser page errors: {page_errors}"
-            assert not failed_requests, f"browser request failures: {failed_requests}"
+            if restored != expected:
+                raise LiveSyncVerificationError("browser restore payload mismatch")
+            if page_errors:
+                raise LiveSyncVerificationError(f"browser page errors: {page_errors}")
+            if failed_requests:
+                raise LiveSyncVerificationError(
+                    f"browser request failures: {failed_requests}"
+                )
 
             context.close()
             browser.close()
@@ -315,16 +332,49 @@ def _run_browser_restore(
         thread.join(timeout=2)
 
 
+def _verify_restored_rows(
+    access_token: str,
+    user_id: str,
+    backups: dict[str, dict],
+) -> list[str]:
+    """Read every touched row back and report any deviation from its backup.
+
+    The restore is only proven by re-reading production, never by the PATCH call
+    returning successfully: an ``updated_at`` trigger or any other DB-side rule can
+    make a write succeed while the stored state differs from the backup.
+    """
+    mismatches: list[str] = []
+    for key, backup in backups.items():
+        try:
+            row = _read_row(access_token, user_id, key)
+        except Exception as exc:  # pragma: no cover - emergency reporting path
+            mismatches.append(f"{key}: restore read-back failed: {exc}")
+            continue
+        if row is None:
+            mismatches.append(f"{key}: row missing after restore")
+            continue
+        if row["payload"] != backup["payload"]:
+            mismatches.append(f"{key}: payload not restored")
+        if row["updated_at"] != backup["updated_at"]:
+            mismatches.append(
+                f"{key}: updated_at not restored "
+                f"(backup={backup['updated_at']!r} stored={row['updated_at']!r})"
+            )
+    return mismatches
+
+
 def main() -> None:
-    assert os.environ.get("AIDEN_SUPABASE_LIVE_SYNC_ALLOW_MUTATION") == "1", (
-        "Refusing live mutation. Set AIDEN_SUPABASE_LIVE_SYNC_ALLOW_MUTATION=1 "
-        "only for an intentional live sync verification."
-    )
+    if os.environ.get("AIDEN_SUPABASE_LIVE_SYNC_ALLOW_MUTATION") != "1":
+        raise LiveSyncVerificationError(
+            "Refusing live mutation. Set AIDEN_SUPABASE_LIVE_SYNC_ALLOW_MUTATION=1 "
+            "only for an intentional live sync verification."
+        )
     email = os.environ.get("AIDEN_SUPABASE_TEST_EMAIL", "").strip()
     password = os.environ.get("AIDEN_SUPABASE_TEST_PASSWORD", "")
-    assert email and password, (
-        "AIDEN_SUPABASE_TEST_EMAIL and AIDEN_SUPABASE_TEST_PASSWORD are required."
-    )
+    if not email or not password:
+        raise LiveSyncVerificationError(
+            "AIDEN_SUPABASE_TEST_EMAIL and AIDEN_SUPABASE_TEST_PASSWORD are required."
+        )
 
     access_token, refresh_token, user_id = _auth(email, password)
     print(f"Authenticated live test user: {email} ({user_id})")
@@ -332,10 +382,11 @@ def main() -> None:
     backups: dict[str, dict] = {}
     for key in SYNC_KEYS:
         row = _read_row(access_token, user_id, key)
-        assert row is not None, (
-            f"Refusing mutation: required pre-existing row {key!r} is missing. "
-            "Use/seed a dedicated test account first; this verifier never creates rows."
-        )
+        if row is None:
+            raise LiveSyncVerificationError(
+                f"Refusing mutation: required pre-existing row {key!r} is missing. "
+                "Use/seed a dedicated test account first; this verifier never creates rows."
+            )
         backups[key] = row
 
     probe_ms = int(time.time() * 1000)
@@ -358,8 +409,10 @@ def main() -> None:
 
         for key in SYNC_KEYS:
             row = _read_row(access_token, user_id, key)
-            assert row is not None
-            assert row["payload"] == expected[key], f"exact read-back failed for {key}"
+            if row is None:
+                raise LiveSyncVerificationError(f"exact read-back returned no row for {key}")
+            if row["payload"] != expected[key]:
+                raise LiveSyncVerificationError(f"exact read-back failed for {key}")
         print("PASS: live PostgREST write + exact read-back for 5 core sync rows")
 
         _run_browser_restore(
@@ -385,10 +438,16 @@ def main() -> None:
                     )
                 except Exception as exc:  # pragma: no cover - emergency reporting path
                     restore_failures.append(f"{key}: {exc}")
-            assert not restore_failures, (
-                "LIVE TEST DATA RESTORE FAILED: " + "; ".join(restore_failures)
+            # A successful PATCH does not prove the stored row was restored, so the
+            # production state is read back and compared against every backup.
+            restore_failures.extend(
+                _verify_restored_rows(access_token, user_id, backups)
             )
-            print("PASS: original payloads and updated_at values restored")
+            if restore_failures:
+                raise LiveSyncVerificationError(
+                    "LIVE TEST DATA RESTORE FAILED: " + "; ".join(restore_failures)
+                )
+            print("PASS: original payloads and updated_at values restored (verified by read-back)")
 
 
 if __name__ == "__main__":

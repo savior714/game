@@ -199,7 +199,9 @@ def _run_harness(tmp_path: Path) -> dict:
     return json.loads(proc.stdout.strip())
 
 
-def test_auth_bootstrap_pulls_current_canonical_and_legacy_fallback_keys(tmp_path: Path) -> None:
+def test_auth_bootstrap_pulls_current_canonical_and_legacy_fallback_keys(
+    tmp_path: Path,
+) -> None:
     result = _run_harness(tmp_path)
     keys = set(result["defaultKeys"])
 
@@ -219,7 +221,9 @@ def test_auth_bootstrap_pulls_current_canonical_and_legacy_fallback_keys(tmp_pat
     } <= keys
 
 
-def test_canonical_subject_stats_restore_without_rewriting_cloud(tmp_path: Path) -> None:
+def test_canonical_subject_stats_restore_without_rewriting_cloud(
+    tmp_path: Path,
+) -> None:
     result = _run_harness(tmp_path)
 
     assert result["canonicalStored"]["+"]["levels"]["0"]["attempts"] == 2

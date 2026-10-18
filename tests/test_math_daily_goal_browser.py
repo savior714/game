@@ -30,8 +30,7 @@ def static_server():
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
 
-    host, port = server.server_address
-    yield f"http://{host}:{port}"
+    yield f"http://127.0.0.1:{server.server_port}"
 
     server.shutdown()
     server.server_close()
@@ -228,4 +227,44 @@ def test_math_landscape_and_portrait_responsiveness_zero_errors(
     expect(page.locator("#daily-goal-banner")).to_be_visible()
     expect(page.locator("#question")).to_be_visible()
 
+    assert page_errors == []
+
+
+@pytest.mark.browser
+@pytest.mark.parametrize(
+    "preset_id,target", [("light", 3), ("standard", 5), ("challenge", 7)]
+)
+def test_daily_goal_accessible_progress_matches_visible_count(
+    tablet_math_page: tuple[Page, list[str], list[str]], preset_id: str, target: int
+) -> None:
+    page, page_errors, _ = tablet_math_page
+    # Set up the persisted guardian preference before creating a fresh goal.
+    page.evaluate(
+        """presetId => {
+            localStorage.removeItem('aiden_math_daily_goal_v1');
+            localStorage.setItem('aiden_math_goal_preference_v1', JSON.stringify({
+                schemaVersion: 1, presetId, updatedAt: new Date().toISOString()
+            }));
+        }""",
+        preset_id,
+    )
+    page.reload()
+    progress = page.get_by_role("progressbar")
+    expect(progress).to_have_attribute("aria-valuemin", "0")
+    expect(progress).to_have_attribute("aria-valuemax", str(target))
+    expect(progress).to_have_attribute("aria-valuenow", "0")
+
+    for count in range(1, target + 1):
+        correct_answer = page.evaluate("answer")
+        page.get_by_role("button", name=str(correct_answer), exact=True).click()
+        expect(page.locator("#daily-goal-count")).to_have_text(f"{count} / {target}")
+        expect(progress).to_have_attribute("aria-valuenow", str(count))
+        expect(progress).to_have_attribute("aria-valuemax", str(target))
+        page.locator("#next-btn").click()
+
+    expect(page.locator("#daily-goal-status")).to_have_text("달성 완료! 🎉")
+    page.reload()
+    expect(progress).to_have_attribute("aria-valuenow", str(target))
+    expect(progress).to_have_attribute("aria-valuemax", str(target))
+    expect(page.locator("#daily-goal-count")).to_have_text(f"{target} / {target}")
     assert page_errors == []

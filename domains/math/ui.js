@@ -8,7 +8,8 @@ const timerCore = QuizUICore.createTimerCore({
   useGameCardDanger: true
 });
 const statsModalCore = QuizUICore.createStatsModalCore({
-  renderStatsTable: () => renderStatsTable()
+  renderStatsTable: () => renderStatsTable(),
+  timerCore
 });
 const answerFlowCore = QuizUICore.createAnswerFlowCore({
   getAnswered: () => answered,
@@ -149,6 +150,7 @@ function updateDailyGoalUI() {
   const descEl = document.getElementById('daily-goal-desc');
   const countEl = document.getElementById('daily-goal-count');
   const progressEl = document.getElementById('daily-goal-progress-bar');
+  const progressWrap = banner.querySelector('[role="progressbar"]');
   const statusEl = document.getElementById('daily-goal-status');
 
   if (descEl) {
@@ -160,6 +162,10 @@ function updateDailyGoalUI() {
   if (progressEl) {
     const pct = Math.min(100, Math.round((mathDailyGoal.currentCount / mathDailyGoal.targetCount) * 100));
     progressEl.style.width = `${pct}%`;
+  }
+  if (progressWrap) {
+    progressWrap.setAttribute('aria-valuenow', String(mathDailyGoal.currentCount));
+    progressWrap.setAttribute('aria-valuemax', String(mathDailyGoal.targetCount));
   }
   if (statusEl) {
     if (mathDailyGoal.completed) {
@@ -279,7 +285,6 @@ function bindProgressionControl() {
 
 function bindStaticControls() {
   const controls = [
-    ['close-stats-btn', closeStats],
     ['reset-stats-btn', confirmResetStats],
     ['restart-btn', startGame],
   ];
@@ -291,13 +296,6 @@ function bindStaticControls() {
 
     button.addEventListener('click', handler);
     button.dataset.mathControlBound = 'true';
-  }
-
-  const statsModal = document.getElementById('stats-modal');
-  if (!statsModal) throw new Error('Math stats modal is missing.');
-  if (statsModal.dataset.mathBackdropBound !== 'true') {
-    statsModal.addEventListener('click', onModalBackdrop);
-    statsModal.dataset.mathBackdropBound = 'true';
   }
 }
 

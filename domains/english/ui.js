@@ -36,7 +36,8 @@ const timerCore = QuizUICore.createTimerCore({
   useGameCardDanger: true
 });
 const statsModalCore = QuizUICore.createStatsModalCore({
-  renderStatsTable: () => renderStatsTable()
+  renderStatsTable: () => renderStatsTable(),
+  timerCore
 });
 const answerFlowCore = QuizUICore.createAnswerFlowCore({
   getAnswered: () => answered,

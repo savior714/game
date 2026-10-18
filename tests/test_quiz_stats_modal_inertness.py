@@ -96,6 +96,18 @@ class TestStatsModalInertness:
         page.wait_for_load_state("domcontentloaded")
         clear_storage(page)
         page.wait_for_selector("#question", state="visible", timeout=5000)
+        # The compact HUD nests its title and home link. Use two task-owned,
+        # id-less body siblings to keep the identity/reordering proof independent
+        # of that layout while retaining distinct prior inert states.
+        page.evaluate(
+            """() => {
+                for (const name of ['home', 'title']) {
+                    const probe = document.createElement('div');
+                    probe.className = 'inert-probe-' + name;
+                    document.body.appendChild(probe);
+                }
+            }"""
+        )
 
         # Step 1: focus the stats button
         page.focus("#stats-btn")
@@ -106,9 +118,11 @@ class TestStatsModalInertness:
 
         # Step 2: verify background elements are NOT inert by default
         home_link_inert = page.evaluate(
-            "() => document.querySelector('.home-link').inert"
+            "() => document.querySelector('.inert-probe-home').inert"
         )
-        h1_inert = page.evaluate("() => document.body.children[1].inert")
+        h1_inert = page.evaluate(
+            "() => document.querySelector('.inert-probe-title').inert"
+        )
         score_board_inert = page.evaluate(
             "() => document.getElementById('score-board').inert"
         )
@@ -116,10 +130,10 @@ class TestStatsModalInertness:
             "() => document.getElementById('main-area').inert"
         )
         assert home_link_inert is False, (
-            f".home-link should not be inert before open, got {home_link_inert}"
+            f".inert-probe-home should not be inert before open, got {home_link_inert}"
         )
         assert h1_inert is False, (
-            f"body > h1 should not be inert before open, got {h1_inert}"
+            f".inert-probe-title should not be inert before open, got {h1_inert}"
         )
         assert score_board_inert is False, (
             f"#score-board should not be inert before open, got {score_board_inert}"
@@ -145,9 +159,11 @@ class TestStatsModalInertness:
 
         # Step 5: verify background elements ARE inert after open
         home_link_inert_open = page.evaluate(
-            "() => document.querySelector('.home-link').inert"
+            "() => document.querySelector('.inert-probe-home').inert"
         )
-        h1_inert_open = page.evaluate("() => document.body.children[1].inert")
+        h1_inert_open = page.evaluate(
+            "() => document.querySelector('.inert-probe-title').inert"
+        )
         score_board_inert_open = page.evaluate(
             "() => document.getElementById('score-board').inert"
         )
@@ -156,10 +172,10 @@ class TestStatsModalInertness:
         )
 
         assert home_link_inert_open is True, (
-            f".home-link should be inert after open, got {home_link_inert_open}"
+            f".inert-probe-home should be inert after open, got {home_link_inert_open}"
         )
         assert h1_inert_open is True, (
-            f"body > h1 should be inert after open, got {h1_inert_open}"
+            f".inert-probe-title should be inert after open, got {h1_inert_open}"
         )
         assert score_board_inert_open is True, (
             f"#score-board should be inert after open, got {score_board_inert_open}"
@@ -187,9 +203,11 @@ class TestStatsModalInertness:
 
         # Step 9: verify background elements are restored to their pre-open state
         home_link_inert_close = page.evaluate(
-            "() => document.querySelector('.home-link').inert"
+            "() => document.querySelector('.inert-probe-home').inert"
         )
-        h1_inert_close = page.evaluate("() => document.body.children[1].inert")
+        h1_inert_close = page.evaluate(
+            "() => document.querySelector('.inert-probe-title').inert"
+        )
         score_board_inert_close = page.evaluate(
             "() => document.getElementById('score-board').inert"
         )
@@ -198,10 +216,10 @@ class TestStatsModalInertness:
         )
 
         assert home_link_inert_close is False, (
-            f".home-link should be inert=false after close, got {home_link_inert_close}"
+            f".inert-probe-home should be inert=false after close, got {home_link_inert_close}"
         )
         assert h1_inert_close is False, (
-            f"body > h1 should be inert=false after close, got {h1_inert_close}"
+            f".inert-probe-title should be inert=false after close, got {h1_inert_close}"
         )
         assert score_board_inert_close is False, (
             f"#score-board should be inert=false after close, got {score_board_inert_close}"
@@ -223,27 +241,45 @@ class TestStatsModalInertness:
         page.wait_for_load_state("domcontentloaded")
         clear_storage(page)
         page.wait_for_selector("#question", state="visible", timeout=5000)
+        # The compact HUD nests its title and home link. Use two task-owned,
+        # id-less body siblings to keep the identity/reordering proof independent
+        # of that layout while retaining distinct prior inert states.
+        page.evaluate(
+            """() => {
+                for (const name of ['home', 'title']) {
+                    const probe = document.createElement('div');
+                    probe.className = 'inert-probe-' + name;
+                    document.body.appendChild(probe);
+                }
+            }"""
+        )
 
         # Confirm target elements have no id so string-key snapshot would fail
         ids = page.evaluate(
-            "() => ({ home: document.querySelector('.home-link').id, h1: document.querySelector('body > h1').id })"
+            "() => ({ home: document.querySelector('.inert-probe-home').id, h1: document.querySelector('.inert-probe-title').id })"
         )
-        assert ids["home"] == "", f".home-link should have no id, got '{ids['home']}'"
-        assert ids["h1"] == "", f"body > h1 should have no id, got '{ids['h1']}'"
+        assert ids["home"] == "", (
+            f".inert-probe-home should have no id, got '{ids['home']}'"
+        )
+        assert ids["h1"] == "", (
+            f".inert-probe-title should have no id, got '{ids['h1']}'"
+        )
 
         # Step 1: set distinct prior inert states
         page.evaluate(
-            "() => { document.querySelector('.home-link').inert = false; document.querySelector('body > h1').inert = true; }"
+            "() => { document.querySelector('.inert-probe-home').inert = false; document.querySelector('.inert-probe-title').inert = true; }"
         )
         home_link_inert_pre = page.evaluate(
-            "() => document.querySelector('.home-link').inert"
+            "() => document.querySelector('.inert-probe-home').inert"
         )
-        h1_inert_pre = page.evaluate("() => document.querySelector('body > h1').inert")
+        h1_inert_pre = page.evaluate(
+            "() => document.querySelector('.inert-probe-title').inert"
+        )
         assert home_link_inert_pre is False, (
-            f".home-link must be inert=false before open, got {home_link_inert_pre}"
+            f".inert-probe-home must be inert=false before open, got {home_link_inert_pre}"
         )
         assert h1_inert_pre is True, (
-            f"body > h1 must be inert=true before open, got {h1_inert_pre}"
+            f".inert-probe-title must be inert=true before open, got {h1_inert_pre}"
         )
 
         # Step 2: focus stats-btn and open the modal
@@ -255,14 +291,16 @@ class TestStatsModalInertness:
 
         # Step 3: verify both are inert while modal is open
         home_link_inert_open = page.evaluate(
-            "() => document.querySelector('.home-link').inert"
+            "() => document.querySelector('.inert-probe-home').inert"
         )
-        h1_inert_open = page.evaluate("() => document.querySelector('body > h1').inert")
+        h1_inert_open = page.evaluate(
+            "() => document.querySelector('.inert-probe-title').inert"
+        )
         assert home_link_inert_open is True, (
-            f".home-link should be inert after open, got {home_link_inert_open}"
+            f".inert-probe-home should be inert after open, got {home_link_inert_open}"
         )
         assert h1_inert_open is True, (
-            f"body > h1 should be inert after open, got {h1_inert_open}"
+            f".inert-probe-title should be inert after open, got {h1_inert_open}"
         )
         active_after_open = page.evaluate("() => document.activeElement.id")
         assert active_after_open == "close-stats-btn", (
@@ -271,7 +309,7 @@ class TestStatsModalInertness:
 
         # Step 4: reorder DOM siblings while modal is open (swap positions)
         page.evaluate(
-            "() => { const home = document.querySelector('.home-link'); const h1 = document.querySelector('body > h1'); home.parentElement.insertBefore(h1, home); }"
+            "() => { const home = document.querySelector('.inert-probe-home'); const h1 = document.querySelector('.inert-probe-title'); home.parentElement.insertBefore(h1, home); }"
         )
 
         # Step 5: close the modal using the same instance
@@ -279,16 +317,16 @@ class TestStatsModalInertness:
 
         # Step 6: verify each element is restored to its own prior inert state
         home_link_inert_close = page.evaluate(
-            "() => document.querySelector('.home-link').inert"
+            "() => document.querySelector('.inert-probe-home').inert"
         )
         h1_inert_close = page.evaluate(
-            "() => document.querySelector('body > h1').inert"
+            "() => document.querySelector('.inert-probe-title').inert"
         )
         assert home_link_inert_close is False, (
-            f".home-link should be inert=false after close (was false before open), got {home_link_inert_close}"
+            f".inert-probe-home should be inert=false after close (was false before open), got {home_link_inert_close}"
         )
         assert h1_inert_close is True, (
-            f"body > h1 should be inert=true after close (was true before open), got {h1_inert_close}"
+            f".inert-probe-title should be inert=true after close (was true before open), got {h1_inert_close}"
         )
 
         # Step 7: verify focus returned to stats-btn

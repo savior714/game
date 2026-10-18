@@ -8,7 +8,8 @@ const timerCore = QuizUICore.createTimerCore({
   useGameCardDanger: true
 });
 const statsModalCore = QuizUICore.createStatsModalCore({
-  renderStatsTable: () => renderStatsTable()
+  renderStatsTable: () => renderStatsTable(),
+  timerCore
 });
 const answerFlowCore = QuizUICore.createAnswerFlowCore({
   getAnswered: () => answered,
@@ -284,7 +285,6 @@ function bindProgressionControl() {
 
 function bindStaticControls() {
   const controls = [
-    ['close-stats-btn', closeStats],
     ['reset-stats-btn', confirmResetStats],
     ['restart-btn', startGame],
   ];
@@ -296,13 +296,6 @@ function bindStaticControls() {
 
     button.addEventListener('click', handler);
     button.dataset.mathControlBound = 'true';
-  }
-
-  const statsModal = document.getElementById('stats-modal');
-  if (!statsModal) throw new Error('Math stats modal is missing.');
-  if (statsModal.dataset.mathBackdropBound !== 'true') {
-    statsModal.addEventListener('click', onModalBackdrop);
-    statsModal.dataset.mathBackdropBound = 'true';
   }
 }
 

@@ -28,7 +28,7 @@
   /**
    * 타이머 코어 생성
    * @param {TimerCoreOptions} options
-   * @returns {{startTimer: function(): void, stopTimer: function(): void, updateTimerUI: function(): void}}
+   * @returns {{startTimer: function(): void, stopTimer: function(): void, pauseTimer: function(): void, resumeTimer: function(): void, updateTimerUI: function(): void}}
    */
   function createTimerCore(options) {
     const {
@@ -48,10 +48,16 @@
       timerText: document.getElementById("timer-text"),
     };
 
+    let paused = false;
+
     function startTimer() {
       stopTimer();
       setTimeLeft(getTimeLimit());
       updateTimerUI();
+      startInterval();
+    }
+
+    function startInterval() {
       const id = setInterval(() => {
         setTimeLeft(getTimeLeft() - 0.25);
         if (getTimeLeft() <= 0) {
@@ -66,7 +72,23 @@
       setTimerInterval(id);
     }
 
+    function pauseTimer() {
+      if (getTimerInterval() === null) return;
+      clearInterval(getTimerInterval());
+      setTimerInterval(null);
+      paused = true;
+    }
+
+    function resumeTimer() {
+      if (!paused) return;
+      paused = false;
+      if (getTimeLeft() <= 0) return;
+      updateTimerUI();
+      startInterval();
+    }
+
     function stopTimer() {
+      paused = false;
       clearInterval(getTimerInterval());
       setTimerInterval(null);
       if (useGameCardDanger && els.gameCard) els.gameCard.classList.remove("time-danger");
@@ -94,11 +116,11 @@
       }
     }
 
-    return { startTimer, stopTimer, updateTimerUI };
+    return { startTimer, stopTimer, pauseTimer, resumeTimer, updateTimerUI };
   }
 
   function createStatsModalCore(options) {
-    const { renderStatsTable } = options;
+    const { renderStatsTable, timerCore } = options;
 
     const els = {
       statsModal: document.getElementById("stats-modal"),
@@ -217,6 +239,7 @@
           }
         }
         els.statsModal._inertSnapshot = snapshot;
+        if (timerCore) timerCore.pauseTimer();
         _applyInert(siblings, true);
       }
       renderStatsTable();
@@ -235,6 +258,7 @@
       if (snapshot) {
         _restoreInert(snapshot);
         if (els.statsModal) els.statsModal._inertSnapshot = null;
+        if (timerCore) timerCore.resumeTimer();
       }
       const target = els.statsModal ? els.statsModal._prevFocusTarget : null;
       if (els.statsModal) {
@@ -263,7 +287,20 @@
       _statsBtnBound = true;
     }
 
+    function _bindDismissControls() {
+      const closeBtn = document.getElementById("close-stats-btn");
+      if (closeBtn && closeBtn.dataset.statsCloseBound !== "true") {
+        closeBtn.addEventListener("click", closeStats);
+        closeBtn.dataset.statsCloseBound = "true";
+      }
+      if (els.statsModal && els.statsModal.dataset.statsBackdropBound !== "true") {
+        els.statsModal.addEventListener("click", onModalBackdrop);
+        els.statsModal.dataset.statsBackdropBound = "true";
+      }
+    }
+
     _bindStatsButton();
+    _bindDismissControls();
 
     return { openStats, closeStats, onModalBackdrop };
   }

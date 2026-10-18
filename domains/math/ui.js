@@ -149,6 +149,7 @@ function updateDailyGoalUI() {
   const descEl = document.getElementById('daily-goal-desc');
   const countEl = document.getElementById('daily-goal-count');
   const progressEl = document.getElementById('daily-goal-progress-bar');
+  const progressWrap = banner.querySelector('[role="progressbar"]');
   const statusEl = document.getElementById('daily-goal-status');
 
   if (descEl) {
@@ -160,6 +161,10 @@ function updateDailyGoalUI() {
   if (progressEl) {
     const pct = Math.min(100, Math.round((mathDailyGoal.currentCount / mathDailyGoal.targetCount) * 100));
     progressEl.style.width = `${pct}%`;
+  }
+  if (progressWrap) {
+    progressWrap.setAttribute('aria-valuenow', String(mathDailyGoal.currentCount));
+    progressWrap.setAttribute('aria-valuemax', String(mathDailyGoal.targetCount));
   }
   if (statusEl) {
     if (mathDailyGoal.completed) {

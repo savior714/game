@@ -161,6 +161,7 @@
         orderIndex: index,
         name: skillMeta.name || sId,
         shortName: skillMeta.shortName || skillMeta.name || sId,
+        operation: skillMeta.operation || '',
         curriculumRef: skillMeta.curriculumRef || '',
         gradeBand: skillMeta.gradeBand || '',
         description: skillMeta.description || '',
@@ -289,8 +290,10 @@
     const totalEvidenceCount = validEvidences.length;
     const practicedSkillCount = skillSnapshots.filter(s => s.totalAttempts > 0).length;
     const masteredSkillCount = masteredSkills.length;
+    const practicingSkillCount = skillSnapshots.filter(s => s.status === 'PRACTICING').length;
     const strugglingSkillCount = skillSnapshots.filter(s => s.status === 'STRUGGLING').length;
     const needsReviewSkillCount = skillSnapshots.filter(s => s.status === 'NEEDS_REVIEW').length;
+    const notStartedSkillCount = skillSnapshots.filter(s => s.status === 'NOT_STARTED').length;
 
     return Object.freeze({
       isEmpty: isEmpty,
@@ -299,8 +302,10 @@
         totalEvidenceCount: totalEvidenceCount,
         practicedSkillCount: practicedSkillCount,
         masteredSkillCount: masteredSkillCount,
+        practicingSkillCount: practicingSkillCount,
         strugglingSkillCount: strugglingSkillCount,
         needsReviewSkillCount: needsReviewSkillCount,
+        notStartedSkillCount: notStartedSkillCount,
         totalSkillCount: skillOrder.length,
       }),
       todayGoal: Object.freeze(todayGoalSummary),

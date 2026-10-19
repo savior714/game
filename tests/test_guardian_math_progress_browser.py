@@ -49,8 +49,15 @@ def tablet_guardian_page(static_server: str):
         page = context.new_page()
         page_errors: list[str] = []
         console_errors: list[str] = []
+        request_failures: list[str] = []
 
         page.on("pageerror", lambda error: page_errors.append(str(error)))
+        page.on(
+            "requestfailed",
+            lambda request: request_failures.append(
+                f"{request.url}: {request.failure}"
+            ),
+        )
         page.on(
             "console",
             lambda msg: (
@@ -63,10 +70,12 @@ def tablet_guardian_page(static_server: str):
             "#math-progress-snapshot-section", state="visible", timeout=5000
         )
 
-        yield page, page_errors, console_errors, static_server
-
-        context.close()
-        browser.close()
+        try:
+            yield page, page_errors, console_errors, static_server
+            assert request_failures == []
+        finally:
+            context.close()
+            browser.close()
 
 
 @pytest.mark.browser
@@ -87,6 +96,25 @@ def test_guardian_math_progress_empty_state_on_fresh_profile(
     expect(section).to_contain_text("수학 학습 진도 스냅샷")
     expect(section).to_contain_text("오늘의 수학 목표")
     expect(section).to_contain_text("아직 기록된 수학 학습 증거가 없습니다")
+
+    overview = page.locator("#guardian-math-status-overview")
+    expect(overview).to_be_visible()
+    expect(overview.locator('[data-math-status="NOT_STARTED"] dd')).to_have_text("12개")
+    for status in ("MASTERED", "PRACTICING", "NEEDS_REVIEW", "STRUGGLING"):
+        expect(overview.locator(f'[data-math-status="{status}"] dd')).to_have_text(
+            "0개"
+        )
+    expect(overview).to_contain_text("실력이 부족하다는 뜻은 아니에요")
+
+    learning_map = page.locator("#guardian-math-learning-map")
+    expect(learning_map).to_be_visible()
+    expect(
+        learning_map.locator('details[data-skill-status="NOT_STARTED"]')
+    ).to_have_count(12)
+    for operation, count in (("+", 5), ("-", 5), ("×", 2)):
+        group = learning_map.locator(f'[data-math-operation="{operation}"]')
+        expect(group.locator("details")).to_have_count(count)
+        expect(group).to_contain_text(f"숙달 0 / {count}")
 
     assert page_errors == []
     assert console_errors == []
@@ -252,3 +280,101 @@ def test_guardian_fail_soft_on_corrupted_storage(
     expect(section).to_contain_text("아직 기록된 수학 학습 증거가 없습니다")
 
     assert page_errors == []
+
+
+@pytest.mark.browser
+@pytest.mark.parametrize("viewport", [(1280, 800), (800, 1280), (360, 800)])
+def test_guardian_math_learning_map_explains_states_without_changing_records(
+    tablet_guardian_page: tuple[Page, list[str], list[str], str],
+    viewport: tuple[int, int],
+) -> None:
+    page, page_errors, console_errors, _ = tablet_guardian_page
+    page.set_viewport_size({"width": viewport[0], "height": viewport[1]})
+
+    before = page.evaluate(
+        """() => {
+        const now = Date.now();
+        const cases = [
+          { skillId: 'math.add.within_10', correct: true, count: 4, age: 0 },
+          { skillId: 'math.add.within_20.carry', correct: false, count: 3, age: 0 },
+          { skillId: 'math.subtract.within_10', correct: true, count: 4, age: 50 * 60 * 60 * 1000 },
+          { skillId: 'math.multiply.basic_facts', correct: true, count: 1, age: 0 },
+        ];
+        const items = cases.flatMap(entry => Array.from({ length: entry.count }, (_, index) => ({
+          id: `${entry.skillId}-${index}`,
+          skillId: entry.skillId,
+          correct: entry.correct,
+          attempts: entry.correct ? 1 : 2,
+          timestamp: now - entry.age - (entry.count - index) * 1000,
+        })));
+        localStorage.setItem('aiden_math_learning_evidence_v1', JSON.stringify({
+          schemaVersion: 1, lastUpdated: new Date(now).toISOString(), items,
+        }));
+        MathDailyGoalEngine.initOrGetDailyGoal({
+          now, skillCatalog: MathSkills.MATH_SKILLS, skillOrder: MathSkills.MATH_SKILL_ORDER,
+        });
+        MathDailyGoalEngine.saveGoalPreference('challenge', { now });
+        localStorage.setItem('study_rewards', JSON.stringify({ gems: 9, youtube_minutes: 10 }));
+        return Object.fromEntries(Object.entries(localStorage));
+    }"""
+    )
+    page.reload()
+
+    overview = page.locator("#guardian-math-status-overview")
+    for status, count in (
+        ("MASTERED", 1),
+        ("PRACTICING", 1),
+        ("NEEDS_REVIEW", 1),
+        ("STRUGGLING", 1),
+        ("NOT_STARTED", 8),
+    ):
+        expect(overview.locator(f'[data-math-status="{status}"] dd')).to_have_text(
+            f"{count}개"
+        )
+    expect(overview).to_contain_text("12개 학습 내용 중 4개에 풀이 기록")
+    expect(overview).to_contain_text("학년 전체의 진도나 점수가 아닙니다")
+
+    learning_map = page.locator("#guardian-math-learning-map")
+    for operation, name, skill_count in (
+        ("+", "덧셈", 5),
+        ("-", "뺄셈", 5),
+        ("×", "곱셈", 2),
+    ):
+        group = learning_map.get_by_role("region", name=f"{name} 학습 현황")
+        expect(group).to_have_attribute("data-math-operation", operation)
+        expect(group.locator("details")).to_have_count(skill_count)
+    rendered_ids = learning_map.locator("details").evaluate_all(
+        "elements => elements.map(element => element.dataset.skillId)"
+    )
+    catalog_ids = page.evaluate("() => Object.keys(MathSkills.MATH_SKILLS)")
+    assert sorted(rendered_ids) == sorted(catalog_ids)
+
+    struggling = learning_map.locator('[data-skill-id="math.add.within_20.carry"]')
+    expect(struggling).to_have_attribute("data-skill-status", "STRUGGLING")
+    expect(struggling.locator("summary")).to_contain_text("도움이 필요해요")
+    struggling.locator("summary").click()
+    expect(struggling.get_by_text("0 / 3 정답", exact=True)).to_be_visible()
+    struggling.locator("summary").press("Enter")
+    expect(struggling).not_to_have_attribute("open", "")
+
+    mastered = learning_map.locator('[data-skill-id="math.add.within_10"]')
+    mastered.locator("summary").focus()
+    mastered.locator("summary").press("Enter")
+    expect(mastered.get_by_text("4 / 4 정답", exact=True)).to_be_visible()
+    expect(mastered.get_by_text("2022-2수01-05", exact=True)).to_be_visible()
+
+    bounds = page.locator("#math-progress-snapshot-section").evaluate(
+        """section => Array.from(section.querySelectorAll('summary, dl, h4, h5')).map(element => {
+            const rect = element.getBoundingClientRect();
+            return { left: rect.left, right: rect.right };
+        })"""
+    )
+    assert all(bound["left"] >= 0 and bound["right"] <= viewport[0] for bound in bounds)
+
+    # Opening explanations, resizing and reloading must not fabricate learning or rewards.
+    page.reload()
+    expect(page.locator("#guardian-math-status-overview")).to_be_visible()
+    after = page.evaluate("() => Object.fromEntries(Object.entries(localStorage))")
+    assert after == before
+    assert page_errors == []
+    assert console_errors == []

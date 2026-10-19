@@ -50,8 +50,15 @@ def tablet_guardian_page(static_server: str):
         page = context.new_page()
         page_errors: list[str] = []
         console_errors: list[str] = []
+        request_failures: list[str] = []
 
         page.on("pageerror", lambda error: page_errors.append(str(error)))
+        page.on(
+            "requestfailed",
+            lambda request: request_failures.append(
+                f"{request.url}: {request.failure}"
+            ),
+        )
         page.on(
             "console",
             lambda msg: (
@@ -64,10 +71,12 @@ def tablet_guardian_page(static_server: str):
             "#math-daily-goal-presets-section", state="visible", timeout=5000
         )
 
-        yield page, page_errors, console_errors, static_server
-
-        context.close()
-        browser.close()
+        try:
+            yield page, page_errors, console_errors, static_server
+            assert request_failures == []
+        finally:
+            context.close()
+            browser.close()
 
 
 @pytest.mark.browser
@@ -260,6 +269,112 @@ def test_guardian_subject_tabs_legacy_isolation(
     expect(presets_section).to_be_visible()
     expect(diff_panel).to_be_hidden()
     expect(preview_section).to_be_hidden()
+
+    assert page_errors == []
+    assert console_errors == []
+
+
+@pytest.mark.browser
+def test_guardian_math_goal_application_summary_before_first_goal(
+    tablet_guardian_page: tuple[Page, list[str], list[str], str],
+) -> None:
+    page, page_errors, console_errors, _ = tablet_guardian_page
+    page.evaluate("() => localStorage.clear()")
+    page.reload()
+    page.wait_for_selector(
+        "#math-daily-goal-presets-section", state="visible", timeout=5000
+    )
+
+    summary = page.locator("#math-goal-application-summary")
+    expect(summary).to_contain_text("오늘 목표는 아직 만들어지지 않았어요.")
+    expect(summary).to_contain_text("'기본' · 목표 정답 5개")
+    expect(summary).to_contain_text("새 목표가 만들어질 때 적용돼요.")
+
+    page.click("#preset-btn-challenge")
+    page.wait_for_timeout(300)
+    expect(summary).to_contain_text("'도전' · 목표 정답 7개")
+    assert (
+        page.evaluate("() => localStorage.getItem('aiden_math_daily_goal_v1')") is None
+    )
+
+    assert page_errors == []
+    assert console_errors == []
+
+
+@pytest.mark.browser
+def test_guardian_math_goal_application_summary_separates_today_goal_from_setting(
+    tablet_guardian_page: tuple[Page, list[str], list[str], str],
+) -> None:
+    page, page_errors, console_errors, _ = tablet_guardian_page
+    page.evaluate(
+        """() => {
+        const now = Date.now();
+        const d = new Date(now);
+        const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        localStorage.setItem('aiden_math_daily_goal_v1', JSON.stringify({
+          schemaVersion: 1,
+          date: today,
+          goalId: `goal-${today}-math.add.within_10-v1`,
+          skillId: 'math.add.within_10',
+          skillName: '10 이하의 덧셈',
+          shortName: '10 이하 덧셈',
+          targetCount: 5,
+          currentCount: 2,
+          completed: false,
+          completedAt: null,
+          rewardGranted: false,
+          rewardReceiptId: `receipt-math-goal-${today}-math.add.within_10-v1`,
+          lastUpdated: new Date(now).toISOString(),
+        }));
+        localStorage.removeItem('aiden_math_goal_preference_v1');
+    }"""
+    )
+    page.reload()
+    page.wait_for_selector(
+        "#math-daily-goal-presets-section", state="visible", timeout=5000
+    )
+
+    summary = page.locator("#math-goal-application-summary")
+    expect(summary).to_contain_text("오늘 적용 중")
+    expect(summary).to_contain_text("10 이하 덧셈")
+    expect(summary).to_contain_text("진행 중")
+    expect(summary).to_contain_text("오늘 적용된 목표는 5개이고, 현재 정답은 2개예요.")
+    expect(summary).to_contain_text("'기본' · 목표 정답 5개")
+    expect(summary).to_contain_text("오늘 적용된 목표와 같아요.")
+
+    page.click("#preset-btn-challenge")
+    page.wait_for_timeout(300)
+    expect(summary).to_contain_text("'도전' · 목표 정답 7개")
+    expect(summary).to_contain_text("다음 새 목표부터 적용돼요.")
+    expect(summary).to_contain_text("그대로 유지돼요.")
+
+    stored_goal = json.loads(
+        page.evaluate("() => localStorage.getItem('aiden_math_daily_goal_v1')")
+    )
+    assert stored_goal["targetCount"] == 5
+    assert stored_goal["currentCount"] == 2
+    assert stored_goal["completed"] is False
+
+    # A goal from another calendar day must not appear as today's applied goal.
+    page.evaluate(
+        """() => {
+        const goal = JSON.parse(localStorage.getItem('aiden_math_daily_goal_v1'));
+        const yesterday = new Date(Date.now() - 86400000);
+        goal.date = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+        localStorage.setItem('aiden_math_daily_goal_v1', JSON.stringify(goal));
+    }"""
+    )
+    page.reload()
+    page.wait_for_selector(
+        "#math-daily-goal-presets-section", state="visible", timeout=5000
+    )
+    expect(page.locator("#math-goal-application-summary")).to_contain_text(
+        "오늘 목표는 아직 만들어지지 않았어요."
+    )
+    assert (
+        page.evaluate("() => localStorage.getItem('aiden_math_daily_goal_v1')")
+        is not None
+    )
 
     assert page_errors == []
     assert console_errors == []

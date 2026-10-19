@@ -657,3 +657,45 @@ test('MathDailyGoalEngine getTodayDateString resolves local calendar date YYYY-M
   const paddedDate = new Date(2026, 0, 5, 12, 0, 0); // 2026-01-05
   assert.equal(MathDailyGoalEngine.getTodayDateString(paddedDate), '2026-01-05');
 });
+
+test('MathDailyGoalEngine loadTodayGoal never creates a goal while inspecting an empty profile', () => {
+  const storage = new MockStorage();
+  const before = [...storage.map];
+  const now = new Date(2026, 9, 19, 0, 30).getTime();
+
+  assert.equal(MathDailyGoalEngine.loadTodayGoal({ storage, now }), null);
+  assert.deepEqual([...storage.map], before);
+});
+
+test('MathDailyGoalEngine loadTodayGoal preserves both in-progress and completed current-day goals', () => {
+  const now = new Date(2026, 9, 19, 0, 30).getTime();
+  for (const completed of [false, true]) {
+    const storage = new MockStorage();
+    const goal = MathDailyGoalEngine.initOrGetDailyGoal({ storage, now, skillCatalog: MathSkills.MATH_SKILLS });
+    goal.currentCount = completed ? goal.targetCount : 2;
+    goal.completed = completed;
+    goal.completedAt = completed ? now : null;
+    goal.rewardGranted = completed;
+    storage.setItem(MathDailyGoalEngine.STORAGE_KEY, JSON.stringify(goal));
+    storage.setItem('study_rewards', JSON.stringify({ gems: 9, youtube_minutes: 10 }));
+    const before = [...storage.map];
+
+    assert.deepEqual(MathDailyGoalEngine.loadTodayGoal({ storage, now }), goal);
+    assert.deepEqual([...storage.map], before);
+  }
+});
+
+test('MathDailyGoalEngine loadTodayGoal excludes other calendar days without deleting their records', () => {
+  const now = new Date(2026, 9, 19, 0, 30).getTime();
+  for (const offset of [-86400000, 86400000]) {
+    const storage = new MockStorage();
+    const storedGoal = MathDailyGoalEngine.initOrGetDailyGoal({
+      storage, now: now + offset, key: 'test_daily_goal', skillCatalog: MathSkills.MATH_SKILLS,
+    });
+    const before = [...storage.map];
+
+    assert.equal(MathDailyGoalEngine.loadTodayGoal({ storage, now, key: 'test_daily_goal' }), null);
+    assert.deepEqual(MathDailyGoalEngine.loadDailyGoal({ storage, key: 'test_daily_goal' }), storedGoal);
+    assert.deepEqual([...storage.map], before);
+  }
+});

@@ -124,6 +124,19 @@ test('B. Status mapping: NOT_STARTED, PRACTICING, MASTERED, NEEDS_REVIEW, STRUGG
   assert.equal(sMap['math.add.multi_digit'].status, 'NOT_STARTED');
   assert.equal(sMap['math.add.multi_digit'].statusLabel, '시작 전');
   assert.equal(sMap['math.add.multi_digit'].totalAttempts, 0);
+
+  // Overview counts are exclusive states, not a fabricated overall mastery score.
+  assert.equal(snapshot.summary.masteredSkillCount, 1);
+  assert.equal(snapshot.summary.practicingSkillCount, 1);
+  assert.equal(snapshot.summary.needsReviewSkillCount, 1);
+  assert.equal(snapshot.summary.strugglingSkillCount, 1);
+  assert.equal(snapshot.summary.notStartedSkillCount, 8);
+  assert.equal(
+    snapshot.summary.masteredSkillCount + snapshot.summary.practicingSkillCount +
+      snapshot.summary.needsReviewSkillCount + snapshot.summary.strugglingSkillCount +
+      snapshot.summary.notStartedSkillCount,
+    snapshot.summary.totalSkillCount
+  );
 });
 
 test('C. Attention priority: STRUGGLING > NEEDS_REVIEW > weak PRACTICING > PRACTICING with canonical tie-break', () => {
@@ -359,4 +372,34 @@ test('G. Streak projection: buildGuardianMathSnapshot projects streak count and 
   });
 
   assert.equal(snapshot3.streak.todayStatusText, '아직 시작 전');
+});
+
+test('H. Fresh profile retains the complete catalog as not started, grouped by canonical operation metadata', () => {
+  const evidenceList = Object.freeze([]);
+  const snapshot = MathGuardianSummary.buildGuardianMathSnapshot({
+    skillCatalog: MathSkills.MATH_SKILLS,
+    skillOrder: MathSkills.MATH_SKILL_ORDER,
+    evidenceList,
+    now: 2000000000000,
+  });
+
+  assert.equal(snapshot.isEmpty, true);
+  assert.equal(snapshot.summary.totalSkillCount, 12);
+  assert.equal(snapshot.summary.notStartedSkillCount, 12);
+  assert.equal(snapshot.summary.practicingSkillCount, 0);
+  assert.equal(snapshot.summary.masteredSkillCount, 0);
+  assert.equal(snapshot.summary.needsReviewSkillCount, 0);
+  assert.equal(snapshot.summary.strugglingSkillCount, 0);
+  assert.equal(snapshot.summary.practicedSkillCount, 0);
+
+  for (const skill of snapshot.skillSnapshots) {
+    assert.equal(skill.operation, MathSkills.MATH_SKILLS[skill.skillId].operation);
+    assert.equal(skill.status, 'NOT_STARTED');
+    assert.equal(skill.isWeak, false);
+    assert.equal(skill.totalAttempts, 0);
+  }
+  assert.equal(snapshot.skillSnapshots.filter(skill => skill.operation === '+').length, 5);
+  assert.equal(snapshot.skillSnapshots.filter(skill => skill.operation === '-').length, 5);
+  assert.equal(snapshot.skillSnapshots.filter(skill => skill.operation === '×').length, 2);
+  assert.deepEqual(evidenceList, []);
 });

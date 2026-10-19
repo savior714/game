@@ -1,0 +1,23 @@
+name: Supabase Keep-Alive
+
+on:
+  schedule:
+    # Every 3 days at 09:00 UTC (18:00 KST)
+    - cron: '0 9 */3 * *'
+  workflow_dispatch:
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase to prevent hibernation
+        run: |
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X HEAD \
+            "https://rxjefpmvlygunrukccgg.supabase.co/rest/v1/" \
+            -H "apikey: sb_publishable_86T5zbV_IUXZDvQig6mofg_tlHYeHVx" \
+            -H "Authorization: Bearer sb_publishable_86T5zbV_IUXZDvQig6mofg_tlHYeHVx")
+          echo "Supabase responded with HTTP $HTTP_CODE"
+          if [ "$HTTP_CODE" -ge 500 ]; then
+            echo "::warning::Supabase returned $HTTP_CODE — project may be paused or unreachable"
+          fi

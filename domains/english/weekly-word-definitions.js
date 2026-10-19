@@ -67,12 +67,39 @@
     return null;
   }
 
+  function resolveDefinition(meta, englishWord) {
+    var metaDefinition = meta
+      ? (meta.academyDescription !== undefined ? meta.academyDescription : meta.prompt)
+      : undefined;
+    if (typeof metaDefinition === 'string' && metaDefinition.trim()) return metaDefinition.trim();
+
+    var storedDefinition = getDefinition(englishWord);
+    if (typeof storedDefinition === 'string' && storedDefinition.trim()) return storedDefinition.trim();
+    return null;
+  }
+
+  /**
+   * 질문 본문이 비어 있으면 definition으로 채운다.
+   * 학원 시험지 원문만 등록된 주간 단어는 ko(한국어 뜻)가 비어 있어서
+   * main/hint/koHint가 ''인 채로 렌더링되어 문제 내용이 보이지 않는 경우가 있었다.
+   */
+  function fillQuestionPrompt(question, koreanMeaning, definition) {
+    ['main', 'hint', 'koHint'].forEach(function (field) {
+      if (!Object.prototype.hasOwnProperty.call(question, field)) return;
+      var value = question[field];
+      var isBlank = typeof value === 'string' && value.trim() === '';
+      var isKoreanMeaning =
+        typeof koreanMeaning === 'string' &&
+        koreanMeaning.trim() !== '' &&
+        value === koreanMeaning;
+      if (isBlank || isKoreanMeaning) question[field] = definition;
+    });
+  }
+
   function applyToQuestion(question, word, meta) {
     var englishWord = Array.isArray(word) ? word[0] : word;
     var koreanMeaning = Array.isArray(word) ? word[1] : null;
-    var definition = (meta && (meta.academyDescription !== undefined ? meta.academyDescription : meta.prompt))
-      ? (meta.academyDescription !== undefined ? meta.academyDescription : meta.prompt)
-      : getDefinition(englishWord);
+    var definition = resolveDefinition(meta, englishWord);
     if (!question || !definition) return question;
 
     var enriched = Object.assign({}, question, { englishDefinition: definition });
@@ -80,9 +107,7 @@
     if (meta && meta.word) enriched.word = meta.word;
     if (meta && meta.isWeekly !== undefined) enriched.isWeekly = meta.isWeekly;
 
-    if (koreanMeaning && enriched.main === koreanMeaning) enriched.main = definition;
-    if (koreanMeaning && enriched.hint === koreanMeaning) enriched.hint = definition;
-    if (koreanMeaning && enriched.koHint === koreanMeaning) enriched.koHint = definition;
+    fillQuestionPrompt(enriched, koreanMeaning, definition);
     return enriched;
   }
 

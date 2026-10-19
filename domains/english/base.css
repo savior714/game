@@ -437,6 +437,12 @@ h1 {
 .q-emoji  { font-size: 3.4rem; display: block; margin-bottom: 10px; filter: drop-shadow(0 0 12px rgba(255,255,255,0.15)); }
 .q-img    { width: 120px; height: 120px; object-fit: contain; margin-bottom: 10px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); }
 .q-main   { font-size: 2.1rem; font-weight: 900; color: #FFFFFF; letter-spacing: -0.02em; font-family: var(--font-heading); }
+.q-main.q-long {
+  font-size: clamp(1.15rem, 4.4vw, 1.55rem);
+  line-height: 1.4;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
 .q-hint   { font-size: 0.95rem; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
 .q-blanked { 
   font-size: 2.1rem; font-weight: 900; color: #FFFFFF;

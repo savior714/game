@@ -52,6 +52,7 @@
       'set-subject': () => global.setSubject?.(target.dataset.subject),
       'set-math-preset': () => global.onSelectMathPreset?.(target.dataset.preset),
       'save-settings': () => global.saveSettings?.(),
+      'reset-difficulty': () => global.resetDifficultyOverride?.(),
       'add-weekly-word': () => global.addWeeklyWord?.(),
       'add-custom-reward': () => global.addCustomReward?.(),
       'show-growth': () => global.showGrowthTab?.(),

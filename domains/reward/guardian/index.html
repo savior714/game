@@ -126,15 +126,18 @@
         <div>
           <h3 class="text-base font-extrabold text-white flex items-center gap-2">
             <span>🎯</span>
-            <span>오늘의 수학 학습량</span>
+            <span>수학 하루 목표 설정</span>
           </h3>
-          <p class="text-xs text-slate-400 mt-1">아이의 학습 상황에 맞게 하루 목표 문제 수를 선택하세요.</p>
+          <p class="text-xs text-slate-400 mt-1">오늘 적용 중인 목표와 다음 목표에 사용할 설정을 확인하세요.</p>
         </div>
         <span class="text-xs px-2.5 py-1 rounded-full bg-[#d7ff00]/10 text-[#d7ff00] font-bold border border-[#d7ff00]/20">
           간편 프리셋
         </span>
       </div>
 
+      <div id="math-goal-application-summary" class="mb-5"></div>
+
+      <p class="text-xs font-bold text-slate-300 mb-3">다음 목표에 사용할 학습량</p>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4" role="group" aria-label="수학 하루 목표 학습량 프리셋">
         <button type="button" data-action="set-math-preset" data-preset="light" id="preset-btn-light" class="preset-btn p-4 rounded-xl border text-left transition-all bg-white/5 text-slate-300 border-white/10 hover:bg-white/10 cursor-pointer">
           <div class="flex items-center justify-between mb-1">
@@ -163,7 +166,7 @@
         <span class="text-base shrink-0">💡</span>
         <div class="space-y-1">
           <p class="font-medium">공부할 내용은 아이의 학습 기록에 맞춰 자동으로 선택됩니다.</p>
-          <p class="text-[11px] text-slate-400">새 목표부터 적용됩니다.</p>
+          <p class="text-[11px] text-slate-400">설정은 바로 저장되고, 다음 새 목표부터 적용됩니다.</p>
         </div>
       </div>
     </div>
@@ -176,6 +179,7 @@
             <span id="current-label" class="bg-[#d7ff00]/15 text-[#d7ff00] border border-[#d7ff00]/30 px-2.5 py-0.5 rounded-md text-sm font-black">기초</span>
             <span id="current-age" class="text-slate-400 text-sm font-medium">7세 (예비 초)</span>
           </h2>
+          <p class="text-xs text-slate-400 mt-1">선택한 레벨은 아이 풀이 기록을 바꾸지 않고 기준 난이도로만 적용됩니다.</p>
         </div>
         <div class="text-3xl font-black text-[#d7ff00]/40 font-mono" id="level-display">Lv. 1</div>
       </div>
@@ -191,6 +195,13 @@
           <span>초4</span>
           <span>고학년~</span>
         </div>
+      </div>
+
+      <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
+        <p id="difficulty-status" class="text-[11px] text-slate-400"></p>
+        <button type="button" id="reset-difficulty-btn" data-action="reset-difficulty" class="text-[11px] px-2.5 py-1 rounded-full border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 cursor-pointer">
+          자동(풀이 기록 기준)으로 초기화
+        </button>
       </div>
 
       <div class="mt-8 flex justify-end">

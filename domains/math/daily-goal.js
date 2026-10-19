@@ -278,6 +278,16 @@
     return null;
   }
 
+  /**
+   * 로컬 날짜가 오늘인 목표만 읽는다. 보호자 조회로 목표를 생성하거나 기록을 변경하지 않는다.
+   */
+  function loadTodayGoal(options) {
+    const opts = options || {};
+    const now = typeof opts.now === 'number' ? opts.now : Date.now();
+    const goal = loadDailyGoal(opts);
+    return goal && goal.date === getTodayDateString(now) ? goal : null;
+  }
+
   function saveDailyGoal(goal, options) {
     const opts = options || {};
     const storage = _getStorage(opts.storage);
@@ -524,6 +534,7 @@
     initOrGetStreak: initOrGetStreak,
     recordStreakGoalCompletion: recordStreakGoalCompletion,
     loadDailyGoal: loadDailyGoal,
+    loadTodayGoal: loadTodayGoal,
     saveDailyGoal: saveDailyGoal,
     resolveGoalTargetCount: resolveGoalTargetCount,
     loadGoalPreference: loadGoalPreference,

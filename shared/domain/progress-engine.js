@@ -15,6 +15,8 @@
  * @typedef {{stats: StatsObject, domainKey: string, level: number, tag?: string, correct: boolean, elapsed: number, weaknessesKey?: string}} RecordResultArgs
  */
 (function (global) {
+  const GUARDIAN_BASE_LEVEL_SCHEMA_VERSION = 1;
+
   /**
    * localStorage 키 네임스페이스 헬퍼
    * @param {string} subject - 과목명 (예: 'english', 'korean', 'math', 'science')
@@ -79,6 +81,89 @@
   }
 
   /**
+   * 보호자 설정 기준 난이도 키 (학습 통계 키와 분리된 독립 키)
+   * @param {string} subject - 과목명
+   * @returns {string} localStorage 키
+   */
+  function guardianBaseLevelKey(subject) {
+    return `aiden_${subject}_guardian_base_level_v1`;
+  }
+
+  function _guardianBaseStorage(options) {
+    const opts = options || {};
+    if (opts.storage && typeof opts.storage.getItem === 'function') return opts.storage;
+    return typeof localStorage !== 'undefined' ? localStorage : null;
+  }
+
+  /**
+   * 보호자 설정 기준 난이도 저장 (학습 통계는 절대 수정하지 않는다)
+   * @param {string} subject - 과목명
+   * @param {number} level - 기준 레벨 (0-6, 범위 밖은 클램프)
+   * @param {Object} [options] - { storage, now }
+   * @returns {Object|null} 저장된 페이로드
+   */
+  function saveGuardianBaseLevel(subject, level, options) {
+    if (typeof level !== 'number' || !Number.isInteger(level)) {
+      return clearGuardianBaseLevel(subject, options);
+    }
+    const storage = _guardianBaseStorage(options);
+    if (!storage || typeof storage.setItem !== 'function') return null;
+    const opts = options || {};
+    const payload = {
+      schemaVersion: GUARDIAN_BASE_LEVEL_SCHEMA_VERSION,
+      level: Math.max(0, Math.min(6, level)),
+      updatedAt: new Date(typeof opts.now === 'number' ? opts.now : Date.now()).toISOString(),
+    };
+    try {
+      storage.setItem(guardianBaseLevelKey(subject), JSON.stringify(payload));
+    } catch (e) {
+      console.error('[ProgressEngine] Failed to save guardian base level:', e);
+    }
+    return payload;
+  }
+
+  /**
+   * 보호자 설정 기준 난이도 읽기 (없거나 손상되면 null → 자동 모드)
+   * @param {string} subject - 과목명
+   * @param {Object} [options] - { storage }
+   * @returns {number|null} 기준 레벨 (0-6) 또는 null
+   */
+  function loadGuardianBaseLevel(subject, options) {
+    const storage = _guardianBaseStorage(options);
+    if (!storage || typeof storage.getItem !== 'function') return null;
+    try {
+      const raw = storage.getItem(guardianBaseLevelKey(subject));
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (
+        parsed &&
+        parsed.schemaVersion === GUARDIAN_BASE_LEVEL_SCHEMA_VERSION &&
+        typeof parsed.level === 'number' &&
+        Number.isInteger(parsed.level)
+      ) {
+        return Math.max(0, Math.min(6, parsed.level));
+      }
+    } catch (e) {
+      console.warn('[ProgressEngine] Failed to parse guardian base level storage:', e);
+    }
+    return null;
+  }
+
+  /**
+   * 보호자 설정 기준 난이도 제거 (자동 모드 복귀)
+   * @param {string} subject - 과목명
+   * @param {Object} [options] - { storage }
+   * @returns {null}
+   */
+  function clearGuardianBaseLevel(subject, options) {
+    const storage = _guardianBaseStorage(options);
+    if (storage && typeof storage.removeItem === 'function') {
+      storage.removeItem(guardianBaseLevelKey(subject));
+    }
+    return null;
+  }
+
+  /**
    * 기본 난이도 레벨 계산
    * @param {StatsObject} stats - 통계 객체
    * @param {string} domainKey - 도메인 키
@@ -88,6 +173,9 @@
    */
   function getBaseDiffLevel(stats, domainKey, minData, opts) {
     opts = opts || {};
+    if (typeof opts.guardianBaseLevel === 'number' && Number.isInteger(opts.guardianBaseLevel)) {
+      return Math.max(0, Math.min(6, opts.guardianBaseLevel));
+    }
     const UP_THRESHOLD = opts.upThreshold !== undefined ? opts.upThreshold : 0.9;
     const DOWN_THRESHOLD = opts.downThreshold !== undefined ? opts.downThreshold : 0.8;
 
@@ -186,6 +274,10 @@
    * @property {typeof emptyStats} emptyStats
    * @property {typeof loadStats} loadStats
    * @property {typeof saveStats} saveStats
+   * @property {typeof guardianBaseLevelKey} guardianBaseLevelKey
+   * @property {typeof saveGuardianBaseLevel} saveGuardianBaseLevel
+   * @property {typeof loadGuardianBaseLevel} loadGuardianBaseLevel
+   * @property {typeof clearGuardianBaseLevel} clearGuardianBaseLevel
    * @property {typeof getBaseDiffLevel} getBaseDiffLevel
    * @property {typeof getDifficultyLevel} getDifficultyLevel
    * @property {typeof recordResultCore} recordResultCore
@@ -197,6 +289,10 @@
     emptyStats,
     loadStats,
     saveStats,
+    guardianBaseLevelKey,
+    saveGuardianBaseLevel,
+    loadGuardianBaseLevel,
+    clearGuardianBaseLevel,
     getBaseDiffLevel,
     getDifficultyLevel,
     recordResultCore,

@@ -146,12 +146,19 @@ function resetStats() { stats = emptyStats(); saveStats(); renderStatsTable(); }
 /* ═══════════════════════════════════
    난이도 계산
 ═══════════════════════════════════ */
+function subjectDiffOpts() {
+  const guardianBaseLevel = ProgressEngine.loadGuardianBaseLevel('english');
+  return guardianBaseLevel === null
+    ? SUBJECT_DIFF_OPTS
+    : Object.assign({}, SUBJECT_DIFF_OPTS, { guardianBaseLevel });
+}
+
 function getBaseDiffLevel(cat) {
-  return ProgressEngine.getBaseDiffLevel(stats, cat, MIN_DATA, SUBJECT_DIFF_OPTS);
+  return ProgressEngine.getBaseDiffLevel(stats, cat, MIN_DATA, subjectDiffOpts());
 }
 
 function getDifficultyLevel(cat) {
-  return ProgressEngine.getDifficultyLevel(stats, cat, MIN_DATA, globalBoost, recentHistory, SUBJECT_DIFF_OPTS);
+  return ProgressEngine.getDifficultyLevel(stats, cat, MIN_DATA, globalBoost, recentHistory, subjectDiffOpts());
 }
 
 /* ═══════════════════════════════════

@@ -107,11 +107,23 @@ function setSubject(sub) {
     t.classList.add('active-tab');
   }
 
-  // 로컬 스토리지에서 현재 레벨 산출 (수학이 아닐 때만 슬라이더 갱신)
+  // 보호자 설정 또는 풀이 기록 기준 레벨로 슬라이더 갱신 (수학이 아닐 때만)
   if (sub !== 'math') {
+    syncDifficultySlider(sub);
+  }
+}
+
+function syncDifficultySlider(sub) {
+  let baseLevel = 0;
+  const override = window.ProgressEngine && typeof window.ProgressEngine.loadGuardianBaseLevel === 'function'
+    ? window.ProgressEngine.loadGuardianBaseLevel(sub)
+    : null;
+
+  if (override !== null) {
+    baseLevel = override;
+  } else {
     const key = STORAGE_KEYS[sub];
     const statsStr = localStorage.getItem(key);
-    let baseLevel = 0;
     if (statsStr) {
       try {
         const stats = JSON.parse(statsStr);
@@ -131,12 +143,26 @@ function setSubject(sub) {
         }
       } catch(e) {}
     }
+  }
 
-    const sl = document.getElementById('level-slider');
-    if (sl) {
-      sl.value = baseLevel;
-      onSliderChange(baseLevel);
-    }
+  const sl = document.getElementById('level-slider');
+  if (sl) {
+    sl.value = baseLevel;
+    onSliderChange(baseLevel);
+  }
+  renderDifficultyStatus();
+}
+
+function renderDifficultyStatus() {
+  const el = document.getElementById('difficulty-status');
+  if (!el) return;
+  const override = window.ProgressEngine && typeof window.ProgressEngine.loadGuardianBaseLevel === 'function'
+    ? window.ProgressEngine.loadGuardianBaseLevel(currentSubject)
+    : null;
+  if (override === null) {
+    el.textContent = '적용 기준: 자동 (아이 풀이 기록). 저장하지 않으면 기록은 바뀌지 않아요.';
+  } else {
+    el.textContent = `적용 기준: 보호자 설정 Lv.${override} (${LABELS[override]}). 아이 풀이 기록은 그대로 유지돼요.`;
   }
 }
 
@@ -173,6 +199,12 @@ document.addEventListener('click', (e) => {
     case 'save-settings':
       if (window.saveSettings) {
         window.saveSettings();
+      }
+      e.stopPropagation();
+      break;
+    case 'reset-difficulty':
+      if (window.resetDifficultyOverride) {
+        window.resetDifficultyOverride();
       }
       e.stopPropagation();
       break;
@@ -282,63 +314,12 @@ function onSliderChange(val) {
 }
 
 function saveSettings() {
-  const key = STORAGE_KEYS[currentSubject];
-  const statsStr = localStorage.getItem(key);
-  let stats = {};
-  
-  if (statsStr) {
-    try { stats = JSON.parse(statsStr); } catch(e) {}
-  }
+  if (currentSubject === 'math') return;
+  if (!window.ProgressEngine || typeof window.ProgressEngine.saveGuardianBaseLevel !== 'function') return;
 
-  // If stats is completely empty, initialize it with correct domains
-  if (Object.keys(stats).length === 0) {
-    const defaultDomains = {
-      'math': ['+', '-', '×'],
-      'english': ['animals','fruits','nature','vehicles','colors','numbers','clothing','body','food','objects'],
-      'korean': ['spelling', 'antonym', 'honorific'],
-      'science': ['biology', 'earth', 'physics']
-    };
-    const domains = defaultDomains[currentSubject];
-    if (window.ProgressEngine) {
-      stats = window.ProgressEngine.emptyStats(domains);
-    } else {
-      for (const d of domains) {
-        stats[d] = { levels: {}, weaknesses: {} };
-        for (let i = 0; i < 7; i++) {
-          stats[d].levels[i] = { attempts: 0, correct: 0, totalTime: 0 };
-        }
-      }
-    }
-  }
-
-  // Inject false progress up to targeted level, and clear above
-  const targetLv = currentLevel;
-
-  for (const domain of Object.keys(stats)) {
-    if (domain === '_updated_at') continue;
-    if (!stats[domain].levels) continue;
-    
-    for (let i = 0; i < 7; i++) {
-       if (!stats[domain].levels[i]) {
-          stats[domain].levels[i] = { attempts:0, correct:0, totalTime:0 };
-       }
-       if (i < targetLv) {
-          stats[domain].levels[i].attempts = 10;
-          stats[domain].levels[i].correct = 10;
-       } else {
-          stats[domain].levels[i].attempts = 0;
-          stats[domain].levels[i].correct = 0;
-          stats[domain].levels[i].totalTime = 0;
-       }
-    }
-  }
-
-  stats._updated_at = Date.now();
-  localStorage.setItem(key, JSON.stringify(stats));
-  
-  if(window.SyncEngine) {
-     window.SyncEngine.pushStats(key, stats);
-  }
+  // 풀이 통계를 대체하지 않고 보호자 기준 난이도만 독립 키에 저장한다.
+  window.ProgressEngine.saveGuardianBaseLevel(currentSubject, currentLevel);
+  renderDifficultyStatus();
 
   const btn = document.getElementById('save-btn');
   const oldText = btn.textContent;
@@ -350,6 +331,14 @@ function saveSettings() {
     btn.classList.add("bg-gray-900");
     btn.classList.remove("bg-green-600");
   }, 1500);
+}
+
+function resetDifficultyOverride() {
+  if (currentSubject === 'math') return;
+  if (window.ProgressEngine && typeof window.ProgressEngine.clearGuardianBaseLevel === 'function') {
+    window.ProgressEngine.clearGuardianBaseLevel(currentSubject);
+  }
+  syncDifficultySlider(currentSubject);
 }
 
 // ──────────────────────────────────────────
@@ -1226,6 +1215,109 @@ const STATUS_BADGE_CLASSES = {
   NOT_STARTED: 'bg-slate-700/30 text-slate-400 border-white/10',
 };
 
+function renderMathLearningOverview(snapshot) {
+  const summary = snapshot.summary;
+  const states = [
+    { status: 'MASTERED', label: '숙달', count: summary.masteredSkillCount },
+    { status: 'PRACTICING', label: '연습 중', count: summary.practicingSkillCount },
+    { status: 'NEEDS_REVIEW', label: '복습 필요', count: summary.needsReviewSkillCount },
+    { status: 'STRUGGLING', label: '도움 필요', count: summary.strugglingSkillCount },
+    { status: 'NOT_STARTED', label: '시작 전', count: summary.notStartedSkillCount },
+  ];
+
+  return `
+    <section id="guardian-math-status-overview" aria-labelledby="guardian-math-status-title" class="bg-[#0e1422]/90 rounded-2xl p-5 border border-white/10">
+      <h4 id="guardian-math-status-title" class="text-sm font-bold text-white mb-2">수학 학습 상태 한눈에</h4>
+      <p class="text-xs text-slate-400 leading-relaxed mb-4">
+        이 앱에 등록된 ${summary.totalSkillCount}개 학습 내용 중 ${summary.practicedSkillCount}개에 풀이 기록이 있어요. 학년 전체의 진도나 점수가 아닙니다.
+      </p>
+      <dl class="grid grid-cols-3 sm:grid-cols-5 gap-2">
+        ${states.map(state => `
+          <div data-math-status="${state.status}" class="rounded-xl border p-3 ${STATUS_BADGE_CLASSES[state.status]}">
+            <dt class="text-xs font-bold">${state.label}</dt>
+            <dd class="mt-1 text-2xl font-black"><span class="font-mono">${state.count}</span><span class="ml-1 text-xs font-medium">개</span></dd>
+          </div>
+        `).join('')}
+      </dl>
+      <p class="text-[11px] text-slate-400 leading-relaxed mt-3">
+        ‘시작 전’은 이 앱에 풀이 기록이 없다는 뜻이에요. 아직 배우지 않았거나 실력이 부족하다는 뜻은 아니에요.
+      </p>
+    </section>
+  `;
+}
+
+function renderMathSkillGroups(snapshot) {
+  const operations = [
+    { operation: '+', name: '덧셈' },
+    { operation: '-', name: '뺄셈' },
+    { operation: '×', name: '곱셈' },
+  ];
+
+  const groupsHtml = operations.map(group => {
+    const skills = snapshot.skillSnapshots.filter(skill => skill.operation === group.operation);
+    const masteredCount = skills.filter(skill => skill.isMastered).length;
+    const practicedCount = skills.filter(skill => skill.totalAttempts > 0).length;
+    const skillsHtml = skills.map(skill => {
+      const badgeClass = STATUS_BADGE_CLASSES[skill.status] || STATUS_BADGE_CLASSES.NOT_STARTED;
+      const trendIcon = skill.trend === 'improved' ? '📈' : (skill.trend === 'declined' ? '📉' : '➡️');
+
+      return `
+        <details data-skill-id="${escapeHtml(skill.skillId)}" data-skill-status="${escapeHtml(skill.status)}" class="group bg-white/5 border border-white/10 rounded-xl">
+          <summary class="flex items-center justify-between gap-3 p-3.5 cursor-pointer list-none [&::-webkit-details-marker]:hidden rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d7ff00]">
+            <span class="min-w-0 text-sm font-bold text-white">${escapeHtml(skill.name)}</span>
+            <span class="flex items-center gap-2 shrink-0">
+              <span class="text-[10px] px-2 py-0.5 rounded-full border font-bold ${badgeClass}">${escapeHtml(skill.statusLabel)}</span>
+              <svg aria-hidden="true" class="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="none">
+                <path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+              </svg>
+            </span>
+          </summary>
+          <div class="border-t border-white/10 p-3.5 space-y-3 text-xs text-slate-300">
+            <p class="leading-relaxed">${escapeHtml(skill.description)}</p>
+            <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
+              <span>총 ${skill.totalAttempts}회 시도</span>
+              ${skill.curriculumRef ? `<span>${escapeHtml(skill.curriculumRef)}</span>` : ''}
+            </div>
+            <div class="bg-black/20 p-2.5 rounded-lg border border-white/5 space-y-1.5">
+              <p>
+                <span class="text-slate-400">최근 풀이:</span>
+                <span class="font-bold text-white ml-1">${skill.recentAttempts > 0 ? `<span class="font-mono">${skill.recentCorrect} / ${skill.recentAttempts}</span> 정답` : '기록 없음'}</span>
+              </p>
+              ${skill.hasPreviousComparison ? `
+                <p>
+                  <span class="text-slate-400">이전 대비:</span>
+                  <span class="font-bold text-[#d7ff00] ml-1">${escapeHtml(skill.trendText)} ${trendIcon}</span>
+                  <span class="text-slate-400 font-mono text-[11px] ml-1">(직전 ${skill.previousCorrect}/${skill.previousAttempts})</span>
+                </p>
+              ` : `
+                <p class="text-slate-400 text-[11px]">${escapeHtml(skill.growthSummary)}</p>
+              `}
+            </div>
+          </div>
+        </details>
+      `;
+    }).join('');
+
+    return `
+      <section data-math-operation="${group.operation}" aria-label="${group.name} 학습 현황">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+          <h5 class="text-sm font-extrabold text-white">${group.operation} ${group.name}</h5>
+          <p class="text-[11px] text-slate-400">숙달 ${masteredCount} / ${skills.length} · 연습 기록 ${practicedCount} / ${skills.length}</p>
+        </div>
+        <div class="space-y-2">${skillsHtml}</div>
+      </section>
+    `;
+  }).join('');
+
+  return `
+    <section id="guardian-math-learning-map" aria-labelledby="guardian-math-learning-map-title" class="bg-[#0e1422]/90 rounded-2xl p-5 border border-white/10">
+      <h4 id="guardian-math-learning-map-title" class="text-sm font-bold text-white mb-2">교육과정 스킬별 학습 현황</h4>
+      <p class="text-xs text-slate-400 leading-relaxed mb-5">내용을 누르면 최근 풀이와 이전 기록을 확인할 수 있어요. 복습 필요는 못한다는 뜻이 아니라, 익힌 내용을 다시 살펴볼 때라는 뜻이에요.</p>
+      <div class="space-y-6">${groupsHtml}</div>
+    </section>
+  `;
+}
+
 function renderMathProgressSnapshot() {
   const container = document.getElementById('math-progress-snapshot-section');
   if (!container) return;
@@ -1250,8 +1342,8 @@ function renderMathProgressSnapshot() {
       masteryMap = window.MathMasteryEngine.computeAllSkillsMastery(skillOrder, evidenceList, now);
     }
     if (window.MathDailyGoalEngine) {
-      if (typeof window.MathDailyGoalEngine.loadDailyGoal === 'function') {
-        dailyGoal = window.MathDailyGoalEngine.loadDailyGoal();
+      if (typeof window.MathDailyGoalEngine.loadTodayGoal === 'function') {
+        dailyGoal = window.MathDailyGoalEngine.loadTodayGoal({ now: now });
       }
       if (typeof window.MathDailyGoalEngine.initOrGetStreak === 'function') {
         streakState = window.MathDailyGoalEngine.initOrGetStreak({ now: now });
@@ -1300,7 +1392,24 @@ function renderMathProgressSnapshot() {
     </div>
   `;
 
-  // 2. 오늘의 목표 카드 (Today's Goal Card) + 연속 학습 스트릭 (Streak Card)
+  html += renderMathLearningOverview(snapshot);
+
+  // 기록이 없어도 전체 학습 범위를 숨기지 않는다.
+  if (snapshot.isEmpty) {
+    html += `
+      <div class="bg-[#0e1422]/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10 text-center">
+        <div class="text-4xl mb-3">🌱</div>
+        <h4 class="text-sm font-bold text-white mb-1">아직 기록된 수학 학습 증거가 없습니다</h4>
+        <p class="text-xs text-slate-400 leading-relaxed max-w-md mx-auto">
+          아이가 수학 놀이에서 문제를 풀기 시작하면, 여기에 실제 학습 결과, 취약점 분석, 복습 시점 안내 및 풀이 변화가 나타납니다.
+        </p>
+      </div>
+    `;
+  }
+
+  html += renderMathSkillGroups(snapshot);
+
+  // 오늘의 목표와 연속 학습은 학습 내용별 현황과 구분해 표시한다.
   const todayGoal = snapshot.todayGoal;
   const streakInfo = snapshot.streak || { currentStreak: 0, todayStatusText: '아직 시작 전' };
   html += `
@@ -1347,22 +1456,7 @@ function renderMathProgressSnapshot() {
     </div>
   `;
 
-  // 3. 빈 상태인 경우 (Empty State)
-  if (snapshot.isEmpty) {
-    html += `
-      <div class="bg-[#0e1422]/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10 text-center">
-        <div class="text-4xl mb-3">🌱</div>
-        <h4 class="text-sm font-bold text-white mb-1">아직 기록된 수학 학습 증거가 없습니다</h4>
-        <p class="text-xs text-slate-400 leading-relaxed max-w-md mx-auto">
-          아이가 수학 놀이에서 문제를 풀기 시작하면, 여기에 실제 학습 결과, 취약점 분석, 복습 시점 안내 및 풀이 변화가 나타납니다.
-        </p>
-      </div>
-    `;
-    container.innerHTML = html;
-    return;
-  }
-
-  // 4. 지금 살펴볼 스킬 (Attention Priority Cards)
+  // 지금 살펴볼 스킬 (Attention Priority Cards)
   if (snapshot.attentionSkills && snapshot.attentionSkills.length > 0) {
     let attentionCardsHtml = '';
     for (const skill of snapshot.attentionSkills) {
@@ -1406,7 +1500,7 @@ function renderMathProgressSnapshot() {
     `;
   }
 
-  // 5. 잘하고 있는 스킬 (Mastered Strengths)
+  // 잘하고 있는 스킬 (Mastered Strengths)
   if (snapshot.masteredSkills && snapshot.masteredSkills.length > 0) {
     let masteredTagsHtml = '';
     for (const skill of snapshot.masteredSkills) {
@@ -1431,63 +1525,6 @@ function renderMathProgressSnapshot() {
       </div>
     `;
   }
-
-  // 6. 스킬별 상세 학습 현황 목록
-  let allSkillsHtml = '';
-  for (const skill of snapshot.skillSnapshots) {
-    const badgeClass = STATUS_BADGE_CLASSES[skill.status] || STATUS_BADGE_CLASSES.NOT_STARTED;
-    const trendIcon = skill.trend === 'improved' ? '📈' : (skill.trend === 'declined' ? '📉' : (skill.trend === 'maintained' ? '➡️' : ''));
-
-    allSkillsHtml += `
-      <div class="bg-white/5 border border-white/10 rounded-xl p-3.5 transition-all hover:bg-white/[0.07]">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-          <div class="flex items-center gap-2">
-            <span class="text-sm font-bold text-white">${escapeHtml(skill.name)}</span>
-            <span class="text-[10px] px-2 py-0.5 rounded-full border font-bold ${badgeClass}">
-              ${escapeHtml(skill.statusLabel)}
-            </span>
-          </div>
-          <div class="flex items-center gap-2 text-[11px] text-slate-400 font-mono">
-            ${skill.curriculumRef ? `<span class="bg-black/30 px-1.5 py-0.5 rounded">${escapeHtml(skill.curriculumRef)}</span>` : ''}
-            <span>총 ${skill.totalAttempts}회 시도</span>
-          </div>
-        </div>
-
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-300 gap-1 bg-black/20 p-2.5 rounded-lg border border-white/5">
-          <div>
-            <span class="text-slate-400">최근 풀이:</span>
-            <span class="font-bold text-white ml-1 font-mono">${skill.recentAttempts > 0 ? `${skill.recentCorrect} / ${skill.recentAttempts} 정답` : '기록 없음'}</span>
-          </div>
-          <div class="text-xs text-slate-300">
-            ${skill.hasPreviousComparison ? `
-              <span class="text-slate-400">이전 대비:</span>
-              <span class="font-bold text-[#d7ff00] ml-1">${escapeHtml(skill.trendText)} ${trendIcon}</span>
-              <span class="text-slate-400 font-mono text-[11px] ml-1">(직전 ${skill.previousCorrect}/${skill.previousAttempts})</span>
-            ` : `
-              <span class="text-slate-400 text-[11px]">${escapeHtml(skill.growthSummary)}</span>
-            `}
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  html += `
-    <div class="bg-[#0e1422]/90 backdrop-blur-xl rounded-2xl p-5 shadow-2xl border border-white/10">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-2">
-          <span class="text-base">📋</span>
-          <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">교육과정 스킬별 학습 현황</h4>
-        </div>
-        <span class="text-[11px] text-slate-400 font-medium font-mono">
-          ${snapshot.summary.practicedSkillCount} / ${snapshot.summary.totalSkillCount} 스킬 연습
-        </span>
-      </div>
-      <div class="space-y-3">
-        ${allSkillsHtml}
-      </div>
-    </div>
-  `;
 
   container.innerHTML = html;
 }
@@ -1677,6 +1714,77 @@ function confirmRestore() {
 const PRESET_ACTIVE_CLASSES = ['bg-[#d7ff00]/15', 'text-[#d7ff00]', 'border-[#d7ff00]/50', 'shadow-[0_0_15px_rgba(215,255,0,0.2)]'];
 const PRESET_INACTIVE_CLASSES = ['bg-white/5', 'text-slate-300', 'border-white/10', 'hover:bg-white/10'];
 
+const GOAL_PRESET_LABELS = Object.freeze({ light: '가볍게', standard: '기본', challenge: '도전' });
+
+function readSavedGoalPreference() {
+  let preference = null;
+  if (window.MathDailyGoalEngine && typeof window.MathDailyGoalEngine.loadGoalPreference === 'function') {
+    preference = window.MathDailyGoalEngine.loadGoalPreference();
+  }
+  const presetId = preference && GOAL_PRESET_LABELS[preference.presetId] ? preference.presetId : 'standard';
+  const targets = (window.MathDailyGoalEngine && window.MathDailyGoalEngine.GOAL_PRESET_TARGETS) || { standard: 5 };
+  return {
+    presetId: presetId,
+    label: GOAL_PRESET_LABELS[presetId],
+    targetCount: typeof targets[presetId] === 'number' ? targets[presetId] : 5,
+  };
+}
+
+function renderMathGoalApplicationSummary() {
+  const container = document.getElementById('math-goal-application-summary');
+  if (!container) return;
+
+  const saved = readSavedGoalPreference();
+  let todayGoal = null;
+  try {
+    if (window.MathDailyGoalEngine && typeof window.MathDailyGoalEngine.loadTodayGoal === 'function') {
+      todayGoal = window.MathDailyGoalEngine.loadTodayGoal({ now: Date.now() });
+    }
+  } catch (err) {
+    console.warn('[Guardian] Failed to read today goal for the application summary:', err);
+  }
+
+  let todayHtml;
+  if (!todayGoal) {
+    todayHtml = `
+        <p class="font-bold text-white">오늘 목표는 아직 만들어지지 않았어요.</p>
+        <p class="text-[11px] text-slate-400 mt-1">아이가 오늘 수학 학습을 처음 시작할 때 저장된 학습량으로 목표가 만들어져요.</p>`;
+  } else {
+    const goalName = todayGoal.shortName || todayGoal.skillName || '수학 연습';
+    const targetCount = Number.isFinite(todayGoal.targetCount) ? todayGoal.targetCount : 0;
+    const currentCount = Number.isFinite(todayGoal.currentCount) ? todayGoal.currentCount : 0;
+    const statusText = todayGoal.completed ? '오늘 완료' : (currentCount > 0 ? '진행 중' : '아직 시작 전');
+    const statusClasses = todayGoal.completed
+      ? 'bg-emerald-400/10 text-emerald-300 border-emerald-400/20'
+      : 'bg-[#d7ff00]/10 text-[#d7ff00] border-[#d7ff00]/20';
+    todayHtml = `
+        <div class="flex items-center justify-between gap-2">
+          <p class="font-bold text-white">${escapeHtml(goalName)}</p>
+          <span class="shrink-0 text-[11px] px-2 py-0.5 rounded-full border font-bold ${statusClasses}">${statusText}</span>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-1">오늘 적용된 목표는 <span class="font-mono font-bold text-slate-200">${targetCount}</span>개이고, 현재 정답은 <span class="font-mono font-bold text-slate-200">${currentCount}</span>개예요.</p>`;
+  }
+
+  const applicationNote = !todayGoal
+    ? `저장된 '${saved.label} ${saved.targetCount}개'는 새 목표가 만들어질 때 적용돼요.`
+    : (todayGoal.targetCount === saved.targetCount
+      ? '저장된 설정은 오늘 적용된 목표와 같아요. 설정을 바꾸면 다음 새 목표부터 적용돼요.'
+      : `저장된 '${saved.label} ${saved.targetCount}개'는 다음 새 목표부터 적용돼요. 오늘 진행 중인 목표와 보상은 그대로 유지돼요.`);
+
+  container.innerHTML = `
+    <div class="p-4 rounded-xl border border-white/10 bg-white/5 space-y-3">
+      <div>
+        <p class="text-[11px] font-bold text-slate-400">오늘 적용 중</p>
+        <div class="mt-1">${todayHtml}</div>
+      </div>
+      <div class="border-t border-white/10 pt-3">
+        <p class="text-[11px] font-bold text-slate-400">저장된 설정</p>
+        <p class="mt-1 text-xs text-slate-200"><span class="font-bold text-white">'${escapeHtml(saved.label)}'</span> · 목표 정답 <span class="font-mono font-bold">${saved.targetCount}</span>개</p>
+        <p class="mt-1 text-[11px] text-slate-400">${escapeHtml(applicationNote)}</p>
+      </div>
+    </div>`;
+}
+
 function renderMathGoalPresets() {
   let preference = { presetId: 'standard' };
   if (window.MathDailyGoalEngine && typeof window.MathDailyGoalEngine.loadGoalPreference === 'function') {
@@ -1698,6 +1806,8 @@ function renderMathGoalPresets() {
       btn.setAttribute('aria-pressed', 'false');
     }
   });
+
+  renderMathGoalApplicationSummary();
 }
 
 function onSelectMathPreset(presetId) {

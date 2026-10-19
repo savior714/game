@@ -206,6 +206,8 @@ function askQuestion() {
 
   const isLong = (q.word && q.word.length > 10) || (q.main && q.main.length > 10);
   const longClass = isLong ? ' q-long' : '';
+  // q-main에는 q.main 길이만 반영한다 (긴 영단어의 짧은 한국어 뜻까지 축소하지 않도록)
+  const mainLongClass = (q.main && q.main.length > 10) ? ' q-long' : '';
 
   const answerBtns = DOM.answerBtns || document.getElementById('answer-buttons');
 
@@ -225,7 +227,7 @@ function askQuestion() {
     qEl.innerHTML =
       renderTaskPrompt('뜻을 보고 영어 단어를 직접 써요', '✍️') +
       iconHtml +
-      `<div class="q-main${longClass}">${q.main}</div>` +
+      `<div class="q-main${mainLongClass}">${q.main}</div>` +
       `<div class="q-typing-hint">시간 제한 없이 천천히 써도 돼요.</div>`;
     answerBtns.className = 'answer-buttons answer-buttons--typing';
     answerBtns.innerHTML =
@@ -260,14 +262,14 @@ function askQuestion() {
     qEl.innerHTML =
       renderTaskPrompt('뜻에 맞는 영어 단어를 골라요', '👀') +
       iconHtml +
-      `<div class="q-main${longClass}">${q.main}</div>` +
+      `<div class="q-main${mainLongClass}">${q.main}</div>` +
       `<div class="q-mini">${escapeHtml(q.hint)}</div>`;
     renderChoiceBtns(q.choices);
   } else {
     qEl.innerHTML =
       renderTaskPrompt('뜻에 맞는 영어 단어를 골라요', '👉') +
       iconHtml +
-      `<div class="q-main${longClass}">${q.main}</div>`;
+      `<div class="q-main${mainLongClass}">${q.main}</div>`;
     renderChoiceBtns(q.choices);
   }
 

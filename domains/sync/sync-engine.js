@@ -1,5 +1,7 @@
 window.SyncEngine = (() => {
   const QUEUE_KEY = 'sync_queue';
+  const SYNC_CHANNEL_NAME = 'aiden-sync-bus';
+  const PERIODIC_INTERVAL_MS = 5 * 60 * 1000; // 5분
 
   // Server-authoritative keys: these must only be mutated through server RPC,
   // never pushed back to cloud via generic LWW sync.
@@ -38,6 +40,12 @@ window.SyncEngine = (() => {
     { id: 'marble', icon: '🎮', label: '마블 게임', desc: '마블 한 판 더!', price: 1 },
     { id: 'bubble', icon: '🫧', label: '비눗방울 게임', desc: '버블팡 한 판 더!', price: 1 }
   ];
+
+  // ── 동기화 상태 추적 ──
+  let _lastSyncAt = 0;
+  let _periodicTimerId = null;
+  let _syncInProgress = false;
+  let _broadcastChannel = null;
 
   /** 로그인 직후 pull 시 서버 빈 값이 로컬 진행을 덮지 않도록 study_rewards만 병합 */
   function mergeStudyRewardsPayload(local, remote) {
@@ -285,13 +293,122 @@ window.SyncEngine = (() => {
     }
   }
 
-  // 이벤트 리스너: 온라인  복구 및 로그인 시 큐 전송
-  window.addEventListener('online', flushQueue);
+  // ── 즉시 전체 동기화 (pull + push flush) ──
+  async function syncNow(reason) {
+    if (_syncInProgress) return;
+    _syncInProgress = true;
+    try {
+      await flushQueue();
+      await pullAndMerge(DEFAULT_PULL_KEYS);
+      _lastSyncAt = Date.now();
+      // 다른 탭에도 동기화 완료 알림
+      _notifyOtherTabs(reason || 'manual');
+    } catch (e) {
+      console.warn('[SyncEngine] syncNow error:', e);
+    } finally {
+      _syncInProgress = false;
+    }
+  }
+
+  // ── BroadcastChannel: 탭 간 동기화 알림 ──
+  function _initBroadcastChannel() {
+    if (typeof BroadcastChannel === 'undefined') return;
+    try {
+      _broadcastChannel = new BroadcastChannel(SYNC_CHANNEL_NAME);
+      _broadcastChannel.onmessage = (event) => {
+        const msg = event.data;
+        if (!msg || msg.type !== 'sync-request') return;
+        // 다른 탭에서 데이터가 변경됨 → 내 탭도 pull
+        if (!_syncInProgress) {
+          flushQueue().then(() => pullAndMerge(DEFAULT_PULL_KEYS));
+        }
+      };
+    } catch (e) {
+      // BroadcastChannel 미지원 환경 (매우 구형 브라우저)
+    }
+  }
+
+  function _notifyOtherTabs(reason) {
+    if (!_broadcastChannel) return;
+    try {
+      _broadcastChannel.postMessage({ type: 'sync-request', reason, at: Date.now() });
+    } catch (e) { /* ignore */ }
+  }
+
+  // ── 페이지 가시성 복귀 시 자동 pull ──
+  function _onVisibilityChange() {
+    if (document.visibilityState !== 'visible') return;
+    // 로그인 상태 && 온라인 && 마지막 동기화 후 30초 이상 경과 시 pull
+    const user = window.Auth?.getUser();
+    if (!user || !navigator.onLine) return;
+    const elapsed = Date.now() - _lastSyncAt;
+    if (elapsed > 30 * 1000) {
+      syncNow('visibility');
+    }
+  }
+
+  // ── 주기적 동기화 타이머 ──
+  function _startPeriodicSync() {
+    _stopPeriodicSync();
+    _periodicTimerId = setInterval(() => {
+      const user = window.Auth?.getUser();
+      if (!user || !navigator.onLine) return;
+      syncNow('periodic');
+    }, PERIODIC_INTERVAL_MS);
+  }
+
+  function _stopPeriodicSync() {
+    if (_periodicTimerId !== null) {
+      clearInterval(_periodicTimerId);
+      _periodicTimerId = null;
+    }
+  }
+
+  // ── localStorage 변경 시 다른 탭에 알림 (storage 이벤트) ──
+  function _onStorageChange(e) {
+    // sync_queue가 변경되면 다른 탭에 push 완료를 알림
+    if (e.key === QUEUE_KEY || (e.key && !e.key.startsWith('_'))) {
+      _notifyOtherTabs('storage-change');
+    }
+  }
+
+  // ── 초기화 ──
+  function _init() {
+    _initBroadcastChannel();
+    document.addEventListener('visibilitychange', _onVisibilityChange);
+    window.addEventListener('storage', _onStorageChange);
+
+    // 로그인 상태가 되면 주기적 동기화 시작
+    window.addEventListener('auth-changed', (e) => {
+      if (e.detail?.user) {
+        _startPeriodicSync();
+      } else {
+        _stopPeriodicSync();
+      }
+    });
+  }
+
+  // ── 이벤트 리스너: 온라인 복구 및 로그인 시 큐 전송 ──
+  window.addEventListener('online', () => {
+    flushQueue();
+    // 오프라인이었다가 복구되면 pull도 함께
+    syncNow('online');
+  });
   window.addEventListener('auth-changed', () => {
     flushQueue();
     // 접속 중인 페이지가 쓰는 주요 Key들을 풀링 (기본 공통키 + 주간 영단어 단일 진실 소스)
-    pullAndMerge(DEFAULT_PULL_KEYS);
+    pullAndMerge(DEFAULT_PULL_KEYS).then(() => {
+      _lastSyncAt = Date.now();
+      _notifyOtherTabs('auth-changed');
+    });
   });
+
+  // DOM 준비되면 초기화
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _init);
+  } else {
+    _init();
+  }
 
   return {
     pushStats,
@@ -299,7 +416,11 @@ window.SyncEngine = (() => {
     flushQueue,
     getQueue,
     pushToSupabase,
-    SERVER_AUTHORITATIVE_KEYS
+    syncNow,
+    SERVER_AUTHORITATIVE_KEYS,
+    /** 마지막 동기화 시각 (ms timestamp) */
+    getLastSyncAt() { return _lastSyncAt; },
+    /** 동기화 진행 여부 */
+    isSyncing() { return _syncInProgress; }
   };
 })();
-

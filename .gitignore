@@ -22,6 +22,10 @@ dist/
 build/
 *.egg-info/
 
+# 커밋된 세 번째 정적 런타임 자산 (빌드 산출물 아님)
+!experiments/space-explorer/vendor/three/build/
+!experiments/space-explorer/vendor/three/build/**
+
 # Logs
 *.log
 

@@ -1,359 +1,732 @@
-import { TWO_PI } from "./state.js";
+// 태양계 3D 탐험대 — 장면 구성과 렌더링
+// 실제 텍스처, 태양 플라스마 셰이더, 지구 대기/구름/야간 조명, 고리 그림자, 블룸을 담당한다.
 
-const PERF_MARK_START = "spaceExplorer:render:start";
-const PERF_MARK_END = "spaceExplorer:render:end";
-const PERF_MEASURE_NAME = "spaceExplorer:render:duration";
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 
-export function createRenderer(canvas, ctx, state, planets) {
-  let viewportWidth = 0;
-  let viewportHeight = 0;
-  let dpr = 1;
-  let starLayer = null;
-  let starLayerMode = "";
+import { BELT, KUIPER_BELT, MOONS, PLANETS, SKY_TEXTURE, SUN } from "./data.js";
+import { createTextureLibrary } from "./textures.js";
+import {
+  createAtmosphereMaterial,
+  createCloudMaterial,
+  createEarthMaterial,
+  createGlowTexture,
+  createRingMaterial,
+  createSkyMaterial,
+  createSunMaterial,
+} from "./shaders.js";
+import {
+  clampAngularStep,
+  orbitPathPoints,
+  orbitRadiusForDistance,
+  spinAngleRad,
+  TAU,
+  visualOrbitPosition,
+} from "./simulation.js";
 
-  // 클릭/호버 검출용 — render()에서 채움
-  let planetHitboxes = [];
+const DEG = Math.PI / 180;
+const STAR_COUNT = 420;
+const SKY_RADIUS = 2600;
 
-  // 정렬된 행성 목록 (초기화 시 한 번만 생성, resize 시 불변)
-  let sortedPlanets = [];
 
-  function initPlanetOrder() {
-    sortedPlanets = [...planets].sort((a, b) => b.orbitRadius - a.orbitRadius);
+
+function wrapAngle(angle) {
+  const wrapped = angle % TAU;
+  if (wrapped > Math.PI) return wrapped - TAU;
+  if (wrapped < -Math.PI) return wrapped + TAU;
+  return wrapped;
+}
+
+function ensureTangents(geometry) {
+  if (!geometry.attributes.tangent && geometry.attributes.uv && geometry.attributes.normal) {
+    geometry.computeTangents();
+  }
+  return geometry;
+}
+
+function createRingGeometry(inner, outer, { radialSegments = 24, angularSegments = 180 } = {}) {
+  const positions = [];
+  const uvs = [];
+  const indices = [];
+
+  for (let i = 0; i <= radialSegments; i += 1) {
+    const t = i / radialSegments;
+    const radius = inner + (outer - inner) * t;
+    for (let j = 0; j <= angularSegments; j += 1) {
+      const angle = (j / angularSegments) * TAU;
+      positions.push(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+      uvs.push(t, j / angularSegments);
+    }
   }
 
-  function is3DMode() {
-    return state.renderMode === "3d";
+  for (let i = 0; i < radialSegments; i += 1) {
+    for (let j = 0; j < angularSegments; j += 1) {
+      const a = i * (angularSegments + 1) + j;
+      const b = a + angularSegments + 1;
+      indices.push(a, b, a + 1, b, b + 1, a + 1);
+    }
   }
 
-  function buildStarLayer(width, height, mode) {
-    const cache = document.createElement("canvas");
-    cache.width = width;
-    cache.height = height;
-    const cacheCtx = cache.getContext("2d");
-    if (!cacheCtx) return null;
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
 
-    cacheCtx.fillStyle = mode === "3d" ? "#050918" : "#081326";
-    cacheCtx.fillRect(0, 0, width, height);
+function createBelt(scene, { innerAU, outerAU, count, color, size = 0.32, spread = 1.1 }) {
+  const geometry = new THREE.DodecahedronGeometry(1, 0);
+  const material = new THREE.MeshStandardMaterial({
+    color,
+    roughness: 1,
+    metalness: 0,
+    transparent: true,
+    opacity: 0.7,
+  });
+  const mesh = new THREE.InstancedMesh(geometry, material, count);
+  const dummy = new THREE.Object3D();
+  const innerRadius = orbitRadiusForDistance(innerAU);
+  const outerRadius = orbitRadiusForDistance(outerAU);
 
-    const nebula = cacheCtx.createRadialGradient(
-      Math.floor(width * 0.72),
-      Math.floor(height * 0.22),
-      20,
-      Math.floor(width * 0.72),
-      Math.floor(height * 0.22),
-      Math.floor(width * 0.9),
+  for (let i = 0; i < count; i += 1) {
+    const angle = Math.random() * TAU;
+    const radius = innerRadius + Math.random() * (outerRadius - innerRadius);
+    const scale = size * (0.25 + Math.random() * 0.9);
+    dummy.position.set(
+      Math.cos(angle) * radius,
+      (Math.random() - 0.5) * spread * 1.5,
+      Math.sin(angle) * radius,
     );
-    nebula.addColorStop(0, "rgba(92,133,255,0.22)");
-    nebula.addColorStop(0.55, "rgba(110,70,170,0.14)");
-    nebula.addColorStop(1, "rgba(4,8,20,0)");
-    cacheCtx.fillStyle = nebula;
-    cacheCtx.fillRect(0, 0, width, height);
+    dummy.rotation.set(Math.random() * TAU, Math.random() * TAU, Math.random() * TAU);
+    dummy.scale.setScalar(scale);
+    dummy.updateMatrix();
+    mesh.setMatrixAt(i, dummy.matrix);
+  }
+  mesh.instanceMatrix.needsUpdate = true;
+  mesh.frustumCulled = false;
+  scene.add(mesh);
+  return mesh;
+}
 
-    const stars = mode === "3d" ? 140 : 86;
-    for (let i = 0; i < stars; i += 1) {
-      const sx = Math.floor((i * 197.3 + i * i * 0.37) % width);
-      const sy = Math.floor((i * 89.1 + i * i * 0.21) % height);
-      const size = mode === "3d" ? ((i % 3) + 1) : 1;
-      cacheCtx.fillStyle = `rgba(255,255,255,${mode === "3d" ? 0.26 : 0.2})`;
-      cacheCtx.fillRect(sx, sy, size, size);
-    }
-    return cache;
+function createKuiperBelt(scene, { innerAU, outerAU, count, color }) {
+  const positions = new Float32Array(count * 3);
+  const innerRadius = orbitRadiusForDistance(innerAU);
+  const outerRadius = orbitRadiusForDistance(outerAU);
+
+  for (let i = 0; i < count; i += 1) {
+    const angle = Math.random() * TAU;
+    const radius = innerRadius + Math.random() * (outerRadius - innerRadius);
+    positions[i * 3] = Math.cos(angle) * radius;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 24;
+    positions[i * 3 + 2] = Math.sin(angle) * radius;
   }
 
-  function resizeCanvas() {
-    if (!canvas) return;
-    const parent = canvas.parentElement;
-    if (!parent) return;
-    const rect = parent.getBoundingClientRect();
-    viewportWidth = Math.max(900, Math.floor(rect.width - 2));
-    viewportHeight = Math.max(560, Math.floor(viewportWidth * 0.6));
-    dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  const material = new THREE.PointsMaterial({
+    color,
+    size: 0.65,
+    sizeAttenuation: true,
+    transparent: true,
+    opacity: 0.5,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  const points = new THREE.Points(geometry, material);
+  points.frustumCulled = false;
+  scene.add(points);
+  return points;
+}
 
-    canvas.width = Math.floor(viewportWidth * dpr);
-    canvas.height = Math.floor(viewportHeight * dpr);
-    canvas.style.width = `${viewportWidth}px`;
-    canvas.style.height = `${viewportHeight}px`;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+function createStarLayer(scene) {
+  const positions = new Float32Array(STAR_COUNT * 3);
+  const colors = new Float32Array(STAR_COUNT * 3);
+  const tints = [new THREE.Color(0xffffff), new THREE.Color(0xcfddff), new THREE.Color(0xffe4c4), new THREE.Color(0x9fc7ff)];
 
-    starLayer = buildStarLayer(viewportWidth, viewportHeight, state.renderMode);
-    starLayerMode = state.renderMode;
-    initPlanetOrder();
+  for (let i = 0; i < STAR_COUNT; i += 1) {
+    const radius = 700 + Math.random() * 1400;
+    const u = Math.random() * 2 - 1;
+    const theta = Math.random() * TAU;
+    const s = Math.sqrt(1 - u * u);
+    positions[i * 3] = radius * s * Math.cos(theta);
+    positions[i * 3 + 1] = radius * u;
+    positions[i * 3 + 2] = radius * s * Math.sin(theta);
+    const tint = tints[i % tints.length];
+    colors[i * 3] = tint.r;
+    colors[i * 3 + 1] = tint.g;
+    colors[i * 3 + 2] = tint.b;
   }
 
-  function drawSunGlow(cx, cy, radius) {
-    // 외부 글로우 (넓고 희미하게)
-    const outerGlow = ctx.createRadialGradient(cx, cy, radius * 0.5, cx, cy, radius * 6);
-    outerGlow.addColorStop(0, "rgba(255,200,60,0.18)");
-    outerGlow.addColorStop(0.4, "rgba(255,160,30,0.06)");
-    outerGlow.addColorStop(1, "rgba(255,100,0,0)");
-    ctx.fillStyle = outerGlow;
-    ctx.fillRect(cx - radius * 6, cy - radius * 6, radius * 12, radius * 12);
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
 
-    // 중간 글로우
-    const midGlow = ctx.createRadialGradient(cx, cy, radius * 0.3, cx, cy, radius * 3);
-    midGlow.addColorStop(0, "rgba(255,220,100,0.35)");
-    midGlow.addColorStop(0.5, "rgba(255,180,50,0.12)");
-    midGlow.addColorStop(1, "rgba(255,140,20,0)");
-    ctx.fillStyle = midGlow;
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius * 3, 0, TWO_PI);
-    ctx.fill();
+  const material = new THREE.PointsMaterial({
+    size: 0.72,
+    sizeAttenuation: true,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.62,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  const stars = new THREE.Points(geometry, material);
+  stars.frustumCulled = false;
+  scene.add(stars);
+  return stars;
+}
 
-    // 태양 본체 (그라데이션)
-    const sunGrad = ctx.createRadialGradient(
-      cx - radius * 0.3,
-      cy - radius * 0.3,
-      radius * 0.1,
-      cx,
-      cy,
-      radius * 1.2,
-    );
-    sunGrad.addColorStop(0, "#fff8e0");
-    sunGrad.addColorStop(0.25, "#ffe44d");
-    sunGrad.addColorStop(0.6, "#ffb820");
-    sunGrad.addColorStop(1, "#e87a00");
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, TWO_PI);
-    ctx.fillStyle = sunGrad;
-    ctx.fill();
+function createGlowSprites(scene, sunRadius) {
+  const outerTexture = createGlowTexture("rgba(255,214,130,0.9)", "rgba(255,140,40,0.35)");
+  const innerTexture = createGlowTexture("rgba(255,252,230,1)", "rgba(255,190,90,0.7)");
 
-    // 태양 표면 질감 (반짝임)
-    const pulse = Math.sin(state.elapsedTime * 2) * 0.1 + 0.9;
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius * 1.05 * pulse, 0, TWO_PI);
-    ctx.strokeStyle = "rgba(255,220,100,0.25)";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+  const outer = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: outerTexture,
+      color: 0xff9d3c,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      opacity: 0.26,
+    }),
+  );
+  outer.scale.setScalar(sunRadius * 6.4);
+  scene.add(outer);
+
+  const inner = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: innerTexture,
+      color: 0xffd27a,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      opacity: 0.4,
+    }),
+  );
+  inner.scale.setScalar(sunRadius * 1.85);
+  scene.add(inner);
+
+  return { outer, inner };
+}
+
+function materialForPlanet(planet, maps) {
+  if (planet.id === "earth") {
+    return createEarthMaterial({
+      day: maps.get("earth_day.jpg"),
+      night: maps.get("earth_night.jpg"),
+      normal: maps.get("earth_normal.jpg"),
+      specular: maps.get("earth_specular.jpg"),
+    });
   }
 
-  function drawOrbit(cx, cy, orbitRadius) {
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, orbitRadius, orbitRadius * 0.92, 0.08, 0, TWO_PI);
-    ctx.strokeStyle = "rgba(255,255,255,0.1)";
-    ctx.lineWidth = 0.7;
-    ctx.setLineDash([4, 6]);
-    ctx.stroke();
-    ctx.setLineDash([]);
+  const config = {
+    map: maps.get(planet.texture),
+    roughness: planet.roughness ?? 0.9,
+    metalness: 0,
+  };
+  if (planet.bumpTexture) {
+    config.bumpMap = maps.get(planet.bumpTexture);
+    config.bumpScale = planet.bumpScale ?? 0.02;
+  }
+  return new THREE.MeshStandardMaterial(config);
+}
+
+function createPlanetGroup(planet, maps, scene) {
+  const group = new THREE.Group();
+  const tilt = new THREE.Group();
+  tilt.rotation.z = planet.axialTilt * DEG;
+  group.add(tilt);
+
+  const geometry = new THREE.SphereGeometry(planet.displayRadius, 128, 64);
+  if (planet.id === "earth") ensureTangents(geometry);
+
+  const material = materialForPlanet(planet, maps);
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.userData.bodyId = planet.id;
+  tilt.add(mesh);
+
+  const record = {
+    data: planet,
+    kind: "planet",
+    group,
+    tilt,
+    mesh,
+    material,
+    radius: planet.displayRadius,
+    position: new THREE.Vector3(),
+    spinCurrent: 0,
+    cloudMesh: null,
+    atmosphere: null,
+    ring: null,
+    orbitLine: null,
+  };
+
+  if (planet.id === "earth") {
+    const cloudGeometry = new THREE.SphereGeometry(planet.displayRadius * 1.012, 96, 48);
+    const cloudMaterial = createCloudMaterial(maps.get(planet.cloudTexture), { opacity: 0.82 });
+    const clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
+    clouds.userData.bodyId = planet.id;
+    tilt.add(clouds);
+    record.cloudMesh = clouds;
+    record.cloudMaterial = cloudMaterial;
   }
 
-  function hexToRgb(hex) {
-    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-      r: parseInt(result[1], 16),
-      g: parseInt(result[2], 16),
-      b: parseInt(result[3], 16),
-    } : { r: 170, g: 170, b: 170 };
+  if (planet.atmosphereColor) {
+    const atmosphereGeometry = new THREE.SphereGeometry(planet.displayRadius * 1.035, 96, 48);
+    const atmosphereMaterial = createAtmosphereMaterial(planet.atmosphereColor, {
+      strength: planet.atmosphereStrength ?? 0.9,
+      planetRadius: planet.displayRadius,
+    });
+    const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+    atmosphere.userData.bodyId = planet.id;
+    tilt.add(atmosphere);
+    record.atmosphere = atmosphere;
+    record.atmosphereMaterial = atmosphereMaterial;
   }
 
-  function drawTrail(trail, color) {
-    if (trail.length < 2) return;
-    const rgb = hexToRgb(color);
-
-    const avgAlpha = ((trail.length - 1) / trail.length) * 0.5 * 0.6;
-    const avgWidth = ((trail.length - 1) / trail.length) * 2 * 0.6;
-
-    ctx.beginPath();
-    for (let i = 1; i < trail.length; i += 1) {
-      ctx.moveTo(trail[i - 1].x, trail[i - 1].y);
-      ctx.lineTo(trail[i].x, trail[i].y);
-    }
-    ctx.strokeStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${avgAlpha})`;
-    ctx.lineWidth = avgWidth;
-    ctx.stroke();
+  if (planet.ringTexture) {
+    const inner = planet.displayRadius * (planet.ringInner ?? 1.3);
+    const outer = planet.displayRadius * (planet.ringOuter ?? 2.2);
+    const ringGeometry = createRingGeometry(inner, outer);
+    const ringMaterial = createRingMaterial(maps.get(planet.ringTexture), {
+      opacity: 0.96,
+      planetRadius: planet.displayRadius,
+    });
+    const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+    ring.userData.bodyId = planet.id;
+    ring.rotation.x = 0;
+    tilt.add(ring);
+    record.ring = ring;
+    record.ringMaterial = ringMaterial;
   }
 
-  function drawSaturnRings(cx, cy, planetRadius, ringInner, ringOuter, angle) {
-    const tilt = 0.35;
-    const ringWidth = ringOuter - ringInner;
-
-    // 뒤쪽 고리 (행성 뒤에 가려짐)
-    ctx.save();
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, ringOuter, ringOuter * tilt, 0.15, Math.PI, TWO_PI);
-    ctx.ellipse(cx, cy, ringInner, ringInner * tilt, 0.15, TWO_PI, Math.PI);
-    ctx.closePath();
-    ctx.clip();
-
-    for (let r = ringInner; r <= ringOuter; r += 2.5) {
-      const ringAlpha = 0.35 + 0.15 * Math.sin((r - ringInner) / ringWidth * Math.PI);
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, r, r * tilt, 0.15, Math.PI, TWO_PI);
-      ctx.strokeStyle = `rgba(210,195,160,${ringAlpha})`;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    // 앞쪽 고리 (행성 앞에 보임)
-    ctx.save();
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, ringOuter, ringOuter * tilt, 0.15, 0, Math.PI);
-    ctx.ellipse(cx, cy, ringInner, ringInner * tilt, 0.15, Math.PI, 0);
-    ctx.closePath();
-    ctx.clip();
-
-    for (let r = ringInner; r <= ringOuter; r += 2.5) {
-      const ringAlpha = 0.35 + 0.15 * Math.sin((r - ringInner) / ringWidth * Math.PI);
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, r, r * tilt, 0.15, 0, Math.PI);
-      ctx.strokeStyle = `rgba(210,195,160,${ringAlpha})`;
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-
-  function drawPlanetBody(x, y, radius, color, gradientStops, phase, isSelected, isHovered) {
-    // 선택/호버 시 하이라이트 링
-    if (isSelected || isHovered) {
-      ctx.beginPath();
-      ctx.arc(x, y, radius + 4, 0, TWO_PI);
-      ctx.strokeStyle = isSelected ? "rgba(120,200,255,0.7)" : "rgba(255,255,255,0.35)";
-      ctx.lineWidth = isSelected ? 2 : 1;
-      ctx.setLineDash(isSelected ? [] : [3, 3]);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-
-    // 3D 그라데이션 (2D에서도 적용)
-    const grad = ctx.createRadialGradient(
-      x - radius * 0.35,
-      y - radius * 0.4,
-      Math.max(1, radius * 0.15),
-      x,
-      y,
-      radius * 1.1,
-    );
-    grad.addColorStop(0, gradientStops[0]);
-    grad.addColorStop(0.5, color);
-    grad.addColorStop(1, gradientStops[2]);
-
-    ctx.beginPath();
-    ctx.arc(x, y, radius, 0, TWO_PI);
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    // 3D 모드일 때 추가 효과
-    if (is3DMode()) {
-      ctx.strokeStyle = `rgba(255,255,255,${0.12 + 0.08 * Math.sin(phase)})`;
-      ctx.lineWidth = 0.6;
-      ctx.stroke();
-    }
-  }
-
-  function render() {
-    if (!canvas || !ctx) return;
-    if (!viewportWidth || !viewportHeight) return;
-    if (typeof performance !== "undefined" && typeof performance.mark === "function") {
-      performance.mark(PERF_MARK_START);
-    }
-    if (!starLayer || starLayerMode !== state.renderMode) {
-      starLayer = buildStarLayer(viewportWidth, viewportHeight, state.renderMode);
-      starLayerMode = state.renderMode;
-    }
-
-    const width = viewportWidth;
-    const height = viewportHeight;
-    const cx = width / 2;
-    const cy = height / 2;
-    const zoom = state.zoom || 1;
-    const viewRotation = state.viewRotation || 0;
-    const sceneScale = Math.max(1, Math.min(1.45, Math.min(width / 860, height / 520)));
-
-    ctx.clearRect(0, 0, width, height);
-    if (starLayer) {
-      ctx.drawImage(starLayer, 0, 0);
-    }
-
-    planetHitboxes = [];
-
-    // 태양 (가장 먼저 — 배경에 위치)
-    const sunRadius = (is3DMode() ? 18 : 15) * sceneScale;
-    drawSunGlow(cx, cy, sunRadius);
-
-    // 행성 렌더링 (먼 행성부터 — 오버랩 시 깊이감)
-    for (const planet of sortedPlanets) {
-      const orbitRadius = planet.orbitRadius * zoom * sceneScale;
-
-      // 궤도선
-      drawOrbit(cx, cy, orbitRadius);
-
-      // 궤적 업데이트 및 그리기
-      const planetAngle = planet.angle + viewRotation;
-      const px = cx + Math.cos(planetAngle) * orbitRadius;
-      const py = cy + Math.sin(planetAngle) * orbitRadius * 0.92;
-
-      // 궤적에 현재 위치 추가
-      if (state.isPlaying) {
-        planet.trail.push({ x: px, y: py });
-        if (planet.trail.length > planet.maxTrail) {
-          planet.trail.shift();
-        }
-      }
-      drawTrail(planet.trail, planet.color);
-
-      // 행성 크기 (선택/호버 시 약간 커짐)
-      let displayRadius = planet.radius * sceneScale * Math.max(0.85, zoom * 0.95);
-      const isSelected = state.selectedPlanet === planet;
-      const isHovered = state.hoveredPlanet === planet;
-      if (isSelected) {
-        displayRadius *= 1.2;
-      } else if (isHovered) {
-        displayRadius *= 1.1;
-      }
-
-      // 토성 고리 — 뒤쪽 먼저 그리기
-      if (planet.hasRings) {
-        drawSaturnRings(px, py, displayRadius, planet.ringInnerRadius, planet.ringOuterRadius, planetAngle);
-      }
-
-      // 행성 본체
-      drawPlanetBody(px, py, displayRadius, planet.color, planet.gradientStops, planet.angle, isSelected, isHovered);
-
-      // 토성 고리 — 앞쪽 (본체 위에)
-      if (planet.hasRings) {
-        // 이미 본체 위에 그리는 로직은 drawSaturnRings에서 처리됨
-      }
-
-      // 라벨
-      if (state.showLabels) {
-        ctx.fillStyle = isSelected ? "#ffffff" : isHovered ? "#e8eeff" : "rgba(216,224,255,0.8)";
-        ctx.font = `${isSelected ? "bold " : ""}${is3DMode() ? 12 : 10}px sans-serif`;
-        ctx.textAlign = "center";
-        ctx.fillText(planet.name, px, py - displayRadius - 8);
-        ctx.textAlign = "start";
-      }
-
-      // 클릭 검출용 히트박스 저장
-      planetHitboxes.push({
-        x: px,
-        y: py,
-        radius: displayRadius + 6,
-        planet,
+  if (planet.faintRings) {
+    const faintRings = new THREE.Group();
+    for (const [offset, width, opacity] of [
+      [1.55, 0.03, 0.22],
+      [1.78, 0.018, 0.16],
+      [2.02, 0.025, 0.12],
+    ]) {
+      const geometry = createRingGeometry(
+        planet.displayRadius * offset,
+        planet.displayRadius * (offset + width),
+        { radialSegments: 2, angularSegments: 128 },
+      );
+      const material = new THREE.MeshBasicMaterial({
+        color: 0xbfe9f2,
+        transparent: true,
+        opacity,
+        side: THREE.DoubleSide,
+        depthWrite: false,
       });
+      faintRings.add(new THREE.Mesh(geometry, material));
     }
-
-    if (typeof performance !== "undefined" && typeof performance.mark === "function") {
-      performance.mark(PERF_MARK_END);
-    }
-    if (typeof performance !== "undefined" && typeof performance.measure === "function") {
-      performance.measure(PERF_MEASURE_NAME, PERF_MARK_START, PERF_MARK_END);
-    }
-
+    tilt.add(faintRings);
   }
 
-  function hitTest(mx, my) {
-    // 뒤에서부터 (앞에 있는 행성부터) 체크
-    for (let i = planetHitboxes.length - 1; i >= 0; i -= 1) {
-      const hb = planetHitboxes[i];
-      const dx = mx - hb.x;
-      const dy = my - hb.y;
-      if (dx * dx + dy * dy <= hb.radius * hb.radius) {
-        return hb.planet || planets.find((p) => p.name === hb.planet?.name);
-      }
+  const orbitPoints = orbitPathPoints(planet.orbit, 320).map(
+    (point) => new THREE.Vector3(point.x, point.y, point.z),
+  );
+  const orbitGeometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
+  const orbitMaterial = new THREE.LineBasicMaterial({
+    color: new THREE.Color(planet.color).lerp(new THREE.Color(0x9fdcff), 0.55),
+    transparent: true,
+    opacity: 0.32,
+    depthWrite: false,
+  });
+  const orbitLine = new THREE.LineLoop(orbitGeometry, orbitMaterial);
+  scene.add(orbitLine);
+  record.orbitLine = orbitLine;
+  record.orbitMaterial = orbitMaterial;
+
+  scene.add(group);
+  return record;
+}
+
+function createMoonRecord(moon, maps, scene) {
+  const radius = moon.displayRadius;
+  const geometry = new THREE.SphereGeometry(radius, 64, 32);
+  const config = { roughness: 0.95, metalness: 0 };
+  if (moon.texture) {
+    config.map = maps.get(moon.texture);
+  } else {
+    config.color = new THREE.Color(moon.color);
+  }
+  if (moon.bumpTexture) {
+    config.bumpMap = maps.get(moon.bumpTexture);
+    config.bumpScale = moon.bumpScale ?? 0.02;
+  }
+  const material = new THREE.MeshStandardMaterial(config);
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.userData.bodyId = moon.id;
+  scene.add(mesh);
+
+  return {
+    data: moon,
+    kind: "moon",
+    group: mesh,
+    mesh,
+    material,
+    radius,
+    position: new THREE.Vector3(),
+    spinCurrent: 0,
+  };
+}
+
+function findMoonParentPosition(moon, planetRecords) {
+  const parent = planetRecords.get(moon.parent);
+  return parent ? parent.position : new THREE.Vector3();
+}
+
+/**
+ * 3D 태양계 장면을 만든다.
+ * @param {{canvas: HTMLCanvasElement, onTextureProgress?: Function}} options
+ */
+export async function createSolarScene({ canvas, onTextureProgress = () => {} }) {
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: true,
+    powerPreference: "high-performance",
+    alpha: false,
+    stencil: false,
+  });
+  let pixelRatioCap = Math.min(window.devicePixelRatio || 1, 1.85);
+  renderer.setPixelRatio(pixelRatioCap);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.0;
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x01030a);
+
+  const camera = new THREE.PerspectiveCamera(47, 1, 0.1, 8000);
+  camera.position.set(0, 110, 300);
+
+  const controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.075;
+  controls.rotateSpeed = 0.52;
+  controls.zoomSpeed = 0.85;
+  controls.enablePan = false;
+  controls.minDistance = 3.2;
+  controls.maxDistance = 900;
+  controls.maxPolarAngle = Math.PI * 0.495;
+  controls.minPolarAngle = Math.PI * 0.08;
+  controls.touches = {
+    ONE: THREE.TOUCH.ROTATE,
+    TWO: THREE.TOUCH.DOLLY_ROTATE,
+  };
+
+  const textures = createTextureLibrary(renderer, onTextureProgress);
+  const maps = await textures.loadAll();
+
+  // 은하수 배경 + 가까운 별 입자
+  const skyGeometry = new THREE.SphereGeometry(SKY_RADIUS, 64, 32);
+  const skyMaterial = createSkyMaterial(maps.get(SKY_TEXTURE), { brightness: 1.5 });
+  const sky = new THREE.Mesh(skyGeometry, skyMaterial);
+  sky.frustumCulled = false;
+  scene.add(sky);
+  const starLayer = createStarLayer(scene);
+
+  scene.add(new THREE.HemisphereLight(0x2e4a72, 0x05060a, 0.42));
+  const sunLight = new THREE.PointLight(0xfff3df, 2.7, 0, 0);
+  scene.add(sunLight);
+
+  // 태양
+  const sunGeometry = new THREE.SphereGeometry(SUN.displayRadius, 128, 64);
+  const sunMaterial = createSunMaterial(maps.get(SUN.texture), { intensity: 1.05 });
+  const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
+  sunMesh.userData.bodyId = SUN.id;
+  scene.add(sunMesh);
+  createGlowSprites(scene, SUN.displayRadius);
+
+  const bodies = new Map();
+  const planetRecords = new Map();
+  const pickables = [sunMesh];
+
+  bodies.set(SUN.id, {
+    data: SUN,
+    kind: "sun",
+    mesh: sunMesh,
+    material: sunMaterial,
+    radius: SUN.displayRadius,
+    position: new THREE.Vector3(),
+    spinCurrent: 0,
+  });
+
+  for (const planet of PLANETS) {
+    const record = createPlanetGroup(planet, maps, scene);
+    planetRecords.set(planet.id, record);
+    bodies.set(planet.id, record);
+    pickables.push(record.mesh);
+    if (record.ring) pickables.push(record.ring);
+    if (record.cloudMesh) pickables.push(record.cloudMesh);
+  }
+
+  for (const moon of MOONS) {
+    const record = createMoonRecord(moon, maps, scene);
+    bodies.set(moon.id, record);
+    pickables.push(record.mesh);
+  }
+
+  const asteroidBelt = createBelt(scene, {
+    innerAU: BELT.innerAU,
+    outerAU: BELT.outerAU,
+    count: BELT.count,
+    color: BELT.color,
+    size: 0.085,
+    spread: 1.6,
+  });
+  const kuiperBelt = createKuiperBelt(scene, {
+    innerAU: KUIPER_BELT.innerAU,
+    outerAU: KUIPER_BELT.outerAU,
+    count: KUIPER_BELT.count,
+    color: KUIPER_BELT.color,
+  });
+
+  // 후처리 — 블룸(태양/도시 불빛)과 톤매핑
+  const composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  const bloomPass = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.52, 0.48, 0.86);
+  composer.addPass(bloomPass);
+  composer.addPass(new OutputPass());
+
+  let bloomEnabled = true;
+  let orbitsVisible = true;
+  let width = 1;
+  let height = 1;
+  let viewShiftY = 0;
+  let viewShiftX = 0;
+
+  /**
+   * 초점을 맞춘 천체가 정보 패널에 가리지 않도록 렌더 중심을 옮긴다.
+   * viewShiftY > 0 이면 장면이 화면 위로, viewShiftX > 0 이면 화면 왼쪽으로 이동한다.
+   */
+  function setViewShift({ y = 0, x = 0 } = {}) {
+    viewShiftY = Math.max(0, Math.min(0.3, y));
+    viewShiftX = Math.max(0, Math.min(0.3, x));
+    applyViewOffset();
+  }
+
+  function applyViewOffset() {
+    if (viewShiftY <= 0.001 && viewShiftX <= 0.001) {
+      camera.clearViewOffset();
+      return;
+    }
+    const offsetX = Math.round(width * viewShiftX);
+    const offsetY = Math.round(height * viewShiftY);
+    camera.setViewOffset(width, height, offsetX, offsetY, width, height);
+  }
+
+  function resize() {
+    const parent = canvas.parentElement || document.body;
+    width = Math.max(1, parent.clientWidth);
+    height = Math.max(1, parent.clientHeight);
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, pixelRatioCap);
+    renderer.setPixelRatio(pixelRatio);
+    renderer.setSize(width, height, false);
+    composer.setPixelRatio(pixelRatio);
+    composer.setSize(width, height);
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    applyViewOffset();
+  }
+
+  function setBloomEnabled(enabled) {
+    bloomEnabled = enabled;
+  }
+
+  function setPixelRatioCap(cap) {
+    pixelRatioCap = Math.max(1, cap);
+    resize();
+  }
+
+  function setOrbitsVisible(visible) {
+    orbitsVisible = visible;
+    for (const record of planetRecords.values()) {
+      record.orbitLine.visible = visible;
+    }
+  }
+
+  function setOrbitHighlight(id) {
+    for (const record of planetRecords.values()) {
+      const active = record.data.id === id;
+      record.orbitMaterial.opacity = active ? 0.85 : 0.32;
+      record.orbitMaterial.color.lerpColors(
+        new THREE.Color(record.data.color),
+        new THREE.Color(active ? 0xffffff : 0x9fdcff),
+        active ? 0.35 : 0.55,
+      );
+    }
+  }
+
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
+
+  function raycastFromEvent(event) {
+    const rect = canvas.getBoundingClientRect();
+    pointer.x = ((event.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1;
+    pointer.y = -((event.clientY - rect.top) / Math.max(1, rect.height)) * 2 + 1;
+    raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObjects(pickables, false);
+    for (const hit of hits) {
+      const id = hit.object.userData.bodyId;
+      if (id) return id;
     }
     return null;
   }
 
-  return { resizeCanvas, render, hitTest };
+  const tempSunDirection = new THREE.Vector3();
+const axisQuaternion = new THREE.Quaternion();
+  let elapsed = 0;
+
+  function updateSpin(record, days, dt) {
+    if (!record.mesh) return;
+    const target = spinAngleRad(record.data.rotationHours, days);
+    const delta = wrapAngle(target - record.spinCurrent);
+    const maxStep = Math.max(0.12, Math.min(0.4, dt * 30));
+    // 일시정지(dt=0)에서는 자전도 완전히 멈춘다.
+    if (dt > 0) {
+      record.spinCurrent += clampAngularStep(delta, maxStep);
+      record.spinCurrent = record.spinCurrent % TAU;
+    }
+    record.mesh.rotation.y = record.spinCurrent;
+  }
+
+  const cloudDrift = new Map();
+
+  function update(days, dt) {
+    elapsed += dt;
+
+    // 태양 자전과 표면 플라스마 애니메이션
+    const sunRecord = bodies.get(SUN.id);
+    updateSpin(sunRecord, days, dt);
+    sunMaterial.uniforms.uTime.value = elapsed;
+
+    for (const planet of PLANETS) {
+      const record = planetRecords.get(planet.id);
+      const position = visualOrbitPosition(planet.orbit, days);
+      if (record.cloudMesh && dt > 0) {
+        cloudDrift.set(planet.id, (cloudDrift.get(planet.id) ?? 0) + dt * (planet.cloudDrift ?? 0.01));
+      }
+      record.position.set(position.x, position.y, position.z);
+      record.group.position.copy(record.position);
+
+      updateSpin(record, days, dt);
+      tempSunDirection.copy(record.position).multiplyScalar(-1).normalize();
+
+      if (record.material.uniforms?.sunDirection) {
+        record.material.uniforms.sunDirection.value.copy(tempSunDirection);
+      }
+      if (record.cloudMaterial) {
+        record.cloudMaterial.uniforms.sunDirection.value.copy(tempSunDirection);
+        record.cloudMesh.rotation.y = record.spinCurrent * 1.03 + (cloudDrift.get(planet.id) ?? 0);
+      }
+      if (record.atmosphereMaterial) {
+        record.atmosphereMaterial.uniforms.sunDirection.value.copy(tempSunDirection);
+        record.atmosphereMaterial.uniforms.planetCenter.value.copy(record.position);
+      }
+      if (record.ringMaterial) {
+        record.ringMaterial.uniforms.sunDirection.value.copy(tempSunDirection);
+        record.ringMaterial.uniforms.planetWorldPosition.value.copy(record.position);
+      }
+    }
+
+    // 위성: 부모 행성 위치 + 경사 궤도
+    for (const moon of MOONS) {
+      const record = bodies.get(moon.id);
+      const parentPosition = findMoonParentPosition(moon, planetRecords);
+      const parentRecord = planetRecords.get(moon.parent);
+      const orbitRadius = (parentRecord?.radius ?? 1) * moon.orbitRadius;
+
+      const angle = TAU * (days / moon.periodDays) + moon.phase;
+      const inclination = (moon.inclination ?? 0) * DEG;
+      const x = Math.cos(angle) * orbitRadius;
+      const z = Math.sin(angle) * orbitRadius;
+      record.position.set(
+        parentPosition.x + x,
+        parentPosition.y + Math.sin(angle) * Math.sin(inclination) * orbitRadius,
+        parentPosition.z + z,
+      );
+      record.mesh.position.copy(record.position);
+      // 조석 고정: 공전과 같은 각도로 자전한다.
+      record.mesh.rotation.y = -angle + Math.PI;
+    }
+
+    asteroidBelt.rotation.y = (days / 1680) * TAU * 0.35;
+    kuiperBelt.rotation.y = (days / 90000) * TAU * 0.35;
+    kuiperBelt.rotation.x = 0.02;
+    starLayer.rotation.y = days * 0.00002;
+    sky.rotation.y = days * 0.000004;
+  }
+
+  function render() {
+    if (bloomEnabled) {
+      composer.render();
+    } else {
+      renderer.render(scene, camera);
+    }
+  }
+
+  function getBodyWorldPosition(id) {
+    const body = bodies.get(id);
+    return body ? body.position.clone() : new THREE.Vector3();
+  }
+
+  /** 천체의 자전축(북극) 월드 방향. 궤도면 기준으로 기울어진 실제 자전축을 돌려준다. */
+  function getBodyPole(id, target = new THREE.Vector3()) {
+    const record = bodies.get(id);
+    if (!record) return target.set(0, 1, 0);
+    if (record.kind === "planet" && record.tilt) {
+      target.set(0, 1, 0).applyQuaternion(record.tilt.getWorldQuaternion(axisQuaternion));
+      return target.normalize();
+    }
+    return target.set(0, 1, 0);
+  }
+
+  function getBodyRadius(id) {
+    const body = bodies.get(id);
+    return body?.radius ?? 1;
+  }
+
+  function getBody(id) {
+    return bodies.get(id) ?? null;
+  }
+
+  resize();
+  return {
+    scene,
+    camera,
+    renderer,
+    controls,
+    composer,
+    bloomPass,
+    bodies,
+    pickables,
+    textures,
+    update,
+    render,
+    resize,
+    setViewShift,
+    setBloomEnabled,
+    setPixelRatioCap,
+    setOrbitsVisible,
+    setOrbitHighlight,
+    raycastFromEvent,
+    getBodyWorldPosition,
+    getBodyPole,
+    getBodyRadius,
+    getBody,
+    orbitPathPoints,
+    dispose() {
+      controls.dispose();
+      composer.dispose();
+      renderer.dispose();
+    },
+  };
 }

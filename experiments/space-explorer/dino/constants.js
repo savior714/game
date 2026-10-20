@@ -1,0 +1,222 @@
+/**
+ * Shared tuning values for the Dino Escape 3D chase runner.
+ * Pure data only — no DOM and no three.js imports, so the run rules can be
+ * exercised in isolation.
+ */
+
+export const THREE_VERSION = "0.185.0";
+export const STORAGE_KEY = "aiden.dinoEscape.v3";
+export const GAME_VERSION = "3.0.0";
+
+export const ROAD = Object.freeze({
+  halfWidth: 4.6,
+  playerMinX: -3.62,
+  playerMaxX: 3.62,
+  lanes: Object.freeze([-2.9, 0, 2.9]),
+  laneWidth: 2.9,
+});
+
+export const PLAYER = Object.freeze({
+  height: 1.62,
+  slideHeight: 0.72,
+  halfWidth: 0.3,
+  strafeSpeed: 7.6,
+  strafeAccel: 14,
+  jumpVelocity: 11.5,
+  gravity: 34,
+  maxFallSpeed: 26,
+  coyoteTime: 0.1,
+  jumpBuffer: 0.14,
+  slideDuration: 0.72,
+  slideCooldown: 0.18,
+  hitboxGrace: 0.08,
+});
+
+export const RUN = Object.freeze({
+  baseSpeed: 13.5,
+  maxSpeed: 24,
+  speedPerMeter: 0.0043,
+  startGap: 15.5,
+  maxGap: 30,
+  caughtGap: 0.7,
+  gapDriftBase: 0.022,
+  gapDriftPerMeter: 0.0001,
+  gapDriftMax: 0.15,
+  hitGapPenalty: 3.2,
+  hitInvuln: 1.25,
+  hitSlow: 0.9,
+  hitSlowFactor: 0.55,
+  sprintMultiplier: 1.26,
+  baitGapGain: 8.5,
+  baitFallbackTime: 0.85,
+  baitEatTime: 3.2,
+  baitCapacity: 3,
+  shieldCapacity: 1,
+  comboTimeout: 3.8,
+  comboStep: 4,
+  comboMax: 5,
+  amberPerBait: 25,
+  milestoneStep: 250,
+  milestoneGapReward: 1.5,
+  staminaDrain: 0.55,
+  staminaRegen: 0.34,
+  staminaUnlock: 0.45,
+  firstHazardDistance: 46,
+});
+
+export const HAZARD = Object.freeze({
+  spawnAhead: 150,
+  despawnBehind: 14,
+  rockHalfWidth: 0.86,
+  logHalfWidth: 1.35,
+  laneHalfWidth: 1.25,
+  pteroHalfWidth: 1.3,
+  geyserHalfWidth: 1.1,
+});
+
+export const COMBO_EVERY = RUN.comboStep;
+
+export const BIOMES = Object.freeze([
+  Object.freeze({
+    id: "jungle",
+    name: "정글 협곡",
+    english: "EMERALD CANYON",
+    threshold: 0,
+    accent: "#8dff6a",
+    skyTop: 0x123c3b,
+    skyHorizon: 0x7fb3a0,
+    skyLow: 0xe4b877,
+    skySun: 0xfff1c9,
+    fog: 0x9db894,
+    fogNear: 32,
+    fogFar: 205,
+    ground: 0x6b8a48,
+    road: 0xb29161,
+    roadEdge: 0x5c763a,
+    rock: 0x77806a,
+    cliff: 0x49553f,
+    foliage: 0x4c8f3a,
+    foliageAlt: 0x2f6b36,
+    trunk: 0x5a4530,
+    light: 0xffd9a3,
+    lightIntensity: 2.5,
+    hemiSky: 0xa7d5d2,
+    hemiGround: 0x40502f,
+    hemiIntensity: 1.15,
+    fill: 0x7ecbff,
+    fillIntensity: 0.45,
+    ambient: 0x9fc8b8,
+    ambientIntensity: 0.35,
+    pollen: 0xffe6a8,
+    exposure: 1.05,
+    scenery: Object.freeze({
+      palm: 0x3f8238,
+      fern: 0x5ea348,
+      rock: 0x747c68,
+      bone: 0xd9d2b5,
+      crystal: 0xffb300,
+    }),
+  }),
+  Object.freeze({
+    id: "desert",
+    name: "호박 사막",
+    english: "AMBER WASTES",
+    threshold: 720,
+    accent: "#ffc247",
+    skyTop: 0x264d6e,
+    skyHorizon: 0xd9a575,
+    skyLow: 0xffcf88,
+    skySun: 0xfff0c2,
+    fog: 0xd8b07e,
+    fogNear: 42,
+    fogFar: 235,
+    ground: 0xb98c53,
+    road: 0xd4ab72,
+    roadEdge: 0x9a6f40,
+    rock: 0xb87749,
+    cliff: 0x8f5e42,
+    foliage: 0x8a8b44,
+    foliageAlt: 0x6f7938,
+    trunk: 0x6d5335,
+    light: 0xffc984,
+    lightIntensity: 2.7,
+    hemiSky: 0x9bc7d8,
+    hemiGround: 0x6d4f2e,
+    hemiIntensity: 1.2,
+    fill: 0xffd9a0,
+    fillIntensity: 0.5,
+    ambient: 0xd7b68b,
+    ambientIntensity: 0.4,
+    pollen: 0xffd27f,
+    exposure: 1.06,
+    scenery: Object.freeze({
+      palm: 0x7d7a39,
+      fern: 0x9a8f42,
+      rock: 0xb47143,
+      bone: 0xe4dbc0,
+      crystal: 0xffc247,
+    }),
+  }),
+  Object.freeze({
+    id: "volcano",
+    name: "화산 지대",
+    english: "EMBER CORE",
+    threshold: 1560,
+    accent: "#ff7a45",
+    skyTop: 0x1a1024,
+    skyHorizon: 0x7d3236,
+    skyLow: 0xe0572c,
+    skySun: 0xffbb73,
+    fog: 0x6d3730,
+    fogNear: 26,
+    fogFar: 165,
+    ground: 0x4a3129,
+    road: 0x6a4634,
+    roadEdge: 0x34221c,
+    rock: 0x4c3736,
+    cliff: 0x3a2824,
+    foliage: 0x7a4131,
+    foliageAlt: 0x542d24,
+    trunk: 0x402a20,
+    light: 0xffa070,
+    lightIntensity: 2.8,
+    hemiSky: 0xa9596f,
+    hemiGround: 0x40231b,
+    hemiIntensity: 1.7,
+    fill: 0xff7a44,
+    fillIntensity: 0.95,
+    ambient: 0x8f4d47,
+    ambientIntensity: 0.72,
+    pollen: 0xff8a3d,
+    exposure: 1.18,
+    scenery: Object.freeze({
+      palm: 0x4a2b24,
+      fern: 0x61332a,
+      rock: 0x372c2c,
+      bone: 0xb9a88c,
+      crystal: 0xff6a33,
+    }),
+  }),
+]);
+
+export const SCENERY = Object.freeze({
+  cliffSegments: 34,
+  cliffSpacing: 11,
+  propsPerSide: 22,
+  propSpacing: 13,
+  mountainCount: 11,
+});
+
+export const PARTICLE_LIMITS = Object.freeze({
+  dust: 220,
+  sparks: 180,
+  ambient: 170,
+});
+
+export const REX_LAYER = 1;
+
+export const QUALITY = Object.freeze({
+  auto: "auto",
+  high: "high",
+  low: "low",
+});

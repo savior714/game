@@ -72,14 +72,17 @@ export async function initializeSpaceBackdrop(target, { intensity = 1 } = {}) {
 
   const pointerTarget = new THREE.Vector2(0, 0);
   const pointerCurrent = new THREE.Vector2(0, 0);
-  target.addEventListener("pointermove", (event) => {
+  // The three-layer overlay is pointer-events: none, so track the pointer from
+  // the scene wrapper that hosts it.
+  const pointerSurface = target.parentElement || target;
+  pointerSurface.addEventListener("pointermove", (event) => {
     const rect = target.getBoundingClientRect();
     const px = (event.clientX - rect.left) / Math.max(1, rect.width);
     const py = (event.clientY - rect.top) / Math.max(1, rect.height);
     pointerTarget.x = (px - 0.5) * 2;
     pointerTarget.y = (py - 0.5) * 2;
   }, { passive: true });
-  target.addEventListener("pointerleave", () => {
+  pointerSurface.addEventListener("pointerleave", () => {
     pointerTarget.set(0, 0);
   }, { passive: true });
 

@@ -336,6 +336,9 @@ body {
 /* Base Console Big Card */
 .console-card {
   position: relative;
+  --card-accent: var(--neon-volt);
+  --card-accent-soft: rgba(215, 255, 0, 0.18);
+  --card-accent-ring: rgba(215, 255, 0, 0.4);
   background: var(--panel);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -381,6 +384,172 @@ body {
   transform: translateY(-8px) scale(1.02);
   border-color: #ffffff;
   box-shadow: 0 25px 50px -10px rgba(215, 255, 0, 0.45);
+}
+
+/* ── Card Icon Tile (호버 반응은 항상 카드 안에서) ──────────────
+   이모지를 글리프 크기의 정사각 타일에 고정한다. 가로 전체 블록을 scale 하면
+   transform 기준점이 블록 중심이라 왼쪽 끝 글리프가 카드 밖으로 밀려난다.
+   타일 방식은 기준점이 아이콘 자체라서 호버 반응이 카드를 벗어나지 않는다. */
+.card-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.9rem;
+  height: 3.9rem;
+  margin-bottom: 0.9rem;
+  border-radius: 1.15rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  user-select: none;
+  transform-origin: 50% 50%;
+  transition:
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    background 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.4s ease;
+}
+
+.card-icon-glyph {
+  position: relative;
+  z-index: 1;
+  display: block;
+  font-size: 2.05rem;
+  line-height: 1;
+  transform-origin: 50% 68%;
+}
+
+/* 호버 시 한 번만 퍼지는 링 — 마지막 프레임이 기본 상태(opacity 0)와 같아
+   마우스가 벗어나도 끊기지 않는다. */
+.card-icon-pulse {
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 2px solid var(--card-accent-ring);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.card-icon--cyan {
+  --card-accent: #22d3ee;
+  --card-accent-soft: rgba(34, 211, 238, 0.18);
+  --card-accent-ring: rgba(34, 211, 238, 0.5);
+}
+
+.card-icon--indigo {
+  --card-accent: #818cf8;
+  --card-accent-soft: rgba(129, 140, 248, 0.2);
+  --card-accent-ring: rgba(129, 140, 248, 0.5);
+}
+
+.card-icon--amber {
+  --card-accent: #fbbf24;
+  --card-accent-soft: rgba(251, 191, 36, 0.18);
+  --card-accent-ring: rgba(251, 191, 36, 0.5);
+}
+
+/* Neon Volt featured card: 밝은 배경 위이므로 타일을 어둡게 반전 */
+.card-icon--featured {
+  width: 4.4rem;
+  height: 4.4rem;
+  background: rgba(7, 9, 14, 0.1);
+  border-color: rgba(7, 9, 14, 0.22);
+  --card-accent: #07090e;
+  --card-accent-soft: rgba(7, 9, 14, 0.2);
+  --card-accent-ring: rgba(7, 9, 14, 0.45);
+}
+
+.card-icon--featured .card-icon-glyph {
+  font-size: 2.4rem;
+}
+
+/* 호버·키보드 포커스 반응: 위로 살짝 떠오르기 + 제자리 통통 튀기 + 링 확산 */
+.console-card:hover .card-icon,
+.console-card:focus-within .card-icon {
+  transform: translateY(-4px);
+  background: var(--card-accent-soft);
+  border-color: var(--card-accent-ring);
+  box-shadow:
+    0 12px 22px -12px rgba(0, 0, 0, 0.6),
+    0 0 18px -4px var(--card-accent-soft);
+}
+
+.console-card:hover .card-icon-glyph,
+.console-card:focus-within .card-icon-glyph {
+  animation: card-icon-react 0.62s cubic-bezier(0.34, 1.4, 0.5, 1) both;
+}
+
+.console-card:hover .card-icon-pulse,
+.console-card:focus-within .card-icon-pulse {
+  animation: card-icon-pulse 0.8s ease-out both;
+}
+
+/* 개별 transform 속성(rotate/translate/scale)만 사용해 타일의 transform과
+   덮어쓰지 않고, 시작·끝 프레임이 같아 호버가 끝나도 튀지 않는다. */
+@keyframes card-icon-react {
+  0% {
+    rotate: 0deg;
+    translate: 0 0;
+    scale: 1;
+  }
+  28% {
+    rotate: -11deg;
+    translate: 0 -6px;
+    scale: 1.16;
+  }
+  52% {
+    rotate: 8deg;
+    translate: 0 1px;
+    scale: 1.03;
+  }
+  74% {
+    rotate: -4deg;
+    translate: 0 -3px;
+    scale: 1.11;
+  }
+  100% {
+    rotate: 0deg;
+    translate: 0 0;
+    scale: 1;
+  }
+}
+
+@keyframes card-icon-pulse {
+  0% {
+    opacity: 0.55;
+    scale: 0.85;
+  }
+  70% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 0;
+    scale: 1.5;
+  }
+}
+
+/* 작은 인라인 아이콘(과목 버튼·주간 시험 배지)용 절제된 버전 */
+@keyframes card-icon-react-sm {
+  0% {
+    rotate: 0deg;
+    translate: 0 0;
+    scale: 1;
+  }
+  35% {
+    rotate: -9deg;
+    translate: 0 -3px;
+    scale: 1.14;
+  }
+  65% {
+    rotate: 6deg;
+    translate: 0 0;
+    scale: 1.02;
+  }
+  100% {
+    rotate: 0deg;
+    translate: 0 0;
+    scale: 1;
+  }
 }
 
 /* Watermark Background Text */
@@ -460,6 +629,12 @@ body {
   font-size: 1.5rem;
   margin-right: 0.65rem;
   line-height: 1;
+  transform-origin: 50% 70%;
+}
+
+.core-subject-btn:hover .btn-emoji,
+.core-subject-btn:focus-visible .btn-emoji {
+  animation: card-icon-react-sm 0.5s cubic-bezier(0.34, 1.4, 0.5, 1) both;
 }
 
 .core-subject-btn .btn-arrow {
@@ -509,6 +684,12 @@ body {
 .weekly-test-direct-btn .wt-badge-icon {
   font-size: 1.4rem;
   line-height: 1;
+  transform-origin: 50% 70%;
+}
+
+.weekly-test-direct-btn:hover .wt-badge-icon,
+.weekly-test-direct-btn:focus-visible .wt-badge-icon {
+  animation: card-icon-react-sm 0.5s cubic-bezier(0.34, 1.4, 0.5, 1) both;
 }
 
 .weekly-test-direct-btn .wt-direct-tag {
@@ -567,13 +748,19 @@ body {
   background: rgba(255, 255, 255, 0.1);
   color: #FFFFFF;
   font-weight: 900;
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition:
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    background 0.25s ease,
+    color 0.25s ease,
+    box-shadow 0.35s ease;
 }
 
-.console-card:hover .card-action-btn {
-  transform: translateX(4px);
+.console-card:hover .card-action-btn,
+.console-card:focus-within .card-action-btn {
+  transform: translateX(3px) scale(1.06);
   background: var(--neon-volt);
   color: #07090e;
+  box-shadow: 0 0 16px -2px rgba(215, 255, 0, 0.55);
 }
 
 /* Quick Labs List inside Card 4 */
@@ -710,6 +897,32 @@ body {
     flex-direction: column;
     gap: 0.75rem;
     align-items: flex-start;
+  }
+}
+
+.console-card:focus-visible {
+  outline: 2px solid var(--card-accent);
+  outline-offset: 3px;
+}
+
+/* 움직임 최소화 설정: 아이콘 튀김·링 확산은 끄고 색/발광 피드백만 남긴다 */
+@media (prefers-reduced-motion: reduce) {
+  .console-card:hover .card-icon,
+  .console-card:focus-within .card-icon,
+  .console-card:hover .card-action-btn,
+  .console-card:focus-within .card-action-btn {
+    transform: none;
+  }
+
+  .console-card:hover .card-icon-glyph,
+  .console-card:focus-within .card-icon-glyph,
+  .console-card:hover .card-icon-pulse,
+  .console-card:focus-within .card-icon-pulse,
+  .core-subject-btn:hover .btn-emoji,
+  .core-subject-btn:focus-visible .btn-emoji,
+  .weekly-test-direct-btn:hover .wt-badge-icon,
+  .weekly-test-direct-btn:focus-visible .wt-badge-icon {
+    animation: none;
   }
 }
 

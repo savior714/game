@@ -112,12 +112,15 @@ def test_color_studio_keeps_the_target_and_mixing_tools_in_one_workspace() -> No
             self.ancestors: list[tuple[str, str]] = []
             self.locations: dict[str, tuple[str, ...]] = {}
 
-        def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        def handle_starttag(
+            self, tag: str, attrs: list[tuple[str, str | None]]
+        ) -> None:
             props = dict(attrs)
             classes = props.get("class") or ""
             if props.get("id"):
                 self.locations[props["id"]] = tuple(
-                    cls for _, ancestor_classes in self.ancestors
+                    cls
+                    for _, ancestor_classes in self.ancestors
                     for cls in ancestor_classes.split()
                 )
             if tag not in {"meta", "link", "input", "br", "hr", "img"}:
@@ -141,9 +144,9 @@ def test_color_studio_keeps_the_target_and_mixing_tools_in_one_workspace() -> No
     assert "paint-tools" in layout.locations["paint-submit-button"]
 
     css = (PAINT_DIR / "paint-mixing.css").read_text(encoding="utf-8")
-    assert '.paint-page .paint-lab-layout { display: contents; }' in css
-    assert '.paint-page .paint-workspace {' in css
-    assert '.paint-page .paint-brightness-group.is-locked { display: none; }' in css
+    assert ".paint-page .paint-lab-layout { display: contents; }" in css
+    assert ".paint-page .paint-workspace {" in css
+    assert ".paint-page .paint-brightness-group.is-locked { display: none; }" in css
     assert 'versusPanel.hidden = mode !== "game";' in _js()
 
 

@@ -23,6 +23,9 @@ ROOT = Path(__file__).resolve().parents[1]
 POWER_DIR = ROOT / "experiments" / "electricity"
 POWER_HTML = POWER_DIR / "index.html"
 POWER_JS = POWER_DIR / "electricity.js"
+POWER_WORLD = POWER_DIR / "world.js"
+POWER_AUDIO = POWER_DIR / "audio.js"
+POWER_TEXTURES = POWER_DIR / "textures.js"
 POWER_PHYSICS = POWER_DIR / "electricity-physics.js"
 POWER_CSS = POWER_DIR / "electricity.css"
 SMOKE_HARNESS = ROOT / "tests" / "fixtures" / "electricity_smoke.mjs"
@@ -74,14 +77,30 @@ def _run_physics(snippet: str) -> object:
 
 
 def test_power_lab_files_exist() -> None:
-    for path in (POWER_HTML, POWER_JS, POWER_PHYSICS, POWER_CSS):
+    for path in (
+        POWER_HTML,
+        POWER_JS,
+        POWER_WORLD,
+        POWER_AUDIO,
+        POWER_TEXTURES,
+        POWER_PHYSICS,
+        POWER_CSS,
+    ):
         assert path.is_file(), (
             f"전기 발전 실험실 파일이 없습니다: {path.relative_to(ROOT)}"
         )
 
 
 def test_power_lab_has_no_external_runtime_dependency() -> None:
-    for path in (POWER_HTML, POWER_JS, POWER_PHYSICS, POWER_CSS):
+    for path in (
+        POWER_HTML,
+        POWER_JS,
+        POWER_WORLD,
+        POWER_AUDIO,
+        POWER_TEXTURES,
+        POWER_PHYSICS,
+        POWER_CSS,
+    ):
         text = path.read_text(encoding="utf-8")
         assert "http://" not in text, (
             f"{path.name} cannot load insecure external resources"
@@ -95,6 +114,7 @@ def test_power_lab_has_no_external_runtime_dependency() -> None:
     assert 'lang="ko"' in html
     assert "<title>" in html and "전기" in html
     assert 'name="viewport"' in html
+    assert 'id="island-canvas"' in html
 
 
 def test_power_lab_links_back_to_main_hub() -> None:
@@ -318,6 +338,24 @@ def test_energy_is_power_times_time() -> None:
     assert result["idle"] == 0
 
 
+def test_island_power_grid_lights_six_village_landmarks_and_cuts_on_blackout() -> None:
+    result = _run_physics(
+        "const closedCopper = P.circuitState({material: 'copper', voltage: 4.5, closed: true});"
+        "const openSwitch = P.circuitState({material: 'copper', voltage: 4.5, closed: false});"
+        "return {"
+        " low: P.islandGridState({solarWatts: 10, circuit: closedCopper}),"
+        " full: P.islandGridState({generatorWatts: 40, windWatts: 55, hydroWatts: 50, solarWatts: 9, surgeWatts: 10, circuit: closedCopper}),"
+        " blackout: P.islandGridState({generatorWatts: 40, windWatts: 55, hydroWatts: 50, circuit: openSwitch})"
+        "};"
+    )
+    assert result["low"]["landmarks"]["cottages"] > 0
+    assert result["low"]["landmarks"]["festival"] == 0
+    assert result["full"]["litCount"] == 6
+    assert result["full"]["landmarks"]["festival"] == 1
+    assert result["blackout"]["deliveredWatts"] == 0
+    assert result["blackout"]["litCount"] == 0
+
+
 def test_power_lab_runs_without_runtime_errors() -> None:
     node = _node()
     result = subprocess.run(
@@ -327,11 +365,15 @@ def test_power_lab_runs_without_runtime_errors() -> None:
         check=True,
         timeout=120,
     )
+    assert result.stderr.strip() == "", f"불필요한 런타임 경고 출력: {result.stderr}"
     data = json.loads(result.stdout.strip().splitlines()[-1])
 
     assert data["errors"] == [], f"실험 실행 중 예외가 발생했습니다: {data['errors']}"
     assert data["physics"] is True, "PowerPhysics 전역 모듈이 등록되지 않았습니다"
     assert data["dots"] == len(STATION_IDS)
+    assert data["worldTags"] == 8, "3D 섬 플로팅 구역 라벨 8개가 생성되어야 합니다"
+    assert data["peakWatts"] > 120, "모든 발전기 가동 시 120W 이상 공급되어야 합니다"
+    assert data["blackoutWatts"] == 0, "주 스위치 개방 즉시 0W 정전이 되어야 합니다"
 
     for station in STATION_IDS:
         assert data["play"]["stamps"][station] is True, (

@@ -35,4 +35,3 @@ def test_marble_top_hud_does_not_cover_game_hud():
     assert "syncTopHudOffset" in content, (
         "experiments/marble/index.html must dynamically synchronize top HUD offset on load and resize"
     )
-

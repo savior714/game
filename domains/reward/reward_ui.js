@@ -97,6 +97,30 @@ const RewardSystemUI = (() => {
         flex-wrap: nowrap !important;
         white-space: nowrap;
       }
+      .dark #reward-inventory .inventory-item .val,
+      html.dark #reward-inventory .inventory-item .val,
+      .hud-reward-mount #reward-inventory .inventory-item .val,
+      .compact-hud-reward-mount #reward-inventory .inventory-item .val {
+        color: #FFFFFF !important;
+      }
+      .dark #reward-inventory .inventory-item .unit,
+      html.dark #reward-inventory .inventory-item .unit,
+      .hud-reward-mount #reward-inventory .inventory-item .unit,
+      .compact-hud-reward-mount #reward-inventory .inventory-item .unit {
+        color: #E2E8F0 !important;
+      }
+      .dark #reward-inventory .inventory-item.empty-slot .val,
+      html.dark #reward-inventory .inventory-item.empty-slot .val,
+      .hud-reward-mount #reward-inventory .inventory-item.empty-slot .val,
+      .compact-hud-reward-mount #reward-inventory .inventory-item.empty-slot .val {
+        color: #CBD5E1 !important;
+      }
+      .dark #reward-inventory #inv-auth,
+      html.dark #reward-inventory #inv-auth,
+      .hud-reward-mount #reward-inventory #inv-auth,
+      .compact-hud-reward-mount #reward-inventory #inv-auth {
+        color: #FFFFFF !important;
+      }
       #reward-inventory.ready { opacity: 1; pointer-events: auto; }
       body.reward-loading { overflow: hidden; }
 

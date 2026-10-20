@@ -17,6 +17,14 @@
 | 3|scene failure 시 `data-rescue-input="disabled"` 영구锁定 — recovery 불가|`onRescueStagePointerDown`: failure flag 감지 시 `exitPauseToMenu()`로 recovery|
 | 4|pause → menu exit 시 pointer capture 누수|`exitPauseToMenu()`: `cancelPausePointerInteractions()` 추가|
 | 5|bridge 실패 시 fallback/input path 없음 |`startSeaTurtleInteraction()`: bridge catch → legacy bind fallback + status message|
+| 6|ESM pause 종료(`exitPauseToMenu`)가 rescue 시퀀스를 해제하지 않음 — 다음 구조 도착의 `handoffTravelArrival`이 stale 시퀀스에 막혀 TRAVEL 단계에 머묾|`pause-timer-resume.ts` `exitPauseToMenu()`: RESCUE_SUCCESS / SITE_TRANSITION / TUTORIAL / ACTIVE 분기에서 `cancelRescueSiteRuntime()`을 `shutdownActiveRescueForMenu()` 앞에 호출|
+| 7|미션 성공 화면에서 pause → 메뉴 시 `controller`와 `host`가 같은 객체라 자기 참조 wrapper가 무한 재귀 (`Maximum call stack size exceeded`), RESCUE_SUCCESS에 머묾|`pause-timer-resume.ts`: `controller.cancelMissionSuccessPresentationForMenu` 자기 참조 wrapper 제거|
+
+## 2-1. 검증 현황 (2026-10-19)
+
+- 1–5: 코드 존재 확인 완료 (`app.js` `shutdownRescueInteractionState`, `onRescuePointerCancel`, `onRescueStagePointerDown`, legacy `exitPauseToMenu`, `startSeaTurtleInteraction`). ESM 경로는 pause 진입 시 `cancelPausePointerInteractions()`를 호출한다 (`pause-timer-resume.ts`).
+- 6–7: 실제 Chromium 브라우저 회귀 테스트 `tests/test_ocean_rescue_pause_menu_rescue_reentry_browser.py`로 고정. 수정 전 아티팩트에서 4건 모두 실패, 수정 후 4건 모두 통과.
+- 미검증: 3번 실패 경로(잘못된 로프 3회 → `data-rescue-input="disabled"` 복구), 5번 bridge 실패 경로, 구조 중 창 크기 변경, 멀티터치.
 
 ## 3.사용자 side recovery
 
@@ -46,3 +54,5 @@
 - `bindRescuePointerInput()`은 exactly-once flag(`seaTurtleInputBound`)로 중복 바인딩 방지 + shutdown 시 reset
 - pointer cancel/capture lost 시 `clearCrabHoldTimer()`를 **항상** 먼저 실행
 - scene failure 시 input disable 대신 phase-based blocking + recovery path 제공
+- 구조 종료 경로(pause → 메뉴)는 `cancelRescueSiteRuntime()` → `shutdownActiveRescueForMenu()` 순서를 유지한다. 시퀀스와 타이머를 정리하지 않으면 다음 도착이 조용히 막힌다.
+- 컨트롤러 host 브리지에 같은 객체를 자기 자신에게 다시 연결하는 wrapper를 두지 않는다 (`controller === host`인 경우 무한 재귀).

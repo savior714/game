@@ -463,12 +463,20 @@ export function installPauseTimerResumeController(
       host.cancelLaunchRuntime?.();
     } else if (snapshot.phase === "RESCUE_SUCCESS") {
       host.cancelMissionSuccessPresentationForMenu();
+      // Clear the active rescue sequence as well: a stale sequence blocks
+      // rescue-arrival handoff on the next mission run (travel never enters
+      // the rescue site). Mirrors the legacy rollback lane in app.js.
+      host.cancelRescueSiteRuntime();
       host.shutdownActiveRescueForMenu();
     } else if (
       snapshot.phase === "RESCUE_SITE_TRANSITION" ||
       snapshot.phase === "RESCUE_TUTORIAL" ||
       snapshot.phase === "RESCUE_ACTIVE"
     ) {
+      // cancelRescueSiteRuntime() clears the active rescue sequence and the
+      // site-transition/tutorial timers, which shutdownActiveRescueForMenu()
+      // does not. Without it, the next arrival is silently blocked.
+      host.cancelRescueSiteRuntime();
       host.shutdownActiveRescueForMenu();
     } else if (snapshot.phase === "LAUNCH") {
       host.cancelLaunchRuntime?.();
@@ -544,9 +552,10 @@ export function installPauseTimerResumeController(
   controller.enterResumeCountdown = enterResumeCountdown;
   controller.completeResume = completeResume;
   controller.exitPauseToMenu = exitPauseToMenu;
-  controller.cancelMissionSuccessPresentationForMenu = () => {
-    host.cancelMissionSuccessPresentationForMenu();
-  };
+  // `controller` and `host` are the same object. Re-assigning a wrapper that
+  // calls `host.cancelMissionSuccessPresentationForMenu` here would replace the
+  // host method with a self-call (infinite recursion on pause -> menu from the
+  // mission-success screen), so the host method is used directly.
   controller.cancelPausePointerInteractions = host.cancelPausePointerInteractions;
   controller.clearPauseSensitiveHoldTimer = host.clearPauseSensitiveHoldTimer;
   controller.shutdownActiveRescueForMenu = host.shutdownActiveRescueForMenu;

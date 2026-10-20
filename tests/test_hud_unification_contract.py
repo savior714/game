@@ -55,7 +55,9 @@ def test_shared_hud_css_exists_and_defines_tokens():
     assert ".ag-hud--immersive" in text
     assert ".ag-hud__brand" in text
     assert ".ag-hud__subject" in text
-    assert ".ag-hud__home" in text
+    assert ".ag-hud__brand-home" in text, (
+        "HUD CSS must style the brand-carried home affordance"
+    )
     assert "data-subject" in text, "HUD CSS must handle subject tint via data-subject"
     assert "prefers-reduced-motion" in text, "HUD must respect reduced-motion"
     assert ".sr-only" in text
@@ -84,10 +86,9 @@ def test_every_game_page_has_unified_hud_markup():
         assert "AIDEN GAME LABS" in html, f"{rel_path} must show brand wordmark"
         # version chip
         assert "v2.0" in html, f"{rel_path} must show version chip v2.0"
-        # home link (brand link counts for hub)
+        # home navigation is carried by the brand link (single home control per chrome)
         has_home = (
-            'data-action="go-home"' in html
-            or 'aria-label="메인 홈' in html
+            'aria-label="AIDEN GAME LABS · 놀이터 홈"' in html
             or 'href="./index.html"' in html
             or 'href="../../index.html"' in html
             or 'href="../../../index.html"' in html
@@ -114,6 +115,21 @@ def test_legacy_aliases_remain_for_backward_compatibility():
     assert ".study-compact-hud" in hud_css, "HUD CSS must alias .study-compact-hud"
     assert ".console-hud" in hud_css, "HUD CSS must alias .console-hud"
     assert ".topbar.glass" in hud_css, "HUD CSS must alias Space Explorer topbar"
+
+
+def test_hud_pages_expose_single_home_control():
+    """HUD 크롬의 홈 컨트롤은 brand 링크 하나뿐이다 (별도 홈 버튼 금지)."""
+    for rel_path in GAME_PAGES:
+        html = (ROOT / rel_path).read_text(encoding="utf-8")
+        assert "ag-hud__home" not in html, (
+            f"{rel_path} must not keep a standalone .ag-hud__home button"
+        )
+        assert "compact-hud-home" not in html, (
+            f"{rel_path} must not keep a standalone .compact-hud-home button"
+        )
+        assert "ag-hud__brand-home" in html, (
+            f"{rel_path} brand must carry the visible home affordance"
+        )
 
 
 def test_main_hub_preserves_reward_full_surface():

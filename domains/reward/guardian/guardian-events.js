@@ -48,7 +48,6 @@
 
     const action = target.dataset.action;
     const handlers = {
-      'go-home': () => { global.location.href = '../../../index.html'; },
       'set-subject': () => global.setSubject?.(target.dataset.subject),
       'set-math-preset': () => global.onSelectMathPreset?.(target.dataset.preset),
       'save-settings': () => global.saveSettings?.(),

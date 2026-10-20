@@ -180,10 +180,6 @@ document.addEventListener('click', (e) => {
   const action = target.dataset.action;
 
   switch (action) {
-    case 'go-home':
-      window.location.href = '../../../index.html';
-      e.stopPropagation();
-      break;
     case 'set-subject':
       if (window.setSubject) {
         window.setSubject(target.dataset.subject);

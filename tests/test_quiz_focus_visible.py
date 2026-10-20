@@ -37,11 +37,11 @@ PRIMARY_COLORS: dict[str, str] = {
     "math": "rgb(255, 107, 53)",
 }
 
-INITIAL_FOCUS_TARGETS = (".home-link", "#stats-btn", ".answer-btn")
+INITIAL_FOCUS_TARGETS = (".ag-hud__brand", "#stats-btn", ".answer-btn")
 
 FOCUS_VISIBLE_SELECTORS_BY_SUBJECT: dict[str, tuple[str, ...]] = {
     "korean": (
-        ".home-link:focus-visible",
+        ".ag-hud__brand:focus-visible",
         "#stats-btn:focus-visible",
         "#next-btn:focus-visible",
         "#restart-btn:focus-visible",
@@ -49,7 +49,7 @@ FOCUS_VISIBLE_SELECTORS_BY_SUBJECT: dict[str, tuple[str, ...]] = {
         "#reset-stats-btn:focus-visible",
     ),
     "english": (
-        ".home-link:focus-visible",
+        ".ag-hud__brand:focus-visible",
         "#stats-btn:focus-visible",
         "#next-btn:focus-visible",
         "#restart-btn:focus-visible",
@@ -57,7 +57,7 @@ FOCUS_VISIBLE_SELECTORS_BY_SUBJECT: dict[str, tuple[str, ...]] = {
         "#reset-stats-btn:focus-visible",
     ),
     "science": (
-        ".home-link:focus-visible",
+        ".ag-hud__brand:focus-visible",
         "#stats-btn:focus-visible",
         "#next-btn:focus-visible",
         "#restart-btn:focus-visible",
@@ -65,7 +65,7 @@ FOCUS_VISIBLE_SELECTORS_BY_SUBJECT: dict[str, tuple[str, ...]] = {
         "#reset-stats-btn:focus-visible",
     ),
     "math": (
-        ".home-link:focus-visible",
+        ".ag-hud__brand:focus-visible",
         "#stats-btn:focus-visible",
         "#next-btn:focus-visible",
         "#restart-btn:focus-visible",
@@ -196,7 +196,7 @@ class TestQuizFocusVisible:
 
     @pytest.mark.parametrize("subject", SUBJECTS)
     def test_home_link_has_focus_visible(self, server: str, subject: str) -> None:
-        """`.home-link` shows solid >=3px outline on keyboard focus."""
+        """`.ag-hud__brand` (canonical home control) shows solid >=3px outline."""
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             context = browser.new_context(viewport={"width": 1280, "height": 720})
@@ -208,8 +208,8 @@ class TestQuizFocusVisible:
             pg.wait_for_selector("#question", state="visible", timeout=5000)
             pg.wait_for_selector(".answer-btn", state="visible", timeout=5000)
 
-            _focus_via_keyboard_tab(pg, ".home-link")
-            info = _computed_focus_info(pg, ".home-link")
+            _focus_via_keyboard_tab(pg, ".ag-hud__brand")
+            info = _computed_focus_info(pg, ".ag-hud__brand")
             _assert_focus_visible_contract(info)
 
             expected_color = PRIMARY_COLORS[subject]

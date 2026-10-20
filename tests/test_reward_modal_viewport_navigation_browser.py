@@ -77,7 +77,7 @@ class TestRewardModalViewportAndNavigation:
     """Acceptance tests for Marble and Bubble reward modals and HUD home navigation."""
 
     def test_case_a_marble_landscape_responsive_and_top_home(self, server, browser):
-        """Case A: Landscape (1280x800) Marble modal is responsive; '홈으로' navigates top-level to /index.html."""
+        """Case A: Landscape (1280x800) Marble modal is responsive; brand home link navigates top-level to /index.html."""
         context = browser.new_context(
             viewport={"width": 1280, "height": 800},
             locale="ko-KR",
@@ -118,7 +118,7 @@ class TestRewardModalViewportAndNavigation:
             marble_frame = page.frame_locator(
                 ".reward-marble-modal iframe.reward-mini-game-frame"
             )
-            home_link = marble_frame.locator(".home-btn")
+            home_link = marble_frame.locator("a.brand-badge")
             home_link.wait_for(state="visible", timeout=8000)
 
             top_hud_box = marble_frame.locator(".game-top-hud").bounding_box()
@@ -129,7 +129,7 @@ class TestRewardModalViewportAndNavigation:
                 f"not to cover #hud (top={game_hud_box['y']})"
             )
 
-            # 4. Click '홈으로' in iframe
+            # 4. Click the brand (워드마크) home control in iframe
             home_link.click()
 
             # 5. Final top-level URL must be main /index.html
@@ -193,10 +193,10 @@ class TestRewardModalViewportAndNavigation:
             bubble_frame = page.frame_locator(
                 ".reward-bubble-modal iframe.reward-mini-game-frame"
             )
-            home_link = bubble_frame.locator(".home-btn")
+            home_link = bubble_frame.locator("a.brand-badge")
             home_link.wait_for(state="visible", timeout=8000)
 
-            # 4. Click '홈으로'
+            # 4. Click the brand (워드마크) home control
             home_link.click()
 
             # 5. Final top-level URL is /index.html

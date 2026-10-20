@@ -231,8 +231,25 @@ a.brand {
   white-space: nowrap;
 }
 
-.ag-hud__divider,
-.hud-left-section .home-link + .brand-badge + .home-link::before {
+/* Home affordance carried by the brand link (single home control per chrome) */
+.ag-hud__brand-home {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  color: var(--neon-volt, #d7ff00);
+  opacity: 0.85;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+.ag-hud__brand-home svg {
+  width: 13px;
+  height: 13px;
+}
+.ag-hud__brand:hover .ag-hud__brand-home { opacity: 1; }
+
+.ag-hud__divider {
   width: 1px;
   height: 22px;
   background: rgba(255,255,255,0.12);
@@ -310,12 +327,9 @@ a.brand {
 .ag-hud--compact .ag-hud__title { display: none; }
 .ag-hud--compact .ag-hud__subject { display: inline-flex; }
 
-/* ── Home pill ──────────────────────────────────────────── */
-.ag-hud__home,
-.compact-hud-home,
+/* ── Home link (legacy alias for pages without a brand cluster) ── */
 .home-link,
-a.home-link,
-.brand + .home-link {
+a.home-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -336,8 +350,6 @@ a.home-link,
   transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
   position: relative;
 }
-.ag-hud__home:hover,
-.compact-hud-home:hover,
 .home-link:hover {
   background: rgba(255,255,255,0.14);
   border-color: rgba(255,255,255,0.26);
@@ -345,26 +357,14 @@ a.home-link,
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(0,0,0,0.28);
 }
-.ag-hud__home:active,
-.compact-hud-home:active,
 .home-link:active { transform: translateY(0) scale(0.98); }
 
-.ag-hud__home-icon,
-.home-arrow,
-.compact-hud-home .home-arrow {
-  font-size: 1rem;
-  line-height: 1;
-  opacity: 0.95;
-  translate: 0 0.5px;
-}
-.ag-hud__home svg,
 .home-link svg {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
   opacity: 0.95;
 }
-.compact-hud-home .home-text { font-weight: 800; }
 
 /* Ghost variant for secondary actions in Space Explorer */
 .ag-hud__ghost-btn {
@@ -470,13 +470,11 @@ a.home-link,
 
 /* ── Focus states ─────────────────────────────────────── */
 .ag-hud__brand:focus-visible,
-.ag-hud__home:focus-visible,
 .ag-hud__ghost-btn:focus-visible,
-.compact-hud-home:focus-visible,
 .home-link:focus-visible,
 .badge:focus-visible,
 .brand:focus-visible {
-  outline: 2px solid var(--subject-accent, #d7ff00);
+  outline: 3px solid var(--subject-accent, #d7ff00);
   outline-offset: 2px;
   border-radius: 9999px;
 }
@@ -504,8 +502,6 @@ a.home-link,
   .brand-category { font-size: 0.78rem; padding: 0.34rem 0.68rem; }
   /* Keep HUD single-row on tablet */
   .ag-hud__left { gap: 0.65rem; }
-  .ag-hud__home,
-  .compact-hud-home,
   .home-link { padding: 0.38rem 0.75rem; font-size: 0.78rem; min-height: 34px; }
 }
 
@@ -522,7 +518,7 @@ a.home-link,
   .compact-hud-reward-mount { gap: 0.4rem; }
   /* Compact HUD shows title fallback if brand trimmed too much */
   .ag-hud--compact .ag-hud__title { display: flex; max-width: 12ch; }
-  .ag-hud--compact .ag-hud__left .ag-hud__brand { display: none; } /* save space on very small */
+  /* Brand stays visible (icon-only home affordance) so small screens keep a way home */
   .topbar.glass,
   .ag-hud--immersive { flex-wrap: wrap; justify-content: space-between; min-height: auto; }
   .topbar.glass .status-row,
@@ -534,16 +530,13 @@ a.home-link,
   .ag-hud,
   .study-compact-hud,
   .console-hud,
-  .ag-hud__home,
-  .ag-hud__ghost-btn,
-  .compact-hud-home { transition: none !important; transform: none !important; }
+  .ag-hud__ghost-btn { transition: none !important; transform: none !important; }
 }
 
 /* ── Legacy compatibility shims ───────────────────────────
    Ensure old markup inherits new tokens without HTML changes */
 .study-compact-hud { --subject-accent: var(--subject-accent, #d7ff00); }
 .console-hud { --subject-accent: var(--subject-accent, #d7ff00); }
-.study-compact-hud .compact-hud-home,
 .console-hud .home-link { /* already styled above */ }
 
 .console-hud .brand-badge { gap: 0.62rem; }

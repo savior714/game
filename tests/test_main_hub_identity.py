@@ -15,10 +15,11 @@ def test_templates_index_is_aidengame_hub_page() -> None:
     assert "국어 놀이" in html
     assert "과학 놀이" in html
     assert "태양계 탐험 (실험)" in html
-    assert "<nav" in html
-    assert "Main navigation" in html
     assert "experiments/space-explorer/index.html" in html
-    assert 'id="main-top-nav"' in html
+    # 상단 크롬은 홈 컨트롤 하나(brand 링크)만 갖는다
+    assert 'id="main-top-nav"' not in html
+    assert "ag-hud__home" not in html
+    assert "ag-hud__brand-home" in html
 
     # Modern Hub UI Structure & Functional Verification
     assert "INTERACTIVE LEARNING PLAYGROUND" in html
@@ -55,24 +56,26 @@ def test_main_hub_unified_topbar_structure() -> None:
 
     # 1. index.html unified header structure
     assert 'class="console-hud' in html
-    assert 'class="hud-left-section"' in html
-    assert 'id="main-top-nav"' in html
+    assert "hud-left-section" in html
     assert 'id="reward-inventory-mount"' in html
     assert "GP" not in html
     assert "12,500" not in html
     assert "🪙" not in html
 
-    nav_start = html.index('id="main-top-nav"')
-    nav_end = html.index("</nav>", nav_start)
-    main_top_nav_html = html[nav_start:nav_end]
-    assert "홈" in main_top_nav_html
-    assert "우주 탐험" not in main_top_nav_html
+    # 2. 홈 컨트롤은 brand 링크 하나뿐 (자기 자신을 가리키는 nav는 두지 않는다)
+    header_start = html.index("<header")
+    header_end = html.index("</header>", header_start)
+    header_html = html[header_start:header_end]
+    assert 'href="./index.html"' in header_html
+    assert "ag-hud__brand-home" in header_html
+    assert "ag-hud__home" not in header_html
+    assert "aria-current" not in header_html
 
-    # 2. reward_ui.js mount support
+    # 3. reward_ui.js mount support
     assert "document.getElementById('reward-inventory-mount')" in reward_ui
     assert "is-integrated" in reward_ui
 
-    # 3. styles.css integration styling
+    # 4. styles.css integration styling
     assert ".hud-reward-mount" in styles
     assert ".hud-reward-mount #reward-inventory" in styles
     assert ".hud-reward-mount #reward-inventory .inventory-item.gem-item" in styles

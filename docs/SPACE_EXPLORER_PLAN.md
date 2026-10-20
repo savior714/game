@@ -47,6 +47,26 @@
 - 텍스처 로딩은 진행률 UI와 대체(fallback) 텍스처를 함께 제공한다.
 - three.js와 애드온은 `vendor/three/`에 고정 번들로 두며 CDN에 의존하지 않는다.
 
+### 2.2 Dino Escape 3D (공룡 추격 탈출)
+
+`dino-escape.html`은 태양계 페이지와 독립된 3D 추격 러너이며, 자체 스타일시트
+(`dino-escape.css`)와 폰트(`assets/fonts/`)를 소유한다. 런타임 네트워크 의존성은 없다.
+
+| 역할 | 경로 |
+|---|---|
+| 페이지 셸 | `experiments/space-explorer/dino-escape.html` |
+| 스타일 | `experiments/space-explorer/dino-escape.css` |
+| 엔트리(렌더 루프·HUD·오디오 배선) | `experiments/space-explorer/dino-escape.js` |
+| 규칙·상수 | `experiments/space-explorer/dino/{constants,run-model,player,spawner,storage,util}.js` |
+| 추격 연출(카메라·렉스 스테이징) | `experiments/space-explorer/dino/chase.js` |
+| 3D 월드·모델·파티클 | `experiments/space-explorer/dino/{world,models,entities,particles}.js` |
+| 프레임 회귀 검사 | `scripts/dino/frame-check.mjs` |
+
+- 카메라와 렉스 위치는 `chase.js`가 단독으로 소유한다. 엔트리에 카메라 수식을 다시 넣지 않는다.
+- 프레이밍 규칙을 바꾸면 `node scripts/dino/frame-check.mjs`를 실행하고,
+  `tests/test_space_explorer_phase14_dino_escape_page.py`로 계약을 유지한다.
+- 한국어 UI는 자체 호스팅 Pretendard를 쓰고, 아이콘은 이모지 글리프 대신 인라인 SVG를 쓴다.
+
 ## 3. 보존할 기술 경계
 
 - 상태와 렌더링을 분리한다.

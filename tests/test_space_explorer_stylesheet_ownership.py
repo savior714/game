@@ -19,9 +19,14 @@ def test_space_explorer_stylesheet_ownership_separation() -> None:
     )
     assert "space-explorer-minigames.css" not in index_html
 
-    # The 3 sibling minigame pages MUST link space-explorer-minigames.css
+    # The sibling minigame pages MUST link space-explorer-minigames.css.
+    # Dino Escape is the documented exception: it is a standalone full-screen
+    # 3D experience with its own stylesheet (see below).
+    assert 'href="./dino-escape.css"' in dino_html
+    assert "space-explorer-minigames.css" not in dino_html
+    assert 'href="./space-explorer.css"' not in dino_html
+
     for filename, html in [
-        ("dino-escape.html", dino_html),
         ("orbit-eclipse.html", orbit_html),
         ("paint-mixing.html", paint_html),
     ]:

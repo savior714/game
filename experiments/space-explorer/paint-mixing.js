@@ -28,6 +28,8 @@ const missionDifficulty = document.getElementById("paint-mission-difficulty");
 const missionTitle = document.getElementById("paint-mission-title");
 const missionStory = document.getElementById("paint-mission-story");
 const targetSwatch = document.getElementById("paint-target-swatch");
+const versusPanel = document.querySelector(".paint-versus");
+const resultTitle = document.getElementById("paint-result-title");
 const targetName = document.getElementById("paint-target-name");
 const mineSwatch = document.getElementById("paint-mine-swatch");
 const mineName = document.getElementById("paint-mine-name");
@@ -617,14 +619,14 @@ function setFeedback(message) {
 }
 
 function repeatStars(count) {
-  return "⭐".repeat(count) + "☆".repeat(3 - count);
+  return "★".repeat(count) + "☆".repeat(3 - count);
 }
 
 function renderHud() {
   scoreText.textContent = String(getTotalScore());
-  starTotalText.textContent = `⭐ ${getTotalStars()} / ${MISSIONS.length * 3}`;
-  streakText.textContent = `🔥 ${progress.streak}`;
-  discoveryText.textContent = `🎨 ${progress.discovered.length} / ${NAMED_COLORS.length}`;
+  starTotalText.textContent = `★ ${getTotalStars()} / ${MISSIONS.length * 3}`;
+  streakText.textContent = String(progress.streak);
+  discoveryText.textContent = `${progress.discovered.length} / ${NAMED_COLORS.length}`;
 }
 
 function maybeDiscoverColor(rgb) {
@@ -636,7 +638,7 @@ function maybeDiscoverColor(rgb) {
   saveProgress();
   renderHud();
   renderCollection();
-  showToast(`🎉 새로운 색 발견! ${nearest.emoji} ${nearest.name} (도감 ${progress.discovered.length}/${NAMED_COLORS.length})`);
+  showToast(`새로운 색 발견! ${nearest.name} (도감 ${progress.discovered.length}/${NAMED_COLORS.length})`);
   playTone(1174.66, { duration: 0.2, type: "triangle", volume: 0.12 });
 }
 
@@ -766,10 +768,10 @@ function renderMissionGrid() {
     const dot = document.createElement("span");
     dot.className = "paint-mission-dot";
     dot.style.background = unlocked ? buildPaintTexture(getMissionRgb(mission)) : "rgba(255,255,255,.12)";
-    dot.textContent = unlocked ? "" : "🔒";
+    dot.textContent = unlocked ? "" : "×";
     const name = document.createElement("span");
     name.className = "paint-mission-card-title";
-    name.textContent = `${index + 1}. ${mission.emoji} ${mission.title}`;
+    name.textContent = `${index + 1}. ${mission.title}`;
     const starLine = document.createElement("span");
     starLine.className = "paint-mission-card-stars";
     starLine.textContent = unlocked ? repeatStars(stars) : "이전 미션을 성공하면 열려요";
@@ -787,8 +789,8 @@ function renderMission() {
   missionChapter.textContent = isRandomMission ? "랜덤 도전" : currentMission.chapter;
   missionProgress.textContent = isRandomMission ? "무한 도전" : `미션 ${currentMissionIndex + 1} / ${MISSIONS.length}`;
   missionDifficulty.textContent = currentMission.difficulty;
-  missionTitle.textContent = `${currentMission.emoji} ${currentMission.title}`;
-  missionStory.textContent = currentMission.story;
+  missionTitle.textContent = currentMission.title;
+  missionStory.textContent = currentMission.story.replace(/^[^가-힣A-Za-z0-9]+\s*/, "");
   targetSwatch.style.background = buildPaintTexture(targetRgb);
   targetSwatch.setAttribute("aria-label", `목표 색 ${currentMission.colorName} ${rgbToHex(targetRgb)}`);
   targetName.textContent = currentMission.colorName;
@@ -807,7 +809,7 @@ function renderCollection() {
     const swatch = document.createElement("span");
     swatch.className = "paint-collection-swatch";
     swatch.style.background = found ? buildPaintTexture(getNamedColorRgb(named)) : "rgba(255,255,255,.08)";
-    swatch.textContent = found ? named.emoji : "?";
+    swatch.textContent = found ? "" : "?";
     const name = document.createElement("strong");
     name.textContent = found ? named.name : "아직 몰라요";
     const recipe = document.createElement("span");
@@ -818,7 +820,7 @@ function renderCollection() {
   }
   collectionSummary.textContent =
     progress.discovered.length >= NAMED_COLORS.length
-      ? "👑 모든 색을 발견했어요! 진짜 컬러 마스터예요!"
+      ? "모든 색을 발견했어요! 진짜 컬러 마스터예요!"
       : `${NAMED_COLORS.length}가지 색 중 ${progress.discovered.length}가지를 발견했어요. 자유 실험실에서 마음껏 섞어 보세요.`;
 }
 
@@ -999,7 +1001,7 @@ function showSuccess(similarity, stars, score) {
   successStars.textContent = repeatStars(stars);
   successStars.setAttribute("aria-label", `별 ${stars}개 획득`);
   if (!isRandomMission && isAllMissionsCleared()) {
-    successTitle.textContent = "👑 컬러 마스터 달성! 모든 미션을 끝냈어요!";
+    successTitle.textContent = "컬러 마스터 달성! 모든 미션을 끝냈어요!";
   } else {
     successTitle.textContent =
       stars === 3
@@ -1011,7 +1013,7 @@ function showSuccess(similarity, stars, score) {
   successScore.textContent = `+${score}점 · 닮은 정도 ${similarity}% · 시도 ${attempts}번`;
   successRecipe.textContent = `정답 레시피: ${formatRecipe(currentMission.recipe)} = ${currentMission.colorName}`;
   const isLastMission = !isRandomMission && currentMissionIndex >= MISSIONS.length - 1;
-  nextButton.textContent = isRandomMission || isLastMission ? "🔀 랜덤 색 도전" : "다음 색으로 →";
+  nextButton.textContent = isRandomMission || isLastMission ? "랜덤 색 도전" : "다음 색으로 →";
   spawnConfetti();
   playSuccessSound(stars);
   openModal(successModal);
@@ -1104,7 +1106,7 @@ function toggleMissionMap(force) {
   const nextHidden = typeof force === "boolean" ? !force : !missionMap.hidden;
   missionMap.hidden = nextHidden;
   missionToggle.setAttribute("aria-expanded", String(!nextHidden));
-  missionToggle.textContent = nextHidden ? "🗺️ 미션 목록 보기" : "🗺️ 미션 목록 닫기";
+  missionToggle.textContent = nextHidden ? "미션 목록 보기" : "미션 목록 닫기";
   if (!nextHidden) renderMissionGrid();
 }
 
@@ -1116,6 +1118,8 @@ function setMode(nextMode, { keepMission = false } = {}) {
     tab.setAttribute("aria-selected", String(active));
   });
   missionPanel.hidden = mode !== "game";
+  if (versusPanel) versusPanel.hidden = mode !== "game";
+  if (resultTitle) resultTitle.textContent = mode === "game" ? "색을 비교해요" : "내 색을 살펴봐요";
   freeNote.hidden = mode !== "free";
   submitButton.hidden = mode !== "game";
   hintButton.hidden = mode !== "game";
@@ -1149,7 +1153,7 @@ function findStartingMissionIndex() {
 }
 
 function updateSoundButton() {
-  soundButton.textContent = progress.soundOn ? "🔊 소리 켬" : "🔇 소리 끔";
+  soundButton.textContent = progress.soundOn ? "소리 켬" : "소리 끔";
   soundButton.setAttribute("aria-pressed", String(progress.soundOn));
 }
 

@@ -1,0 +1,530 @@
+/* Color Studio: paint-game-only presentation. The shared minigame sheet owns the
+   mechanics/animation hooks; this sheet deliberately does not restyle other games.
+   Noto Sans KR (SIL OFL) is bundled so the game reads correctly offline. */
+@font-face {
+  font-family: "Color Studio KR";
+  src: url("./assets/fonts/noto-sans-kr-400.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Color Studio KR";
+  src: url("./assets/fonts/noto-sans-kr-700.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700 900;
+  font-display: swap;
+}
+body.paint-page {
+  --ink: #243149;
+  --subtle: #656e7c;
+  --paper: #fffdf8;
+  --line: #e6dfd2;
+  --coral: #ef6853;
+  --blue: #365d9b;
+  --muted: #656e7c;
+  --text: #243149;
+  --neon-volt: #ef6853;
+  color-scheme: light;
+  color: var(--ink);
+  background: #f5f0e7;
+  background-image: radial-gradient(#ded7ca 0.7px, transparent 0.7px);
+  background-size: 22px 22px;
+  font-family: "Color Studio KR", system-ui, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  padding: 0 24px 72px;
+}
+.paint-page button { font-family: inherit; }
+
+.paint-page .site-header {
+  position: relative;
+  top: auto;
+  max-width: 1280px;
+  margin-bottom: 0;
+  padding: 15px 4px;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid #ded8cd;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.paint-page .hud-left-section { width: 100%; justify-content: space-between; gap: 12px; }
+.paint-page .brand-badge { color: var(--ink); gap: 10px; }
+.paint-page .brand-dot {
+  width: 30px;
+  height: 30px;
+  border: 5px solid #f6d695;
+  background: var(--coral);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+.paint-page .brand-title { color: var(--ink); font-size: 12px; letter-spacing: 0.055em; }
+.paint-page .brand-version { color: #92532f; background: #ffe6d6; font-size: 9px; }
+.paint-page .brand-category { color: var(--subtle); font-size: 11px; }
+.paint-page .nav-list { gap: 4px; }
+.paint-page .nav-list a {
+  color: #626b79;
+  border: 0;
+  background: transparent;
+  border-radius: 10px;
+  font-size: 12px;
+  min-height: 38px;
+  padding: 7px 11px;
+}
+.paint-page .nav-list a:hover, .paint-page .nav-list a[aria-current="page"] {
+  color: var(--ink);
+  background: #eae3d8;
+  transform: none;
+}
+.paint-page .container { max-width: 1280px; }
+.paint-page .paint-game-shell { gap: 14px; }
+.paint-page .card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 23px 25px;
+  box-shadow: 0 5px 0 #e9e1d4, 0 16px 35px rgba(62, 50, 32, 0.055);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.paint-page .card h2 { color: var(--ink); letter-spacing: -0.045em; }
+.paint-page .mini-note, .paint-page .gesture-hint { color: var(--subtle); line-height: 1.5; }
+
+/* Introduction and saved progress */
+.paint-page .paint-hero {
+  margin-top: 18px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 5px 20px;
+  align-items: center;
+  padding: 23px 28px 16px;
+  background: #27344b;
+  border: 1px solid #27344b;
+  box-shadow: 0 5px 0 #cfc5b6, 0 18px 32px rgba(36, 49, 73, 0.13);
+  color: #fffdf8;
+  overflow: hidden;
+  position: relative;
+}
+.paint-page .paint-hero::after {
+  content: "";
+  position: absolute;
+  width: 230px;
+  height: 230px;
+  right: 130px;
+  top: -145px;
+  border-radius: 45% 55% 58% 42%;
+  background: #ef6853;
+  transform: rotate(-24deg);
+  opacity: 0.75;
+  pointer-events: none;
+}
+.paint-page .paint-hero-text, .paint-page .paint-hero-actions, .paint-page .paint-hud { position: relative; z-index: 1; }
+.paint-page .paint-kicker { color: #f9c9a0; font-size: 10px; letter-spacing: 0.19em; }
+.paint-page .paint-title {
+  font-size: clamp(25px, 3vw, 39px);
+  line-height: 1.2;
+  margin-top: 2px;
+  letter-spacing: -0.055em;
+}
+.paint-page .paint-subtitle { color: #d8e0e6; font-size: 13px; margin-top: 3px; }
+.paint-page .paint-hero-actions { align-self: start; }
+.paint-page .paint-hero-actions .paint-ghost-button {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.24);
+}
+.paint-page .paint-hero-actions .paint-ghost-button:hover:not(:disabled) { background: rgba(255, 255, 255, 0.24); }
+.paint-page .paint-hud {
+  display: flex;
+  gap: 0;
+  margin-top: 13px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+.paint-page .paint-hud-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 20px;
+  border: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.21);
+  border-radius: 0;
+  background: transparent;
+  color: #c9d3db;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.paint-page .paint-hud-item:first-child { padding-left: 0; }
+.paint-page .paint-hud-item:last-child { border-right: 0; }
+.paint-page .paint-hud-item strong { color: #ffdfac; font-size: 14px; }
+
+/* Mode switch */
+.paint-page .paint-mode-tabs {
+  display: flex;
+  width: max-content;
+  max-width: 100%;
+  padding: 4px;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #eae3d8;
+}
+.paint-page .paint-mode-tab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  min-height: 51px;
+  padding: 7px 19px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #6b6c6d;
+  font-size: 14px;
+  line-height: 1.25;
+  box-shadow: none;
+}
+.paint-page .paint-mode-tab:hover { transform: none; background: rgba(255, 255, 255, 0.55); }
+.paint-page .paint-mode-tab.is-active {
+  color: var(--ink);
+  background: var(--paper);
+  box-shadow: 0 2px 6px rgba(49, 38, 23, 0.1);
+}
+.paint-page .paint-mode-tab small { display: block; font-size: 10px; font-weight: 600; opacity: 0.72; margin-top: 2px; }
+.paint-page .paint-tab-icon { font-size: 27px; line-height: 1; color: var(--coral); }
+
+/* Work surface: the mission and paint controls share the left column; the
+   target and the live mix stay together on the right, in the same viewport. */
+.paint-page .paint-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.92fr);
+  gap: 14px;
+  align-items: start;
+}
+.paint-page .paint-lab-layout { display: contents; }
+.paint-page .paint-mission-panel, .paint-page .paint-tools { grid-column: 1; min-width: 0; }
+.paint-page .paint-result { grid-column: 2; grid-row: 1 / span 3; min-width: 0; }
+.paint-page .paint-free-note { grid-column: 1; }
+.paint-page .paint-mission-main { display: block; }
+.paint-page .paint-mission-panel { border-top: 4px solid var(--coral); padding-top: 17px; }
+.paint-page .paint-mission-meta { color: #a24f3b; font-size: 11px; gap: 8px; }
+.paint-page .paint-mission-progress { color: var(--subtle); }
+.paint-page .paint-difficulty { background: #ffeadb; color: #8e4931; border: 0; }
+.paint-page .paint-mission-title { font-size: clamp(19px, 2vw, 26px); margin-top: 7px; }
+.paint-page .paint-mission-story { color: var(--ink); font-size: 13px; margin-top: 4px; line-height: 1.5; }
+.paint-page .paint-mission-howto { color: var(--subtle); font-size: 12px; margin-top: 4px; }
+.paint-page .paint-similarity-box {
+  margin-top: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+.paint-page .paint-similarity-head { color: var(--subtle); font-size: 12px; }
+.paint-page .paint-similarity-head strong { color: var(--ink); text-align: right; }
+.paint-page .paint-similarity-track { background: #eee8dc; height: 10px; margin: 8px 0 5px; }
+.paint-page .paint-similarity-fill { background: linear-gradient(90deg, #f6c980, #ef6853); box-shadow: none; }
+.paint-page .paint-similarity-pass { background: var(--ink); }
+.paint-page .paint-similarity-box .mini-note { font-size: 10px; }
+.paint-page .paint-mission-controls { margin-top: 12px; }
+.paint-page .paint-ghost-button {
+  background: #f5f0e8;
+  color: var(--ink);
+  border: 1px solid #e4dccc;
+  border-radius: 10px;
+  font-size: 12px;
+  min-height: 44px;
+  padding: 8px 12px;
+  box-shadow: none;
+}
+.paint-page .paint-ghost-button:hover:not(:disabled) {
+  background: #eae2d6;
+  border-color: #cfc3b0;
+  transform: none;
+}
+.paint-page .paint-ghost-button:disabled { opacity: 0.48; }
+.paint-page .paint-free-note {
+  background: #e7f1eb;
+  color: #2d594c;
+  border: 1px solid #cae1d3;
+  border-radius: 14px;
+  font-size: 13px;
+}
+.paint-page .paint-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.paint-page .paint-section-index {
+  color: #aa6552;
+  font-weight: 800;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  margin-bottom: 5px;
+}
+.paint-page .paint-section-heading h2, .paint-page .paint-collection-card h2 {
+  font-size: clamp(18px, 1.9vw, 23px);
+  margin: 0;
+  line-height: 1.25;
+}
+.paint-page .paint-section-heading h2 > [aria-hidden], .paint-page .paint-collection-card h2 span { color: var(--coral); }
+.paint-page .paint-step-badge {
+  flex-shrink: 0;
+  border: 1px solid #efdbcf;
+  border-radius: 50px;
+  background: #fff2e8;
+  color: #9f593f;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+/* Mixing tools */
+.paint-page .paint-tools .gesture-hint { font-size: 12px; margin-top: 10px; }
+.paint-page .paint-palette { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: 14px; }
+.paint-page .paint-tube { gap: 5px; min-width: 0; }
+.paint-page .paint-tube .color-chip {
+  min-height: 56px;
+  min-width: 0;
+  gap: 8px;
+  border-radius: 11px;
+  border: 1px solid rgba(36, 49, 73, 0.16);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.45), 0 3px 0 rgba(42, 40, 35, 0.13);
+  font-size: 14px;
+  padding: 10px;
+}
+.paint-page .paint-tube .color-chip:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.04); }
+.paint-page .paint-tube .color-chip.is-selected { outline: 2px solid var(--ink); outline-offset: 2px; box-shadow: 0 3px 0 rgba(42, 40, 35, 0.22); }
+.paint-page .paint-blob { width: 19px; height: 19px; flex-basis: 19px; box-shadow: 1px 2px 0 rgba(0,0,0,.14); }
+.paint-page .paint-name small { display: block; font-size: 10px; }
+.paint-page .paint-count { padding: 2px 6px; font-size: 11px; }
+.paint-page .paint-minus {
+  flex: 0 0 44px;
+  width: 44px;
+  min-height: 56px;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  background: #f6f1e9;
+  border-radius: 10px;
+  font-size: 22px;
+}
+.paint-page .paint-minus:hover:not(:disabled) { background: #e9e1d5; }
+.paint-page .paint-capacity { margin-top: 14px; }
+.paint-page .paint-capacity-head { color: var(--subtle); }
+.paint-page .paint-capacity-head strong { color: var(--ink); font-family: inherit; }
+.paint-page .paint-capacity-track { background: #eee8dc; }
+.paint-page .paint-capacity-fill { background: #365d9b; }
+/* Brightness is only useful in free mode; don't leave a disabled control in the game. */
+.paint-page .paint-brightness-group.is-locked { display: none; }
+.paint-page .paint-brightness-group { color: var(--subtle); }
+.paint-page .paint-brightness-group label { color: var(--ink); }
+.paint-page .paint-brightness-freeonly { color: var(--subtle); }
+.paint-page .speed-control input[type="range"] { background: #e9e1d5; }
+.paint-page .speed-control input[type="range"]::-webkit-slider-thumb { background: var(--coral); box-shadow: none; }
+.paint-page .paint-action-row { margin-top: 15px; }
+.paint-page .paint-submit-button {
+  border-radius: 11px;
+  background: var(--coral);
+  border: 1px solid #d85943;
+  color: #fff;
+  box-shadow: 0 4px 0 #b74536;
+  min-height: 52px;
+  font-size: 15px;
+  margin-top: 13px;
+  padding: 11px;
+}
+.paint-page .paint-submit-button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 0 #b74536; }
+.paint-page .paint-submit-button:disabled { background: #e0d8cc; border-color: #d7cfc3; color: #77736d; opacity: 1; }
+.paint-page .paint-keyboard-hint { font-size: 10px; margin-top: 10px; }
+
+/* The color table */
+.paint-page .paint-result { gap: 0; border-top: 4px solid #365d9b; padding-top: 17px; }
+.paint-page .paint-versus {
+  margin-top: 17px;
+  grid-template-columns: 1fr 36px 1fr;
+  gap: 8px;
+  background: #f7f3ed;
+  border: 1px solid var(--line);
+  padding: 12px;
+  border-radius: 14px;
+}
+.paint-page .paint-versus-item { display: grid; grid-template-columns: 55px minmax(0, 1fr); grid-template-rows: 1fr 1fr; gap: 0 10px; text-align: left; align-items: center; justify-items: start; color: var(--subtle); font-size: 11px; }
+.paint-page .paint-versus-swatch { grid-row: 1 / 3; width: 55px; height: 55px; border: 3px solid white; border-radius: 13px; box-shadow: 0 2px 6px #bcb3a6; }
+.paint-page .paint-target-swatch { box-shadow: 0 2px 6px #bcb3a6; }
+.paint-page .paint-versus-item strong { color: var(--ink); font-size: 12px; overflow-wrap: anywhere; }
+.paint-page .paint-versus-middle { color: #b4a79a; font-size: 10px; text-align: center; }
+.paint-page .paint-result-caption { color: var(--subtle); font-size: 11px; margin: 14px 0 7px; }
+.paint-page .paint-stage {
+  height: 264px;
+  background: #ede6db;
+  background-image: radial-gradient(#d6cec2 1px, transparent 1px);
+  background-size: 18px 18px;
+  border: 1px solid #e3dace;
+  border-radius: 14px;
+  overflow: hidden;
+}
+.paint-page .paint-stage::before {
+  content: "";
+  position: absolute;
+  inset: 15px;
+  border: 1px dashed rgba(84, 86, 83, 0.24);
+  border-radius: 10px;
+  pointer-events: none;
+}
+.paint-page .paint-stage-label {
+  position: absolute;
+  z-index: 5;
+  left: 24px;
+  top: 22px;
+  color: #766d65;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.paint-page .paint-stage-label span { color: var(--coral); font-size: 16px; }
+.paint-page .paint-stage .three-layer { opacity: 0.12; }
+.paint-page .paint-stage .result-swatch {
+  position: absolute;
+  top: auto;
+  left: 8%;
+  bottom: 22px;
+  width: 34%;
+  height: 62%;
+  z-index: 2;
+  border: 5px solid #fffaf0;
+  border-radius: 43% 57% 62% 38% / 52% 43% 57% 48%;
+  transform: rotate(-12deg);
+  box-shadow: 6px 10px 0 rgba(80, 62, 47, 0.13), 0 12px 22px rgba(50, 42, 35, .1);
+}
+.paint-page .paint-stage .beaker {
+  inset: auto 10% 19px auto;
+  width: 43%;
+  height: 76%;
+  z-index: 3;
+  border: 5px solid rgba(255, 255, 255, 0.87);
+  border-top: 9px solid #fff;
+  border-bottom: 7px solid rgba(255, 255, 255, 0.87);
+  border-radius: 12px 12px 33px 33px;
+  background: rgba(255,255,255,.35);
+  box-shadow: inset 8px 0 16px rgba(255,255,255,.36), 0 8px 0 rgba(73,64,55,.16), 0 15px 25px rgba(60,48,33,.13);
+}
+.paint-page .paint-stage .liquid-layer { opacity: .93; }
+.paint-page .paint-stage .pipette { right: 17%; top: 12px; background: linear-gradient(#f9bb8b, #d46c58); box-shadow: 0 3px 8px rgba(81,43,28,.28); }
+.paint-page .paint-result .status-badge {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 13px 0 0 !important;
+  background: #eaf0f5;
+  border: 1px solid #dce5ed;
+  color: #315782;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+  font-family: inherit;
+  border-radius: 8px;
+  white-space: normal;
+}
+.paint-page .paint-feedback {
+  margin-top: 10px;
+  background: #fff1e6;
+  color: #744832;
+  border: 1px solid #f2ddc9;
+  padding: 11px 13px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+.paint-page .paint-recipe { margin-top: 13px; }
+.paint-page .paint-recipe-chip { background: #f6f1e8; color: var(--ink); border-color: var(--line); font-size: 11px; }
+.paint-page .paint-recipe-result { background: #e7f1eb; color: #2d594c; border-color: #cbe0d5; }
+.paint-page .paint-recipe-plus, .paint-page .paint-recipe-empty { color: var(--subtle); }
+.paint-page .paint-color-info { margin-top: 9px; font-size: 11px; font-family: inherit; }
+
+/* Discovery book and overlays */
+.paint-page .paint-collection-card { margin-top: 3px; }
+.paint-page .paint-collection-card .mini-note { font-size: 12px; margin-top: 4px; }
+.paint-page .paint-collection-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 9px; margin-top: 17px; }
+.paint-page .paint-collection-item { background: #f9f5ed; color: var(--ink); border-color: var(--line); border-radius: 11px; }
+.paint-page .paint-collection-item.is-locked { opacity: .58; }
+.paint-page .paint-collection-swatch { border-radius: 8px; border-color: #e4ded2; }
+.paint-page .paint-collection-recipe { color: var(--subtle); }
+.paint-page .paint-mission-card { background: #f9f5ed; color: var(--ink); border-color: var(--line); }
+.paint-page .paint-mission-card:hover:not(:disabled) { background: #f1e9db; }
+.paint-page .paint-mission-card.is-current { border-color: var(--coral); box-shadow: 0 0 0 2px #f9d1bd; }
+.paint-page .paint-mission-card-stars { color: var(--subtle); }
+.paint-page .paint-mission-dot { border-color: #d9ccba; }
+.paint-page .paint-modal { background: rgba(27, 35, 49, .65); }
+.paint-page .paint-modal-card {
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid #ecdfd0;
+  box-shadow: 0 10px 0 #cfc2b2, 0 25px 65px rgba(0, 0, 0, .22);
+  text-align: center;
+}
+.paint-page .paint-modal-card .paint-kicker, .paint-page .paint-success-score { color: #b8523d; }
+.paint-page .paint-success-stars { color: #e8a53b; }
+.paint-page .paint-modal-card h2 { color: var(--ink); }
+.paint-page .paint-modal-close { color: var(--ink); background: #f4ece1; border-color: var(--line); }
+.paint-page .paint-success-recipe { background: #f6f0e7; border-color: var(--line); }
+.paint-page .paint-help-steps, .paint-page .paint-help-mix { color: var(--ink); }
+.paint-page .paint-help-dot { border-color: #b8ada2; }
+.paint-page .paint-toast { background: var(--ink); color: white; border-color: #f4c995; box-shadow: 0 5px 20px rgba(36,49,73,.2); border-radius: 12px; }
+.paint-page .nav-list a:focus-visible,
+.paint-page .paint-ghost-button:focus-visible,
+.paint-page .paint-mode-tab:focus-visible,
+.paint-page .paint-submit-button:focus-visible,
+.paint-page .paint-minus:focus-visible,
+.paint-page .color-chip:focus-visible,
+.paint-page .paint-mission-card:focus-visible,
+.paint-page .paint-modal-close:focus-visible,
+.paint-page .speed-control input:focus-visible {
+  outline: 3px solid #365d9b;
+  outline-offset: 3px;
+  box-shadow: none;
+}
+
+/* On landscape tablets, keep the target visible while reaching the mix controls. */
+@media (min-width: 721px) and (min-height: 760px) {
+  .paint-page .paint-result { position: sticky; top: 12px; }
+}
+
+@media (max-width: 980px) {
+  .paint-page .paint-workspace { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .paint-page .paint-hud-item { padding: 0 11px; }
+  .paint-page .paint-step-badge { display: none; }
+  .paint-page .paint-versus { grid-template-columns: 1fr 22px 1fr; }
+  .paint-page .paint-versus-item { grid-template-columns: 1fr; justify-items: center; text-align: center; gap: 3px; }
+  .paint-page .paint-versus-swatch { grid-row: auto; width: 55px; height: 55px; }
+}
+@media (max-width: 720px) {
+  body.paint-page { padding: 0 13px 48px; }
+  .paint-page .site-header { padding: 12px 1px; }
+  .paint-page .hud-left-section { flex-direction: column; align-items: flex-start; }
+  .paint-page .nav-list { gap: 0; }
+  .paint-page .nav-list a { padding: 5px 8px; min-height: 34px; font-size: 11px; }
+  .paint-page .paint-hero { margin-top: 12px; grid-template-columns: 1fr; padding: 19px; }
+  .paint-page .paint-hero::after { width: 110px; height: 110px; right: -55px; top: -40px; }
+  .paint-page .paint-hero-actions { justify-content: flex-start; margin-top: 8px; }
+  .paint-page .paint-hud { display: grid; grid-template-columns: repeat(2, 1fr); row-gap: 8px; }
+  .paint-page .paint-hud-item { padding: 0; border: 0; font-size: 10px; }
+  .paint-page .paint-mode-tabs { width: 100%; }
+  .paint-page .paint-mode-tab { flex: 1; padding: 8px; font-size: 12px; justify-content: center; }
+  .paint-page .paint-tab-icon { font-size: 23px; }
+  .paint-page .paint-workspace { display: flex; flex-direction: column; }
+  .paint-page .paint-workspace > *, .paint-page .paint-lab-layout { width: 100%; }
+  .paint-page .paint-lab-layout { display: flex; flex-direction: column; gap: 14px; }
+  .paint-page .paint-result { order: 0; }
+  .paint-page .paint-tools { order: 1; }
+  .paint-page .card { padding: 18px; }
+  .paint-page .paint-mission-panel, .paint-page .paint-result { padding-top: 15px; }
+  .paint-page .paint-palette { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .paint-page .paint-stage { height: 220px; }
+  .paint-page .paint-action-row .paint-ghost-button { flex: 1 1 auto; }
+}
+@media (max-width: 380px) {
+  .paint-page .paint-tube .color-chip { font-size: 12px; padding: 6px; gap: 4px; }
+  .paint-page .paint-minus { width: 44px; flex-basis: 44px; }
+  .paint-page .paint-blob { width: 15px; height: 15px; flex-basis: 15px; }
+  .paint-page .paint-versus-item strong { font-size: 11px; }
+  .paint-page .paint-stage { height: 190px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .paint-page .paint-tube .color-chip:hover:not(:disabled),
+  .paint-page .paint-submit-button:hover:not(:disabled) { transform: none; }
+}

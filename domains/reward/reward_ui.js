@@ -207,6 +207,20 @@ const RewardSystemUI = (() => {
         background: rgba(255, 255, 255, 0.25);
         transform: translateY(-1px);
       }
+      .reward-modal-content,
+      .reward-choice-modal {
+        color: #0f172a !important;
+      }
+      .reward-modal-content h3,
+      .reward-choice-modal h3 {
+        color: #0f172a !important;
+      }
+      .reward-modal-content input[type="number"] {
+        color: #0f172a !important;
+        background: #ffffff !important;
+        font-weight: 800;
+        text-align: center;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -538,21 +552,21 @@ const RewardSystemUI = (() => {
     const shopItems = state.shop_items || [];
 
     overlay.innerHTML = `
-      <div class="reward-modal-content shop-modal">
+      <div class="reward-modal-content shop-modal" style="color:#0f172a;">
         <div class="reward-head">
-          <h3 style="margin:0; font-size:1.5rem;">💎 보석 상점</h3>
-          <p style="margin:5px 0 0; font-size:0.9rem; color:#666;">보석으로 선물을 골라보세요!</p>
+          <h3 style="margin:0; font-size:1.5rem; color:#0f172a; font-weight:800;">💎 보석 상점</h3>
+          <p style="margin:5px 0 0; font-size:0.9rem; color:#475569;">보석으로 선물을 골라보세요!</p>
         </div>
-        <div class="shop-inventory-info" style="margin: 15px 0; padding: 10px; background: #f1f5f9; border-radius: 12px; font-weight: bold;">
+        <div class="shop-inventory-info" style="margin: 15px 0; padding: 10px; background: #f1f5f9; border-radius: 12px; font-weight: bold; color:#0f172a;">
           보유 보석: <span style="color:#8b5cf6;">💎 ${state.gems}개</span>
         </div>
         <div class="shop-grid" style="display: grid; gap: 12px; margin: 20px 0; max-height:50vh; overflow-y:auto; padding-right:5px;">
           ${shopItems.map(item => `
-            <div class="shop-card" data-action="exchange-gem" data-item-id="${item.id}" style="cursor:pointer; padding:15px; border:2px solid #e2e8f0; border-radius:18px; display:flex; align-items:center; gap:15px; text-align:left; transition:all 0.2s;">
+            <div class="shop-card" data-action="exchange-gem" data-item-id="${item.id}" style="cursor:pointer; padding:15px; border:2px solid #e2e8f0; border-radius:18px; display:flex; align-items:center; gap:15px; text-align:left; transition:all 0.2s; color:#0f172a;">
               <div style="font-size:2rem;">${item.icon}</div>
               <div style="flex:1;">
-                <div style="font-weight:bold; font-size:1.05rem;">${item.label}</div>
-                <div style="font-size:0.8rem; color:#666; word-break:keep-all;">${item.desc}</div>
+                <div style="font-weight:bold; font-size:1.05rem; color:#0f172a;">${item.label}</div>
+                <div style="font-size:0.8rem; color:#64748b; word-break:keep-all;">${item.desc}</div>
               </div>
               <div style="background:#8b5cf6; color:white; padding:4px 10px; border-radius:10px; font-size:0.85rem; font-weight:bold; flex-shrink:0;">💎 ${item.price || 1}</div>
             </div>
@@ -591,17 +605,20 @@ const RewardSystemUI = (() => {
 
   function openYoutubeModal(state) {
     const overlay = createModalOverlay('reward-yt-modal');
-    overlay.innerHTML = `
-      <div class="reward-modal-content">
-        <div class="icon-bounce" style="font-size:3rem; margin-bottom:12px;">📺</div>
-        <h3 style="margin:0 0 12px; font-size:1.4rem;">유튜브 자유시간</h3>
+    const initialMinutes = state && typeof state.youtube_minutes === 'number' ? state.youtube_minutes : 0;
+    const initialTickets = Math.max(0, Math.floor(initialMinutes / 10));
 
-        <div class="yt-status-card" style="background:#f8fafc; border-radius:14px; padding:12px 16px; margin:12px 0; font-size:0.95rem; text-align:left; border:1px solid #e2e8f0;">
-          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+    overlay.innerHTML = `
+      <div class="reward-modal-content" style="color:#0f172a;">
+        <div class="icon-bounce" style="font-size:2.6rem; margin-bottom:8px;">📺</div>
+        <h3 style="margin:0 0 10px; font-size:1.35rem; color:#0f172a; font-weight:800;">유튜브 자유시간</h3>
+
+        <div class="yt-status-card" style="background:#f8fafc; border-radius:14px; padding:10px 14px; margin:10px 0; font-size:0.9rem; text-align:left; border:1px solid #e2e8f0; color:#0f172a;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
             <span style="color:#64748b;">보유 자유시간</span>
-            <span style="font-weight:bold; color:#f43f5e;" id="yt-modal-inventory">${state.youtube_minutes}분</span>
+            <span style="font-weight:bold; color:#f43f5e;" id="yt-modal-inventory">${initialMinutes}분</span>
           </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
             <span style="color:#64748b;">오늘 사용</span>
             <span style="font-weight:bold; color:#0f172a;" id="yt-modal-daily">0 / 60분</span>
           </div>
@@ -610,29 +627,54 @@ const RewardSystemUI = (() => {
             <span style="font-weight:bold; color:#0f172a;" id="yt-modal-period">0 / 30분</span>
           </div>
         </div>
+
+        <div id="yt-deduct-area" class="reward-bulk-box" style="margin:12px 0; padding:12px 14px; background:#fff1f2; border:1.5px solid #fecdd3; border-radius:16px; text-align:left; color:#0f172a;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:6px; flex-wrap:wrap;">
+            <label for="yt-consume-quantity" style="font-size:0.88rem; font-weight:800; color:#be123c;">⚡ 부모님용 · 여러 개 한 번에 소진 (10분권)</label>
+            <span id="yt-ticket-count-badge" style="font-size:0.76rem; font-weight:800; color:#e11d48; background:#ffe4e6; padding:2px 8px; border-radius:999px;">보유 ${initialTickets}개 (${initialMinutes}분)</span>
+          </div>
+          <p style="margin:0 0 8px; color:#475569; font-size:0.76rem; line-height:1.35;">TV·태블릿 등에서 이미 시청했거나 여러 개(10분 단위)를 한 번에 차감할 때 개수를 선택해 소진하세요.</p>
+          <div class="reward-preset-row" style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px;">
+            <button type="button" class="reward-preset-btn" data-yt-preset="1" style="flex:1 1 auto; padding:6px 8px; border-radius:8px; border:1.5px solid #fecdd3; background:#ffffff; color:#9f1239; font-size:0.78rem; font-weight:700; cursor:pointer;">1개(10분)</button>
+            <button type="button" class="reward-preset-btn" data-yt-preset="2" style="flex:1 1 auto; padding:6px 8px; border-radius:8px; border:1.5px solid #fecdd3; background:#ffffff; color:#9f1239; font-size:0.78rem; font-weight:700; cursor:pointer;">2개(20분)</button>
+            <button type="button" class="reward-preset-btn" data-yt-preset="3" style="flex:1 1 auto; padding:6px 8px; border-radius:8px; border:1.5px solid #fecdd3; background:#ffffff; color:#9f1239; font-size:0.78rem; font-weight:700; cursor:pointer;">3개(30분)</button>
+            <button type="button" class="reward-preset-btn" data-yt-preset="5" style="flex:1 1 auto; padding:6px 8px; border-radius:8px; border:1.5px solid #fecdd3; background:#ffffff; color:#9f1239; font-size:0.78rem; font-weight:700; cursor:pointer;">5개(50분)</button>
+            <button type="button" id="yt-use-all-btn" class="reward-preset-btn reward-use-all-btn" style="flex:1 1 auto; padding:6px 8px; border-radius:8px; border:1.5px solid #f43f5e; background:#ffe4e6; color:#be123c; font-size:0.78rem; font-weight:800; cursor:pointer;">전부 선택 (${initialTickets}개)</button>
+          </div>
+          <div class="reward-qty-row" style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+            <button type="button" id="yt-qty-minus" class="reward-qty-stepper" aria-label="유튜브 소진 개수 감소" style="width:36px; height:36px; border-radius:10px; border:1.5px solid #cbd5e1; background:#ffffff; color:#0f172a; font-size:1.15rem; font-weight:800; cursor:pointer;">−</button>
+            <input id="yt-consume-quantity" type="number" min="1" max="${Math.max(1, initialTickets)}" value="1" inputmode="numeric" aria-label="한 번에 사용할 유튜브 10분권 개수" style="flex:1; min-width:60px; padding:7px 8px; border:1.5px solid #cbd5e1; border-radius:10px; font-size:1rem; font-weight:800; color:#0f172a; background:#ffffff; text-align:center;">
+            <button type="button" id="yt-qty-plus" class="reward-qty-stepper" aria-label="유튜브 소진 개수 증가" style="width:36px; height:36px; border-radius:10px; border:1.5px solid #cbd5e1; background:#ffffff; color:#0f172a; font-size:1.15rem; font-weight:800; cursor:pointer;">+</button>
+            <span id="yt-consume-minutes-preview" style="font-size:0.86rem; font-weight:800; color:#be123c; min-width:58px; text-align:right;">= 10분</span>
+          </div>
+          <button type="button" class="btn-primary" id="deduct-yt-btn" style="background:#e11d48; border-color:#be123c; width:100%; margin-bottom:0; padding:11px; font-size:0.95rem;">유튜브 1개 (10분) 사용 기록하기</button>
+        </div>
         
-        <div id="yt-lock-area" style="margin: 20px 0;">
-          <button id="yt-unlock-trigger" style="background:none; border:none; font-size:4rem; cursor:pointer;" title="부모님용 잠금 해제">🔒</button>
-          <p class="sub" style="color:#666; font-size:0.8rem; margin-top:8px;">부모님께서 자물쇠를 눌러 승인해 주세요.</p>
+        <div id="yt-lock-area" style="margin: 12px 0;">
+          <button id="yt-unlock-trigger" style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:14px; padding:8px 16px; font-size:1.5rem; cursor:pointer; display:inline-flex; align-items:center; gap:8px; color:#0f172a; font-weight:700;" title="부모님용 잠금 해제">
+            <span>🔒</span>
+            <span style="font-size:0.85rem;">브라우저 타이머 시작 (부모님 잠금 해제)</span>
+          </button>
+          <p class="sub" style="color:#64748b; font-size:0.76rem; margin-top:6px;">부모님께서 자물쇠를 눌러 승인해 주세요.</p>
         </div>
 
         <div id="yt-start-area" style="display:none; margin-top:10px;">
-          <div style="font-size:0.95rem; font-weight:bold; margin-bottom:10px; color:#334155;">한 번에 사용할 시간을 선택해 주세요</div>
-          <p style="margin:0 0 10px; color:#64748b; font-size:0.8rem;">10분권을 여러 개 모아 20분 또는 30분으로 한 번에 사용할 수 있어요.</p>
-          <div class="yt-duration-options" style="display:flex; gap:8px; justify-content:center; margin-bottom:12px;">
-            <button type="button" class="btn-duration btn-duration-10" data-duration="10" style="flex:1; padding:12px 6px; font-weight:bold; font-size:1rem; border-radius:12px; border:none;">10분</button>
-            <button type="button" class="btn-duration btn-duration-20" data-duration="20" style="flex:1; padding:12px 6px; font-weight:bold; font-size:1rem; border-radius:12px; border:none;">20분</button>
-            <button type="button" class="btn-duration btn-duration-30" data-duration="30" style="flex:1; padding:12px 6px; font-weight:bold; font-size:1rem; border-radius:12px; border:none;">30분</button>
+          <div style="font-size:0.95rem; font-weight:bold; margin-bottom:8px; color:#334155;">한 번에 사용할 시간을 선택해 주세요</div>
+          <p style="margin:0 0 8px; color:#64748b; font-size:0.78rem;">10분권을 여러 개 모아 20분 또는 30분으로 한 번에 사용할 수 있어요.</p>
+          <div class="yt-duration-options" style="display:flex; gap:8px; justify-content:center; margin-bottom:10px;">
+            <button type="button" class="btn-duration btn-duration-10" data-duration="10" style="flex:1; padding:11px 6px; font-weight:bold; font-size:0.95rem; border-radius:12px; border:none;">10분</button>
+            <button type="button" class="btn-duration btn-duration-20" data-duration="20" style="flex:1; padding:11px 6px; font-weight:bold; font-size:0.95rem; border-radius:12px; border:none;">20분</button>
+            <button type="button" class="btn-duration btn-duration-30" data-duration="30" style="flex:1; padding:11px 6px; font-weight:bold; font-size:0.95rem; border-radius:12px; border:none;">30분</button>
           </div>
-          <p class="sub" style="color:#666; font-size:0.8rem; margin-top:8px; line-height:1.4;">
+          <p class="sub" style="color:#666; font-size:0.78rem; margin-top:6px; line-height:1.4;">
             새 YouTube 탭이 열려요.<br>
             게임 탭을 닫지 않아야 종료 알림이 유지돼요.<br>
             일찍 닫아도 사용 시간은 환불되지 않아요.
           </p>
-          <div id="yt-result-msg" style="margin-top:10px; font-size:0.9rem; display:none;"></div>
+          <div id="yt-result-msg" style="margin-top:8px; font-size:0.88rem; display:none;"></div>
         </div>
 
-        <button class="btn-close" style="margin-top:15px; width:100%;" data-action="close-overlay">닫기</button>
+        <button class="btn-close" style="margin-top:12px; width:100%;" data-action="close-overlay">닫기</button>
       </div>
     `;
     document.body.appendChild(overlay);
@@ -647,6 +689,36 @@ const RewardSystemUI = (() => {
     const displayPeriodLabel = overlay.querySelector('#yt-modal-period-label');
     const durationBtns = overlay.querySelectorAll('.btn-duration');
 
+    const ytQuantityInput = overlay.querySelector('#yt-consume-quantity');
+    const ytUseAllBtn = overlay.querySelector('#yt-use-all-btn');
+    const ytMinusBtn = overlay.querySelector('#yt-qty-minus');
+    const ytPlusBtn = overlay.querySelector('#yt-qty-plus');
+    const ytPresetBtns = overlay.querySelectorAll('[data-yt-preset]');
+    const deductYtBtn = overlay.querySelector('#deduct-yt-btn');
+    const ytTicketBadge = overlay.querySelector('#yt-ticket-count-badge');
+    const ytMinutesPreview = overlay.querySelector('#yt-consume-minutes-preview');
+
+    let isYtUnlocked = false;
+
+    function ensureYtUnlocked() {
+      if (isYtUnlocked) return true;
+      const n1 = Math.floor(Math.random() * 40) + 11;
+      const n2 = Math.floor(Math.random() * 40) + 11;
+      const answer = prompt(`🔒 [부모님 잠금 해제]\n\n계산해 주세요: ${n1} + ${n2} = ?`);
+      if (answer !== null && String(answer).trim() === String(n1 + n2)) {
+        isYtUnlocked = true;
+        lockArea.style.display = 'none';
+        startArea.style.display = 'block';
+        updateDurationButtons();
+        updateYtQuantity();
+        return true;
+      }
+      if (answer !== null) {
+        alert('정답이 아닙니다.');
+      }
+      return false;
+    }
+
     function getQuotaProjection() {
       if (typeof FreeTimeAllowance !== 'undefined' && typeof FreeTimeAllowance.getRemainingQuota === 'function') {
         let savedUsage = null;
@@ -656,6 +728,51 @@ const RewardSystemUI = (() => {
         return FreeTimeAllowance.getRemainingQuota({ usage: savedUsage, now: Date.now() });
       }
       return null;
+    }
+
+    function updateYtQuantity() {
+      const currentMinutes = (typeof RewardSystem !== 'undefined' && typeof RewardSystem.getState === 'function')
+        ? Number(RewardSystem.getState().youtube_minutes) || 0
+        : Number(state.youtube_minutes) || 0;
+      const availableTickets = Math.max(0, Math.floor(currentMinutes / 10));
+
+      if (ytTicketBadge) {
+        ytTicketBadge.textContent = `보유 ${availableTickets}개 (${currentMinutes}분)`;
+      }
+      ytQuantityInput.max = String(Math.max(1, availableTickets));
+      ytUseAllBtn.textContent = `전부 선택 (${availableTickets}개)`;
+      ytUseAllBtn.disabled = availableTickets < 1;
+
+      let quantity = Number(ytQuantityInput.value);
+      if (availableTickets > 0 && Number.isSafeInteger(quantity) && quantity > availableTickets) {
+        quantity = availableTickets;
+        ytQuantityInput.value = String(availableTickets);
+      }
+      const valid = Number.isSafeInteger(quantity) && quantity >= 1 && quantity <= availableTickets;
+      const minutesToDeduct = valid ? quantity * 10 : 0;
+
+      if (ytMinutesPreview) {
+        ytMinutesPreview.textContent = valid ? `= ${minutesToDeduct}분` : '= 0분';
+      }
+
+      ytPresetBtns.forEach(btn => {
+        const presetVal = Number(btn.dataset.ytPreset);
+        btn.disabled = availableTickets < presetVal;
+        btn.classList.toggle('is-active', valid && quantity === presetVal);
+      });
+      ytMinusBtn.disabled = !valid || quantity <= 1;
+      ytPlusBtn.disabled = !valid || quantity >= availableTickets;
+
+      if (availableTickets < 1) {
+        deductYtBtn.textContent = '보유 중인 유튜브 시간이 없습니다 (0분)';
+        deductYtBtn.disabled = true;
+      } else if (valid) {
+        deductYtBtn.textContent = `유튜브 ${quantity}개 (${minutesToDeduct}분) 사용 기록하기`;
+        deductYtBtn.disabled = false;
+      } else {
+        deductYtBtn.textContent = '사용할 개수를 입력해 주세요';
+        deductYtBtn.disabled = true;
+      }
     }
 
     function updateStatusDisplay() {
@@ -675,6 +792,7 @@ const RewardSystemUI = (() => {
       const periodUsed = quota ? (isAfternoon ? quota.afternoonMinutes : quota.morningMinutes) : 0;
       if (displayPeriodLabel) displayPeriodLabel.textContent = `${isAfternoon ? '오후' : '오전'} 사용`;
       if (displayPeriod) displayPeriod.textContent = `${periodUsed} / 30분`;
+      updateYtQuantity();
     }
 
     function updateDurationButtons() {
@@ -706,20 +824,49 @@ const RewardSystemUI = (() => {
       });
     }
 
+    ytQuantityInput.addEventListener('input', updateYtQuantity);
+    ytUseAllBtn.addEventListener('click', () => {
+      const currentMinutes = Number(RewardSystem.getState().youtube_minutes) || 0;
+      const availableTickets = Math.max(0, Math.floor(currentMinutes / 10));
+      ytQuantityInput.value = availableTickets > 0 ? String(availableTickets) : '1';
+      updateYtQuantity();
+    });
+    ytMinusBtn.addEventListener('click', () => {
+      const current = Math.max(1, (Math.floor(Number(ytQuantityInput.value)) || 1) - 1);
+      ytQuantityInput.value = String(current);
+      updateYtQuantity();
+    });
+    ytPlusBtn.addEventListener('click', () => {
+      const currentMinutes = Number(RewardSystem.getState().youtube_minutes) || 0;
+      const availableTickets = Math.max(1, Math.floor(currentMinutes / 10));
+      const next = Math.min(availableTickets, (Math.floor(Number(ytQuantityInput.value)) || 1) + 1);
+      ytQuantityInput.value = String(next);
+      updateYtQuantity();
+    });
+    ytPresetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        ytQuantityInput.value = String(btn.dataset.ytPreset);
+        updateYtQuantity();
+      });
+    });
+
+    deductYtBtn.addEventListener('click', () => {
+      const quantity = Math.floor(Number(ytQuantityInput.value));
+      if (!Number.isSafeInteger(quantity) || quantity < 1) return;
+      if (!ensureYtUnlocked()) return;
+      RewardSystem.consumeInternal('youtube', (newState) => {
+        updateStatusDisplay();
+        updateDurationButtons();
+        if (newState.youtube_minutes < 10) {
+          setTimeout(() => overlay.remove(), 400);
+        }
+      }, quantity);
+    });
+
     updateStatusDisplay();
 
     lockTrigger.addEventListener('click', () => {
-      const n1 = Math.floor(Math.random() * 40) + 11;
-      const n2 = Math.floor(Math.random() * 40) + 11;
-      const answer = prompt(`🔒 [부모님 잠금 해제]\n\n계산해 주세요: ${n1} + ${n2} = ?`);
-
-      if (String(answer) === String(n1 + n2)) {
-        lockArea.style.display = 'none';
-        startArea.style.display = 'block';
-        updateDurationButtons();
-      } else if (answer !== null) {
-        alert('정답이 아닙니다.');
-      }
+      ensureYtUnlocked();
     });
 
     function showResult(code, duration) {
@@ -805,29 +952,39 @@ const RewardSystemUI = (() => {
     const overlay = createModalOverlay('reward-snack-modal');
     const initialCount = state && typeof state.snacks === 'number' ? state.snacks : 0;
     overlay.innerHTML = `
-      <div class="reward-modal-content">
-        <div class="icon-bounce" style="font-size:3rem; margin-bottom:15px;">🍪</div>
-        <h3>확보된 간식</h3>
-        <div class="secured-snack-display" style="font-size:2.5rem; font-weight:bold; color:#8b5cf6; margin:15px 0;">
+      <div class="reward-modal-content" style="color:#0f172a;">
+        <div class="icon-bounce" style="font-size:2.8rem; margin-bottom:8px;">🍪</div>
+        <h3 style="margin:0; font-size:1.35rem; color:#0f172a; font-weight:800;">확보된 간식</h3>
+        <div class="secured-snack-display" style="font-size:2.3rem; font-weight:800; color:#8b5cf6; margin:10px 0;">
           ${initialCount}개
         </div>
-        <p class="sub" style="color:#666; font-size:0.9rem;">과일, 요거트, 또는 좋아하는 과자를 골라 드신 뒤 부모님께서 사용을 기록해 주세요.</p>
+        <p class="sub" style="color:#475569; font-size:0.86rem; margin-bottom:12px;">과일, 요거트, 또는 좋아하는 과자를 골라 드신 뒤 부모님께서 한 번에 여러 개를 소진·기록해 주세요.</p>
 
-        <div id="snack-lock-area" style="margin: 20px 0;">
-          <button id="snack-unlock-trigger" style="background:none; border:none; font-size:4rem; cursor:pointer;" title="부모님용 잠금 해제">🔒</button>
-          <p class="sub" style="color:#666; font-size:0.8rem;">부모님께서 자물쇠를 눌러 승인해 주세요.</p>
-        </div>
-
-        <div id="snack-deduct-area" style="display:none; margin-top:10px;">
-          <label for="snack-consume-quantity" style="display:block; margin-bottom:8px; color:#475569; font-size:0.9rem;">한 번에 사용할 개수</label>
-          <div style="display:flex; gap:8px; margin-bottom:10px;">
-            <input id="snack-consume-quantity" type="number" min="1" max="${Math.max(1, initialCount)}" value="1" inputmode="numeric" aria-label="한 번에 사용할 간식 개수" style="width:90px; padding:10px; border:1px solid #cbd5e1; border-radius:10px; font:inherit;">
-            <button type="button" id="snack-use-all-btn" class="btn-close" style="flex:1;">전부 선택 (${initialCount}개)</button>
+        <div id="snack-deduct-area" class="reward-bulk-box" style="display:block; margin-top:10px; padding:12px 14px; background:#f5f3ff; border:1.5px solid #ddd6fe; border-radius:16px; text-align:left; color:#0f172a;">
+          <label for="snack-consume-quantity" style="display:block; margin-bottom:8px; color:#5b21b6; font-size:0.88rem; font-weight:800;">⚡ 부모님용 · 한 번에 사용할 개수 선택</label>
+          <div class="reward-preset-row" style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px;">
+            <button type="button" class="reward-preset-btn" data-snack-preset="1" style="flex:1 1 auto; padding:6px 8px; border-radius:8px; border:1.5px solid #ddd6fe; background:#ffffff; color:#5b21b6; font-size:0.8rem; font-weight:700; cursor:pointer;">1개</button>
+            <button type="button" class="reward-preset-btn" data-snack-preset="2" style="flex:1 1 auto; padding:6px 8px; border-radius:8px; border:1.5px solid #ddd6fe; background:#ffffff; color:#5b21b6; font-size:0.8rem; font-weight:700; cursor:pointer;">2개</button>
+            <button type="button" class="reward-preset-btn" data-snack-preset="3" style="flex:1 1 auto; padding:6px 8px; border-radius:8px; border:1.5px solid #ddd6fe; background:#ffffff; color:#5b21b6; font-size:0.8rem; font-weight:700; cursor:pointer;">3개</button>
+            <button type="button" class="reward-preset-btn" data-snack-preset="5" style="flex:1 1 auto; padding:6px 8px; border-radius:8px; border:1.5px solid #ddd6fe; background:#ffffff; color:#5b21b6; font-size:0.8rem; font-weight:700; cursor:pointer;">5개</button>
+            <button type="button" id="snack-use-all-btn" class="reward-preset-btn reward-use-all-btn" style="flex:1 1 auto; padding:6px 8px; border-radius:8px; border:1.5px solid #8b5cf6; background:#ede9fe; color:#5b21b6; font-size:0.8rem; font-weight:800; cursor:pointer;">전부 선택 (${initialCount}개)</button>
           </div>
-          <button class="btn-primary" id="deduct-snack-btn" style="background:#8b5cf6; border-color:#7c3aed; width:100%;">간식 1개 사용 기록하기</button>
+          <div class="reward-qty-row" style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+            <button type="button" id="snack-qty-minus" class="reward-qty-stepper" aria-label="간식 소진 개수 감소" style="width:38px; height:38px; border-radius:10px; border:1.5px solid #cbd5e1; background:#ffffff; color:#0f172a; font-size:1.15rem; font-weight:800; cursor:pointer;">−</button>
+            <input id="snack-consume-quantity" type="number" min="1" max="${Math.max(1, initialCount)}" value="1" inputmode="numeric" aria-label="한 번에 사용할 간식 개수" style="flex:1; min-width:70px; padding:8px 10px; border:1.5px solid #cbd5e1; border-radius:10px; font-size:1.05rem; font-weight:800; color:#0f172a; background:#ffffff; text-align:center;">
+            <button type="button" id="snack-qty-plus" class="reward-qty-stepper" aria-label="간식 소진 개수 증가" style="width:38px; height:38px; border-radius:10px; border:1.5px solid #cbd5e1; background:#ffffff; color:#0f172a; font-size:1.15rem; font-weight:800; cursor:pointer;">+</button>
+          </div>
+          <button class="btn-primary" id="deduct-snack-btn" style="background:#8b5cf6; border-color:#7c3aed; width:100%; margin-bottom:0; padding:12px;">간식 1개 사용 기록하기</button>
         </div>
 
-        <button class="btn-close" style="margin-top:15px;" data-action="close-overlay">닫기</button>
+        <div id="snack-lock-area" style="margin: 12px 0 4px;">
+          <button id="snack-unlock-trigger" style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:12px; padding:6px 14px; font-size:1.1rem; cursor:pointer; display:inline-flex; align-items:center; gap:6px; color:#334155; font-weight:700;" title="부모님용 잠금 해제">
+            <span>🔒</span>
+            <span style="font-size:0.8rem;">부모님 사전 잠금 해제</span>
+          </button>
+        </div>
+
+        <button class="btn-close" style="margin-top:12px;" data-action="close-overlay">닫기</button>
       </div>
     `;
     document.body.appendChild(overlay);
@@ -838,20 +995,57 @@ const RewardSystemUI = (() => {
     const deductBtn = overlay.querySelector('#deduct-snack-btn');
     const quantityInput = overlay.querySelector('#snack-consume-quantity');
     const useAllBtn = overlay.querySelector('#snack-use-all-btn');
+    const snackMinusBtn = overlay.querySelector('#snack-qty-minus');
+    const snackPlusBtn = overlay.querySelector('#snack-qty-plus');
+    const snackPresetBtns = overlay.querySelectorAll('[data-snack-preset]');
     const display = overlay.querySelector('.secured-snack-display');
+
+    let isSnackUnlocked = false;
+
+    function ensureSnackUnlocked() {
+      if (isSnackUnlocked) return true;
+      const n1 = Math.floor(Math.random() * 40) + 11;
+      const n2 = Math.floor(Math.random() * 40) + 11;
+      const answer = prompt(`🔒 [부모님 잠금 해제]\n\n계산해 주세요: ${n1} + ${n2} = ?`);
+
+      if (answer !== null && String(answer).trim() === String(n1 + n2)) {
+        isSnackUnlocked = true;
+        lockArea.style.display = 'none';
+        deductArea.style.display = 'block';
+        return true;
+      } else if (answer !== null) {
+        alert('정답이 아닙니다.');
+      }
+      return false;
+    }
 
     function updateSnackQuantity() {
       const available = Number(RewardSystem.getState().snacks) || 0;
-      quantityInput.max = String(available);
+      quantityInput.max = String(Math.max(1, available));
       useAllBtn.textContent = `전부 선택 (${available}개)`;
+      useAllBtn.disabled = available < 1;
       let quantity = Number(quantityInput.value);
-      if (Number.isSafeInteger(quantity) && quantity > available) {
+      if (available > 0 && Number.isSafeInteger(quantity) && quantity > available) {
         quantity = available;
         quantityInput.value = String(available);
       }
       const valid = Number.isSafeInteger(quantity) && quantity >= 1 && quantity <= available;
-      deductBtn.textContent = valid ? `간식 ${quantity}개 사용 기록하기` : '사용할 개수를 입력해 주세요';
-      deductBtn.disabled = !valid;
+
+      snackPresetBtns.forEach(btn => {
+        const presetVal = Number(btn.dataset.snackPreset);
+        btn.disabled = available < presetVal;
+        btn.classList.toggle('is-active', valid && quantity === presetVal);
+      });
+      snackMinusBtn.disabled = !valid || quantity <= 1;
+      snackPlusBtn.disabled = !valid || quantity >= available;
+
+      if (available < 1) {
+        deductBtn.textContent = '보유 중인 간식이 없습니다 (0개)';
+        deductBtn.disabled = true;
+      } else {
+        deductBtn.textContent = valid ? `간식 ${quantity}개 사용 기록하기` : '사용할 개수를 입력해 주세요';
+        deductBtn.disabled = !valid;
+      }
     }
 
     quantityInput.addEventListener('input', updateSnackQuantity);
@@ -860,23 +1054,33 @@ const RewardSystemUI = (() => {
       quantityInput.value = available > 0 ? String(available) : '';
       updateSnackQuantity();
     });
+    snackMinusBtn.addEventListener('click', () => {
+      const current = Math.max(1, (Math.floor(Number(quantityInput.value)) || 1) - 1);
+      quantityInput.value = String(current);
+      updateSnackQuantity();
+    });
+    snackPlusBtn.addEventListener('click', () => {
+      const available = Math.max(1, Number(RewardSystem.getState().snacks) || 0);
+      const next = Math.min(available, (Math.floor(Number(quantityInput.value)) || 1) + 1);
+      quantityInput.value = String(next);
+      updateSnackQuantity();
+    });
+    snackPresetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        quantityInput.value = String(btn.dataset.snackPreset);
+        updateSnackQuantity();
+      });
+    });
     updateSnackQuantity();
 
     lockTrigger.addEventListener('click', () => {
-      const n1 = Math.floor(Math.random() * 40) + 11;
-      const n2 = Math.floor(Math.random() * 40) + 11;
-      const answer = prompt(`🔒 [부모님 잠금 해제]\n\n계산해 주세요: ${n1} + ${n2} = ?`);
-
-      if (String(answer) === String(n1 + n2)) {
-        lockArea.style.display = 'none';
-        deductArea.style.display = 'block';
-      } else if (answer !== null) {
-        alert('정답이 아닙니다.');
-      }
+      ensureSnackUnlocked();
     });
 
     deductBtn.addEventListener('click', () => {
       const quantity = Math.floor(Number(quantityInput.value));
+      if (!Number.isSafeInteger(quantity) || quantity < 1) return;
+      if (!ensureSnackUnlocked()) return;
       RewardSystem.consumeInternal('snack', (newState) => {
         display.textContent = `${newState.snacks}개`;
         if (newState.snacks < 1) {
@@ -972,19 +1176,28 @@ const RewardSystemUI = (() => {
 
   function openCustomModal(item, state) {
     const overlay = createModalOverlay('reward-custom-modal');
+    const initialCount = Number(state.custom_inventory[item.id]) || 0;
     overlay.innerHTML = `
-      <div class="reward-modal-content">
-        <div class="icon-bounce" style="font-size:3.5rem; margin-bottom:15px;">${item.icon}</div>
-        <h3 style="font-size:1.6rem;">${item.label}</h3>
-        <p style="color:#666; margin-top:5px;">확보 인벤토리: <span id="custom-modal-inventory">${state.custom_inventory[item.id] || 0}</span>개</p>
+      <div class="reward-modal-content" style="color:#0f172a;">
+        <div class="icon-bounce" style="font-size:3rem; margin-bottom:10px;">${item.icon}</div>
+        <h3 style="font-size:1.45rem; color:#0f172a; font-weight:800; margin:0;">${item.label}</h3>
+        <p style="color:#475569; margin-top:6px; font-weight:700;">확보 인벤토리: <span id="custom-modal-inventory" style="color:#e11d48; font-weight:800;">${initialCount}</span>개</p>
         
-        <div style="margin: 25px 0;">
-          <label for="custom-consume-quantity" style="display:block; margin-bottom:8px; color:#475569; font-size:0.9rem;">한 번에 사용할 개수</label>
-          <div style="display:flex; gap:8px; margin-bottom:10px;">
-            <input id="custom-consume-quantity" type="number" min="1" max="${Math.max(1, Number(state.custom_inventory[item.id]) || 0)}" value="1" inputmode="numeric" aria-label="한 번에 사용할 ${item.label} 개수" style="width:90px; padding:10px; border:1px solid #cbd5e1; border-radius:10px; font:inherit;">
-            <button type="button" id="custom-use-all-btn" class="btn-close" style="flex:1;">전부 선택 (${state.custom_inventory[item.id] || 0}개)</button>
+        <div class="reward-bulk-box" style="margin: 16px 0; padding:12px 14px; background:#fff1f2; border:1.5px solid #fecdd3; border-radius:16px; text-align:left; color:#0f172a;">
+          <label for="custom-consume-quantity" style="display:block; margin-bottom:8px; color:#be123c; font-size:0.88rem; font-weight:800;">⚡ 부모님용 · 한 번에 사용할 개수 선택</label>
+          <div class="reward-preset-row" style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px;">
+            <button type="button" class="reward-preset-btn" data-custom-preset="1" style="flex:1 1 auto; padding:6px 8px; border-radius:8px; border:1.5px solid #fecdd3; background:#ffffff; color:#9f1239; font-size:0.8rem; font-weight:700; cursor:pointer;">1개</button>
+            <button type="button" class="reward-preset-btn" data-custom-preset="2" style="flex:1 1 auto; padding:6px 8px; border-radius:8px; border:1.5px solid #fecdd3; background:#ffffff; color:#9f1239; font-size:0.8rem; font-weight:700; cursor:pointer;">2개</button>
+            <button type="button" class="reward-preset-btn" data-custom-preset="3" style="flex:1 1 auto; padding:6px 8px; border-radius:8px; border:1.5px solid #fecdd3; background:#ffffff; color:#9f1239; font-size:0.8rem; font-weight:700; cursor:pointer;">3개</button>
+            <button type="button" class="reward-preset-btn" data-custom-preset="5" style="flex:1 1 auto; padding:6px 8px; border-radius:8px; border:1.5px solid #fecdd3; background:#ffffff; color:#9f1239; font-size:0.8rem; font-weight:700; cursor:pointer;">5개</button>
+            <button type="button" id="custom-use-all-btn" class="reward-preset-btn reward-use-all-btn" style="flex:1 1 auto; padding:6px 8px; border-radius:8px; border:1.5px solid #f43f5e; background:#ffe4e6; color:#be123c; font-size:0.8rem; font-weight:800; cursor:pointer;">전부 선택 (${initialCount}개)</button>
           </div>
-          <button class="btn-primary" id="deduct-custom-btn" style="background:#f43f5e; border-color:#e11d48; width:100%;">1개 사용 승인하기 (권장: 부모님)</button>
+          <div class="reward-qty-row" style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+            <button type="button" id="custom-qty-minus" class="reward-qty-stepper" aria-label="${item.label} 소진 개수 감소" style="width:38px; height:38px; border-radius:10px; border:1.5px solid #cbd5e1; background:#ffffff; color:#0f172a; font-size:1.15rem; font-weight:800; cursor:pointer;">−</button>
+            <input id="custom-consume-quantity" type="number" min="1" max="${Math.max(1, initialCount)}" value="1" inputmode="numeric" aria-label="한 번에 사용할 ${item.label} 개수" style="flex:1; min-width:70px; padding:8px 10px; border:1.5px solid #cbd5e1; border-radius:10px; font-size:1.05rem; font-weight:800; color:#0f172a; background:#ffffff; text-align:center;">
+            <button type="button" id="custom-qty-plus" class="reward-qty-stepper" aria-label="${item.label} 소진 개수 증가" style="width:38px; height:38px; border-radius:10px; border:1.5px solid #cbd5e1; background:#ffffff; color:#0f172a; font-size:1.15rem; font-weight:800; cursor:pointer;">+</button>
+          </div>
+          <button class="btn-primary" id="deduct-custom-btn" style="background:#f43f5e; border-color:#e11d48; width:100%; margin-bottom:0; padding:12px;">1개 사용 승인하기 (권장: 부모님)</button>
         </div>
         <button class="btn-close" data-action="close-overlay">닫기</button>
       </div>
@@ -994,20 +1207,38 @@ const RewardSystemUI = (() => {
     const deductBtn = overlay.querySelector('#deduct-custom-btn');
     const quantityInput = overlay.querySelector('#custom-consume-quantity');
     const useAllBtn = overlay.querySelector('#custom-use-all-btn');
+    const customMinusBtn = overlay.querySelector('#custom-qty-minus');
+    const customPlusBtn = overlay.querySelector('#custom-qty-plus');
+    const customPresetBtns = overlay.querySelectorAll('[data-custom-preset]');
     const inventoryDisplay = overlay.querySelector('#custom-modal-inventory');
 
     function updateCustomQuantity() {
       const available = Number(RewardSystem.getState().custom_inventory[item.id]) || 0;
-      quantityInput.max = String(available);
+      quantityInput.max = String(Math.max(1, available));
       useAllBtn.textContent = `전부 선택 (${available}개)`;
+      useAllBtn.disabled = available < 1;
       let quantity = Number(quantityInput.value);
-      if (Number.isSafeInteger(quantity) && quantity > available) {
+      if (available > 0 && Number.isSafeInteger(quantity) && quantity > available) {
         quantity = available;
         quantityInput.value = String(available);
       }
       const valid = Number.isSafeInteger(quantity) && quantity >= 1 && quantity <= available;
-      deductBtn.textContent = valid ? `${quantity}개 사용 승인하기 (권장: 부모님)` : '사용할 개수를 입력해 주세요';
-      deductBtn.disabled = !valid;
+
+      customPresetBtns.forEach(btn => {
+        const presetVal = Number(btn.dataset.customPreset);
+        btn.disabled = available < presetVal;
+        btn.classList.toggle('is-active', valid && quantity === presetVal);
+      });
+      customMinusBtn.disabled = !valid || quantity <= 1;
+      customPlusBtn.disabled = !valid || quantity >= available;
+
+      if (available < 1) {
+        deductBtn.textContent = `보유 중인 ${item.label} 보상이 없습니다 (0개)`;
+        deductBtn.disabled = true;
+      } else {
+        deductBtn.textContent = valid ? `${quantity}개 사용 승인하기 (권장: 부모님)` : '사용할 개수를 입력해 주세요';
+        deductBtn.disabled = !valid;
+      }
       inventoryDisplay.textContent = String(available);
     }
 
@@ -1017,12 +1248,34 @@ const RewardSystemUI = (() => {
       quantityInput.value = available > 0 ? String(available) : '';
       updateCustomQuantity();
     });
+    customMinusBtn.addEventListener('click', () => {
+      const current = Math.max(1, (Math.floor(Number(quantityInput.value)) || 1) - 1);
+      quantityInput.value = String(current);
+      updateCustomQuantity();
+    });
+    customPlusBtn.addEventListener('click', () => {
+      const available = Math.max(1, Number(RewardSystem.getState().custom_inventory[item.id]) || 0);
+      const next = Math.min(available, (Math.floor(Number(quantityInput.value)) || 1) + 1);
+      quantityInput.value = String(next);
+      updateCustomQuantity();
+    });
+    customPresetBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        quantityInput.value = String(btn.dataset.customPreset);
+        updateCustomQuantity();
+      });
+    });
     updateCustomQuantity();
 
     deductBtn.addEventListener('click', () => {
       const quantity = Math.floor(Number(quantityInput.value));
-      RewardSystem.consumeInternal(item.id, () => {
-        overlay.remove();
+      RewardSystem.consumeInternal(item.id, (newState) => {
+        const remaining = Number(newState.custom_inventory[item.id]) || 0;
+        if (remaining < 1) {
+          overlay.remove();
+        } else {
+          updateCustomQuantity();
+        }
       }, quantity);
     });
   }

@@ -795,6 +795,22 @@ body {
   transform: translateX(3px);
 }
 
+.quick-lab-item--magnet {
+  border-color: rgba(215, 255, 0, 0.34);
+  background: linear-gradient(90deg, rgba(215, 255, 0, 0.14), rgba(215, 255, 0, 0.04));
+  box-shadow: inset 0 0 0 1px rgba(215, 255, 0, 0.06);
+}
+
+.quick-lab-item--magnet .quick-lab-name {
+  color: #f4ffb8;
+}
+
+.quick-lab-item--magnet:hover {
+  border-color: rgba(215, 255, 0, 0.62);
+  background: linear-gradient(90deg, rgba(215, 255, 0, 0.24), rgba(215, 255, 0, 0.08));
+  color: #f4ffb8;
+}
+
 .quick-lab-arrow {
   font-weight: 900;
   transition: transform 0.2s ease;

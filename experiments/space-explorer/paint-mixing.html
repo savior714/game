@@ -1,22 +1,26 @@
 <!doctype html>
-<html lang="ko" class="dark">
+<html lang="ko">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>물감 색 섞기 실험 | Space Explorer | AIDEN GAME LABS</title>
-  
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
-  
-  <link rel="stylesheet" href="./space-explorer-minigames.css" />
-</head>
-<body class="se-page selection:bg-[#d7ff00]/30 selection:text-[#d7ff00]">
+  <meta name="description" content="목표 색을 보고 물감을 한 방울씩 섞어 똑같은 색을 만드는 어린이용 색 맞히기 게임" />
+  <title>물감 색 섞기 실험 | 색 맞히기 게임 | Space Explorer | AIDEN GAME LABS</title>
 
-  <!-- Ambient Glow Background -->
-  <div class="console-bg-glow"></div>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/build/three.module.min.js",
+        "three/addons/": "./vendor/three/addons/"
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="./space-explorer-minigames.css" />
+  <link rel="stylesheet" href="./paint-mixing.css" />
+</head>
+<body class="se-page paint-page">
+
+  <!-- Paper texture and celebration layer -->
+  <div id="paint-confetti-layer" class="paint-confetti-layer" aria-hidden="true"></div>
 
   <header class="site-header">
     <div class="hud-left-section">
@@ -25,9 +29,9 @@
         <div>
           <div class="brand-subline">
             <span class="brand-title">AIDEN GAME LABS</span>
-            <span class="brand-version">v2.0</span>
+            <span class="brand-version">PLAY LAB</span>
           </div>
-          <div class="brand-category">빛과 색 실험</div>
+          <div class="brand-category">색을 섞는 작은 실험실</div>
         </div>
       </a>
 
@@ -45,43 +49,222 @@
     </div>
   </header>
 
-  <main class="container mix-layout">
-    <section class="card" aria-label="색상 선택 영역">
-      <h2>🎨 물감 선택</h2>
-      <p class="gesture-hint">원하는 색을 누를수록 한 방울씩 더 들어가며 색이 점점 짙어져요.</p>
-      <div class="palette" role="group" aria-label="색상 팔레트">
-        <button type="button" class="color-chip" data-color="yellow">노랑</button>
-        <button type="button" class="color-chip" data-color="blue">파랑</button>
-        <button type="button" class="color-chip" data-color="red">빨강</button>
-        <button type="button" class="color-chip" data-color="white">하양</button>
-        <button type="button" class="color-chip" data-color="black">검정</button>
+  <main class="container paint-game-shell">
+
+    <!-- ── 타이틀 + 게임 HUD ─────────────────────────────── -->
+    <section class="card paint-hero" aria-label="물감 연구소 소개와 기록">
+      <div class="paint-hero-text">
+        <p class="paint-kicker">AIDEN’S COLOR STUDIO</p>
+        <h1 class="paint-title">색은 섞을수록 재미있어!</h1>
+        <p class="paint-subtitle">오늘의 색을 보고, 나만의 물감으로 똑같이 만들어 봐요.</p>
       </div>
-      <div class="control-group" style="margin-top: 0.8rem;">
-        <label for="paint-brightness">밝기</label>
-        <input id="paint-brightness" name="paint-brightness" type="range" min="70" max="115" step="1" value="100" />
-        <p id="paint-brightness-status" class="mini-note">밝기 100%</p>
+      <div class="paint-hero-actions">
+        <button id="paint-help-button" type="button" class="paint-ghost-button">게임 방법 ↗</button>
+        <button id="paint-sound-button" type="button" class="paint-ghost-button" aria-pressed="true">소리 켬</button>
       </div>
-      <div class="control-group" style="margin-top: 0.8rem;">
-        <button id="paint-reset-button" type="button">초기화</button>
+      <div class="paint-hud" role="group" aria-label="내 게임 기록">
+        <div class="hud-item paint-hud-item">점수<strong id="paint-score">0</strong></div>
+        <div class="hud-item paint-hud-item">모은 별<strong id="paint-star-total">★ 0 / 36</strong></div>
+        <div class="hud-item paint-hud-item">연속 성공<strong id="paint-streak">0</strong></div>
+        <div class="hud-item paint-hud-item">발견한 색<strong id="paint-discovery-count">0 / 20</strong></div>
       </div>
     </section>
 
-    <aside class="card controls-panel" aria-label="혼합 결과 영역">
-      <h2>🧪 혼합 결과</h2>
-      <div class="result-swatch-wrap">
-        <div id="paint-mixing-three-layer" class="three-layer" aria-hidden="true"></div>
-        <div id="paint-result-swatch" class="result-swatch" role="img" aria-label="섞은 물감 결과 색"></div>
-        <div id="paint-beaker" class="beaker" aria-hidden="true">
-          <div id="paint-liquid-layer" class="liquid-layer"></div>
-          <div id="paint-drop-layer" class="drop-layer"></div>
+    <!-- ── 모드 선택 ─────────────────────────────────────── -->
+    <div class="paint-mode-tabs" role="tablist" aria-label="놀이 모드 선택">
+      <button id="paint-mode-game" type="button" class="paint-mode-tab is-active" data-mode="game" role="tab" aria-selected="true"><span class="paint-tab-icon" aria-hidden="true">◎</span><span>색 맞히기 <small>목표 색에 도전!</small></span></button>
+      <button id="paint-mode-free" type="button" class="paint-mode-tab" data-mode="free" role="tab" aria-selected="false"><span class="paint-tab-icon" aria-hidden="true">✳</span><span>자유 실험 <small>마음대로 섞어 봐요</small></span></button>
+    </div>
+
+    <div class="paint-workspace">
+    <!-- ── 미션 패널 (게임 모드) ─────────────────────────── -->
+    <section id="paint-mission-panel" class="card paint-mission-panel" aria-label="이번 미션">
+      <div class="paint-mission-main">
+        <div class="paint-mission-text">
+          <p class="paint-mission-meta">
+            <span id="paint-mission-chapter">1장 · 삼원색 친구들</span>
+            <span id="paint-mission-progress" class="paint-mission-progress">미션 1 / 12</span>
+            <span id="paint-mission-difficulty" class="paint-difficulty">쉬움</span>
+          </p>
+          <h2 id="paint-mission-title" class="paint-mission-title">초록 나뭇잎</h2>
+          <p id="paint-mission-story" class="paint-mission-story">미션을 불러오고 있어요.</p>
+          <p class="paint-mission-howto">물감을 한 방울씩 넣어 목표 색을 완성해요.</p>
         </div>
-        <div id="paint-pipette" class="pipette" aria-hidden="true"></div>
       </div>
-      <p id="paint-mix-status" class="status-badge" aria-live="polite" style="margin-top: 0.7rem;">색을 선택하면 결과가 여기에 보여요.</p>
-    </aside>
+
+      <div class="paint-similarity-box">
+        <div class="paint-similarity-head">
+          <span>닮은 정도</span>
+          <strong id="paint-similarity" aria-live="polite">색을 섞은 뒤 확인해 보세요</strong>
+        </div>
+        <div class="paint-similarity-track" aria-hidden="true">
+          <div id="paint-similarity-fill" class="paint-similarity-fill"></div>
+          <span class="paint-similarity-pass" title="성공 기준 70%"></span>
+        </div>
+        <p class="mini-note">70% 넘으면 성공! 93% 넘으면 별 3개예요.</p>
+      </div>
+
+      <div class="paint-mission-controls">
+        <button id="paint-mission-toggle" type="button" class="paint-ghost-button" aria-expanded="false">미션 목록 보기</button>
+        <button id="paint-random-button" type="button" class="paint-ghost-button">랜덤 색 도전</button>
+      </div>
+      <div id="paint-mission-map" class="paint-mission-map" hidden>
+        <div id="paint-mission-grid" class="paint-mission-grid" role="group" aria-label="미션 선택"></div>
+        <p class="mini-note">미션을 성공하면 다음 미션이 열려요. 이미 연 미션은 언제든 다시 할 수 있어요.</p>
+      </div>
+    </section>
+
+    <p id="paint-free-note" class="paint-free-note" hidden><strong>자유 실험실</strong>에서는 마음껏 섞어 보세요. 새로운 색을 만들면 아래 <strong>색상 도감</strong>에 모여요. 조명 밝기도 바꿔 볼 수 있어요.</p>
+
+    <!-- ── 실험대: 팔레트 + 비커 ─────────────────────────── -->
+    <div class="mix-layout paint-lab-layout">
+      <aside class="card controls-panel paint-result" aria-label="목표 색과 혼합 결과">
+        <div class="paint-section-heading"><div><p class="paint-section-index">01 / THE COLOR TABLE</p><h2><span id="paint-result-title">색을 비교해요</span> <span aria-hidden="true">↗</span></h2></div><span class="paint-step-badge">오늘의 작업대</span></div>
+        <div class="paint-versus" aria-label="목표 색과 내가 만든 색 비교">
+          <div class="paint-versus-item">
+            <div id="paint-target-swatch" class="paint-versus-swatch paint-target-swatch" role="img" aria-label="목표 색"></div>
+            <span>목표 색</span>
+            <strong id="paint-target-name">초록</strong>
+          </div>
+          <div class="paint-versus-middle" aria-hidden="true">VS</div>
+          <div class="paint-versus-item">
+            <div id="paint-mine-swatch" class="paint-versus-swatch paint-mine-swatch" role="img" aria-label="내가 만든 색"></div>
+            <span>내 색</span>
+            <strong id="paint-mine-name">아직 비었어요</strong>
+          </div>
+        </div>
+        <p class="paint-result-caption">방울이 들어갈 때마다 색이 달라져요</p>
+        <div class="result-swatch-wrap paint-stage">
+          <span class="paint-stage-label" aria-hidden="true">MY MIX <span>✳</span> COLOR LAB</span>
+          <div id="paint-mixing-three-layer" class="three-layer" aria-hidden="true"></div>
+          <div id="paint-result-swatch" class="result-swatch" role="img" aria-label="섞은 물감 결과 색"></div>
+          <div id="paint-beaker" class="beaker" aria-hidden="true">
+            <div id="paint-liquid-layer" class="liquid-layer"></div>
+            <div id="paint-bubble-layer" class="paint-bubble-layer"></div>
+            <div id="paint-drop-layer" class="drop-layer"></div>
+          </div>
+          <div id="paint-pipette" class="pipette" aria-hidden="true"></div>
+        </div>
+        <p id="paint-mix-status" class="status-badge" aria-live="polite" style="margin-top: 0.7rem;">색을 선택하면 결과가 여기에 보여요.</p>
+        <p id="paint-feedback" class="paint-feedback" aria-live="polite">왼쪽 물감 튜브를 눌러 목표 색에 도전해 보세요!</p>
+        <div id="paint-recipe" class="paint-recipe" aria-label="지금까지 넣은 물감 레시피"></div>
+        <p id="paint-color-info" class="mini-note paint-color-info">색 코드가 여기에 보여요.</p>
+      </aside>
+
+      <section class="card paint-tools" aria-label="물감 선택 영역">
+        <div class="paint-section-heading"><div><p class="paint-section-index">02 / MIX YOUR PAINT</p><h2>물감을 골라요 <span aria-hidden="true">✳</span></h2></div><span class="paint-step-badge">한 번에 한 방울씩</span></div>
+        <p class="gesture-hint">색을 눌러 방울을 더해요. 같은 색을 여러 번 눌러 비율을 바꿔 보세요!</p>
+        <div class="palette paint-palette" role="group" aria-label="색상 팔레트">
+          <div class="paint-tube">
+            <button type="button" class="color-chip" data-color="yellow" aria-label="노랑 물감 한 방울 넣기">
+              <span class="paint-blob" aria-hidden="true"></span><span class="paint-name">노랑</span><span class="paint-count" data-count-for="yellow" hidden>×0</span>
+            </button>
+            <button type="button" class="paint-minus" data-remove="yellow" aria-label="노랑 한 방울 빼기" disabled>−</button>
+          </div>
+          <div class="paint-tube">
+            <button type="button" class="color-chip" data-color="blue" aria-label="파랑 물감 한 방울 넣기">
+              <span class="paint-blob" aria-hidden="true"></span><span class="paint-name">파랑</span><span class="paint-count" data-count-for="blue" hidden>×0</span>
+            </button>
+            <button type="button" class="paint-minus" data-remove="blue" aria-label="파랑 한 방울 빼기" disabled>−</button>
+          </div>
+          <div class="paint-tube">
+            <button type="button" class="color-chip" data-color="red" aria-label="빨강 물감 한 방울 넣기">
+              <span class="paint-blob" aria-hidden="true"></span><span class="paint-name">빨강</span><span class="paint-count" data-count-for="red" hidden>×0</span>
+            </button>
+            <button type="button" class="paint-minus" data-remove="red" aria-label="빨강 한 방울 빼기" disabled>−</button>
+          </div>
+          <div class="paint-tube">
+            <button type="button" class="color-chip" data-color="white" aria-label="하양 물감 한 방울 넣기. 색이 연해져요">
+              <span class="paint-blob" aria-hidden="true"></span><span class="paint-name">하양 <small>연하게</small></span><span class="paint-count" data-count-for="white" hidden>×0</span>
+            </button>
+            <button type="button" class="paint-minus" data-remove="white" aria-label="하양 한 방울 빼기" disabled>−</button>
+          </div>
+          <div class="paint-tube">
+            <button type="button" class="color-chip" data-color="black" aria-label="검정 물감 한 방울 넣기. 색이 진해져요">
+              <span class="paint-blob" aria-hidden="true"></span><span class="paint-name">검정 <small>진하게</small></span><span class="paint-count" data-count-for="black" hidden>×0</span>
+            </button>
+            <button type="button" class="paint-minus" data-remove="black" aria-label="검정 한 방울 빼기" disabled>−</button>
+          </div>
+        </div>
+
+        <div class="paint-capacity" aria-label="비커 용량">
+          <div class="paint-capacity-head">
+            <span>비커</span>
+            <strong id="paint-capacity-text">0 / 12방울</strong>
+          </div>
+          <div class="paint-capacity-track" aria-hidden="true"><div id="paint-capacity-fill" class="paint-capacity-fill"></div></div>
+        </div>
+
+        <div id="paint-brightness-group" class="control-group paint-brightness-group" style="margin-top: 0.8rem;">
+          <label for="paint-brightness">조명 밝기 <span class="paint-brightness-freeonly">(자유 실험실 전용)</span></label>
+          <div class="speed-control">
+            <input id="paint-brightness" name="paint-brightness" type="range" min="70" max="115" step="1" value="100" />
+          </div>
+          <p id="paint-brightness-status" class="mini-note">밝기 100%</p>
+        </div>
+
+        <div class="paint-action-row">
+          <button id="paint-undo-button" type="button" class="paint-ghost-button" disabled>↶ 한 방울 되돌리기</button>
+          <button id="paint-reset-button" type="button" class="paint-ghost-button">비커 비우기</button>
+          <button id="paint-hint-button" type="button" class="paint-ghost-button paint-hint-button">힌트 <span id="paint-hint-count" class="paint-hint-count">3개 남음</span></button>
+        </div>
+        <button id="paint-submit-button" type="button" class="paint-submit-button" disabled>완성! 확인하기 →</button>
+        <p class="mini-note paint-keyboard-hint">키보드 1~5번으로도 물감을 넣을 수 있어요.</p>
+      </section>
+    </div>
+    </div><!-- /.paint-workspace -->
+
+    <!-- ── 색상 도감 ─────────────────────────────────────── -->
+    <section class="card paint-collection-card" aria-label="색상 도감">
+      <p class="paint-section-index">03 / COLOR COLLECTION</p>
+      <h2>내가 발견한 색들 <span aria-hidden="true">✳</span></h2>
+      <p id="paint-collection-summary" class="mini-note">새로운 색을 만들면 도감에 색이 채워져요.</p>
+      <div id="paint-collection-grid" class="paint-collection-grid"></div>
+    </section>
   </main>
+
+  <!-- ── 성공 모달 ─────────────────────────────────────── -->
+  <div id="paint-success-modal" class="paint-modal" hidden role="dialog" aria-modal="true" aria-labelledby="paint-success-title">
+    <div class="paint-modal-card">
+      <button id="paint-success-close" type="button" class="paint-modal-close" aria-label="성공 창 닫기">×</button>
+      <p class="paint-kicker">🎉 미션 성공!</p>
+      <p id="paint-success-stars" class="paint-success-stars" aria-label="받은 별">★★★</p>
+      <h2 id="paint-success-title">완벽한 색이에요!</h2>
+      <p id="paint-success-score" class="paint-success-score">+0점</p>
+      <div id="paint-success-recipe" class="paint-success-recipe"></div>
+      <div class="paint-modal-actions">
+        <button id="paint-retry-button" type="button" class="paint-ghost-button">다시 해보기</button>
+        <button id="paint-next-button" type="button" class="paint-submit-button paint-next-button">다음 색으로 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 게임 방법 모달 ─────────────────────────────────── -->
+  <div id="paint-help-modal" class="paint-modal" hidden role="dialog" aria-modal="true" aria-labelledby="paint-help-title">
+    <div class="paint-modal-card">
+      <button id="paint-help-close" type="button" class="paint-modal-close" aria-label="게임 방법 닫기">×</button>
+      <h2 id="paint-help-title">게임 방법</h2>
+      <ol class="paint-help-steps">
+        <li><strong>목표 색</strong>을 잘 살펴봐요.</li>
+        <li><strong>물감 튜브</strong>를 눌러 한 방울씩 넣어요. 비율이 중요해요!</li>
+        <li>비슷해지면 <strong>완성! 확인하기</strong>를 눌러요. 70% 넘으면 성공, 93% 넘으면 별 3개예요.</li>
+        <li>어려우면 <strong>힌트</strong>를 쓰거나, <strong>− 버튼</strong>으로 방울을 빼서 고쳐 봐요. 틀려도 괜찮아요, 계속 고칠 수 있어요!</li>
+      </ol>
+      <h3 class="paint-help-subtitle">물감 섞기 비밀</h3>
+      <ul class="paint-help-mix" aria-label="기본 물감 혼합표">
+        <li><span class="paint-help-dot" style="background:#ffd500"></span>노랑 + <span class="paint-help-dot" style="background:#1e5adc"></span>파랑 = <strong>초록</strong></li>
+        <li><span class="paint-help-dot" style="background:#ee362c"></span>빨강 + <span class="paint-help-dot" style="background:#ffd500"></span>노랑 = <strong>주황</strong></li>
+        <li><span class="paint-help-dot" style="background:#ee362c"></span>빨강 + <span class="paint-help-dot" style="background:#1e5adc"></span>파랑 = <strong>보라</strong></li>
+        <li>어떤 색 + <span class="paint-help-dot" style="background:#fafafa"></span>하양 = <strong>연한 색</strong></li>
+        <li>어떤 색 + <span class="paint-help-dot" style="background:#232328"></span>검정 = <strong>진한 색</strong></li>
+        <li>빨강 + 노랑 + 파랑 모두 = <strong>갈색</strong></li>
+      </ul>
+      <p class="mini-note">자유 실험실에서는 점수 걱정 없이 마음껏 섞으며 색상 도감을 채울 수 있어요.</p>
+    </div>
+  </div>
+
+  <p id="paint-toast" class="paint-toast" aria-live="polite" hidden></p>
 
   <script type="module" src="./paint-mixing.js"></script>
 </body>
 </html>
-

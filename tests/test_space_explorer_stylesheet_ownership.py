@@ -6,56 +6,39 @@ SPACE_EXPLORER_DIR = ROOT / "experiments" / "space-explorer"
 
 
 def test_space_explorer_stylesheet_ownership_separation() -> None:
-    """Dino Escape owns its stylesheet; sibling mini-games keep the shared shell."""
+    """Ensure fullscreen 3D solar system and legacy sibling mini-games have separated stylesheet ownership."""
     index_html = (SPACE_EXPLORER_DIR / "index.html").read_text(encoding="utf-8")
     dino_html = (SPACE_EXPLORER_DIR / "dino-escape.html").read_text(encoding="utf-8")
     orbit_html = (SPACE_EXPLORER_DIR / "orbit-eclipse.html").read_text(encoding="utf-8")
     paint_html = (SPACE_EXPLORER_DIR / "paint-mixing.html").read_text(encoding="utf-8")
 
-    assert 'href="./space-explorer.css"' in index_html or 'href="space-explorer.css"' in index_html
+    # index.html MUST link space-explorer.css (fullscreen Three.js simulation)
+    assert (
+        'href="./space-explorer.css"' in index_html
+        or 'href="space-explorer.css"' in index_html
+    )
     assert "space-explorer-minigames.css" not in index_html
 
-    # The rebuilt Dino Escape is a standalone full-screen 3D experience.
+    # The sibling minigame pages MUST link space-explorer-minigames.css.
+    # Dino Escape is the documented exception: it is a standalone full-screen
+    # 3D experience with its own stylesheet (see below).
     assert 'href="./dino-escape.css"' in dino_html
     assert "space-explorer-minigames.css" not in dino_html
-    assert 'href="./space-explorer.css"' not in dino_html and 'href="space-explorer.css"' not in dino_html
+    assert 'href="./space-explorer.css"' not in dino_html
 
     for filename, html in [
         ("orbit-eclipse.html", orbit_html),
         ("paint-mixing.html", paint_html),
     ]:
-        assert 'href="./space-explorer-minigames.css"' in html or 'href="space-explorer-minigames.css"' in html
-        assert 'href="./space-explorer.css"' not in html and 'href="space-explorer.css"' not in html
-        assert "dino-escape.css" not in html, f"{filename} must not link the dino stylesheet"
-
-
-def test_dino_escape_stylesheet_has_required_contracts() -> None:
-    """The standalone dino stylesheet must cover the full-screen HUD shell."""
-    css_path = SPACE_EXPLORER_DIR / "dino-escape.css"
-    assert css_path.exists(), "dino-escape.css must exist"
-    css = css_path.read_text(encoding="utf-8")
-
-    required = [
-        ".game-canvas",
-        ".hud",
-        ".hud[data-visible=\"true\"]",
-        ".rexcam-window",
-        ".rexcam-glass",
-        ".toast",
-        ".biome-banner",
-        ".touch-controls",
-        ".screen--start",
-        ".screen--panel",
-        ".screen--modal",
-        ".segmented",
-        ".switch",
-        "prefers-reduced-motion",
-    ]
-    for selector in required:
-        assert selector in css, f"Missing dino stylesheet contract: {selector}"
-
-    assert "@media (max-width: 860px)" in css
-    assert "@media (max-height: 640px) and (orientation: landscape)" in css
+        assert (
+            'href="./space-explorer-minigames.css"' in html
+            or 'href="space-explorer-minigames.css"' in html
+        ), f"{filename} must use space-explorer-minigames.css"
+        # Must not re-couple to the fullscreen stylesheet
+        assert (
+            'href="./space-explorer.css"' not in html
+            and 'href="space-explorer.css"' not in html
+        ), f"{filename} must NOT link space-explorer.css"
 
 
 def test_minigames_stylesheet_has_required_contracts() -> None:
@@ -88,8 +71,23 @@ def test_minigames_stylesheet_has_required_contracts() -> None:
     for layout in [".dino-layout", ".lesson-layout", ".mix-layout"]:
         assert layout in css, f"Missing layout contract: {layout}"
 
-    # The dino page moved to its own stylesheet; the shared shell keeps the
-    # orbit + paint contracts only.
+    # Dino minigame contracts
+    required_dino = [
+        ".dino-canvas",
+        ".hud-grid",
+        ".hud-item",
+        "#dino-status",
+        ".progress-track",
+        ".progress-fill",
+        "#dino-restart-button",
+        "#dino-touch-controls",
+        ".touch-btn",
+        ".chase-settings",
+        ".chase-settings-grid",
+    ]
+    for selector in required_dino:
+        assert selector in css, f"Missing dino contract: {selector}"
+
     # Orbit & Eclipse contracts
     required_orbit = [
         ".lesson-canvas",

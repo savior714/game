@@ -6,7 +6,7 @@
  * input, audio and persistence into a run loop.
  */
 
-import * as THREE from "./vendor/three/three.module.min.js";
+import * as THREE from "./vendor/three/build/three.module.min.js";
 import {
   BIOMES,
   GAME_VERSION,
@@ -21,10 +21,10 @@ import {
   clamp,
   clamp01,
   damp,
+  dampAngle,
   formatMeters,
   lerp,
   randRange,
-  smoothstep,
 } from "./dino/util.js";
 import {
   applyHit,
@@ -50,6 +50,7 @@ import { createHud } from "./dino/hud.js";
 import { loadProfile, saveProfile } from "./dino/storage.js";
 import { createEntityLayer } from "./dino/entities.js";
 import { createSpawner } from "./dino/spawner.js";
+import { createChaseDirector, rexStaging, yawToward } from "./dino/chase.js";
 import {
   createPlayerState,
   hitTest,
@@ -57,10 +58,12 @@ import {
   stepPlayer,
 } from "./dino/player.js";
 
+// Plain symbols only: these are drawn with the page's own fonts so a device
+// without an emoji font can never turn a toast into a tofu box.
 const TOAST_ICONS = Object.freeze({
-  amber: "✦",
-  bait: "🍖",
-  shield: "◈",
+  amber: "★",
+  bait: "◆",
+  shield: "✚",
   danger: "!",
   good: "▲",
   info: "·",
@@ -106,6 +109,7 @@ function boot() {
   let renderer;
   let scene;
   let camera;
+  let chase;
   let rexCamera;
   let world;
   let explorer;
@@ -152,15 +156,7 @@ function boot() {
     autoQualityTimer: 0,
     autoQualityFrames: 0,
     autoQualityTime: 0,
-    cam: {
-      x: 2.4,
-      y: 2.3,
-      z: 8.5,
-      lookX: 0,
-      lookY: 1.3,
-      lookZ: -6,
-      fov: 62,
-    },
+    rexYaw: 0,
     lastZ: 0,
   };
 
@@ -257,9 +253,10 @@ function boot() {
 
     scene = new THREE.Scene();
 
-    camera = new THREE.PerspectiveCamera(62, 1, 0.1, 640);
+    camera = new THREE.PerspectiveCamera(55, 1, 0.1, 640);
     camera.layers.enable(REX_LAYER);
-    camera.position.set(game.cam.x, game.cam.y, game.cam.z);
+    camera.position.set(-2.85, 2.28, 7.35);
+    chase = createChaseDirector();
 
     rexCamera = new THREE.PerspectiveCamera(46, 1.6, 0.1, 640);
     rexCamera.layers.set(REX_LAYER);
@@ -305,7 +302,6 @@ function boot() {
     renderer.setPixelRatio(game.pixelRatio);
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
-    camera.fov = camera.aspect < 1 ? 82 : 62;
     camera.updateProjectionMatrix();
     world.setViewportSize(width, height, game.pixelRatio);
     if (dust) {
@@ -345,6 +341,9 @@ function boot() {
     game.tutorialSeen.clear();
     game.roarTimer = 6;
     game.dangerToastTimer = 0;
+    game.rexYaw = 0;
+    game.rexStepTimer = 0;
+    chase.reset("menu");
     world.setBiome(0);
     spawnAhead();
     updateHud();
@@ -357,6 +356,11 @@ function boot() {
     resetRun();
     game.mode = "running";
     game.startSwing = reduceMotion ? 0 : 1;
+    if (reduceMotion) {
+      chase.reset("running");
+    } else {
+      chase.startSwing();
+    }
     hud.hideBoot();
     hud.hideAllScreens();
     hud.setHudVisible(true);
@@ -494,11 +498,10 @@ function boot() {
     }
   }
 
-  // The chase camera rides about 9 m behind the runner. Anything kept alive
-  // closer than that to the camera balloons through the near plane, so
-  // collectibles are pruned as soon as they drop behind that plane while
-  // hazards linger just long enough for the swept hit window.
-  const PICKUP_DESPAWN_BEHIND = 11;
+  // The chase camera rides ~13 m behind the runner, so a missed collectible
+  // drifts toward the lens for a while. entities.js shrinks it out between
+  // 6.5 m and 10.5 m behind the runner; prune just after that window closes.
+  const PICKUP_DESPAWN_BEHIND = 10.6;
 
   function updateEntities(dt) {
     pruneFrom(hazards, HAZARD.despawnBehind);
@@ -799,6 +802,13 @@ function boot() {
       if (game.rexStepTimer <= 0) {
         game.rexStepTimer = 0.5;
         playSfx("footstep", 0.8, clamp(game.rexX / 6, -0.7, 0.7), true);
+        // Close behind: each stomp kicks the camera and the dust.
+        if (view.danger > 0.35) {
+          const weight = clamp01((view.danger - 0.35) / 0.65);
+          game.shake = Math.max(game.shake, 0.18 + weight * 0.32);
+          chase.impulse(0.05 + weight * 0.09);
+          popParticles(game.rexX, 0.08, game.rexZ, 4 + Math.round(weight * 4), color, 2.6, dust);
+        }
         if (game.glance.weight > 0.05) {
           popParticles(game.rexX, 0.08, game.rexZ, 5, color, 2.2, dust);
         }
@@ -954,7 +964,7 @@ function boot() {
 
     if (run.distance > profile.bestDistance && profile.bestDistance > 0 && !game.recordAnnounced) {
       game.recordAnnounced = true;
-      hud.toast("신기록 페이스!", { tone: "good", icon: "★", duration: 1600 });
+      hud.toast("신기록 페이스!", { tone: "good", icon: TOAST_ICONS.good, duration: 1600 });
     }
 
     // Rex roar cadence ramps up with danger.
@@ -1022,56 +1032,43 @@ function boot() {
   }
 
   /**
-   * The demo's chase rules measure a real gap in metres, but a single chase
-   * camera cannot show a predator 15 m behind. So the T-Rex is staged on a
-   * compressed track: far away it lurks out of frame (the REX CAM covers it),
-   * and as the gap closes it slides in from the left, looming next to the
-   * runner and finally biting down when the run ends.
+   * The gap is a real distance in metres, but a camera that trails the runner
+   * cannot show a predator that far back. The director compresses the chase
+   * onto a staged track (./dino/chase.js): the rex runs alongside and behind,
+   * stays inside the right edge of frame, and leans in as the gap closes.
    */
-  function stageRex(gap, mode) {
-    if (mode === "menu") {
-      return { lateral: 1.55, behind: 6.6 };
-    }
-    if (mode === "caught" || mode === "gameover") {
-      return { lateral: 1.45, behind: 3.55 };
-    }
-    const t = clamp01((gap - 2) / (RUN.startGap - 2));
-    // Healthy gap: the predator runs behind the chase camera (the REX CAM and
-    // the look-back inserts keep it on screen). As it closes in it slides into
-    // the right edge of frame and finally fills it for the final bite.
-    const reveal = smoothstep(0.24, 1, t);
-    return { lateral: 2.45 + t * 0.95, behind: 4.15 + 6.35 * reveal };
-  }
-
   function updateRex(dt, mode) {
     const run = runState.current;
-    const gap = mode === "menu" ? RUN.startGap : run.gap;
-    const { lateral, behind } = stageRex(gap, mode);
-    const forwardness = mode === "menu" ? 1 : 1 - clamp01(behind / Math.max(0.001, game.camBack));
-    game.rexGap = damp(game.rexGap, behind, mode === "caught" ? 5.5 : 2.4, dt);
-    let targetX = player.x - lateral;
-    if (mode === "menu") {
-      targetX = -1.55 + Math.sin(game.time * 0.42) * 0.1;
-    }
-    game.rexX = damp(game.rexX, clamp(targetX, -10, 10), mode === "caught" ? 6 : 1.9, dt);
+    const danger =
+      mode === "running" ? clamp01(view.danger) : mode === "menu" ? 0.18 : 1;
+    const stage = rexStaging(danger, mode, { t: game.time, eat: clamp01(run.eatTimer > 0 ? 1 : 0) });
+    const targetX = mode === "menu" ? player.x - stage.lateral : clamp(player.x - stage.lateral, -9, 9);
+
+    // Lateral / depth easing: fast enough to read as a lunge, slow enough that
+    // lane changes do not teleport the predator across the track.
+    game.rexX = damp(game.rexX, targetX, mode === "caught" ? 6.5 : 2.1, dt);
+    game.rexGap = damp(game.rexGap, stage.behind, mode === "caught" ? 6 : 2.6, dt);
     game.rexZ = player.z - game.rexGap;
+
     rex.root.position.set(game.rexX, 0, game.rexZ);
-    const idleSway = Math.sin(game.time * 0.4) * 0.03;
-    rex.root.rotation.y = mode === "menu" ? 0.18 + idleSway : idleSway;
-    // Keep the predator facing the runner while it charges alongside.
-    if (mode !== "menu") {
-      rex.root.rotation.y += clamp((player.x - game.rexX) * 0.05, -0.2, 0.2);
-    }
-    const danger = mode === "running" ? view.danger : mode === "menu" ? 0.35 : 1;
+
+    // Turn the body toward the runner so the chase reads as pursuit, not a race.
+    const targetYaw = yawToward(game.rexX, game.rexZ, player.x, player.z + 0.6);
+    game.rexYaw = dampAngle(game.rexYaw, targetYaw, mode === "caught" ? 7 : 3.2, dt);
+    rex.root.rotation.y = game.rexYaw + Math.sin(game.time * 0.9) * 0.015;
+    rex.root.rotation.z = -stage.lean * 0.05 + Math.sin(game.time * 2.1) * 0.008;
+
+    const speed = mode === "running" ? run.speed : mode === "menu" ? 0 : 0;
     rex.update(dt, {
       mode,
-      speed: mode === "running" ? run.speed : 0,
+      speed,
       danger,
       eating: run.eatTimer > 0,
       caught: mode === "caught" || mode === "gameover",
       time: game.time,
     });
-    game.rexForwardness = forwardness;
+    rex.setLunge(stage.bite);
+    game.rexForwardness = stage.lean;
   }
 
   /* ------------------------------------------------------------------ */
@@ -1084,88 +1081,46 @@ function boot() {
     if (amount <= 0.001) {
       return 0;
     }
-    camera.position.x += Math.sin(game.time * 71) * 0.16 * amount;
-    camera.position.y += Math.sin(game.time * 93 + 1.7) * 0.13 * amount;
-    return Math.sin(game.time * 47) * 0.035 * amount;
+    camera.position.x += Math.sin(game.time * 71) * 0.17 * amount;
+    camera.position.y += Math.sin(game.time * 93 + 1.7) * 0.14 * amount;
+    camera.position.z += Math.sin(game.time * 57 + 0.6) * 0.09 * amount;
+    return Math.sin(game.time * 47) * 0.03 * amount;
   }
 
   function updateCamera(dt) {
     const run = runState.current;
-    if (game.mode === "menu") {
-      // Hero shot: runner facing the lens, rex rising behind him, both pushed
-      // into the free right-hand column of the start screen.
-      const drift = Math.sin(game.time * 0.24) * 0.32;
-      camera.position.set(2.05 + drift, 1.9, player.z + 7.45);
-      camera.lookAt(-0.35 + drift * 0.3, 1.78, player.z - 5.2);
-      camera.fov = 46;
-      camera.updateProjectionMatrix();
-      return;
-    }
-
-    if (game.mode === "caught" || game.mode === "gameover") {
-      const phase = game.time * (game.mode === "caught" ? 0.55 : 0.3);
-      const focusZ = (player.z + game.rexZ) * 0.5;
-      camera.position.set(
-        player.x + 2.6 + Math.sin(phase) * 3.4,
-        2.9 + Math.sin(phase * 0.7) * 0.35,
-        player.z + 6.2 + Math.cos(phase) * 1.2,
-      );
-      camera.lookAt(player.x - 0.6, 2.2, focusZ);
-      camera.fov = 56;
-      camera.updateProjectionMatrix();
-      const roll = applyCameraShake(dt);
-      if (roll) {
-        camera.rotateZ(roll);
-      }
-      return;
-    }
-
     const speedRatio = clamp01((run.speed - RUN.baseSpeed) / (RUN.maxSpeed - RUN.baseSpeed));
-    const danger = view.danger;
-    billboardFov(clamp(61 + speedRatio * 5 + (run.sprinting ? 2.5 : 0) + danger * 2, 59, 75), dt);
-    game.camBack = damp(game.camBack, 8.6 + speedRatio * 0.8 + danger * 0.5, 3, dt);
+    const mode =
+      game.mode === "running" || game.mode === "menu" || game.mode === "caught" || game.mode === "gameover"
+        ? game.mode
+        : "menu";
+    const pose = chase.update(dt, {
+      mode,
+      player,
+      danger: mode === "running" ? view.danger : mode === "menu" ? 0.18 : 1,
+      speedRatio,
+      sprinting: run.sprinting,
+      rex: { x: game.rexX, z: game.rexZ },
+      time: game.time,
+      reduceMotion,
+    });
 
-    if (game.startSwing > 0) {
-      game.startSwing = Math.max(0, game.startSwing - dt / 1.15);
-      const eased = smoothstep(0, 1, 1 - game.startSwing);
-      const theta = lerp(0.34, Math.PI + 0.03, eased);
-      const radius = lerp(10.4, game.camBack, eased);
-      game.cam.x = player.x + Math.sin(theta) * radius;
-      game.cam.y = lerp(2.35, 3.62, eased) + Math.min(player.y, 2) * 0.2;
-      game.cam.z = player.z + Math.cos(theta) * radius;
-      game.cam.lookX = player.x * lerp(0.2, 0.75, eased) - lerp(1.4, 0, eased);
-      game.cam.lookY = lerp(1.35, 1.45, eased);
-      game.cam.lookZ = player.z + lerp(-6.2, 11.2, eased);
-      camera.position.set(game.cam.x, game.cam.y, game.cam.z);
-      camera.lookAt(game.cam.lookX, game.cam.lookY, game.cam.lookZ);
-    } else {
-      const targetX = player.x * 0.55;
-      game.cam.x = damp(game.cam.x, targetX, 6, dt);
-      game.cam.y = damp(game.cam.y, 3.62 + Math.min(player.y, 2) * 0.24 + danger * 0.3, 5, dt);
-      game.cam.z = player.z - game.camBack;
-      game.cam.lookX = damp(game.cam.lookX, player.x * 0.72, 7, dt);
-      game.cam.lookY = damp(game.cam.lookY, 1.38, 6, dt);
-      game.cam.lookZ = player.z + 11.2;
-      camera.position.set(game.cam.x, game.cam.y, game.cam.z);
-      camera.lookAt(game.cam.lookX, game.cam.lookY, game.cam.lookZ);
-      camera.rotateZ(-player.tilt * 0.025);
-    }
-    const weight = updateGlance(dt);
-    applyGlancePose(weight);
-    const roll = applyCameraShake(dt);
+    camera.position.set(pose.x, pose.y, pose.z);
+    camera.lookAt(pose.lookX, pose.lookY, pose.lookZ);
+    camera.fov = pose.fov;
+    camera.updateProjectionMatrix();
+
+    const glance = updateGlance(dt);
+    applyGlancePose(glance);
+    const roll = applyCameraShake(dt) + pose.roll;
     if (roll) {
       camera.rotateZ(roll);
     }
   }
 
-  function billboardFov(target, dt) {
-    camera.fov = damp(camera.fov, target, 3.2, dt);
-    camera.updateProjectionMatrix();
-  }
-
   /**
-   * Cinematic "look-back" insert: a short reverse shot from in front of the
-   * runner, framing the explorer's shoulder with the charging T-Rex behind.
+   * Cinematic "look back" insert: a short reverse tracking shot from ahead of
+   * the runner that frames the explorer's shoulder with the charging T-Rex.
    */
   function triggerGlance(duration = 1.3) {
     if (reduceMotion) {
@@ -1184,7 +1139,7 @@ function boot() {
     }
     game.glance.t += dt;
     const progress = clamp01(game.glance.t / game.glance.duration);
-    game.glance.weight = Math.sin(progress * Math.PI) ** 0.8;
+    game.glance.weight = Math.sin(progress * Math.PI) ** 0.85;
     if (progress >= 1) {
       game.glance.active = false;
       game.glance.weight = 0;
@@ -1197,35 +1152,38 @@ function boot() {
     if (weight <= 0.001) {
       return;
     }
-    // Stand in front of the runner and look back down the trail.
-    const side = clamp(player.x - game.rexX, -2.6, 2.6) * 0.35;
+    // Stand ahead and to the right of the runner, looking back down the trail
+    // at both of them. The wide lens keeps the predator inside the frame.
     const insert = new THREE.Vector3(
-      player.x + side + 1.85,
-      2.3 + Math.sin(game.time * 1.7) * 0.05,
-      player.z + 3.35,
+      player.x + 4.35,
+      2.55 + Math.sin(game.time * 1.7) * 0.04,
+      player.z + 8.2,
     );
     camera.position.lerp(insert, weight);
     const focus = new THREE.Vector3(
-      player.x * 0.34 + game.rexX * 0.66,
-      2.35,
-      player.z * 0.3 + game.rexZ * 0.7,
+      lerp(player.x, game.rexX, 0.55),
+      lerp(player.y + 1.05, 2.55, 0.55),
+      lerp(player.z, game.rexZ, 0.55),
     );
     camera.lookAt(focus);
-    camera.fov = lerp(camera.fov, 58, weight);
+    camera.fov = lerp(camera.fov, 54, weight);
     camera.updateProjectionMatrix();
   }
 
   function updateRexCamera() {
-    // A low three-quarter tracking shot: the rex fills the left two thirds and
-    // the road it is chasing along stays readable on the right.
-    const orbit = Math.sin(game.time * 0.62) * 0.3;
-    const sway = Math.sin(game.time * 1.3) * 0.08;
+    // Counter-shot: sit ahead of the predator along its own heading so the
+    // PiP always shows its face and jaws, never just its back.
+    const forwardX = Math.sin(game.rexYaw);
+    const forwardZ = Math.cos(game.rexYaw);
+    const rightX = -forwardZ;
+    const rightZ = forwardX;
+    const sway = Math.sin(game.time * 1.1) * 0.18;
     rexCamera.position.set(
-      game.rexX + 2.7 + orbit,
-      3.3 + sway,
-      game.rexZ + 9.4,
+      game.rexX + forwardX * 7.4 + rightX * (2.5 + sway),
+      2.75 + Math.sin(game.time * 0.9) * 0.12,
+      game.rexZ + forwardZ * 7.4 + rightZ * (2.5 + sway),
     );
-    rexCamera.lookAt(game.rexX + 0.1, 2.6, game.rexZ + 0.6);
+    rexCamera.lookAt(game.rexX + forwardX * 1.4, 3.05, game.rexZ + forwardZ * 1.4);
     const rect = hud.getRexCamRect();
     if (rect && rect.visible && rect.height > 8) {
       const aspect = rect.width / rect.height;

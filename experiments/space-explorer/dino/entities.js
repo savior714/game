@@ -4,7 +4,7 @@
  * only maps them onto meshes.
  */
 
-import * as THREE from "../vendor/three/three.module.min.js";
+import * as THREE from "../vendor/three/build/three.module.min.js";
 import { HAZARD, REX_LAYER } from "./constants.js";
 import { clamp, randRange } from "./util.js";
 import {
@@ -26,6 +26,23 @@ const CAPS = Object.freeze({
 });
 
 const AMBER_MAX = 96;
+
+/**
+ * Collectibles that the runner misses keep floating toward the chase camera.
+ * Shrinking them out over the last few metres stops a stray crystal from
+ * filling the lens without yanking it out of the world in one frame.
+ */
+const CAMERA_FADE_START = 6.5;
+const CAMERA_FADE_END = 10.5;
+
+function passByScale(playerZ, z) {
+  const behind = playerZ - z;
+  if (behind <= CAMERA_FADE_START) {
+    return 1;
+  }
+  const t = clamp((behind - CAMERA_FADE_START) / (CAMERA_FADE_END - CAMERA_FADE_START), 0, 1);
+  return 1 - t;
+}
 
 function enableRexLayer(root) {
   root.traverse((object) => {
@@ -161,6 +178,9 @@ export function createEntityLayer(scene) {
       }
       view.root.position.set(descriptor.x, 0, descriptor.z);
       if (descriptor.kind !== "hazard") {
+        const fade = passByScale(playerZ, descriptor.z);
+        view.root.visible = fade > 0.02;
+        view.root.scale.setScalar(0.35 + fade * 0.65);
         view.update(dt, time);
         view.root.position.y = Math.sin(time * 2.2 + descriptor.z * 0.3) * 0.12;
         continue;
@@ -183,16 +203,20 @@ export function createEntityLayer(scene) {
       if (amber.collected) {
         continue;
       }
+      const fade = passByScale(playerZ, amber.z);
+      if (fade <= 0.001) {
+        continue;
+      }
       const bob = Math.sin(time * 2.4 + amber.z * 0.22) * 0.11;
       const spin = time * 1.35 + amber.z * 0.12;
       dummy.position.set(amber.x, amber.y + bob, amber.z);
       dummy.rotation.set(0.18, spin, 0.12);
-      dummy.scale.setScalar(1);
+      dummy.scale.setScalar(fade);
       dummy.updateMatrix();
       amberMesh.setMatrixAt(amberCount, dummy.matrix);
       amberCount += 1;
 
-      const pulse = 1 + Math.sin(time * 3.1 + amber.z * 0.4) * 0.12;
+      const pulse = (1 + Math.sin(time * 3.1 + amber.z * 0.4) * 0.12) * fade;
       dummy.rotation.set(0.4, -spin * 0.6, 0);
       dummy.scale.setScalar(pulse);
       dummy.updateMatrix();

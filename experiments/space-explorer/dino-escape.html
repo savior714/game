@@ -10,18 +10,22 @@
   />
   <title>공룡 추격 탈출 3D | DINO ESCAPE | AIDEN GAME LABS</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
-    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap"
-    rel="stylesheet"
+    rel="preload"
+    as="font"
+    type="font/woff2"
+    crossorigin
+    href="./assets/fonts/PretendardVariable.woff2"
   />
   <link
-    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
-    rel="stylesheet"
+    rel="preload"
+    as="font"
+    type="font/woff2"
+    crossorigin
+    href="./assets/fonts/outfit-latin-800-normal.woff2"
   />
-  <link rel="modulepreload" href="./vendor/three/three.module.min.js" />
-  <link rel="modulepreload" href="./vendor/three/three.core.min.js" />
+  <link rel="modulepreload" href="./vendor/three/build/three.module.min.js" />
+  <link rel="modulepreload" href="./vendor/three/build/three.core.min.js" />
   <link rel="stylesheet" href="./dino-escape.css" />
 </head>
 <body class="dino-page">
@@ -75,7 +79,12 @@
             BEST <span id="hud-best">0</span><span class="best-unit">M</span>
           </div>
           <div class="gap-block" id="gap-block" aria-label="렉스와의 거리">
-            <span class="gap-rex" aria-hidden="true">🦖</span>
+            <span class="gap-rex" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M3.4 12.2c0-2.6 2.1-4.7 4.7-4.7h5.2c1 0 1.8.5 2.3 1.2l3.2.5c1.4.2 2.2 1 2.2 2.1 0 .9-.5 1.6-1.4 1.9l-1.9.6-.4 1.3c-.2.6-.8 1-1.4.9l-2.7-.4-1 3.1c-.2.6-.8.9-1.4.7-.6-.2-.9-.8-.7-1.4l.8-2.6-3.9-.2-1.6 2.6c-.3.5-1 .7-1.5.4-.5-.3-.7-1-.4-1.5l1.5-2.4c-.9-.7-1.4-1.7-1.4-2.8z"/>
+                <circle cx="15.6" cy="9.4" r="0.9" fill="#0a1214"/>
+              </svg>
+            </span>
             <div class="gap-track"><div id="hud-gap-fill" class="gap-fill"></div></div>
             <span id="hud-gap" class="gap-value">15.5m</span>
           </div>
@@ -132,7 +141,12 @@
             <strong id="hud-shield">0</strong>
           </div>
           <div class="resource resource--bait" aria-label="고기 미끼">
-            <span class="resource-icon" aria-hidden="true">🍖</span>
+            <span class="resource-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M8.2 3.1a2.9 2.9 0 0 1 2.6 1.6l2.4 4.2 4.2 2.4a2.9 2.9 0 1 1-1.4 2.4l-4.6-2.6-2.6-4.6A2.9 2.9 0 1 1 8.2 3.1z"/>
+                <circle cx="16.4" cy="16.4" r="4.1"/>
+              </svg>
+            </span>
             <strong id="hud-bait">1</strong>
           </div>
         </div>
@@ -183,7 +197,12 @@
 
       <div class="touch-controls" id="touch-controls">
         <button id="btn-bait" class="touch-btn touch-bait" type="button" tabindex="-1" aria-label="고기 던지기">
-          <span class="touch-icon" aria-hidden="true">🥩</span>
+          <span class="touch-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M8.2 3.1a2.9 2.9 0 0 1 2.6 1.6l2.4 4.2 4.2 2.4a2.9 2.9 0 1 1-1.4 2.4l-4.6-2.6-2.6-4.6A2.9 2.9 0 1 1 8.2 3.1z"/>
+              <circle cx="16.4" cy="16.4" r="4.1"/>
+            </svg>
+          </span>
           <span id="touch-bait-count" class="touch-count">1</span>
         </button>
         <div class="action-cluster">
@@ -318,7 +337,19 @@
         <span class="footer-dot" aria-hidden="true"></span>
         <span>학습 후 즐기는 3D 탈출 게임</span>
         <button id="start-sound" class="audio-pill" type="button" data-action="toggle-sound">
-          <span class="audio-pill-icon" aria-hidden="true">🔊</span>
+          <span class="audio-pill-icon audio-pill-icon--on" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+          </span>
+          <span class="audio-pill-icon audio-pill-icon--off" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <line x1="22" y1="9" x2="16" y2="15"></line>
+              <line x1="16" y1="9" x2="22" y2="15"></line>
+            </svg>
+          </span>
           <span class="audio-pill-label">소리 켜짐</span>
         </button>
       </footer>
@@ -455,7 +486,12 @@
 
     <!-- Boot / error ------------------------------------------------- -->
     <div id="boot-screen" class="boot-screen">
-      <div class="boot-mark" aria-hidden="true">🦖</div>
+      <div class="boot-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M4.7 8.1c0-2.5 2-4.5 4.5-4.5h2.1c1 0 1.9.4 2.5 1.1l2.2 2.4 2.6.9c1.5.5 2.4 1.9 2.2 3.4l-.3 2.1-2.2.7-.5 1.6c-.2.5-.8.8-1.3.6l-2.1-.6-1.2 3.6c-.2.6-.8.9-1.4.7-.6-.2-.9-.8-.7-1.4l1-3.1-3.6-.1-1.9 3.1c-.3.5-1 .7-1.5.4-.5-.3-.7-1-.4-1.5l1.7-2.8c-1.2-1-1.9-2.5-1.9-4.1z"/>
+          <circle cx="15.6" cy="8.6" r="0.9" fill="#0a1214"/>
+        </svg>
+      </div>
       <div class="boot-bar" aria-hidden="true"><i></i></div>
       <p>3D 세계를 준비하고 있어요…</p>
       <span class="boot-note">정글 협곡으로 이동 중</span>

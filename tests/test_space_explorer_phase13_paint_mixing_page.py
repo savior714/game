@@ -66,3 +66,23 @@ def test_paint_mixing_script_supports_mix_and_reset() -> None:
         'const threeLayer = document.getElementById("paint-mixing-three-layer");' in js
     )
     assert "initializePaintLights(threeLayer);" in js
+
+
+def test_paint_mixing_page_is_a_complete_game() -> None:
+    """실험 페이지가 목표 색 맞히기 게임으로 완성되어야 한다 (상세 계약은 test_paint_mixing_game.py)."""
+    html = (
+        TEMPLATES / "experiments" / "space-explorer" / "paint-mixing.html"
+    ).read_text(encoding="utf-8")
+    js = (TEMPLATES / "experiments" / "space-explorer" / "paint-mixing.js").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'id="paint-mission-panel"' in html
+    assert 'id="paint-target-swatch"' in html
+    assert 'id="paint-submit-button"' in html
+    assert 'data-mode="game"' in html
+    assert 'data-mode="free"' in html
+    assert "const MISSIONS = [" in js
+    assert js.count('id: "mission-') == 12
+    assert "function checkAnswer(" in js
+    assert "function rybToRgb(" in js

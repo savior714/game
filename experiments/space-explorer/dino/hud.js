@@ -520,11 +520,7 @@ export function createHud() {
     el.btnSound.setAttribute("aria-pressed", String(sound));
     el.btnSound.setAttribute("aria-label", sound ? "소리 끄기" : "소리 켜기");
     el.startSound.setAttribute("aria-pressed", String(sound));
-    const icon = el.startSound.querySelector(".audio-pill-icon");
     const label = el.startSound.querySelector(".audio-pill-label");
-    if (icon) {
-      icon.textContent = sound ? "🔊" : "🔇";
-    }
     if (label) {
       label.textContent = sound ? "소리 켜짐" : "소리 꺼짐";
     }

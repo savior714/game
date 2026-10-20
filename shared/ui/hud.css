@@ -1,0 +1,599 @@
+/* ─────────────────────────────────────────────────────────────
+   Aiden Game Labs — Unified HUD System  v2.1
+   외주 에이전시 레벨 프리미엄 상단 헤더
+   모든 게임/학습 표면의 시각적 통일감 담당
+   • .ag-hud            : 새 표준 클래스
+   • .ag-hud--full      : 메인 허브 / 가디언용 (넓은 폭)
+   • .ag-hud--compact   : 학습 4과목 / 주간시험용 (좁은 폭)
+   • .ag-hud--immersive : Space Explorer 등 몰입형 캔버스용
+   • Legacy aliases     : .study-compact-hud / .console-hud / .topbar.glass
+                          를 새 토큰으로 자동 업그레이드
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  --hud-bg: rgba(14, 18, 28, 0.92);
+  --hud-bg-strong: rgba(14, 18, 28, 0.96);
+  --hud-border: rgba(255, 255, 255, 0.14);
+  --hud-border-strong: rgba(255, 255, 255, 0.22);
+  --hud-blur: 20px;
+  --hud-radius: 9999px;
+  --hud-radius-sm: 16px; /* fallback for very small viewports if needed */
+  --hud-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.55), 0 4px 16px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --hud-shadow-hover: 0 14px 36px -6px rgba(0, 0, 0, 0.62), 0 6px 20px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.10), 0 0 0 1px var(--subject-accent, rgba(215,255,0,0.0));
+  --hud-height: 54px;
+  --hud-pad-y: 0.55rem;
+  --hud-pad-x: 0.9rem;
+  --hud-gap: 0.75rem;
+  --hud-max-compact: 720px;
+  --hud-max-full: 1280px;
+}
+
+/* ── Base shell ──────────────────────────────────────────── */
+.ag-hud,
+.study-compact-hud,
+.console-hud,
+.topbar.glass {
+  --hud-max: var(--hud-max-compact);
+  --hud-pad-x-current: var(--hud-pad-x);
+  width: 100%;
+  max-width: var(--hud-max);
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 1.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--hud-gap);
+  padding: var(--hud-pad-y) var(--hud-pad-x-current);
+  min-height: var(--hud-height);
+  background: var(--hud-bg);
+  backdrop-filter: blur(var(--hud-blur)) saturate(125%);
+  -webkit-backdrop-filter: blur(var(--hud-blur)) saturate(125%);
+  border: 1px solid var(--hud-border);
+  border-radius: var(--hud-radius);
+  box-shadow: var(--hud-shadow);
+  position: sticky;
+  top: 0.85rem;
+  z-index: 100;
+  isolation: isolate;
+  transition: border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease, transform 0.2s cubic-bezier(0.16,1,0.3,1);
+}
+
+.ag-hud--full,
+.console-hud.ag-hud--full,
+#space-app .ag-hud--full {
+  --hud-max: var(--hud-max-full);
+  --hud-pad-x-current: 1.15rem;
+}
+.ag-hud--compact,
+.study-compact-hud {
+  --hud-max: var(--hud-max-compact);
+}
+.ag-hud--immersive,
+#space-app .topbar.glass,
+#space-app .ag-hud--immersive {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: max(12px, env(safe-area-inset-top));
+  width: auto;
+  max-width: none;
+  margin: 0;
+  z-index: 30;
+}
+
+/* subtle top highlight */
+.ag-hud::before,
+.study-compact-hud::before,
+.console-hud::before,
+.topbar.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255,255,255,0.08), transparent 55%);
+  pointer-events: none;
+  opacity: 0.9;
+}
+
+/* Hover / focus lift — very subtle, agency-like */
+.ag-hud:hover,
+.study-compact-hud:hover,
+.console-hud:hover {
+  border-color: rgba(255,255,255,0.20);
+  box-shadow: 0 12px 32px -6px rgba(0,0,0,0.60), inset 0 1px 0 rgba(255,255,255,0.10);
+}
+
+/* ── Layout clusters ───────────────────────────────────── */
+.ag-hud__left,
+.hud-left-section,
+.study-compact-hud .ag-hud__left,
+.console-hud .ag-hud__left {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+  flex: 1 1 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.ag-hud__center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 1 auto;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.ag-hud__right,
+.hud-reward-mount,
+.compact-hud-reward-mount,
+#reward-inventory-mount {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  flex-shrink: 0;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* Ensure reward inventory mount never collapses to 0 */
+#reward-inventory-mount,
+.hud-reward-mount,
+.compact-hud-reward-mount {
+  min-height: 36px;
+  min-width: 48px;
+}
+
+/* ── Brand ─────────────────────────────────────────────── */
+.ag-hud__brand,
+.brand-badge,
+a.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.62rem;
+  text-decoration: none;
+  flex-shrink: 0;
+  min-width: 0;
+  border-radius: 9999px;
+  padding: 0.15rem 0.1rem;
+  transition: opacity 0.2s ease;
+}
+
+.ag-hud__brand:hover,
+.brand-badge:hover { opacity: 0.95; }
+
+.ag-hud__brand-dot,
+.brand-dot,
+.brand-icon {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--subject-accent, var(--neon-volt, #d7ff00));
+  box-shadow: 0 0 10px var(--subject-accent, var(--neon-volt, #d7ff00)), 0 0 18px color-mix(in srgb, var(--subject-accent, #d7ff00) 35%, transparent);
+  flex-shrink: 0;
+  position: relative;
+}
+.brand-icon { /* space-explorer uses emoji; keep dot semantics but allow emoji */
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow: none;
+  font-size: 16px;
+  border-radius: 9999px;
+}
+
+.ag-hud__brand-word,
+.brand-title,
+.brand strong {
+  font-family: 'Space Grotesk', 'Outfit', system-ui, sans-serif;
+  font-size: 0.71rem;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  color: var(--neon-volt, #d7ff00);
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+}
+.brand small {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #a5e3f7;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+.brand-badge div:last-child { display: flex; flex-direction: column; gap: 2px; }
+
+.ag-hud__brand-ver,
+.brand-version {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 3px 7px;
+  border-radius: 9999px;
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.14);
+  color: #E2E8F0;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.ag-hud__divider,
+.hud-left-section .home-link + .brand-badge + .home-link::before {
+  width: 1px;
+  height: 22px;
+  background: rgba(255,255,255,0.12);
+  flex-shrink: 0;
+  border-radius: 9999px;
+}
+.ag-hud__divider { display: block; }
+
+/* ── Subject chip ──────────────────────────────────────── */
+.ag-hud__subject,
+.brand-category {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  padding: 0.38rem 0.78rem;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--subject-accent, #d7ff00) 14%, rgba(255,255,255,0.06));
+  border: 1px solid color-mix(in srgb, var(--subject-accent, #d7ff00) 28%, rgba(255,255,255,0.10));
+  color: #FFFFFF;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  line-height: 1;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 2px 10px color-mix(in srgb, var(--subject-accent, transparent) 16%, transparent);
+}
+.brand-category {
+  font-size: 0.78rem;
+  padding: 0.32rem 0.7rem;
+  margin-top: 0;
+}
+.ag-hud__subject-emoji { font-size: 0.95em; line-height: 1; }
+
+/* Math / Korean / Science / English tint helpers if data-attribute present */
+.ag-hud[data-subject="math"] { --subject-accent: #ff6b35; }
+.ag-hud[data-subject="korean"] { --subject-accent: #10b981; }
+.ag-hud[data-subject="science"] { --subject-accent: #06b6d4; }
+.ag-hud[data-subject="english"] { --subject-accent: #38bdf8; }
+.ag-hud[data-subject="weekly-test"] { --subject-accent: #6366f1; }
+.ag-hud[data-subject="space"] { --subject-accent: #22d3ee; }
+.ag-hud[data-subject="guardian"] { --subject-accent: #d7ff00; }
+
+/* ── Title (center) ────────────────────────────────────── */
+.ag-hud__title,
+.compact-hud-title,
+.study-compact-hud h1,
+.console-hud h1 {
+  font-family: 'Outfit', 'Pretendard', system-ui, sans-serif;
+  font-size: 0.98rem !important;
+  font-weight: 900 !important;
+  color: #FFFFFF !important;
+  letter-spacing: -0.02em !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  padding: 0 0.35rem !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 22ch;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.35) !important;
+  text-transform: none !important;
+}
+.ag-hud__title-label {
+  font-family: 'Space Grotesk', monospace;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.55);
+  text-transform: uppercase;
+  margin-right: 0.35rem;
+}
+
+/* For compact HUDs, title lives in center — hide on desktop if brand+subject present, show on mobile */
+.ag-hud--compact .ag-hud__title { display: none; }
+.ag-hud--compact .ag-hud__subject { display: inline-flex; }
+
+/* ── Home pill ──────────────────────────────────────────── */
+.ag-hud__home,
+.compact-hud-home,
+.home-link,
+a.home-link,
+.brand + .home-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
+  padding: 0.44rem 0.95rem;
+  min-height: 36px;
+  border-radius: 9999px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.14);
+  color: #F1F5F9;
+  font-family: 'Outfit', 'Pretendard', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s cubic-bezier(0.16,1,0.3,1);
+  position: relative;
+}
+.ag-hud__home:hover,
+.compact-hud-home:hover,
+.home-link:hover {
+  background: rgba(255,255,255,0.14);
+  border-color: rgba(255,255,255,0.26);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.28);
+}
+.ag-hud__home:active,
+.compact-hud-home:active,
+.home-link:active { transform: translateY(0) scale(0.98); }
+
+.ag-hud__home-icon,
+.home-arrow,
+.compact-hud-home .home-arrow {
+  font-size: 1rem;
+  line-height: 1;
+  opacity: 0.95;
+  translate: 0 0.5px;
+}
+.ag-hud__home svg,
+.home-link svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.95;
+}
+.compact-hud-home .home-text { font-weight: 800; }
+
+/* Ghost variant for secondary actions in Space Explorer */
+.ag-hud__ghost-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.44rem 0.85rem;
+  min-height: 36px;
+  border-radius: 9999px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.14);
+  color: #E2E8F0;
+  font-size: 0.80rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.ag-hud__ghost-btn:hover {
+  background: rgba(255,255,255,0.14);
+  border-color: rgba(255,255,255,0.24);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.ag-hud__ghost-btn:active { transform: scale(0.98); }
+.ag-hud__ghost-btn[aria-pressed="true"] {
+  background: rgba(34,211,238,0.16);
+  border-color: rgba(34,211,238,0.42);
+  color: #a5f3fc;
+  box-shadow: 0 0 14px rgba(34,211,238,0.22);
+}
+
+/* ── Status badges (Space Explorer date / speed) ──────── */
+.ag-hud__status-row,
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+.ag-hud__badge,
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.38rem 0.7rem;
+  border-radius: 9999px;
+  background: rgba(2, 8, 20, 0.72);
+  border: 1px solid rgba(148,163,184,0.18);
+  color: #D8E5F5;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  line-height: 1;
+  backdrop-filter: blur(6px);
+}
+.ag-hud__badge--accent,
+.badge.accent {
+  color: #70f0c0;
+  border-color: rgba(52,211,153,0.32);
+  background: rgba(4,60,45,0.32);
+  box-shadow: 0 0 12px rgba(52,211,153,0.18);
+}
+
+/* ── Reward mount polish ──────────────────────────────── */
+.ag-hud__reward,
+.hud-reward-mount,
+.compact-hud-reward-mount {
+  margin-left: 0.15rem;
+  padding-left: 0.55rem;
+  border-left: 1px solid rgba(255,255,255,0.08);
+}
+.ag-hud__reward:empty,
+.hud-reward-mount:empty,
+.compact-hud-reward-mount:empty {
+  border-left: none;
+  padding-left: 0;
+}
+
+/* Tighten inventory pills when inside HUD — match agency spacing */
+.ag-hud #reward-inventory .inventory-item,
+.hud-reward-mount #reward-inventory .inventory-item,
+.compact-hud-reward-mount #reward-inventory .inventory-item {
+  padding: 0.42rem 0.8rem !important;
+  gap: 0.35rem !important;
+  font-size: 0.82rem !important;
+  min-height: 36px !important;
+  border-radius: 9999px !important;
+}
+.ag-hud #reward-inventory .inventory-item.gem-item,
+.compact-hud-reward-mount #reward-inventory .compact-gem-link {
+  background: rgba(215,255,0,0.14) !important;
+  border-color: rgba(215,255,0,0.38) !important;
+  box-shadow: 0 0 14px rgba(215,255,0,0.14) !important;
+}
+.ag-hud #reward-inventory .inventory-item.gem-item:hover {
+  background: rgba(215,255,0,0.22) !important;
+  border-color: rgba(215,255,0,0.52) !important;
+}
+
+/* ── Focus states ─────────────────────────────────────── */
+.ag-hud__brand:focus-visible,
+.ag-hud__home:focus-visible,
+.ag-hud__ghost-btn:focus-visible,
+.compact-hud-home:focus-visible,
+.home-link:focus-visible,
+.badge:focus-visible,
+.brand:focus-visible {
+  outline: 2px solid var(--subject-accent, #d7ff00);
+  outline-offset: 2px;
+  border-radius: 9999px;
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 980px) {
+  .ag-hud--full { --hud-pad-x-current: 0.9rem; }
+  .ag-hud__brand-word { font-size: 0.66rem; }
+  .ag-hud__brand-ver { display: none; } /* hide version on tablet */
+}
+
+@media (max-width: 720px) {
+  .ag-hud,
+  .study-compact-hud,
+  .console-hud,
+  .topbar.glass {
+    --hud-height: 50px;
+    --hud-pad-y: 0.45rem;
+    --hud-pad-x-current: 0.75rem;
+    gap: 0.6rem;
+  }
+  .ag-hud__brand-word { display: none; }
+  .ag-hud__divider { display: none; }
+  .ag-hud__subject,
+  .brand-category { font-size: 0.78rem; padding: 0.34rem 0.68rem; }
+  /* Keep HUD single-row on tablet */
+  .ag-hud__left { gap: 0.65rem; }
+  .ag-hud__home,
+  .compact-hud-home,
+  .home-link { padding: 0.38rem 0.75rem; font-size: 0.78rem; min-height: 34px; }
+}
+
+@media (max-width: 520px) {
+  .ag-hud,
+  .study-compact-hud,
+  .console-hud { flex-wrap: nowrap; }
+  .ag-hud__brand-dot,
+  .brand-dot { width: 8px; height: 8px; }
+  .ag-hud__subject,
+  .brand-category { max-width: 18ch; overflow: hidden; text-overflow: ellipsis; }
+  .ag-hud__right,
+  .hud-reward-mount,
+  .compact-hud-reward-mount { gap: 0.4rem; }
+  /* Compact HUD shows title fallback if brand trimmed too much */
+  .ag-hud--compact .ag-hud__title { display: flex; max-width: 12ch; }
+  .ag-hud--compact .ag-hud__left .ag-hud__brand { display: none; } /* save space on very small */
+  .topbar.glass,
+  .ag-hud--immersive { flex-wrap: wrap; justify-content: space-between; min-height: auto; }
+  .topbar.glass .status-row,
+  .ag-hud--immersive .ag-hud__status-row { order: 3; width: 100%; justify-content: center; margin-top: 0.2rem; }
+}
+
+/* ── Reduced motion ───────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .ag-hud,
+  .study-compact-hud,
+  .console-hud,
+  .ag-hud__home,
+  .ag-hud__ghost-btn,
+  .compact-hud-home { transition: none !important; transform: none !important; }
+}
+
+/* ── Legacy compatibility shims ───────────────────────────
+   Ensure old markup inherits new tokens without HTML changes */
+.study-compact-hud { --subject-accent: var(--subject-accent, #d7ff00); }
+.console-hud { --subject-accent: var(--subject-accent, #d7ff00); }
+.study-compact-hud .compact-hud-home,
+.console-hud .home-link { /* already styled above */ }
+
+.console-hud .brand-badge { gap: 0.62rem; }
+.console-hud .brand-badge > div { gap: 2px; }
+
+/* Space Explorer pill buttons should look like HUD pills, not cards */
+.topbar.glass button,
+.ag-hud--immersive button {
+  border-radius: 9999px !important;
+}
+
+/* Guardian header container max-width harmonization */
+.ag-hud--full { /* already defined */ }
+
+/* Ensure daily-goal banner sits cleanly below HUD with consistent rhythm */
+#daily-goal-banner,
+.daily-goal-container { margin-top: 0.15rem; }
+
+/* ── Screen-reader only ────────────────────────────────── */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* ── Immersive fine-tuning ─────────────────────────────── */
+.ag-hud--immersive,
+#space-app .topbar.glass.ag-hud--immersive {
+  gap: 0.85rem;
+}
+.ag-hud--immersive .ag-hud__left { flex: 1 1 auto; }
+.ag-hud--immersive .ag-hud__status-row { flex: 0 0 auto; justify-content: center; }
+.ag-hud--immersive .ag-hud__right { flex: 0 0 auto; }
+
+/* ── Entrance polish (no layout shift, respects prefers-reduced-motion) ── */
+@media (prefers-reduced-motion: no-preference) {
+  .ag-hud,
+  .study-compact-hud,
+  .console-hud,
+  .topbar.glass {
+    animation: ag-hud-in 0.42s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  @keyframes ag-hud-in {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+}

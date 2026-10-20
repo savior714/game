@@ -16,6 +16,9 @@ PAGE = EXPERIMENTS / "dino-escape.html"
 STYLESHEET = EXPERIMENTS / "dino-escape.css"
 SCRIPT = EXPERIMENTS / "dino-escape.js"
 DINO = EXPERIMENTS / "dino"
+ASSETS = EXPERIMENTS / "assets"
+FONTS = ASSETS / "fonts"
+FRAME_CHECK = ROOT / "scripts" / "dino" / "frame-check.mjs"
 
 
 def test_home_has_dino_escape_card_below_paint_mixing_card() -> None:
@@ -94,23 +97,31 @@ def test_dino_escape_page_is_offline_and_module_based() -> None:
     assert '<script type="module" src="./dino-escape.js"></script>' in html
     assert html.count("<script") == 1
 
-    # Fonts may come from a CDN (the rest of the lab does the same); the 3D
-    # engine itself must never be fetched at runtime.
-    for remote in ("unpkg.com", "cdn.jsdelivr.net/npm/three", "cdnjs.cloudflare.com", "three@0."):
-        assert remote not in html, f"remote three.js dependency leaked back: {remote}"
+    # Nothing at all is fetched at runtime: the 3D engine, the fonts and the
+    # stylesheet are all local, so the page renders identically offline.
+    for remote in (
+        "unpkg.com",
+        "cdn.jsdelivr.net",
+        "cdnjs.cloudflare.com",
+        "three@0.",
+        "fonts.googleapis.com",
+        "fonts.gstatic.com",
+    ):
+        assert remote not in html, f"runtime network dependency leaked back: {remote}"
     assert "importmap" not in html
 
     # Vendored three.js ships its core chunk next to the module entry point.
-    assert 'modulepreload" href="./vendor/three/three.module.min.js"' in html
-    assert 'modulepreload" href="./vendor/three/three.core.min.js"' in html
-    assert (EXPERIMENTS / "vendor" / "three" / "three.module.min.js").exists()
-    assert (EXPERIMENTS / "vendor" / "three" / "three.core.min.js").exists()
+    assert 'modulepreload" href="./vendor/three/build/three.module.min.js"' in html
+    assert 'modulepreload" href="./vendor/three/build/three.core.min.js"' in html
+    assert (EXPERIMENTS / "vendor" / "three" / "build" / "three.module.min.js").exists()
+    assert (EXPERIMENTS / "vendor" / "three" / "build" / "three.core.min.js").exists()
+    assert (EXPERIMENTS / "vendor" / "three" / "LICENSE" / "THREE_LICENSE.txt").exists()
 
 
 def test_entry_script_only_imports_local_modules() -> None:
     script = SCRIPT.read_text(encoding="utf-8")
 
-    assert 'from "./vendor/three/three.module.min.js"' in script
+    assert 'from "./vendor/three/build/three.module.min.js"' in script
     assert "unpkg.com" not in script
     assert "jsdelivr" not in script
     assert "https://" not in script
@@ -138,7 +149,7 @@ def test_simulation_modules_stay_dom_free() -> None:
 
     for name in ("models.js", "world.js", "particles.js", "entities.js"):
         source = (DINO / name).read_text(encoding="utf-8")
-        assert 'from "../vendor/three/three.module.min.js"' in source
+        assert 'from "../vendor/three/build/three.module.min.js"' in source
 
 
 def test_run_model_exposes_events_used_by_the_presentation_layer() -> None:
@@ -210,3 +221,81 @@ def test_presentation_entry_drives_every_required_screen_and_hud_state() -> None
 
     for mode in ('"menu"', '"running"', '"paused"', '"caught"', '"gameover"'):
         assert f"mode = {mode}" in script or f"mode: {mode}" in script
+
+
+def test_dino_escape_ships_its_own_fonts() -> None:
+    """Korean copy must never depend on a reachable CDN or the host's emoji font."""
+    html = PAGE.read_text(encoding="utf-8")
+    css = STYLESHEET.read_text(encoding="utf-8")
+
+    assert 'href="./assets/fonts/PretendardVariable.woff2"' in html
+    assert "fonts.googleapis.com" not in html and "fonts.gstatic.com" not in html
+    assert "jsdelivr" not in html
+
+    for family, weight in (
+        ("Pretendard", "45 920"),
+        ("Outfit", "700"),
+        ("Space Grotesk", "700"),
+        ("JetBrains Mono", "500"),
+    ):
+        assert f'font-family: "{family}"' in css, f"missing @font-face for {family}"
+    assert 'src: url("./assets/fonts/PretendardVariable.woff2")' in css
+    assert "font-display: swap" in css
+
+    for font_file in re.findall(r'url\(\"\./assets/fonts/([^\"]+)\"\)', css):
+        assert (FONTS / font_file).is_file(), f"stylesheet references missing font: {font_file}"
+    assert (FONTS / "Pretendard-LICENSE.txt").is_file()
+    assert (FONTS / "OFL-LICENSE.txt").is_file()
+
+    # Korean glyphs fall back to a Korean-capable family, not to the emoji font.
+    assert "--font-body: \"Pretendard\"" in css
+    assert '"Apple SD Gothic Neo"' in css and '"Malgun Gothic"' in css
+
+
+def test_dino_escape_hud_does_not_rely_on_emoji_glyphs() -> None:
+    """Emoji render as tofu on many Linux/Windows setups; shipped UI uses SVG."""
+    html = PAGE.read_text(encoding="utf-8")
+    script = SCRIPT.read_text(encoding="utf-8")
+
+    for emoji in ("🦖", "🍖", "🥩", "🔊", "🔇"):
+        assert emoji not in html, f"page shell still depends on emoji glyph {emoji}"
+        assert emoji not in script, f"entry script still injects emoji glyph {emoji}"
+
+    for icon in ("gap-rex", "touch-bait", "audio-pill-icon", "boot-mark"):
+        block = re.search(rf'class="[^"]*{icon}[^"]*"[^>]*>(.*?)</span>', html, re.S)
+        if block is None:
+            block = re.search(rf'class="[^"]*{icon}[^"]*"[^>]*>(.*?)</div>', html, re.S)
+        assert block is not None, f"missing {icon} markup"
+        assert "<svg" in block.group(1), f"{icon} must render as inline SVG, not a glyph"
+
+
+def test_chase_director_keeps_the_chase_readable() -> None:
+    """Static contract for the camera/staging module plus its framing check."""
+    chase = (DINO / "chase.js").read_text(encoding="utf-8")
+    script = SCRIPT.read_text(encoding="utf-8")
+
+    for export in ("createChaseDirector", "rexStaging", "CHASE", "yawToward"):
+        assert f"export function {export}" in chase or f"export const {export}" in chase
+
+    assert "chase.update(" in script
+    assert "rexStaging(" in script
+    # The camera director owns the pose now, not ad-hoc camera math in the entry.
+    assert "camera.lookAt(pose.lookX, pose.lookY, pose.lookZ)" in script
+    assert FRAME_CHECK.is_file()
+
+    import shutil
+    import subprocess
+
+    node = shutil.which("node")
+    if not node:
+        return
+    result = subprocess.run(
+        [node, str(FRAME_CHECK)],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "checks passed" in result.stdout

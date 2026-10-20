@@ -1,4 +1,4 @@
-import * as THREE from "../vendor/three/three.module.min.js";
+import * as THREE from "../vendor/three/build/three.module.min.js";
 import { BIOMES, PARTICLE_LIMITS, REX_LAYER, SCENERY } from "./constants.js";
 import { clamp, damp, randRange, randInt, pick } from "./util.js";
 import { buildMergedGeometry, createHazardModel } from "./models.js";

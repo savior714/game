@@ -1,4 +1,4 @@
-import * as THREE from "../vendor/three/three.module.min.js";
+import * as THREE from "../vendor/three/build/three.module.min.js";
 
 const VERTEX_SHADER = /* glsl */ `
   attribute float aSize;

@@ -1,181 +1,100 @@
-export const TWO_PI = Math.PI * 2;
+// 태양계 3D 탐험대 — 시뮬레이션 상태
+// DOM/THREE에 의존하지 않으므로 Node 테스트에서 그대로 검증할 수 있다.
 
-// 실제 천문학적 데이터 기반
-// 공전속도: speed = 2π / (orbitalPeriodInDays) — 1년 = 365.25일 기준
-// 거리 비율은 sqrt(AU) 스케일로 압축 — 외행성 가시성 확보
+import { DEFAULT_SPEED_ID, SPEED_PRESETS } from "./data.js";
+import { daysSinceJ2000, formatSimDate, speedLabel } from "./simulation.js";
 
-export const planets = [
-  {
-    name: "수성",
-    nameEn: "Mercury",
-    color: "#a8a8a8",
-    gradientStops: ["#d4d4d4", "#8a8a8a", "#5a5a5a"],
-    radius: 3.5,
-    orbitRadius: 48,
-    orbitSpeed: 2 * Math.PI / (88 / 365.25),
-    angle: 0.8,
-    trail: [],
-    maxTrail: 120,
-    info: {
-      diameter: "4,879 km",
-      distance: "0.39 AU (5,790만 km)",
-      orbitalPeriod: "88일",
-      temperature: "-173~427°C",
-      description: "태양에서 가장 가까운 행성.昼夜 온도차가 극심하고 대기가 거의 없습니다.",
-    },
-  },
-  {
-    name: "금성",
-    nameEn: "Venus",
-    color: "#e8c47a",
-    gradientStops: ["#f5e6b8", "#d4a84c", "#a07830"],
-    radius: 5.5,
-    orbitRadius: 68,
-    orbitSpeed: 2 * Math.PI / (225 / 365.25),
-    angle: 2.1,
-    trail: [],
-    maxTrail: 140,
-    info: {
-      diameter: "12,104 km",
-      distance: "0.72 AU (1억 80만 km)",
-      orbitalPeriod: "225일",
-      temperature: "462°C (평균)",
-      description: "두꺼운 이산화탄소 대기로 인한 온실 효과로 태양계에서 가장 뜨거운 행성입니다.",
-    },
-  },
-  {
-    name: "지구",
-    nameEn: "Earth",
-    color: "#4a90d9",
-    gradientStops: ["#7ec8f0", "#4a90d9", "#2a5a8a"],
-    radius: 6,
-    orbitRadius: 90,
-    orbitSpeed: 2 * Math.PI / (365.25 / 365.25),
-    angle: 4.0,
-    trail: [],
-    maxTrail: 160,
-    info: {
-      diameter: "12,756 km",
-      distance: "1.00 AU (1억 5,000만 km)",
-      orbitalPeriod: "365.25일",
-      temperature: "15°C (평균)",
-      description: "태양계에서 유일한 생명체 존재 행성. 표면의 71%가 바닷물입니다.",
-    },
-  },
-  {
-    name: "화성",
-    nameEn: "Mars",
-    color: "#c85a3c",
-    gradientStops: ["#e89070", "#c85a3c", "#8a3020"],
-    radius: 4.5,
-    orbitRadius: 114,
-    orbitSpeed: 2 * Math.PI / (687 / 365.25),
-    angle: 5.5,
-    trail: [],
-    maxTrail: 140,
-    info: {
-      diameter: "6,792 km",
-      distance: "1.52 AU (2억 2,800만 km)",
-      orbitalPeriod: "687일",
-      temperature: "-63°C (평균)",
-      description: "붉은 산화철 표면이 특징. 태양계에서 가장 높은 화산(올림푸스 몬스, 22km)이 있습니다.",
-    },
-  },
-  {
-    name: "목성",
-    nameEn: "Jupiter",
-    color: "#d4a868",
-    gradientStops: ["#f0d8a8", "#d4a868", "#a07840"],
-    radius: 13,
-    orbitRadius: 165,
-    orbitSpeed: 2 * Math.PI / (11.9 * 365.25 / 365.25),
-    angle: 1.2,
-    trail: [],
-    maxTrail: 180,
-    info: {
-      diameter: "142,984 km",
-      distance: "5.20 AU (7억 7,800만 km)",
-      orbitalPeriod: "11.9년",
-      temperature: "-108°C (구름상단)",
-      description: "태양계 최대 행성. 대적점이라 불리는 거대 폭풍이 수백 년간 지속되고 있습니다.",
-    },
-  },
-  {
-    name: "토성",
-    nameEn: "Saturn",
-    color: "#e0d0a0",
-    gradientStops: ["#f8ecd0", "#e0d0a0", "#b0a070"],
-    radius: 11,
-    orbitRadius: 210,
-    orbitSpeed: 2 * Math.PI / (29.5 * 365.25 / 365.25),
-    angle: 3.8,
-    trail: [],
-    maxTrail: 180,
-    hasRings: true,
-    ringInnerRadius: 15,
-    ringOuterRadius: 26,
-    info: {
-      diameter: "120,536 km",
-      distance: "9.58 AU (14억 3천만 km)",
-      orbitalPeriod: "29.5년",
-      temperature: "-139°C (구름상단)",
-      description: "아름다운 고리가 특징. 고리는 주로 얼음과 암석 조각으로 구성되어 있습니다.",
-    },
-  },
-  {
-    name: "천왕성",
-    nameEn: "Uranus",
-    color: "#8ed8e8",
-    gradientStops: ["#c0f0f8", "#8ed8e8", "#5aa8b8"],
-    radius: 9,
-    orbitRadius: 250,
-    orbitSpeed: 2 * Math.PI / (84.0 * 365.25 / 365.25),
-    angle: 0.5,
-    trail: [],
-    maxTrail: 180,
-    info: {
-      diameter: "51,118 km",
-      distance: "19.2 AU (28억 7천만 km)",
-      orbitalPeriod: "84.0년",
-      temperature: "-197°C",
-      description: "자전축이 약 98도 기울어져 있어 '옆으로 누운' 행성. 메탄 대기로 청록색을 띱니다.",
-    },
-  },
-  {
-    name: "해왕성",
-    nameEn: "Neptune",
-    color: "#4a68e8",
-    gradientStops: ["#7090f0", "#4a68e8", "#2a3a9a"],
-    radius: 8.5,
-    orbitRadius: 285,
-    orbitSpeed: 2 * Math.PI / (165 * 365.25 / 365.25),
-    angle: 2.7,
-    trail: [],
-    maxTrail: 180,
-    info: {
-      diameter: "49,528 km",
-      distance: "30.1 AU (45억 km)",
-      orbitalPeriod: "165년",
-      temperature: "-201°C",
-      description: "태양계 가장 바깥 행성. 강한 바람(초음속)과 아름다운 청색 대기를 가지고 있습니다.",
-    },
-  },
-];
+export const MAX_FRAME_STEP_SECONDS = 0.1;
 
-export const initialAngles = planets.map((p) => p.angle);
+export function findSpeedPreset(id) {
+  return SPEED_PRESETS.find((preset) => preset.id === id) || SPEED_PRESETS.find((preset) => preset.id === DEFAULT_SPEED_ID);
+}
 
-export const state = {
-  isPlaying: true,
-  timeScale: 0.5,
-  showLabels: true,
-  renderMode: "2d",
-  zoom: 1,
-  targetZoom: 1,
-  viewRotation: 0,
-  targetRotation: 0,
-  elapsedTime: 0,
-  lastTs: 0,
-  rafId: null,
-  selectedPlanet: null,
-  hoveredPlanet: null,
-};
+/**
+ * @param {{ now?: Date }} options
+ */
+export function createAppState({ now = new Date() } = {}) {
+  const todayDays = daysSinceJ2000(now.toISOString());
+  const preset = findSpeedPreset(DEFAULT_SPEED_ID);
+
+  return {
+    days: todayDays,
+    todayDays,
+    speedId: preset.id,
+    daysPerSecond: preset.daysPerSecond,
+    paused: false,
+    followId: null,
+    showOrbits: true,
+    showLabels: true,
+    effects: true,
+    lastSpeedId: preset.id,
+  };
+}
+
+export function setSpeed(state, presetId) {
+  const preset = findSpeedPreset(presetId);
+  if (!preset) return state;
+  state.speedId = preset.id;
+  state.daysPerSecond = preset.daysPerSecond;
+  state.paused = false;
+  if (preset.daysPerSecond > 0) state.lastSpeedId = preset.id;
+  return state;
+}
+
+export function togglePaused(state) {
+  state.paused = !state.paused;
+  return state;
+}
+
+export function stepDays(state, deltaDays) {
+  if (!Number.isFinite(deltaDays)) return state;
+  state.days += deltaDays;
+  return state;
+}
+
+export function resetToToday(state) {
+  state.days = state.todayDays;
+  return state;
+}
+
+/** 프레임 경과 시간만큼 시뮬레이션 날짜를 진행한다. */
+export function advanceSimulation(state, dtSeconds) {
+  const dt = Math.min(MAX_FRAME_STEP_SECONDS, Math.max(0, dtSeconds));
+  if (state.paused || !Number.isFinite(state.daysPerSecond)) return state.days;
+  state.days += dt * state.daysPerSecond;
+  return state.days;
+}
+
+export function currentDateLabel(state) {
+  return formatSimDate(state.days);
+}
+
+export function speedBadgeText(state) {
+  if (state.paused) return "일시정지";
+  return speedLabel(state.daysPerSecond);
+}
+
+export function setFollow(state, bodyId) {
+  state.followId = bodyId;
+  return state;
+}
+
+export function clearFollow(state) {
+  state.followId = null;
+  return state;
+}
+
+export function toggleOrbits(state) {
+  state.showOrbits = !state.showOrbits;
+  return state.showOrbits;
+}
+
+export function toggleLabels(state) {
+  state.showLabels = !state.showLabels;
+  return state.showLabels;
+}
+
+export function toggleEffects(state) {
+  state.effects = !state.effects;
+  return state.effects;
+}

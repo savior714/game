@@ -21,3 +21,18 @@ def test_reward_ui_marble_url_resolution():
     assert "../marble/" not in content, (
         "reward_ui.js must not refer to outdated '../marble/' path"
     )
+
+
+def test_marble_top_hud_does_not_cover_game_hud():
+    """Ensure experiments/marble/index.html reserves top offset for .game-top-hud so #hud and #stage are not obscured."""
+    content = MARBLE_INDEX.read_text(encoding="utf-8")
+    assert "--top-hud-offset" in content, (
+        "experiments/marble/index.html must define --top-hud-offset to prevent .game-top-hud from covering #hud"
+    )
+    assert "#app" in content and "padding-top" in content, (
+        "experiments/marble/index.html must apply padding-top to #app below .game-top-hud"
+    )
+    assert "syncTopHudOffset" in content, (
+        "experiments/marble/index.html must dynamically synchronize top HUD offset on load and resize"
+    )
+

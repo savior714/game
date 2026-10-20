@@ -512,6 +512,27 @@ kbd {
   animation: rex-lurch 0.8s ease-in-out infinite;
 }
 
+/* Amber pickup: the distance readout flashes so the loop is legible.
+   "Coins push the rex back" should be visible, not explained. */
+.gap-block.is-gain .gap-value {
+  animation: gap-gain 0.34s ease-out;
+}
+
+.gap-block.is-gain .gap-fill {
+  box-shadow: 0 0 12px rgba(215, 255, 0, 0.85);
+}
+
+@keyframes gap-gain {
+  0% {
+    transform: scale(calc(1 + 0.18 * var(--gap-pulse, 1)));
+    color: var(--volt);
+  }
+  100% {
+    transform: scale(1);
+    color: inherit;
+  }
+}
+
 .hud.is-danger .gap-fill {
   background: linear-gradient(90deg, #ff1c10, #ff6a35);
 }

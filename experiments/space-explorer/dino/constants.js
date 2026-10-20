@@ -20,16 +20,19 @@ export const PLAYER = Object.freeze({
   height: 1.62,
   slideHeight: 0.72,
   halfWidth: 0.3,
-  strafeSpeed: 7.6,
-  strafeAccel: 14,
+  strafeSpeed: 8.2,
+  strafeAccel: 16,
   jumpVelocity: 11.5,
   gravity: 34,
   maxFallSpeed: 26,
   coyoteTime: 0.16,
   jumpBuffer: 0.2,
-  slideDuration: 0.72,
-  slideCooldown: 0.18,
-  hitboxGrace: 0.08,
+  slideDuration: 0.78,
+  slideCooldown: 0.16,
+  // Vertical clearance and lateral leniency: a dodge that looks like a dodge
+  // should count as one. Children aim with their thumbs, not with a mouse.
+  hitboxGrace: 0.16,
+  lateralGrace: 0.24,
 });
 
 export const RUN = Object.freeze({
@@ -37,15 +40,25 @@ export const RUN = Object.freeze({
   maxSpeed: 24,
   speedPerMeter: 0.0043,
   startGap: 15.5,
-  maxGap: 30,
+  maxGap: 26,
   caughtGap: 0.7,
-  gapDriftBase: 0.022,
-  gapDriftPerMeter: 0.0001,
-  gapDriftMax: 0.15,
-  hitGapPenalty: 3.2,
-  hitInvuln: 1.25,
-  hitSlow: 0.9,
-  hitSlowFactor: 0.55,
+  // The rex closes in continuously; ambers are the only way to push back.
+  // Tuned with a headless simulation (density 0.147 ambers/m):
+  //   0% collected  -> eaten in ~45s
+  //   30%           -> ~3 min
+  //   50%           -> ~5-6 min, gap hovers near danger
+  //   60%+          -> distance holds near the cap
+  // Drift per metre keeps the pressure identical as speed rises.
+  gapDriftBase: 0.6,
+  gapDriftPerMeter: 0.0003,
+  gapDriftMax: 1.8,
+  amberGapGain: 0.5,
+  amberStreak: 10,
+  amberStreakBonus: 1.6,
+  hitGapPenalty: 2.6,
+  hitInvuln: 1.35,
+  hitSlow: 0.75,
+  hitSlowFactor: 0.65,
   sprintMultiplier: 1.26,
   baitGapGain: 8.5,
   baitFallbackTime: 0.85,
@@ -57,7 +70,7 @@ export const RUN = Object.freeze({
   comboMax: 5,
   amberPerBait: 25,
   milestoneStep: 250,
-  milestoneGapReward: 1.5,
+  milestoneGapReward: 1.0,
   staminaDrain: 0.55,
   staminaRegen: 0.34,
   staminaUnlock: 0.45,

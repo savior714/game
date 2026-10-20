@@ -11,10 +11,16 @@ const midiToFreq = (midi) => 440 * 2 ** ((midi - 69) / 12);
 
 const PENTATONIC = [62, 64, 67, 69, 72, 74, 77, 79, 81, 84];
 
+/**
+ * Ambience is a bed, not a lead. Each layer keeps a low gain and a narrow,
+ * slow-moving filter so the mix breathes like wind instead of hissing like
+ * untuned static (the old 520 Hz / Q 0.55 band plus a 2.4 kHz highpass read as
+ * a continuous "shhh" and buried the music).
+ */
 const BIOME_AMBIENCE = {
-  jungle: { wind: 520, windGain: 0.05, leaves: 0.016, rumble: 0 },
-  desert: { wind: 360, windGain: 0.042, leaves: 0.008, rumble: 0 },
-  volcano: { wind: 210, windGain: 0.055, leaves: 0.004, rumble: 0.035 },
+  jungle: { wind: 300, air: 900, windGain: 0.028, airGain: 0.006, rumble: 0 },
+  desert: { wind: 240, air: 1400, windGain: 0.024, airGain: 0.009, rumble: 0 },
+  volcano: { wind: 150, air: 620, windGain: 0.03, airGain: 0.003, rumble: 0.03 },
 };
 
 export function createAudioEngine(initialSettings = {}) {
@@ -129,7 +135,7 @@ export function createAudioEngine(initialSettings = {}) {
       musicBus = ctx.createGain();
       musicBus.gain.value = settings.music ? settings.musicVolume * 0.8 : 0;
       ambienceBus = ctx.createGain();
-      ambienceBus.gain.value = settings.music ? 0.7 : 0;
+      ambienceBus.gain.value = settings.sound ? 0.6 : 0;
       sfxBus.connect(master);
       musicBus.connect(master);
       ambienceBus.connect(master);
@@ -163,28 +169,68 @@ export function createAudioEngine(initialSettings = {}) {
   }
 
   function startAmbience() {
+    // Low, slowly-modulated wind: filtered noise plus two very slow LFOs that
+    // open the filter and swell the gain, so the pad never sits on one pitch.
     windSource = ctx.createBufferSource();
     windSource.buffer = noiseBuffer;
     windSource.loop = true;
     windFilter = ctx.createBiquadFilter();
-    windFilter.type = "bandpass";
+    windFilter.type = "lowpass";
     windFilter.frequency.value = BIOME_AMBIENCE.jungle.wind;
-    windFilter.Q.value = 0.55;
+    windFilter.Q.value = 0.9;
     windGain = ctx.createGain();
     windGain.gain.value = BIOME_AMBIENCE.jungle.windGain;
     windSource.connect(windFilter);
     windFilter.connect(windGain);
-    windGain.connect(ambienceBus);
+    // Slow stereo drift: a wall of centred noise reads as a hiss, a moving
+    // stereo image reads as air around the player.
+    if (typeof ctx.createStereoPanner === "function") {
+      const windPan = ctx.createStereoPanner();
+      windPan.pan.value = 0;
+      windGain.connect(windPan);
+      windPan.connect(ambienceBus);
+      const panDrift = ctx.createOscillator();
+      panDrift.type = "sine";
+      panDrift.frequency.value = 0.043;
+      const panDepth = ctx.createGain();
+      panDepth.gain.value = 0.34;
+      panDrift.connect(panDepth);
+      panDepth.connect(windPan.pan);
+      panDrift.start();
+    } else {
+      windGain.connect(ambienceBus);
+    }
     windSource.start();
 
+    const gust = ctx.createOscillator();
+    gust.type = "sine";
+    gust.frequency.value = 0.07;
+    const gustDepth = ctx.createGain();
+    gustDepth.gain.value = 0.012;
+    gust.connect(gustDepth);
+    gustDepth.connect(windGain.gain);
+    gust.start();
+
+    const drift = ctx.createOscillator();
+    drift.type = "sine";
+    drift.frequency.value = 0.031;
+    const driftDepth = ctx.createGain();
+    driftDepth.gain.value = 130;
+    drift.connect(driftDepth);
+    driftDepth.connect(windFilter.frequency);
+    drift.start();
+
+    // A whisper of high air for movement, kept far below the old hiss.
     leavesSource = ctx.createBufferSource();
     leavesSource.buffer = noiseBuffer;
     leavesSource.loop = true;
+    leavesSource.playbackRate.value = 0.6;
     leavesFilter = ctx.createBiquadFilter();
     leavesFilter.type = "highpass";
-    leavesFilter.frequency.value = 2400;
+    leavesFilter.frequency.value = BIOME_AMBIENCE.jungle.air;
+    leavesFilter.Q.value = 0.7;
     leavesGain = ctx.createGain();
-    leavesGain.gain.value = BIOME_AMBIENCE.jungle.leaves;
+    leavesGain.gain.value = BIOME_AMBIENCE.jungle.airGain;
     leavesSource.connect(leavesFilter);
     leavesFilter.connect(leavesGain);
     leavesGain.connect(ambienceBus);
@@ -206,7 +252,7 @@ export function createAudioEngine(initialSettings = {}) {
 
   function startDrone() {
     droneGain = ctx.createGain();
-    droneGain.gain.value = 0.028;
+    droneGain.gain.value = 0.02;
     droneFilter = ctx.createBiquadFilter();
     droneFilter.type = "lowpass";
     droneFilter.frequency.value = 190;
@@ -256,8 +302,10 @@ export function createAudioEngine(initialSettings = {}) {
       t,
       ramp,
     );
+    // Wind is ambience, not music: it follows the master sound switch and
+    // drops back (rather than vanishing) while the game is paused.
     ambienceBus.gain.setTargetAtTime(
-      settings.music ? (musicPaused ? 0.25 : 0.7) : 0.0001,
+      settings.sound ? (musicPaused ? 0.22 : 0.6) : 0.0001,
       t,
       ramp,
     );
@@ -616,22 +664,38 @@ export function createAudioEngine(initialSettings = {}) {
   }
 
   /* Music scheduler ------------------------------------------------- */
+  /*
+   * A composed bed rather than a random sprinkle: 104 BPM, four-on-the-floor
+   * kick, snare on 2 and 4, shakers, a moving bass line, sustained pad chords
+   * and a pentatonic pluck motif. The motif is fixed (not random) so a child
+   * can recognise the tune; the threat level only adds intensity on top.
+   */
 
-  function scheduleKick(time, gain = 0.16) {
+  const MUSIC = Object.freeze({
+    bpm: 104,
+    stepsPerBar: 16,
+    bars: 64,
+    bassPattern: [38, 38, 36, 41, 38, 38, 43, 36],
+    // Indices into PENTATONIC, one bar's worth of pickups.
+    motif: [0, 2, 4, 2, 5, 4, 2, 0, 1, 3, 5, 3, 6, 5, 3, 1],
+    motifSlots: [0, 3, 6, 10, 12],
+  });
+
+  function scheduleKick(time, gain = 0.42) {
     const osc = ctx.createOscillator();
     osc.type = "sine";
-    osc.frequency.setValueAtTime(112, time);
-    osc.frequency.exponentialRampToValueAtTime(42, time + 0.2);
+    osc.frequency.setValueAtTime(118, time);
+    osc.frequency.exponentialRampToValueAtTime(44, time + 0.18);
     const amp = ctx.createGain();
-    envelope(amp, time, gain, 0.004, 0.26);
+    envelope(amp, time, gain, 0.004, 0.24);
     osc.connect(amp);
     amp.connect(musicBus);
     const send = ctx.createGain();
-    send.gain.value = 0.06;
+    send.gain.value = 0.05;
     amp.connect(send);
     send.connect(reverbSend);
     osc.start(time);
-    osc.stop(time + 0.34);
+    osc.stop(time + 0.32);
     osc.onended = () => {
       osc.disconnect();
       amp.disconnect();
@@ -639,46 +703,60 @@ export function createAudioEngine(initialSettings = {}) {
     };
   }
 
-  function scheduleTom(time, gain = 0.07, frequency = 190) {
+  function scheduleSnare(time, gain = 0.17) {
     const source = ctx.createBufferSource();
     source.buffer = noiseBuffer;
     const filter = ctx.createBiquadFilter();
     filter.type = "bandpass";
-    filter.frequency.value = frequency;
-    filter.Q.value = 1.8;
+    filter.frequency.value = 1900;
+    filter.Q.value = 0.9;
     const amp = ctx.createGain();
-    envelope(amp, time, gain, 0.005, 0.2);
+    envelope(amp, time, gain, 0.002, 0.14);
     source.connect(filter);
     filter.connect(amp);
     amp.connect(musicBus);
     const send = ctx.createGain();
-    send.gain.value = 0.12;
+    send.gain.value = 0.16;
     amp.connect(send);
     send.connect(reverbSend);
     source.start(time);
-    source.stop(time + 0.28);
+    source.stop(time + 0.2);
     source.onended = () => {
       source.disconnect();
       filter.disconnect();
       amp.disconnect();
       send.disconnect();
     };
+    const body = ctx.createOscillator();
+    body.type = "triangle";
+    body.frequency.setValueAtTime(196, time);
+    body.frequency.exponentialRampToValueAtTime(150, time + 0.09);
+    const bodyAmp = ctx.createGain();
+    envelope(bodyAmp, time, gain * 0.5, 0.002, 0.1);
+    body.connect(bodyAmp);
+    bodyAmp.connect(musicBus);
+    body.start(time);
+    body.stop(time + 0.15);
+    body.onended = () => {
+      body.disconnect();
+      bodyAmp.disconnect();
+    };
   }
 
-  function scheduleShaker(time, gain = 0.018) {
+  function scheduleHat(time, gain = 0.045) {
     const source = ctx.createBufferSource();
     source.buffer = noiseBuffer;
-    source.playbackRate.value = 1.7;
+    source.playbackRate.value = 1.9;
     const filter = ctx.createBiquadFilter();
     filter.type = "highpass";
-    filter.frequency.value = 5200;
+    filter.frequency.value = 7200;
     const amp = ctx.createGain();
-    envelope(amp, time, gain, 0.002, 0.07);
+    envelope(amp, time, gain, 0.001, 0.05);
     source.connect(filter);
     filter.connect(amp);
     amp.connect(musicBus);
     source.start(time);
-    source.stop(time + 0.1);
+    source.stop(time + 0.08);
     source.onended = () => {
       source.disconnect();
       filter.disconnect();
@@ -686,28 +764,41 @@ export function createAudioEngine(initialSettings = {}) {
     };
   }
 
-  function scheduleBass(time, midi) {
+  function scheduleBass(time, midi, gain = 0.2) {
     const osc = ctx.createOscillator();
     osc.type = "triangle";
     osc.frequency.value = midiToFreq(midi);
+    const sub = ctx.createOscillator();
+    sub.type = "sine";
+    sub.frequency.value = midiToFreq(midi - 12);
     const filter = ctx.createBiquadFilter();
     filter.type = "lowpass";
-    filter.frequency.value = 320;
+    filter.frequency.setValueAtTime(520, time);
+    filter.frequency.exponentialRampToValueAtTime(220, time + 0.4);
+    filter.Q.value = 4;
     const amp = ctx.createGain();
-    envelope(amp, time, 0.055, 0.02, 0.6);
+    envelope(amp, time, gain, 0.012, 0.5);
+    const subAmp = ctx.createGain();
+    envelope(subAmp, time, gain * 0.5, 0.012, 0.45);
     osc.connect(filter);
     filter.connect(amp);
+    sub.connect(subAmp);
     amp.connect(musicBus);
+    subAmp.connect(musicBus);
     osc.start(time);
-    osc.stop(time + 0.8);
+    osc.stop(time + 0.7);
+    sub.start(time);
+    sub.stop(time + 0.7);
     osc.onended = () => {
       osc.disconnect();
+      sub.disconnect();
       filter.disconnect();
       amp.disconnect();
+      subAmp.disconnect();
     };
   }
 
-  function schedulePad(time, notes) {
+  function schedulePad(time, notes, gain = 0.05) {
     for (const midi of notes) {
       const osc = ctx.createOscillator();
       osc.type = "sine";
@@ -715,12 +806,12 @@ export function createAudioEngine(initialSettings = {}) {
       osc.detune.value = Math.random() * 8 - 4;
       const filter = ctx.createBiquadFilter();
       filter.type = "lowpass";
-      filter.frequency.value = 1100;
+      filter.frequency.value = 1300;
       const amp = ctx.createGain();
       amp.gain.setValueAtTime(0.0001, time);
-      amp.gain.exponentialRampToValueAtTime(0.02, time + 1.1);
-      amp.gain.setValueAtTime(0.02, time + 3.2);
-      amp.gain.exponentialRampToValueAtTime(0.0001, time + 4.6);
+      amp.gain.exponentialRampToValueAtTime(gain, time + 0.9);
+      amp.gain.setValueAtTime(gain, time + 3.0);
+      amp.gain.exponentialRampToValueAtTime(0.0001, time + 4.4);
       osc.connect(filter);
       filter.connect(amp);
       amp.connect(musicBus);
@@ -729,7 +820,7 @@ export function createAudioEngine(initialSettings = {}) {
       amp.connect(send);
       send.connect(reverbSend);
       osc.start(time);
-      osc.stop(time + 4.8);
+      osc.stop(time + 4.6);
       osc.onended = () => {
         osc.disconnect();
         filter.disconnect();
@@ -739,11 +830,55 @@ export function createAudioEngine(initialSettings = {}) {
     }
   }
 
+  function schedulePluck(time, midi, gain = 0.12) {
+    const osc = ctx.createOscillator();
+    osc.type = "triangle";
+    osc.frequency.value = midiToFreq(midi);
+    const click = ctx.createOscillator();
+    click.type = "sine";
+    click.frequency.value = midiToFreq(midi + 12);
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(3400, time);
+    filter.frequency.exponentialRampToValueAtTime(1200, time + 0.35);
+    const amp = ctx.createGain();
+    envelope(amp, time, gain, 0.004, 0.38);
+    const clickAmp = ctx.createGain();
+    envelope(clickAmp, time, gain * 0.28, 0.002, 0.09);
+    osc.connect(filter);
+    filter.connect(amp);
+    amp.connect(musicBus);
+    click.connect(clickAmp);
+    clickAmp.connect(musicBus);
+    const send = ctx.createGain();
+    send.gain.value = 0.3;
+    amp.connect(send);
+    send.connect(reverbSend);
+    osc.start(time);
+    osc.stop(time + 0.5);
+    click.start(time);
+    click.stop(time + 0.14);
+    osc.onended = () => {
+      osc.disconnect();
+      click.disconnect();
+      filter.disconnect();
+      amp.disconnect();
+      clickAmp.disconnect();
+      send.disconnect();
+    };
+  }
+
   function scheduleStep(stepIndex, time, barIndex) {
+    const motif = MUSIC.motif;
     if (state.mode === "menu") {
+      // A calm version of the same tune so the start screen has music too.
       if (stepIndex === 0 && barIndex % 2 === 0) {
-        schedulePad(time, barIndex % 4 === 0 ? [50, 53, 57] : [46, 50, 53]);
-        scheduleBass(time, barIndex % 4 === 0 ? 38 : 34);
+        schedulePad(time, barIndex % 4 === 0 ? [50, 53, 57] : [46, 50, 53], 0.036);
+        scheduleBass(time, barIndex % 4 === 0 ? 38 : 34, 0.1);
+      }
+      if (stepIndex % 4 === 0) {
+        const slot = (stepIndex / 4 + barIndex * 2) % motif.length;
+        schedulePluck(time, PENTATONIC[motif[slot]] + 12, 0.05);
       }
       return;
     }
@@ -753,22 +888,25 @@ export function createAudioEngine(initialSettings = {}) {
     const threat = clamp01(state.threat);
     const intensity = state.mode === "running" ? 1 : 0.4;
     const kickSteps = [0, 6, 10, 14];
-    const tomSteps = [3, 8, 12];
     if (kickSteps.includes(stepIndex)) {
-      scheduleKick(time, stepIndex === 0 ? 0.15 * intensity : 0.09 * intensity);
+      scheduleKick(time, (stepIndex === 0 ? 0.42 : 0.28) * intensity);
     }
-    if (tomSteps.includes(stepIndex) || (threat > 0.55 && stepIndex % 4 === 3)) {
-      scheduleTom(time, 0.045 * intensity, 150 + (stepIndex % 5) * 40);
+    if (stepIndex === 4 || stepIndex === 12) {
+      scheduleSnare(time, (stepIndex === 12 ? 0.19 : 0.15) * intensity);
     }
-    if (stepIndex % 2 === 0 || threat > 0.65) {
-      scheduleShaker(time, (stepIndex % 4 === 0 ? 0.016 : 0.009) * (0.6 + threat));
+    if (stepIndex % 2 === 0) {
+      scheduleHat(time, (stepIndex % 4 === 0 ? 0.05 : 0.028) * (0.7 + threat * 0.5));
     }
-    if (stepIndex === 0) {
-      const bassPattern = [38, 38, 36, 41, 38, 38, 43, 36];
-      scheduleBass(time, bassPattern[barIndex % bassPattern.length]);
-      if (barIndex % 4 === 0) {
-        schedulePad(time, barIndex % 8 === 0 ? [50, 53, 57] : [48, 51, 55]);
+    if (stepIndex === 0 || stepIndex === 8) {
+      scheduleBass(time, MUSIC.bassPattern[barIndex % MUSIC.bassPattern.length], 0.2);
+      if (stepIndex === 0 && barIndex % 2 === 0) {
+        schedulePad(time, barIndex % 8 === 0 ? [50, 53, 57] : [48, 51, 55], 0.044);
       }
+    }
+    const motifSlot = MUSIC.motifSlots.indexOf(stepIndex);
+    if (motifSlot >= 0 && (barIndex % 2 === 0 || threat > 0.4)) {
+      const note = PENTATONIC[motif[(barIndex * 5 + motifSlot) % motif.length]];
+      schedulePluck(time, note + (threat > 0.6 ? 12 : 0), 0.12 * (0.75 + threat * 0.35));
     }
   }
 
@@ -777,25 +915,30 @@ export function createAudioEngine(initialSettings = {}) {
       nextStepTime = 0;
       return;
     }
-    const now = ctx.currentTime;
-    if (nextStepTime === 0) {
-      nextStepTime = now + 0.1;
+    if (ctx.state !== "running") {
+      return;
     }
+    const now = ctx.currentTime;
+    if (nextStepTime === 0 || nextStepTime < now - 0.5) {
+      nextStepTime = now + 0.08;
+    }
+    const bpm = MUSIC.bpm + state.threat * 6;
+    const stepDuration = 60 / bpm / 4;
     let guard = 0;
     while (nextStepTime < now + 0.2 && guard < 24) {
       scheduleStep(step, nextStepTime, bar);
-      nextStepTime += 60 / 104 / 4;
-      step = (step + 1) % 16;
+      nextStepTime += stepDuration;
+      step = (step + 1) % MUSIC.stepsPerBar;
       if (step === 0) {
-        bar = (bar + 1) % 64;
+        bar = (bar + 1) % MUSIC.bars;
       }
       guard += 1;
     }
     if (state.mode === "running" && state.threat > 0.5) {
       const interval = lerp(1.25, 0.62, state.threat);
       while (nextHeartbeat < now + 0.2) {
-        scheduleKick(nextHeartbeat, 0.055 * state.threat);
-        scheduleKick(nextHeartbeat + 0.13, 0.032 * state.threat);
+        scheduleKick(nextHeartbeat, 0.16 * state.threat);
+        scheduleKick(nextHeartbeat + 0.13, 0.09 * state.threat);
         nextHeartbeat += interval;
       }
     } else {
@@ -818,10 +961,10 @@ export function createAudioEngine(initialSettings = {}) {
       slideStop();
     } else if (mode === "menu") {
       musicBus.gain.setTargetAtTime(settings.music ? settings.musicVolume * 0.65 : 0.0001, now, 0.3);
-      ambienceBus.gain.setTargetAtTime(settings.music ? 0.55 : 0.0001, now, 0.3);
+      ambienceBus.gain.setTargetAtTime(settings.sound ? 0.5 : 0.0001, now, 0.3);
     } else if (mode === "caught") {
       musicBus.gain.setTargetAtTime(settings.music ? settings.musicVolume * 0.4 : 0.0001, now, 0.3);
-      ambienceBus.gain.setTargetAtTime(settings.music ? 0.4 : 0.0001, now, 0.3);
+      ambienceBus.gain.setTargetAtTime(settings.sound ? 0.4 : 0.0001, now, 0.3);
       slideStop();
     } else {
       applySettings();
@@ -844,7 +987,8 @@ export function createAudioEngine(initialSettings = {}) {
     const now = ctx.currentTime;
     windFilter.frequency.setTargetAtTime(target.wind, now, 1.2);
     windGain.gain.setTargetAtTime(target.windGain, now, 1.2);
-    leavesGain.gain.setTargetAtTime(target.leaves, now, 1.2);
+    leavesFilter.frequency.setTargetAtTime(target.air, now, 1.2);
+    leavesGain.gain.setTargetAtTime(target.airGain, now, 1.2);
     rumbleGain.gain.setTargetAtTime(target.rumble, now, 1.2);
   }
 
@@ -908,6 +1052,33 @@ export function createAudioEngine(initialSettings = {}) {
     gameOver,
     uiClick,
     uiBack,
+    /** Diagnostics for tests and the `?debug` panel. */
+    debugSnapshot() {
+      return {
+        unlocked: Boolean(ctx),
+        contextState: ctx ? ctx.state : "none",
+        mode: state.mode,
+        biome: state.biome,
+        threat: state.threat,
+        step,
+        bar,
+        nextStepTime: Number(nextStepTime.toFixed(3)),
+        time: ctx ? Number(ctx.currentTime.toFixed(3)) : 0,
+        musicGain: musicBus ? Number(musicBus.gain.value.toFixed(3)) : 0,
+        ambienceGain: ambienceBus ? Number(ambienceBus.gain.value.toFixed(3)) : 0,
+      };
+    },
+    /** Taps the master bus so a test can measure that real signal is playing. */
+    tapAnalyser(fftSize = 2048) {
+      if (!ctx || !master) {
+        return null;
+      }
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = fftSize;
+      analyser.smoothingTimeConstant = 0;
+      master.connect(analyser);
+      return analyser;
+    },
     get isUnlocked() {
       return Boolean(ctx);
     },

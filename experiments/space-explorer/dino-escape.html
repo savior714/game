@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#07090e" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="format-detection" content="telephone=no" />
   <meta
     name="description"
     content="거대한 티라노사우루스에게 쫓기는 3D 추격 탈출 게임. 점프하고 미끄러지며 호박을 모아 최고 기록에 도전하세요."
@@ -91,6 +95,14 @@
         </div>
 
         <div class="hud-top-right">
+          <button id="btn-fullscreen" class="hud-icon-btn hud-icon-btn--fullscreen" type="button" data-action="toggle-fullscreen" aria-label="전체 화면으로 보기" aria-pressed="false">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+              <path d="M16 3h3a2 2 0 0 1 2 2v3"></path>
+              <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+              <path d="M8 21H5a2 2 0 0 1-2-2v-3"></path>
+            </svg>
+          </button>
           <button id="btn-sound" class="hud-icon-btn" type="button" data-action="toggle-sound" aria-label="소리 끄기" aria-pressed="true">
             <svg class="icon-on" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -196,16 +208,30 @@
       </div>
 
       <div class="touch-controls" id="touch-controls">
-        <button id="btn-bait" class="touch-btn touch-bait" type="button" tabindex="-1" aria-label="고기 던지기">
-          <span class="touch-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <path d="M8.2 3.1a2.9 2.9 0 0 1 2.6 1.6l2.4 4.2 4.2 2.4a2.9 2.9 0 1 1-1.4 2.4l-4.6-2.6-2.6-4.6A2.9 2.9 0 1 1 8.2 3.1z"/>
-              <circle cx="16.4" cy="16.4" r="4.1"/>
+        <div class="steer-pad" role="group" aria-label="좌우 이동">
+          <button id="btn-steer-left" class="touch-btn touch-steer" type="button" tabindex="-1" aria-label="왼쪽으로 이동">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M15 4 7 12l8 8"></path>
             </svg>
-          </span>
-          <span id="touch-bait-count" class="touch-count">1</span>
-        </button>
+            <span class="touch-caption">왼쪽</span>
+          </button>
+          <button id="btn-steer-right" class="touch-btn touch-steer" type="button" tabindex="-1" aria-label="오른쪽으로 이동">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="m9 4 8 8-8 8"></path>
+            </svg>
+            <span class="touch-caption">오른쪽</span>
+          </button>
+        </div>
         <div class="action-cluster">
+          <button id="btn-bait" class="touch-btn touch-bait" type="button" tabindex="-1" aria-label="고기 던지기">
+            <span class="touch-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M8.2 3.1a2.9 2.9 0 0 1 2.6 1.6l2.4 4.2 4.2 2.4a2.9 2.9 0 1 1-1.4 2.4l-4.6-2.6-2.6-4.6A2.9 2.9 0 1 1 8.2 3.1z"/>
+                <circle cx="16.4" cy="16.4" r="4.1"/>
+              </svg>
+            </span>
+            <span id="touch-bait-count" class="touch-count">1</span>
+          </button>
           <button id="btn-sprint" class="touch-btn touch-sprint" type="button" tabindex="-1" aria-label="질주">
             <span>SPRINT</span>
           </button>
@@ -222,6 +248,23 @@
     </div>
 
     <div id="toast-layer" class="toast-layer" aria-live="polite" aria-atomic="false"></div>
+
+    <div id="rotate-hint" class="rotate-hint" hidden>
+      <div class="rotate-card" role="dialog" aria-modal="true" aria-labelledby="rotate-title">
+        <span class="rotate-icon" aria-hidden="true">
+          <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="20" y="6" width="24" height="40" rx="4"></rect>
+            <path d="M12 30a20 20 0 0 0 4 12"></path>
+            <path d="m8 30 4 6 6-2"></path>
+          </svg>
+        </span>
+        <strong id="rotate-title">태블릿을 가로로 돌려 주세요</strong>
+        <p>가로로 놓으면 길이 훨씬 잘 보여요.</p>
+        <button id="btn-rotate-dismiss" class="btn btn--ghost" type="button" data-action="dismiss-rotate">이대로 할게요</button>
+      </div>
+    </div>
+
+    <div id="perf-readout" class="perf-readout" hidden aria-hidden="true"></div>
     <div id="biome-banner" class="biome-banner" hidden>
       <span class="biome-banner-kicker">NEW AREA</span>
       <strong id="biome-banner-title">호박 사막</strong>
@@ -261,7 +304,8 @@
                 <span class="btn-play" aria-hidden="true">▶</span>
                 탈출 시작
               </span>
-              <span class="btn-sub">SPACE / ENTER</span>
+              <span class="btn-sub btn-sub--keys">SPACE / ENTER</span>
+              <span class="btn-sub btn-sub--touch">버튼을 눌러 시작</span>
               <span class="btn-arrow" aria-hidden="true">→</span>
             </button>
             <button id="btn-start-settings" class="btn btn--ghost" type="button" data-action="open-settings">
@@ -292,21 +336,24 @@
               <span class="howto-key" aria-hidden="true">← →</span>
               <div>
                 <strong>좌우 이동</strong>
-                <span>A / D · 드래그</span>
+                <span class="howto-desktop">A / D · 드래그</span>
+                <span class="howto-touch">왼쪽 · 오른쪽 버튼</span>
               </div>
             </div>
             <div class="howto-card">
               <span class="howto-key" aria-hidden="true">↑</span>
               <div>
                 <strong>점프</strong>
-                <span>SPACE · 위로 스와이프</span>
+                <span class="howto-desktop">SPACE · 위로 스와이프</span>
+                <span class="howto-touch">점프 버튼 · 화면을 톡</span>
               </div>
             </div>
             <div class="howto-card">
               <span class="howto-key" aria-hidden="true">↓</span>
               <div>
                 <strong>슬라이드</strong>
-                <span>S · 아래로 스와이프</span>
+                <span class="howto-desktop">S · 아래로 스와이프</span>
+                <span class="howto-touch">슬라이드 버튼</span>
               </div>
             </div>
           </div>

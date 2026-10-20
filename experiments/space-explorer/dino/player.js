@@ -20,6 +20,8 @@ export function createPlayerState() {
     stepTravel: 0,
     strideParity: 0,
     distanceRun: 0,
+    coyote: 0,
+    jumpBuffer: 0,
   };
   return state;
 }
@@ -40,6 +42,8 @@ export function resetPlayer(state, x = 0) {
   state.stepTravel = 0;
   state.strideParity = 0;
   state.distanceRun = 0;
+  state.coyote = 0;
+  state.jumpBuffer = 0;
 }
 
 /**
@@ -64,7 +68,13 @@ export function stepPlayer(state, dt, controls = {}) {
   }
   const step = Math.min(dt, 0.05);
   const speed = Math.max(6, controls.speed ?? 13.5);
-  const axis = clamp(controls.axis ?? 0, -1, 1);
+  // Input reports +1 for "go right" as the player sees it. The chase camera
+  // sits behind the runner looking down +z, which makes world −x the right-hand
+  // side of the screen, so the screen-space axis is flipped once, here. Every
+  // input source (keyboard, drag, gamepad, touch pad) and the runner's lean
+  // inherit the correction from this single conversion.
+  const screenAxis = clamp(controls.axis ?? 0, -1, 1);
+  const axis = -screenAxis;
   const sprinting = Boolean(controls.sprint);
 
   state.landImpact = 0;
@@ -101,8 +111,12 @@ export function stepPlayer(state, dt, controls = {}) {
     events.fastFell = true;
   }
 
-  // Jump (also cancels a slide).
-  if (controls.jump && state.grounded) {
+  // Jump with a forgiveness window in both directions: a press just before
+  // landing still fires (buffer), and a press just after leaving an edge still
+  // counts (coyote). Small hands miss frames; the game should not.
+  state.jumpBuffer = controls.jump ? PLAYER.jumpBuffer : Math.max(0, state.jumpBuffer - step);
+  state.coyote = state.grounded ? PLAYER.coyoteTime : Math.max(0, state.coyote - step);
+  if (state.jumpBuffer > 0 && (state.grounded || state.coyote > 0)) {
     if (state.sliding) {
       state.sliding = false;
       state.slideCooldown = PLAYER.slideCooldown;
@@ -110,6 +124,8 @@ export function stepPlayer(state, dt, controls = {}) {
     }
     state.vy = PLAYER.jumpVelocity;
     state.grounded = false;
+    state.coyote = 0;
+    state.jumpBuffer = 0;
     events.jumped = true;
   }
 

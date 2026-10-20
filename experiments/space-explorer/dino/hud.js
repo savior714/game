@@ -56,6 +56,10 @@ export function createHud() {
     tutorial: byId("tutorial-hint"),
     rexcam: byId("rexcam"),
     rexcamWindow: byId("rexcam-window"),
+    rotateHint: byId("rotate-hint"),
+    btnRotateDismiss: byId("btn-rotate-dismiss"),
+    btnFullscreen: byId("btn-fullscreen"),
+    perfReadout: byId("perf-readout"),
     rexcamDistance: byId("rexcam-distance"),
     rexcamState: byId("rexcam-state"),
     toastLayer: byId("toast-layer"),
@@ -105,6 +109,8 @@ export function createHud() {
       slide: byId("btn-slide"),
       sprint: byId("btn-sprint"),
       bait: byId("btn-bait"),
+      steerLeft: byId("btn-steer-left"),
+      steerRight: byId("btn-steer-right"),
     },
     keyHints: byId("key-hints"),
     touchControls: byId("touch-controls"),
@@ -148,7 +154,10 @@ export function createHud() {
     document.body.classList.add("is-touch");
   }
 
-  if (window.matchMedia && window.matchMedia("(hover: none) and (pointer: coarse)").matches) {
+  if (
+    (window.matchMedia && window.matchMedia("(hover: none) and (pointer: coarse)").matches) ||
+    (navigator.maxTouchPoints ?? 0) > 0
+  ) {
     touchDetected = true;
     document.body.classList.add("is-touch");
   }
@@ -510,9 +519,11 @@ export function createHud() {
     el.tutorial.textContent = message;
     el.tutorial.classList.add("is-visible");
     if (!sticky) {
+      // Children read slowly and need a second look; give touch players longer.
+      const linger = document.body.classList.contains("is-touch") ? 7000 : 4200;
       tutorialTimer = window.setTimeout(() => {
         el.tutorial.classList.remove("is-visible");
-      }, 3600);
+      }, linger);
     }
   }
 
@@ -559,6 +570,35 @@ export function createHud() {
     setShakeState(profile.settings.shake);
     setQualityState(profile.settings.quality);
     setVolumes(profile.settings.sfxVolume, profile.settings.musicVolume);
+  }
+
+  function setFullscreenState(active) {
+    if (!el.btnFullscreen) {
+      return;
+    }
+    el.btnFullscreen.setAttribute("aria-pressed", active ? "true" : "false");
+    el.btnFullscreen.setAttribute("aria-label", active ? "전체 화면 끄기" : "전체 화면으로 보기");
+  }
+
+  function showRotateHint(show) {
+    if (!el.rotateHint) {
+      return;
+    }
+    el.rotateHint.hidden = !show;
+    document.body.classList.toggle("is-rotating", show);
+    if (show) {
+      el.btnRotateDismiss?.focus({ preventScroll: true });
+    }
+  }
+
+  function setPerfReadout(text) {
+    if (!el.perfReadout) {
+      return;
+    }
+    el.perfReadout.hidden = !text;
+    if (text && el.perfReadout.textContent !== text) {
+      el.perfReadout.textContent = text;
+    }
   }
 
   function measureRexCam() {
@@ -651,6 +691,9 @@ export function createHud() {
     hideBoot,
     showError,
     markTouch,
+    setFullscreenState,
+    showRotateHint,
+    setPerfReadout,
     get screenState() {
       return screenState;
     },

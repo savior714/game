@@ -86,8 +86,25 @@ function pixelRatioFor(quality) {
   if (quality === QUALITY.low) {
     return Math.min(raw, 1);
   }
-  return Math.min(raw, 2);
+  // 2x on a tablet quadruples the pixels for no visible gain at arm's length;
+  // 1.75 keeps edges crisp and buys back ~23% of the fragment budget.
+  return Math.min(raw, 1.75);
 }
+
+/**
+ * Adaptive resolution. A tablet that cannot hold ~45 fps quietly renders
+ * fewer pixels instead of dropping frames; it climbs back once there is
+ * headroom. Only the high preset scales, so an explicit "low" stays low.
+ */
+const PERF = Object.freeze({
+  targetMs: 21,
+  recoverMs: 13.5,
+  minScale: 0.7,
+  maxScale: 1,
+  step: 0.1,
+  cooldownFrames: 90,
+  recoverFrames: 240,
+});
 
 function dustColorFor(biome) {
   return new THREE.Color(biome.road).lerp(new THREE.Color(0xffffff), 0.18);
@@ -151,14 +168,24 @@ function boot() {
     chomped: false,
     tutorialSeen: new Set(),
     quality: QUALITY.auto,
+    basePixelRatio: 1,
     pixelRatio: 1,
+    dprScale: 1,
+    frameMs: 16.7,
+    slowFrames: 0,
+    fastFrames: 0,
+    perfCooldown: 0,
     frameCount: 0,
     autoQualityTimer: 0,
     autoQualityFrames: 0,
     autoQualityTime: 0,
     rexYaw: 0,
     lastZ: 0,
+    width: 0,
+    height: 0,
+    lastRexInset: 0,
   };
+  const REX_INSET_HZ = 30;
 
   const view = {
     distance: 0,
@@ -235,9 +262,14 @@ function boot() {
   /* ------------------------------------------------------------------ */
 
   function initStage() {
+    const denseTouchPanel =
+      (navigator.maxTouchPoints ?? 0) > 0 &&
+      (window.devicePixelRatio || 1) >= 2;
     renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: true,
+      // A 1.75x buffer already antialiases edges on a retina tablet; 4x MSAA
+      // there costs a lot of fill rate for a difference nobody can see.
+      antialias: !denseTouchPanel,
       alpha: false,
       stencil: false,
       powerPreference: "high-performance",
@@ -245,7 +277,11 @@ function boot() {
     renderer.setClearColor(0x0a1214, 1);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.shadowMap.autoUpdate = true;
+    // Two render passes per frame (chase view + predator inset). Letting the
+    // shadow map auto-update redraws every caster for both; drive it manually
+    // so the 2048px depth pass happens once.
+    renderer.shadowMap.autoUpdate = false;
+    renderer.shadowMap.needsUpdate = true;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.05;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -287,10 +323,56 @@ function boot() {
 
   function applyQuality(setting) {
     game.quality = resolveQuality(setting);
-    game.pixelRatio = pixelRatioFor(game.quality);
+    game.basePixelRatio = pixelRatioFor(game.quality);
+    game.dprScale = 1;
+    game.pixelRatio = game.basePixelRatio;
+    game.slowFrames = 0;
+    game.fastFrames = 0;
     renderer.setPixelRatio(game.pixelRatio);
     world.setQuality(game.quality);
     resize();
+  }
+
+  function setRenderScale(scale) {
+    const next = clamp(scale, PERF.minScale, PERF.maxScale);
+    if (Math.abs(next - game.dprScale) < 0.001) {
+      return;
+    }
+    game.dprScale = next;
+    game.pixelRatio = game.basePixelRatio * next;
+    renderer.setPixelRatio(game.pixelRatio);
+    resize();
+  }
+
+  function watchFrameTime(dt) {
+    game.frameMs += (dt * 1000 - game.frameMs) * 0.08;
+    if (game.quality !== QUALITY.high) {
+      return;
+    }
+    if (game.perfCooldown > 0) {
+      game.perfCooldown -= 1;
+      return;
+    }
+    if (game.frameMs > PERF.targetMs) {
+      game.slowFrames += 1;
+      game.fastFrames = 0;
+      if (game.slowFrames >= PERF.cooldownFrames && game.dprScale > PERF.minScale) {
+        setRenderScale(game.dprScale - PERF.step);
+        game.slowFrames = 0;
+        game.perfCooldown = 45;
+      }
+    } else if (game.frameMs < PERF.recoverMs) {
+      game.fastFrames += 1;
+      game.slowFrames = 0;
+      if (game.fastFrames >= PERF.recoverFrames && game.dprScale < PERF.maxScale) {
+        setRenderScale(game.dprScale + PERF.step);
+        game.fastFrames = 0;
+        game.perfCooldown = 120;
+      }
+    } else {
+      game.slowFrames = 0;
+      game.fastFrames = 0;
+    }
   }
 
   function resize() {
@@ -299,6 +381,8 @@ function boot() {
     }
     const width = Math.max(320, window.innerWidth);
     const height = Math.max(240, window.innerHeight);
+    game.width = width;
+    game.height = height;
     renderer.setPixelRatio(game.pixelRatio);
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
@@ -365,7 +449,11 @@ function boot() {
     hud.hideAllScreens();
     hud.setHudVisible(true);
     hud.blurActive();
-    hud.setTutorial(window.matchMedia?.("(pointer: coarse)")?.matches ? "화면을 좌우로 드래그해 방향을 바꿔요" : "A / D 또는 ← → 로 좌우 이동");
+    hud.setTutorial(
+      isTouchDevice()
+        ? "왼쪽 화살표로 좌우, 오른쪽 버튼으로 점프 · 화면을 톡 누르면 점프해요"
+        : "A / D 또는 ← → 로 좌우 이동",
+    );
     hud.announce("탈출 시작. 렉스가 뒤쫓아옵니다.");
     profile.runs += 1;
     scheduleSave();
@@ -1198,16 +1286,23 @@ function boot() {
   /* Render                                                              */
   /* ------------------------------------------------------------------ */
 
-  function renderFrame() {
-    const width = Math.max(320, window.innerWidth);
-    const height = Math.max(240, window.innerHeight);
+  function renderFrame(now = performance.now()) {
+    const width = game.width || Math.max(320, window.innerWidth);
+    const height = game.height || Math.max(240, window.innerHeight);
     renderer.setScissorTest(false);
     renderer.setViewport(0, 0, width, height);
     renderer.clear(true, true, true);
+    if (renderer.shadowMap.enabled) {
+      renderer.shadowMap.needsUpdate = true;
+    }
     renderer.render(scene, camera);
 
+    // The predator inset is a small cameo: 30 Hz reads as smooth and halves
+    // its draw-call bill. It also stays off during the pause screen.
+    const insetDue = now - game.lastRexInset >= 1000 / REX_INSET_HZ - 2;
     const rect = hud.getRexCamRect();
-    if (rect && rect.visible && rect.width > 12 && rect.height > 8) {
+    if (insetDue && game.mode !== "paused" && rect && rect.visible && rect.width > 12 && rect.height > 8) {
+      game.lastRexInset = now;
       const x = clamp(rect.x, 0, width);
       const y = clamp(height - rect.y - rect.height, 0, height);
       const w = Math.min(rect.width, width - x);
@@ -1307,13 +1402,18 @@ function boot() {
     }
     updateRexCamera();
     game.frameCount += 1;
-    if (game.frameCount % 20 === 0) {
+    // Reading layout (getBoundingClientRect) forces a style flush; the HUD is
+    // stable between resizes and screen changes, so poll it rarely.
+    if (game.frameCount % 120 === 0) {
       hud.measureRexCam();
     }
   }
 
   let previousTime = performance.now();
   let raf = 0;
+  const perfBadge =
+    new URLSearchParams(window.location.search).has("debug") ||
+    new URLSearchParams(window.location.search).has("perf");
 
   function frame(now) {
     raf = requestAnimationFrame(frame);
@@ -1322,18 +1422,68 @@ function boot() {
     if (!Number.isFinite(dt) || dt <= 0) {
       return;
     }
-    dt = Math.min(dt, 0.05);
     if (document.hidden) {
       return;
     }
+    watchFrameTime(Math.min(dt, 0.25));
+    dt = Math.min(dt, 0.05);
     input.update(dt);
     update(dt);
-    renderFrame();
+    audio.tick();
+    renderFrame(now);
+    if (perfBadge && game.frameCount % 30 === 0) {
+      const fps = game.frameMs > 0 ? 1000 / game.frameMs : 0;
+      hud.setPerfReadout(
+        `${fps.toFixed(0)} fps · ${game.frameMs.toFixed(1)} ms\n` +
+          `${game.width}x${game.height} @${game.pixelRatio.toFixed(2)}\n` +
+          `${game.quality} · scale ${game.dprScale.toFixed(2)}`,
+      );
+    }
   }
 
   /* ------------------------------------------------------------------ */
   /* Actions                                                             */
   /* ------------------------------------------------------------------ */
+
+  function isTouchDevice() {
+    return (
+      (window.matchMedia?.("(pointer: coarse)")?.matches ?? false) ||
+      (navigator.maxTouchPoints ?? 0) > 0 ||
+      document.body.classList.contains("is-touch")
+    );
+  }
+
+  function isFullscreen() {
+    return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+
+  async function toggleFullscreen() {
+    const root = document.documentElement;
+    try {
+      if (isFullscreen()) {
+        await (document.exitFullscreen?.() ?? document.webkitExitFullscreen?.());
+      } else {
+        const request = root.requestFullscreen?.bind(root) ?? root.webkitRequestFullscreen?.bind(root);
+        await request?.({ navigationUI: "hide" });
+        // Locking the orientation is best-effort: iOS Safari ignores it.
+        await screen.orientation?.lock?.("landscape").catch(() => {});
+      }
+    } catch (error) {
+      // Not fatal: the game is fully playable in the browser chrome.
+      console.info("Dino Escape: fullscreen unavailable", error);
+    }
+    hud.setFullscreenState(isFullscreen());
+    window.setTimeout(resize, 220);
+    playSfx("uiClick");
+  }
+
+  const rotateQuery = window.matchMedia?.("(orientation: portrait) and (pointer: coarse)");
+  let rotateDismissed = false;
+
+  function syncRotateHint() {
+    const shouldShow = Boolean(rotateQuery?.matches) && isTouchDevice() && !rotateDismissed;
+    hud.showRotateHint(shouldShow);
+  }
 
   function toggleSound() {
     profile.settings.sound = !profile.settings.sound;
@@ -1448,6 +1598,14 @@ function boot() {
       case "music-volume":
         setVolume("music", payload);
         break;
+      case "toggle-fullscreen":
+        void toggleFullscreen();
+        break;
+      case "dismiss-rotate":
+        rotateDismissed = true;
+        hud.showRotateHint(false);
+        playSfx("uiBack");
+        break;
       case "reload":
         window.location.reload();
         break;
@@ -1544,10 +1702,32 @@ function boot() {
     input.setEnabled(false);
 
     hud.bindActions(handleAction);
-    window.addEventListener("resize", resize, { passive: true });
+    let resizeQueued = false;
+    const queueResize = () => {
+      if (resizeQueued) {
+        return;
+      }
+      resizeQueued = true;
+      requestAnimationFrame(() => {
+        resizeQueued = false;
+        resize();
+      });
+    };
+    window.addEventListener("resize", queueResize, { passive: true });
+    window.visualViewport?.addEventListener("resize", queueResize, { passive: true });
     window.addEventListener("orientationchange", () => {
-      window.setTimeout(resize, 180);
+      window.setTimeout(() => {
+        resize();
+        syncRotateHint();
+      }, 220);
     });
+    window.matchMedia?.("(orientation: portrait) and (pointer: coarse)")?.addEventListener?.("change", syncRotateHint);
+    document.addEventListener("fullscreenchange", () => {
+      hud.setFullscreenState(isFullscreen());
+      resize();
+    });
+    screen.orientation?.addEventListener?.("change", () => window.setTimeout(resize, 220));
+    syncRotateHint();
     window.addEventListener("keydown", handleGlobalKeys);
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
@@ -1571,7 +1751,12 @@ function boot() {
       audio?.dispose();
     });
 
-    if (new URLSearchParams(window.location.search).has("debug")) {
+    const search = new URLSearchParams(window.location.search);
+    if (search.has("debug") || search.has("perf")) {
+      hud.setPerfReadout("측정 중…");
+    }
+
+    if (search.has("debug")) {
       window.__dinoEscape = {
         THREE,
         scene,
@@ -1590,10 +1775,14 @@ function boot() {
         entities,
         spawner,
         hud,
+        audio,
+        input,
+        renderFrame,
         step(seconds = 1, dt = 1 / 60, render = true) {
           const frames = Math.max(1, Math.round(seconds / dt));
           for (let i = 0; i < frames; i += 1) {
             update(dt);
+            audio.tick();
           }
           if (render) {
             renderFrame();

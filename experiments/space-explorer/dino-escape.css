@@ -56,6 +56,7 @@
 
 :root {
   color-scheme: dark;
+  overscroll-behavior: none;
   --bg: #07090e;
   --bg-deep: #040609;
   --bg-panel: rgba(9, 14, 19, 0.86);
@@ -1032,13 +1033,87 @@ body.is-touch .key-hints {
 
 body.is-touch .hud-bottom-left,
 body.is-touch .hud-bottom-center {
-  bottom: calc(112px + var(--safe-bottom));
+  bottom: calc(154px + var(--safe-bottom));
+}
+
+/* Full-width and centred: the tutorial must never sit half off-screen. */
+body.is-touch .hud-bottom-center {
+  right: calc(12px + var(--safe-right));
+  left: calc(12px + var(--safe-left));
+  align-items: center;
+  transform: none;
+}
+
+body.is-touch .tutorial-hint {
+  max-width: min(620px, 88vw);
+  padding: 10px 18px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
+  white-space: normal;
 }
 
 @media (pointer: coarse) {
   body.is-touch .hud-bottom-left {
     bottom: calc(112px + var(--safe-bottom));
   }
+}
+
+/* Input hints swap with the device so a child never reads a keyboard legend. */
+.howto-touch,
+.btn-sub--touch {
+  display: none;
+}
+
+body.is-touch .howto-touch,
+body.is-touch .btn-sub--touch {
+  display: inline;
+}
+
+body.is-touch .howto-desktop,
+body.is-touch .btn-sub--keys {
+  display: none;
+}
+
+/* Tablet typography: 7.5px mono captions are unreadable at arm's length. */
+body.is-touch .howto-card div span {
+  font-size: 12px;
+  white-space: normal;
+  line-height: 1.35;
+}
+
+body.is-touch .howto-card strong {
+  font-size: 15px;
+}
+
+body.is-touch .tagline {
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+body.is-touch .tip-line {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+body.is-touch .start-record {
+  font-size: 13px;
+}
+
+body.is-touch .hud-icon-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+}
+
+body.is-touch .hud-icon-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+body.is-touch .hud-top-right {
+  gap: 8px;
 }
 
 .key-hints {
@@ -1145,6 +1220,17 @@ body.is-touch .hud-bottom-center {
   transform: none;
 }
 
+/* Fullscreen -------------------------------------------------------------- */
+
+.hud-icon-btn--fullscreen {
+  display: none;
+}
+
+body.is-touch .hud-icon-btn--fullscreen,
+body.show-touch .hud-icon-btn--fullscreen {
+  display: inline-flex;
+}
+
 /* Touch controls ----------------------------------------------------------- */
 
 .touch-controls {
@@ -1170,6 +1256,7 @@ body.is-touch .key-hints {
 
 .touch-btn {
   display: inline-flex;
+  -webkit-tap-highlight-color: transparent;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -1179,9 +1266,9 @@ body.is-touch .key-hints {
   background: rgba(7, 12, 16, 0.46);
   color: #eef5e9;
   font-family: var(--font-mono);
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
   cursor: pointer;
   user-select: none;
   touch-action: none;
@@ -1197,18 +1284,58 @@ body.is-touch .key-hints {
 }
 
 .touch-icon {
-  font-size: 23px;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
   line-height: 1;
 }
 
+.touch-icon svg {
+  width: 1em;
+  height: 1em;
+}
+
 .touch-caption {
-  font-size: 7px;
-  opacity: 0.72;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  opacity: 0.82;
+}
+
+/* Left thumb: a pair of big paddle buttons. Dragging on the canvas still works,
+   but a child should never have to discover a gesture to steer. */
+.steer-pad {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.touch-steer {
+  width: 92px;
+  height: 92px;
+  gap: 2px;
+  border-radius: 28px;
+  border-color: rgba(238, 245, 233, 0.3);
+  background: rgba(9, 15, 20, 0.62);
+  color: #eef5e9;
+}
+
+.touch-steer svg {
+  width: 34px;
+  height: 34px;
+}
+
+.touch-steer.is-pressed {
+  transform: scale(0.93);
+  border-color: rgba(215, 255, 0, 0.8);
+  background: rgba(215, 255, 0, 0.2);
 }
 
 .touch-jump {
-  width: 92px;
-  height: 92px;
+  width: 108px;
+  height: 108px;
   border-color: rgba(215, 255, 0, 0.55);
   background: rgba(215, 255, 0, 0.12);
   color: var(--volt);
@@ -1216,17 +1343,17 @@ body.is-touch .key-hints {
 }
 
 .touch-slide {
-  width: 72px;
-  height: 72px;
+  width: 88px;
+  height: 88px;
   color: var(--cyan);
   border-color: rgba(105, 238, 252, 0.36);
 }
 
 .touch-sprint {
-  width: 62px;
-  height: 62px;
+  width: 76px;
+  height: 76px;
   color: var(--muted);
-  font-size: 7px;
+  font-size: 10px;
 }
 
 .touch-sprint.is-pressed {
@@ -1236,14 +1363,15 @@ body.is-touch .key-hints {
 .action-cluster {
   display: flex;
   align-items: flex-end;
-  gap: 8px;
+  gap: 10px;
   pointer-events: auto;
+  touch-action: none;
 }
 
 .touch-bait {
   position: relative;
-  width: 60px;
-  height: 60px;
+  width: 74px;
+  height: 74px;
   pointer-events: auto;
   border-color: rgba(255, 106, 74, 0.38);
   background: rgba(28, 14, 11, 0.55);
@@ -2569,6 +2697,83 @@ input[type="range"]::-moz-range-thumb {
    Responsive
    -------------------------------------------------------------------------- */
 
+/* Rotate to landscape ----------------------------------------------------- */
+
+.rotate-hint {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: calc(24px + var(--safe-top)) 24px calc(24px + var(--safe-bottom));
+  background: rgba(4, 6, 9, 0.94);
+  text-align: center;
+}
+
+.rotate-hint[hidden] {
+  display: none;
+}
+
+.rotate-card {
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  max-width: 340px;
+  padding: 28px 24px;
+  border: 1px solid rgba(215, 255, 0, 0.28);
+  border-radius: 22px;
+  background: linear-gradient(160deg, rgba(20, 28, 24, 0.96), rgba(8, 12, 14, 0.98));
+}
+
+.rotate-card strong {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--volt);
+}
+
+.rotate-card p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.rotate-icon {
+  color: var(--volt);
+}
+
+.rotate-icon svg {
+  width: 74px;
+  height: 74px;
+  animation: rotate-nudge 2.6s ease-in-out infinite;
+}
+
+@keyframes rotate-nudge {
+  0%, 45%, 100% { transform: rotate(0deg); }
+  60%, 85% { transform: rotate(-90deg); }
+}
+
+.perf-readout {
+  position: fixed;
+  top: 50%;
+  right: calc(8px + var(--safe-right));
+  transform: translateY(-50%);
+  z-index: 95;
+  padding: 6px 9px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.62);
+  color: #8dffb4;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre;
+  pointer-events: none;
+}
+
+.perf-readout[hidden] {
+  display: none;
+}
+
 @media (max-width: 1180px) {
   .start-inner {
     grid-template-columns: minmax(0, 1.2fr) minmax(190px, 0.5fr);
@@ -2982,7 +3187,38 @@ input[type="range"]::-moz-range-thumb {
   }
 
   .hud-bottom-center {
-    bottom: calc(96px + var(--safe-bottom));
+    bottom: calc(112px + var(--safe-bottom));
+  }
+
+  .touch-steer {
+    width: 78px;
+    height: 78px;
+  }
+
+  .touch-jump {
+    width: 90px;
+    height: 90px;
+  }
+
+  .touch-slide {
+    width: 74px;
+    height: 74px;
+  }
+
+  .touch-sprint {
+    width: 64px;
+    height: 64px;
+  }
+
+  .touch-bait {
+    width: 64px;
+    height: 64px;
+  }
+
+  .touch-controls {
+    right: calc(12px + var(--safe-right));
+    bottom: calc(10px + var(--safe-bottom));
+    left: calc(12px + var(--safe-left));
   }
 }
 
@@ -3062,6 +3298,119 @@ input[type="range"]::-moz-range-thumb {
   }
 }
 
+/* Narrow portrait (a phone held upright, a small tablet in a case): the row
+   cannot hold four actions beside two paddles, so the actions become a 2x2
+   thumb grid and everything shrinks to fit inside 360px. */
+@media (max-width: 480px) {
+  .steer-pad {
+    gap: 8px;
+  }
+
+  .touch-steer {
+    width: 78px;
+    height: 78px;
+    border-radius: 24px;
+  }
+
+  .touch-jump {
+    width: 74px;
+    height: 74px;
+  }
+
+  .touch-slide {
+    width: 60px;
+    height: 60px;
+  }
+
+  .touch-sprint {
+    width: 56px;
+    height: 56px;
+    font-size: 9px;
+  }
+
+  .touch-bait {
+    width: 56px;
+    height: 56px;
+  }
+
+  .action-cluster {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-rows: auto auto;
+    align-items: end;
+    justify-items: end;
+    gap: 8px;
+  }
+
+  .touch-bait {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .touch-sprint {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .touch-slide {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .touch-jump {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  body.is-touch .hud-bottom-center {
+    bottom: calc(168px + var(--safe-bottom));
+  }
+}
+
+/* Settings on a tablet: every control must be thumb-sized. */
+body.is-touch .icon-close {
+  width: 48px;
+  height: 48px;
+  font-size: 30px;
+}
+
+body.is-touch .switch {
+  width: 62px;
+  height: 38px;
+}
+
+body.is-touch .segmented button {
+  min-height: 48px;
+  padding: 0 20px;
+  font-size: 15px;
+}
+
+body.is-touch .slider-row input[type="range"] {
+  height: 34px;
+}
+
+body.is-touch .slider-row input[type="range"]::-webkit-slider-thumb {
+  width: 28px;
+  height: 28px;
+  margin-top: -11px;
+}
+
+body.is-touch .slider-row input[type="range"]::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+}
+
+body.is-touch .btn {
+  min-height: 58px;
+  font-size: 16px;
+}
+
+/* A keyboard legend is noise on a tablet; the touch tutorial covers it. */
+body.is-touch .setting-row--keys,
+body.is-touch .panel-hint {
+  display: none;
+}
+
 @media (hover: none) and (pointer: coarse) {
   body:not(.is-touch) .touch-controls {
     display: flex;
@@ -3069,6 +3418,14 @@ input[type="range"]::-moz-range-thumb {
 
   body:not(.is-touch) .key-hints {
     display: none;
+  }
+
+  /* Hover styles latch on touch screens and leave buttons looking stuck. */
+  .hud-icon-btn:hover,
+  .home-link:hover,
+  .btn:hover,
+  .touch-btn:hover {
+    transform: none;
   }
 }
 

@@ -15,17 +15,18 @@ verify_with:
 이 문서는 현재 세션에 실제로 제공된 도구와 AidenGame 저장소의 실제 경로를 기준으로 읽기·수정·검증 컨텍스트를 선택하는 보조 규칙이다.
 실행 우선순위는 상위 에이전트 개발 계약을 따르며 이 문서가 이를 재정의하지 않는다.
 
-## 1. 권위 순서
+## 1. 권위 범위
 
-충돌 시 다음 순서를 적용한다.
+전역 서열 대신 질문의 domain별 owner를 따른다.
 
-1. 사용자의 현재 요청
-2. `AGENTS.md`
-3. `PROJECT_RULES.md`와 대상 기능에 가장 가까운 product/technical spec
-4. 최신 `origin/main`의 코드·테스트·설정
+- 실행 환경이 workspace, branch/ref, 권한을 지정하면 그 경계가 저장소 기본값보다 우선한다.
+- 사용자의 현재 요청은 objective와 범위를 정하고, 저장소 공통 실행 안전은 `AGENTS.md`가 소유한다.
+- 제품 방향·우선순위는 [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md), 아키텍처·품질 경계는
+  `PROJECT_RULES.md`, 기능별 동작은 가장 가까운 product/technical spec이 소유한다.
+- 현재 workspace의 코드·테스트·설정은 구현 증거다. 활성 계약과 다른 경우 어느 쪽도 자동으로 다시 쓰지 않고 조사한다.
 
-현재 범위가 지정되지 않은 작업 선택은
-[`CORE_QUIZ_RELIABILITY_STABILIZATION.md`](../../docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md)를 따른다.
+범위가 지정되지 않은 다음 작업은 `ACTIVE_PRODUCT_SCOPE.md`의 current development priority에서 시작한다.
+`CORE_QUIZ_RELIABILITY_STABILIZATION.md`는 해당 완료 계약이나 실제 회귀를 다룰 때만 읽는다.
 
 ## 2. 도구 선택
 
@@ -39,12 +40,12 @@ verify_with:
 
 기존 파일을 수정하기 전에 다음을 확인한다.
 
-1. 최신 `origin/main`과 대상 파일의 현재 내용을 읽는다.
+1. 지정된 workspace/ref와 대상 파일의 현재 내용을 읽는다. 지정이 없으면 최신 `origin/main`을 기본으로 한다.
 2. 변경하려는 failure domain과 binary criterion을 고정한다.
 3. 수정 범위가 현재 제품 방향에 포함되는지 확인한다.
 4. 부분 수정이면 대상 블록이 정확히 식별되는지 확인한다.
 5. 전체 덮어쓰기이면 원본 동작·테스트·문서 계약이 유실되지 않는지 diff로 확인한다.
-6. 게시 직전 `origin/main` 이동 여부를 다시 확인한다.
+6. 게시가 허용된 경우 직전 선택된 publish ref 이동 여부를 다시 확인한다 (`origin/main`이 기본값).
 
 대상 문자열이 이미 목표 상태라면 변경을 만들지 않는다.
 패턴 불일치가 발생하면 대상 파일을 다시 읽고 원인을 확인한 뒤 더 작은 경계로 재시도한다.
@@ -53,10 +54,10 @@ verify_with:
 
 | 대상 | 우선 컨텍스트 |
 |---|---|
-| `domains/math/`, `domains/english/`, `domains/korean/`, `domains/science/` | 현재 안정화 spec, 직접 관련 구현, focused test |
+| `domains/math/`, `domains/english/`, `domains/korean/`, `domains/science/` | 제품 방향 SSOT, 과목 contract, 직접 관련 구현·focused test; 완료 reliability 계약은 회귀 범위일 때만 참고 |
 | 브라우저 테스트 | 직접 관련 entry, [`playwright.md`](../domains/testing/playwright.md), 실제 browser evidence |
 | `docs/`, `.agents/`, README, 최상위 규칙 | authority 문서, 링크 대상, 실제 명령, drift guard |
-| `domains/ocean-rescue/`, `ocean-rescue/` | 사용자의 명시적 재개 또는 허용 예외 확인 후 가장 가까운 technical spec |
+| `domains/ocean-rescue/`, `ocean-rescue/` | 가장 가까운 Ocean Rescue technical spec; active feature로서 명시된 범위에서 작업하며 과거 runbook만으로 기본 priority를 바꾸지 않는다. |
 | `experiments/` | 제품 방향 SSOT의 해당 표면 상태와 가장 가까운 기술 참고 |
 | `Justfile`, `verify.sh`, `scripts/` | 실제 recipe·script와 직접 영향 테스트 |
 
@@ -87,8 +88,8 @@ verify_with:
 4. 공유 경계 변경 시 영향받는 regression
 5. repository-wide gate는 실제 위험이나 정책상 요구될 때
 
-게시 전 최신 `origin/main`을 확인한다.
-원격이 이동했으면 최신 main에 재적용하고 직접 영향 검증을 반복한다.
+게시가 허용된 경우 선택된 publish ref를 확인한다 (`origin/main`이 저장소 기본값).
+원격이 이동했으면 허용된 게시 대상에 재적용하고 직접 영향 검증을 반복한다.
 fast-forward가 아니면 게시하지 않는다.
 
 ## 7. 현재 자동 라우팅 상태

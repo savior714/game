@@ -87,10 +87,12 @@ interface에는 signature뿐 아니라 다음을 포함한다.
 
 계약이 같지 않으면 shared abstraction보다 과목별 구현을 유지한다.
 
-## 7. 동결 기능
+## 7. Active·frozen surface
 
-Ocean Rescue와 `experiments/`의 architecture 개선은 현재 방향에서 제외된다.
-사용자의 명시적 재개 또는 허용 예외가 없으면 후보 분석을 구현으로 전환하지 않는다.
+제품 SSOT의 상태는 개별 surface마다 확인한다. Active feature가 현재 기본 priority가 아니라는 이유만으로
+동결로 분류하지 않는다. Ocean Rescue 작업은 명시된 범위나 직접 필요한 failure domain에서 수행할 수 있고,
+과거 runbook만으로 우선순위를 자동 승격하지 않는다. Space Explorer는 `PAUSED_REFERENCE_ONLY`이며,
+`experiments/`의 다른 surface 상태를 일괄적으로 추정하지 않는다.
 
 ## 8. 완료 점검
 

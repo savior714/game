@@ -9,16 +9,18 @@ last_verified: 2026-08-06
 
 이 문서는 AidenGame 에이전트가 어떤 문서를 언제 읽어야 하는지 정의한다. 로딩 순서는 우선순위를 바꾸지 않는다.
 
-## 1. 우선순위
+## 1. 권위 범위
 
-충돌 시 다음 순서를 적용한다.
+전역 문서 서열이 아니라 질문의 domain별 owner를 따른다.
 
-1. 사용자의 현재 요청
-2. [`AGENTS.md`](../../AGENTS.md)
-3. [`PROJECT_RULES.md`](../../PROJECT_RULES.md)와 대상 기능에 가장 가까운 product/technical spec
-4. 최신 `origin/main`의 코드·테스트·설정
+- 실행 환경이 지정한 workspace, branch/ref, 권한 제약은 저장소 기본값보다 우선한다.
+- 사용자의 현재 요청은 objective와 범위를 정하고, 저장소 공통 실행 안전과 라우팅은
+  [`AGENTS.md`](../../AGENTS.md)가 소유한다.
+- 제품 방향은 [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md), 아키텍처·품질 경계는
+  [`PROJECT_RULES.md`](../../PROJECT_RULES.md), 구체 기능 계약은 가장 가까운 product/technical spec이 소유한다.
+- 현재 workspace의 코드·테스트·설정은 구현 증거이며, 문서 계약과 다르면 drift를 조사한다.
 
-`.agents/`의 registry, core, workflow, skill 문서는 위 순서를 보조할 뿐 이를 재정의하지 않는다.
+`.agents/`의 registry, core, workflow, skill 문서는 각 owner를 보조하며 해당 owner를 재정의하지 않는다.
 
 ## 2. 세션 시작
 
@@ -28,7 +30,7 @@ last_verified: 2026-08-06
 2. [`PROJECT_RULES.md`](../../PROJECT_RULES.md)
 3. [`MEMORY.md`](../../docs/agent-context/memory/MEMORY.md)
 
-현재 제품 방향·우선순위·active/frozen feature 상태의 단일 SSOT는
+현재 제품 방향·우선순위·active/paused/frozen feature 상태의 단일 SSOT는
 [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)다.
 범위가 지정되지 않은 다음 작업이나 로컬 프롬프트 요청에서는 이 SSOT를 추가로 읽고, 그 방향을 이 문서에서 다시
 서술하지 않는다. 네 과목 Core Quiz reliability 완료 계약이 필요할 때만
@@ -55,6 +57,6 @@ last_verified: 2026-08-06
 ## 5. 세션 종료
 
 - 변경 위험에 대응하는 가장 작은 검증을 실행한다.
-- `RESULT / CHANGE / VERIFY` 중심으로 보고한다.
+- 최종 결과는 [`reporting.md`](../core/reporting.md)의 단일 형식을 따른다.
 - 제품 방향 또는 다음 실행 경계가 바뀐 경우에만 `MEMORY.md`를 교체한다.
 - 과목별 진행률, 다음 WP, 완료 문자열을 문서에 누적하지 않는다.

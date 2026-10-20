@@ -2,16 +2,16 @@
 
 이 색인은 현재 개발 방향을 결정하는 문서와 feature reference, 완료 계약, 동결·legacy 문서를 구분한다. 문서의 수정 시각, 분량, `ACTIVE`/WP 같은 내부 문자열이 권위를 결정하지 않는다.
 
-## 1. 적용 우선순위
+## 1. 권위 범위
 
-충돌 시 다음 순서를 따른다.
+모든 주제에 하나의 전역 문서 순위를 적용하지 않고, 질문의 domain에 맞는 owner를 따른다.
 
-1. 사용자의 현재 요청
-2. [`AGENTS.md`](../AGENTS.md) — 실행·Git·검증 규칙
-3. [`ACTIVE_PRODUCT_SCOPE.md`](specs/product/ACTIVE_PRODUCT_SCOPE.md) — **현재 제품 방향 단일 SSOT**
-4. [`PROJECT_RULES.md`](../PROJECT_RULES.md) — 아키텍처·품질 경계
-5. 대상 기능에 가장 가까운 product/technical spec
-6. 최신 `origin/main`의 코드·테스트·설정
+- 실행 환경이 지정한 workspace, branch/ref, 권한, 도구 제약은 저장소 기본값보다 우선한다.
+- 사용자의 현재 요청은 원하는 결과와 범위를 정한다. 저장소 실행 경계는 [`AGENTS.md`](../AGENTS.md)가 소유한다.
+- 제품 목표·우선순위·active/paused/frozen 상태는 [`ACTIVE_PRODUCT_SCOPE.md`](specs/product/ACTIVE_PRODUCT_SCOPE.md)가 소유한다.
+- 아키텍처·품질·보안 경계는 [`PROJECT_RULES.md`](../PROJECT_RULES.md)가 소유한다.
+- 구체 기능 동작과 수용 기준은 대상 기능에 가장 가까운 product/technical spec이 소유한다.
+- 현재 workspace의 코드·테스트·설정은 구현 증거이며, 활성 계약과 다르면 자동으로 의도를 덮어쓰지 않고 drift를 조사한다.
 
 과거 plan, evidence, 완료 보고, WP 번호, runbook의 `ACTIVE` 문구는 현재 제품 우선순위를 정하지 않는다.
 
@@ -19,8 +19,8 @@
 
 | 문서 | 역할 | 갱신 조건 |
 |---|---|---|
-| [`AGENTS.md`](../AGENTS.md) | 작업 실행, Git, 검증, 보고 계약 | 저장소 실행 규칙이 실제로 변경될 때 |
-| [`ACTIVE_PRODUCT_SCOPE.md`](specs/product/ACTIVE_PRODUCT_SCOPE.md) | **제품 목표, 현재 priority, 학습↔게임 관계, active/frozen surface, 큰 개발 sequence의 단일 SSOT** | 제품 방향이 실제로 변경될 때 |
+| [`AGENTS.md`](../AGENTS.md) | 저장소 실행 경계와 owner 라우팅 | 저장소 실행 규칙이 실제로 변경될 때 |
+| [`ACTIVE_PRODUCT_SCOPE.md`](specs/product/ACTIVE_PRODUCT_SCOPE.md) | **현재 제품 방향 단일 SSOT: 제품 목표, priority, 학습↔게임 관계, active/paused/frozen surface, 큰 개발 sequence** | 제품 방향이 실제로 변경될 때 |
 | [`PROJECT_RULES.md`](../PROJECT_RULES.md) | 아키텍처·품질·보안 경계 | 제품 결정의 결과로 해당 경계가 실제 변경될 때 |
 | [`MEMORY.md`](agent-context/memory/MEMORY.md) | 새 세션 handoff와 바로 다음 실행 경계 | 현재 방향/다음 실행 경계가 바뀔 때 |
 | [`README.md`](../README.md) | 저장소 진입점과 제품 요약 | 사용자·개발자 진입 정보가 변경될 때 |
@@ -53,7 +53,7 @@ Ocean Rescue는 더 이상 제품 차원에서 동결된 feature가 아니다. *
 
 A/B track runbook은 사용자가 **A트랙/B트랙을 명시적으로 요청한 경우에만** 실행 범위 참고로 사용한다. 범위 미지정 다음 작업의 authority가 아니다.
 
-## 5. 동결 기술 참고
+## 5. Paused reference
 
 | 문서 | 상태 | 재개 조건 |
 |---|---|---|
@@ -90,7 +90,7 @@ Space Explorer의 존재나 과거 plan만으로 신규 기능을 시작하지 �
 - 상태 전용 plan/evidence 파일을 새로 만들지 않는다.
 - runbook은 해당 범위가 명시적으로 선택된 경우만 읽는다.
 - 테스트에서 `다음 WP`, `현재 WP`, `WP COMPLETE` 같은 일정 상태를 검증하지 않는다.
-- 완료 근거는 최신 main의 코드, focused test, 브라우저 증거, build/artifact 계약이다.
+- 완료 근거는 현재 할당된 workspace/ref의 코드, focused test, 브라우저 증거, build/artifact 계약이다 (별도 지정이 없으면 최신 main).
 
 ## 9. 문서 변경 검증
 
@@ -109,6 +109,7 @@ Space Explorer의 존재나 과거 plan만으로 신규 기능을 시작하지 �
 
 ```bash
 uv run pytest -q tests/test_active_product_scope_policy.py
+uv run pytest -q tests/test_development_guideline_consistency.py
 uv run pytest -q tests/test_document_authority_classification.py
 uv run pytest -q tests/test_ocean_rescue_product_classification.py
 uv run pytest -q tests/test_active_technical_spec_consistency.py

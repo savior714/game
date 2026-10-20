@@ -60,7 +60,7 @@ skill goal
 - 검증 진입점: 루트 `verify.sh`
 - 주요 상태 분류:
   - Ocean Rescue | 운영중·active feature
-  - Space Explorer | 운영중 artifact·개발 동결
+  - Space Explorer | 배포된 artifact·`PAUSED_REFERENCE_ONLY`
 
 ### 운영 / 실험 / 레거시 경로 구분표
 
@@ -70,7 +70,7 @@ skill goal
 | Core Quiz 4과목 | `domains/{math,english,korean,science}/index.html` | 운영중 | adaptive learning의 학습 surface |
 | Guardian / Reward | `domains/reward/guardian/index.html` | 운영중 | 성장·목표·보상 관리 |
 | Ocean Rescue | `ocean-rescue/index.html` | 운영중·active feature | 학습 완료 후 reward game |
-| 우주 탐험 실험 페이지 | `experiments/space-explorer/index.html` | 운영중·개발 동결 | 실험 참고 |
+| 우주 탐험 실험 페이지 | `experiments/space-explorer/index.html` | 배포된 artifact·`PAUSED_REFERENCE_ONLY` | 참고 전용 |
 | 전기 발전 실험실 | `experiments/electricity/index.html` | 운영중 | 전기 발전 일곱 가지 실험 |
 | 자석 실험실 | `experiments/magnet/index.html` | 운영중 | 자기장·자석 놀이 실험 |
 | 과거 우주 탐험 alias | `/space-explorer.html`, `experiments/space-explorer.html` | 없음 | 레거시 경로 |
@@ -79,7 +79,7 @@ skill goal
 
 ## 🎮 Ocean Rescue toolchain
 
-Ocean Rescue는 제품 차원에서 active feature지만, **현재 기본 구현 우선순위는 Math mastery/adaptive loop**입니다. Ocean Rescue 자체 작업이 명시적으로 선택되었을 때는 가장 가까운 feature/technical spec과 실제 최신 main을 기준으로 수행합니다.
+Ocean Rescue는 제품 차원에서 active feature지만, **현재 기본 구현 우선순위는 Math mastery/adaptive loop**입니다. Ocean Rescue 작업이 명시적으로 선택되었을 때는 가장 가까운 feature/technical spec과 할당된 workspace/ref를 기준으로 수행합니다 (별도 지정이 없으면 최신 main).
 
 대표 명령:
 
@@ -120,7 +120,7 @@ bash ./verify.sh
 - `/`: 사용자 runtime HTML/CSS/JS entry
 - `shared/`: 과목/제품 공용 domain·UI 로직
 - `domains/`: Core Quiz, reward, Ocean Rescue 등 기능 도메인
-- `experiments/`: 현재 Space Explorer 등 동결 실험 영역
+- `experiments/`: surface별 실험 영역. Space Explorer는 paused 상태이며, 디렉터리 전체가 동결된 것은 아니다.
 - `ocean-rescue/`: Ocean Rescue production standalone artifact
 - `docs/`: 제품 SSOT, feature spec, 기술 참고
 - `tests/`: 제품·회귀 계약

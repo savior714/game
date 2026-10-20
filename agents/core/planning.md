@@ -13,7 +13,9 @@ verify_with:
 # AidenGame 계획 규칙
 
 이 문서는 채팅 계획, 실행 프롬프트, 명시적으로 요청된 저장소 Blueprint의 경계를 정의한다.
-현재 실행 우선순위는 [`AGENTS.md`](../../AGENTS.md)를 따르며, 제품 범위는 [`PROJECT_RULES.md`](../../PROJECT_RULES.md)와 가장 가까운 product spec이 결정한다.
+실행 절차는 [`AGENTS.md`](../../AGENTS.md)가 소유한다. 제품 목표·우선순위는
+[`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md), 아키텍처·품질 경계는
+[`PROJECT_RULES.md`](../../PROJECT_RULES.md), 구체 기능 동작은 가장 가까운 product/technical spec이 소유한다.
 
 ## 1. 기본 계획 방식
 
@@ -63,11 +65,11 @@ verify_with:
 [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)의 current development priority에서
 시작한다. 이 문서는 그 방향을 다시 서술하지 않는다.
 
-- SSOT가 정한 개발 sequence와 active/frozen feature 상태를 따른다.
+- SSOT가 정한 개발 sequence와 active/paused/frozen feature 상태를 따른다.
 - 첫 실행은 아직 닫히지 않은 첫 failure domain이다.
 - SSOT가 동결로 표시한 표면의 신규 기능·구조 이전은 자동 재개하지 않는다.
 - 최근 커밋이나 과거 계획이 특정 기능을 이유로 자동 재개하지 않는다.
-- 이미 해결된 결함은 최신 main에서 재현되지 않으면 다시 목표로 선택하지 않는다.
+- 이미 해결된 결함은 현재 할당된 workspace/ref에서 재현되지 않으면 다시 목표로 선택하지 않는다 (별도 지정이 없으면 최신 main).
 - 네 과목 Core Quiz 문제풀이 reliability 계약은
   [`CORE_QUIZ_RELIABILITY_STABILIZATION.md`](../../docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md)의
   `COMPLETED_REFERENCE` 완료 계약으로만 참조하며 진행 국면의 근거로 쓰지 않는다.
@@ -134,7 +136,7 @@ Blueprint는 단일 실행 경로를 제공해야 한다.
 ## 7. 계획과 현재 상태의 관계
 
 계획 문서는 현재 코드보다 높은 권위가 아니다.
-실행 전 최신 `origin/main`에서 다음을 다시 확인한다.
+실행 전 할당된 workspace/ref에서 다음을 다시 확인한다. 별도 지정이 없으면 최신 `origin/main`을 기본으로 한다.
 
 - 대상 경로와 symbol이 존재하는가
 - 직접 관련 테스트가 존재하는가
@@ -172,7 +174,7 @@ Blueprint는 단일 실행 경로를 제공해야 한다.
 - 일정 header
 - 수동 체크박스 진행률
 
-완료 근거는 최신 main의 구현과 실행 증거다.
+완료 근거는 현재 할당된 workspace/ref의 구현과 실행 증거다 (별도 지정이 없으면 최신 main).
 
 ## 9. 검증과 보고
 
@@ -181,6 +183,7 @@ Blueprint는 단일 실행 경로를 제공해야 한다.
 ```bash
 uv run pytest -q tests/test_planning_workflow_consistency.py
 uv run pytest -q tests/test_agent_registry_consistency.py
+uv run pytest -q tests/test_development_guideline_consistency.py
 ```
 
 최종 보고는 [`reporting.md`](reporting.md) 형식을 따른다.
@@ -190,7 +193,7 @@ uv run pytest -q tests/test_agent_registry_consistency.py
 
 계획·runbook·다음 실행 task를 만들 때 repository 전체 broad scan부터 시작하지 않는다.
 
-1. latest `origin/main`을 확인한다.
+1. 현재 할당된 workspace/ref를 확인한다 (별도 지정이 없으면 latest `origin/main`).
 2. [`review backlog`](../../agents/reviews/review-backlog.md)를 먼저 읽는다.
 3. backlog candidate를 production owner, sibling invariant, relevant diff/history, focused test/runtime evidence에 대조해 독립 재검증한다.
 4. 여전히 실제 gap인 LIVE finding만 task 후보로 유지하고 SATISFIED / OBSOLETE / INVALID finding은 backlog에서 제거한다.
@@ -198,7 +201,7 @@ uv run pytest -q tests/test_agent_registry_consistency.py
 6. hypothesis, primary criterion, authorized scope와 RDV strategy는 승격 시점의 최신 evidence에서 정한다.
 7. 후보가 부족하면 targeted review를 먼저 수행하고, 그래도 부족할 때만 broad review로 확장한다.
 8. 새 evidence-grounded unresolved finding은 backlog에 기록한다.
-9. publication 뒤 latest main에서 primary criterion 만족을 다시 확인한 후에만 backlog에서 제거한다.
+9. publication 뒤 선택된 publish ref에서 primary criterion 만족을 다시 확인한 후에만 backlog에서 제거한다 (저장소 기본값은 latest main).
 
 Discovery 순서는 `review backlog → targeted review → broad review`다.
 Review backlog는 truth cache, product roadmap, 완료 이력 또는 실행 queue가 아니다. Runbook 승격만으로 finding을 제거하지 않는다.

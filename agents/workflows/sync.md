@@ -45,25 +45,28 @@ spec alignment CLI가 아니다.
 
 ## 4. 문서별 역할
 
-- `AGENTS.md`: 권위 순서, 권위 라우팅, 실행·workspace 경계
-- `PROJECT_RULES.md`: 제품·아키텍처·품질 경계
-- `agents/core/verification.md`·`agents/core/reporting.md`: 검증 판정과 보고 형식
+- `AGENTS.md`: 저장소 실행 경계와 domain owner 라우팅
+- `ACTIVE_PRODUCT_SCOPE.md`: 제품 목표·priority·surface 상태
+- `PROJECT_RULES.md`: 아키텍처·품질 경계
+- `agents/core/verification.md`: required proof와 PASS/BLOCKED 판정
+- `agents/RISK_DIRECTED_VERIFICATION.md`: test-first/runtime-first 전략과 fidelity
+- `agents/core/reporting.md`: 최종 보고 형식
 - `agents/core/execution.md`·`agents/workflows/git.md`: workspace·게시 절차와 Git 파괴적 안전
 - product spec: 사용자 동작과 수용 기준
 - technical spec: runtime boundary와 trade-off
-- `MEMORY.md`: 현재 방향과 다음 실행 경계
+- `MEMORY.md`: session handoff와 다음 실행 경계
 - README: 저장소 진입 정보
 - plan/evidence: 현재 authority가 아니라 명시적 계획 또는 과거 증거
 
 진행률만 바뀌었다면 stable authority 문서를 수정하지 않는다.
 
-## 5. 현재 동결 정책
+## 5. Surface별 상태 적용
 
-[`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)가 동결로 표시한 표면에 대해:
+[`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)에서 상태를 각 surface별로 확인한다.
 
-- 해당 표면의 기술 문서는 reference-only 상태를 유지한다.
-- 과거 plan의 next WP를 현재 작업으로 복원하지 않는다.
-- 문서 drift를 이유로 동결된 runtime migration을 자동 재개하지 않는다.
+- Ocean Rescue는 active feature지만 현재 기본 priority와는 구분한다. 과거 plan/runbook만으로 작업을 자동 재개하거나 priority를 올리지 않는다.
+- Space Explorer는 `PAUSED_REFERENCE_ONLY`다. 그 밖의 `experiments/` surface 상태를 일괄 추정하지 않는다.
+- 개별적으로 paused/frozen인 surface는 reference-only로 유지하고, 문서 drift만으로 재개하지 않는다.
 
 ## 6. 검증
 
@@ -71,20 +74,16 @@ spec alignment CLI가 아니다.
 
 - 모든 local Markdown link가 존재함
 - 경로와 command가 실제 저장소에 존재함
-- authority 우선순위가 `AGENTS.md`와 일치함
+- 각 claim이 올바른 domain owner와 일치하며, 과거 문서가 현재 status/priority를 덮어쓰지 않음
 - product test가 일정 상태를 검증하지 않음
 - MEMORY가 현재 방향과 다음 단일 실행 경계를 반영함
-- README가 현재 active/frozen 구분을 명확히 함
+- README가 현재 active/paused/frozen 구분을 명확히 함
 
 관련 focused test 중 실제 변경에 필요한 항목만 실행한다.
 
 ## 7. 결과
 
-```text
-RESULT: PASS | BLOCKED
-CHANGE: <정합화한 stable contract 한 문장>
-VERIFY: <비교한 claim과 focused 검증 결과>
-```
+최종 결과는 [`agents/core/reporting.md`](../core/reporting.md)의 단일 형식을 따른다. `CHANGE`와 검증 근거에는 정합화한 claim 및 focused 검증을 요약한다.
 
 모든 문서를 일괄 갱신하지 않는다.
 직접 drift가 확인된 문서만 수정한다.

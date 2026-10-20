@@ -85,4 +85,4 @@ domain: workflow
 - 필수 handoff menu를 호출하지 않는다.
 - 자동으로 Blueprint를 만들지 않는다.
 - 사용자가 더 이상 논의를 원하지 않으면 확정 사항을 요약하고 종료한다.
-- 구현까지 요청받았다면 최신 main에서 첫 단일 failure domain으로 전환한다.
+- 구현까지 요청받았다면 현재 할당된 workspace/ref에서 첫 단일 failure domain으로 전환한다 (별도 지정이 없으면 최신 main).

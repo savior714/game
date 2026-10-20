@@ -34,12 +34,12 @@ current development priority에서 대상을 고른다. 이 문서는 그 방향
 - SSOT가 정한 개발 sequence에서 아직 닫히지 않은 failure domain을 먼저 본다.
 - SSOT가 동결로 표시한 표면의 신규 기능·구조 이전은 자동 재개하지 않는다.
 - 동결 범위는 사용자의 현재 명시적 요청 또는 치명적 운영 회귀·데이터 손상·보안 문제일 때만 예외로 다룬다.
-- 과거 보고에 등장한 오류는 최신 main에서 같은 조건으로 재현되는지 먼저 확인한다.
+- 과거 보고에 등장한 오류는 현재 할당된 workspace/ref에서 같은 조건으로 재현되는지 먼저 확인한다 (별도 지정이 없으면 최신 main).
 
 ## 3. 진단 순서
 
 1. 사용자가 설명한 증상을 한 문장으로 고정한다.
-2. 최신 `origin/main`에서 가장 작은 재현 경로를 만든다.
+2. 할당된 workspace/ref에서 가장 작은 재현 경로를 만든다 (별도 지정이 없으면 최신 `origin/main`).
 3. 성공·실패를 판정하는 binary criterion을 정한다.
 4. source, caller, state, event, network, persistence 또는 build 경계를 추적한다.
 5. 증거가 구분하지 못하는 원인에만 가설을 세운다.
@@ -85,10 +85,4 @@ current development priority에서 대상을 고른다. 이 문서는 그 방향
 
 ## 7. 보고
 
-```text
-RESULT: PASS | BLOCKED
-CHANGE: <확정한 원인과 수정 한 문장>
-VERIFY: <재현·회귀 판정과 결과 한 문장>
-```
-
-실제 게시 시에만 `COMMIT`, 안전하게 닫지 못했을 때만 `BLOCKER`와 `NEXT`를 추가한다.
+최종 결과는 [`agents/core/reporting.md`](../core/reporting.md)의 단일 형식을 따른다. `CHANGE`와 검증 근거에는 확정한 원인, 재현·회귀 판정을 요약한다.

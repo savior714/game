@@ -20,8 +20,8 @@ workflow 진입점은 [`sync.md`](../../workflows/sync.md)다.
 - next button이 한 문제만 전진한다는 계약
 - 특정 controller가 pointer cleanup을 소유함
 - generated artifact가 build pipeline 소유임
-- Ocean Rescue가 현재 development freeze 상태임
-- MEMORY의 다음 실행이 공통 과목 진단임
+- Ocean Rescue가 active reward-game feature지만 기본 개발 priority와는 별도임
+- Space Explorer가 `PAUSED_REFERENCE_ONLY`임
 
 각 claim에 근거 파일과 검증 방법을 붙인다.
 
@@ -48,15 +48,17 @@ source만으로 실제 동작을 확정할 수 없거나 필요한 browser/build
 
 ## 3. authority 판단
 
-충돌 시 다음을 확인한다.
+전역 문서 서열 대신 claim의 domain owner를 확인한다.
 
-1. 사용자의 현재 결정
-2. `AGENTS.md`
-3. `PROJECT_RULES.md`와 가장 가까운 product/technical spec
-4. 최신 code/test/config
+- 실행 환경이 지정한 workspace/ref/권한 제약은 저장소 기본값보다 우선한다.
+- 사용자의 현재 결정은 요청 범위를 정하고, 실행 안전은 `AGENTS.md`가 소유한다.
+- 제품 방향은 `ACTIVE_PRODUCT_SCOPE.md`, 아키텍처·품질 경계는 `PROJECT_RULES.md`, 기능 동작은 가장 가까운
+  product/technical spec이 소유한다.
+- 현재 code/test/config는 구현 증거다. 활성 owner contract와 다르면 어느 쪽도 자동으로 덮어쓰지 않고 drift를
+  분류한다.
 
-문서 종류가 다르면 역할에 맞게 비교한다.
-README 설명이 product spec을 재정의할 수 없고, 과거 plan이 현재 execution priority를 정할 수 없다.
+문서 종류가 다르면 역할에 맞게 비교한다. README 설명이 product spec을 재정의할 수 없고, 과거 plan이 현재
+execution priority를 정할 수 없다.
 
 ## 4. 실제 저장소 확인
 
@@ -74,7 +76,7 @@ README 설명이 product spec을 재정의할 수 없고, 과거 plan이 현재 
 - 진행 상태와 commit history를 authority 문서에 누적하지 않는다.
 - 같은 claim을 여러 문서가 사용자 진입을 위해 요약한다면 링크와 핵심 범위만 일치시킨다.
 - 문서 전체 재작성 전 기존 안정적인 기술 계약이 유실되지 않는지 확인한다.
-- inactive feature plan은 `PAUSED_REFERENCE_ONLY` 역할을 유지한다.
+- Space Explorer plan은 `PAUSED_REFERENCE_ONLY` reference 역할을 유지하고, 다른 plan의 status는 surface별 SSOT에서 확인한다.
 
 ## 6. guard test
 
@@ -83,8 +85,8 @@ README 설명이 product spec을 재정의할 수 없고, 과거 plan이 현재 
 
 - 링크가 실제로 존재함
 - 실제 command가 존재함
-- authority 우선순위가 일치함
-- active/frozen 범위가 일치함
+- 각 claim이 올바른 domain owner와 일치함
+- active/paused/frozen status가 surface별 SSOT와 일치함
 - stale foreign repository path가 없음
 - 제품 test에 일정 상태가 결합되지 않음
 

@@ -26,8 +26,12 @@ PUBLISH: PUBLISHED | NOT_APPLICABLE | BLOCKED
 DISCOVERED_FAILURE: <독립 failure domain 또는 NONE>
 ```
 
+- `RESULT`는 binary verdict다. `PARTIAL`을 별도 verdict로 만들지 않는다. 구현 일부가 끝났지만 선언된 필수 scope가
+  남아 있으면 `CHANGE`에 완료 범위를 적고 `BLOCKED`로 보고하며, 열린 항목을 `BLOCKER`에 `file:line`으로 적는다.
 - `PRIMARY_VERIFY`와 `DIRECT_VERIFY`는 `verification.md`의 `PRIMARY_CRITERION`과
   `DIRECT_IMPACT_CLOSURE`에 대응한다. 실행하지 않은 criterion은 `NOT_RUN`으로 적는다.
+- `PUBLISH: NOT_APPLICABLE`은 게시가 요청되지 않았거나 실행 권한상 허용되지 않은 경우다. `BLOCKED`는 게시가
+  필수·허용됐지만 안전하게 끝내지 못한 경우에만 사용한다. 게시 권한 부재 자체는 task blocker가 아니다.
 - 실제 게시 시에만 `COMMIT`을 추가한다.
 - 중단 시에만 `BLOCKER`와 `NEXT`를 추가한다.
 - 변경하지 않았다면 `CHANGE: 변경 없음`으로 명확히 적는다.

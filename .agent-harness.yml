@@ -2,8 +2,8 @@ project:
   name: AidenGame
 
 git:
-  canonical_branch: "main"
-  main_only: true
+  canonical_branch: "main" # Default integration target; an assigned session ref takes precedence.
+  main_only: false
   write_concurrency: 4
   write_concurrency_policy: "optimistic-parallel-exclusive-reservation"
   reservation_board: "github-issue-1"

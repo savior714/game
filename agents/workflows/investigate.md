@@ -27,7 +27,7 @@ domain: workflow
 
 - 기본적으로 read-only다.
 - 사용자 요청이 분석만이면 production code를 수정하지 않는다.
-- 파일·명령·상태는 최신 `origin/main`에서 확인한다.
+- 파일·명령·상태는 현재 할당된 workspace/ref에서 확인한다 (별도 지정이 없으면 최신 `origin/main`).
 - 과거 계획과 완료 보고를 현재 증거로 사용하지 않는다.
 - 사실, 추정, 미확인 항목을 구분한다.
 - 검색 결과의 존재 자체를 결함으로 판정하지 않는다.
@@ -50,7 +50,8 @@ current development priority를 기준으로 한다. 이 문서는 그 방향을
 
 - SSOT가 지정한 대상 과목의 실제 runtime failure와 test coverage gap을 구분한다.
 - 이미 해결된 next progression과 touch target을 재현 없이 다시 결함으로 선언하지 않는다.
-- Ocean Rescue·실험 기능은 동결 정책 위반 여부만 조사할 수 있으며, 자동 구현 재개로 이어가지 않는다.
+- Ocean Rescue는 active feature지만 기본 개발 priority와는 구분한다. 명시적으로 지정된 범위는 조사할 수 있으나 과거 runbook만으로 구현을 자동 재개하지 않는다.
+- Space Explorer는 `PAUSED_REFERENCE_ONLY`다. 그 밖의 `experiments/` surface는 제품 SSOT의 개별 상태를 확인하며 디렉터리 전체를 동결로 단정하지 않는다.
 
 ## 5. 결과 형식
 

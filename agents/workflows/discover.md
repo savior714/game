@@ -35,7 +35,8 @@ Core Quiz reliability 완료 계약이 필요할 때만
 - queue JSON, timestamp Blueprint, backlog를 자동 생성하지 않는다.
 - 파일 길이·복잡도 숫자만으로 후보를 만들지 않는다.
 - 실제 사용자 실패, 반복 변경 비용, 검증 공백, ownership 혼란을 근거로 후보를 만든다.
-- 동결된 Ocean Rescue·실험 기능의 구조 개선 후보를 현재 실행 대상으로 추천하지 않는다.
+- 제품 SSOT가 실제로 frozen/paused로 표시한 surface의 구조 개선은 기본 실행 후보로 추천하지 않는다.
+- Ocean Rescue는 active feature지만 현재 기본 priority가 아니므로, 명시적으로 선택된 범위와 무관한 과거 runbook만으로 후보에 올리지 않는다. `experiments/`도 전체를 동결로 간주하지 않는다.
 
 ## 3. 탐색 순서
 
@@ -43,7 +44,7 @@ Core Quiz reliability 완료 계약이 필요할 때만
 2. 현재 authority와 직접 관련 code/test를 읽는다.
 3. 사용자 흐름, state ownership, duplication, cleanup, test gap을 조사한다.
 4. 후보마다 구체적인 실패 또는 반복 비용을 확인한다.
-5. 이미 해결됐거나 현재 main에서 재현되지 않는 후보를 제거한다.
+5. 이미 해결됐거나 현재 할당된 workspace/ref에서 재현되지 않는 후보를 제거한다 (별도 지정이 없으면 최신 main).
 6. 현재 제품 방향 안에서 첫 actionable candidate 하나를 권장한다.
 7. 후보의 재현 조건, binary criterion, non-goal을 정리한다.
 

@@ -1,6 +1,8 @@
 # Risk-Directed Verification — AidenGame
 
-이 문서는 AidenGame의 개발·디버깅 검증 방식을 구체화한다. 현재 사용자 지시, 루트 `AGENTS.md`, `PROJECT_RULES.md`가 우선하며, 이 문서는 기존 `위험 기반 개발·테스트 선택` 원칙의 실행 규칙이다.
+이 문서는 test-first/runtime-first 전략 선택과 fidelity ladder를 소유한다. 필수 검증 범위와 PASS/BLOCKED 판정은
+[`agents/core/verification.md`](core/verification.md)가, 실행 우선순위와 아키텍처 경계는 루트
+`AGENTS.md`와 `PROJECT_RULES.md`가 소유한다. 이 문서는 결과 판정을 재정의하지 않는다.
 
 ## 1. 핵심 원칙
 

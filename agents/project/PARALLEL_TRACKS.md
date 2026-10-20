@@ -17,9 +17,11 @@ exclusive 자원 reservation 자체는
 작업에서 어느 하위 분야를 뜻하는지 다시 묻지 않는다.
 
 명시적인 A/B 트랙 요청은 사용자가 현재 요청에서 개발 범위를 지정한 것으로 본다. 제품 SSOT의 범위
-미지정 기본 방향과 다르더라도 이 트랙 계약을 따른다. 최신 `origin/main`과 가장 가까운 technical spec을
-읽고, 해당 트랙의 쓰기 범위 안에서 다른 트랙과 독립적으로 완료할 수 있는 가치가 가장 높은 다음 작업
-하나를 선정한다.
+미지정 기본 priority와 다르더라도 트랙 영역에서 후보를 고르되, 트랙 선택만으로 개별 surface의 paused/frozen
+상태를 해제하지 않는다. 다만 실행 환경이 workspace/ref나 권한을 지정하면
+그 경계가 저장소 기본값보다 우선한다. 할당된 workspace/ref와 가장 가까운 technical spec을 읽고
+(별도 지정이 없으면 최신 `origin/main`), 해당 트랙의 쓰기 범위 안에서 다른 트랙과 독립적으로 완료할 수
+있는 가치가 가장 높은 다음 작업 하나를 선정한다.
 
 - **A — 게임 런타임·플레이**: 실제 게임 실행 중 플레이어에게 일어나는 동작을 소유한다. 전투, 월드,
   엔티티, 인벤토리, 진행, 경제·보상 규칙, 상태 머신(FSM), HUD, 입력·상호작용, controller,
@@ -38,20 +40,20 @@ exclusive 자원 reservation 자체는
 - 다른 트랙의 코드·자산·테스트는 원인과 소비/생산 계약 확인을 위해 읽을 수 있지만 수정하지 않는다.
 - `asset metadata/schema → manifest/atlas/registry → runtime loader/renderer`처럼 B가 생산하고 A가
   소비하는 계약은 두 트랙이 동시에 수정하지 않는다.
-- 생산 계약 변경이 필요하면 B가 metadata/schema와 생성·검증 체인을 먼저 확정하고 직접 검증한 뒤
-  `origin/main`에 게시한다. 그 다음 A가 게시된 계약만 기준으로 loader/renderer 소비 변경을 별도 단일
-  작업으로 수행한다.
+- 생산 계약 변경이 필요하면 B가 metadata/schema와 생성·검증 체인을 먼저 확정하고 직접 검증한 뒤 선택된
+  publish ref (저장소 기본값: `origin/main`)에 게시한다. 그 다음 A가 그 ref에 게시된 계약만 기준으로
+  loader/renderer 소비 변경을 별도 단일 작업으로 수행한다.
 - A 작업자는 런타임 문제를 닫기 위해 B의 schema·manifest 형식·생성기를 임의로 바꾸지 않는다. B 작업자는
   파이프라인 문제를 닫기 위해 A의 플레이 상태·controller·런타임 loader 동작까지 확장하지 않는다.
 - 예상 쓰기 범위가 A와 B 양쪽에 걸치면 현재 상시 병렬 작업으로 실행하지 않는다. 생산측 선행 계약 또는
   소비측 후속 작업으로 분리하고, 현재 트랙에서 독립 완료 가능한 다른 후보를 선택할 수 있다.
-- 단순한 `origin/main` 선행이나 non-fast-forward는 트랙 충돌이 아니다. 최신 main에 재적용했을 때
-  파일·계약 중첩이 없고 focused 검증이 유지되면 정상 병렬 진행으로 본다.
+- 선택된 통합 ref의 선행이나 non-fast-forward만으로 트랙 충돌이 되지는 않는다 (`origin/main`은 저장소 기본값).
+  허용된 최신 ref에 재적용했을 때 파일·계약 중첩이 없고 focused 검증이 유지되면 정상 병렬 진행으로 본다.
 - 실제 충돌이 발견되면 추상적인 예방 규칙을 늘리지 않는다. 반복된 실제 사례를 근거로 특정 경로의 소유권,
   생산/소비 순서, 공용 직렬 영역 등 필요한 경계만 최소한으로 보정한다.
 - 사용자가 `A트랙/B트랙에서 이어갈 다음 작업을 분석`하라고 하면 전투·HUD·DragonBones·atlas 같은 하위
-  분야를 다시 선택하라고 묻지 않는다. 최신 저장소 상태와 최근 완료 작업을 기준으로 해당 트랙 안에서
-  독립적으로 닫히는 다음 단일 failure domain을 스스로 선택한다. 로컬 프롬프트가 요청된 경우 작업 선택까지
+  분야를 다시 선택하라고 묻지 않는다. 할당된 workspace/ref와 최근 완료 작업을 기준으로 해당 트랙 안에서
+  독립적으로 닫히는 다음 단일 failure domain을 스스로 선택한다 (별도 지정이 없으면 최신 `origin/main`). 로컬 프롬프트가 요청된 경우 작업 선택까지
   먼저 수행하고 [`LOCAL_LLM_DELEGATION.md`](LOCAL_LLM_DELEGATION.md)의 즉시 발행 원칙에 따라 재확인 없이
   프롬프트를 발행한다.
 
@@ -63,8 +65,8 @@ root dependency/toolchain, 공용 lockfile, 저장소 전체 CI·verify 설정�
 ## 4. 명시적 트랙 런북의 10개 순차 작업 리필
 
 사용자가 특정 A/B 트랙의 런북을 **작성하거나 갱신**하라고 명시적으로 요청한 경우에만, 일반적인 transient
-queue 금지의 제한적 예외로 해당 런북의 pending 작업 목록을 최신 `origin/main`, 트랙 계약, 직접
-테스트·runtime 근거, 관련 최근 commit에서 다시 구성한다.
+queue 금지의 제한적 예외로 해당 런북의 pending 작업 목록을 할당된 workspace/ref (별도 지정이 없으면 최신
+`origin/main`), 트랙 계약, 직접 테스트·runtime 근거, 관련 최근 commit에서 다시 구성한다.
 
 - dependency 순서로 한 번에 하나씩 실행 가능한 pending work package를 **정확히 10개** 유지한다.
 - 완료된 항목은 목록에서 제거하고 완료 이력으로 남겨 수를 채우지 않는다.

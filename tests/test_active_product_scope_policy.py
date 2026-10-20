@@ -222,7 +222,7 @@ def test_completed_reliability_contract_is_not_used_as_current_direction() -> No
 def test_agents_kernel_routes_instead_of_restating_delegated_contracts() -> None:
     agents = read("AGENTS.md")
 
-    assert "권위 순서" in agents
+    assert "권위 범위" in agents
     assert "권위 라우팅" in agents
     assert "Bounded execution invariants" in agents
     assert ACTIVE_SCOPE in agents

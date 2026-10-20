@@ -12,9 +12,10 @@ verify_with:
 
 # AidenGame 검증 규칙
 
-이 문서는 변경 위험에 맞는 검증 선택, 검증 계층, PASS/BLOCKED 판정을 정의한다.
-변경 범위 경계는 [`principles.md`](principles.md), 실행 순서는
-[`execution.md`](execution.md), 보고 형식은 [`reporting.md`](reporting.md)를 따른다.
+이 문서는 필수 검증 범위·계층과 PASS/BLOCKED 판정을 정의한다. 위험에 맞는 test-first/runtime-first 전략과
+fidelity ladder는 [`RISK_DIRECTED_VERIFICATION.md`](../RISK_DIRECTED_VERIFICATION.md)가 소유한다.
+변경 범위 경계는 [`principles.md`](principles.md), 실행 순서는 [`execution.md`](execution.md), 보고 형식은
+[`reporting.md`](reporting.md)를 따른다.
 실제 명령은 최신 `Justfile`, `verify.sh`, package 설정, 테스트 파일을 우선한다.
 
 ## 1. 기본 원칙
@@ -27,24 +28,17 @@ verify_with:
 - workaround, fail-open fallback, broad ignore, 검사 대상 축소, baseline·snapshot 갱신으로 실패를
   숨기지 않는다.
 
-## 2. 위험 기반 개발·테스트 선택
+## 2. 검증 전략 경계
 
-정통 TDD를 모든 변경에 일률적으로 강제하지 않는다. TDD를 생략하는 것은 무검증 개발을 허용한다는
-뜻이 아니다.
+TDD를 모든 변경에 일률적으로 강제하지 않지만, 어떤 전략을 택해도 무검증 개발은 허용하지 않는다.
+`RISK_DIRECTED_VERIFICATION.md`가 test-first/runtime-first 전략과 proof fidelity 선택을 구체화하며,
+이 문서는 그 전략으로 확보해야 하는 필수 criterion과 결과 판정을 소유한다.
 
-- 화면 구성, 스타일, 애니메이션, 조작감, 게임 감각, 콘텐츠 표현, 탐색적 신규 기능과 단순
-  dependency/toolchain 승격은 먼저 구현하고 실제 브라우저·입력·렌더링으로 직접 확인한 뒤 안정된
-  계약만 회귀 테스트로 고정할 수 있다.
-- 입력 한 번에 효과 한 번, 이벤트 중복 연결, 점수·진행·저장 데이터, 복잡한 상태 전이, 재시작·복구,
-  공유 controller, 사용자 데이터 손상 가능성과 이미 발생한 회귀 버그는 테스트 우선 또는 구현과 동시에
-  테스트한다.
-- 시각적 품질과 재미를 단위 테스트로 대신하지 않는다. 반대로 자동 검증 가능한 핵심 계약을 수동
-  확인만으로 남기지 않는다.
-- 테스트는 구현 구조를 복제하지 않고 사용자에게 중요한 동작과 재발 방지에 집중한다.
-- 모든 변경은 수정 전 재현 조건 또는 기대 동작과 단일 판정 기준을 정하고, 수정 후 해당 failure
-  domain을 가장 짧은 독립 검증으로 판정한다.
-- 형식적인 RED 증명, 고정 횟수 반복, 전 과목·전체 suite 실행을 모든 작업의 기본 절차로 삼지 않는다.
-  현재 위험이나 실제 불안정성이 요구할 때만 넓힌다.
+- 시각·입력·rendering·game feel은 실제 runtime에서 판정할 수 있다. 단위 테스트만으로 시각 품질을 대신하지 않는다.
+- 자동 검증 가능한 상태·저장·진행·입력 invariant를 수동 확인만으로 남기지 않는다.
+- 테스트는 구현 구조 복제가 아니라 사용자 계약과 실제 회귀 방지에 집중한다.
+- 모든 변경은 단일 binary criterion을 정하고, 그 criterion을 판정할 가장 가까운 독립 proof부터 실행한다.
+- RED 증명, 고정 횟수 반복, 전체 suite는 현재 위험이나 구체적 불안정성이 요구할 때만 추가한다.
 
 ## 3. 형제 화면·공용 소유자 사전 점검
 
@@ -132,6 +126,7 @@ bash ./verify.sh
 ```bash
 uv run pytest -q tests/test_core_quiz_reliability_policy.py
 uv run pytest -q tests/test_agent_registry_consistency.py
+uv run pytest -q tests/test_development_guideline_consistency.py
 uv run pytest -q tests/test_planning_workflow_consistency.py
 uv run pytest -q tests/test_core_agent_contract_consistency.py
 ```

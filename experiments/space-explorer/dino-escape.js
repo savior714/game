@@ -1,4 +1,4 @@
-const THREE_MODULE_URL = "https://unpkg.com/three@0.165.0/build/three.module.js";
+const THREE_MODULE_URL = "three";
 
 const WEAPON_TIERS = [
   { id: "stone", unlockScore: 0, damage: 1, cooldownMs: 700, projectileSpeed: 18, projectileSize: 0.28, label: "STONE" },

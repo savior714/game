@@ -24,13 +24,28 @@
 |---|---|
 | 실험 페이지 | `experiments/space-explorer/index.html` |
 | 모듈 엔트리 | `experiments/space-explorer/main.js` |
+| 천체/궤도 데이터 | `experiments/space-explorer/data.js` |
 | 상태 | `experiments/space-explorer/state.js` |
+| 궤도·자전 계산 | `experiments/space-explorer/simulation.js` |
 | 렌더링 | `experiments/space-explorer/renderer.js` |
+| 셰이더/머티리얼 | `experiments/space-explorer/shaders.js` |
+| 텍스처 로더 | `experiments/space-explorer/textures.js` |
 | 컨트롤 | `experiments/space-explorer/controls.js` |
 | 제스처 | `experiments/space-explorer/interactions.js` |
+| 행성 텍스처 자산 | `experiments/space-explorer/assets/textures/` |
+| three.js 번들 | `experiments/space-explorer/vendor/three/` |
 | 배포 라우팅 | `vercel.json` |
 
 루트 `/space-explorer.html`과 `experiments/space-explorer.html`은 현재 배포 entry가 아니다. 실제 코드와 `vercel.json`을 우선한다.
+
+### 2.1 3D 텍스처 파이프라인
+
+- 표면 텍스처는 저장소에 커밋된 실제 촬영·공개 지도(Solar System Scope CC BY 4.0, NASA Blue Marble, NASA SDO)를 쓴다.
+- 지구는 day/night/normal/specular/cloud 5개 레이어를 각각 셰이더로 합성한다.
+- 수성·금성·화성·달은 bump 맵을, 토성은 알파 스트립 고리 텍스처와 행성 그림자를 쓴다.
+- 태양은 NASA SDO 텍스처에 절차적 플라스마 노이즈를 더한다.
+- 텍스처 로딩은 진행률 UI와 대체(fallback) 텍스처를 함께 제공한다.
+- three.js와 애드온은 `vendor/three/`에 고정 번들로 두며 CDN에 의존하지 않는다.
 
 ## 3. 보존할 기술 경계
 

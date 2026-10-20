@@ -1,69 +1,66 @@
+"""태양계 3D 탐험대 — 카메라 조작/프레임 예산 회귀 가드."""
+
+from __future__ import annotations
+
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
-SPACE_EXPLORER_DIR = ROOT / "experiments" / "space-explorer"
+SPACE_DIR = ROOT / "experiments" / "space-explorer"
 
 
-def test_wheel_zoom_is_supported_on_canvas() -> None:
-    interactions_js = (SPACE_EXPLORER_DIR / "interactions.js").read_text(
-        encoding="utf-8"
-    )
+def read(name: str) -> str:
+    return (SPACE_DIR / name).read_text(encoding="utf-8")
 
-    assert "function onWheel(event)" in interactions_js
-    assert "const wheelDelta = -event.deltaY;" in interactions_js
+
+def test_orbit_controls_handle_wheel_pinch_and_rotation() -> None:
+    renderer = read("renderer.js")
+    interactions = read("interactions.js")
+
     assert (
-        "state.targetZoom = clamp(state.targetZoom + zoomStep, MIN_ZOOM, MAX_ZOOM);"
-        in interactions_js
+        'import { OrbitControls } from "three/addons/controls/OrbitControls.js";'
+        in renderer
     )
+    assert "controls.enableDamping = true;" in renderer
+    assert "controls.minDistance" in renderer
+    assert "controls.maxDistance" in renderer
+    assert "ONE: THREE.TOUCH.ROTATE" in renderer
+    assert "TWO: THREE.TOUCH.DOLLY_ROTATE" in renderer
+    # 휠/핀치 확대는 OrbitControls가 처리하고, 상호작용 레이어는 클릭과 드래그를 구분한다.
     assert (
-        'canvas.addEventListener("wheel", onWheel, { passive: false });'
-        in interactions_js
+        'canvas.addEventListener("wheel", onUserInteract, { passive: true });'
+        in interactions
     )
+    assert "const DRAG_THRESHOLD_PX = 7;" in interactions
 
 
-def test_high_frequency_interactions_are_raf_batched() -> None:
-    interactions_js = (SPACE_EXPLORER_DIR / "interactions.js").read_text(
-        encoding="utf-8"
-    )
+def test_pointer_hover_raycasts_are_frame_batched() -> None:
+    interactions = read("interactions.js")
 
-    assert "let rafScheduled = false;" in interactions_js
-    assert "function scheduleRender()" in interactions_js
-    assert "if (rafScheduled) return;" in interactions_js
-    assert "requestAnimationFrame(() => {" in interactions_js
-    assert "rafScheduled = false;" in interactions_js
-    assert "render();" in interactions_js
-    assert "scheduleRender();" in interactions_js
+    assert "let hoverFrame = 0;" in interactions
+    assert "requestAnimationFrame(() => {" in interactions
+    assert "cancelAnimationFrame(hoverFrame)" in interactions
+    assert "function onPointerDown(event)" in interactions
+    assert "function onPointerUp(event)" in interactions
 
 
-def test_animation_loop_avoids_unnecessary_idle_renders() -> None:
-    main_js = (SPACE_EXPLORER_DIR / "main.js").read_text(encoding="utf-8")
+def test_render_budget_guards_exist() -> None:
+    renderer = read("renderer.js")
+    main = read("main.js")
 
-    assert "const SMOOTHING_EPSILON = 0.0008;" in main_js
-    assert "let shouldRenderFrame = state.isPlaying;" in main_js
-    assert "const zoomDelta = state.targetZoom - state.zoom;" in main_js
-    assert "const rotationDelta = state.targetRotation - state.viewRotation;" in main_js
+    # 픽셀 비율 상한과 자동 화질 하향
+    assert "Math.min(window.devicePixelRatio || 1, 1.85)" in renderer
+    assert "function setPixelRatioCap(cap)" in renderer
+    assert "if (lowPerformanceWindows >= 3) {" in main
+    assert "scene?.setPixelRatioCap(1.25);" in main
+    # 화면이 가려진 동안에는 시뮬레이션과 렌더를 멈춘다.
+    assert "if (scene && !document.hidden) {" in main
+    assert 'document.addEventListener("visibilitychange"' in main
+
+
+def test_frame_delta_is_clamped_to_avoid_planet_jumps() -> None:
+    main = read("main.js")
+
     assert (
-        "Math.abs(zoomDelta) > SMOOTHING_EPSILON || Math.abs(rotationDelta) > SMOOTHING_EPSILON"
-        in main_js
+        "const dt = Math.min(0.1, Math.max(0, (now - lastFrameTime) / 1000));" in main
     )
-    assert "if (shouldRenderFrame) {" in main_js
-    assert "render();" in main_js
-
-
-def test_renderer_records_frame_measurements_for_regression_guard() -> None:
-    renderer_js = (SPACE_EXPLORER_DIR / "renderer.js").read_text(encoding="utf-8")
-
-    assert 'const PERF_MARK_START = "spaceExplorer:render:start";' in renderer_js
-    assert 'const PERF_MARK_END = "spaceExplorer:render:end";' in renderer_js
-    assert 'const PERF_MEASURE_NAME = "spaceExplorer:render:duration";' in renderer_js
-    assert (
-        'if (typeof performance !== "undefined" && typeof performance.mark === "function")'
-        in renderer_js
-    )
-    assert "performance.mark(PERF_MARK_START);" in renderer_js
-    assert "performance.mark(PERF_MARK_END);" in renderer_js
-    assert (
-        "performance.measure(PERF_MEASURE_NAME, PERF_MARK_START, PERF_MARK_END);"
-        in renderer_js
-    )
+    assert "export const MAX_FRAME_STEP_SECONDS = 0.1;" in read("state.js")

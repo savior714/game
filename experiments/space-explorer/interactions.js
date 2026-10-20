@@ -1,157 +1,138 @@
-const MIN_ZOOM = 0.65;
-const MAX_ZOOM = 1.85;
-const ZOOM_SENSITIVITY = 1;
+// 태양계 3D 탐험대 — 포인터/키보드 상호작용
+// OrbitControls가 회전·줌을 담당하고, 여기서는 "클릭과 드래그 구분", 호버 표시,
+// 키보드 줌 보조를 담당한다.
 
-function getTouchDistance(t1, t2) {
-  const x1 = t1.clientX ?? t1.x ?? 0;
-  const y1 = t1.clientY ?? t1.y ?? 0;
-  const x2 = t2.clientX ?? t2.x ?? 0;
-  const y2 = t2.clientY ?? t2.y ?? 0;
-  const dx = x2 - x1;
-  const dy = y2 - y1;
-  return Math.hypot(dx, dy);
-}
-
-function getTouchAngle(t1, t2) {
-  const x1 = t1.clientX ?? t1.x ?? 0;
-  const y1 = t1.clientY ?? t1.y ?? 0;
-  const x2 = t2.clientX ?? t2.x ?? 0;
-  const y2 = t2.clientY ?? t2.y ?? 0;
-  return Math.atan2(y2 - y1, x2 - x1);
-}
+const DRAG_THRESHOLD_PX = 7;
+const CLICK_MAX_MS = 520;
 
 function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value));
+  return Math.max(min, Math.min(max, value));
 }
 
-export function attachTouchInteractions(options) {
-  const { canvas, state, render } = options;
-  if (!canvas) return;
-  const activePointers = new Map();
-  let rafScheduled = false;
+function isTypingTarget(target) {
+  if (!target) return false;
+  const tag = target.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable;
+}
 
-  let gestureStartDistance = null;
-  let gestureStartAngle = null;
-  let zoomAtGestureStart = state.targetZoom;
-  let rotationAtGestureStart = state.targetRotation;
+/**
+ * @param {{
+ *   canvas: HTMLCanvasElement,
+ *   camera: import("three").PerspectiveCamera,
+ *   controls: import("three/addons/controls/OrbitControls.js").OrbitControls,
+ *   raycast: (event: PointerEvent) => string | null,
+ *   onPick: (bodyId: string) => void,
+ *   onHover: (bodyId: string | null) => void,
+ *   onUserInteract?: () => void
+ * }} options
+ */
+export function attachSceneInteractions({ canvas, camera, controls, raycast, onPick, onHover, onUserInteract = () => {} }) {
+  let start = null;
+  let hoveredId = null;
+  let hoverFrame = 0;
+  let pendingHoverEvent = null;
 
-  function resetGesture() {
-    gestureStartDistance = null;
-    gestureStartAngle = null;
-    zoomAtGestureStart = state.targetZoom;
-    rotationAtGestureStart = state.targetRotation;
-  }
-
-  function scheduleRender() {
-    if (rafScheduled) return;
-    rafScheduled = true;
-    requestAnimationFrame(() => {
-      rafScheduled = false;
-      render();
+  function emitHover(event) {
+    pendingHoverEvent = event;
+    if (hoverFrame) return;
+    hoverFrame = requestAnimationFrame(() => {
+      hoverFrame = 0;
+      if (!pendingHoverEvent) return;
+      const id = raycast(pendingHoverEvent);
+      pendingHoverEvent = null;
+      if (id !== hoveredId) {
+        hoveredId = id;
+        canvas.style.cursor = id ? "pointer" : "grab";
+        onHover(id);
+      }
     });
   }
 
-  function onTouchStart(event) {
-    if (event.touches.length < 2) return;
-    const [t1, t2] = event.touches;
-    gestureStartDistance = getTouchDistance(t1, t2);
-    gestureStartAngle = getTouchAngle(t1, t2);
-    zoomAtGestureStart = state.targetZoom;
-    rotationAtGestureStart = state.targetRotation;
-    event.preventDefault();
-  }
-
-  function onTouchMove(event) {
-    if (event.touches.length < 2 || !gestureStartDistance || gestureStartAngle === null) {
-      return;
-    }
-
-    const [t1, t2] = event.touches;
-    const currentDistance = getTouchDistance(t1, t2);
-    const currentAngle = getTouchAngle(t1, t2);
-    const scaleFactor = currentDistance / gestureStartDistance;
-
-    state.targetZoom = clamp(zoomAtGestureStart * scaleFactor * ZOOM_SENSITIVITY, MIN_ZOOM, MAX_ZOOM);
-    state.targetRotation = rotationAtGestureStart + (currentAngle - gestureStartAngle);
-    scheduleRender();
-    event.preventDefault();
-  }
-
-  function onTouchEnd(event) {
-    if (event.touches.length >= 2) {
-      const [t1, t2] = event.touches;
-      gestureStartDistance = getTouchDistance(t1, t2);
-      gestureStartAngle = getTouchAngle(t1, t2);
-      zoomAtGestureStart = state.targetZoom;
-      rotationAtGestureStart = state.targetRotation;
-      return;
-    }
-    resetGesture();
-  }
-
-  function getPointerPair() {
-    const pointers = Array.from(activePointers.values());
-    if (pointers.length < 2) return null;
-    return [pointers[0], pointers[1]];
-  }
-
   function onPointerDown(event) {
-    activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
-    const pair = getPointerPair();
-    if (!pair) return;
-    const [p1, p2] = pair;
-    gestureStartDistance = getTouchDistance(p1, p2);
-    gestureStartAngle = getTouchAngle(p1, p2);
-    zoomAtGestureStart = state.targetZoom;
-    rotationAtGestureStart = state.targetRotation;
-    event.preventDefault();
+    if (event.button !== undefined && event.button !== 0) return;
+    start = {
+      x: event.clientX,
+      y: event.clientY,
+      time: performance.now(),
+    };
+    canvas.style.cursor = "grabbing";
+    onUserInteract();
   }
 
   function onPointerMove(event) {
-    if (!activePointers.has(event.pointerId)) return;
-    activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
-    const pair = getPointerPair();
-    if (!pair || !gestureStartDistance || gestureStartAngle === null) return;
-
-    const [p1, p2] = pair;
-    const currentDistance = getTouchDistance(p1, p2);
-    const currentAngle = getTouchAngle(p1, p2);
-    const scaleFactor = currentDistance / gestureStartDistance;
-    state.targetZoom = clamp(zoomAtGestureStart * scaleFactor * ZOOM_SENSITIVITY, MIN_ZOOM, MAX_ZOOM);
-    state.targetRotation = rotationAtGestureStart + (currentAngle - gestureStartAngle);
-    scheduleRender();
-    event.preventDefault();
+    if (start) {
+      const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y);
+      if (moved > DRAG_THRESHOLD_PX) start.moved = true;
+      return;
+    }
+    if (event.pointerType === "mouse" || event.pointerType === "pen") emitHover(event);
   }
 
   function onPointerUp(event) {
-    activePointers.delete(event.pointerId);
-    const pair = getPointerPair();
-    if (pair) {
-      const [p1, p2] = pair;
-      gestureStartDistance = getTouchDistance(p1, p2);
-      gestureStartAngle = getTouchAngle(p1, p2);
-      zoomAtGestureStart = state.targetZoom;
-      rotationAtGestureStart = state.targetRotation;
-      return;
+    const wasClick =
+      start &&
+      !start.moved &&
+      Math.hypot(event.clientX - start.x, event.clientY - start.y) <= DRAG_THRESHOLD_PX &&
+      performance.now() - start.time <= CLICK_MAX_MS;
+    start = null;
+    canvas.style.cursor = hoveredId ? "pointer" : "grab";
+    if (wasClick) {
+      const id = raycast(event);
+      if (id) onPick(id);
     }
-    resetGesture();
   }
 
-  function onWheel(event) {
-    const wheelDelta = -event.deltaY;
-    const zoomStep = wheelDelta * 0.0015;
-    state.targetZoom = clamp(state.targetZoom + zoomStep, MIN_ZOOM, MAX_ZOOM);
-    scheduleRender();
-    event.preventDefault();
+  function onPointerLeave() {
+    start = null;
+    if (hoveredId) {
+      hoveredId = null;
+      onHover(null);
+    }
   }
 
-  canvas.addEventListener("touchstart", onTouchStart, { passive: false });
-  canvas.addEventListener("touchmove", onTouchMove, { passive: false });
-  canvas.addEventListener("touchend", onTouchEnd);
-  canvas.addEventListener("touchcancel", onTouchEnd);
-  canvas.addEventListener("pointerdown", onPointerDown, { passive: false });
-  canvas.addEventListener("pointermove", onPointerMove, { passive: false });
+  function dolly(factor) {
+    const offset = camera.position.clone().sub(controls.target);
+    const distance = clamp(offset.length() * factor, controls.minDistance, controls.maxDistance);
+    camera.position.copy(controls.target).add(offset.setLength(distance));
+    controls.update();
+    onUserInteract();
+  }
+
+  function onKeyDown(event) {
+    if (isTypingTarget(event.target)) return;
+    if (event.key === "+" || event.key === "=") {
+      event.preventDefault();
+      dolly(0.88);
+    } else if (event.key === "-" || event.key === "_") {
+      event.preventDefault();
+      dolly(1.14);
+    }
+  }
+
+  canvas.addEventListener("pointerdown", onPointerDown);
+  canvas.addEventListener("pointermove", onPointerMove);
   canvas.addEventListener("pointerup", onPointerUp);
-  canvas.addEventListener("pointercancel", onPointerUp);
-  canvas.addEventListener("wheel", onWheel, { passive: false });
+  canvas.addEventListener("pointercancel", onPointerLeave);
+  canvas.addEventListener("pointerleave", onPointerLeave);
+  canvas.addEventListener("wheel", onUserInteract, { passive: true });
+  window.addEventListener("keydown", onKeyDown);
+
+  return {
+    detach() {
+      canvas.removeEventListener("pointerdown", onPointerDown);
+      canvas.removeEventListener("pointermove", onPointerMove);
+      canvas.removeEventListener("pointerup", onPointerUp);
+      canvas.removeEventListener("pointercancel", onPointerLeave);
+      canvas.removeEventListener("pointerleave", onPointerLeave);
+      canvas.removeEventListener("wheel", onUserInteract);
+      window.removeEventListener("keydown", onKeyDown);
+      if (hoverFrame) cancelAnimationFrame(hoverFrame);
+    },
+    zoomIn() {
+      dolly(0.88);
+    },
+    zoomOut() {
+      dolly(1.14);
+    },
+  };
 }

@@ -1,116 +1,81 @@
-import json
-import subprocess
-import textwrap
+"""태양계 3D 탐험대 — 엔트리/의존성 계약.
+
+이 페이지는 정적 배포되므로 three.js와 애드온을 저장소 안에서 제공해야 한다.
+CDN import가 되살아나면 오프라인/사내망에서 3D 장면이 통째로 뜨지 않는다.
+"""
+
+from __future__ import annotations
+
+import re
 from pathlib import Path
 
 import pytest
 
-
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATES = ROOT
+SPACE_DIR = ROOT / "experiments" / "space-explorer"
+INDEX = SPACE_DIR / "index.html"
 
 
-def test_space_explorer_script_is_connected() -> None:
-    html = (TEMPLATES / "experiments" / "space-explorer" / "index.html").read_text(
-        encoding="utf-8"
-    )
+def read(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+def test_three_is_served_from_the_repository_not_a_cdn() -> None:
+    html = read(INDEX)
+
+    import_map = re.search(r'<script type="importmap">(.*?)</script>', html, re.DOTALL)
+    assert import_map is not None, "index.html must declare an import map"
+    mapping = import_map.group(1)
+
+    assert '"three": "./vendor/three/build/three.module.min.js"' in mapping
+    assert '"three/addons/": "./vendor/three/addons/"' in mapping
+    assert "cdn.jsdelivr.net" not in html
+    assert "unpkg.com" not in html
+    assert "https://" not in "".join(re.findall(r'<script[^>]*src="([^"]+)"', html))
+
+
+@pytest.mark.parametrize(
+    "relative_path",
+    [
+        "vendor/three/build/three.module.min.js",
+        "vendor/three/build/three.core.min.js",
+        "vendor/three/addons/controls/OrbitControls.js",
+        "vendor/three/addons/postprocessing/EffectComposer.js",
+        "vendor/three/addons/postprocessing/RenderPass.js",
+        "vendor/three/addons/postprocessing/UnrealBloomPass.js",
+        "vendor/three/addons/postprocessing/OutputPass.js",
+        "vendor/three/LICENSE/THREE_LICENSE.txt",
+    ],
+)
+def test_vendored_three_files_exist(relative_path: str) -> None:
+    assert (SPACE_DIR / relative_path).is_file(), relative_path
+
+
+def test_module_entry_is_connected() -> None:
+    html = read(INDEX)
+
     assert 'script type="module" src="./main.js"' in html
-    assert 'id="space-explorer-three-layer"' in html
+    assert 'id="space-canvas"' in html
+    assert 'id="labels-layer"' in html
+    assert 'id="loading-screen"' in html
+    assert (SPACE_DIR / "main.js").is_file()
 
 
-def test_main_script_initializes_three_backdrop_layer() -> None:
-    js = (TEMPLATES / "experiments" / "space-explorer" / "main.js").read_text(
-        encoding="utf-8"
-    )
-    assert 'import { initializeSpaceBackdrop } from "./three-backdrop.js";' in js
-    assert (
-        'const threeLayer = document.getElementById("space-explorer-three-layer");'
-        in js
-    )
-    assert "initializeSpaceBackdrop(threeLayer, { intensity: 1.2 });" in js
+def test_main_imports_the_scene_pipeline_modules() -> None:
+    js = read(SPACE_DIR / "main.js")
+
+    assert 'import { createSolarScene } from "./renderer.js";' in js
+    assert 'import { createUiController } from "./controls.js";' in js
+    assert 'import { attachSceneInteractions } from "./interactions.js";' in js
+    assert "import { createAppState" in js
+    assert "requestAnimationFrame(frame);" in js
 
 
-def test_three_backdrop_has_nebula_and_pointer_parallax() -> None:
-    js = (TEMPLATES / "experiments" / "space-explorer" / "three-backdrop.js").read_text(
-        encoding="utf-8"
-    )
-    assert "const nebulaGeo = new THREE.PlaneGeometry(26, 16, 1, 1);" in js
-    assert "const nebulaMat = new THREE.MeshBasicMaterial({" in js
-    assert "blending: THREE.AdditiveBlending," in js
-    assert "const pointerTarget = new THREE.Vector2(0, 0);" in js
-    assert 'target.addEventListener("pointermove", (event) => {' in js
-    assert "pointerTarget.x = (px - 0.5) * 2;" in js
-    assert "pointerCurrent.lerp(pointerTarget, 0.045);" in js
-    assert (
-        "points.rotation.y += (0.00045 + pointerCurrent.x * 0.0002) * intensity;" in js
-    )
+def test_license_and_texture_credits_are_visible_to_users() -> None:
+    html = read(INDEX)
 
-
-@pytest.mark.skip(reason="Requires browser canvas API - not runnable in Node.js")
-def test_space_explorer_renderer_contract_is_executable() -> None:
-    renderer_url = (
-        TEMPLATES / "experiments" / "space-explorer" / "renderer.js"
-    ).as_uri()
-    state_url = (TEMPLATES / "experiments" / "space-explorer" / "state.js").as_uri()
-    node_script = (
-        textwrap.dedent(
-            """
-        import { createRenderer } from "__RENDERER_URL__";
-        import { state, planets } from "__STATE_URL__";
-
-        globalThis.document = {
-          createElement: () => ({
-            width: 0,
-            height: 0,
-            getContext: () => ({
-              fillStyle: "",
-              fillRect: () => {},
-              createRadialGradient: () => ({ addColorStop: () => {} }),
-            }),
-          }),
-        };
-        globalThis.window = { devicePixelRatio: 1 };
-
-        const canvas = {
-          width: 0,
-          height: 0,
-          style: {},
-          parentElement: { getBoundingClientRect: () => ({ width: 960 }) },
-        };
-        const ctx = {
-          setTransform: () => {},
-          beginPath: () => {},
-          ellipse: () => {},
-          arc: () => {},
-          stroke: () => {},
-          clearRect: () => {},
-          drawImage: () => {},
-          fill: () => {},
-          fillText: () => {},
-          fillRect: () => {},
-          createRadialGradient: () => ({ addColorStop: () => {} }),
-        };
-
-        const renderer = createRenderer(canvas, ctx, state, planets);
-        renderer.resizeCanvas();
-        renderer.render();
-        console.log(JSON.stringify({
-          hasResizeCanvas: typeof renderer.resizeCanvas === "function",
-          hasRender: typeof renderer.render === "function",
-          planetCount: planets.length,
-        }));
-        """
-        )
-        .replace("__RENDERER_URL__", renderer_url)
-        .replace("__STATE_URL__", state_url)
-    )
-    completed = subprocess.run(
-        ["node", "--input-type=module", "--eval", node_script],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    payload = json.loads(completed.stdout.strip())
-    assert payload["hasResizeCanvas"] is True
-    assert payload["hasRender"] is True
-    assert payload["planetCount"] >= 8
+    assert "Solar System Scope" in html
+    assert "CC BY 4.0" in html
+    assert "NASA" in html
+    assert "three.js" in html
+    assert 'rel="noopener noreferrer"' in html

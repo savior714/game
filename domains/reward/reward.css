@@ -223,27 +223,6 @@
   flex-wrap: nowrap !important;
 }
 
-.inventory-bar-icon-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border: none;
-  border-radius: 99px;
-  background: rgba(0, 0, 0, 0.03);
-  color: #9ca3af;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  flex-shrink: 0;
-}
-
-.inventory-bar-icon-btn:hover {
-  background: rgba(0, 0, 0, 0.08);
-  color: #374151;
-}
-
 .inventory-item {
   display: flex;
   align-items: center;
@@ -398,24 +377,6 @@ html.dark #reward-inventory .inventory-item.gem-item .val,
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
-.dark #reward-inventory .inventory-bar-icon-btn,
-html.dark #reward-inventory .inventory-bar-icon-btn,
-.hud-reward-mount #reward-inventory .inventory-bar-icon-btn,
-.compact-hud-reward-mount #reward-inventory .inventory-bar-icon-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.16);
-  color: #E2E8F0;
-}
-
-.dark #reward-inventory .inventory-bar-icon-btn:hover,
-html.dark #reward-inventory .inventory-bar-icon-btn:hover,
-.hud-reward-mount #reward-inventory .inventory-bar-icon-btn:hover,
-.compact-hud-reward-mount #reward-inventory .inventory-bar-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.35);
-  color: #FFFFFF;
-}
-
 .inventory-item .val {
   font-weight: 800;
   font-size: 1.05rem;
@@ -469,10 +430,6 @@ html.dark #reward-inventory .inventory-bar-icon-btn:hover,
   }
   .inventory-item .unit {
     font-size: 0.7rem;
-  }
-  .inventory-bar-icon-btn {
-    width: 36px;
-    height: 36px;
   }
 }
 

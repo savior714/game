@@ -69,6 +69,7 @@ export interface PauseTimerResumeAppApi extends PauseTimerResumeHostApi {
   enterResumeCountdown(): void;
   completeResume(): void;
   exitPauseToMenu(): void;
+  abandonRescueToMenu(): void;
   cancelMissionSuccessPresentationForMenu(): void;
 }
 
@@ -457,6 +458,14 @@ export function installPauseTimerResumeController(
     setPauseRootMarkers(false);
     syncPauseButton();
 
+    returnToMissionSelect();
+  }
+
+  /**
+   * Leave the current mission for the mission list. Shared by pause -> menu and
+   * by abandonRescueToMenu(). Does not require a pause.
+   */
+  function returnToMissionSelect(): void {
     const snapshot = State.getSnapshot();
     if (snapshot.phase === "TRAVEL") {
       host.stopTravelRuntime();
@@ -489,6 +498,9 @@ export function installPauseTimerResumeController(
       root.removeAttribute("data-rescue-sequence");
       root.removeAttribute("data-rescue-phase");
       root.removeAttribute("data-rescue-input");
+      root.removeAttribute("data-rescue-scene-failure");
+      root.removeAttribute("data-sea-turtle-scene-failure");
+      root.removeAttribute("data-crab-scene-failure");
       root.removeAttribute("data-rescue-mission-id");
       root.removeAttribute("data-rescue-gup-id");
       root.removeAttribute("data-sea-turtle-active");
@@ -537,7 +549,21 @@ export function installPauseTimerResumeController(
     }
   }
 
+  /**
+   * Rescue scene-failure recovery (tap to return to menu). It cannot go through
+   * exitPauseToMenu(): that returns early unless the game is paused, so the
+   * recovery was a silent no-op and the player stayed on a dead rescue screen.
+   */
+  function abandonRescueToMenu(): void {
+    if (pauseActive) {
+      exitPauseToMenu();
+      return;
+    }
+    returnToMissionSelect();
+  }
+
   const controller = host as unknown as PauseTimerResumeAppApi;
+  controller.abandonRescueToMenu = abandonRescueToMenu;
   controller.isPauseActive = isPauseActive;
   controller.isPauseablePhase = isPauseablePhase;
   controller.registerPauseableTimer = registerPauseableTimer;

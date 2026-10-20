@@ -1235,7 +1235,7 @@ def test_real_pointer_flow_completes_three_rocks_and_enters_success() -> None:
         assert.strictEqual(ctx.frames.pending().length, 0);
         assert.deepStrictEqual(
           Object.keys(dom.canvas.listeners).sort(),
-          ["pointercancel", "pointerdown", "pointermove", "pointerup"]
+          ["lostpointercapture", "pointercancel", "pointerdown", "pointermove", "pointerup"]
         );
 
         completeRockByHoldDrag(dom, ctx, 1, { x: 900, y: 440 }, { x: 310, y: 290 });

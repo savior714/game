@@ -24,13 +24,31 @@
 
 - 1–5: 코드 존재 확인 완료 (`app.js` `shutdownRescueInteractionState`, `onRescuePointerCancel`, `onRescueStagePointerDown`, legacy `exitPauseToMenu`, `startSeaTurtleInteraction`). ESM 경로는 pause 진입 시 `cancelPausePointerInteractions()`를 호출한다 (`pause-timer-resume.ts`).
 - 6–7: 실제 Chromium 브라우저 회귀 테스트 `tests/test_ocean_rescue_pause_menu_rescue_reentry_browser.py`로 고정. 수정 전 아티팩트에서 4건 모두 실패, 수정 후 4건 모두 통과.
-- 미검증: 3번 실패 경로(잘못된 로프 3회 → `data-rescue-input="disabled"` 복구), 5번 bridge 실패 경로, 구조 중 창 크기 변경, 멀티터치.
+- 이후 검증(2026-10-20): 아래 `2-2` 절의 수정을 `tests/test_ocean_rescue_rescue_input_recovery_browser.py`(11개, 실제 Chromium)로 고정. 이 중 4개(캡처 손실, 브라우저 bridge 실패, 재생 후 진행, 게 캡처 손실)는 수정 전 아티팩트(`da57db4`)에서 실패, 수정 후 통과. 나머지 7개는 이미 동작하던 경로의 회귀 가드.
+- 검증 완료: 잘못된 로프 3회 후 입력 유지, 구조 중 창 크기 변경, 멀티터치(두 번째 손가락이 제스처를 빼앗지 않음), 전환(SITE_TRANSITION) 중 탭 무시, 일시정지 중 드래그 후 재개, 게 pointer cancel 시 hold/grab 해제.
+
+## 2-2. 2026-10-20 추가 수정
+
+| # | 증상 원인 | 수정 위치 |
+|---|-----------|-----------|
+| 8 | 드래그 중 pointer capture가 pointerup 전에 풀리면(`lostpointercapture`) 컨트롤러의 `activePointerId`가 남아 다음 정상 드래그가 거부되고, 끊긴 제스처가 로프 실패로 집계됨 | `app.js` `onRescuePointerLostCapture`, `sea-turtle-lifecycle.ts` 소유권 검사 `isOwnedSeaTurtlePointer` |
+| 9 | 브리지(`startSeaTurtleSession`)가 false를 반환해도 "Rescue controls ready"와 `data-rescue-input="enabled"`가 표시되어 모든 드래그가 무시됨 | `rescue-site-tutorial.ts` 튜토리얼 완료 시 시작 결과 확인 → `markRescueSceneFailure`. 레거시 폴백은 컨트롤러가 설치되어 있으면 건너뜀 |
+| 10 | 장면 실패 후 탭 복구가 ACTIVE 단계에서만 동작하고 일시정지가 필요했음. 실패 마커(`data-sea-turtle-scene-failure`, `data-crab-scene-failure`, `data-rescue-scene-failure`)가 다음 구조까지 남아 첫 탭에 바로 메뉴로 나감 | `rescue-site-tutorial.ts` `handleRescueStagePointerDown`(TRANSITION/ACTIVE 복구), `abandonRescueToMenu()`, `clearSceneFailureMarkers()` |
+| 11 | 재생(`#ocean-rescue-mission-complete-replay`) 시 `data-rescue-sequence="active"`가 남음. 구조 도착 판정 자체는 정상이나 DOM 마커가 실제 상태와 어긋남 | `app.js` `onMissionCompleteReplayClick`에서 마커 제거 |
+| 12 | `shutdownRescueInteractionState`에 `CrabScene.exit()` 중복 블록 | `app.js` 중복 제거 (동작 변화 없음) |
+| 13 | `SeaTurtle` 캔버스 리스너에 `lostpointercapture`가 추가되어 리스너 계약 테스트 3개가 갱신 필요 | 계약 테스트 갱신 (`test_ocean_rescue_sea_turtle_interaction`, `crab_interaction`, `young_whale_interaction`) |
+| 14 | 타입 오류 `collisionActive` 누락 (`runtime-abi.ts`); `wp32a` 엄격 타입 검사 실패 | `runtime-abi.ts` `TerrainSnapshot.collisionActive` 추가 |
+
+**설계 질문 (미결정, 코드 변경 없음)**: 재생 경로(레거시 여행 루프)는 도착 전에 "그물 살펴보기" 스캔(`#ocean-rescue-travel-scan`) 완료(`readyForRescue`)를 요구합니다. 첫 실행 경로(컨트롤러 여행 루프, `rescue-site-tutorial.ts` `handoffTravelArrival`)는 이 조건을 확인하지 않습니다. 같은 미션이 실행 경로에 따라 다르게 도착합니다. 스캔을 필수로 할지 결정이 필요합니다.
+
+**테스트 계약 변경**: `test_ocean_rescue_rescue_site_tutorial.py` 3개는 상호작용 모듈을 로드하지 않은 채 튜토리얼 완료 후 "준비 완료"를 기대했습니다. 이는 시작되지 않은 장면을 준비된 것으로 보던 기대이므로, 입력 `disabled`와 장면 실패 문구를 기대하도록 갱신했습니다.
 
 ## 3.사용자 side recovery
 
 - 구조 중 조작 불응 → **일시정지 버튼**으로 pause → **메뉴 나가기**
 - scene failure 메시지 표시 시 → **canvas 탭**하면 자동으로 메뉴로 이동 (Fix 3)
 - replay 시 입력 안 됨 → `seaTurtleInputBound` 초기화 적용됨 (Fix 1)
+- 구조 시작 실패 메시지 → 캔버스를 한 번 탭하면 메뉴로 이동 (Fix 3, 2-2 절 10번)
 
 ## 4.디버깅 checklist
 

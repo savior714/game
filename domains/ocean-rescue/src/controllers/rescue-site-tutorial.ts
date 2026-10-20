@@ -51,6 +51,7 @@ export interface RescueSiteTutorialHostApi extends LaunchTravelAppApi {
   cancelPausePointerInteractions(): void;
   clearPauseSensitiveHoldTimer(): void;
   shutdownActiveRescueForMenu(): void;
+  abandonRescueToMenu(): void;
 }
 
 export interface RescueSiteTutorialAppApi extends RescueSiteTutorialHostApi {}
@@ -233,7 +234,20 @@ export function installRescueSiteTutorialController(
     }
   }
 
+  // Scene-failure markers are per rescue attempt. Without clearing them, one
+  // failed scene would stay flagged on the root for every later rescue.
+  function clearSceneFailureMarkers(): void {
+    const root = document.getElementById("ocean-rescue-root");
+    if (!root) {
+      return;
+    }
+    root.removeAttribute("data-rescue-scene-failure");
+    root.removeAttribute("data-sea-turtle-scene-failure");
+    root.removeAttribute("data-crab-scene-failure");
+  }
+
   function prepareAuthoredScenes(sequence: RescueSiteSequence): void {
+    clearSceneFailureMarkers();
     const renderReady = RenderRuntime?.isReady() === true;
 
     if (
@@ -511,9 +525,37 @@ export function installRescueSiteTutorialController(
     if (status) {
       status.textContent = "Rescue controls ready";
     }
-    host.startRescueInteraction(sequence);
+    // Never report "ready" with input enabled when nothing could start: the
+    // controls would look live while every drag is ignored.
+    if (!host.startRescueInteraction(sequence)) {
+      markRescueSceneFailure("Rescue scene could not start — tap to return to menu");
+    }
     host.syncPauseButton();
     return true;
+  }
+
+  function markRescueSceneFailure(message: string): void {
+    const root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-rescue-scene-failure", "true");
+      root.setAttribute("data-rescue-input", "disabled");
+    }
+    const status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = message;
+    }
+  }
+
+  function rescueSceneHasFailed(): boolean {
+    const root = document.getElementById("ocean-rescue-root");
+    if (!root) {
+      return false;
+    }
+    return (
+      root.getAttribute("data-rescue-scene-failure") === "true" ||
+      root.getAttribute("data-sea-turtle-scene-failure") === "true" ||
+      root.getAttribute("data-crab-scene-failure") === "true"
+    );
   }
 
   function consumeStagePointerEvent(event: PointerEvent): void {
@@ -523,6 +565,19 @@ export function installRescueSiteTutorialController(
 
   function handleRescueStagePointerDown(event: PointerEvent): boolean {
     const phase = State.getSnapshot().phase;
+    if (
+      !host.isPauseActive() &&
+      (phase === State.Phases.RESCUE_SITE_TRANSITION ||
+        phase === State.Phases.RESCUE_ACTIVE) &&
+      rescueSceneHasFailed()
+    ) {
+      // Scene-failure recovery: a tap leaves the failed rescue for the menu.
+      // The previous code only checked the transition phase and went through the
+      // pause-only exit, so a failed scene could not be left by tapping.
+      consumeStagePointerEvent(event);
+      host.abandonRescueToMenu();
+      return true;
+    }
     if (host.isPauseActive() || phase === State.Phases.RESCUE_SITE_TRANSITION) {
       consumeStagePointerEvent(event);
       return true;

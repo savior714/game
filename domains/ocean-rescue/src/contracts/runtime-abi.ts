@@ -72,6 +72,8 @@ export interface TerrainSnapshot {
   readonly active: boolean;
   readonly missionId: MissionId | null;
   readonly forwardSpeedMultiplier: number;
+  /** True while the knockback/shake collision window is running (terrain.js). */
+  readonly collisionActive: boolean;
 }
 
 export interface TerrainApi {

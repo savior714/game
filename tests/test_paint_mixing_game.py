@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import re
+from html.parser import HTMLParser
 import shutil
 import subprocess
 from pathlib import Path
@@ -100,6 +101,50 @@ def test_paint_game_page_has_game_chrome() -> None:
     for color in ["yellow", "blue", "red", "white", "black"]:
         assert f'data-color="{color}"' in html, f"물감 튜브 누락: {color}"
         assert f'data-remove="{color}"' in html, f"방울 빼기 버튼 누락: {color}"
+
+
+def test_color_studio_keeps_the_target_and_mixing_tools_in_one_workspace() -> None:
+    """리디자인에서 색 비교가 미션과 분리되거나 자유 모드에 남지 않게 한다."""
+
+    class PaintLayout(HTMLParser):
+        def __init__(self) -> None:
+            super().__init__()
+            self.ancestors: list[tuple[str, str]] = []
+            self.locations: dict[str, tuple[str, ...]] = {}
+
+        def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+            props = dict(attrs)
+            classes = props.get("class") or ""
+            if props.get("id"):
+                self.locations[props["id"]] = tuple(
+                    cls for _, ancestor_classes in self.ancestors
+                    for cls in ancestor_classes.split()
+                )
+            if tag not in {"meta", "link", "input", "br", "hr", "img"}:
+                self.ancestors.append((tag, classes))
+
+        def handle_endtag(self, tag: str) -> None:
+            if self.ancestors and self.ancestors[-1][0] == tag:
+                self.ancestors.pop()
+
+    layout = PaintLayout()
+    layout.feed(_html())
+    for element_id in (
+        "paint-mission-panel",
+        "paint-target-swatch",
+        "paint-result-swatch",
+        "paint-submit-button",
+    ):
+        assert "paint-workspace" in layout.locations[element_id]
+    assert "paint-result" in layout.locations["paint-target-swatch"]
+    assert "paint-result" in layout.locations["paint-result-swatch"]
+    assert "paint-tools" in layout.locations["paint-submit-button"]
+
+    css = (PAINT_DIR / "paint-mixing.css").read_text(encoding="utf-8")
+    assert '.paint-page .paint-lab-layout { display: contents; }' in css
+    assert '.paint-page .paint-workspace {' in css
+    assert '.paint-page .paint-brightness-group.is-locked { display: none; }' in css
+    assert 'versusPanel.hidden = mode !== "game";' in _js()
 
 
 def test_paint_game_script_has_full_game_loop() -> None:

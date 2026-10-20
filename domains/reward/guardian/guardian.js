@@ -381,6 +381,15 @@ function loadRewards() {
     });
   }
   if (!rewardState.custom_inventory) rewardState.custom_inventory = {};
+  // 보상 코어와 동일: 10분 단위가 아닌 찌꺼기(5분 등)는 사용 불가로 고착되므로 자동 정리
+  if (Number.isFinite(Number(rewardState.youtube_minutes)) && Number(rewardState.youtube_minutes) % 10 !== 0) {
+    const before = rewardState.youtube_minutes;
+    rewardState.youtube_minutes = Math.max(0, Math.floor(Number(rewardState.youtube_minutes) / 10) * 10);
+    if (before !== rewardState.youtube_minutes) {
+      console.warn('[Guardian] normalizing stray youtube_minutes', before, '→', rewardState.youtube_minutes);
+      saveRewards();
+    }
+  }
   renderRewardList();
 }
 

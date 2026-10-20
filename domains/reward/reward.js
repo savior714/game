@@ -56,6 +56,12 @@ const RewardSystem = (() => {
         // 로컬/클라우드 병합 과정에서 숫자 필드가 문자열·NaN으로 들어와도 누적이 깨지지 않게 정규화
         state.gems = Number.isFinite(Number(state.gems)) ? Number(state.gems) : 0;
         state.youtube_minutes = Number.isFinite(Number(state.youtube_minutes)) ? Number(state.youtube_minutes) : 0;
+        // 10분권 단위가 아닌 찌꺼기(예: 5분)는 타이머/소진 로직에서 사용할 수 없어 고착된다. 로드 시 자동 정규화.
+        if (state.youtube_minutes % 10 !== 0) {
+          const normalized = Math.max(0, Math.floor(state.youtube_minutes / 10) * 10);
+          console.warn('[RewardSystem] normalizing stray youtube_minutes', state.youtube_minutes, '→', normalized);
+          state.youtube_minutes = normalized;
+        }
         state.snacks = Number.isFinite(Number(state.snacks)) ? Number(state.snacks) : 0;
         state.marble_plays = Number.isFinite(Number(state.marble_plays)) ? Number(state.marble_plays) : 0;
         state.bubble_plays = Number.isFinite(Number(state.bubble_plays)) ? Number(state.bubble_plays) : 0;

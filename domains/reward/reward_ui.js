@@ -609,6 +609,7 @@ const RewardSystemUI = (() => {
       <div class="reward-modal-content" style="color:#0f172a;">
         <div class="icon-bounce" style="font-size:2.6rem; margin-bottom:8px;">📺</div>
         <h3 style="margin:0 0 10px; font-size:1.35rem; color:#0f172a; font-weight:800;">유튜브 자유시간</h3>
+        ${initialMinutes % 10 !== 0 ? `<div id="yt-stray-notice" style="background:#fef3c7; border:1.5px solid #f59e0b; border-radius:12px; padding:10px 12px; margin:10px 0; font-size:0.82rem; text-align:left; color:#92400e; line-height:1.4;">⚠️ <b>${initialMinutes}분</b> 중 <b>${initialMinutes % 10}분</b>은 10분권 단위가 아니라 사용할 수 없는 찌꺼기예요.<br><button type="button" id="yt-normalize-btn" style="margin-top:8px; width:100%; padding:8px; background:#f59e0b; color:white; border:none; border-radius:10px; font-weight:800; cursor:pointer;">찌꺼기 ${initialMinutes % 10}분 정리하고 ${Math.floor(initialMinutes/10)*10}분으로 맞추기</button></div>` : ''}
 
         <div class="yt-status-card" style="background:#f8fafc; border-radius:14px; padding:10px 14px; margin:10px 0; font-size:0.9rem; text-align:left; border:1px solid #e2e8f0; color:#0f172a;">
           <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
@@ -861,6 +862,19 @@ const RewardSystemUI = (() => {
     });
 
     updateStatusDisplay();
+
+    const ytNormalizeBtn = overlay.querySelector('#yt-normalize-btn');
+    if (ytNormalizeBtn) {
+      ytNormalizeBtn.addEventListener('click', () => {
+        const curr = Number(RewardSystem.getState().youtube_minutes) || 0;
+        const normalized = Math.max(0, Math.floor(curr / 10) * 10);
+        RewardSystem.getState().youtube_minutes = normalized;
+        try { localStorage.setItem('study_rewards', JSON.stringify(RewardSystem.getState())); } catch(e){}
+        RewardSystemUI.showToast(`찌꺼기 정리 완료: ${normalized}분`);
+        overlay.remove();
+        if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.updateUI(RewardSystem.getState());
+      });
+    }
 
     lockTrigger.addEventListener('click', () => {
       ensureYtUnlocked();

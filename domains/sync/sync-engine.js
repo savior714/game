@@ -71,11 +71,15 @@ window.SyncEngine = (() => {
       }
     });
 
+    // 10분 단위가 아닌 찌꺼기는 병합 후에도 사용 불가이므로 정규화
+    const rawYoutube = Math.max(L.youtube_minutes || 0, R.youtube_minutes || 0);
+    const normalizedYoutube = rawYoutube % 10 === 0 ? rawYoutube : Math.max(0, Math.floor(rawYoutube / 10) * 10);
+
     return {
       ...L,
       ...R,
       gems: Math.max(L.gems || 0, R.gems || 0),
-      youtube_minutes: Math.max(L.youtube_minutes || 0, R.youtube_minutes || 0),
+      youtube_minutes: normalizedYoutube,
       snacks: Math.max(L.snacks || 0, R.snacks || 0),
       marble_plays: Math.max(L.marble_plays || 0, R.marble_plays || 0),
       bubble_plays: Math.max(L.bubble_plays || 0, R.bubble_plays || 0),

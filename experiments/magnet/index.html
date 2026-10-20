@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="자석을 끌어 클립을 모으고, 극을 뒤집고, 철가루로 보이지 않는 자기장을 그려 보는 어린이 과학 실험실" />
+  <meta name="theme-color" content="#050a14" />
+  <title>자석 연구소 · 자기장 놀이 | MAGNET LAB | AIDEN GAME LABS</title>
+  <link rel="stylesheet" href="./magnet.css" />
+</head>
+<body>
+  <header class="lab-topbar">
+    <a class="lab-brand" href="../../index.html" target="_top" aria-label="AIDEN GAME LABS 메인 홈으로 이동">
+      <span class="brand-dot" aria-hidden="true"></span>
+      <span class="brand-text">
+        <span class="brand-name">AIDEN GAME LABS</span>
+        <span class="brand-lab">🧲 MAGNET LAB · 자석 연구소</span>
+      </span>
+    </a>
+
+    <div class="top-actions">
+      <span class="top-chip">자기장 놀이터</span>
+      <button id="sound-button" class="top-button" type="button" aria-pressed="true" aria-label="효과음 끄기">🔊 소리</button>
+      <button id="help-button" class="top-button" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9.2 9a2.9 2.9 0 0 1 5.6 1c0 2-2.8 2.2-2.8 4"></path><path d="M12 17.4h.01"></path></svg>
+        놀이 방법
+      </button>
+      <a class="top-home" href="../../index.html" target="_top">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M9 22V12h6v10"></path></svg>
+        홈으로
+      </a>
+    </div>
+  </header>
+
+  <main class="lab-shell">
+    <section class="lab-hero" aria-labelledby="lab-title">
+      <div>
+        <p class="hero-kicker">Magnetic Playground · 자기장 놀이터</p>
+        <h1 id="lab-title">자석은 <span class="accent">신기해!</span></h1>
+        <p class="hero-sub">끌어당기고, 밀어내고, 철가루로 보이지 않는 힘을 그려 봐요. 손끝으로 만지는 작은 과학 실험실이에요.</p>
+      </div>
+
+      <div class="hero-stats" aria-label="실험 진행 상황">
+        <div class="stat">
+          <span>지금 실험</span>
+          <strong id="stat-mission">1 / 6</strong>
+        </div>
+        <div class="stat">
+          <span>발견한 원리</span>
+          <strong><em id="stat-found">0</em> / 6</strong>
+        </div>
+        <div class="hero-legend" aria-label="극 색깔 안내">
+          <span class="legend-pole legend-pole--n">N극</span>
+          <span class="legend-pole legend-pole--s">S극</span>
+        </div>
+      </div>
+    </section>
+
+    <div class="lab-grid">
+      <!-- ────────────────────────────── tools ────────────────────────────── -->
+      <aside class="tools-panel panel" aria-labelledby="tools-title">
+        <div class="panel-head">
+          <h2 id="tools-title"><span class="head-icon" aria-hidden="true">🧰</span> 실험 도구</h2>
+          <span class="head-note">TOOLBOX</span>
+        </div>
+
+        <section class="tool-section" aria-labelledby="tools-magnet-title">
+          <h3 id="tools-magnet-title">자석 <small>끌어서 움직여요</small></h3>
+          <button class="tool tool--magnet" type="button" data-add-magnet>
+            <span class="tool-icon" aria-hidden="true">🧲</span>
+            <span class="tool-text">막대자석 추가<small>빨간 N극 · 파란 S극</small></span>
+          </button>
+        </section>
+
+        <section class="tool-section" aria-labelledby="tools-metal-title">
+          <h3 id="tools-metal-title">철로 된 물건 <small>자석에 붙어요</small></h3>
+          <div class="tool-grid">
+            <button class="tool" type="button" data-add-item="clip">
+              <span class="tool-icon" aria-hidden="true">📎</span>
+              <span class="tool-text">종이클립</span>
+            </button>
+            <button class="tool" type="button" data-add-item="nail">
+              <span class="tool-icon" aria-hidden="true">🔩</span>
+              <span class="tool-text">못</span>
+            </button>
+            <button class="tool" type="button" data-add-item="key">
+              <span class="tool-icon" aria-hidden="true">🗝️</span>
+              <span class="tool-text">열쇠</span>
+            </button>
+            <button class="tool" type="button" data-add-item="ball">
+              <span class="tool-icon" aria-hidden="true">⚪</span>
+              <span class="tool-text">쇠구슬</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="tool-section" aria-labelledby="tools-other-title">
+          <h3 id="tools-other-title">안 붙는 물건 <small>실험해 봐요</small></h3>
+          <div class="tool-grid">
+            <button class="tool" type="button" data-add-item="stick">
+              <span class="tool-icon" aria-hidden="true">🥢</span>
+              <span class="tool-text">나무젓가락</span>
+            </button>
+            <button class="tool" type="button" data-add-item="eraser">
+              <span class="tool-icon" aria-hidden="true">🧽</span>
+              <span class="tool-text">지우개</span>
+            </button>
+            <button class="tool" type="button" data-add-item="coin">
+              <span class="tool-icon" aria-hidden="true">🪙</span>
+              <span class="tool-text">구리 동전</span>
+            </button>
+            <button class="tool" type="button" data-add-item="compass">
+              <span class="tool-icon" aria-hidden="true">🧭</span>
+              <span class="tool-text">나침반</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="tool-section" aria-labelledby="tools-view-title">
+          <h3 id="tools-view-title">관찰 도구</h3>
+          <div class="toggle-stack">
+            <button class="view-toggle" id="field-toggle" type="button" data-toggle-field aria-pressed="true">
+              <span class="toggle-label"><span class="toggle-emoji" aria-hidden="true">〰️</span> 자기장 보기</span>
+              <span class="switch" aria-hidden="true"></span>
+            </button>
+            <button class="view-toggle" id="filings-toggle" type="button" data-toggle-filings aria-pressed="false">
+              <span class="toggle-label"><span class="toggle-emoji" aria-hidden="true">✨</span> 철가루 보기</span>
+              <span class="switch" aria-hidden="true"></span>
+            </button>
+            <button class="snapshot-button" id="save-artwork" type="button">
+              <span aria-hidden="true">📷</span> 내 자기장 작품 저장
+            </button>
+          </div>
+        </section>
+
+        <section class="tool-section" aria-labelledby="tools-power-title">
+          <h3 id="tools-power-title">자석 힘</h3>
+          <div class="power-block">
+            <label class="power-head" for="power-range">힘 조절 <output id="power-output" for="power-range">보통</output></label>
+            <input id="power-range" type="range" min="60" max="140" step="10" value="100" aria-describedby="power-scale" />
+            <div class="power-scale" id="power-scale"><span>약하게</span><span>보통</span><span>강하게</span></div>
+          </div>
+        </section>
+
+        <button class="ghost-button" id="reset-scene" type="button">🧹 실험대 비우기</button>
+      </aside>
+
+      <!-- ────────────────────────────── stage ────────────────────────────── -->
+      <section class="stage-column" aria-label="자석 실험대">
+        <div class="stage-shell" id="stage-shell">
+          <canvas
+            id="magnet-canvas"
+            tabindex="0"
+            role="application"
+            aria-label="자석 실험대. 자석을 손가락으로 끌어 움직이고, 물건을 가까이 가져가 보세요."
+            aria-describedby="canvas-help"
+          ></canvas>
+
+          <div class="stage-topbar">
+            <span class="stage-chip"><span class="chip-dot" aria-hidden="true"></span><span id="stage-mission-chip">실험 1 · 클립을 모두 모아요</span></span>
+            <span class="stage-chip stage-chip--view" id="stage-view-chip" data-off="false">〰️ 자기장 ON</span>
+          </div>
+
+          <div class="stage-hint" id="stage-hint">
+            <span class="hint-hand" aria-hidden="true">👆</span>
+            <span>자석을 끌어 움직여 보세요 · 클립을 가까이!</span>
+          </div>
+
+          <div class="stage-toolbar" id="selection-toolbar" hidden>
+            <span class="selected-name" id="selected-name">자석 1</span>
+            <span class="toolbar-divider" aria-hidden="true"></span>
+            <button class="toolbar-btn" id="flip-button" type="button" title="F">🔄 극 뒤집기</button>
+            <button class="toolbar-btn" id="rotate-left" type="button" aria-label="왼쪽으로 15도 돌리기">↺</button>
+            <button class="toolbar-btn" id="rotate-right" type="button" aria-label="오른쪽으로 15도 돌리기">↻</button>
+            <button class="toolbar-btn toolbar-btn--danger" id="delete-magnet" type="button">🗑 빼기</button>
+          </div>
+        </div>
+
+        <p class="sr-only" id="canvas-help">
+          자석을 고르면 방향키로 움직이고, Q와 E로 돌리고, F로 극을 뒤집고, Delete로 치울 수 있어요.
+          모든 도구는 키보드로도 사용할 수 있어요.
+        </p>
+
+        <div class="stage-footnote">
+          <span>💡 자석을 끌면 자기장도 함께 따라와요.</span>
+          <span class="keyboard-note" aria-hidden="true">
+            <span class="key">←</span><span class="key">→</span> 이동
+            · <span class="key">Q</span><span class="key">E</span> 돌리기
+            · <span class="key">F</span> 극 뒤집기
+          </span>
+        </div>
+      </section>
+
+      <!-- ───────────────────────────── mission ───────────────────────────── -->
+      <aside class="mission-panel panel" aria-labelledby="mission-panel-title">
+        <div class="panel-head">
+          <h2 id="mission-panel-title"><span class="head-icon" aria-hidden="true">📓</span> 실험 노트</h2>
+          <span class="head-note">LAB NOTES</span>
+        </div>
+
+        <div class="mode-tabs" role="tablist" aria-label="놀이 모드 선택">
+          <button class="mode-tab" id="mode-mission" type="button" role="tab" aria-selected="true" aria-controls="mission-view" data-mode="mission">🎯 미션 랩</button>
+          <button class="mode-tab" id="mode-free" type="button" role="tab" aria-selected="false" aria-controls="free-view" data-mode="free">🖐 자유 실험</button>
+        </div>
+
+        <div id="mission-view" role="tabpanel" aria-labelledby="mode-mission">
+          <article class="mission-card" aria-labelledby="mission-title">
+            <p class="mission-kicker">
+              <span id="mission-step">실험 1 / 6</span>
+              <span class="difficulty" id="mission-difficulty">관찰</span>
+            </p>
+            <h2 class="mission-title" id="mission-title">클립을 모두 모아요</h2>
+            <p class="mission-goal" id="mission-goal">자석을 끌어서 종이클립 3개를 붙여 보세요.</p>
+            <p class="mission-tip"><span class="tip-icon" aria-hidden="true">💡</span><span id="mission-tip">클립은 철로 만들어져 자석에 끌려와요.</span></p>
+
+            <div class="why-card" id="mission-why" hidden>
+              <p class="why-label">🔎 발견한 원리</p>
+              <p id="why-text"></p>
+            </div>
+
+            <div class="mission-actions">
+              <button class="action-button" id="mission-reset" type="button">↺ 다시 배치</button>
+              <button class="action-button action-button--primary" id="mission-next" type="button" hidden>다음 실험 →</button>
+            </div>
+          </article>
+        </div>
+
+        <div class="free-card" id="free-view" role="tabpanel" aria-labelledby="mode-free" hidden>
+          <p class="mission-kicker"><span>자유 실험실</span><span class="difficulty">무한 놀이</span></p>
+          <h2>마음껏 놀아 봐요</h2>
+          <p>정답은 없어요. 자석을 여러 개 놓고, 극을 뒤집고, 철가루로 멋진 그림을 그려 보세요.</p>
+          <ul class="free-ideas">
+            <li><span aria-hidden="true">💥</span><span>N극과 N극을 마주 보게 놓으면 어떻게 될까요?</span></li>
+            <li><span aria-hidden="true">✨</span><span>철가루를 켜고 자석을 빙글빙글 돌려 곡선을 그려 봐요.</span></li>
+            <li><span aria-hidden="true">🧭</span><span>나침반을 자석 가까이 데려가 바늘을 관찰해요.</span></li>
+            <li><span aria-hidden="true">🥢</span><span>클립과 나무젓가락을 같이 놓고 누가 붙는지 비교해요.</span></li>
+          </ul>
+          <div class="free-actions">
+            <button class="action-button action-button--primary" id="start-mission" type="button">🎯 미션 랩으로</button>
+          </div>
+        </div>
+
+        <div class="mission-progress">
+          <span>실험 지도</span>
+          <strong id="mission-count">1 / 6</strong>
+        </div>
+        <div class="mission-dots" id="mission-dots" role="group" aria-label="실험 선택"></div>
+
+        <div class="legend-card">
+          <p><span>빨간색</span><span class="legend-swatch legend-swatch--red">N극</span></p>
+          <p><span>파란색</span><span class="legend-swatch legend-swatch--blue">S극</span></p>
+          <p><span>자석은</span><strong>N극 ↔ S극</strong></p>
+        </div>
+      </aside>
+    </div>
+
+    <footer class="lab-footer">
+      <span>© 2026 AIDEN GAME LABS · 손으로 배우는 과학 놀이터</span>
+      <nav aria-label="다른 실험실">
+        <a href="../../index.html" target="_top">🏠 놀이터 홈</a>
+        <a href="../space-explorer/paint-mixing.html">🎨 물감 색 섞기</a>
+        <a href="../space-explorer/orbit-eclipse.html">🌍 공전과 일식</a>
+        <a href="../space-explorer/dino-escape.html">🦖 공룡 탈출</a>
+      </nav>
+    </footer>
+  </main>
+
+  <dialog id="help-dialog" class="lab-dialog" aria-labelledby="help-title">
+    <div class="dialog-card">
+      <button class="dialog-close" id="help-close" type="button" aria-label="도움말 닫기">✕</button>
+      <p class="dialog-kicker">How to play</p>
+      <h2 id="help-title">자석 연구소 사용법</h2>
+      <ol class="howto-list">
+        <li><b>자석을 끌어요.</b> 실험대 위 막대자석을 손가락으로 움직여요. 물건을 고르면 그 물건도 끌 수 있어요.</li>
+        <li><b>물건을 가까이.</b> 클립·못·열쇠·쇠구슬은 철로 되어 있어 자석에 붙어요. 나무젓가락·지우개·구리 동전은 붙지 않아요.</li>
+        <li><b>극을 뒤집어요.</b> 자석을 고른 뒤 <b>극 뒤집기</b>를 누르면 N극과 S극이 자리를 바꿔요.</li>
+        <li><b>철가루를 켜요.</b> 보이지 않던 자기장 곡선이 나타나요. 자석을 움직여 철가루 그림을 그려 보세요.</li>
+        <li><b>나침반을 관찰해요.</b> 나침반의 빨간 바늘은 자석의 S극 쪽을 가리켜요.</li>
+      </ol>
+      <p class="dialog-note">
+        키보드로도 놀 수 있어요. 자석을 고르고 방향키로 이동, Q/E로 돌리기, F로 극 뒤집기, Delete로 치우기.
+        화면의 모든 버튼은 Tab 키로 이동할 수 있어요.
+      </p>
+      <button class="action-button action-button--primary" id="help-start" type="button">실험 시작!</button>
+    </div>
+  </dialog>
+
+  <div class="reward-toast" id="reward-toast" aria-hidden="true">
+    <span class="toast-icon" id="toast-icon" aria-hidden="true">⭐</span>
+    <div class="toast-copy">
+      <strong id="toast-title">실험 성공!</strong>
+      <p id="toast-text"></p>
+    </div>
+  </div>
+
+  <div class="confetti-layer" id="confetti-layer" aria-hidden="true"></div>
+  <p class="sr-only" id="live-region" role="status" aria-live="polite"></p>
+
+  <script src="./magnet-physics.js"></script>
+  <script src="./magnet.js"></script>
+</body>
+</html>

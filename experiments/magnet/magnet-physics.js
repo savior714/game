@@ -347,7 +347,10 @@
   }
 
   /** 철로 된 물체가 각 극에서 받는 인력. 극에 가까울수록 훨씬 세다. */
-  function itemAcceleration(item, magnets) {
+  function itemAcceleration(item, magnets, options) {
+    const opts = options || {};
+    const reach = opts.reach || DEFAULTS.itemReach;
+    const fadeStart = opts.fadeStart || Math.min(DEFAULTS.itemFadeStart, reach * 0.72);
     let ax = 0;
     let ay = 0;
     for (let i = 0; i < magnets.length; i += 1) {
@@ -357,11 +360,8 @@
         const dy = poles[p].y - item.y;
         const d2 = dx * dx + dy * dy + DEFAULTS.itemSoftening;
         const d = Math.sqrt(d2);
-        if (d >= DEFAULTS.itemReach) continue;
-        const fade =
-          d <= DEFAULTS.itemFadeStart
-            ? 1
-            : 1 - (d - DEFAULTS.itemFadeStart) / (DEFAULTS.itemReach - DEFAULTS.itemFadeStart);
+        if (d >= reach) continue;
+        const fade = d <= fadeStart ? 1 : 1 - (d - fadeStart) / (reach - fadeStart);
         const strength = (DEFAULTS.itemForce * magnets[i].power * fade * fade) / d2;
         ax += (dx / d) * strength;
         ay += (dy / d) * strength;
@@ -489,7 +489,7 @@
         if (item.capturedBy != null || item.dragged) continue;
 
         if (item.magnetic) {
-          const accel = itemAcceleration(item, magnets);
+          const accel = itemAcceleration(item, magnets, opts);
           item.vx += accel.x * h;
           item.vy += accel.y * h;
           const damping = Math.exp(-DEFAULTS.itemFriction * h);

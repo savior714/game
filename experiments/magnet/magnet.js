@@ -39,6 +39,18 @@
     return { length, width: Math.round(length * 0.335) };
   }
 
+  /** 철 물건이 자석에 끌리는 거리. 좁은 화면에서는 함께 줄어든다. */
+  function itemReach() {
+    const magnetX = state.width * 0.16;
+    const room = Math.max(150, state.width - magnetX - 56);
+    return clamp(Math.min(state.width * 0.32, room / 1.3), 112, 280);
+  }
+
+  function stepOptions() {
+    const reach = itemReach();
+    return { reach, fadeStart: reach * 0.72 };
+  }
+
   const $ = (id) => document.getElementById(id);
   const refs = {
     canvas: $("magnet-canvas"),
@@ -124,6 +136,7 @@
     trails: [],
     sceneMagnetIds: [],
     missionStartDistance: 0,
+    materialGap: 95,
     filingsDraw: 0,
     nextId: 1,
     magnetSerial: 0,
@@ -203,16 +216,20 @@
       goal: "자석을 끌어서 종이클립 3개를 붙여 보세요.",
       tip: "클립은 철로 만들어져 자석에 끌려와요. 자석을 가까이 가져가 볼까요?",
       why: "자석은 철로 된 물건을 끌어당겨요. 자석과 클립이 가까워질수록 보이지 않는 자기장의 힘이 더 세게 작용해요.",
-      setup: (width, height) => ({
-        magnets: [{ x: width * 0.16, y: height * 0.5, angle: 0 }],
-        items: [
-          { kind: "clip", x: width * 0.66, y: height * 0.3 },
-          { kind: "clip", x: width * 0.79, y: height * 0.54 },
-          { kind: "clip", x: width * 0.68, y: height * 0.77 },
-        ],
-        showField: true,
-        showFilings: false,
-      }),
+      setup: (width, height) => {
+        const magnetX = width * 0.16;
+        const room = Math.max(140, width - magnetX - 64);
+        return {
+          magnets: [{ x: magnetX, y: height * 0.5, angle: 0 }],
+          items: [
+            { kind: "clip", x: magnetX + room * 0.55, y: height * 0.3 },
+            { kind: "clip", x: magnetX + room * 0.82, y: height * 0.54 },
+            { kind: "clip", x: magnetX + room * 0.62, y: height * 0.77 },
+          ],
+          showField: true,
+          showFilings: false,
+        };
+      },
       check: () => {
         const clips = state.items.filter((item) => item.kind === "clip");
         return clips.filter((item) => item.capturedBy != null).length >= 3;
@@ -225,15 +242,21 @@
       goal: "N극과 S극이 마주 보게 놓인 두 자석을 가만히 지켜보세요.",
       tip: "왼쪽 자석의 N극과 오른쪽 자석의 S극이 서로를 부르고 있어요.",
       why: "서로 다른 극끼리는 끌어당겨요. N극과 S극이 가까워지면 자석이 스스로 움직여 딱 붙는답니다.",
-      setup: (width, height) => ({
-        magnets: [
-          { x: width * 0.3, y: height * 0.5, angle: 0 },
-          { x: width * 0.72, y: height * 0.5, angle: 0 },
-        ],
-        items: [],
-        showField: true,
-        showFilings: false,
-      }),
+      setup: (width, height) => {
+        const size = magnetSize();
+        const half = Math.max(70, size.length / 2 + 10);
+        const room = width / 2 - half;
+        const dx = Math.min(room, Math.max(half + 30, size.length * 0.68 + 70));
+        return {
+          magnets: [
+            { x: width / 2 - dx, y: height * 0.5, angle: 0 },
+            { x: width / 2 + dx, y: height * 0.5, angle: 0 },
+          ],
+          items: [],
+          showField: true,
+          showFilings: false,
+        };
+      },
       check: () => {
         const [a, b] = missionMagnets();
         if (!a || !b) return false;
@@ -247,20 +270,26 @@
       goal: "N극끼리 마주 본 두 자석이 멀어지는 모습을 관찰하세요.",
       tip: "같은 극을 마주 보게 놓으면 자석이 서로를 밀어내요. 손을 대지 않아도 움직여요!",
       why: "같은 극끼리는 서로 밀어내요. N극과 N극, S극과 S극이 마주 보면 자석이 반대쪽으로 힘껏 달아난답니다.",
-      setup: (width, height) => ({
-        magnets: [
-          { x: width * 0.36, y: height * 0.5, angle: 0 },
-          { x: width * 0.64, y: height * 0.5, angle: Math.PI },
-        ],
-        items: [],
-        showField: true,
-        showFilings: false,
-      }),
+      setup: (width, height) => {
+        const size = magnetSize();
+        const half = Math.max(70, size.length / 2 + 10);
+        const dx = clamp(size.length * 0.68, half + 4, width / 2 - half);
+        return {
+          magnets: [
+            { x: width / 2 - dx, y: height * 0.5, angle: 0 },
+            { x: width / 2 + dx, y: height * 0.5, angle: Math.PI },
+          ],
+          items: [],
+          showField: true,
+          showFilings: false,
+        };
+      },
       check: () => {
         const [a, b] = missionMagnets();
         if (!a || !b) return false;
         const current = distance(a.x, a.y, b.x, b.y);
-        return current > state.missionStartDistance + Math.max(70, state.width * 0.08);
+        const needed = Math.max(45, Math.min(state.width * 0.09, 90));
+        return current > state.missionStartDistance + needed;
       },
     },
     {
@@ -285,23 +314,30 @@
       goal: "자석을 나무젓가락·지우개·구리 동전 가까이 가져가 보세요.",
       tip: "자석에 붙는 물건과 그렇지 않은 물건을 하나씩 비교해 봐요.",
       why: "자석은 철로 된 물건에만 힘을 보여요. 나무, 고무, 구리로 만든 물건은 자석에 붙지 않아요.",
-      setup: (width, height) => ({
-        magnets: [{ x: width * 0.27, y: height * 0.52, angle: 0 }],
-        items: [
-          { kind: "stick", x: width * 0.6, y: height * 0.33 },
-          { kind: "eraser", x: width * 0.7, y: height * 0.6 },
-          { kind: "coin", x: width * 0.58, y: height * 0.78 },
-        ],
-        showField: true,
-        showFilings: false,
-      }),
+      setup: (width, height) => {
+        const size = magnetSize();
+        const magnetX = width * 0.24;
+        const left = magnetX + size.length / 2 + 26;
+        const right = Math.max(left + 60, width - 40);
+        const span = right - left;
+        return {
+          magnets: [{ x: magnetX, y: height * 0.52, angle: 0 }],
+          items: [
+            { kind: "stick", x: left + span * 0.3, y: height * 0.3 },
+            { kind: "eraser", x: left + span * 0.62, y: height * 0.62 },
+            { kind: "coin", x: left + span * 0.44, y: height * 0.82 },
+          ],
+          showField: true,
+          showFilings: false,
+        };
+      },
       check: () =>
         state.magnets.some((magnet) =>
           state.items.some(
             (item) =>
               !item.magnetic &&
               item.kind !== "compass" &&
-              P.distanceToMagnet(magnet, item.x, item.y) < 95
+              P.distanceToMagnet(magnet, item.x, item.y) < state.materialGap
           )
         ),
     },
@@ -397,6 +433,7 @@
     state.showField = scene.showField !== false;
     state.showFilings = scene.showFilings === true;
     state.sceneMagnetIds = state.magnets.map((magnet) => magnet.id);
+    state.materialGap = clamp(state.width * 0.13, 58, 95);
     state.missionStartDistance =
       state.magnets.length >= 2
         ? distance(state.magnets[0].x, state.magnets[0].y, state.magnets[1].x, state.magnets[1].y)
@@ -577,7 +614,7 @@
     );
 
     P.stepMagnets(state.magnets, dt, bounds);
-    P.stepItems(state.items, state.magnets, dt, bounds);
+    P.stepItems(state.items, state.magnets, dt, bounds, stepOptions());
 
     state.items.forEach((item) => {
       if (item.capturedBy != null && !capturedBefore.has(item.id)) {
@@ -1353,15 +1390,26 @@
   function drawSelection() {
     const magnet = state.selectedId != null ? P.findMagnet(state.magnets, state.selectedId) : null;
     if (!magnet) return;
+    const cos = Math.cos(magnet.angle);
+    const sin = Math.sin(magnet.angle);
+    const top = Math.min(
+      magnet.y - (Math.abs(cos) * magnet.length + Math.abs(sin) * magnet.width) / 2,
+      magnet.y - (Math.abs(sin) * magnet.length + Math.abs(cos) * magnet.width) / 2
+    );
     ctx.save();
-    ctx.fillStyle = "rgba(" + COLORS.volt + ", 0.9)";
     ctx.font = "800 10px AidenKR, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText(
-      magnet.name || "자석",
-      magnet.x,
-      magnet.y - magnet.length / 2 - 22
-    );
+    ctx.textBaseline = "middle";
+    const text = magnet.name || "자석";
+    const width = ctx.measureText(text).width + 16;
+    roundedRectPath(magnet.x - width / 2, top - 34, width, 18, 9);
+    ctx.fillStyle = "rgba(9, 16, 31, 0.86)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(" + COLORS.volt + ", 0.55)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = "rgba(" + COLORS.volt + ", 0.95)";
+    ctx.fillText(text, magnet.x, top - 24.5);
     ctx.restore();
   }
 

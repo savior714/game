@@ -4,23 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>태양계 3D 탐험대 | AIDEN GAME LABS</title>
-  <meta name="description" content="행성 공전, 자전, 달과 토성 고리를 직접 탐험하는 3D 태양계 시뮬레이션">
+  <meta name="description" content="실제 행성 텍스처로 공전과 자전을 관찰하는 3D 태양계 시뮬레이션">
+  <meta name="theme-color" content="#03060f">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Noto+Sans+KR:wght@500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./space-explorer.css">
   <link rel="stylesheet" href="../../shared/ui/hud.css">
   <script type="importmap">
-  {"imports":{
-    "three":"https://cdn.jsdelivr.net/npm/three@0.185.0/build/three.module.js",
-    "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.185.0/examples/jsm/"
-  }}
+    {
+      "imports": {
+        "three": "./vendor/three/build/three.module.min.js",
+        "three/addons/": "./vendor/three/addons/"
+      }
+    }
   </script>
 </head>
 <body>
   <div id="space-app">
-    <canvas id="space-canvas" aria-label="3D 태양계 시뮬레이션"></canvas>
-    <div id="labels-layer"></div>
+    <canvas id="space-canvas" tabindex="0" aria-label="3D 태양계 시뮬레이션. 드래그로 회전하고 스크롤로 확대할 수 있습니다."></canvas>
+    <div id="labels-layer" aria-hidden="true"></div>
 
     <header class="topbar glass ag-hud ag-hud--immersive" data-subject="space" aria-label="태양계 탐험 내비게이션">
       <div class="ag-hud__left">
@@ -30,64 +33,104 @@
           <span class="ag-hud__brand-ver">v2.0</span>
         </a>
         <span class="ag-hud__divider" aria-hidden="true"></span>
-        <span class="ag-hud__subject"><span class="ag-hud__subject-emoji">🪐</span> 태양계 탐험대</span>
+        <span class="ag-hud__subject"><span class="ag-hud__subject-emoji" aria-hidden="true">🪐</span> 태양계 탐험대</span>
       </div>
       <div class="ag-hud__status-row status-row">
-        <span id="date-display" class="ag-hud__badge badge">📅 2026년 08월 28일</span>
-        <span id="speed-badge" class="ag-hud__badge ag-hud__badge--accent badge accent">7일 / 초</span>
+        <span id="date-display" class="ag-hud__badge badge">📅 불러오는 중</span>
+        <span id="speed-badge" class="ag-hud__badge ag-hud__badge--accent badge accent">1일 / 초</span>
       </div>
       <div class="ag-hud__right top-actions">
         <a href="../../index.html" class="ag-hud__home" aria-label="메인 홈으로">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
           <span>홈</span>
         </a>
-        <button id="orbits-btn" type="button" class="ag-hud__ghost-btn" aria-pressed="true">🪐 궤도선</button>
-        <button id="help-btn" type="button" class="ag-hud__ghost-btn">📖 가이드</button>
+        <button id="orbits-btn" type="button" class="ag-hud__ghost-btn icon-btn" aria-pressed="true" title="행성 궤도선 보기">
+          <span aria-hidden="true">🪐</span><span class="btn-label">궤도선</span>
+        </button>
+        <button id="labels-btn" type="button" class="ag-hud__ghost-btn icon-btn" aria-pressed="true" title="이름표 보기">
+          <span aria-hidden="true">🏷️</span><span class="btn-label">이름표</span>
+        </button>
+        <button id="effects-btn" type="button" class="ag-hud__ghost-btn icon-btn" aria-pressed="true" title="빛 번짐 효과">
+          <span aria-hidden="true">✨</span><span class="btn-label">효과</span>
+        </button>
+        <button id="help-btn" type="button" class="ag-hud__ghost-btn icon-btn" title="조작 가이드">
+          <span aria-hidden="true">📖</span><span class="btn-label">가이드</span>
+        </button>
       </div>
     </header>
 
     <button id="overview-btn" class="overview-btn hidden" type="button">🌌 태양계 전체보기</button>
 
-    <aside id="detail-card" class="detail glass hidden" aria-live="polite">
-      <button id="detail-close" class="close-btn" type="button" aria-label="행성 정보 닫기">×</button>
-      <div class="detail-heading">
-        <span id="detail-icon" class="planet-icon">🌍</span>
-        <div><h1 id="detail-name">지구</h1><span id="detail-category" class="category">암석형 행성</span></div>
+    <aside id="detail-card" class="detail glass hidden" aria-label="천체 정보">
+      <button id="detail-close" class="close-btn" type="button" aria-label="천체 정보 닫기">×</button>
+      <div class="detail-hero">
+        <div id="detail-preview" class="detail-preview">
+          <img id="detail-preview-image" class="detail-preview-image" alt="" width="88" height="88">
+          <span id="detail-preview-icon" class="detail-preview-icon" aria-hidden="true">🌍</span>
+        </div>
+        <div class="detail-heading">
+          <span id="detail-category" class="category">암석형 행성</span>
+          <h1 id="detail-name">지구</h1>
+          <span id="detail-en" class="detail-en">Earth</span>
+        </div>
       </div>
-      <div id="detail-highlight" class="highlight"></div>
+      <p id="detail-highlight" class="highlight"></p>
       <p id="detail-overview" class="overview"></p>
       <div id="detail-stats" class="stats"></div>
       <h2>💡 신기한 우주 비밀</h2>
       <ul id="detail-facts" class="facts"></ul>
+      <p class="detail-hint">🖱️ 행성을 드래그해 이리저리 돌려 보세요.</p>
     </aside>
 
     <div class="bottom-suite">
-      <nav id="planet-ribbon" class="planet-ribbon glass" aria-label="행성 빠른 이동"></nav>
-      <div class="time-controls glass">
-        <button id="prev10-btn" type="button">◀ 10일</button>
-        <button id="pause-btn" class="primary" type="button">⏸ 일시정지</button>
-        <span class="separator"></span>
-        <button class="speed-btn" data-speed="0.000011574074" type="button">실시간</button>
-        <button class="speed-btn" data-speed="1" type="button">1일/초</button>
-        <button class="speed-btn active" data-speed="7" type="button">7일/초</button>
-        <button class="speed-btn" data-speed="30" type="button">30일/초</button>
-        <button class="speed-btn" data-speed="365" type="button">1년/초</button>
-        <button id="next10-btn" type="button">10일 ▶</button>
+      <nav id="planet-ribbon" class="planet-ribbon glass" aria-label="천체 빠른 이동"></nav>
+      <div class="time-controls glass" role="group" aria-label="시간 조작">
+        <button id="prev-day-btn" type="button" title="10일 전으로">◀ 10일</button>
+        <button id="pause-btn" class="primary" type="button" aria-pressed="false">⏸ 일시정지</button>
+        <button id="today-btn" type="button" title="오늘 날짜로">📅 오늘</button>
+        <span class="separator" aria-hidden="true"></span>
+        <span id="speed-controls" class="speed-controls"></span>
+        <span class="separator" aria-hidden="true"></span>
+        <button id="next-day-btn" type="button" title="10일 뒤로">10일 ▶</button>
       </div>
       <p class="scale-note">🔭 관찰하기 쉽도록 행성 크기와 궤도 거리는 실제 비율과 다르게 조정했습니다.</p>
+    </div>
+
+    <section id="loading-screen" class="loading-screen" aria-live="polite">
+      <div class="loading-sun" aria-hidden="true"><span class="loading-planet"></span></div>
+      <p class="loading-title">태양계를 준비하고 있어요</p>
+      <div class="loading-track"><span id="loading-bar" class="loading-bar"></span></div>
+      <p id="loading-label" class="loading-label">행성 텍스처 불러오는 중 · <strong id="loading-percent">0%</strong></p>
+    </section>
+
+    <div id="fatal-error" class="fatal-error hidden" role="alert">
+      <h2>🚀 우주선 점검 중</h2>
+      <p id="fatal-error-message">3D 화면을 불러오지 못했어요. 새로고침을 눌러 다시 시도해 주세요.</p>
+      <button type="button" id="reload-btn">🔄 새로고침</button>
     </div>
 
     <div id="help-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="help-title">
       <div class="modal-card glass">
         <button id="help-close" class="close-btn" type="button" aria-label="가이드 닫기">×</button>
         <h2 id="help-title">🚀 태양계 3D 탐험 가이드</h2>
-        <div class="guide-row"><span>👆</span><p><strong>행성 터치·클릭</strong><br>행성을 누르면 카메라가 가까이 날아가고 정보를 보여줘요.</p></div>
-        <div class="guide-row"><span>🔄</span><p><strong>드래그</strong><br>태양계를 360° 돌려 보세요.</p></div>
-        <div class="guide-row"><span>🤏</span><p><strong>핀치·휠</strong><br>확대·축소해서 전체 궤도와 행성 표면을 오가세요.</p></div>
-        <div class="guide-row"><span>⏱️</span><p><strong>시간 여행</strong><br>속도를 바꾸거나 ±10일로 행성의 위치 변화를 비교해 보세요.</p></div>
+        <div class="guide-row"><span aria-hidden="true">👆</span><p><strong>행성 터치·클릭</strong><br>행성을 누르면 카메라가 가까이 날아가고 정보를 보여 줘요.</p></div>
+        <div class="guide-row"><span aria-hidden="true">🔄</span><p><strong>드래그</strong><br>태양계를 360° 돌려 보세요. 행성 옆에서 돌리면 표면을 관찰할 수 있어요.</p></div>
+        <div class="guide-row"><span aria-hidden="true">🤏</span><p><strong>핀치로 확대/축소</strong><br>두 손가락을 벌리거나 줄여서 행성 표면까지 다가가 보세요.</p></div>
+        <div class="guide-row"><span aria-hidden="true">⌨️</span><p><strong>키보드</strong><br><kbd>+</kbd> / <kbd>-</kbd> 확대·축소, <kbd>Space</kbd> 일시정지, <kbd>Esc</kbd> 전체보기로 돌아가기.</p></div>
+        <div class="guide-row"><span aria-hidden="true">⏱️</span><p><strong>시간 여행</strong><br>속도를 바꾸거나 ±10일로 행성의 위치 변화를 비교해 보세요.</p></div>
+        <p class="credits">
+          행성·달 텍스처: <a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noopener noreferrer">Solar System Scope</a> (CC BY 4.0) ·
+          지구: NASA Blue Marble ·
+          태양: NASA SDO ·
+          별 배경: threex.planets ·
+          3D 엔진: <a href="https://threejs.org/" target="_blank" rel="noopener noreferrer">three.js</a> (MIT)
+        </p>
       </div>
     </div>
+
+    <p id="live-status" class="sr-only" role="status" aria-live="polite"></p>
   </div>
+
   <script type="module" src="./main.js"></script>
 </body>
 </html>

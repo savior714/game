@@ -1,8 +1,9 @@
 let threePromise;
 
+// 번들된 three.js를 쓴다. 미니게임 페이지에도 같은 import map이 선언되어 있다.
 function loadThree() {
   if (!threePromise) {
-    threePromise = import("https://unpkg.com/three@0.165.0/build/three.module.js")
+    threePromise = import("three")
       .then((mod) => mod)
       .catch(() => null);
   }

@@ -30,6 +30,7 @@ def test_home_buttons_exist_in_all_pages():
         ("experiments/space-explorer/dino-escape.html", "../../index.html"),
         ("experiments/space-explorer/orbit-eclipse.html", "../../index.html"),
         ("experiments/space-explorer/paint-mixing.html", "../../index.html"),
+        ("experiments/electricity/index.html", "../../index.html"),
         ("experiments/magnet/index.html", "../../index.html"),
         ("ocean-rescue/index.html", "../index.html"),
     ]

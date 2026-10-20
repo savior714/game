@@ -47,6 +47,8 @@ skill goal
 - 메인 허브: `index.html`
 - 우주 탐험 페이지: `experiments/space-explorer/index.html`
 - 우주 탐험 모듈 엔트리: `experiments/space-explorer/main.js`
+- 전기 발전 실험실: `experiments/electricity/index.html`
+- 전기 발전 실험실 물리 엔진: `experiments/electricity/electricity-physics.js`
 - 자석 실험실: `experiments/magnet/index.html`
 - 자석 실험실 물리 엔진: `experiments/magnet/magnet-physics.js`
 - 과목별 학습: `domains/{math,english,korean,science}/index.html`
@@ -68,6 +70,7 @@ skill goal
 | Guardian / Reward | `domains/reward/guardian/index.html` | 운영중 | 성장·목표·보상 관리 |
 | Ocean Rescue | `ocean-rescue/index.html` | 운영중·active feature | 학습 완료 후 reward game |
 | 우주 탐험 실험 페이지 | `experiments/space-explorer/index.html` | 운영중·개발 동결 | 실험 참고 |
+| 전기 발전 실험실 | `experiments/electricity/index.html` | 운영중 | 전기 발전 일곱 가지 실험 |
 | 자석 실험실 | `experiments/magnet/index.html` | 운영중 | 자기장·자석 놀이 실험 |
 | 과거 우주 탐험 alias | `/space-explorer.html`, `experiments/space-explorer.html` | 없음 | 레거시 경로 |
 

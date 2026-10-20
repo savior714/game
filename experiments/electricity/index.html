@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="회로를 잇고, 풍선을 비비고, 레몬으로 전지를 만들고, 손잡이를 돌리고, 햇빛과 바람과 물로 전기를 만들어 보는 어린이 전기 실험실" />
+  <meta name="theme-color" content="#050b16" />
+  <title>전기 발전 실험실 · 전기를 만들어 봐요 | POWER LAB | AIDEN GAME LABS</title>
+  <link rel="stylesheet" href="./electricity.css" />
+</head>
+<body>
+  <header class="lab-topbar">
+    <a class="lab-brand" href="../../index.html" target="_top" aria-label="AIDEN GAME LABS 메인 홈으로 이동">
+      <span class="brand-dot" aria-hidden="true"></span>
+      <span class="brand-text">
+        <span class="brand-name">AIDEN GAME LABS</span>
+        <span class="brand-lab">⚡ POWER LAB · 전기 발전 실험실</span>
+      </span>
+    </a>
+
+    <div class="top-actions">
+      <span class="top-chip">전기 놀이터</span>
+      <button id="sound-button" class="top-button" type="button" aria-pressed="true" aria-label="효과음 끄기">🔊 소리</button>
+      <button id="help-button" class="top-button" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9.2 9a2.9 2.9 0 0 1 5.6 1c0 2-2.8 2.2-2.8 4"></path><path d="M12 17.4h.01"></path></svg>
+        놀이 방법
+      </button>
+      <a class="top-home" href="../../index.html" target="_top">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><path d="M9 22V12h6v10"></path></svg>
+        홈으로
+      </a>
+    </div>
+  </header>
+
+  <main class="lab-shell">
+    <section class="lab-hero" aria-labelledby="lab-title">
+      <div>
+        <p class="hero-kicker">Electricity Playground · 전기 발전 실험실</p>
+        <h1 id="lab-title">전기를 <span class="accent">만들어 봐요!</span></h1>
+        <p class="hero-sub">
+          잇고, 비비고, 담그고, 돌리고... 일곱 가지 방법으로 전기를 만들어 보세요.
+          전기가 어디에서 오는지, 어떻게 더 많이 만들 수 있는지 직접 발견하게 될 거예요.
+        </p>
+      </div>
+
+      <div class="hero-stats" aria-label="실험 진행 상황">
+        <div class="stat">
+          <span>지금 만드는 전기</span>
+          <strong><em id="stat-watts">0.0</em> W</strong>
+        </div>
+        <div class="stat">
+          <span>모은 전기</span>
+          <strong><em id="stat-energy">0</em> J</strong>
+        </div>
+        <div class="stat">
+          <span>발견한 원리</span>
+          <strong><em id="stat-found">0</em> / 7</strong>
+        </div>
+        <div class="hero-legend" id="found-dots" aria-label="발견한 원리 일곱 개"></div>
+      </div>
+    </section>
+
+    <nav class="lab-jump" aria-label="실험 바로가기">
+      <a href="#station-circuit">🔌 회로</a>
+      <a href="#station-static">🎈 마찰 전기</a>
+      <a href="#station-fruit">🍋 과일 전지</a>
+      <a href="#station-generator">🔄 손잡이 발전기</a>
+      <a href="#station-solar">☀️ 태양광</a>
+      <a href="#station-wind">🌬️ 바람</a>
+      <a href="#station-hydro">💧 물</a>
+    </nav>
+
+    <!-- ─────────────── 01 닫힌 회로 ─────────────── -->
+    <article class="station" id="station-circuit" data-station="circuit">
+      <header class="station-head">
+        <span class="station-no">01</span>
+        <div class="station-title">
+          <h2><span class="station-emoji" aria-hidden="true">🔌</span> 닫힌 회로 · 전구 켜기</h2>
+          <p class="station-tag">전기가 도는 길</p>
+        </div>
+        <span class="station-stamp" id="stamp-circuit" data-stamp hidden>발견 완료</span>
+      </header>
+
+      <div class="station-body">
+        <div class="stage">
+          <canvas id="canvas-circuit" role="img" aria-label="건전지와 전선, 전구, 재료를 끼우는 틈이 있는 회로 그림"></canvas>
+          <p class="stage-read" id="read-circuit" role="status" aria-live="polite">구리 전선을 끼우면 전구가 켜져요.</p>
+        </div>
+
+        <div class="controls">
+          <div class="meter" role="img" aria-label="전구 밝기">
+            <span class="meter-fill" id="meter-circuit" style="width: 0%"></span>
+          </div>
+
+          <fieldset class="control-group">
+            <legend>틈에 끼울 재료</legend>
+            <div class="chip-row" role="group" aria-label="틈에 끼울 재료 고르기">
+              <button class="chip" type="button" data-material="copper" aria-pressed="true">구리 전선</button>
+              <button class="chip" type="button" data-material="coin" aria-pressed="false">동전</button>
+              <button class="chip" type="button" data-material="wood" aria-pressed="false">나무젓가락</button>
+              <button class="chip" type="button" data-material="plastic" aria-pressed="false">플라스틱 자</button>
+              <button class="chip" type="button" data-material="eraser" aria-pressed="false">지우개</button>
+            </div>
+          </fieldset>
+
+          <div class="switch-row">
+            <button id="switch-circuit" class="switch-button" type="button" data-switch aria-pressed="true">
+              <span class="switch-knob" aria-hidden="true"></span>
+              <span class="switch-text">스위치 닫힘</span>
+            </button>
+            <button id="reset-circuit" class="ghost-button" type="button">처음으로</button>
+          </div>
+
+          <div class="slider-block">
+            <label class="slider-head" for="voltage-range">건전지 세기 <output id="voltage-output" for="voltage-range">1.5 V</output></label>
+            <input id="voltage-range" type="range" min="1.5" max="4.5" step="1.5" value="1.5" />
+            <div class="slider-scale"><span>1.5V</span><span>3V</span><span>4.5V</span></div>
+          </div>
+
+          <p class="goal" id="goal-circuit">🎯 목표: 구리 전선으로 전구를 환하게 켜요.</p>
+
+          <button class="why-toggle" type="button" aria-expanded="false" aria-controls="why-circuit">왜 그럴까요?</button>
+          <p class="why" id="why-circuit" hidden>
+            전기는 <strong>한 바퀴 도는 길</strong>이 있어야 흘러요. 건전지에서 나온 전기가 전선을 지나 전구를 거쳐
+            다시 건전지로 돌아오지 못하면 전구는 켜지지 않아요. 구리처럼 전기가 잘 통하는 재료를 <strong>도체</strong>,
+            나무나 플라스틱처럼 통하지 않는 재료를 <strong>부도체</strong>라고 해요. 부도체를 끼우면 길이 끊겨서
+            전기가 멈추고, 저항이 큰 동전을 끼우면 전기가 조금만 흘러 전구가 흐리게 켜져요.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <!-- ─────────────── 02 마찰 전기 ─────────────── -->
+    <article class="station" id="station-static" data-station="static">
+      <header class="station-head">
+        <span class="station-no">02</span>
+        <div class="station-title">
+          <h2><span class="station-emoji" aria-hidden="true">🎈</span> 마찰 전기 · 종이 춤</h2>
+          <p class="station-tag">비비면 생기는 전기</p>
+        </div>
+        <span class="station-stamp" id="stamp-static" data-stamp hidden>발견 완료</span>
+      </header>
+
+      <div class="station-body">
+        <div class="stage">
+          <canvas
+            id="canvas-static"
+            tabindex="0"
+            role="application"
+            aria-label="풍선을 털모자에 비비고 종이 조각에 가까이 대는 실험대. 방향키로 풍선을 옮기고 스페이스바로 비빌 수 있어요."
+          ></canvas>
+          <p class="stage-read" id="read-static" role="status" aria-live="polite">풍선을 털모자에 문질러 볼까요?</p>
+        </div>
+
+        <div class="controls">
+          <div class="meter meter--violet" role="img" aria-label="모인 전하">
+            <span class="meter-fill" id="meter-static" style="width: 0%"></span>
+          </div>
+
+          <div class="chip-row">
+            <button id="rub-button" class="chip chip--wide" type="button">✋ 누르고 문지르기</button>
+            <button id="discharge-button" class="chip" type="button">⚡ 전기 없애기</button>
+          </div>
+
+          <p class="control-note">풍선을 손가락으로 끌어 움직여도 돼요. 털모자 위에서 빠르게 움직이면 전기가 더 많이 모여요.</p>
+
+          <p class="goal" id="goal-static">🎯 목표: 종이 조각 5개를 풍선에 붙여요.</p>
+
+          <button class="why-toggle" type="button" aria-expanded="false" aria-controls="why-static">왜 그럴까요?</button>
+          <p class="why" id="why-static" hidden>
+            풍선을 털에 비비면 털에 있던 아주 작은 <strong>전자</strong>가 풍선으로 옮겨가요.
+            전자를 많이 모은 풍선은 <strong>음전하</strong>를 띠고, 가벼운 종이 조각을 끌어당겨요.
+            이렇게 움직이지 않고 한곳에 모여 있는 전기를 <strong>정전기</strong>라고 불러요.
+            시간이 지나면 전기가 공기 중으로 조금씩 사라져서 종이 조각이 다시 떨어져요.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <!-- ─────────────── 03 과일 전지 ─────────────── -->
+    <article class="station" id="station-fruit" data-station="fruit">
+      <header class="station-head">
+        <span class="station-no">03</span>
+        <div class="station-title">
+          <h2><span class="station-emoji" aria-hidden="true">🍋</span> 과일 전지 · LED 켜기</h2>
+          <p class="station-tag">액체가 만드는 전기</p>
+        </div>
+        <span class="station-stamp" id="stamp-fruit" data-stamp hidden>발견 완료</span>
+      </header>
+
+      <div class="station-body">
+        <div class="stage">
+          <canvas id="canvas-fruit" role="img" aria-label="과일에 구리판과 아연판을 꽂아 전선으로 잇고 LED를 켜는 실험대"></canvas>
+          <p class="stage-read" id="read-fruit" role="status" aria-live="polite">레몬 1개로는 전압이 0.9V예요.</p>
+        </div>
+
+        <div class="controls">
+          <div class="meter meter--green" role="img" aria-label="LED 밝기">
+            <span class="meter-fill" id="meter-fruit" style="width: 0%"></span>
+          </div>
+
+          <fieldset class="control-group">
+            <legend>어떤 재료에 꽂을까요?</legend>
+            <div class="chip-row" role="group" aria-label="전지 재료 고르기">
+              <button class="chip" type="button" data-fruit="lemon" aria-pressed="true">🍋 레몬</button>
+              <button class="chip" type="button" data-fruit="potato" aria-pressed="false">🥔 감자</button>
+              <button class="chip" type="button" data-fruit="apple" aria-pressed="false">🍎 사과</button>
+              <button class="chip" type="button" data-fruit="tomato" aria-pressed="false">🍅 토마토</button>
+              <button class="chip" type="button" data-fruit="vinegar" aria-pressed="false">🧪 식초 물</button>
+            </div>
+          </fieldset>
+
+          <fieldset class="control-group">
+            <legend>전지 개수 (직렬 연결)</legend>
+            <div class="stepper">
+              <button id="cells-minus" class="step-button" type="button" aria-label="전지 하나 줄이기">−</button>
+              <output id="cells-count" class="step-value">1개</output>
+              <button id="cells-plus" class="step-button" type="button" aria-label="전지 하나 늘리기">＋</button>
+            </div>
+            <p class="control-note">전지를 차례로 잇(직렬)으면 전압이 더해져요.</p>
+          </fieldset>
+
+          <p class="goal" id="goal-fruit">🎯 목표: LED를 환하게 켜요 (3.3V 이상).</p>
+
+          <button class="why-toggle" type="button" aria-expanded="false" aria-controls="why-fruit">왜 그럴까요?</button>
+          <p class="why" id="why-fruit" hidden>
+            과일 속의 신 주스(전해질)가 <strong>구리판</strong>과 <strong>아연판</strong> 사이에서 전자를 옮겨
+            다니게 해요. 아연이 전자를 내놓고, 그 전자가 전선을 따라 구리로 이동하면서 전기가 흐르죠.
+            전지 하나의 전압은 아주 작아서 LED를 켤 수 없지만, 여러 개를 차례로 잇(직렬 연결)으면
+            전압이 <strong>더해져서</strong> LED가 켜져요. 이렇게 화학 반응으로 전기를 만드는 것을
+            <strong>화학 전지</strong>라고 해요.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <!-- ─────────────── 04 손잡이 발전기 ─────────────── -->
+    <article class="station" id="station-generator" data-station="generator">
+      <header class="station-head">
+        <span class="station-no">04</span>
+        <div class="station-title">
+          <h2><span class="station-emoji" aria-hidden="true">🔄</span> 손잡이 발전기 · 전자기 유도</h2>
+          <p class="station-tag">자석과 코일이 만나는 순간</p>
+        </div>
+        <span class="station-stamp" id="stamp-generator" data-stamp hidden>발견 완료</span>
+      </header>
+
+      <div class="station-body">
+        <div class="stage">
+          <canvas
+            id="canvas-generator"
+            tabindex="0"
+            role="application"
+            aria-label="손잡이를 돌리면 코일 안의 자석이 회전하며 전기를 만드는 발전기. 방향키로 돌리고 스페이스바로 빠르게 돌릴 수 있어요."
+          ></canvas>
+          <p class="stage-read" id="read-generator" role="status" aria-live="polite">손잡이를 잡고 돌려 보세요.</p>
+        </div>
+
+        <div class="controls">
+          <div class="meter meter--amber" role="img" aria-label="발전량">
+            <span class="meter-fill" id="meter-generator" style="width: 0%"></span>
+          </div>
+
+          <div class="chip-row">
+            <button class="chip" type="button" data-spin="55" aria-pressed="false">🐢 천천히</button>
+            <button class="chip" type="button" data-spin="140" aria-pressed="false">🐇 빠르게</button>
+            <button class="chip" type="button" data-spin="0" aria-pressed="true">⏸ 멈춤</button>
+          </div>
+
+          <div class="slider-block">
+            <label class="slider-head" for="turns-range">코일 감은 수 <output id="turns-output" for="turns-range">240번</output></label>
+            <input id="turns-range" type="range" min="60" max="600" step="20" value="240" />
+            <div class="slider-scale"><span>60번</span><span>600번</span></div>
+          </div>
+
+          <div class="slider-block">
+            <label class="slider-head" for="magnet-range">자석 세기 <output id="magnet-output" for="magnet-range">보통</output></label>
+            <input id="magnet-range" type="range" min="1" max="3" step="1" value="2" />
+            <div class="slider-scale"><span>약함</span><span>보통</span><span>강함</span></div>
+          </div>
+
+          <p class="goal" id="goal-generator">🎯 목표: 발전량 1.6W로 전구를 환하게 켜요.</p>
+
+          <button class="why-toggle" type="button" aria-expanded="false" aria-controls="why-generator">왜 그럴까요?</button>
+          <p class="why" id="why-generator" hidden>
+            자석이 코일 옆에서 움직이면 코일을 지나는 자기장이 계속 바뀌고, 그때 전자가 밀리면서
+            전기가 생겨요. 이를 <strong>전자기 유도</strong>라고 해요.
+            손잡이를 <strong>빠르게</strong> 돌리고, 코일을 <strong>많이</strong> 감고, 자석을 <strong>강한</strong> 것으로
+            쓰면 전기가 훨씬 많이 만들어져요. 발전소의 큰 발전기도 바로 이 원리로 전기를 만든답니다.
+            다만 우리가 만든 전기는 손의 힘에서 온 것이기 때문에, 발전기를 돌리는 힘이 더 필요해져요.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <!-- ─────────────── 05 태양광 ─────────────── -->
+    <article class="station" id="station-solar" data-station="solar">
+      <header class="station-head">
+        <span class="station-no">05</span>
+        <div class="station-title">
+          <h2><span class="station-emoji" aria-hidden="true">☀️</span> 태양광 발전</h2>
+          <p class="station-tag">빛을 바로 전기로</p>
+        </div>
+        <span class="station-stamp" id="stamp-solar" data-stamp hidden>발견 완료</span>
+      </header>
+
+      <div class="station-body">
+        <div class="stage">
+          <canvas id="canvas-solar" role="img" aria-label="하늘의 해와 구름, 각도를 조절하는 태양광 패널과 발전량 표시"></canvas>
+          <p class="stage-read" id="read-solar" role="status" aria-live="polite">패널을 해 쪽으로 돌려 볼까요?</p>
+        </div>
+
+        <div class="controls">
+          <div class="meter meter--gold" role="img" aria-label="발전량">
+            <span class="meter-fill" id="meter-solar" style="width: 0%"></span>
+          </div>
+
+          <div class="slider-block">
+            <label class="slider-head" for="sun-range">해 높이 <output id="sun-output" for="sun-range">40°</output></label>
+            <input id="sun-range" type="range" min="5" max="90" step="1" value="40" />
+            <div class="slider-scale"><span>아침</span><span>점심</span></div>
+          </div>
+
+          <div class="slider-block">
+            <label class="slider-head" for="tilt-range">패널 각도 <output id="tilt-output" for="tilt-range">15°</output></label>
+            <input id="tilt-range" type="range" min="0" max="90" step="1" value="15" />
+            <div class="slider-scale"><span>눕힘</span><span>세움</span></div>
+          </div>
+
+          <div class="slider-block">
+            <label class="slider-head" for="cloud-range">구름 <output id="cloud-output" for="cloud-range">0%</output></label>
+            <input id="cloud-range" type="range" min="0" max="100" step="5" value="0" />
+            <div class="slider-scale"><span>맑음</span><span>흐림</span></div>
+          </div>
+
+          <div class="switch-row">
+            <button id="tilt-auto" class="switch-button" type="button" aria-pressed="false">
+              <span class="switch-knob" aria-hidden="true"></span>
+              <span class="switch-text">해 따라가기</span>
+            </button>
+          </div>
+
+          <p class="goal" id="goal-solar">🎯 목표: 해를 따라 패널을 돌려 9W 이상 만들어요.</p>
+
+          <button class="why-toggle" type="button" aria-expanded="false" aria-controls="why-solar">왜 그럴까요?</button>
+          <p class="why" id="why-solar" hidden>
+            태양광 패널은 빛을 받으면 전자를 밀어 내서 전기를 만들어요.
+            빛이 패널에 <strong>똑바로</strong> 들어올 때 가장 많은 전기가 만들어지고,
+            비스듬히 들어오면 같은 빛이라도 넓게 퍼져서 발전량이 줄어들어요.
+            그래서 해의 높이에 맞춰 패널 각도를 바꾸면 전기를 더 많이 얻을 수 있답니다.
+            구름이 빛을 가려도 발전량이 확 줄어들어요.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <!-- ─────────────── 06 바람 발전 ─────────────── -->
+    <article class="station" id="station-wind" data-station="wind">
+      <header class="station-head">
+        <span class="station-no">06</span>
+        <div class="station-title">
+          <h2><span class="station-emoji" aria-hidden="true">🌬️</span> 바람 발전</h2>
+          <p class="station-tag">바람의 힘으로</p>
+        </div>
+        <span class="station-stamp" id="stamp-wind" data-stamp hidden>발견 완료</span>
+      </header>
+
+      <div class="station-body">
+        <div class="stage">
+          <canvas id="canvas-wind" role="img" aria-label="바람에 돌아가는 풍력 터빈과 발전량 표시, 전기가 켜는 집"></canvas>
+          <p class="stage-read" id="read-wind" role="status" aria-live="polite">바람을 세게 불어 보세요.</p>
+        </div>
+
+        <div class="controls">
+          <div class="meter meter--mint" role="img" aria-label="발전량">
+            <span class="meter-fill" id="meter-wind" style="width: 0%"></span>
+          </div>
+
+          <div class="slider-block">
+            <label class="slider-head" for="wind-range">바람 세기 <output id="wind-output" for="wind-range">4.0 m/s</output></label>
+            <input id="wind-range" type="range" min="0" max="10" step="0.5" value="4" />
+            <div class="slider-scale"><span>잔잔</span><span>강풍</span></div>
+          </div>
+
+          <div class="slider-block">
+            <label class="slider-head" for="blade-range">날개 길이 <output id="blade-output" for="blade-range">30 cm</output></label>
+            <input id="blade-range" type="range" min="0.15" max="0.5" step="0.05" value="0.3" />
+            <div class="slider-scale"><span>짧게</span><span>길게</span></div>
+          </div>
+
+          <fieldset class="control-group">
+            <legend>날개 개수</legend>
+            <div class="chip-row" role="group" aria-label="날개 개수 고르기">
+              <button class="chip" type="button" data-blades="2" aria-pressed="false">2개</button>
+              <button class="chip" type="button" data-blades="3" aria-pressed="true">3개</button>
+              <button class="chip" type="button" data-blades="4" aria-pressed="false">4개</button>
+              <button class="chip" type="button" data-blades="6" aria-pressed="false">6개</button>
+            </div>
+          </fieldset>
+
+          <p class="goal" id="goal-wind">🎯 목표: 바람과 날개를 조절해 20W를 채워요.</p>
+
+          <button class="why-toggle" type="button" aria-expanded="false" aria-controls="why-wind">왜 그럴까요?</button>
+          <p class="why" id="why-wind" hidden>
+            바람이 날개를 밀어 터빈을 돌리고, 터빈이 발전기를 돌려 전기를 만들어요.
+            발전량은 바람이 <strong>두 배</strong> 세지면 <strong>여덟 배</strong>로 늘어나요(바람 세기의 세제곱).
+            날개가 길면 바람을 더 넓게 받아서 전기가 늘어나지만, 너무 많거나 촘촘한 날개는
+            서로 바람을 방해해서 오히려 효율이 떨어져요. 그래서 발전소의 터빈은 보통 날개 3개를 써요.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <!-- ─────────────── 07 물 발전 ─────────────── -->
+    <article class="station" id="station-hydro" data-station="hydro">
+      <header class="station-head">
+        <span class="station-no">07</span>
+        <div class="station-title">
+          <h2><span class="station-emoji" aria-hidden="true">💧</span> 물 발전</h2>
+          <p class="station-tag">높이에서 떨어지는 물</p>
+        </div>
+        <span class="station-stamp" id="stamp-hydro" data-stamp hidden>발견 완료</span>
+      </header>
+
+      <div class="station-body">
+        <div class="stage">
+          <canvas id="canvas-hydro" role="img" aria-label="저수지에서 떨어진 물이 바퀴를 돌리고 발전량을 만드는 실험대"></canvas>
+          <p class="stage-read" id="read-hydro" role="status" aria-live="polite">물 높이와 물의 양을 조절해 봐요.</p>
+        </div>
+
+        <div class="controls">
+          <div class="meter meter--blue" role="img" aria-label="발전량">
+            <span class="meter-fill" id="meter-hydro" style="width: 0%"></span>
+          </div>
+
+          <div class="slider-block">
+            <label class="slider-head" for="head-range">물 높이 (낙차) <output id="head-output" for="head-range">100 cm</output></label>
+            <input id="head-range" type="range" min="0.2" max="2.5" step="0.1" value="1" />
+            <div class="slider-scale"><span>낮게</span><span>높게</span></div>
+          </div>
+
+          <div class="slider-block">
+            <label class="slider-head" for="flow-range">물의 양 <output id="flow-output" for="flow-range">2.0 L/s</output></label>
+            <input id="flow-range" type="range" min="0.5" max="5" step="0.5" value="2" />
+            <div class="slider-scale"><span>조금</span><span>많이</span></div>
+          </div>
+
+          <p class="goal" id="goal-hydro">🎯 목표: 물 높이와 양을 조절해 20W를 채워요.</p>
+
+          <button class="why-toggle" type="button" aria-expanded="false" aria-controls="why-hydro">왜 그럴까요?</button>
+          <p class="why" id="why-hydro" hidden>
+            높은 곳의 물은 <strong>위치 에너지</strong>를 가지고 있어요. 물이 아래로 떨어지면서
+            그 에너지가 물바퀴를 돌리는 힘으로 바뀌고, 바퀴가 발전기를 돌려 전기를 만들어요.
+            물이 떨어지는 <strong>높이(낙차)</strong>가 높을수록, 내려보내는 <strong>물의 양</strong>이 많을수록
+            전기가 더 많이 만들어져요. 댐이 높은 곳에 큰 저수지를 만드는 이유랍니다.
+          </p>
+        </div>
+      </div>
+    </article>
+
+    <section class="lab-outro" aria-labelledby="outro-title">
+      <h2 id="outro-title">⚡ 전기 발견 정리</h2>
+      <ul class="outro-list">
+        <li><strong>닫힌 회로</strong> — 전기는 한 바퀴 도는 길이 있어야 흘러요.</li>
+        <li><strong>마찰 전기</strong> — 비비면 전자가 옮겨가요(정전기).</li>
+        <li><strong>화학 전지</strong> — 액체 속에서 두 금속이 전자를 주고받아요.</li>
+        <li><strong>전자기 유도</strong> — 자석이 코일 옆에서 움직이면 전기가 생겨요.</li>
+        <li><strong>태양광</strong> — 빛이 패널의 전자를 밀어 올려요.</li>
+        <li><strong>풍력</strong> — 바람이 날개를 돌려요. 바람이 2배면 전기 8배!</li>
+        <li><strong>수력</strong> — 높은 곳의 물이 떨어지며 바퀴를 돌려요.</li>
+      </ul>
+      <p class="outro-note">
+        발전소도 이 일곱 가지 원리 중 하나로 전기를 만들어요. 오늘 내가 만든 전기는
+        <strong><em id="outro-energy">0</em> J</strong>예요.
+      </p>
+      <button id="reset-all" class="ghost-button ghost-button--wide" type="button">🧹 실험 기록 지우고 처음부터</button>
+    </section>
+  </main>
+
+  <div class="help-backdrop" id="help-backdrop" hidden></div>
+  <div class="help-dialog" id="help-dialog" role="dialog" aria-modal="true" aria-labelledby="help-title" hidden>
+    <button id="help-close" class="help-close" type="button" aria-label="놀이 방법 닫기">✕</button>
+    <h2 id="help-title">⚡ 전기 발전 실험실 · 놀이 방법</h2>
+    <p>일곱 가지 방법으로 전기를 만들어 보는 실험실이에요. 위에서 아래로 내려가며 하나씩 해 보세요.</p>
+    <ol class="help-list">
+      <li><b>닫힌 회로</b> — 틈에 끼울 재료를 골라 전구를 켜요. 부도체는 길을 끊어요.</li>
+      <li><b>마찰 전기</b> — 풍선을 털모자에 빠르게 문지른 뒤 종이 조각에 갖다 대요.</li>
+      <li><b>과일 전지</b> — 재료를 고르고 전지 개수를 늘려 LED를 켜요.</li>
+      <li><b>손잡이 발전기</b> — 손잡이를 잡고 빙글빙글 돌리거나 버튼으로 돌려요.</li>
+      <li><b>태양광</b> — 해 높이에 맞춰 패널 각도를 맞추면 전기가 쑥쑥!</li>
+      <li><b>바람 발전</b> — 바람 세기와 날개 길이·개수를 바꿔 봐요.</li>
+      <li><b>물 발전</b> — 물 높이와 물의 양을 조절해 바퀴를 돌려요.</li>
+    </ol>
+    <p class="help-foot">
+      목표를 이루면 <b>발견 완료</b> 도장이 찍혀요. 일곱 개를 다 모으면 전기의 비밀을 모두 찾은 거예요!
+      화면이 작아도 옆으로 밀며 쓸 수 있고, 풍선과 손잡이는 방향키로도 조작할 수 있어요.
+    </p>
+    <button id="help-ok" class="primary-button" type="button">시작하기</button>
+  </div>
+
+  <script src="./electricity-physics.js"></script>
+  <script src="./electricity.js"></script>
+</body>
+</html>

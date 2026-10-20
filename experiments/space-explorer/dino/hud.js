@@ -1,5 +1,6 @@
 /** DOM presentation layer: HUD, screens, toasts, settings and records. */
 
+import { RUN } from "./constants.js";
 import { formatMeters } from "./util.js";
 
 const FOCUSABLE =
@@ -37,6 +38,7 @@ export function createHud() {
     distance: byId("hud-distance"),
     best: byId("hud-best"),
     gap: byId("hud-gap"),
+    gapBlock: byId("gap-block"),
     gapFill: byId("hud-gap-fill"),
     biome: byId("hud-biome"),
     biomeNext: byId("hud-biome-next"),
@@ -141,6 +143,7 @@ export function createHud() {
   let bannerTimer = 0;
   let flashTimer = 0;
   let tutorialTimer = 0;
+  let tutorialShownAt = -1e9;
   let touchDetected = false;
   let rexCamRect = null;
   let screenState = "start";
@@ -384,7 +387,7 @@ export function createHud() {
       cache.rexState,
     );
 
-    const gapWidth = Math.max(0, Math.min(100, (view.gap / 15.5) * 100));
+    const gapWidth = Math.max(0, Math.min(100, (view.gap / RUN.maxGap) * 100));
     if (Math.abs(gapWidth - cache.gapWidth.last) > 0.4) {
       el.gapFill.style.width = `${gapWidth.toFixed(1)}%`;
       cache.gapWidth.last = gapWidth;
@@ -510,12 +513,26 @@ export function createHud() {
     }, duration);
   }
 
+  /**
+   * Shows a one-line hint. Returns false while the previous hint is still
+   * being read, so the caller keeps its own "already taught" flag and retries.
+   * Without this, two systems firing in the same second (a hazard ahead and
+   * the amber rule) would overwrite each other before either is legible.
+   */
   function setTutorial(message, { sticky = false } = {}) {
-    window.clearTimeout(tutorialTimer);
     if (!message) {
+      window.clearTimeout(tutorialTimer);
       el.tutorial.classList.remove("is-visible");
-      return;
+      // A cleared hint (new run, countdown) must not block the next one.
+      tutorialShownAt = -1e9;
+      return false;
     }
+    const now = performance.now();
+    if (el.tutorial.classList.contains("is-visible") && now - tutorialShownAt < 2400) {
+      return false;
+    }
+    window.clearTimeout(tutorialTimer);
+    tutorialShownAt = now;
     el.tutorial.textContent = message;
     el.tutorial.classList.add("is-visible");
     if (!sticky) {
@@ -525,6 +542,7 @@ export function createHud() {
         el.tutorial.classList.remove("is-visible");
       }, linger);
     }
+    return true;
   }
 
   function setSoundState(sound) {
@@ -570,6 +588,21 @@ export function createHud() {
     setShakeState(profile.settings.shake);
     setQualityState(profile.settings.quality);
     setVolumes(profile.settings.sfxVolume, profile.settings.musicVolume);
+  }
+
+  let gapPulseTimer = 0;
+
+  function pulseGap(strength = 1) {
+    if (!el.gap || !el.gapBlock) {
+      return;
+    }
+    el.gapBlock.classList.remove("is-gain");
+    // Force a reflow-free restart of the animation.
+    void el.gapBlock.offsetWidth;
+    el.gapBlock.style.setProperty("--gap-pulse", String(Math.min(1, Math.max(0.2, strength))));
+    el.gapBlock.classList.add("is-gain");
+    window.clearTimeout(gapPulseTimer);
+    gapPulseTimer = window.setTimeout(() => el.gapBlock.classList.remove("is-gain"), 340);
   }
 
   function setFullscreenState(active) {
@@ -691,6 +724,7 @@ export function createHud() {
     hideBoot,
     showError,
     markTouch,
+    pulseGap,
     setFullscreenState,
     showRotateHint,
     setPerfReadout,

@@ -203,6 +203,11 @@ export function applyHit(state) {
   return { type: "hit" };
 }
 
+/**
+ * Ambers are the run's fuel. Each one pushes the predator back a little, so a
+ * player who keeps collecting holds the gap open; a player who only runs is
+ * slowly caught. Every `amberStreak` in a row pays a visible bonus on top.
+ */
 export function collectAmber(state) {
   state.amber += 1;
   state.chain += 1;
@@ -213,11 +218,16 @@ export function collectAmber(state) {
     state.bait += 1;
     baitAward = true;
   }
+  const before = state.gap;
+  const streakBonus = state.chain > 0 && state.chain % RUN.amberStreak === 0 ? RUN.amberStreakBonus : 0;
+  state.gap = Math.min(RUN.maxGap, state.gap + RUN.amberGapGain + streakBonus);
   return {
     type: "amber",
     chain: state.chain,
     multiplier: getComboMultiplier(state),
     baitAward,
+    gapGain: state.gap - before,
+    streak: streakBonus > 0,
   };
 }
 

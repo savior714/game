@@ -187,7 +187,7 @@ export function hitTest(state, hazard, z) {
   if (Math.abs(playerZ - hazard.z) > (hazard.depth ?? 0.9)) {
     return false;
   }
-  if (Math.abs(state.x - hazard.x) > (hazard.halfWidth ?? 1) + PLAYER.halfWidth) {
+  if (Math.abs(state.x - hazard.x) > (hazard.halfWidth ?? 1) + PLAYER.halfWidth + PLAYER.lateralGrace) {
     return false;
   }
   if (hazard.type === "geyser" && !hazard.erupting) {

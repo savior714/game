@@ -5,6 +5,7 @@
  */
 
 import { HAZARD, ROAD, RUN } from "./constants.js";
+import { getBaseSpeed } from "./run-model.js";
 import { clamp, clamp01, pick, pickWeighted, randInt, randRange } from "./util.js";
 
 export const HAZARD_TYPES = Object.freeze({
@@ -146,6 +147,26 @@ export function createSpawner() {
     return true;
   }
 
+  // A hazard the player already met in this lane needs a full reaction beat
+  // before the next one arrives. Four metres was fine at 13.5 m/s and far too
+  // tight at 24 m/s, so the clearance is measured in seconds.
+  const SAME_LANE_SECONDS = 0.95;
+
+  function laneClear(lane, z, seconds = SAME_LANE_SECONDS) {
+    const window = Math.max(4, getBaseSpeed(z) * seconds);
+    for (const entry of recent) {
+      if (entry.lane === lane && Math.abs(entry.z - z) < window) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function clearLanes(z, seconds = SAME_LANE_SECONDS) {
+    const lanes = [0, 1, 2].filter((lane) => laneClear(lane, z, seconds));
+    return lanes.length ? lanes : [0, 1, 2];
+  }
+
   function freeLane(z, preferred = null) {
     if (preferred !== null && laneFree(preferred, z)) {
       return preferred;
@@ -168,31 +189,54 @@ export function createSpawner() {
     }
   }
 
-  /** Generates every pattern whose trigger point is now inside the horizon. */
+  /**
+   * Generates every pattern whose trigger point is now inside the horizon.
+   *
+   * Spacing is expressed in *seconds*, not metres: at 24 m/s a 16 m gap is
+   * 0.67 s, which is not a fair reaction window for a child on a tablet. The
+   * director asks for ~1.4-1.8 s between clusters and shrinks that only as the
+   * run's difficulty climbs.
+   */
   function update(playerDistance, horizon = HAZARD.spawnAhead) {
     const spawns = [];
     const limit = playerDistance + horizon;
+    const speed = getBaseSpeed(playerDistance);
+    const secondsBetween = (difficulty) => 1.8 - difficulty * 0.45;
+    const gapFor = (difficulty, multiplier = 1) =>
+      speed * secondsBetween(difficulty) * multiplier * randRange(0.92, 1.12);
     let safety = 0;
     while (nextZ < limit && safety < 24) {
       safety += 1;
       const difficulty = difficultyAt(nextZ);
       const sinceFull = nextZ - lastFullWidthZ;
-      const weightRibs = sinceFull > 120 ? 9 + difficulty * 8 : 0;
-      const weightGeyser = nextZ - lastGeyserZ > 70 ? 10 + difficulty * 8 : 0;
+      // The opening stretch is a lesson, not a gauntlet: one hazard at a time
+      // until the child has met the jump, then the full vocabulary.
+      const early = nextZ < 140;
+      // Full-width bone arches need the longest runway: never closer than
+      // 200 m, and rarer than the rest of the vocabulary.
+      const weightRibs = sinceFull > 200 && nextZ > 260 ? 6 + difficulty * 5 : 0;
+      const weightGeyser = nextZ - lastGeyserZ > 90 && nextZ > 160 ? 9 + difficulty * 6 : 0;
       const pattern = pickWeighted([
-        { id: "single", weight: 34 },
-        { id: "pair", weight: 12 + difficulty * 12 },
-        { id: "jumpLine", weight: 18 },
+        { id: "single", weight: early ? 46 : 34 },
+        { id: "pair", weight: early ? 0 : 10 + difficulty * 10 },
+        { id: "jumpLine", weight: early ? 24 : 20 },
         { id: "ribs", weight: weightRibs },
         { id: "geyser", weight: weightGeyser },
-        { id: "slalom", weight: 8 + difficulty * 10 },
+        { id: "slalom", weight: early ? 0 : 7 + difficulty * 8 },
       ]);
 
-      let advance = randRange(16, 25) - difficulty * 4;
+      let advance = gapFor(difficulty);
       let lastZ = nextZ;
 
-      if (pattern.id === "single") {
-        const lane = randInt(0, 2);
+      // A two-lane wall is only fair when every lane is fresh; otherwise the
+      // player is asked to swerve into a lane they just left.
+      let chosen = pattern;
+      if (chosen.id === "pair" && clearLanes(nextZ).length < 3) {
+        chosen = { id: "single" };
+      }
+
+      if (chosen.id === "single") {
+        const lane = pick(clearLanes(nextZ));
         const type = pickWeighted([
           { id: "rock", weight: 38 },
           { id: "ptero", weight: 24 },
@@ -201,13 +245,16 @@ export function createSpawner() {
         const hazard = makeHazard(type, lane, nextZ);
         spawns.push(hazard);
         noteHazard(hazard);
-        if (Math.random() < 0.55) {
-          const trailLane = freeLane(nextZ - 14);
-          addAmberLine(spawns, trailLane, nextZ - 15, randInt(3, 5), 2.4);
+        // A trail through the open side teaches the dodge and pays the fuel.
+        const openLane = type === "ptero" ? lane : freeLane(nextZ, (lane + 1 + randInt(0, 1)) % 3);
+        if (type === "ptero") {
+          addAmberLine(spawns, lane, nextZ - 13, randInt(4, 5), 2.3, 0.85);
+        } else {
+          addAmberLine(spawns, openLane, nextZ - 14, randInt(4, 6), 2.4);
         }
-        advance = randRange(18, 27) - difficulty * 5;
-      } else if (pattern.id === "pair") {
-        const open = randInt(0, 2);
+        advance = gapFor(difficulty);
+      } else if (chosen.id === "pair") {
+        const open = pick(clearLanes(nextZ));
         const type = pickWeighted([
           { id: "rock", weight: 46 },
           { id: "ptero", weight: 28 },
@@ -221,53 +268,61 @@ export function createSpawner() {
           spawns.push(hazard);
           noteHazard(hazard);
         }
-        if (Math.random() < 0.7) {
-          addAmberLine(spawns, open, nextZ - 12, 4, 2.6);
-        }
-        advance = randRange(22, 30) - difficulty * 4;
-      } else if (pattern.id === "jumpLine") {
-        const lane = randInt(0, 2);
+        addAmberLine(spawns, open, nextZ - 12, randInt(4, 5), 2.5);
+        advance = gapFor(difficulty, 1.12);
+      } else if (chosen.id === "jumpLine") {
+        const lane = pick(clearLanes(nextZ));
         const hazard = makeHazard("log", lane, nextZ);
         spawns.push(hazard);
         noteHazard(hazard);
-        addAmberLine(spawns, lane, nextZ - 9, 5, 4.5, 0.85, 1.1);
-        if (difficulty > 0.35 && Math.random() < 0.5) {
-          const other = (lane + 1 + randInt(0, 1)) % 3;
-          const second = makeHazard("rock", other, nextZ + 16);
+        addAmberLine(spawns, lane, nextZ - 9, 5, 4.2, 0.85, 1.05);
+        // The follow-up only appears once the jump has had time to land, and
+        // never in a lane the player is about to be trapped in.
+        if (difficulty > 0.4 && Math.random() < 0.4) {
+          const options = [0, 1, 2].filter((l) => l !== lane && laneClear(l, nextZ + speed * 1.1));
+          const other = options.length ? pick(options) : (lane + 1) % 3;
+          const second = makeHazard("rock", other, nextZ + speed * 1.1);
           spawns.push(second);
           noteHazard(second);
           lastZ = second.z;
         }
-        advance = randRange(24, 32) - difficulty * 4;
-      } else if (pattern.id === "ribs") {
+        advance = gapFor(difficulty, 1.05);
+      } else if (chosen.id === "ribs") {
+        // Nothing else may share the arch's beat: it is the one pattern that
+        // owns all three lanes at once.
+        nextZ = Math.max(nextZ, lastHazardZ + speed * 1.35);
         const hazard = makeHazard("ribs", 1, nextZ);
         hazard.halfWidth = ROAD.halfWidth - 0.25;
         spawns.push(hazard);
         noteHazard(hazard);
         lastFullWidthZ = nextZ;
         addAmberLine(spawns, randInt(0, 2), nextZ - 16, 4, 2.8);
-        advance = randRange(34, 44);
-      } else if (pattern.id === "geyser") {
-        const lane = randInt(0, 2);
+        advance = gapFor(difficulty, 1.3);
+      } else if (chosen.id === "geyser") {
+        const lane = pick(clearLanes(nextZ));
         const hazard = makeHazard("geyser", lane, nextZ);
         spawns.push(hazard);
         noteHazard(hazard);
         lastGeyserZ = nextZ;
-        const free = freeLane(nextZ, (lane + 1) % 3);
-        addAmberLine(spawns, free, nextZ - 10, 4, 2.8);
-        advance = randRange(26, 36);
-      } else if (pattern.id === "slalom") {
-        // Two hazards in alternating lanes, forcing a diagonal line.
-        const firstLane = randInt(0, 2);
-        const secondLane = (firstLane + (Math.random() < 0.5 ? 1 : 2)) % 3;
+        const open = freeLane(nextZ, (lane + 1) % 3);
+        addAmberLine(spawns, open, nextZ - 12, randInt(4, 5), 2.6);
+        advance = gapFor(difficulty, 1.05);
+      } else if (chosen.id === "slalom") {
+        // Two hazards in alternating lanes, forcing a diagonal line. The second
+        // sits a full lane-change apart in time, never in distance.
+        const firstLane = pick(clearLanes(nextZ));
+        const secondOptions = [0, 1, 2].filter(
+          (l) => l !== firstLane && laneClear(l, nextZ + speed * 1.15),
+        );
+        const secondLane = secondOptions.length ? pick(secondOptions) : (firstLane + 1) % 3;
         const first = makeHazard(pick(["rock", "log"]), firstLane, nextZ);
-        const second = makeHazard(pick(["rock", "log", "ptero"]), secondLane, nextZ + 17);
+        const second = makeHazard(pick(["rock", "log", "ptero"]), secondLane, nextZ + speed * 1.15);
         spawns.push(first, second);
         noteHazard(first);
         noteHazard(second);
-        addAmberLine(spawns, (firstLane + 1) % 3, nextZ + 3, 3, 3);
+        addAmberLine(spawns, (firstLane + 1) % 3, nextZ + 3, 4, 2.6);
         lastZ = second.z;
-        advance = randRange(30, 38);
+        advance = gapFor(difficulty, 1.15);
       }
 
       // Power-ups live between hazard clusters.
@@ -284,7 +339,7 @@ export function createSpawner() {
       }
 
       spawned += 1;
-      nextZ += Math.max(15, advance);
+      nextZ += Math.max(speed * 0.9, advance);
       lastHazardZ = Math.max(lastHazardZ, lastZ);
     }
     return spawns;

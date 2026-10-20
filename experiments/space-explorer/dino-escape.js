@@ -165,6 +165,7 @@ function boot() {
     recordAnnounced: false,
     firstBaitHint: false,
     firstShieldHint: false,
+    amberTaught: false,
     chomped: false,
     tutorialSeen: new Set(),
     quality: QUALITY.auto,
@@ -421,6 +422,7 @@ function boot() {
     game.recordAnnounced = false;
     game.firstBaitHint = false;
     game.firstShieldHint = false;
+    game.amberTaught = false;
     game.staminaToastArmed = true;
     game.tutorialSeen.clear();
     game.roarTimer = 6;
@@ -697,6 +699,25 @@ function boot() {
       }
       const beforeMultiplier = getComboMultiplier(run);
       const result = collectAmber(run);
+      // Ambers are the fuel for the gap. Make that visible every single time.
+      if (result.gapGain > 0) {
+        hud.pulseGap(result.gapGain / RUN.amberGapGain);
+      }
+      if (!game.amberTaught) {
+        game.amberTaught = true;
+        hud.toast("호박 = 거리! 렉스가 밀려났어요", {
+          tone: "amber",
+          icon: TOAST_ICONS.amber,
+          duration: 3200,
+        });
+      }
+      if (result.streak && run.chain % (RUN.amberStreak * 2) === 0) {
+        hud.toast(`연속 ${run.chain}개 · 거리 +${result.gapGain.toFixed(1)}m`, {
+          tone: "amber",
+          icon: TOAST_ICONS.amber,
+          duration: 1500,
+        });
+      }
       amber.collected = true;
       amber.dead = true;
       entities.remove(amber);
@@ -1045,8 +1066,9 @@ function boot() {
       }
       const ahead = hazard.z - player.z;
       if (ahead > 2 && ahead < 34 && !game.tutorialSeen.has(hazard.type)) {
-        game.tutorialSeen.add(hazard.type);
-        hud.setTutorial(hazard.hint);
+        if (hud.setTutorial(hazard.hint)) {
+          game.tutorialSeen.add(hazard.type);
+        }
       }
     }
 

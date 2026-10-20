@@ -48,6 +48,7 @@ skill goal
 - 우주 탐험 페이지: `experiments/space-explorer/index.html`
 - 우주 탐험 모듈 엔트리: `experiments/space-explorer/main.js`
 - 전기 발전 실험실: `experiments/electricity/index.html`
+- 전기 발전 실험실 3D 월드: `experiments/electricity/world.js`
 - 전기 발전 실험실 물리 엔진: `experiments/electricity/electricity-physics.js`
 - 자석 실험실: `experiments/magnet/index.html`
 - 자석 실험실 물리 엔진: `experiments/magnet/magnet-physics.js`

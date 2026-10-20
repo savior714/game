@@ -183,9 +183,9 @@ def test_tuning_and_storage_contract() -> None:
     assert "threshold: 0," in constants
     assert "threshold: 720," in constants
     assert "threshold: 1560," in constants
-    assert constants.count("id: \"jungle\"") == 1
-    assert constants.count("id: \"desert\"") == 1
-    assert constants.count("id: \"volcano\"") == 1
+    assert constants.count('id: "jungle"') == 1
+    assert constants.count('id: "desert"') == 1
+    assert constants.count('id: "volcano"') == 1
 
     assert "export function loadProfile()" in storage
     assert "export function saveProfile(profile)" in storage
@@ -200,7 +200,9 @@ def test_hud_module_only_reads_ids_that_exist_in_the_page() -> None:
 
     ids = set(re.findall(r'byId\("([^"]+)"\)', hud))
     assert len(ids) >= 40
-    missing = sorted(identifier for identifier in ids if f'id="{identifier}"' not in html)
+    missing = sorted(
+        identifier for identifier in ids if f'id="{identifier}"' not in html
+    )
     assert not missing, f"hud.js references missing page ids: {missing}"
 
 
@@ -242,13 +244,15 @@ def test_dino_escape_ships_its_own_fonts() -> None:
     assert 'src: url("./assets/fonts/PretendardVariable.woff2")' in css
     assert "font-display: swap" in css
 
-    for font_file in re.findall(r'url\(\"\./assets/fonts/([^\"]+)\"\)', css):
-        assert (FONTS / font_file).is_file(), f"stylesheet references missing font: {font_file}"
+    for font_file in re.findall(r"url\(\"\./assets/fonts/([^\"]+)\"\)", css):
+        assert (FONTS / font_file).is_file(), (
+            f"stylesheet references missing font: {font_file}"
+        )
     assert (FONTS / "Pretendard-LICENSE.txt").is_file()
     assert (FONTS / "OFL-LICENSE.txt").is_file()
 
     # Korean glyphs fall back to a Korean-capable family, not to the emoji font.
-    assert "--font-body: \"Pretendard\"" in css
+    assert '--font-body: "Pretendard"' in css
     assert '"Apple SD Gothic Neo"' in css and '"Malgun Gothic"' in css
 
 
@@ -266,7 +270,9 @@ def test_dino_escape_hud_does_not_rely_on_emoji_glyphs() -> None:
         if block is None:
             block = re.search(rf'class="[^"]*{icon}[^"]*"[^>]*>(.*?)</div>', html, re.S)
         assert block is not None, f"missing {icon} markup"
-        assert "<svg" in block.group(1), f"{icon} must render as inline SVG, not a glyph"
+        assert "<svg" in block.group(1), (
+            f"{icon} must render as inline SVG, not a glyph"
+        )
 
 
 def test_chase_director_keeps_the_chase_readable() -> None:

@@ -24,7 +24,9 @@ def test_reward_bulk_consume_node_suite() -> None:
         timeout=30,
         check=False,
     )
-    assert proc.returncode == 0, f"Node bulk consume test failed:\n{proc.stderr}\n{proc.stdout}"
+    assert proc.returncode == 0, (
+        f"Node bulk consume test failed:\n{proc.stderr}\n{proc.stdout}"
+    )
     assert "PASS:" in proc.stdout
 
 
@@ -46,7 +48,9 @@ def test_hud_modals_expose_immediate_bulk_controls() -> None:
     snack_section_idx = ui_code.find('id="snack-deduct-area"')
     assert snack_section_idx != -1, "#snack-deduct-area must exist"
     snack_tag = ui_code[snack_section_idx - 20 : snack_section_idx + 180]
-    assert "display:block" in snack_tag, "#snack-deduct-area must be immediately visible (display:block)"
+    assert "display:block" in snack_tag, (
+        "#snack-deduct-area must be immediately visible (display:block)"
+    )
     assert 'id="snack-consume-quantity"' in ui_code
     assert 'id="snack-use-all-btn"' in ui_code
     assert 'id="snack-qty-minus"' in ui_code

@@ -201,18 +201,27 @@ const RewardSystem = (() => {
   }
 
   function consume(type) {
-    if (!has(type)) {
-      alert('보유 중인 보상이 없습니다.');
-      return;
-    }
     if (typeof RewardSystemUI === 'undefined') return;
 
     if (type === 'youtube') {
       RewardSystemUI.openYoutubeModal(state);
+      return;
     } else if (type === 'snack') {
       // 유튜브와 동일: 모달에서 부모 잠금 후 '사용 기록' 시 consumeInternal로 차감
       RewardSystemUI.openSnackModal(state);
-    } else if (type === 'marble') {
+      return;
+    } else if (type !== 'marble' && type !== 'bubble') {
+      const item = state.shop_items.find(i => i.id === type) || { id: type, icon: '🎁', label: '알 수 없는 보상' };
+      RewardSystemUI.openCustomModal(item, state);
+      return;
+    }
+
+    if (!has(type)) {
+      alert('보유 중인 보상이 없습니다.');
+      return;
+    }
+
+    if (type === 'marble') {
       state.marble_plays -= 1;
       save();
       RewardSystemUI.openMarbleModal();
@@ -220,9 +229,6 @@ const RewardSystem = (() => {
       state.bubble_plays -= 1;
       save();
       RewardSystemUI.openBubbleModal();
-    } else {
-      const item = state.shop_items.find(i => i.id === type) || { id: type, icon: '🎁', label: '알 수 없는 보상' };
-      RewardSystemUI.openCustomModal(item, state);
     }
   }
 
@@ -232,11 +238,20 @@ const RewardSystem = (() => {
     if (!Number.isSafeInteger(safeAmount) || safeAmount < 1) return false;
 
     if (type === 'youtube') {
-      // YouTube 시간은 세션 시작 트랜잭션에서만 차감한다.
-      if (safeAmount !== 1 || state.youtube_minutes < 10) return false;
-      state.youtube_minutes -= 10;
+      const minutesToDeduct = safeAmount * 10;
+      if (state.youtube_minutes < minutesToDeduct) {
+        if (typeof RewardSystemUI !== 'undefined') alert('보유 중인 유튜브 시간이 부족합니다.');
+        return false;
+      }
+      state.youtube_minutes -= minutesToDeduct;
       save();
-      if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.showToast('10분 차감 완료');
+      if (typeof RewardSystemUI !== 'undefined') {
+        RewardSystemUI.showToast(
+          safeAmount === 1
+            ? '10분 차감 완료'
+            : `📺 유튜브 ${safeAmount}개 (${minutesToDeduct}분) 사용 완료`
+        );
+      }
     } else if (type === 'snack') {
       if (state.snacks < safeAmount) {
         if (typeof RewardSystemUI !== 'undefined') alert('보유 중인 간식이 부족합니다.');
@@ -245,6 +260,22 @@ const RewardSystem = (() => {
       state.snacks -= safeAmount;
       save();
       if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.showToast(`🍪 간식 ${safeAmount}개 사용 완료`);
+    } else if (type === 'marble') {
+      if (state.marble_plays < safeAmount) {
+        if (typeof RewardSystemUI !== 'undefined') alert('보유 중인 마블 게임 횟수가 부족합니다.');
+        return false;
+      }
+      state.marble_plays -= safeAmount;
+      save();
+      if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.showToast(`🎮 마블 게임 ${safeAmount}회 사용 완료`);
+    } else if (type === 'bubble') {
+      if (state.bubble_plays < safeAmount) {
+        if (typeof RewardSystemUI !== 'undefined') alert('보유 중인 비눗방울 게임 횟수가 부족합니다.');
+        return false;
+      }
+      state.bubble_plays -= safeAmount;
+      save();
+      if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.showToast(`🫧 비눗방울 게임 ${safeAmount}회 사용 완료`);
     } else {
       const available = Number(state.custom_inventory[type]) || 0;
       if (available < safeAmount) {

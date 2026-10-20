@@ -277,18 +277,34 @@
 }
 
 .inventory-item.empty-slot {
-  opacity: 0.72;
-  background: rgba(0, 0, 0, 0.02);
+  opacity: 0.9;
+  background: rgba(0, 0, 0, 0.03);
 }
 
 .inventory-item.empty-slot .val {
-  color: #94a3b8;
-  font-weight: 600;
+  color: #64748b;
+  font-weight: 700;
 }
 
 .inventory-item.empty-slot .icon {
-  filter: grayscale(0.25);
-  opacity: 0.85;
+  filter: grayscale(0.2);
+  opacity: 0.9;
+}
+
+.dark #reward-inventory .inventory-item,
+html.dark #reward-inventory .inventory-item {
+  color: #F8FAFC;
+}
+
+.dark #reward-inventory .inventory-item.empty-slot,
+html.dark #reward-inventory .inventory-item.empty-slot {
+  color: #CBD5E1;
+  opacity: 0.95;
+}
+
+.dark #reward-inventory .inventory-item.empty-slot .val,
+html.dark #reward-inventory .inventory-item.empty-slot .val {
+  color: #CBD5E1;
 }
 
 .inventory-item .val {

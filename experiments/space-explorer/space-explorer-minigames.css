@@ -5,14 +5,14 @@
   --panel: rgba(18, 24, 38, 0.85);
   --panel-border: rgba(255, 255, 255, 0.12);
   --text: #F8FAFC;
-  --muted: #94A3B8;
+  --muted: #CBD5E1;
   --se-bg-deep: #07090e;
   --se-bg-panel: rgba(18, 24, 38, 0.85);
   --se-border: rgba(255, 255, 255, 0.14);
   --se-border-soft: rgba(255, 255, 255, 0.08);
   --se-text-primary: #FFFFFF;
   --se-text-secondary: #F8FAFC;
-  --se-text-muted: #94A3B8;
+  --se-text-muted: #CBD5E1;
   --se-text-dim: #64748B;
   --se-accent: #6366f1;
   --se-accent-light: #38bdf8;
@@ -111,18 +111,18 @@ body.se-page {
 }
 
 .brand-version {
-  font-size: 10px;
-  padding: 1px 6px;
+  font-size: 11px;
+  padding: 1.5px 7px;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #cbd5e1;
-  font-weight: 600;
+  background: rgba(255, 255, 255, 0.15);
+  color: #F1F5F9;
+  font-weight: 700;
 }
 
 .brand-category {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  color: #94a3b8;
+  color: #CBD5E1;
   margin-top: 1px;
 }
 
@@ -139,11 +139,11 @@ body.se-page {
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-weight: 700;
-  color: var(--muted);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #E2E8F0;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 9999px;
   text-decoration: none;
   min-height: 36px;

@@ -1551,7 +1551,7 @@ def test_real_pointer_flow_completes_three_debris_and_enters_success() -> None:
         assert.strictEqual(ctx.frames.pending().length, 0);
         assert.deepStrictEqual(
           Object.keys(dom.canvas.listeners).sort(),
-          ["pointercancel", "pointerdown", "pointermove", "pointerup"]
+          ["lostpointercapture", "pointercancel", "pointerdown", "pointermove", "pointerup"]
         );
 
         dispatch(dom.canvas, "pointerdown", pointerEvent(1, 800, 260));

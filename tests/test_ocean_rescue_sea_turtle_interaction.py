@@ -1136,7 +1136,7 @@ def test_app_rescue_active_starts_and_renders_sea_turtle() -> None:
         assert.strictEqual(ctx.frames.pending().length, 0);
         assert.deepStrictEqual(
           Object.keys(dom.canvas.listeners).sort(),
-          ["pointercancel", "pointerdown", "pointermove", "pointerup"]
+          ["lostpointercapture", "pointercancel", "pointerdown", "pointermove", "pointerup"]
         );
         """
     )

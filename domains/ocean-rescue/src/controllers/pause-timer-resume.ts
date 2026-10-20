@@ -69,6 +69,7 @@ export interface PauseTimerResumeAppApi extends PauseTimerResumeHostApi {
   enterResumeCountdown(): void;
   completeResume(): void;
   exitPauseToMenu(): void;
+  abandonRescueToMenu(): void;
   cancelMissionSuccessPresentationForMenu(): void;
 }
 
@@ -457,18 +458,34 @@ export function installPauseTimerResumeController(
     setPauseRootMarkers(false);
     syncPauseButton();
 
+    returnToMissionSelect();
+  }
+
+  /**
+   * Leave the current mission for the mission list. Shared by pause -> menu and
+   * by abandonRescueToMenu(). Does not require a pause.
+   */
+  function returnToMissionSelect(): void {
     const snapshot = State.getSnapshot();
     if (snapshot.phase === "TRAVEL") {
       host.stopTravelRuntime();
       host.cancelLaunchRuntime?.();
     } else if (snapshot.phase === "RESCUE_SUCCESS") {
       host.cancelMissionSuccessPresentationForMenu();
+      // Clear the active rescue sequence as well: a stale sequence blocks
+      // rescue-arrival handoff on the next mission run (travel never enters
+      // the rescue site). Mirrors the legacy rollback lane in app.js.
+      host.cancelRescueSiteRuntime();
       host.shutdownActiveRescueForMenu();
     } else if (
       snapshot.phase === "RESCUE_SITE_TRANSITION" ||
       snapshot.phase === "RESCUE_TUTORIAL" ||
       snapshot.phase === "RESCUE_ACTIVE"
     ) {
+      // cancelRescueSiteRuntime() clears the active rescue sequence and the
+      // site-transition/tutorial timers, which shutdownActiveRescueForMenu()
+      // does not. Without it, the next arrival is silently blocked.
+      host.cancelRescueSiteRuntime();
       host.shutdownActiveRescueForMenu();
     } else if (snapshot.phase === "LAUNCH") {
       host.cancelLaunchRuntime?.();
@@ -481,6 +498,9 @@ export function installPauseTimerResumeController(
       root.removeAttribute("data-rescue-sequence");
       root.removeAttribute("data-rescue-phase");
       root.removeAttribute("data-rescue-input");
+      root.removeAttribute("data-rescue-scene-failure");
+      root.removeAttribute("data-sea-turtle-scene-failure");
+      root.removeAttribute("data-crab-scene-failure");
       root.removeAttribute("data-rescue-mission-id");
       root.removeAttribute("data-rescue-gup-id");
       root.removeAttribute("data-sea-turtle-active");
@@ -529,7 +549,21 @@ export function installPauseTimerResumeController(
     }
   }
 
+  /**
+   * Rescue scene-failure recovery (tap to return to menu). It cannot go through
+   * exitPauseToMenu(): that returns early unless the game is paused, so the
+   * recovery was a silent no-op and the player stayed on a dead rescue screen.
+   */
+  function abandonRescueToMenu(): void {
+    if (pauseActive) {
+      exitPauseToMenu();
+      return;
+    }
+    returnToMissionSelect();
+  }
+
   const controller = host as unknown as PauseTimerResumeAppApi;
+  controller.abandonRescueToMenu = abandonRescueToMenu;
   controller.isPauseActive = isPauseActive;
   controller.isPauseablePhase = isPauseablePhase;
   controller.registerPauseableTimer = registerPauseableTimer;
@@ -544,9 +578,10 @@ export function installPauseTimerResumeController(
   controller.enterResumeCountdown = enterResumeCountdown;
   controller.completeResume = completeResume;
   controller.exitPauseToMenu = exitPauseToMenu;
-  controller.cancelMissionSuccessPresentationForMenu = () => {
-    host.cancelMissionSuccessPresentationForMenu();
-  };
+  // `controller` and `host` are the same object. Re-assigning a wrapper that
+  // calls `host.cancelMissionSuccessPresentationForMenu` here would replace the
+  // host method with a self-call (infinite recursion on pause -> menu from the
+  // mission-success screen), so the host method is used directly.
   controller.cancelPausePointerInteractions = host.cancelPausePointerInteractions;
   controller.clearPauseSensitiveHoldTimer = host.clearPauseSensitiveHoldTimer;
   controller.shutdownActiveRescueForMenu = host.shutdownActiveRescueForMenu;

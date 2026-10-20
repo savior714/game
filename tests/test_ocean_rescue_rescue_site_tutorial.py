@@ -900,7 +900,10 @@ def test_tutorial_auto_completion_enters_rescue_active() -> None:
 
         assert.strictEqual(ctx.State.getSnapshot().phase, "RESCUE_ACTIVE");
         assert.strictEqual(dom.rootEl.getAttribute("data-rescue-phase"), "active");
-        assert.strictEqual(dom.rootEl.getAttribute("data-rescue-input"), "enabled");
+        // This harness does not load the sea-turtle interaction module, so the
+        // scene cannot start. It must report that instead of showing live controls.
+        assert.strictEqual(dom.rootEl.getAttribute("data-rescue-input"), "disabled");
+        assert.strictEqual(dom.rootEl.getAttribute("data-rescue-scene-failure"), "true");
         assert.strictEqual(
           dom.rootEl.getAttribute("data-rescue-tutorial-skipped"),
           "false"
@@ -916,7 +919,10 @@ def test_tutorial_auto_completion_enters_rescue_active() -> None:
           dom.rescueInstruction.textContent,
           "Start here. Follow the rope to the end!"
         );
-        assert.strictEqual(dom.statusEl.textContent, "Rescue controls ready");
+        assert.strictEqual(
+          dom.statusEl.textContent,
+          "Rescue scene could not start — tap to return to menu"
+        );
 
         const pendingAfter = ctx.timers.pending().length;
         const markersBefore =
@@ -976,7 +982,7 @@ def test_tutorial_tap_skips_once_and_stale_timer_is_ignored() -> None:
 
         assert.strictEqual(ctx.State.getSnapshot().phase, "RESCUE_ACTIVE");
         assert.strictEqual(dom.rootEl.getAttribute("data-rescue-phase"), "active");
-        assert.strictEqual(dom.rootEl.getAttribute("data-rescue-input"), "enabled");
+        assert.strictEqual(dom.rootEl.getAttribute("data-rescue-input"), "disabled");
         assert.strictEqual(
           dom.rootEl.getAttribute("data-rescue-tutorial-skipped"),
           "true"
@@ -986,7 +992,10 @@ def test_tutorial_tap_skips_once_and_stale_timer_is_ignored() -> None:
           false
         );
         assert.strictEqual(dom.rescueHand.hidden, true);
-        assert.strictEqual(dom.statusEl.textContent, "Rescue controls ready");
+        assert.strictEqual(
+          dom.statusEl.textContent,
+          "Rescue scene could not start — tap to return to menu"
+        );
 
         const tutorialEntry = ctx.timers.timers.find((t) => t.id === tutorialTimer.id);
         assert.strictEqual(tutorialEntry.cancelled, true);
@@ -1093,7 +1102,11 @@ def test_all_mission_site_content_and_missing_optional_runtime_are_safe() -> Non
             dom.rescueTutorial.classList.contains("ocean-rescue-tutorial-active"),
             false
           );
-          assert.strictEqual(dom.statusEl.textContent, "Rescue controls ready");
+          // No interaction module is loaded in this harness: report the failure.
+          assert.strictEqual(
+            dom.statusEl.textContent,
+            "Rescue scene could not start — tap to return to menu"
+          );
         }
 
         const missingRescueDom = makeBootDom();

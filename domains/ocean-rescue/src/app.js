@@ -2011,7 +2011,9 @@
     if (status) {
       status.textContent = "Rescue controls ready";
     }
-    startRescueInteraction(sequence);
+    if (!startRescueInteraction(sequence)) {
+      markRescueSceneFailure("Rescue scene could not start — tap to return to menu");
+    }
     App.syncPauseButton();
     return true;
   }
@@ -2087,6 +2089,40 @@
     setTutorialClass(container, "ocean-rescue-tutorial-hold", active);
   }
 
+  function rescueSceneHasFailed() {
+    var root = document.getElementById("ocean-rescue-root");
+    if (!root) {
+      return false;
+    }
+    return (
+      root.getAttribute("data-rescue-scene-failure") === "true" ||
+      root.getAttribute("data-sea-turtle-scene-failure") === "true" ||
+      root.getAttribute("data-crab-scene-failure") === "true"
+    );
+  }
+
+  function markRescueSceneFailure(message) {
+    var root = document.getElementById("ocean-rescue-root");
+    if (root) {
+      root.setAttribute("data-rescue-scene-failure", "true");
+      root.setAttribute("data-rescue-input", "disabled");
+    }
+    var status = document.getElementById("ocean-rescue-status");
+    if (status) {
+      status.textContent = message;
+    }
+  }
+
+  // Leaves the failed rescue for the mission list. Goes through the controller's
+  // abandon path because the legacy exitPauseToMenu() returns early unless paused.
+  function abandonRescueFromSceneFailure() {
+    if (typeof App.abandonRescueToMenu === "function") {
+      App.abandonRescueToMenu();
+      return;
+    }
+    exitPauseToMenu();
+  }
+
   function onRescueStagePointerDown(event) {
     if (!event || typeof event !== "object") {
       return;
@@ -2101,16 +2137,22 @@
       return;
     }
     var snapshot = State.getSnapshot();
+    if (
+      snapshot.phase === State.Phases.RESCUE_SITE_TRANSITION ||
+      snapshot.phase === State.Phases.RESCUE_ACTIVE
+    ) {
+      if (rescueSceneHasFailed()) {
+        if (typeof event.preventDefault === "function") {
+          event.preventDefault();
+        }
+        if (typeof event.stopPropagation === "function") {
+          event.stopPropagation();
+        }
+        abandonRescueFromSceneFailure();
+        return;
+      }
+    }
     if (snapshot.phase === State.Phases.RESCUE_SITE_TRANSITION) {
-      var root = document.getElementById("ocean-rescue-root");
-      if (root && root.getAttribute("data-sea-turtle-scene-failure") === "true") {
-        exitPauseToMenu();
-        return;
-      }
-      if (root && root.getAttribute("data-crab-scene-failure") === "true") {
-        exitPauseToMenu();
-        return;
-      }
       if (typeof event.preventDefault === "function") {
         event.preventDefault();
       }
@@ -2250,7 +2292,13 @@
         started = false;
       }
     }
-    if (!started) {
+    // The legacy fallback only works when no lifecycle controller is installed:
+    // the installed controller's pointer handlers reject input unless its own
+    // session is active, so a fallback here would show "ready" controls that
+    // ignore every drag. With the controller installed a failed start is
+    // surfaced below as a scene failure instead.
+    var controllerOwnsInput = typeof App.handleSeaTurtlePointerDown === "function";
+    if (!started && !controllerOwnsInput) {
       var fallbackCanvas = resolveVisibleInputCanvas();
       var fallbackContext = resolvePaintContext();
       var fallbackOverlay = document.getElementById("ocean-rescue-rescue-overlay");
@@ -2388,7 +2436,57 @@
     canvas.addEventListener("pointermove", onRescuePointerMove);
     canvas.addEventListener("pointerup", onRescuePointerUp);
     canvas.addEventListener("pointercancel", onRescuePointerCancel);
+    canvas.addEventListener("lostpointercapture", onRescuePointerLostCapture);
     seaTurtleInputBound = true;
+  }
+
+  // Single owner check for the sea-turtle pointer. With the lifecycle controller
+  // installed (the shipped ESM host) the controller owns the pointer; the local
+  // id only remains for the legacy-only fallback.
+  function isSeaTurtlePointerOwned() {
+    if (typeof App.hasTrackedSeaTurtlePointer === "function") {
+      return App.hasTrackedSeaTurtlePointer();
+    }
+    return seaTurtlePointerId !== null;
+  }
+
+  // A tracked pointer that loses capture without its pointerup/pointercancel
+  // reaching the canvas (capture released by the browser, the canvas re-parented
+  // mid-drag, or the release landing outside the canvas) must end its gesture.
+  // Otherwise the mission keeps the pointer forever: the next drag is rejected
+  // and the stale gesture is later scored as a failed rope.
+  // lostpointercapture fires after a normal pointerup too; by then the owner has
+  // already cleared, so this is a no-op in that case.
+  function onRescuePointerLostCapture(event) {
+    if (!event || typeof event !== "object") {
+      return;
+    }
+    if (typeof event.pointerId !== "number" || !isFinite(event.pointerId)) {
+      return;
+    }
+    if (activeRescueSequence === null) {
+      return;
+    }
+    if (activeRescueSequence.missionId === SeaTurtle.MissionId) {
+      if (
+        typeof App.isTrackedSeaTurtlePointer === "function" &&
+        App.isTrackedSeaTurtlePointer(event.pointerId)
+      ) {
+        onRescuePointerCancel(event);
+      }
+      return;
+    }
+    if (Crab && activeRescueSequence.missionId === Crab.MissionId) {
+      if (crabPointerId !== null && event.pointerId === crabPointerId) {
+        onRescuePointerCancel(event);
+      }
+      return;
+    }
+    if (YoungWhale && activeRescueSequence.missionId === YoungWhale.MissionId) {
+      if (youngWhalePointerId !== null && event.pointerId === youngWhalePointerId) {
+        onRescuePointerCancel(event);
+      }
+    }
   }
 
   function acceptRescuePointerEvent(event) {
@@ -2414,7 +2512,7 @@
       if (!seaTurtle.active) {
         return false;
       }
-      if (seaTurtlePointerId !== null) {
+      if (isSeaTurtlePointerOwned()) {
         return false;
       }
     } else if (Crab && missionId === Crab.MissionId) {
@@ -4065,9 +4163,6 @@
     if (CrabScene && CrabScene.isMounted()) {
       CrabScene.exit();
     }
-    if (CrabScene && CrabScene.isMounted()) {
-      CrabScene.exit();
-    }
     clearCrabFeedbackTimer();
     clearYoungWhaleFeedbackTimer();
     clearCrabHoldTimer();
@@ -4428,6 +4523,9 @@
       root.removeAttribute("data-rescue-sequence");
       root.removeAttribute("data-rescue-phase");
       root.removeAttribute("data-rescue-input");
+      root.removeAttribute("data-rescue-scene-failure");
+      root.removeAttribute("data-sea-turtle-scene-failure");
+      root.removeAttribute("data-crab-scene-failure");
       root.removeAttribute("data-rescue-mission-id");
       root.removeAttribute("data-rescue-gup-id");
       root.removeAttribute("data-sea-turtle-active");
@@ -5022,6 +5120,7 @@
       root.setAttribute("data-launch-ready", "true");
       root.setAttribute("data-mission-complete-action", "replay");
       root.removeAttribute("data-mission-complete-ready");
+      root.removeAttribute("data-rescue-sequence");
     }
     var launchEls = resolveLaunchElements();
     if (launchEls !== null && content !== null) {

@@ -354,6 +354,21 @@ export function installSeaTurtleLifecycleController(
     return { valid: true, mapped: null };
   }
 
+  /**
+   * Ownership check only: true when `event` is the pointer that started the
+   * current drag. Unlike isSeaTurtlePointerTracked it does not require the
+   * session to still be valid, so the owning pointer can always end its gesture.
+   */
+  function isOwnedSeaTurtlePointer(event: PointerEvent): boolean {
+    if (!event || typeof event !== "object") {
+      return false;
+    }
+    if (activePointerId === null) {
+      return false;
+    }
+    return typeof event.pointerId === "number" && event.pointerId === activePointerId;
+  }
+
   function isSeaTurtlePointerTracked(event: PointerEvent): boolean {
     const validation = validateSeaTurtlePointerEvent(event);
     if (!validation.valid) {
@@ -481,18 +496,17 @@ export function installSeaTurtleLifecycleController(
   }
 
   function handleSeaTurtlePointerUp(event: PointerEvent): boolean {
-    if (!isSeaTurtlePointerTracked(event)) {
+    if (!isOwnedSeaTurtlePointer(event)) {
       return false;
     }
 
+    // The owning pointer has ended, so the gesture is over whatever the state
+    // checks say. Returning early here used to keep activePointerId set, which
+    // silently rejected every later pointerdown until a page reload.
     const validation = validateSeaTurtlePointerEvent(event);
-    if (!validation.valid) {
-      return false;
-    }
-
     const canvas = host.resolveVisibleInputCanvas();
-    if (!(canvas instanceof HTMLCanvasElement)) {
-      return false;
+    if (!validation.valid || !(canvas instanceof HTMLCanvasElement)) {
+      return handleSeaTurtlePointerCancel(event);
     }
 
     const PointerInput = (window.OceanRescue as OceanRescueNamespace)?.PointerInput;

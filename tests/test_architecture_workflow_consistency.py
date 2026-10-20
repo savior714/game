@@ -126,7 +126,10 @@ def test_architecture_uses_real_seams_without_forced_option_expansion() -> None:
         "caller 하나뿐이고 교체 가능성도 없으면 hypothetical seam을 만들지 않는다."
         in skill
     )
-    assert "현재 신규 architecture migration은 동결" in skill
+    assert "Ocean Rescue는 active feature" in skill
+    assert "Space Explorer는 `PAUSED_REFERENCE_ONLY`" in skill
+    assert "과거 migration plan만으로" in skill
+    assert "현재 신규 architecture migration은 동결" not in skill
     assert "method 수가 적다는 이유만으로 deep module은 아니다." in skill
 
     forbidden = (

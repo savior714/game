@@ -13,12 +13,14 @@ verify_with:
 # AidenGame 핵심 원칙
 
 이 문서는 에이전트의 판단 원칙을 정의한다.
-실행 우선순위는 [`AGENTS.md`](../../AGENTS.md), 제품 경계는 [`PROJECT_RULES.md`](../../PROJECT_RULES.md)가 결정한다.
+저장소 실행 경계는 [`AGENTS.md`](../../AGENTS.md), 제품 목표·우선순위는
+[`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md), 아키텍처·품질 경계는
+[`PROJECT_RULES.md`](../../PROJECT_RULES.md)가 각각 소유한다.
 
 ## 1. 증거 우선
 
 - 파일·경로·symbol·명령·오류 원인을 확인하기 전에 단정하지 않는다.
-- 현재 `origin/main`의 코드·테스트·설정을 과거 계획과 완료 보고보다 우선한다.
+- 현재 할당된 workspace/ref의 코드·테스트·설정을 과거 계획과 완료 보고보다 우선한다. 별도 지정이 없으면 `origin/main`을 기본 기준으로 삼는다.
 - 직접 확인한 사실과 아직 검증되지 않은 가설을 구분한다.
 - 실행하지 않은 검증을 PASS로 보고하지 않는다.
 - 도구 제한이나 접근 불가가 있으면 우회 사실과 검증 한계를 명시한다.
@@ -29,8 +31,9 @@ verify_with:
 [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)의 current development priority에서
 시작한다. 이 문서는 그 방향을 다시 서술하지 않는다.
 
-- SSOT가 명시한 active/frozen feature 상태를 따른다. Ocean Rescue와 `experiments/`처럼 동결된 표면의 신규 기능·구조 이전은 자동 재개하지 않는다.
-- 최근 커밋이나 과거 계획이 특정 기능이라는 이유로 자동 재개하지 않는다.
+- SSOT의 active/paused/frozen 상태는 개별 surface에 적용한다. active지만 기본 priority가 아닌 기능은 frozen이 아니며, 명시적으로 선택된 작업이나 직접 필요한 failure domain에서 다룰 수 있다.
+- Space Explorer는 `PAUSED_REFERENCE_ONLY`다. `experiments/` 전체를 동결로 취급하지 말고 각 surface의 SSOT 상태를 확인한다.
+- 최근 커밋이나 과거 계획이 특정 기능을 자동으로 우선순위에 올리지는 않는다.
 - 사용자가 현재 요청에서 방향을 명시적으로 변경하면 그 요청이 우선한다.
 - 치명적 운영 회귀, 데이터 손상, 보안 문제는 독립 failure domain으로 예외 처리할 수 있다.
 

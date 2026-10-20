@@ -26,17 +26,20 @@
 - 저장소가 exact pin과 deterministic build step을 선언하면 이 문서의 오래된 버전 대신 현재 선언을
   따른다. unrelated asset/gameplay fix 중 renderer, dependency, tooling을 바꾸지 않는다.
 
-## 1. 권위 순서와 언어
+## 1. 권위 범위와 언어
 
-충돌 시 다음 순서를 적용한다.
+저장소에는 모든 질문에 적용되는 단일 문서 서열이 없다. 권위는 질문의 domain에 따라 고른다.
 
-1. 사용자의 현재 요청
-2. 이 문서
-3. 이 문서가 위임한 subject owner: `PROJECT_RULES.md`, 제품 SSOT, §2 표의 owner
-4. 최신 `origin/main`의 코드·테스트·설정·runtime 증거
+- 상위 실행 환경이 지정한 workspace, branch/ref, 권한, 도구 제약은 저장소 기본값보다 우선한다. 저장소 지침은
+  실행 환경의 권한을 넓히거나 그 제약을 우회할 수 없다.
+- 사용자의 현재 요청은 원하는 결과와 작업 범위를 정한다. 단, 상위 실행 제약과 안전 경계를 넘지 않는다.
+- 이 문서는 저장소 공통 실행 경계와 owner 라우팅을 소유한다. 위임한 owner의 제품·기술 계약을 덮어쓰지 않는다.
+- §2의 subject owner는 선언된 domain 안에서 유일한 authority다. 예를 들어 제품 목표·우선순위는 제품 SSOT,
+  아키텍처·품질 경계는 `PROJECT_RULES.md`, 구체 기능 동작은 가장 가까운 feature spec이 소유한다.
+- 최신 대상 workspace의 코드·테스트·설정·runtime은 구현 증거이지 제품 의도를 정하는 규칙이 아니다. 증거와
+  활성 contract가 다르면 어느 쪽도 자동으로 다시 쓰지 말고 불일치를 조사한다.
 
-1–3은 instruction이고 4는 implementation evidence다. evidence와 활성 contract가 다르면 어느 쪽도
-자동으로 다시 쓰지 말고 불일치를 조사한다. 과거 계획, 완료 보고, WP 문서는 현재 상태의 근거가 아니다.
+과거 계획, 완료 보고, WP 문서는 현재 상태의 근거가 아니다.
 
 응답 언어와 artifact 언어는 서로 독립이다.
 
@@ -48,10 +51,11 @@
 
 | 질문 | Owner |
 |---|---|
-| 현재 제품 목표·우선순위·active/frozen feature 상태 | [`ACTIVE_PRODUCT_SCOPE.md`](docs/specs/product/ACTIVE_PRODUCT_SCOPE.md) |
+| 현재 제품 목표·우선순위·active/paused/frozen feature 상태 | [`ACTIVE_PRODUCT_SCOPE.md`](docs/specs/product/ACTIVE_PRODUCT_SCOPE.md) |
 | 아키텍처·경로·품질·보안 경계 | [`PROJECT_RULES.md`](PROJECT_RULES.md) |
 | 실행 순서·workspace lifecycle·commit·게시 절차 | [`execution.md`](agents/core/execution.md) |
-| 검증 선택·검증 계층·PASS/BLOCKED 판정 | [`verification.md`](agents/core/verification.md) |
+| 검증 범위·계층·PASS/BLOCKED 판정 | [`verification.md`](agents/core/verification.md) |
+| 검증 전략 선택과 fidelity ladder | [`RISK_DIRECTED_VERIFICATION.md`](agents/RISK_DIRECTED_VERIFICATION.md) |
 | 판단 원칙·YAGNI·변경 범위 경계 | [`principles.md`](agents/core/principles.md) |
 | 보고 형식과 PASS/BLOCKED 근거 | [`reporting.md`](agents/core/reporting.md) |
 | Git 파괴적 안전 판정 | [`git.md`](agents/workflows/git.md) |
@@ -75,10 +79,11 @@
   mutation을 승인한다고 가장하지 않는다.
 - `MODE: PLAN_ONLY` — materially uncertain한 부분을 read-only로 조사하고 추적 상태를 변경하지 않는다.
 
-`BUILD` mutation은 최신 `origin/main`에서 잘라낸 격리 workspace에서 수행하며 tracking `main`에서
-수행하지 않는다. workspace 생성·lock·재적용·정리 절차는
-[`execution.md`](agents/core/execution.md)가, 그 상태 전이가 안전한지는
-[`git.md`](agents/workflows/git.md)가 소유한다.
+상위 실행 환경이 checkout/workspace나 branch/ref를 지정하면 그것을 유일한 작업 대상으로 사용하고,
+저장소 기본 절차를 이유로 다른 workspace·branch로 전환하거나 새 branch를 만들지 않는다. 지정이 없을 때의
+저장소 기본값은 최신 `origin/main`을 기준으로 한 격리 workspace이며 tracking `main`에서 직접 작업하지
+않는다. workspace 생성·lock·재적용·정리 절차는 [`execution.md`](agents/core/execution.md)가, 그 상태
+전이가 안전한지는 [`git.md`](agents/workflows/git.md)가 소유한다.
 
 조사 범위는 쓰기 권한을 넓히지 않는다. task, lane, execution, workspace, branch/ref, commit,
 publication은 서로 다른 identity이며 task가 새 branch를 필요로 하지는 않는다. 사용자가 지정한
@@ -98,9 +103,10 @@ publication은 서로 다른 identity이며 task가 새 branch를 필요로 하�
    지시, 도구 결과가 실질적으로 바뀐 경우에만 재확인한다. 재시작, compaction, 새 호출, 단순한 의심은
    완료된 작업을 반복할 이유가 아니다. 별도 decision registry를 두지 않는다.
 5. **Closure-first scope control** — 현재 task가 만들거나 직접 대체한 상태만 정리한다. 발견된 개선은
-   근접하다는 이유만으로 현재 task에 편입되지 않는다. 선언한 fix surface 중 하나라도 열려 있으면
-   결과는 `PARTIAL`이며 남은 위치를 `file:line`으로 밝힌다.
-6. **Revision-bound evidence** — 증거는 실제 관측한 revision에 묶인다. `origin/main` SHA 이동만으로
+   근접하다는 이유만으로 현재 task에 편입되지 않는다. 선언한 필수 fix surface가 하나라도 열려 있으면
+   binary criterion 미충족이므로 `PASS`가 아니다. `reporting.md`에 따라 `BLOCKED`로 기록하고 남은 위치를
+   `file:line`으로 밝힌다.
+6. **Revision-bound evidence** — 증거는 실제 관측한 revision에 묶인다. 기본 `origin/main` 또는 지정된 base/ref의 SHA 이동만으로
    완료된 의미 작업이나 영향 없는 proof가 무효가 되지 않는다. 다음 결정이 현재 원격 상태에 실제로
    의존할 때만 권위를 다시 관측하고, 이미 충족된 결과는 가장 작은 확인 후 중복 mutation을 멈춘다.
 7. **Stop discipline** — bounded outcome, required proof, required publication/read-back, task-owned
@@ -111,16 +117,17 @@ publication은 서로 다른 identity이며 task가 새 branch를 필요로 하�
 
 1. 사용자의 bounded task에서 시작하거나, autonomous 구현이 명시적으로 요청된 경우 현재 저장소 권위에서
    도출한 bounded task 하나에서 시작한다.
-2. 최신 `origin/main` 권위를 확립하고 격리된 task-owned workspace에서 작업하며 foreign·dirty·in-flight
-   state를 보존한다.
+2. 상위 실행 환경이 지정한 revision/ref를 우선한다. 지정이 없으면 최신 `origin/main`을 기준으로 격리된
+   task-owned workspace에서 작업하며 foreign·dirty·in-flight state를 보존한다.
 3. 독립 작업은 semantic·proof·mutation·integration 경계가 실질적으로 독립일 때만 병렬 실행한다.
    파일이 다르다는 사실은 독립의 증거가 아니고, 파일이 겹친다는 사실만으로 충돌도 아니다.
 4. 의미적 신선도, proof 신선도, 게시 신선도를 분리해 판단하고 영향 없는 proof는 재사용한다.
 5. 권한이 있는 mutation은 최소 root-cause-complete 구현 → 가장 가까운 정직한 proof → task-owned 잔여
-   정리 → 게시 자격 → non-force 게시 → 정확한 remote read-back → task-owned workspace close 순서로
-   닫고 현재 세션에서 결과를 직접 보고한다.
-6. `origin/main` 이동과 다른 세션의 선행 게시는 blocker가 아니다. 최신 main에 재적용하고 영향받은
-   proof만 다시 실행한 뒤 최소한의 게시 rebinding으로 재시도한다.
+   정리 → 게시가 허용·요구된 경우의 게시 자격 확인·non-force 게시·정확한 remote read-back 순서로 닫고
+   현재 세션에서 결과를 직접 보고한다.
+6. 기본 게시 대상이 `origin/main`일 때 main 이동과 다른 세션의 선행 게시는 blocker가 아니다. 최신 main에
+   재적용하고 영향받은 proof만 다시 실행한 뒤 최소한의 게시 rebinding으로 재시도한다. 실행 환경이 다른 ref를
+   지정하면 그 ref와 환경의 허용된 절차를 따른다.
 7. retired coordination queue, reservation, relay·report transport 같은 대안 control plane을 다시
    도입하지 않는다. Git-native 실행이 반드시 처리해야 하는 실패 클래스가 실제로 증명될 때만 가장 작은
    수단만 추가한다.

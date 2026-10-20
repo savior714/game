@@ -38,7 +38,9 @@ domain: workflow
 
 ## 3. 실행 절차
 
-1. 최신 `origin/main`과 clean mutation 경계를 확인한다.
+상위 실행 환경이 workspace/ref나 권한을 지정하면 해당 경계가 우선한다. 지정이 없을 때만 최신 `origin/main`을 기본으로 삼고, 게시는 `agents/core/execution.md`의 허용 조건을 따른다.
+
+1. 할당된 workspace/ref와 clean mutation 경계를 확인한다 (별도 지정이 없으면 최신 `origin/main`).
 2. 대상 문서의 현재 역할과 링크를 조사한다.
 3. destination을 기존 archive 구조에 맞춰 결정한다.
 4. dry-run 또는 후보 diff로 이동·링크 변경 범위를 확인한다.
@@ -46,7 +48,7 @@ domain: workflow
 6. 저장소 내부의 정확한 링크만 갱신한다.
 7. 깨진 링크와 중복 파일이 없는지 확인한다.
 8. 문서 내용이 과거 상태를 현재 일정 권위처럼 표현하지 않는지 확인한다.
-9. 최신 main 이동 여부를 재확인하고 fast-forward로 게시한다.
+9. 게시가 허용된 경우 선택된 publish ref 이동 여부를 재확인하고 non-force fast-forward로 게시한다 (`origin/main`은 기본값).
 
 아카이브를 위해 제품 테스트의 수용 기준을 변경하지 않는다.
 문서의 Task 상태를 억지로 완료 처리해 archive gate를 통과시키지 않는다.

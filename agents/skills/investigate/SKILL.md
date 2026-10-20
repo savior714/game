@@ -25,7 +25,7 @@ workflow 진입점은 [`investigate.md`](../../workflows/investigate.md)다.
 
 우선순위:
 
-1. 최신 `origin/main`의 대상 파일
+1. 현재 할당된 workspace/ref의 대상 파일 (별도 지정이 없으면 최신 `origin/main`)
 2. 직접 관련 caller와 test
 3. 가장 가까운 product/technical spec
 4. 실제 browser, build, artifact 또는 connector 결과
@@ -107,7 +107,7 @@ workflow 진입점은 [`investigate.md`](../../workflows/investigate.md)다.
 
 - 원인과 영향이 충분히 확정됨
 - 원인 후보를 구분할 다음 실험이 명확함
-- 현재 main에서 결함이 재현되지 않음
+- 할당된 workspace/ref에서 결함이 재현되지 않음 (별도 지정이 없으면 최신 main)
 - 필요한 환경·입력이 없어 더 이상 증거를 얻을 수 없음
 
 결과는 간결하게 사실, 근거, 영향, 첫 수정 경계 순으로 보고한다.

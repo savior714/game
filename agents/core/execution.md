@@ -17,10 +17,15 @@ verify_with:
 [`../workflows/git.md`](../workflows/git.md), 검증은 [`verification.md`](verification.md), 보고는
 [`reporting.md`](reporting.md)를 따른다.
 
+이 문서의 branch/workspace 절차는 실행 환경이 별도 경계를 지정하지 않았을 때 적용하는 저장소 기본값이다.
+상위 session/runtime이 checkout, branch/ref, 권한을 고정하면 그 경계를 따르고 다른 workspace·branch를 새로
+만들거나 전환하지 않는다. 게시도 현재 요청과 실행 권한이 허용한 경우에만 하며, 기본 게시 대상은 `main`이다.
+
 ## 1. 작업 시작
 
 1. 사용자의 현재 요청을 확인한다.
-2. 최신 `origin/main`과 대상 파일·직접 관련 테스트를 읽는다.
+2. 지정된 workspace/ref와 대상 파일·직접 관련 테스트를 읽는다. 별도 지정이 없으면 최신 `origin/main`을
+   기본 기준으로 삼는다.
 3. `AGENTS.md`의 권위 라우팅으로 해당 failure domain의 owner를 정해 읽는다.
 4. 현재 failure domain, 재현 조건, binary criterion을 한 문장으로 고정한다.
 5. 동결 범위나 forbidden action과 충돌하지 않는지 확인한다.
@@ -73,14 +78,16 @@ assertion 없는 테스트나 일정 상태 문자열만 검증하는 테스트�
 
 ## 6. workspace와 Git lifecycle
 
-`MODE: BUILD` mutation은 tracking `main`이 아니라 최신 `origin/main`에서 만든 격리 worktree에서
-수행한다. 실제 명령과 lock·정리 절차는 이 문서가 소유하고, 그 상태 전이가 안전한지는
-[`../workflows/git.md`](../workflows/git.md)가 판정한다.
+저장소 기본 절차에서는 `MODE: BUILD` mutation을 tracking `main`이 아니라 최신 `origin/main`에서 만든
+격리 worktree에서 수행한다. 실행 환경이 이미 checkout/workspace나 branch/ref를 할당했다면 그 workspace를
+사용하고 별도 worktree를 만들지 않는다. 실제 명령과 lock·정리 절차는 이 문서가 소유하고, 그 상태 전이가
+안전한지는 [`../workflows/git.md`](../workflows/git.md)가 판정한다.
 
 ### 6.1 worktree 생성·lock
 
-- 기본 worktree root는 `/Users/seungjulee/Desktop/Dev/.worktrees/game/<task-slug>`다. 저장소가 다른
-  개발 루트에 있으면 같은 상위 디렉터리의 `.worktrees/game/<task-slug>` sibling root를 사용한다.
+- 별도 workspace가 할당되지 않은 경우 기본 root는 저장소 상위의 `.worktrees/<repo-name>/<task-slug>`다.
+  `WORKTREE_ROOT` 환경 변수로 이를 바꿀 수 있으며, 사용자별 절대 경로를 지침에 고정하지 않는다.
+- 실행 환경이 관리하는 checkout/worktree는 그대로 사용하며, 이 절차를 이유로 재생성하거나 회수하지 않는다.
 - 새 primary/reapply worktree는 생성 시점부터 lock해 현재 활성 workspace임을 Git metadata에 남긴다.
 - lock reason에는 owner/tool, task 식별자, 생성 시각, phase처럼 짧은 운영 식별자만 기록하고 PII,
   secret, prompt 원문을 넣지 않는다.
@@ -92,12 +99,16 @@ assertion 없는 테스트나 일정 상태 문자열만 검증하는 테스트�
   산출물에만 사용한다.
 
 ```bash
-git fetch origin
-git rev-parse origin/main
+TASK_SLUG=${TASK_SLUG:?set a short task slug}
+BASE_REF=${BASE_REF:-origin/main}
+BASE_REMOTE=${BASE_REMOTE:-${BASE_REF%%/*}}
+git fetch "$BASE_REMOTE"
 git status --short
 
-TASK_SLUG=${TASK_SLUG:?set a short task slug}
-WORKTREE_ROOT=${WORKTREE_ROOT:-/Users/seungjulee/Desktop/Dev/.worktrees/game}
+REPO_ROOT=$(git rev-parse --show-toplevel)
+REPO_NAME=$(basename "$REPO_ROOT")
+REPO_PARENT=$(dirname "$REPO_ROOT")
+WORKTREE_ROOT=${WORKTREE_ROOT:-"$REPO_PARENT/.worktrees/$REPO_NAME"}
 WORKTREE_DIR="$WORKTREE_ROOT/$TASK_SLUG"
 WORKTREE_CREATED_AT=$(date -u +%Y%m%dT%H%M%SZ)
 mkdir -p "$WORKTREE_ROOT"
@@ -105,7 +116,7 @@ test ! -e "$WORKTREE_DIR"
 git worktree add \
   --lock \
   --reason "owner=game-agent task=$TASK_SLUG created=$WORKTREE_CREATED_AT phase=primary" \
-  --detach "$WORKTREE_DIR" origin/main
+  --detach "$WORKTREE_DIR" "$BASE_REF"
 cd "$WORKTREE_DIR"
 ```
 
@@ -130,8 +141,9 @@ soft gate가 다른 원인의 오류를 드러내더라도 `--no-verify`로 우�
 
 ### 6.3 staging과 commit
 
-- 통합·게시 기준은 `origin/main`이며 기본 게시 방식은 main fast-forward push다.
-  PR·feature branch는 사용자가 명시적으로 요청한 경우에만 사용한다.
+- 저장소 기본 통합 기준은 `origin/main`이며 기본 게시 방식은 `main` fast-forward push다.
+  실행 환경이나 사용자가 branch/ref를 지정하면 그 대상만 사용하고, 다른 branch로 전환·생성하거나 게시하지 않는다.
+  PR·feature branch는 명시적으로 요청되거나 실행 환경에서 지정된 경우에만 사용한다.
 - 전체 선택 스테이징 대신 정확한 파일 경로를 지정한다.
 - secret, local database, IDE state, browser report, temporary artifact를 stage하지 않는다.
 - 하나의 commit에는 한 coherent failure domain만 포함한다.
@@ -166,11 +178,11 @@ type(scope): imperative summary
 
 repository connector로 직접 commit하는 경우:
 
-1. 최신 main ref와 commit tree를 읽는다.
+1. 지정된 publish ref와 commit tree를 읽는다 (저장소 기본값은 `main`).
 2. 수정 파일 blob을 만든다.
 3. 최신 tree를 base로 candidate tree와 commit을 만든다.
 4. candidate diff가 의도한 파일에만 한정되는지 확인한다.
-5. main ref를 다시 읽는다.
+5. 선택된 publish ref를 다시 읽는다.
 6. parent가 여전히 최신이면 `force=false`로 ref를 이동한다.
 7. 게시 후 remote ref와 changed files를 재확인한다.
 
@@ -178,18 +190,21 @@ repository connector로 직접 commit하는 경우:
 
 ## 7. 게시
 
+현재 요청과 실행 권한이 게시를 허용할 때만 이 절차를 수행한다. 그 외에는 검증 후 `PUBLISH: NOT_APPLICABLE`로 보고한다.
+
 1. 변경 파일과 diff scope를 확인한다.
-2. `git fetch origin`으로 최신 `origin/main`을 다시 읽는다.
-3. 원격이 이동했으면 최신 main에 재적용한다.
+2. 선택된 게시 remote를 fetch해 대상 ref의 최신 상태를 다시 읽는다 (저장소 기본값은 `origin/main`).
+3. 원격이 이동했으면 허용된 게시 대상에 재적용한다.
 4. 직접 영향 검증을 반복한다.
 5. fast-forward로만 게시를 시도한다.
 6. 게시 후 remote ref와 commit diff를 재확인한다.
 
 재적용:
 
-- base 이후 변경이 현재 경로·contract와 무관하면 최신 main에서 만든 다른 안정적인 worktree에 안전하게
-  재적용한다.
-- 재적용용 worktree도 별도 활성 workspace이므로 §6.1과 동일한 lock lifecycle을 사용한다.
+- 저장소 기본 절차에서 base 이후 변경이 현재 경로·contract와 무관하면 최신 main에서 만든 다른 안정적인
+  worktree에 안전하게 재적용한다. 실행 환경이 ref/workspace를 고정한 경우 그 절차를 우선한다.
+- 재적용용 worktree를 직접 만들 때는 §6.1과 동일한 lock lifecycle을 사용한다. 실행 환경이 소유한 workspace는
+  이 절차로 lock·unlock·제거하지 않는다.
 - 재적용 후 focused verification과 정적 진단 closure를 다시 실행한다.
 - 관련 경로·contract가 바뀌었으면 최신 상태를 읽고 현재 변경을 조정한 뒤 재검증한다.
 
@@ -200,20 +215,31 @@ test ! -e "$REAPPLY_DIR"
 git worktree add \
   --lock \
   --reason "owner=game-agent task=$TASK_SLUG created=$REAPPLY_CREATED_AT phase=reapply" \
-  --detach "$REAPPLY_DIR" origin/main
+  --detach "$REAPPLY_DIR" "$BASE_REF"
 ```
 
 - 다른 세션이 먼저 push해 non-fast-forward로 거부되면 최신 main 기준으로 반복한다.
 - force push나 merge commit으로 경쟁 변경을 덮지 않는다.
 - SHA가 이동했다는 이유나 원격 이동 자체만으로 자동 중단하거나 BLOCKED 처리하지 않는다.
 
-일반 Git CLI 게시:
+일반 Git CLI 게시 (저장소 기본값):
 
 ```bash
-git push origin HEAD:main
-git fetch origin
+if [[ -n "${PUBLISH_REF:-}" ]]; then
+  PUBLISH_REMOTE=${PUBLISH_REMOTE:-${PUBLISH_REF%%/*}}
+  PUBLISH_BRANCH=${PUBLISH_BRANCH:-${PUBLISH_REF#*/}}
+else
+  PUBLISH_REMOTE=${PUBLISH_REMOTE:-origin}
+  PUBLISH_BRANCH=${PUBLISH_BRANCH:-main}
+  PUBLISH_REF="$PUBLISH_REMOTE/$PUBLISH_BRANCH"
+fi
+git push "$PUBLISH_REMOTE" "HEAD:$PUBLISH_BRANCH"
+git fetch "$PUBLISH_REMOTE"
 git status --short
 ```
+
+상위 실행 환경이 대상 ref를 지정하면 `PUBLISH_REF=<remote>/<branch>` 또는 일치하는
+`PUBLISH_REMOTE`/`PUBLISH_BRANCH`를 전달한다. 아래의 `origin/main` 확인도 선택된 `PUBLISH_REF`로 대체한다.
 
 완료 조건:
 
@@ -221,8 +247,8 @@ git status --short
 - focused verification PASS
 - 현재 변경·수정 파일·직접 영향 범위의 LSP/typecheck/lint 오류 0
 - 요구된 저장소 정적 게이트 PASS
-- remote main fast-forward 확인
-- published commit이 `origin/main`에 존재함
+- 선택된 remote publish ref의 fast-forward 확인
+- published commit이 선택된 remote ref에 존재함
 - 대상 dirty가 없음
 - working tree 또는 connector candidate에 unrelated mutation 없음
 
@@ -231,16 +257,25 @@ reservation을 사용했다면 `DONE`을 게시한다.
 
 ### 7.1 cleanup
 
-게시에 성공하고 worktree가 clean이며 HEAD가 최신 `origin/main`에 포함되고 자신이 만든 worktree임을 확인한 뒤에만 unlock 후 plain `git worktree remove`로 회수한다. 중단된 작업, dirty worktree 또는 아직 `origin/main`에 포함되지 않은 HEAD는 unlock하거나 제거하지 않고 경로를 보존한다.
+저장소가 직접 만든 worktree에 한해, 게시가 성공하고 worktree가 clean이며 HEAD가 선택된 remote publish ref
+(기본 `origin/main`)에 포함됨을 확인한 뒤 unlock 후 plain `git worktree remove`로 회수한다. 실행 환경이 관리하는
+workspace, 중단된 작업, dirty worktree 또는 아직 publish ref에 포함되지 않은 HEAD는 unlock·제거하지 않는다.
 
 ```bash
-git -C <main-checkout> fetch origin --prune
+if [[ -n "${PUBLISH_REF:-}" ]]; then
+  PUBLISH_REMOTE=${PUBLISH_REMOTE:-${PUBLISH_REF%%/*}}
+else
+  PUBLISH_REMOTE=${PUBLISH_REMOTE:-origin}
+  PUBLISH_BRANCH=${PUBLISH_BRANCH:-main}
+  PUBLISH_REF="$PUBLISH_REMOTE/$PUBLISH_BRANCH"
+fi
+git -C <repo-checkout> fetch "$PUBLISH_REMOTE" --prune
 test -z "$(git -C "$WORKTREE_DIR" status --porcelain)"
 WORKTREE_HEAD=$(git -C "$WORKTREE_DIR" rev-parse HEAD)
-git -C <main-checkout> merge-base --is-ancestor "$WORKTREE_HEAD" origin/main
-git -C <main-checkout> worktree unlock "$WORKTREE_DIR"
-git -C <main-checkout> worktree remove "$WORKTREE_DIR"
-git -C <main-checkout> worktree prune --dry-run --verbose
+git -C <repo-checkout> merge-base --is-ancestor "$WORKTREE_HEAD" "$PUBLISH_REF"
+git -C <repo-checkout> worktree unlock "$WORKTREE_DIR"
+git -C <repo-checkout> worktree remove "$WORKTREE_DIR"
+git -C <repo-checkout> worktree prune --dry-run --verbose
 ```
 
 - unlock은 삭제 직전의 마지막 단계다. clean, published, self-owned 조건을 모두 확인하기 전에는

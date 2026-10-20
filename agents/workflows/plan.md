@@ -14,10 +14,10 @@ domain: workflow
 이 워크플로우는 사용자가 **저장소에 Blueprint 또는 plan 문서를 만들라고 명시적으로 요청한 경우에만** 적용한다.
 일반적인 “계획해줘”, “다음 작업 정리”, “이어서 진행”, 로컬 프롬프트 요청은 채팅에서 처리하며 plan 파일을 만들지 않는다.
 
-현재 제품 방향과 실행 우선순위는 [`AGENTS.md`](../../AGENTS.md),
-[`PROJECT_RULES.md`](../../PROJECT_RULES.md), 그리고 제품 방향의 단일 SSOT인
-[`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)를 따른다. 이 문서는 그 방향을
-다시 서술하지 않는다.
+실행 경계는 [`AGENTS.md`](../../AGENTS.md), 제품 목표·우선순위는
+[`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md), 아키텍처·품질 경계는
+[`PROJECT_RULES.md`](../../PROJECT_RULES.md), 구체 기능 계약은 가장 가까운 product/technical spec을 따른다.
+이 문서는 이 owner들의 내용을 복제하지 않는다.
 
 ## 1. 진입 조건
 
@@ -39,7 +39,7 @@ domain: workflow
 
 ## 2. 작성 전 확인
 
-1. 최신 `origin/main`을 확인한다.
+1. 현재 할당된 workspace/ref를 확인한다 (별도 지정이 없으면 최신 `origin/main`).
 2. `AGENTS.md`와 현재 product spec을 읽는다.
 3. 기존 Blueprint 또는 더 가까운 기술 문서가 있는지 확인한다.
 4. 계획 파일이 현재 동결 범위를 재개하지 않는지 확인한다.
@@ -100,17 +100,9 @@ Blueprint 전체 실행 중 저장소 현실과 계획이 달라지면 과거 �
 ## 6. 완료와 보고
 
 Blueprint 완료는 문서의 완료 문자열만으로 선언하지 않는다.
-최신 main의 코드, focused test, 브라우저·build·artifact 증거가 해당 완료 조건을 만족해야 한다.
+할당된 workspace/ref의 코드, focused test, 브라우저·build·artifact 증거가 해당 완료 조건을 만족해야 한다 (별도 지정이 없으면 최신 main).
 
-보고 형식은 `agents/core/reporting.md`를 따른다.
-
-```text
-RESULT: PASS | BLOCKED
-CHANGE: <한 문장>
-VERIFY: <한 문장>
-```
-
-실제 게시 시에만 `COMMIT`, 중단 시에만 `BLOCKER`와 `NEXT`를 추가한다.
+최종 결과는 [`agents/core/reporting.md`](../core/reporting.md)의 단일 형식을 따른다. 이 workflow는 별도 보고 형식을 만들지 않는다.
 
 ## 7. 금지
 

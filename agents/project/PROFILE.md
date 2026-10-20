@@ -7,7 +7,7 @@
 
 - Project name: `AidenGame`
 - Project slug: `game`
-- Canonical branch: `main`
+- Default integration branch: `main` (상위 실행 환경이 branch/ref를 지정하면 해당 ref가 우선)
 - Package/build tool: `uv`
 
 ## Commands

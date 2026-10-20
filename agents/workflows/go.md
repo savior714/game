@@ -15,7 +15,7 @@ domain: workflow
 
 ## 1. 이관 전 확인
 
-1. 최신 `origin/main`을 확인한다.
+1. 현재 할당된 workspace/ref를 확인한다 (별도 지정이 없으면 최신 `origin/main`).
 2. 이번 세션에서 실제로 게시된 커밋과 변경 파일을 확인한다.
 3. 실행한 검증과 실행하지 못한 검증을 구분한다.
 4. `AGENTS.md`, `PROJECT_RULES.md`, 현재 product spec과 충돌이 없는지 확인한다.
@@ -49,7 +49,7 @@ MEMORY는 200줄 이하로 유지하고 현재 product spec 링크와 다음 단
 
 - 제품 방향: [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md)의 current development priority를 링크로 전달한다.
 - 동결 범위: 그 SSOT가 동결로 표시한 표면의 신규 기능·구조 이전
-- 다음 실행: 최신 main에서 아직 닫히지 않은 첫 failure domain
+- 다음 실행: 할당된 workspace/ref에서 아직 닫히지 않은 첫 failure domain (별도 지정이 없으면 최신 main)
 - 완료 근거: 코드, focused test, 실제 브라우저 증거, 게시 커밋
 
 우선순위와 동결 표면을 이 문서가 다시 나열하지 않는다. 최근 커밋이나 과거 계획이 특정 기능을 이유로 다음
@@ -64,7 +64,7 @@ CURRENT DIRECTION:
 - <현재 최우선 제품 방향>
 
 VERIFIED BASELINE:
-- <이미 main에서 검증된 사실 1~5개>
+- <선택된 workspace/ref에서 이미 검증된 사실 1~5개>
 
 OPEN FAILURE DOMAIN:
 - <아직 닫히지 않은 원인 하나 또는 진단 작업>
@@ -80,7 +80,7 @@ REFERENCE:
 ```
 
 긴 과거 이력이나 전체 roadmap을 복사하지 않는다.
-다음 세션이 현재 main을 읽어야만 알 수 있는 세부 구현은 handoff에 장문으로 넣지 않는다.
+다음 세션이 현재 할당된 workspace/ref (별도 지정이 없으면 최신 main)를 읽어야만 알 수 있는 세부 구현은 handoff에 장문으로 넣지 않는다.
 
 ## 5. 검증
 

@@ -34,7 +34,7 @@ OUT_OF_SCOPE:
 - <different root cause, acceptance criterion, future capability, or unrelated finding; leave it residual/out of scope>
 
 DO:
-1. Fetch latest origin/main and confirm the current failure/expected contract plus PRIMARY_CRITERION before editing.
+1. Inspect the assigned workspace/ref and confirm the current failure/expected contract plus PRIMARY_CRITERION before editing (default to latest origin/main only when none is assigned).
 2. Select VERIFICATION_STRATEGY and PRIMARY_FIDELITY according to `agents/RISK_DIRECTED_VERIFICATION.md`; do not default to test-first merely because code will change.
 3. Preserve unrelated work.
 4. Read the closest implementation, contract, tests, shared owner, and sibling surfaces that consume the same invariant. This inventory is read-only until root-cause ownership is established.
@@ -77,7 +77,7 @@ VERIFY:
 - <higher-fidelity runtime/browser evidence only when required by the failure mode or ESCALATE_IF>
 
 STOP:
-- current main already satisfies OBJECTIVE, PRIMARY_CRITERION, and structural closure
+- the assigned base/ref already satisfies OBJECTIVE, PRIMARY_CRITERION, and structural closure
 - PRIMARY_CRITERION passes with direct-impact closure and required static checks, with no concrete reason to escalate fidelity
 - required change would alter user-visible/domain behavior, authorization, or acceptance beyond the approved objective
 - a discovered problem requires a different root cause, rollback boundary, or independent primary criterion; report it separately instead of fixing it now
@@ -96,7 +96,10 @@ SCOPE:
 REPORT:
 RESULT: PASS | BLOCKED
 CHANGE: <one line>
-VERIFY: <one line, include PRIMARY_CRITERION and fidelity used>
+PRIMARY_VERIFY: PASS | FAIL | NOT_RUN
+DIRECT_VERIFY: PASS | FAIL | NOT_RUN
+PUBLISH: PUBLISHED | NOT_APPLICABLE | BLOCKED
+DISCOVERED_FAILURE: <independent failure domain or NONE>
 COMMIT: <only when published>
 BLOCKER: <only when blocked>
 NEXT: <only when blocked>

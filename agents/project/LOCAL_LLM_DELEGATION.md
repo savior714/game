@@ -13,7 +13,7 @@
 ```text
 사용자와 다음 작업 선택
 → 필요한 최신 지식만 짧게 보정
-→ 로컬 LLM이 구현·focused 검증·main 게시
+→ 로컬 LLM이 구현·focused 검증·허용된 target에 게시 (저장소 기본값: main)
 → 실제 commit/diff/browser evidence 리뷰
 → 다음 작업 또는 단일 보완 작업 선택
 ```
@@ -27,8 +27,8 @@
 - 사용자가 범위를 수정하면 최신 지시를 즉시 반영하고, 새 지시 자체가 실행 가능하면 다시 승인받지
   않는다.
 - 사소한 모호성은 사용자의 현재 요청, 제품 SSOT인
-  [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md), 최신 `origin/main`,
-  가장 가까운 technical spec과 기존 저장소 계약으로 해소하며 확인차 되묻지 않는다.
+  [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md), 현재 할당된 workspace/ref
+  (별도 지정이 없으면 최신 `origin/main`), 가장 가까운 technical spec과 기존 저장소 계약으로 해소하며 확인차 되묻지 않는다.
 - 질문은 `verification.md` §10의 `DECISION_REQUIRED` 조건으로 제한한다. 그 외 구현 세부사항은 로컬
   작업자가 `DECISION BOUNDARY` 안에서 스스로 결정한다.
 - 발행 전에 objective가 사용자의 명시적 범위 또는 제품 SSOT의 현재 개발 방향/active feature와 정합한지
@@ -85,8 +85,9 @@ acceptance는 증상 한 건의 GREEN에 그치지 않는다.
 ## 6. 크기와 workspace 제약
 
 - 현재 package에 필요한 delta만 포함하고 최대 700줄을 넘기지 않는다.
-- source workspace는 안정적인 `/Users/seungjulee/Desktop/Dev/.worktrees/game/<task-slug>` 하나로
-  고정한다.
+- source workspace는 `execution.md` §6에 따라 선택한다. 실행 환경이 관리하는 workspace를 그대로 쓰며,
+  별도 지정이 없을 때만 저장소 상위의 `.worktrees/<repo-name>/<task-slug>` 기본 경로를 사용한다.
+  prompt에 OS별 사용자 절대 경로를 고정하지 않는다.
 - 일반 병렬 prompt에는 reservation metadata를 넣지 않는다. exclusive 자원이 실제로 필요한 경우에만
   [`../workflows/work-package-claim.md`](../workflows/work-package-claim.md)의 block을 넣는다.
 - WP 작업 프롬프트에는 계획 파일, WP 상태 문서, 상태 전용 evidence 생성 지시를 넣지 않는다.
@@ -96,7 +97,7 @@ acceptance는 증상 한 건의 GREEN에 그치지 않는다.
 
 구현 판단은 다음 순서를 따른다.
 
-1. 최신 `origin/main`의 코드·테스트·설정·vendor artifact
+1. 현재 할당된 workspace/ref의 코드·테스트·설정·vendor artifact (별도 지정이 없으면 최신 `origin/main`)
 2. 설치된 package의 source/type과 실제 browser behavior
 3. 해당 버전의 공식 문서과 release note
 4. Context7 같은 version-aware 문서 도구
@@ -134,7 +135,7 @@ PixiJS, Playwright, browser API, Canvas/WebGL, timer·event lifecycle처럼 현�
 
 프론티어 모델은 실제 증거를 확인한다.
 
-- 최신 main의 실제 diff
+- 현재 작업 ref의 실제 diff와, 게시가 허용된 경우 선택된 remote target
 - 현재 runtime에서 유효한 API인지
 - 입력 한 번의 직접 효과가 한 번인지
 - 점수·진행·저장·상태 전이 계약 유지 여부

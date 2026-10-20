@@ -88,10 +88,12 @@ def test_opencode_contract_uses_game_workspace_and_single_tool_stability() -> No
     opencode = read(OPENCODE_TOOLS)
 
     assert "한 assistant turn에 도구 하나만 호출" in opencode
-    assert "/Users/seungjulee/Desktop/Dev/.worktrees/game/<task-slug>" in opencode
-    assert "다른 저장소 경로나 OS 임시 디렉터리" in opencode
+    assert "실행 환경이 workspace나 branch/ref를 지정하면 그 대상을 그대로 사용한다." in opencode
+    assert "`execution.md` §6의 저장소 기본 worktree" in opencode
+    assert "/Users/seungjulee/Desktop/Dev/.worktrees/game" not in opencode
     assert "현재 OpenCode 세션의 schema가 authority" in opencode
-    assert "RESULT: PASS | BLOCKED" in opencode
+    assert "reporting.md" in opencode
+    assert "RESULT: PASS | BLOCKED" not in opencode
 
 
 def test_error_patterns_cover_current_repeated_failures() -> None:

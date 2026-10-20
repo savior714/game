@@ -15,8 +15,8 @@ domain: workflow
 branch 이름 규칙, linked worktree, candidate protocol, 특정 Git workflow를 강제하지 않는다.
 
 raw Git은 정상 개발 도구이며 local-agent `MODE: BUILD`에도 동일하게 적용된다. BUILD는 작업 모드이지
-Git topology 의무가 아니다. 실제 workspace 선택·commit·게시 절차는
-[`../core/execution.md`](../core/execution.md)가 소유한다.
+Git topology 의무가 아니다. 상위 실행 환경이 workspace나 branch/ref를 지정하면 그 경계를 따르며, 실제
+저장소 기본값·workspace 선택·commit·게시 절차는 [`../core/execution.md`](../core/execution.md)가 소유한다.
 
 ## 1. 판정 기준: 소유권 × 의도 × 복구 가능성
 
@@ -49,7 +49,8 @@ Git topology 의무가 아니다. 실제 workspace 선택·commit·게시 절차
 아래는 저장소 경계에 대한 명시적 결정이며 §1의 일반 기준보다 강한 제품 계약이다. 소유권·의도·복구
 가능성 판정과 무관하게 금지한다.
 
-- 공유 ref에 대한 force push와 공유 history rewrite. `origin/main`이 유일한 통합·게시 기준이다.
+- 공유 ref에 대한 force push와 공유 history rewrite. `origin/main`은 저장소의 기본 통합 기준이자 기본 게시
+  대상이며, 상위 실행 환경이 다른 허용 ref를 지정하면 그 ref를 대상으로 non-force 게시한다.
 - `--no-verify` 또는 동등한 우회로 필수 검증과 commit gate를 건너뛰는 것.
 - 소유권이 다른 dirty·in-flight·unpublished 상태를 흡수하거나, 전역 stash·reset으로 덮는 것.
 - 게시가 증명되지 않은 worktree의 unlock·제거, `git worktree remove --force`, worktree 경로의 `rm -rf`.
@@ -59,8 +60,9 @@ workspace와 전이를 선택한다.
 
 ## 5. 게시와 동시성 경계
 
-workspace 선택, staging과 commit 내용, main 이동·재적용 결정, 게시 종료와 정확한 remote read-back,
-동시성 처리는 [`../core/execution.md`](../core/execution.md)가 소유한다. 이 kernel이 추가하는 것은
+workspace 선택, staging과 commit 내용, 기본 main 이동·재적용 결정, 게시 종료와 정확한 remote read-back,
+동시성 처리는 [`../core/execution.md`](../core/execution.md)가 소유한다. 실행 환경이 다른 branch/ref를
+지정하면 해당 owner가 그 대상으로 절차를 적용한다. 이 kernel이 추가하는 것은
 파괴적 경계뿐이다. 오래된 로컬 SHA나 게시 편의를 유지하기 위한 force push, history rewrite, 보호 상태
 폐기는 진행하지 않는다.
 

@@ -66,11 +66,11 @@ verify_with:
 
 ## 4. 원격 이동
 
-작업 중 main이 이동하면 다음을 수행한다.
+작업 중 선택된 base/publish ref가 이동하면 다음을 수행한다 (`origin/main`은 저장소 기본값).
 
-1. 최신 ref와 새 commit의 changed files를 확인한다.
+1. 선택된 ref와 새 commit의 changed files를 확인한다.
 2. 현재 변경과 겹치는지 판단한다.
-3. 충돌이 없으면 최신 tree 위에 재적용한다.
+3. 충돌이 없으면 허용된 최신 tree 위에 재적용한다.
 4. 직접 영향 검증을 반복한다.
 5. fast-forward로만 게시한다.
 
@@ -82,7 +82,7 @@ verify_with:
 - 완료된 이력과 중복 정책을 제거한다.
 - 현재 objective, baseline, 단일 gap, 검증 기준만 유지한다.
 - 전체 roadmap을 local prompt에 넣지 않는다.
-- 다음 작업은 결과를 받은 뒤 최신 main에서 새로 결정한다.
+- 다음 작업은 결과를 받은 뒤 현재 할당된 workspace/ref에서 새로 결정한다 (별도 지정이 없으면 최신 main).
 
 context 제한을 함수·타입·도메인 계약 삭제로 해결하지 않는다.
 
@@ -104,7 +104,7 @@ context 제한을 함수·타입·도메인 계약 삭제로 해결하지 않는
 - 필수 입력이 없고 저장소 증거로 해소할 수 없음
 - 안전 정책 또는 권한상 수행 불가
 - 필수 검증 환경을 사용할 수 없고 대체 증거도 없음
-- 최신 main과 실제 semantic conflict
+- 선택된 최신 base/ref와 실제 semantic conflict
 - 필수 criterion을 안전하게 만족할 수 없음
 
 가능한 부분 완료와 확인된 증거를 함께 보고한다.

@@ -14,7 +14,7 @@ REGISTRY_FILES = (
 CORE_ROUTING = ROOT / ".agents/core/routing.md"
 CORE_EXECUTION = ROOT / ".agents/core/execution.md"
 ROUTING_FILES = (*REGISTRY_FILES, CORE_ROUTING)
-CURRENT_SPEC = "docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md"
+CURRENT_SPEC = "docs/specs/product/ACTIVE_PRODUCT_SCOPE.md"
 
 
 def read(path: Path) -> str:
@@ -78,20 +78,15 @@ def test_routing_precedence_matches_agents_contract() -> None:
     context_routing = read(REGISTRY_FILES[1])
     core_routing = read(CORE_ROUTING)
 
-    ordered = (
-        "사용자의 현재 요청",
-        "AGENTS.md",
-        "PROJECT_RULES.md",
-        "최신 `origin/main`의 코드·테스트·설정",
-    )
-    for document in (load_order, core_routing):
-        positions = [document.index(value) for value in ordered]
-        assert positions == sorted(positions)
+    for document in (load_order, context_routing, core_routing):
+        assert "domain별 owner" in document or "domain에 따라" in document
+        assert "ACTIVE_PRODUCT_SCOPE.md" in document
+        assert "PROJECT_RULES.md" in document
+        assert "구현 증거" in document or "implementation evidence" in document
 
-    assert (
-        "사용자의 현재 요청 → AGENTS.md → PROJECT_RULES.md와 가장 가까운 "
-        "product/technical spec → 최신 code/tests/config"
-    ) in context_routing
+    assert "사용자의 현재 요청 → AGENTS.md → PROJECT_RULES.md" not in context_routing
+    assert "CORE_QUIZ_RELIABILITY_STABILIZATION.md" in core_routing
+    assert "해당 완료 계약이나 실제 회귀를 다룰 때만" in core_routing
 
 
 def test_core_routing_declares_manual_current_tool_policy() -> None:
@@ -100,7 +95,7 @@ def test_core_routing_declares_manual_current_tool_policy() -> None:
     assert "현재 세션에 실제로 제공된 도구" in routing
     assert "현재 저장소에는 별도의 자동 route CLI" in routing
     assert "한 작업에는 하나의 failure domain" in routing
-    assert "게시 직전 `origin/main` 이동 여부" in routing
+    assert "선택된 publish ref 이동 여부" in routing
     assert "대형 파일을 전체 교체할 때는 게시 전에 원본과 후보 diff" in routing
 
 

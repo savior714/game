@@ -25,7 +25,7 @@ workflow 진입점은 [`discover.md`](../../workflows/discover.md)다.
 
 후보에는 최소 하나의 강한 증거가 필요하다.
 
-- 최신 main에서 재현되는 사용자 failure
+- 현재 할당된 workspace/ref에서 재현되는 사용자 failure (별도 지정이 없으면 최신 main)
 - 동일 책임의 두 번째 실제 사용처
 - 반복 commit에서 같은 수정이 여러 파일에 복제됨
 - listener·timer·pointer cleanup 소유권 불명확
@@ -81,7 +81,7 @@ workflow 진입점은 [`discover.md`](../../workflows/discover.md)다.
 5. 반복 변경 비용이 큰 구조적 중복
 6. 순수 코드 hygiene
 
-현재 동결 기능의 장기 개선은 우선순위 목록에 넣지 않는다.
+제품 SSOT가 frozen/paused로 표시한 surface의 장기 개선은 우선순위 목록에 넣지 않는다. Active지만 현재 기본 priority가 아닌 기능은 frozen이 아니며, 사용자가 범위를 지정한 경우에만 해당 요청의 후보로 다룬다. 각 `experiments/` surface의 상태를 개별 확인한다.
 
 ## 7. 결과와 종료
 
@@ -89,4 +89,4 @@ workflow 진입점은 [`discover.md`](../../workflows/discover.md)다.
 가장 높은 후보 하나가 실행 가능하면 탐색을 종료한다.
 
 자동으로 queue·artifact·Blueprint를 발급하지 않는다.
-사용자가 구현을 요청하면 해당 candidate만 실행하고, 완료 후 최신 main에서 다시 탐색한다.
+사용자가 구현을 요청하면 해당 candidate만 실행하고, 완료 후 할당된 workspace/ref에서 다시 탐색한다 (별도 지정이 없으면 최신 main).

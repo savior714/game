@@ -9,8 +9,11 @@ status: active
 
 ## 기본값
 
+이 절차는 저장소 기본값이다. 상위 실행 환경이 workspace나 branch/ref를 지정하면 그 경계가 우선하며,
+reservation이 별도 workspace·branch 사용을 허가하거나 요구하지 않는다.
+
 - 일반 분석·구현·focused verification은 reservation 없이 병렬 실행한다.
-- isolated worktree와 게시 전 최신 main 확인을 사용한다.
+- 저장소 기본 작업에서는 isolated worktree와 게시 전 최신 main 확인을 사용한다; 실행 환경이 다른 workspace/ref를 지정하면 `execution.md`의 그 경계를 따른다.
 - 같은 파일이라는 이유만으로 자동 예약하지 않는다.
 - push를 예약하지 않는다.
 
@@ -57,9 +60,9 @@ GitHub comment ID가 reservation 식별자다. custom claim ID·nonce·base SHA�
 
 - exclusive mutation·long run 직전에만 board를 확인한다.
 - scope 밖 exclusive 자원이 필요하면 기존 reservation을 종료하고 새 reservation을 게시한다.
-- main 이동은 일반 Git preflight로 처리한다.
-- unrelated 이동은 최신 main 위에 재적용하고 focused verification을 다시 실행한다.
-- related 이동은 최신 상태에 맞게 변경을 조정한다.
+- 선택된 publish ref 이동은 `execution.md`의 Git preflight로 처리한다 (`origin/main`은 저장소 기본값).
+- unrelated 이동은 허용된 최신 base/ref 위에 재적용하고 focused verification을 다시 실행한다.
+- related 이동은 할당된 workspace/ref의 최신 상태에 맞게 변경을 조정한다.
 
 ## 종료
 

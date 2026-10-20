@@ -28,7 +28,7 @@ workflow 진입점은 [`diagnose.md`](../../workflows/diagnose.md)다.
 
 ## 2. 재현 최소화
 
-1. 최신 main에서 증상을 재현한다.
+1. 할당된 workspace/ref에서 증상을 재현한다 (별도 지정이 없으면 최신 main).
 2. 입력, 순서, 저장 상태, viewport, 브라우저, timing 중 필요한 변수를 기록한다.
 3. 관련 없는 단계와 데이터를 제거한다.
 4. 재현률을 측정한다.

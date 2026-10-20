@@ -2,14 +2,14 @@
 
 - **상태:** ACTIVE — Game-state presentation evidence audit
 - **갱신:** 2026-08-08 KST
-- **기준:** 실행 시점의 최신 `origin/main`
+- **기본 기준:** 실행 시점의 최신 `origin/main` (실행 환경이 workspace/ref를 지정하면 해당 경계 우선)
 - **범위:** player-facing runtime/play. Asset source/schema/generator/atlas/provenance는 B 소유다.
 
 이 문서는 history/changelog가 아니라 **rolling working set**이다. 완료 이력은 Git history와 현재 코드·테스트가 소유한다.
 
 ## 1. Cut line
 
-재개하지 않는다. 구체적 회귀가 최신 main에서 재현될 때만 새 카드로 연다.
+아래 cut-line 항목은 이 runbook에서 자동으로 다시 열지 않는다. 이는 Ocean Rescue feature 전체의 동결 선언이 아니다. 명시적 사용자 요청은 별도 bounded task를 선택할 수 있으며, 요청이 없는 경우에만 같은 결함이 할당된 workspace/ref (별도 지정이 없으면 최신 main)에서 재현될 때 재개한다.
 
 - Quiz launcher / YouTube fallback 안정화
 - Ocean Rescue authored Kid / Sea Turtle / Seaweed 런타임 소비와 현재 macOS app 조립
@@ -53,7 +53,7 @@ Sea Turtle 미션의 주요 state transition(상태 전이 및 feedback presenta
 1. **Fallback acceptance evidence audit** — Canvas fallback의 complete playable rescue flow와 visible-placeholder 금지 계약 중 실제 증거 공백 하나만 승격한다.
 
 
-NEXT는 backlog 구현 지시가 아니다. 최신 main에 이미 충분한 evidence가 있으면 삭제한다.
+NEXT는 backlog 구현 지시가 아니다. 할당된 workspace/ref (별도 지정이 없으면 최신 main)에 이미 충분한 evidence가 있으면 삭제한다.
 
 ## 4. 실행 계약
 
@@ -63,23 +63,24 @@ NEXT는 backlog 구현 지시가 아니다. 최신 main에 이미 충분한 evid
 - 같은 root cause + invariant + ownership/rollback boundary만 minimum coherent change로 함께 닫는다.
 - 다른 root cause는 `DISCOVERED_FAILURE`로 분리한다.
 - Broad/full suite는 primary criterion으로 쓰지 않는다.
-- verification은 `AGENTS.md`의 Risk-Directed Verification을 따른다.
+- 필수 검증 범위와 판정은 `agents/core/verification.md`, 위험 기반 전략과 fidelity는 `agents/RISK_DIRECTED_VERIFICATION.md`를 따른다.
 
 ## 5. 로컬 LLM 출력 계약
 
 ```text
-RESULT: PASS | FAIL | BLOCKED
-FAILURE_DOMAIN: <one>
-HYPOTHESIS: <one sentence>
+RESULT: PASS | BLOCKED
+CHANGE: <short summary or 변경 없음>
 PRIMARY_VERIFY: PASS | FAIL | NOT_RUN
 DIRECT_VERIFY: PASS | FAIL | NOT_RUN
-STATIC_VERIFY: PASS | FAIL | NOT_RUN
-CHANGE: <summary | NONE>
-DISCOVERED_FAILURE: <NONE | one out-of-scope failure>
-PUBLISH: PUBLISHED | NOT_PUBLISHED | NOT_APPLICABLE
-COMMIT: <sha | NONE>
-BLOCKER: <NONE | exact blocker>
+PUBLISH: PUBLISHED | NOT_APPLICABLE | BLOCKED
+DISCOVERED_FAILURE: <independent failure domain or NONE>
+COMMIT: <only when published>
+BLOCKER: <only when blocked>
+NEXT: <only when blocked>
 ```
+
+최종 상태와 게시 의미는 `agents/core/reporting.md`가 소유한다. 검증이 실패했지만 안전하게 계속 수정할 수
+있다면 완료/중단 보고를 내기 전에 task를 계속 닫고, 필수 기준을 안전하게 충족할 수 없을 때만 `BLOCKED`로 보고한다.
 
 ## 6. 유지 규칙
 

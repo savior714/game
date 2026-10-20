@@ -103,10 +103,10 @@ def test_execution_owns_workspace_commit_and_publication_procedure() -> None:
     execution = read(EXECUTION_RULE)
     justfile = read(ROOT / "Justfile")
 
-    assert "통합·게시 기준은 `origin/main`" in execution
-    assert "main fast-forward push" in execution
+    assert "저장소 기본 통합 기준은 `origin/main`" in execution
+    assert "`main` fast-forward push" in execution
     assert "PR·feature branch는" in execution
-    assert "사용자가 명시적으로 요청한 경우에만" in execution
+    assert "실행 환경에서 지정된 경우" in execution
     assert "force push, history rewrite, `--no-verify`는 금지한다." in execution
     assert "unrelated dirty state를 보존" in execution
     assert "정확한 파일 경로" in execution

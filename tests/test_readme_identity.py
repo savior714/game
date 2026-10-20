@@ -41,7 +41,7 @@ def test_readme_includes_route_classification_table() -> None:
     assert "| 구분 | 경로 | 상태 | 용도 |" in readme
     assert (
         "| 우주 탐험 실험 페이지 | `experiments/space-explorer/index.html` | "
-        "운영중·개발 동결 |"
+        "배포된 artifact·`PAUSED_REFERENCE_ONLY` |"
     ) in readme
     assert (
         "| 과거 우주 탐험 alias | `/space-explorer.html`, "

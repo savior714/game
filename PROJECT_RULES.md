@@ -1,6 +1,6 @@
 # PROJECT_RULES.md — AidenGame 프로젝트 정책
 
-작업 절차는 `AGENTS.md`를 따른다. **현재 제품 목표·우선순위·active/frozen feature 상태의 단일 SSOT는 `docs/specs/product/ACTIVE_PRODUCT_SCOPE.md`다.** 이 문서는 제품 SSOT를 복제하지 않고 아키텍처·품질·보안 경계를 정의한다.
+작업 절차는 `AGENTS.md`를 따른다. **현재 제품 목표·우선순위·active/paused/frozen feature 상태의 단일 SSOT는 `docs/specs/product/ACTIVE_PRODUCT_SCOPE.md`다.** 이 문서는 제품 SSOT를 복제하지 않고 아키텍처·품질·보안 경계를 정의한다.
 
 ## 1. 제품 경계
 
@@ -53,15 +53,14 @@ AidenGame은 어린이를 위한 local-first 웹 기반 학습 게임 플랫폼�
 
 ## 4. 개발·배포
 
-- 통합·게시 기준 브랜치는 `origin/main`이다.
-- `main` fast-forward push가 기본이다.
-- PR·feature branch는 요청 시에만 사용한다.
-- 일반 작업은 안정적인 프로젝트 전용 경로의 isolated worktree에서 reservation 없이 병렬 실행한다.
+- 저장소 기본 통합 기준은 `origin/main`이며, 기본 게시 방식은 `main` fast-forward push다.
+- 실행 환경이 작업 workspace나 branch/ref를 지정하면 그 경계가 우선한다. 다른 branch로 전환·생성하거나 지정된 ref 밖에 게시하지 않는다.
+- 별도 지시가 없을 때 일반 작업은 안정적인 프로젝트 전용 경로의 isolated worktree에서 reservation 없이 병렬 실행한다.
 - hotspot·runtime identity·generated artifact처럼 충돌 비용이 큰 자원만 `agents/workflows/work-package-claim.md`로 예약한다.
-- IDE·LSP·package manager·브라우저·generator는 실제 작업 worktree 하나를 동일한 workspace root와 CWD로 사용한다. main checkout, worktree, symlink alias, OS 임시 경로를 혼합하지 않는다.
-- 게시 직전 최신 main에 재적용하고 focused verification과 정적 진단 closure를 다시 실행한다.
+- IDE·LSP·package manager·브라우저·generator는 실제로 선택된 작업 workspace 하나를 동일한 root와 CWD로 사용한다. main checkout, worktree, symlink alias, OS 임시 경로를 혼합하지 않는다.
+- 게시가 현재 요청과 실행 권한에 포함된 경우에만, 해당 게시 대상 최신 상태에 재적용하고 focused verification과 정적 진단 closure를 다시 실행한다.
 - generated artifact는 source of truth와 build pipeline을 통해 갱신한다.
-- 원격 상태나 필수 검증이 불명확하면 publish하지 않는다.
+- 대상 ref나 필수 검증이 불명확하면 publish하지 않는다.
 
 경로·lock·재적용·cleanup의 실제 절차는 `agents/core/execution.md` §6–§7이 소유하고, 파괴적 Git 전이의
 안전 판정은 `agents/workflows/git.md`가 소유한다. 이 문서는 두 절차 문서를 복제하지 않는다.
@@ -130,7 +129,8 @@ just ci
 | 실행 규약·권위 라우팅 | `AGENTS.md` |
 | **현재 제품 방향** | `docs/specs/product/ACTIVE_PRODUCT_SCOPE.md` |
 | 아키텍처·품질 경계 | `PROJECT_RULES.md` |
-| 검증 선택·검증 계층·PASS/BLOCKED 판정 | `agents/core/verification.md` |
+| 필수 검증 범위·계층·PASS/BLOCKED 판정 | `agents/core/verification.md` |
+| test-first/runtime-first 전략·fidelity ladder | `agents/RISK_DIRECTED_VERIFICATION.md` |
 | 보고 형식 | `agents/core/reporting.md` |
 | workspace·commit·게시 lifecycle | `agents/core/execution.md` |
 | Git 파괴적 안전 판정 | `agents/workflows/git.md` |
@@ -138,7 +138,7 @@ just ci
 | 로컬 실행 프롬프트 | `agents/project/LOCAL_LLM_DELEGATION.md` |
 | 완료된 Core Quiz reliability 계약 | `docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md` |
 | Ocean Rescue 제품/기술 계약 | 대상 기능에 가장 가까운 `docs/specs/product/`·`docs/specs/technical/` 문서 |
-| Space Explorer 동결 참고 | `docs/SPACE_EXPLORER_PLAN.md` |
+| Space Explorer `PAUSED_REFERENCE_ONLY` 참고 | `docs/SPACE_EXPLORER_PLAN.md` |
 | exclusive reservation | `agents/workflows/work-package-claim.md` + Issue #1 |
 | 요구사항·회귀 | `tests/` |
 | 배포 | `vercel.json`과 실제 entry |

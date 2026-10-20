@@ -5,7 +5,7 @@
 - **Track:** B — asset/content authoring, generation, validation, provenance, deterministic publication
 - **Audience:** local coding agents (including Qwen3.6 35B-class or smaller), frontier-model reviewer, human operator
 - **Repository:** `savior714/game`
-- **Integration branch:** `origin/main`
+- **Default integration branch:** `origin/main` (an execution environment that pins another workspace/ref takes precedence)
 
 ---
 
@@ -25,10 +25,10 @@ The expected operating loop is:
 ```text
 run one bounded B task
 → return its evidence packet
-→ frontier reviewer checks only that task and current main
+→ frontier reviewer checks only that task and the selected base/ref
 → reviewer supplies a delta-only corrective prompt if a gap exists
 → local agent closes that gap
-→ publish to origin/main
+→ publish to the allowed target (default: origin/main), if publication is authorized
 → advance to the next independent B task
 ```
 
@@ -38,13 +38,13 @@ Do not repeatedly restate the whole runbook in follow-up prompts.
 
 ## 2. Authority and precedence
 
-When instructions differ, use this order:
+Use topic-specific owners rather than a single global document order:
 
-1. the user's current request,
-2. `AGENTS.md`,
-3. `PROJECT_RULES.md` and the nearest product/technical specification,
-4. current `origin/main` code/tests/configuration,
-5. this runbook.
+- A platform/session-assigned workspace, branch/ref, tool, or permission boundary overrides repository defaults.
+- The user's current request defines the objective and scope; `AGENTS.md` owns repository execution safety and owner routing.
+- `ACTIVE_PRODUCT_SCOPE.md` owns product direction and feature status; `PROJECT_RULES.md` owns architecture/quality boundaries; the nearest feature specification owns feature behavior.
+- Code/tests/configuration in the assigned workspace are implementation evidence. When they disagree with an active contract, investigate drift instead of silently rewriting either side.
+- This runbook is subordinate to those owners and is used only when Track B is explicitly selected.
 
 Primary Ocean Rescue B-track references:
 
@@ -52,7 +52,7 @@ Primary Ocean Rescue B-track references:
 - `docs/specs/technical/AIDENGAME_OCEAN_RESCUE_DEVELOPMENT_ARCHITECTURE.md`
 - the current validators/builders under `scripts/ocean_rescue/`
 
-If this runbook disagrees with a higher-authority source, **do not repair the conflict by guessing**. Stop the current task and report the exact disagreement.
+If this runbook and a domain owner disagree, do not guess or treat the runbook as an override. Record the exact drift and follow the owner-specific resolution path.
 
 ---
 
@@ -113,22 +113,19 @@ A newly discovered independent problem is recorded under `DISCOVERED_FAILURE`; i
 ### 5.1 Refresh canonical state
 
 ```bash
-git fetch origin
+BASE_REF=${BASE_REF:-origin/main}
+BASE_REMOTE=${BASE_REMOTE:-${BASE_REF%%/*}}
+git fetch "$BASE_REMOTE"
 git status --short
-git rev-parse origin/main
+git rev-parse "$BASE_REF"
 ```
 
 Do not treat a harmless remote advance as a blocker.
 
 ### 5.2 Create an isolated locked worktree
 
-Use the repository workflow in `agents/workflows/git.md`. The normal location is:
-
-```text
-/Users/seungjulee/Desktop/Dev/.worktrees/game/<task-slug>
-```
-
-The worktree must start from the current `origin/main` and be locked with a short operational reason.
+Use the repository defaults in `agents/core/execution.md` §6 and the safety rules in `agents/workflows/git.md`.
+When no workspace/ref is assigned, create a locked worktree using the documented portable `WORKTREE_ROOT` default and start from current `origin/main`. If the execution environment already provides a workspace or pins a ref, use it as-is; do not create, switch, or clean another workspace to satisfy this runbook.
 
 ### 5.3 Preserve unrelated state
 
@@ -136,16 +133,16 @@ Never clean, reset, stash, delete, or overwrite another task's dirty files merel
 
 ### 5.4 Before publication
 
-Re-fetch `origin/main`. If another non-overlapping task advanced it, reapply onto the latest main and rerun this task's primary verifier plus its required direct-impact verification.
+Refresh the selected base/publish ref (repository default: `origin/main`). If another non-overlapping task advanced it, reapply onto the latest selected base and rerun this task's primary verifier plus required direct-impact verification. A session-pinned workspace/ref must be refreshed and reapplied only according to that execution boundary.
 
 ### 5.5 After successful publication
 
 Only when all are true:
 
-- the task is published to `origin/main`,
+- the task is published to the selected remote target (default: `origin/main`) when publication is required and authorized,
 - the worktree is clean,
-- its HEAD is contained in current `origin/main`,
-- it is the worktree created by this task,
+- its HEAD is contained in that target,
+- it is a worktree created by this task rather than an execution-environment-managed workspace,
 
 unlock it and remove it with normal `git worktree remove`. Never use `--force` or `rm -rf`.
 
@@ -224,19 +221,18 @@ STOP IF
 - the baseline failure belongs to another failure domain
 
 REPORT
-RESULT: PASS | FAIL | BLOCKED
-FAILURE_DOMAIN: <same task domain>
-CHANGE: <short exact summary or NONE>
+RESULT: PASS | BLOCKED
+CHANGE: <short exact summary or 변경 없음>
 PRIMARY_VERIFY: PASS | FAIL | NOT_RUN
 DIRECT_VERIFY: PASS | FAIL | NOT_RUN
-STATIC_VERIFY: PASS | FAIL | NOT_RUN
-PUBLISH: PUBLISHED | NOT_PUBLISHED | NOT_APPLICABLE
-COMMIT: <sha or NONE>
+PUBLISH: PUBLISHED | NOT_APPLICABLE | BLOCKED
 DISCOVERED_FAILURE: NONE | <one-line independent finding>
-BLOCKER: NONE | <why current task cannot continue>
+COMMIT: <only when published>
+BLOCKER: <only when blocked>
+NEXT: <only when blocked>
 ```
 
-Each status field must contain exactly one allowed value. Do not emit compound states such as `PASS | BLOCKED` or `PASS (with caveat)`.
+Use the canonical status/report semantics in `agents/core/reporting.md`. `RESULT` is binary (`PASS` or `BLOCKED`); a failed required criterion that cannot safely be closed is reported as `BLOCKED`, with partial changes described under `CHANGE`. Do not emit compound states such as `PASS | BLOCKED` or `PASS (with caveat)`.
 
 ---
 
@@ -247,7 +243,8 @@ When asking the frontier reviewer to inspect a local-agent result, provide this 
 ```text
 TRACK: B
 TASK: Bxx
-BASE_ORIGIN_MAIN: <sha used when task began>
+BASE_REF: <selected base ref and SHA used when task began>
+PUBLISH_REF: <selected remote target or NONE>
 PUBLISHED_COMMIT: <sha or NONE>
 FAILURE_DOMAIN: <one domain>
 HYPOTHESIS: <one sentence>
@@ -265,7 +262,7 @@ DISCOVERED_FAILURE: <NONE or independent finding>
 
 Do not ask the local model to prepare a long retrospective.
 
-The frontier reviewer should independently compare the actual commit/diff and current `origin/main` against this evidence rather than trusting the report text alone.
+The frontier reviewer should independently compare the actual commit/diff and selected base/ref (default: `origin/main`) against this evidence rather than trusting the report text alone.
 
 ---
 
@@ -322,7 +319,7 @@ This is read-only unless the user explicitly asks for documentation refresh.
 - `domains/ocean-rescue/assets/source/art-approval.json`
 - `domains/ocean-rescue/assets/generated/atlas-manifest.json`
 - current `scripts/ocean_rescue/`
-- recent B-related commits on current main
+- recent B-related commits reachable from the selected base/ref
 
 ### Run
 
@@ -341,7 +338,7 @@ uv run python scripts/ocean_rescue/validate_atlases.py \
 
 ### Pass criterion
 
-All three canonical validators pass on unchanged current `origin/main`.
+All three canonical validators pass on the unchanged selected base/ref (default: current `origin/main`).
 
 ### If one fails
 
@@ -594,7 +591,7 @@ uv run python scripts/ocean_rescue/build_render_assets_registry.py \
   --output <current canonical registry path>
 ```
 
-Before running, determine the canonical output path from current `origin/main`; do not invent a new registry destination.
+Before running, determine the canonical output path from the selected base/ref (default: current `origin/main`); do not invent a new registry destination.
 
 ### Verify
 
@@ -649,7 +646,7 @@ Rebuild the B-owned generated chain twice from identical committed inputs and pr
 
 ### Procedure
 
-1. Start from a clean worktree at current `origin/main`.
+1. Start from a clean worktree at the selected base/ref (default: current `origin/main`).
 2. Record hashes of B-owned generated outputs.
 3. Rebuild the applicable B pipeline.
 4. Confirm expected diff scope only.
@@ -899,7 +896,7 @@ A task is complete only when:
 - unrelated failures were kept separate,
 - the actual diff matches the allowed scope,
 - publication status is unambiguous,
-- if published, the commit is reachable from current `origin/main`,
+- if published, the commit is reachable from the selected remote target (default: `origin/main`),
 - the disposable worktree is safely reclaimed when eligible.
 
 `DISCOVERED_FAILURE` does not invalidate an otherwise completed task unless it is genuinely a prerequisite/blocker for the current criterion.
@@ -910,7 +907,7 @@ A task is complete only when:
 
 When the user asks for review during this runbook, send the compact evidence packet from §8 and the local agent's report. The reviewer should:
 
-1. refresh current `origin/main`,
+1. refresh the selected base/ref (default: `origin/main`),
 2. inspect the actual commit/diff,
 3. reproduce the claimed primary evidence when feasible,
 4. determine whether the original B task is genuinely closed,
@@ -925,7 +922,7 @@ The reviewer should not restart the entire B plan or reissue completed work.
 
 When this runbook is handed to a local LLM without another task-specific prompt:
 
-1. refresh and read current `origin/main`,
+1. refresh and read the selected workspace/ref (default: current `origin/main`),
 2. read `AGENTS.md` and the two B-track technical specs,
 3. execute B00 read-only baseline,
 4. identify the earliest concrete B-owned failing gate or one concrete unguarded guarantee from B13,

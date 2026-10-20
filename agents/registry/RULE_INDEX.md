@@ -13,9 +13,9 @@ last_verified: 2026-08-06
 
 | 문서 | 역할 |
 |---|---|
-| [`AGENTS.md`](../../AGENTS.md) | 권위 순서, 권위 라우팅, 실행·workspace 경계, Git-native 작업 실행 |
+| [`AGENTS.md`](../../AGENTS.md) | 권위 범위와 라우팅, 실행·workspace 경계, Git-native 작업 실행 |
 | [`PROJECT_RULES.md`](../../PROJECT_RULES.md) | 제품·아키텍처·품질 경계 |
-| [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md) | 현재 제품 방향·우선순위·active/frozen feature의 단일 SSOT |
+| [`ACTIVE_PRODUCT_SCOPE.md`](../../docs/specs/product/ACTIVE_PRODUCT_SCOPE.md) | 현재 제품 방향·우선순위·active/paused/frozen feature의 단일 SSOT |
 | [`CORE_QUIZ_RELIABILITY_STABILIZATION.md`](../../docs/specs/product/CORE_QUIZ_RELIABILITY_STABILIZATION.md) | 완료된 일반 과목 안정화 제품·검증 계약 |
 | [`MEMORY.md`](../../docs/agent-context/memory/MEMORY.md) | 새 세션 handoff와 다음 실행 경계 |
 | [`README.md`](../../README.md) | 사용자·개발자용 저장소 진입점 |
@@ -39,7 +39,8 @@ last_verified: 2026-08-06
 - [`principles.md`](../core/principles.md)
 - [`execution.md`](../core/execution.md)
 - [`routing.md`](../core/routing.md)
-- [`verification.md`](../core/verification.md)
+- [`verification.md`](../core/verification.md) — required proof, verification layers, PASS/BLOCKED
+- [`RISK_DIRECTED_VERIFICATION.md`](../RISK_DIRECTED_VERIFICATION.md) — verification strategy and fidelity ladder
 - [`reporting.md`](../core/reporting.md)
 - [`planning.md`](../core/planning.md)
 - [`security.md`](../core/security.md)

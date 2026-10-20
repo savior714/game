@@ -51,7 +51,7 @@ def test_active_completed_and_frozen_documents_are_classified_separately() -> No
     assert "PLAN_ocean_rescue_vite_esm_typescript_migration.md" in index
     assert "`STABLE_TECHNICAL_REFERENCE_NOT_CURRENT_PRIORITY`" in index
 
-    assert "## 5. 동결 기술 참고" in index
+    assert "## 5. Paused reference" in index
     assert "SPACE_EXPLORER_PLAN.md" in index
     assert "`PAUSED_REFERENCE_ONLY`" in index
 
@@ -87,7 +87,8 @@ def test_readme_uses_active_scope_and_current_feature_classification() -> None:
     assert "docs/specs/product/ACTIVE_PRODUCT_SCOPE.md" in readme
     assert "Math mastery/adaptive loop" in readme
     assert "Ocean Rescue | 운영중·active feature" in readme
-    assert "Space Explorer | 운영중 artifact·개발 동결" in readme
+    assert "Space Explorer | 배포된 artifact·`PAUSED_REFERENCE_ONLY`" in readme
+    assert "운영중 artifact·개발 동결" not in readme
     assert "Ocean Rescue toolchain" in readme
     assert "현재 개발 동결" not in readme
     assert "docs/plans/PLAN_ocean_rescue_vite_esm_typescript_migration.md" in readme

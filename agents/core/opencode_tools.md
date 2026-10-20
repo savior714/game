@@ -25,9 +25,9 @@ verify_with:
 
 ## 2. workspace
 
-- 작업 root는 최신 `origin/main`에서 만든 안정적인 game worktree다.
-- 기본 경로는 `/Users/seungjulee/Desktop/Dev/.worktrees/game/<task-slug>`다.
-- 다른 저장소 경로나 OS 임시 디렉터리를 source root로 사용하지 않는다.
+- 실행 환경이 workspace나 branch/ref를 지정하면 그 대상을 그대로 사용한다.
+- 지정이 없으면 `execution.md` §6의 저장소 기본 worktree와 `origin/main` 기준을 따른다.
+- OS별 사용자 절대 경로를 고정하지 않고, source root를 OS 임시 디렉터리로 만들지 않는다.
 - read, edit, lint, test, browser가 같은 workspace와 CWD를 사용해야 한다.
 
 ## 3. 기본 작업 순서
@@ -91,11 +91,5 @@ SSOT가 동결로 표시한 표면은 최근 커밋만 보고 자동 재개하�
 
 ## 8. 결과 보고
 
-```text
-RESULT: PASS | BLOCKED
-CHANGE: <한 문장>
-VERIFY: <한 문장>
-```
-
-실제 push 시에만 `COMMIT`, 중단 시에만 `BLOCKER / NEXT`를 추가한다.
+최종 보고는 [`reporting.md`](reporting.md)의 단일 형식을 따른다. 이 문서는 결과 형식을 복제하지 않는다.
 실행하지 않은 테스트를 PASS로 보고하지 않는다.

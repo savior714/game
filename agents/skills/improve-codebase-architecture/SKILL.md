@@ -73,10 +73,12 @@ method 수가 적다는 이유만으로 deep module은 아니다. caller가 내�
 - 두 번째 과목에서 answer/feedback/next/final/restart 책임이 반복될 때 shared module을 검토한다.
 - 과목별 question data와 pedagogy 차이를 억지로 하나의 interface에 넣지 않는다.
 
-### Ocean Rescue와 experiments
+### Surface별 우선순위와 동결 상태
 
-현재 신규 architecture migration은 동결 상태다.
-명시적 재개나 치명적 유지보수 예외가 없으면 분석 결과를 implementation으로 전환하지 않는다.
+Ocean Rescue는 active feature지만 현재 기본 개발 priority와는 구분한다. 사용자가 범위를 명시했거나
+선택한 failure domain을 닫는 데 필요한 architecture 변경은 검토할 수 있으며, 과거 migration plan만으로
+작업을 자동 재개하지 않는다. Space Explorer는 `PAUSED_REFERENCE_ONLY`; `experiments/`의 나머지 surface는
+각각의 현재 SSOT 상태를 확인한다.
 
 ## 7. migration
 

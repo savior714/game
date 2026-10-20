@@ -47,6 +47,8 @@ skill goal
 - 메인 허브: `index.html`
 - 우주 탐험 페이지: `experiments/space-explorer/index.html`
 - 우주 탐험 모듈 엔트리: `experiments/space-explorer/main.js`
+- 자석 실험실: `experiments/magnet/index.html`
+- 자석 실험실 물리 엔진: `experiments/magnet/magnet-physics.js`
 - 과목별 학습: `domains/{math,english,korean,science}/index.html`
 - 보호자 관리: `domains/reward/guardian/index.html`
 - Ocean Rescue source/package: `domains/ocean-rescue/`
@@ -66,6 +68,7 @@ skill goal
 | Guardian / Reward | `domains/reward/guardian/index.html` | 운영중 | 성장·목표·보상 관리 |
 | Ocean Rescue | `ocean-rescue/index.html` | 운영중·active feature | 학습 완료 후 reward game |
 | 우주 탐험 실험 페이지 | `experiments/space-explorer/index.html` | 운영중·개발 동결 | 실험 참고 |
+| 자석 실험실 | `experiments/magnet/index.html` | 운영중 | 자기장·자석 놀이 실험 |
 | 과거 우주 탐험 alias | `/space-explorer.html`, `experiments/space-explorer.html` | 없음 | 레거시 경로 |
 
 과거 alias나 plan의 WP 번호를 현재 runtime entry 또는 다음 작업의 근거로 사용하지 않습니다.

@@ -210,9 +210,9 @@ def test_pause_menu_from_rescue_stage_does_not_block_next_arrival(stage: str) ->
                     timeout=8000,
                 )
                 second_sequence = _active_sequence_id(page)
-                assert second_sequence is not None and second_sequence != first_sequence, (
-                    "arrival after pause -> menu must hand off to a new rescue site"
-                )
+                assert (
+                    second_sequence is not None and second_sequence != first_sequence
+                ), "arrival after pause -> menu must hand off to a new rescue site"
 
                 _wait_for_phase(page, "RESCUE_TUTORIAL")
                 rect = _canvas_rect(page)
@@ -280,9 +280,7 @@ def test_pause_menu_from_mission_success_returns_to_menu_without_recursion() -> 
 
                 _pause_to_menu(page)
                 assert (
-                    page.evaluate(
-                        "() => OceanRescue.App.isPauseActive() === false"
-                    )
+                    page.evaluate("() => OceanRescue.App.isPauseActive() === false")
                     is True
                 )
             finally:

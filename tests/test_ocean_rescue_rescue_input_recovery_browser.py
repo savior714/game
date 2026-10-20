@@ -184,7 +184,12 @@ def _assert_clean_pointer(page: Page) -> None:
 
 
 class _Session:
-    def __init__(self, base_url: str, viewport: tuple[int, int] = (1280, 720), has_touch: bool = False) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        viewport: tuple[int, int] = (1280, 720),
+        has_touch: bool = False,
+    ) -> None:
         self.base_url = base_url
         self.viewport = viewport
         self.has_touch = has_touch
@@ -228,7 +233,9 @@ class _Session:
 
     def assert_no_errors(self) -> None:
         assert self.page_errors == [], f"page errors: {self.page_errors}"
-        assert self.external_requests == [], f"unexpected external requests: {self.external_requests}"
+        assert self.external_requests == [], (
+            f"unexpected external requests: {self.external_requests}"
+        )
 
 
 @pytest.fixture(scope="module")
@@ -272,7 +279,9 @@ def test_capture_loss_mid_drag_does_not_strand_the_next_drag(server: str) -> Non
         state = _sea_turtle_state(page)
         assert state["pointerActive"] is False, state
         assert state["tracked"] is False, state
-        assert state["failures"] == 0, "the abandoned gesture must not be scored as a rope failure"
+        assert state["failures"] == 0, (
+            "the abandoned gesture must not be scored as a rope failure"
+        )
 
         _wait_for_input_unlocked(page)
         _drag_rope(page, rope)
@@ -323,8 +332,14 @@ def test_second_touch_does_not_steal_the_gesture(server: str) -> None:
         def touches(points: list[tuple[float, float]]) -> list[dict]:
             return [{"x": x, "y": y, "id": i} for i, (x, y) in enumerate(points)]
 
-        cdp.send("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": touches([(sx, sy)])})
-        cdp.send("Input.dispatchTouchEvent", {"type": "touchStart", "touchPoints": touches([(sx, sy), (ox, oy)])})
+        cdp.send(
+            "Input.dispatchTouchEvent",
+            {"type": "touchStart", "touchPoints": touches([(sx, sy)])},
+        )
+        cdp.send(
+            "Input.dispatchTouchEvent",
+            {"type": "touchStart", "touchPoints": touches([(sx, sy), (ox, oy)])},
+        )
         steps = 12
         for k in range(1, steps + 1):
             x = sx + (ex - sx) * k / steps
@@ -333,7 +348,10 @@ def test_second_touch_does_not_steal_the_gesture(server: str) -> None:
                 "Input.dispatchTouchEvent",
                 {"type": "touchMove", "touchPoints": touches([(x, y), (ox + k, oy)])},
             )
-        cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": touches([(ex, ey)])})
+        cdp.send(
+            "Input.dispatchTouchEvent",
+            {"type": "touchEnd", "touchPoints": touches([(ex, ey)])},
+        )
         page.wait_for_timeout(150)
         cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
         _wait_for_completed_ropes(page, 1)
@@ -349,7 +367,9 @@ def test_second_touch_does_not_steal_the_gesture(server: str) -> None:
 
 
 @pytest.mark.timeout(SEA_TURTLE_TIMEOUT_S)
-def test_three_failed_ropes_keep_input_live_and_the_next_rope_completes(server: str) -> None:
+def test_three_failed_ropes_keep_input_live_and_the_next_rope_completes(
+    server: str,
+) -> None:
     with _Session(server) as session:
         page = session.page
         assert page is not None
@@ -483,13 +503,17 @@ def test_pause_mid_drag_then_resume_accepts_a_fresh_drag(server: str) -> None:
         page.mouse.down()
         page.mouse.move(sx + 30, sy + 8, steps=4)
         # DOM click: a real mouse click would fight the button still held down.
-        page.evaluate("() => document.getElementById('ocean-rescue-pause-button').click()")
+        page.evaluate(
+            "() => document.getElementById('ocean-rescue-pause-button').click()"
+        )
         page.wait_for_function(
             "() => document.getElementById('ocean-rescue-pause-overlay').hidden === false",
             timeout=5000,
         )
         page.mouse.up()
-        page.evaluate("() => document.getElementById('ocean-rescue-pause-resume').click()")
+        page.evaluate(
+            "() => document.getElementById('ocean-rescue-pause-resume').click()"
+        )
         page.wait_for_function(
             "() => OceanRescue.App.isPauseActive() === false",
             timeout=10000,

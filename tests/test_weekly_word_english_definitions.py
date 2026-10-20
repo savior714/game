@@ -136,7 +136,9 @@ console.log(JSON.stringify({{
     assert payload["spelling"]["hint"] == definition
     assert payload["sentence"]["koHint"] == definition
     assert payload["kor2word"]["main"] == definition
-    assert payload["kor2word"]["hint"] is None, "main과 hint에 같은 definition이 중복되면 안 된다"
+    assert payload["kor2word"]["hint"] is None, (
+        "main과 hint에 같은 definition이 중복되면 안 된다"
+    )
     assert payload["minimalPair"]["main"] == definition
     assert payload["minimalPair"]["hint"] == "비슷한 철자에 주목하세요!"
     assert payload["storedDefinition"]["main"] == EXPECTED_DEFINITIONS["across"]

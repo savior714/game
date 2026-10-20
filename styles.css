@@ -4,7 +4,7 @@
   --panel: rgba(18, 24, 38, 0.85);
   --panel-border: rgba(255, 255, 255, 0.12);
   --text: #F8FAFC;
-  --muted: #94A3B8;
+  --muted: #CBD5E1;
   --accent: #6366F1;
   --accent-soft: rgba(99, 102, 241, 0.18);
   --neon-volt: #d7ff00;
@@ -57,13 +57,13 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  background: rgba(14, 18, 28, 0.92);
+  background: rgba(14, 18, 28, 0.94);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 20px;
-  padding: 0.6rem 1.25rem;
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+  padding: 0.65rem 1.25rem;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6);
   position: sticky;
   top: 1rem;
   z-index: 100;
@@ -149,13 +149,13 @@ body {
   display: inline-flex !important;
   align-items: center !important;
   gap: 0.35rem !important;
-  padding: 0.35rem 0.75rem !important;
+  padding: 0.38rem 0.8rem !important;
   border-radius: 999px !important;
-  background: rgba(255, 255, 255, 0.05) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  font-size: 0.78rem !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  font-size: 0.82rem !important;
   font-weight: 700 !important;
-  color: #F8FAFC !important;
+  color: #FFFFFF !important;
   white-space: nowrap !important;
   cursor: pointer !important;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
@@ -168,39 +168,44 @@ body {
 }
 
 .hud-reward-mount #reward-inventory .inventory-item.gem-item {
-  background: rgba(215, 255, 0, 0.12) !important;
-  border-color: rgba(215, 255, 0, 0.35) !important;
+  background: rgba(215, 255, 0, 0.15) !important;
+  border-color: rgba(215, 255, 0, 0.45) !important;
   color: #FFFFFF !important;
-  box-shadow: 0 0 12px rgba(215, 255, 0, 0.12) !important;
+  box-shadow: 0 0 14px rgba(215, 255, 0, 0.18) !important;
 }
 
 .hud-reward-mount #reward-inventory .inventory-item.gem-item .val {
   color: var(--neon-volt) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
 }
 
 .hud-reward-mount #reward-inventory .inventory-item.has-reward {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-color: rgba(255, 255, 255, 0.22) !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.26) !important;
   color: #FFFFFF !important;
 }
 
 .hud-reward-mount #reward-inventory .inventory-item.empty-slot {
-  background: rgba(255, 255, 255, 0.03) !important;
-  border-color: rgba(255, 255, 255, 0.06) !important;
-  color: #94A3B8 !important;
-  opacity: 0.65 !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #CBD5E1 !important;
+  opacity: 0.95 !important;
+}
+
+.hud-reward-mount #reward-inventory .inventory-item.empty-slot .val {
+  color: #CBD5E1 !important;
 }
 
 .hud-reward-mount #reward-inventory .inventory-item:hover {
   transform: translateY(-1px) !important;
-  background: rgba(255, 255, 255, 0.12) !important;
-  border-color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.16) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
 }
 
 .hud-reward-mount #reward-inventory .inventory-item.gem-item:hover {
-  background: rgba(215, 255, 0, 0.2) !important;
-  border-color: rgba(215, 255, 0, 0.6) !important;
-  box-shadow: 0 0 18px rgba(215, 255, 0, 0.25) !important;
+  background: rgba(215, 255, 0, 0.25) !important;
+  border-color: rgba(215, 255, 0, 0.7) !important;
+  box-shadow: 0 0 20px rgba(215, 255, 0, 0.3) !important;
 }
 
 .hud-reward-mount #reward-inventory .inventory-rail-right {
@@ -217,20 +222,20 @@ body {
 }
 
 .hud-reward-mount #reward-inventory .inventory-auth {
-  background: rgba(255, 255, 255, 0.06) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
   border-radius: 999px !important;
-  padding: 0.35rem 0.85rem !important;
-  font-size: 0.75rem !important;
+  padding: 0.38rem 0.85rem !important;
+  font-size: 0.8rem !important;
   font-weight: 700 !important;
-  color: #E2E8F0 !important;
+  color: #FFFFFF !important;
   cursor: pointer !important;
   transition: all 0.2s ease !important;
 }
 
 .hud-reward-mount #reward-inventory .inventory-auth:hover {
-  background: rgba(255, 255, 255, 0.14) !important;
-  border-color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.18) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
   color: #FFFFFF !important;
 }
 
@@ -241,9 +246,9 @@ body {
   width: 34px !important;
   height: 34px !important;
   border-radius: 50% !important;
-  background: rgba(255, 255, 255, 0.06) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  color: #CBD5E1 !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  color: #E2E8F0 !important;
   cursor: pointer !important;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
   padding: 0 !important;
@@ -274,16 +279,18 @@ body {
   text-transform: uppercase;
   color: #FFFFFF;
   margin: 0;
-  line-height: 1;
-  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  line-height: 1.05;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
 }
 
 .arena-subtitle {
-  font-size: 0.85rem;
-  color: var(--muted);
-  margin-top: 0.5rem;
-  font-weight: 500;
-  letter-spacing: 0.05em;
+  font-size: clamp(0.95rem, 1.8vw, 1.05rem);
+  color: #E2E8F0;
+  margin-top: 0.65rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.5;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
 /* Console 4-Grid Layout */
@@ -606,25 +613,29 @@ body {
 }
 
 .nav-list a {
-  color: var(--muted);
+  color: #E2E8F0;
   text-decoration: none;
-  padding: 0.4rem 0.85rem;
+  padding: 0.45rem 0.95rem;
   border-radius: 999px;
-  border: 1px solid transparent;
-  font-size: 0.78rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 0.84rem;
   font-weight: 700;
   transition: all 0.2s ease;
 }
 
 .nav-list a[aria-current="page"] {
-  background: rgba(215, 255, 0, 0.15);
-  border-color: rgba(215, 255, 0, 0.4);
+  background: rgba(215, 255, 0, 0.18);
+  border-color: rgba(215, 255, 0, 0.55);
   color: var(--neon-volt);
+  font-weight: 800;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
 .nav-list a:hover {
   color: #FFFFFF;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 /* Responsive Breakpoints */

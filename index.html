@@ -16,6 +16,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./shared/ui/hud.css">
   
   <style>
     /* Custom Scrollbar */
@@ -34,35 +35,32 @@
   <div class="console-wrapper">
 
     <!-- Top Console HUD Navigation Bar (Unified Header) -->
-    <header class="console-hud gsap-stagger-item">
-      <div class="hud-left-section">
-        <a href="./index.html" class="brand-badge group focus:outline-none" aria-label="AIDEN GAME LABS 메인 홈">
-          <div class="brand-dot"></div>
+    <header class="console-hud ag-hud ag-hud--full gsap-stagger-item" data-subject="hub" aria-label="메인 내비게이션">
+      <div class="ag-hud__left hud-left-section">
+        <a href="./index.html" class="ag-hud__brand brand-badge group focus:outline-none" aria-label="AIDEN GAME LABS 메인 홈">
+          <div class="ag-hud__brand-dot brand-dot"></div>
           <div>
             <div class="flex items-center gap-2">
-              <span class="text-xs font-black tracking-widest text-[#d7ff00] uppercase group-hover:text-white transition-colors drop-shadow-sm">AIDEN GAME LABS</span>
-              <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-white/15 border border-white/20 text-slate-100 font-bold">v2.0</span>
+              <span class="ag-hud__brand-word text-xs font-black tracking-widest text-[#d7ff00] uppercase group-hover:text-white transition-colors drop-shadow-sm">AIDEN GAME LABS</span>
+              <span class="ag-hud__brand-ver text-[11px] px-2.5 py-0.5 rounded-full bg-white/15 border border-white/20 text-slate-100 font-bold">v2.0</span>
             </div>
-            <h1 class="text-base font-extrabold text-white tracking-tight leading-none mt-0.5">
-              학습 게임 놀이터
-            </h1>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span class="ag-hud__subject"><span class="ag-hud__subject-emoji" aria-hidden="true">🎮</span> 학습 게임 놀이터</span>
+              <nav id="main-top-nav" aria-label="Main navigation" class="hidden sm:flex items-center">
+                <ul class="nav-list flex items-center gap-1 ml-1">
+                  <li>
+                    <a href="./index.html" aria-current="page" class="text-[11px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full bg-white/10 border border-white/10 text-white">홈</a>
+                  </li>
+                </ul>
+              </nav>
+            </div>
           </div>
         </a>
-
-        <!-- Main Top Navigation -->
-        <nav id="main-top-nav" aria-label="Main navigation">
-          <ul class="nav-list">
-            <li>
-              <a href="./index.html" aria-current="page">
-                홈
-              </a>
-            </li>
-          </ul>
-        </nav>
       </div>
-
-      <!-- Integrated Reward System & User Control Mount -->
-      <div id="reward-inventory-mount" class="hud-reward-mount" data-reward-surface="full"></div>
+      <div class="ag-hud__right">
+        <!-- Integrated Reward System & User Control Mount -->
+        <div id="reward-inventory-mount" class="ag-hud__reward hud-reward-mount" data-reward-surface="full"></div>
+      </div>
     </header>
 
     <main class="relative z-10 py-6">

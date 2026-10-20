@@ -221,7 +221,8 @@ body.se-page {
   border-radius: 18px;
 }
 
-.scene-wrap .three-layer {
+/* 3D backdrops always overlay inside their scene wrapper — never take flow space. */
+.three-layer {
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -231,11 +232,11 @@ body.se-page {
 .lesson-canvas {
   position: relative;
   z-index: 2;
+  display: block;
   width: 100%;
   max-width: 100%;
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: radial-gradient(circle at 20% 20%, #0c142e, #040711 70%);
+  background: transparent;
 }
 
 .dino-canvas {

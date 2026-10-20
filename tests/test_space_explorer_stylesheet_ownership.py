@@ -94,6 +94,19 @@ def test_minigames_stylesheet_has_required_contracts() -> None:
     for selector in required_orbit:
         assert selector in css, f"Missing orbit contract: {selector}"
 
+    # 3D backdrop layering contract — the starfield/lights overlay must be
+    # absolutely positioned inside its scene wrapper and never take flow space
+    # (regression guard for the "backdrop playing separately" bug).
+    assert re.search(r"\.three-layer\s*\{[^}]*position:\s*absolute", css), (
+        ".three-layer must be position: absolute"
+    )
+    assert re.search(r"\.three-layer\s*\{[^}]*pointer-events:\s*none", css), (
+        ".three-layer must be pointer-events: none"
+    )
+    assert re.search(r"\.three-layer\s*\{[^}]*z-index:\s*1", css), (
+        ".three-layer must sit behind the 2D canvas (z-index: 1)"
+    )
+
     # Paint mixing contracts
     required_paint = [
         ".palette",

@@ -47,7 +47,7 @@
   <main class="container lesson-layout">
     <section class="card" aria-label="공전과 일식 월식 장면">
       <h2>🌍 태양-지구-달 움직임</h2>
-      <div class="lesson-scene-wrap">
+      <div class="scene-wrap">
         <div id="orbit-eclipse-three-layer" class="three-layer" aria-hidden="true"></div>
         <canvas
           id="orbit-eclipse-canvas"
@@ -86,8 +86,13 @@
           <option value="3d">3D</option>
         </select>
       </div>
+      <div class="control-group">
+        <label for="lesson-pause-button">재생 컨트롤</label>
+        <button id="lesson-pause-button" type="button" aria-pressed="false">⏸ 일시정지</button>
+      </div>
       <p id="lesson-explanation" aria-live="polite"></p>
       <p class="mini-note">태양은 가운데에 고정되어 있고, 지구는 태양 둘레를 공전하며 스스로 자전해요. 달은 지구 둘레를 공전해요.</p>
+      <p class="mini-note">장면 위로 마우스를 움직이면 별 배경이 살짝 따라와요. ⏸ 버튼으로 언제든 멈춰서 살펴볼 수 있어요.</p>
     </aside>
   </main>
 

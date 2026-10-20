@@ -114,12 +114,20 @@ class TestRewardModalViewportAndNavigation:
                 f"Expected responsive height >= 580, got {box['height']}"
             )
 
-            # 3. Locate home link inside iframe HUD
+            # 3. Locate home link inside iframe HUD and verify no overlap with game #hud
             marble_frame = page.frame_locator(
                 ".reward-marble-modal iframe.reward-mini-game-frame"
             )
             home_link = marble_frame.locator(".home-btn")
             home_link.wait_for(state="visible", timeout=8000)
+
+            top_hud_box = marble_frame.locator(".game-top-hud").bounding_box()
+            game_hud_box = marble_frame.locator("#hud").bounding_box()
+            assert top_hud_box is not None and game_hud_box is not None
+            assert top_hud_box["y"] + top_hud_box["height"] <= game_hud_box["y"] + 2, (
+                f"Expected .game-top-hud (bottom={top_hud_box['y'] + top_hud_box['height']}) "
+                f"not to cover #hud (top={game_hud_box['y']})"
+            )
 
             # 4. Click '홈으로' in iframe
             home_link.click()

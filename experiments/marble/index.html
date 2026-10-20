@@ -32,13 +32,23 @@ html,body{margin:0;height:100%;display:grid;place-items:center;background:#ffeef
     // Inject unified console HUD top bar into document
     const style = document.createElement('style');
     style.textContent = `
+      :root { --top-hud-offset: 60px; }
       .game-top-hud { position: fixed; top: 12px; left: 12px; right: 12px; z-index: 99999; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: rgba(14, 18, 28, 0.88); border: 1px solid rgba(255, 255, 255, 0.14); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-radius: 999px; padding: 6px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6); pointer-events: auto; max-width: 680px; margin: 0 auto; }
       .game-top-hud .brand-badge { display: flex; align-items: center; gap: 8px; text-decoration: none; }
       .game-top-hud .brand-dot { width: 8px; height: 8px; border-radius: 50%; background: #d7ff00; box-shadow: 0 0 8px #d7ff00; }
       .game-top-hud .brand-title { font-size: 11px; font-weight: 900; letter-spacing: 0.08em; color: #d7ff00; text-transform: uppercase; font-family: system-ui, sans-serif; }
       .game-top-hud .brand-sub { font-size: 11px; font-weight: 700; color: #94a3b8; font-family: system-ui, sans-serif; }
-      .game-top-hud .home-btn { display: inline-flex; align-items: center; gap: 6px; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 700; color: #F8FAFC; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 999px; padding: 5px 12px; text-decoration: none; transition: all 0.2s ease; }
+      .game-top-hud .home-btn { display: inline-flex; align-items: center; gap: 6px; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 700; color: #F8FAFC; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 999px; padding: 5px 12px; text-decoration: none; transition: all 0.2s ease; white-space: nowrap; }
       .game-top-hud .home-btn:hover { background: rgba(255, 255, 255, 0.18); border-color: rgba(255, 255, 255, 0.3); color: #d7ff00; transform: translateY(-1px); }
+      #app { padding-top: calc(var(--top-hud-offset, 60px) + env(safe-area-inset-top)); }
+      #hud { padding-top: 4px; }
+      .overlay { overflow-y: auto; gap: clamp(8px, 1.8vh, 14px); padding: clamp(14px, 2.5vh, 22px); }
+      .title-blobs { margin-bottom: 0; }
+      .title { font-size: clamp(32px, 6.5vh, 52px); }
+      .subtitle { font-size: clamp(13px, 2vh, 15px); line-height: 1.45; }
+      .howto { padding: clamp(10px, 1.8vh, 15px) clamp(14px, 2.5vh, 18px); font-size: clamp(12px, 1.9vh, 14px); line-height: 1.5; }
+      .howto li { margin: 3px 0; }
+      .primary { min-height: clamp(46px, 7.2vh, 56px); font-size: clamp(17px, 2.6vh, 20px); }
     `;
     const hud = document.createElement('header');
     hud.className = 'game-top-hud';
@@ -59,6 +69,17 @@ html,body{margin:0;height:100%;display:grid;place-items:center;background:#ffeef
     `;
     if (document.head) document.head.appendChild(style);
     if (document.body) document.body.appendChild(hud);
+
+    const syncTopHudOffset = () => {
+      const rect = hud.getBoundingClientRect();
+      if (rect && rect.height > 0) {
+        const offset = Math.max(56, Math.ceil(rect.bottom + 8));
+        document.documentElement.style.setProperty('--top-hud-offset', `${offset}px`);
+      }
+      window.dispatchEvent(new Event('resize'));
+    };
+    syncTopHudOffset();
+    window.addEventListener('resize', syncTopHudOffset);
   } catch (error) {
     const target = document.getElementById('loadError');
     if (target) target.textContent = '마블 게임을 불러오지 못했습니다. 최신 브라우저에서 다시 열어 주세요.';

@@ -593,7 +593,8 @@ const RewardSystemUI = (() => {
         </div>
 
         <div id="yt-start-area" style="display:none; margin-top:10px;">
-          <div style="font-size:0.95rem; font-weight:bold; margin-bottom:10px; color:#334155;">사용할 시간을 선택해 주세요</div>
+          <div style="font-size:0.95rem; font-weight:bold; margin-bottom:10px; color:#334155;">한 번에 사용할 시간을 선택해 주세요</div>
+          <p style="margin:0 0 10px; color:#64748b; font-size:0.8rem;">10분권을 여러 개 모아 20분 또는 30분으로 한 번에 사용할 수 있어요.</p>
           <div class="yt-duration-options" style="display:flex; gap:8px; justify-content:center; margin-bottom:12px;">
             <button type="button" class="btn-duration btn-duration-10" data-duration="10" style="flex:1; padding:12px 6px; font-weight:bold; font-size:1rem; border-radius:12px; border:none;">10분</button>
             <button type="button" class="btn-duration btn-duration-20" data-duration="20" style="flex:1; padding:12px 6px; font-weight:bold; font-size:1rem; border-radius:12px; border:none;">20분</button>
@@ -794,6 +795,11 @@ const RewardSystemUI = (() => {
         </div>
 
         <div id="snack-deduct-area" style="display:none; margin-top:10px;">
+          <label for="snack-consume-quantity" style="display:block; margin-bottom:8px; color:#475569; font-size:0.9rem;">한 번에 사용할 개수</label>
+          <div style="display:flex; gap:8px; margin-bottom:10px;">
+            <input id="snack-consume-quantity" type="number" min="1" max="${Math.max(1, initialCount)}" value="1" inputmode="numeric" aria-label="한 번에 사용할 간식 개수" style="width:90px; padding:10px; border:1px solid #cbd5e1; border-radius:10px; font:inherit;">
+            <button type="button" id="snack-use-all-btn" class="btn-close" style="flex:1;">전부 선택 (${initialCount}개)</button>
+          </div>
           <button class="btn-primary" id="deduct-snack-btn" style="background:#8b5cf6; border-color:#7c3aed; width:100%;">간식 1개 사용 기록하기</button>
         </div>
 
@@ -806,7 +812,31 @@ const RewardSystemUI = (() => {
     const deductArea = overlay.querySelector('#snack-deduct-area');
     const lockArea = overlay.querySelector('#snack-lock-area');
     const deductBtn = overlay.querySelector('#deduct-snack-btn');
+    const quantityInput = overlay.querySelector('#snack-consume-quantity');
+    const useAllBtn = overlay.querySelector('#snack-use-all-btn');
     const display = overlay.querySelector('.secured-snack-display');
+
+    function updateSnackQuantity() {
+      const available = Number(RewardSystem.getState().snacks) || 0;
+      quantityInput.max = String(available);
+      useAllBtn.textContent = `전부 선택 (${available}개)`;
+      let quantity = Number(quantityInput.value);
+      if (Number.isSafeInteger(quantity) && quantity > available) {
+        quantity = available;
+        quantityInput.value = String(available);
+      }
+      const valid = Number.isSafeInteger(quantity) && quantity >= 1 && quantity <= available;
+      deductBtn.textContent = valid ? `간식 ${quantity}개 사용 기록하기` : '사용할 개수를 입력해 주세요';
+      deductBtn.disabled = !valid;
+    }
+
+    quantityInput.addEventListener('input', updateSnackQuantity);
+    useAllBtn.addEventListener('click', () => {
+      const available = Number(RewardSystem.getState().snacks) || 0;
+      quantityInput.value = available > 0 ? String(available) : '';
+      updateSnackQuantity();
+    });
+    updateSnackQuantity();
 
     lockTrigger.addEventListener('click', () => {
       const n1 = Math.floor(Math.random() * 40) + 11;
@@ -822,15 +852,15 @@ const RewardSystemUI = (() => {
     });
 
     deductBtn.addEventListener('click', () => {
+      const quantity = Math.floor(Number(quantityInput.value));
       RewardSystem.consumeInternal('snack', (newState) => {
         display.textContent = `${newState.snacks}개`;
         if (newState.snacks < 1) {
           setTimeout(() => overlay.remove(), 400);
         } else {
-          lockArea.style.display = 'block';
-          deductArea.style.display = 'none';
+          updateSnackQuantity();
         }
-      });
+      }, quantity);
     });
   }
 
@@ -922,12 +952,15 @@ const RewardSystemUI = (() => {
       <div class="reward-modal-content">
         <div class="icon-bounce" style="font-size:3.5rem; margin-bottom:15px;">${item.icon}</div>
         <h3 style="font-size:1.6rem;">${item.label}</h3>
-        <p style="color:#666; margin-top:5px;">확보 인벤토리: ${state.custom_inventory[item.id] || 0}개</p>
+        <p style="color:#666; margin-top:5px;">확보 인벤토리: <span id="custom-modal-inventory">${state.custom_inventory[item.id] || 0}</span>개</p>
         
         <div style="margin: 25px 0;">
-          <button class="btn-primary" id="deduct-custom-btn" style="background:#f43f5e; border-color:#e11d48; width:100%;">
-            1개 사용 승인하기 (권장: 부모님)
-          </button>
+          <label for="custom-consume-quantity" style="display:block; margin-bottom:8px; color:#475569; font-size:0.9rem;">한 번에 사용할 개수</label>
+          <div style="display:flex; gap:8px; margin-bottom:10px;">
+            <input id="custom-consume-quantity" type="number" min="1" max="${Math.max(1, Number(state.custom_inventory[item.id]) || 0)}" value="1" inputmode="numeric" aria-label="한 번에 사용할 ${item.label} 개수" style="width:90px; padding:10px; border:1px solid #cbd5e1; border-radius:10px; font:inherit;">
+            <button type="button" id="custom-use-all-btn" class="btn-close" style="flex:1;">전부 선택 (${state.custom_inventory[item.id] || 0}개)</button>
+          </div>
+          <button class="btn-primary" id="deduct-custom-btn" style="background:#f43f5e; border-color:#e11d48; width:100%;">1개 사용 승인하기 (권장: 부모님)</button>
         </div>
         <button class="btn-close" data-action="close-overlay">닫기</button>
       </div>
@@ -935,10 +968,38 @@ const RewardSystemUI = (() => {
     document.body.appendChild(overlay);
 
     const deductBtn = overlay.querySelector('#deduct-custom-btn');
+    const quantityInput = overlay.querySelector('#custom-consume-quantity');
+    const useAllBtn = overlay.querySelector('#custom-use-all-btn');
+    const inventoryDisplay = overlay.querySelector('#custom-modal-inventory');
+
+    function updateCustomQuantity() {
+      const available = Number(RewardSystem.getState().custom_inventory[item.id]) || 0;
+      quantityInput.max = String(available);
+      useAllBtn.textContent = `전부 선택 (${available}개)`;
+      let quantity = Number(quantityInput.value);
+      if (Number.isSafeInteger(quantity) && quantity > available) {
+        quantity = available;
+        quantityInput.value = String(available);
+      }
+      const valid = Number.isSafeInteger(quantity) && quantity >= 1 && quantity <= available;
+      deductBtn.textContent = valid ? `${quantity}개 사용 승인하기 (권장: 부모님)` : '사용할 개수를 입력해 주세요';
+      deductBtn.disabled = !valid;
+      inventoryDisplay.textContent = String(available);
+    }
+
+    quantityInput.addEventListener('input', updateCustomQuantity);
+    useAllBtn.addEventListener('click', () => {
+      const available = Number(RewardSystem.getState().custom_inventory[item.id]) || 0;
+      quantityInput.value = available > 0 ? String(available) : '';
+      updateCustomQuantity();
+    });
+    updateCustomQuantity();
+
     deductBtn.addEventListener('click', () => {
+      const quantity = Math.floor(Number(quantityInput.value));
       RewardSystem.consumeInternal(item.id, () => {
         overlay.remove();
-      });
+      }, quantity);
     });
   }
 

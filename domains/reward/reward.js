@@ -227,29 +227,39 @@ const RewardSystem = (() => {
   }
 
   // reward_ui.js에서 호출하는 내부 데이터 수정 함수
-  function consumeInternal(type, onSuccess) {
-    if (type === 'youtube' && state.youtube_minutes >= 10) {
+  function consumeInternal(type, onSuccess, amount = 1) {
+    const safeAmount = Number(amount);
+    if (!Number.isSafeInteger(safeAmount) || safeAmount < 1) return false;
+
+    if (type === 'youtube') {
+      // YouTube 시간은 세션 시작 트랜잭션에서만 차감한다.
+      if (safeAmount !== 1 || state.youtube_minutes < 10) return false;
       state.youtube_minutes -= 10;
       save();
       if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.showToast('10분 차감 완료');
-      if (onSuccess) onSuccess(state);
     } else if (type === 'snack') {
-      if (state.snacks <= 0) {
-        if (typeof RewardSystemUI !== 'undefined') alert('보유 중인 간식이 없습니다.');
-        return;
+      if (state.snacks < safeAmount) {
+        if (typeof RewardSystemUI !== 'undefined') alert('보유 중인 간식이 부족합니다.');
+        return false;
       }
-      state.snacks -= 1;
+      state.snacks -= safeAmount;
       save();
-      if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.showToast('🍪 간식 1개 사용 완료');
-      if (onSuccess) onSuccess(state);
-    } else if (type !== 'youtube' && state.custom_inventory[type] > 0) {
-      state.custom_inventory[type] -= 1;
+      if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.showToast(`🍪 간식 ${safeAmount}개 사용 완료`);
+    } else {
+      const available = Number(state.custom_inventory[type]) || 0;
+      if (available < safeAmount) {
+        if (typeof RewardSystemUI !== 'undefined') alert('보유 중인 보상이 부족합니다.');
+        return false;
+      }
+      state.custom_inventory[type] = available - safeAmount;
       save();
       const item = state.shop_items.find(i => i.id === type);
       const label = item ? item.label : '보상';
-      if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.showToast(`${label} 1개 사용 완료`);
-      if (onSuccess) onSuccess(state);
+      if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.showToast(`${label} ${safeAmount}개 사용 완료`);
     }
+
+    if (onSuccess) onSuccess(state);
+    return true;
   }
 
   function exchangeGem(targetType) {

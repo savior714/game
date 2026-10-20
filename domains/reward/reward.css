@@ -292,19 +292,128 @@
 }
 
 .dark #reward-inventory .inventory-item,
-html.dark #reward-inventory .inventory-item {
-  color: #F8FAFC;
+html.dark #reward-inventory .inventory-item,
+.hud-reward-mount #reward-inventory .inventory-item,
+.compact-hud-reward-mount #reward-inventory .inventory-item {
+  color: #FFFFFF;
+}
+
+.dark #reward-inventory .inventory-item .val,
+html.dark #reward-inventory .inventory-item .val,
+.hud-reward-mount #reward-inventory .inventory-item .val,
+.compact-hud-reward-mount #reward-inventory .inventory-item .val {
+  color: #FFFFFF;
+}
+
+.dark #reward-inventory .inventory-item .unit,
+html.dark #reward-inventory .inventory-item .unit,
+.hud-reward-mount #reward-inventory .inventory-item .unit,
+.compact-hud-reward-mount #reward-inventory .inventory-item .unit {
+  color: #E2E8F0;
+  font-weight: 600;
+}
+
+.dark #reward-inventory .inventory-item.has-reward,
+html.dark #reward-inventory .inventory-item.has-reward,
+.hud-reward-mount #reward-inventory .inventory-item.has-reward,
+.compact-hud-reward-mount #reward-inventory .inventory-item.has-reward {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.26);
+  color: #FFFFFF;
+}
+
+.dark #reward-inventory .inventory-item.has-reward .val,
+html.dark #reward-inventory .inventory-item.has-reward .val,
+.hud-reward-mount #reward-inventory .inventory-item.has-reward .val,
+.compact-hud-reward-mount #reward-inventory .inventory-item.has-reward .val {
+  color: #FFFFFF;
+}
+
+.dark #reward-inventory .inventory-item.has-reward .unit,
+html.dark #reward-inventory .inventory-item.has-reward .unit,
+.hud-reward-mount #reward-inventory .inventory-item.has-reward .unit,
+.compact-hud-reward-mount #reward-inventory .inventory-item.has-reward .unit {
+  color: #E2E8F0;
 }
 
 .dark #reward-inventory .inventory-item.empty-slot,
-html.dark #reward-inventory .inventory-item.empty-slot {
+html.dark #reward-inventory .inventory-item.empty-slot,
+.hud-reward-mount #reward-inventory .inventory-item.empty-slot,
+.compact-hud-reward-mount #reward-inventory .inventory-item.empty-slot {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.14);
   color: #CBD5E1;
   opacity: 0.95;
 }
 
 .dark #reward-inventory .inventory-item.empty-slot .val,
-html.dark #reward-inventory .inventory-item.empty-slot .val {
+html.dark #reward-inventory .inventory-item.empty-slot .val,
+.hud-reward-mount #reward-inventory .inventory-item.empty-slot .val,
+.compact-hud-reward-mount #reward-inventory .inventory-item.empty-slot .val {
   color: #CBD5E1;
+}
+
+.dark #reward-inventory .inventory-item.empty-slot .unit,
+html.dark #reward-inventory .inventory-item.empty-slot .unit,
+.hud-reward-mount #reward-inventory .inventory-item.empty-slot .unit,
+.compact-hud-reward-mount #reward-inventory .inventory-item.empty-slot .unit {
+  color: #94A3B8;
+}
+
+.dark #reward-inventory .inventory-item.inventory-auth,
+html.dark #reward-inventory .inventory-item.inventory-auth,
+.hud-reward-mount #reward-inventory .inventory-item.inventory-auth,
+.compact-hud-reward-mount #reward-inventory .inventory-item.inventory-auth {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #FFFFFF;
+}
+
+.dark #reward-inventory .inventory-item.inventory-auth .val,
+html.dark #reward-inventory .inventory-item.inventory-auth .val,
+.dark #reward-inventory #inv-auth,
+html.dark #reward-inventory #inv-auth,
+.hud-reward-mount #reward-inventory .inventory-item.inventory-auth .val,
+.hud-reward-mount #reward-inventory #inv-auth,
+.compact-hud-reward-mount #reward-inventory .inventory-item.inventory-auth .val,
+.compact-hud-reward-mount #reward-inventory #inv-auth {
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+.dark #reward-inventory .inventory-item.gem-item,
+html.dark #reward-inventory .inventory-item.gem-item,
+.hud-reward-mount #reward-inventory .inventory-item.gem-item,
+.compact-hud-reward-mount #reward-inventory .inventory-item.gem-item {
+  background: rgba(215, 255, 0, 0.15);
+  border-color: rgba(215, 255, 0, 0.45);
+  color: #FFFFFF;
+}
+
+.dark #reward-inventory .inventory-item.gem-item .val,
+html.dark #reward-inventory .inventory-item.gem-item .val,
+.hud-reward-mount #reward-inventory .inventory-item.gem-item .val,
+.compact-hud-reward-mount #reward-inventory .inventory-item.gem-item .val {
+  color: var(--neon-volt, #d7ff00);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.dark #reward-inventory .inventory-bar-icon-btn,
+html.dark #reward-inventory .inventory-bar-icon-btn,
+.hud-reward-mount #reward-inventory .inventory-bar-icon-btn,
+.compact-hud-reward-mount #reward-inventory .inventory-bar-icon-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #E2E8F0;
+}
+
+.dark #reward-inventory .inventory-bar-icon-btn:hover,
+html.dark #reward-inventory .inventory-bar-icon-btn:hover,
+.hud-reward-mount #reward-inventory .inventory-bar-icon-btn:hover,
+.compact-hud-reward-mount #reward-inventory .inventory-bar-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #FFFFFF;
 }
 
 .inventory-item .val {

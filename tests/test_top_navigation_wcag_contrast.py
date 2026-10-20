@@ -100,6 +100,31 @@ def test_styles_css_top_hud_and_header_readability() -> None:
     assert "#CBD5E1" in empty_slot_body, "empty-slot must use high-contrast #CBD5E1"
     assert "opacity: 0.95" in empty_slot_body, "empty-slot opacity must be >= 0.9"
 
+    # 5. Reward inventory active slot (.has-reward and general .val / .unit / auth)
+    assert ".hud-reward-mount #reward-inventory .inventory-item .val" in styles
+    assert "color: #FFFFFF !important;" in styles
+    assert ".hud-reward-mount #reward-inventory .inventory-item .unit" in styles
+    assert "color: #E2E8F0 !important;" in styles
+    assert ".hud-reward-mount #reward-inventory #inv-auth" in styles
+
+
+def test_reward_inventory_dark_mode_stylesheet_contrast() -> None:
+    """Ensure domains/reward/reward.css enforces high contrast across all inventory items."""
+    reward_css = (ROOT / "domains/reward/reward.css").read_text(encoding="utf-8")
+    reward_ui = (ROOT / "domains/reward/reward_ui.js").read_text(encoding="utf-8")
+
+    # 1. Dark mode rules in reward.css explicitly prevent #1a1a1a from leaking into dark mode
+    assert ".dark #reward-inventory .inventory-item .val" in reward_css
+    assert "color: #FFFFFF;" in reward_css
+    assert ".dark #reward-inventory .inventory-item .unit" in reward_css
+    assert "color: #E2E8F0;" in reward_css
+    assert ".dark #reward-inventory #inv-auth" in reward_css
+
+    # 2. Critical styles in reward_ui.js guarantee high-contrast text before external CSS loads
+    assert ".dark #reward-inventory .inventory-item .val" in reward_ui
+    assert "color: #FFFFFF !important;" in reward_ui
+    assert ".dark #reward-inventory #inv-auth" in reward_ui
+
 
 def test_index_html_top_header_accessibility_markup() -> None:
     """Ensure index.html top header elements meet accessibility and readability standards."""

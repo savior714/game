@@ -29,6 +29,7 @@ POWER_TEXTURES = POWER_DIR / "textures.js"
 POWER_PHYSICS = POWER_DIR / "electricity-physics.js"
 POWER_CSS = POWER_DIR / "electricity.css"
 SMOKE_HARNESS = ROOT / "tests" / "fixtures" / "electricity_smoke.mjs"
+WORLD_PROBE = ROOT / "tests" / "fixtures" / "electricity_world_probe.mjs"
 
 STATION_IDS = (
     "circuit",
@@ -380,6 +381,92 @@ def test_power_lab_runs_without_runtime_errors() -> None:
             f"{station} 목표에 도달하지 못했습니다"
         )
         assert data["play"]["reads"][station], f"{station} 안내 문구가 비어 있습니다"
+
+
+def test_power_lab_3d_world_stages_a_finished_castle_grade_diorama() -> None:
+    """3D 디오라마가 '완성된 그래픽'을 갖추도록 씬 구성을 고정한다.
+
+    픽셀 비교 대신 실제 씬 그래프를 수치로 관측한다: 프로시저럴 텍스처 세트,
+    PBR/셰이더/클리어코트 재질, 잔디·모래·절벽 3재질 섬 본체, 다중 조명,
+    그림자, 인스턴싱, 스프라이트 레이어가 모두 살아 있어야 한다.
+    """
+    node = _node()
+    result = subprocess.run(
+        [node, str(WORLD_PROBE)],
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=180,
+    )
+    assert result.stderr.strip() == "", f"불필요한 런타임 경고 출력: {result.stderr}"
+    data = json.loads(result.stdout.strip().splitlines()[-1])
+
+    assert data["errors"] == [], f"씬 스텝 중 예외: {data['errors']}"
+    assert data["stepped"] == 48, "네 가지 날씨 × 12프레임 스텝이 모두 실행되어야 합니다"
+
+    # 1) 프로시저럴 텍스처 세트 — 외부 이미지 없이 지표/암벽/물/구름을 합성한다
+    texture_names = {item["key"] for item in data["textures"]}
+    for required in (
+        "glow",
+        "star",
+        "cloud",
+        "smoke",
+        "sunRays",
+        "solar",
+        "wood",
+        "windowPane",
+        "stone",
+        "grass",
+        "rock",
+        "roof",
+        "cobble",
+        "waterNormal",
+        "moon",
+        "foam",
+        "sand",
+    ):
+        assert required in texture_names, f"3D 텍스처가 없습니다: {required}"
+    assert all(item["isTexture"] for item in data["textures"]), "텍스처 세트가 THREE.Texture 여야 합니다"
+    assert all(item["hasDispose"] for item in data["textures"]), "텍스처는 dispose 가능해야 합니다"
+
+    # 2) 재질 계층 — 하늘/별 셰이더, 젖은 바다 clearcoat, 대량의 PBR 재질
+    assert data["shaderMaterials"] >= 1, "대기 셰이더(하늘 그라디언트)가 있어야 합니다"
+    assert data["physicalMaterials"] >= 1, "바다 표면은 clearcoat 물리 재질이어야 합니다"
+    assert data["standardMaterials"] >= 300, "PBR 재질이 충분히 쓰여야 합니다"
+
+    # 3) 섬 본체는 잔디/모래/절벽 3개 재질 그룹을 가진 단일 지오메트리
+    assert data["multiMaterialMeshes"] >= 1
+    assert sorted(data["multiMaterialGroups"]) == [0, 1, 2]
+    assert 2.2 <= data["islandTopY"] <= 2.9, "잔디 상판이 소품과 같은 높이대에 있어야 합니다"
+
+    # 4) 조명 — 하늘광 + 키/림/보조 방향광 + 발전소·마을 포인트광
+    assert data["lights"]["hemisphere"] >= 1
+    assert data["lights"]["directional"] >= 3
+    assert data["lights"]["point"] >= 4
+
+    # 5) 그림자·인스턴싱·스프라이트 레이어
+    assert data["castShadowMeshes"] >= 120, "그림자를 만드는 주요 구조물이 있어야 합니다"
+    assert data["receiveShadowMeshes"] >= 80
+    assert data["instancedMeshes"] >= 5, "풀·관목·꽃은 인스턴싱으로 깔려야 합니다"
+
+    # 6) 표면 요철(노멀맵) — 지면·암벽·목재·기와가 빛을 받아 요철로 반응해야 한다
+    assert data["normalMappedMaterials"] >= 60, "노멀맵이 붙은 재질이 충분해야 합니다"
+    for required in ("grassNormal", "sandNormal", "rockNormal", "roofNormal", "woodNormal",
+                     "cobbleNormal", "stoneNormal"):
+        assert required in texture_names, f"노멀맵이 없습니다: {required}"
+    # 7) 지형 색 얼룩과 구역을 잇는 산책로
+    assert data["vertexColorMeshes"] >= 2, "섬 상판은 정점 색으로 얼룩을 가져야 합니다"
+    assert data["walkwayMeshes"] >= 6, "구역을 잇는 조약돌 산책로가 있어야 합니다"
+    # 8) 구역별 실내등 — 밤 디오라마에 빛 웅덩이가 생겨야 한다
+    assert data["lights"]["point"] >= 8
+    assert data["sprites"] >= 60, "구름·연기·광원 글로우 스프라이트 레이어가 필요합니다"
+    assert data["triangles"] >= 40000, "디오라마 밀도가 너무 낮습니다"
+
+    # 6) 카메라 프리셋 — 섬 전체가 화면에 들어오도록 충분히 물러나 있어야 한다
+    overview = data["cameras"]["overview"]
+    assert overview["position"][1] >= 24, "전체보기는 높은 3/4 시점이어야 합니다"
+    assert len(data["cameras"]) >= 9
+    assert data["cameraFar"] >= 600
 
 
 def test_main_hub_links_to_power_lab() -> None:

@@ -149,32 +149,55 @@ a {
   pointer-events: auto;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 11px;
+  gap: 7px;
+  padding: 5px 12px 5px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(6, 13, 28, 0.76);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  color: #eef5ff;
+  border: 1px solid rgba(160, 205, 255, 0.26);
+  background:
+    linear-gradient(160deg, rgba(20, 38, 68, 0.88), rgba(6, 13, 28, 0.8));
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  color: #eaf3ff;
   font-size: 12px;
   font-weight: 800;
+  letter-spacing: -0.01em;
   white-space: nowrap;
   cursor: pointer;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.48);
-  transition: border-color 0.16s ease, background 0.16s ease, opacity 0.2s ease;
+  box-shadow:
+    0 10px 24px -10px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  transition: border-color 0.16s ease, background 0.16s ease, opacity 0.2s ease,
+    transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.16s ease;
+}
+
+.world-tag::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 1px;
+  height: 6px;
+  background: linear-gradient(rgba(170, 220, 255, 0.7), transparent);
+  transform: translateX(-50%);
 }
 
 .world-tag:hover {
-  background: rgba(16, 30, 58, 0.92);
-  border-color: var(--volt);
+  background: linear-gradient(160deg, rgba(30, 56, 96, 0.94), rgba(10, 20, 40, 0.9));
+  border-color: rgba(215, 255, 0, 0.7);
+  transform: translate(-50%, calc(-100% - 2px));
 }
 
 .world-tag.is-focused {
   border-color: var(--volt);
-  background: rgba(24, 42, 20, 0.88);
+  background: linear-gradient(160deg, rgba(46, 66, 26, 0.92), rgba(16, 26, 14, 0.88));
   color: var(--volt);
-  box-shadow: 0 0 18px rgba(215, 255, 0, 0.36);
+  box-shadow:
+    0 0 22px -2px rgba(215, 255, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.world-tag.is-focused::after {
+  background: linear-gradient(rgba(215, 255, 0, 0.85), transparent);
 }
 
 .world-tag em {

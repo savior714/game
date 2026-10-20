@@ -52,11 +52,16 @@ export function createInput(options) {
   let slideHeldFromTouch = false;
   let sprintHeldFromPad = false;
   let slideHeldFromPad = false;
+  let steerLeftHeld = false;
+  let steerRightHeld = false;
+  let touchAxis = 0;
 
   const drag = {
     pointerId: null,
     startX: 0,
     startY: 0,
+    startTime: 0,
+    moved: false,
     active: false,
     verticalAction: null,
   };
@@ -64,6 +69,16 @@ export function createInput(options) {
   function queueJump() {
     jumpQueued = true;
     jumpBuffer = 0.16;
+  }
+
+  /** Thumb paddles: -1 left, +1 right, 0 released. */
+  function setSteer(direction, pressed) {
+    if (direction < 0) {
+      steerLeftHeld = Boolean(pressed);
+    } else {
+      steerRightHeld = Boolean(pressed);
+    }
+    touchAxis = (steerRightHeld ? 1 : 0) - (steerLeftHeld ? 1 : 0);
   }
 
   function updateHeldKeys() {
@@ -150,7 +165,10 @@ export function createInput(options) {
     const width = Math.max(320, window.innerWidth);
     const dx = event.clientX - drag.startX;
     const dy = event.clientY - drag.startY;
-    if (!drag.verticalAction && Math.abs(dy) > 42 && Math.abs(dy) > Math.abs(dx) * 1.35) {
+    if (Math.abs(dx) > 14 || Math.abs(dy) > 14) {
+      drag.moved = true;
+    }
+    if (!drag.verticalAction && Math.abs(dy) > 38 && Math.abs(dy) > Math.abs(dx) * 1.2) {
       if (dy < 0) {
         queueJump();
         drag.verticalAction = "jump";
@@ -164,8 +182,9 @@ export function createInput(options) {
       pointerAxis = 0;
       return;
     }
-    const deadZone = 0.1;
-    const raw = Math.max(-1, Math.min(1, dx / (width * 0.16)));
+    // A wider throw and a smaller dead zone: small hands tend to drag short.
+    const deadZone = 0.06;
+    const raw = Math.max(-1, Math.min(1, dx / (width * 0.2)));
     pointerAxis = Math.abs(raw) < deadZone ? 0 : Math.sign(raw) * ((Math.abs(raw) - deadZone) / (1 - deadZone));
   }
 
@@ -179,9 +198,15 @@ export function createInput(options) {
     drag.pointerId = event.pointerId;
     drag.startX = event.clientX;
     drag.startY = event.clientY;
+    drag.startTime = performance.now();
+    drag.moved = false;
     drag.active = true;
     drag.verticalAction = null;
-    canvas.setPointerCapture?.(event.pointerId);
+    try {
+      canvas.setPointerCapture?.(event.pointerId);
+    } catch {
+      // Capture is an optimisation, not a requirement for steering.
+    }
     event.preventDefault();
   }
 
@@ -196,6 +221,12 @@ export function createInput(options) {
   function onPointerUp(event) {
     if (drag.pointerId !== event.pointerId) {
       return;
+    }
+    // A quick tap is a jump. Kids tap the screen long before they discover a
+    // swipe, so the most-used verb gets the simplest gesture.
+    const quick = performance.now() - drag.startTime < 320 && !drag.moved;
+    if (quick && drag.verticalAction === null) {
+      queueJump();
     }
     releaseDrag(event.pointerId);
     event.preventDefault();
@@ -220,7 +251,11 @@ export function createInput(options) {
       event.preventDefault();
       event.stopPropagation();
       element.classList.add("is-pressed");
-      element.setPointerCapture?.(event.pointerId);
+      try {
+        element.setPointerCapture?.(event.pointerId);
+      } catch {
+        // Some tablets reject capture for a pointer that already lifted.
+      }
       action(true);
     };
     const up = (event) => {
@@ -267,6 +302,8 @@ export function createInput(options) {
     sprintHeldFromTouch = pressed;
     updateHeldKeys();
   }, { hold: true });
+  bindPress(buttons.steerLeft, (pressed) => setSteer(-1, pressed), { hold: true });
+  bindPress(buttons.steerRight, (pressed) => setSteer(1, pressed), { hold: true });
   bindPress(buttons.bait, () => {
     baitQueued = true;
   });
@@ -331,6 +368,9 @@ export function createInput(options) {
   }
 
   function getAxis() {
+    if (touchAxis !== 0) {
+      return touchAxis;
+    }
     if (Math.abs(pointerAxis) > 0.02) {
       return pointerAxis;
     }
@@ -378,6 +418,9 @@ export function createInput(options) {
         pointerAxis = 0;
         keyboardAxis = 0;
         padAxis = 0;
+        steerLeftHeld = false;
+        steerRightHeld = false;
+        touchAxis = 0;
       }
     },
     destroy() {

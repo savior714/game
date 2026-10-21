@@ -826,41 +826,6 @@ body {
   margin-top: 1rem;
 }
 
-/* Nav Link Overrides */
-.nav-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  gap: 0.5rem;
-}
-
-.nav-list a {
-  color: #E2E8F0;
-  text-decoration: none;
-  padding: 0.45rem 0.95rem;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
-  font-size: 0.84rem;
-  font-weight: 700;
-  transition: all 0.2s ease;
-}
-
-.nav-list a[aria-current="page"] {
-  background: rgba(215, 255, 0, 0.18);
-  border-color: rgba(215, 255, 0, 0.55);
-  color: var(--neon-volt);
-  font-weight: 800;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
-}
-
-.nav-list a:hover {
-  color: #FFFFFF;
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
 /* Responsive Breakpoints */
 @media (max-width: 1024px) {
   .dream-grid {

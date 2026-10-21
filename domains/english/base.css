@@ -66,34 +66,6 @@ body {
   z-index: 20;
 }
 
-.compact-hud-home {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.35rem 0.7rem;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: #F8FAFC;
-  font-size: 0.85rem;
-  font-weight: 700;
-  text-decoration: none;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.compact-hud-home:hover {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: var(--neon-volt, #d7ff00);
-}
-
-.compact-hud-home .home-arrow {
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
 .study-compact-hud .compact-hud-title,
 .study-compact-hud h1 {
   font-size: 1.05rem !important;
@@ -117,36 +89,6 @@ body {
   justify-content: flex-end;
   flex-shrink: 0;
   min-height: 36px;
-}
-
-/* ── Unified Console HUD (Top Bar as .home-link) ─────────── */
-.home-link.console-hud {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem 1.25rem;
-  margin-bottom: 1.5rem;
-  background: rgba(14, 18, 28, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 9999px;
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  text-decoration: none;
-  color: #F8FAFC;
-  position: relative;
-  z-index: 50;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  cursor: pointer;
-}
-
-.home-link.console-hud:hover {
-  background: rgba(18, 24, 38, 0.95);
-  border-color: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 12px 35px -8px rgba(0, 0, 0, 0.7), 0 0 20px rgba(215, 255, 0, 0.15);
-  transform: translateY(-1px);
 }
 
 .hud-left-section {
@@ -198,27 +140,6 @@ body {
   font-weight: 700;
   color: #CBD5E1;
   margin-top: 1px;
-}
-
-.home-pill-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.45rem 0.9rem;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: #F8FAFC;
-  font-size: 0.8125rem;
-  font-weight: 700;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  white-space: nowrap;
-}
-
-.home-link.console-hud:hover .home-pill-btn {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: var(--neon-volt);
 }
 
 /* Ambient Glow Mesh */
@@ -286,30 +207,6 @@ body {
   border-radius: 50%;
   background: var(--subject-accent);
   box-shadow: 0 0 10px var(--subject-accent);
-}
-
-.home-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: #E2E8F0;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 9999px;
-  text-decoration: none;
-  padding: 6px 14px;
-  min-height: 36px;
-  transition: all 0.2s ease;
-}
-
-.home-link:hover {
-  color: #FFFFFF;
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.35);
-  transform: translateY(-1px);
 }
 
 .hud-reward-mount {
@@ -903,8 +800,8 @@ h1 {
   100%{ opacity:0; transform:translateY(80vh) rotate(360deg); }
 }
 
-.home-link:focus,
-.home-link:focus-visible {
+.ag-hud__brand:focus,
+.ag-hud__brand:focus-visible {
   outline-style: solid !important;
   outline-width: 3px !important;
   outline-color: var(--primary) !important;
@@ -912,7 +809,7 @@ h1 {
   transition: none !important;
 }
 
-.home-link:focus-visible,
+.ag-hud__brand:focus-visible,
 #stats-btn:focus-visible,
 .answer-btn:focus-visible,
 #next-btn:focus-visible,

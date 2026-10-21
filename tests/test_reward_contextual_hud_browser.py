@@ -111,13 +111,18 @@ def test_learning_screens_compact_hud_browser(
         assert hud.is_visible(), f"{path} must show header.study-compact-hud"
 
         # Verify title
-        title_el = hud.locator("h1.compact-hud-title")
+        title_el = hud.locator("h1")
         assert title_el.inner_text().strip() == expected_title
 
-        # Verify home button
-        home_btn = hud.locator("a.compact-hud-home")
+        # Verify the single home control (brand link) and its visible affordance
+        home_btn = hud.locator("a.ag-hud__brand")
         assert home_btn.is_visible()
-        assert home_btn.get_attribute("data-action") == "go-home"
+        assert hud.locator("a.ag-hud__brand .ag-hud__brand-home").count() == 1, (
+            f"{path} must show exactly one brand home affordance"
+        )
+        assert hud.locator("a.compact-hud-home").count() == 0, (
+            f"{path} must not keep a standalone home button"
+        )
 
         # Verify gem-only reward surface
         gem_link = hud.locator("a.compact-gem-link")
@@ -211,9 +216,9 @@ def test_compact_hud_responsive_single_line_browser(
             f"At viewport {viewport_name} ({width}x{height}), HUD height was {box['height']}px (expected <= 55px)"
         )
 
-        home = hud.locator("a.compact-hud-home")
+        home = hud.locator("a.ag-hud__brand")
         gem = hud.locator("a.compact-gem-link")
-        title = hud.locator("h1.compact-hud-title")
+        title = hud.locator("h1")
 
         home_box = home.bounding_box()
         gem_box = gem.bounding_box()

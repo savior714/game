@@ -120,7 +120,9 @@ def test_power_lab_has_no_external_runtime_dependency() -> None:
 def test_power_lab_links_back_to_main_hub() -> None:
     html = _html()
     assert 'href="../../index.html"' in html
-    assert "홈으로" in html
+    # 홈 이동은 brand(워드마크) 링크가 단일 컨트롤로 담당한다
+    assert 'class="lab-brand"' in html
+    assert "brand-home" in html
     assert 'target="_top"' in html
 
 

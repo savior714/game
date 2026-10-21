@@ -82,7 +82,6 @@ listeners.click[0]({ target: target('add-weekly-word'), stopPropagation() {} });
 listeners.click[0]({ target: target('add-custom-reward'), stopPropagation() {} });
 listeners.click[0]({ target: target('show-growth'), stopPropagation() {} });
 listeners.click[0]({ target: target('delete-weekly-word', { dataset: { idx: '3' } }), stopPropagation() {} });
-listeners.click[0]({ target: target('go-home'), stopPropagation() {} });
 
 console.log(JSON.stringify({ listeners, calls, href: window.location.href }));
 """
@@ -118,7 +117,6 @@ def test_guardian_delegated_handlers_bind_once_and_dispatch_once(
     assert result["calls"]["custom"] == 1
     assert result["calls"]["growth"] == 1
     assert result["calls"]["deleteWeekly"] == [3]
-    assert result["href"] == "../../../index.html"
 
 
 def test_guardian_event_script_is_syntax_valid() -> None:

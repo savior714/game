@@ -85,8 +85,10 @@ def test_styles_css_top_hud_and_header_readability() -> None:
     assert ".arena-subtitle" in styles
     assert "color: #E2E8F0;" in styles
 
-    # 3. Top navigation links have high contrast and explicit padding
-    assert ".nav-list a" in styles
+    # 3. Brand home affordance is styled by the shared HUD sheet
+    hud_css = (ROOT / "shared/ui/hud.css").read_text(encoding="utf-8")
+    assert ".ag-hud__brand-home" in hud_css
+    assert ".ag-hud__brand-home svg" in hud_css
     assert "color: #E2E8F0;" in styles
 
     # 4. Reward inventory empty slot readability (no unreadable dark text or low opacity)
@@ -134,11 +136,10 @@ def test_index_html_top_header_accessibility_markup() -> None:
     assert "text-[11px]" in html or "text-xs" in html
     assert "text-slate-100" in html or "text-white" in html
 
-    # 2. Main title in HUD is clearly visible
-    assert (
-        "text-base font-extrabold text-white" in html
-        or "text-sm font-extrabold text-white" in html
-    )
+    # 2. HUD brand wordmark is clearly visible
+    assert "ag-hud__brand-word" in html
+    assert "text-[#d7ff00]" in html
+    assert "ag-hud__brand-home" in html
 
     # 3. Arena header badge has clear contrast
     assert "INTERACTIVE LEARNING PLAYGROUND" in html

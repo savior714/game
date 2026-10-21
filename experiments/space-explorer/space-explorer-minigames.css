@@ -96,6 +96,26 @@ body.se-page {
   box-shadow: 0 0 10px var(--neon-volt);
 }
 
+.brand-home {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  color: #CBD5E1;
+  transition: color 0.18s ease;
+}
+
+.brand-home svg {
+  width: 15px;
+  height: 15px;
+}
+
+.brand-badge:hover .brand-home {
+  color: var(--neon-volt);
+}
+
 .brand-subline {
   display: flex;
   align-items: center;

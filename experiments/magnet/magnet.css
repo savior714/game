@@ -151,6 +151,26 @@ a {
   box-shadow: 0 0 14px rgba(215, 255, 0, 0.9), 0 0 4px rgba(215, 255, 0, 0.9);
 }
 
+.brand-home {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--muted);
+  transition: color 0.18s ease;
+}
+
+.brand-home svg {
+  width: 15px;
+  height: 15px;
+}
+
+.lab-brand:hover .brand-home {
+  color: var(--volt);
+}
+
 .brand-text {
   display: flex;
   flex-direction: column;
@@ -198,8 +218,7 @@ a {
   white-space: nowrap;
 }
 
-.top-button,
-.top-home {
+.top-button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -216,8 +235,7 @@ a {
   transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
 }
 
-.top-button:hover,
-.top-home:hover {
+.top-button:hover {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(215, 255, 0, 0.45);
   transform: translateY(-1px);
@@ -227,8 +245,7 @@ a {
   color: var(--dim);
 }
 
-.top-button svg,
-.top-home svg {
+.top-button svg {
   width: 15px;
   height: 15px;
   flex: none;
@@ -1751,8 +1768,7 @@ a {
     gap: 6px;
   }
 
-  .top-button,
-  .top-home {
+  .top-button {
     min-height: 32px;
     padding: 5px 10px;
     font-size: 11px;

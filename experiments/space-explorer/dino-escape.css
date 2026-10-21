@@ -368,25 +368,23 @@ kbd {
   line-height: 1.2;
 }
 
-.hud-divider {
-  width: 1px;
-  height: 21px;
-  background: var(--line);
-}
-
-.home-link {
+.hud-brand-home {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
   color: var(--muted);
-  font-size: 11px;
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
   transition: color 0.18s ease;
 }
 
-.home-link:hover {
+.hud-brand-home svg {
+  width: 15px;
+  height: 15px;
+}
+
+.hud-brand:hover .hud-brand-home {
   color: var(--volt);
 }
 
@@ -3100,14 +3098,6 @@ input[type="range"]::-moz-range-thumb {
     font-size: 9px;
   }
 
-  .home-link span {
-    display: none;
-  }
-
-  .hud-divider {
-    display: none;
-  }
-
   .hud-icon-btn {
     width: 34px;
     height: 34px;
@@ -3443,7 +3433,6 @@ body.is-touch .panel-hint {
 
   /* Hover styles latch on touch screens and leave buttons looking stuck. */
   .hud-icon-btn:hover,
-  .home-link:hover,
   .btn:hover,
   .touch-btn:hover {
     transform: none;

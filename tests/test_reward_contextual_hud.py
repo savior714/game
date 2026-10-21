@@ -57,36 +57,42 @@ def test_core_learning_screens_have_compact_hud_and_gem_only_mount() -> None:
         assert file_path.exists(), f"File {rel_path} does not exist"
         html = file_path.read_text(encoding="utf-8")
 
-        # 1. Must contain study-compact-hud header
-        assert (
-            'class="study-compact-hud"' in html or "class='study-compact-hud'" in html
-        ), f'{rel_path} must have <header class="study-compact-hud">'
+        # 1. Must contain the unified compact HUD header
+        assert "study-compact-hud" in html, (
+            f"{rel_path} must use the compact HUD header"
+        )
+        assert "ag-hud--compact" in html, f"{rel_path} must use .ag-hud--compact"
 
-        # 2. Must NOT contain the old large brand badge / console-hud
+        # 2. Must NOT contain the old large brand badge / console-hud wrapper
         assert 'class="home-link console-hud"' not in html, (
             f'{rel_path} still has old <a class="home-link console-hud"> wrapper'
         )
         # Extract header content
-        header_start = html.find('<header class="study-compact-hud"')
+        header_start = html.find("<header")
         header_end = html.find("</header>", header_start)
         assert header_start != -1 and header_end != -1, f"{rel_path} header not found"
         header_html = html[header_start:header_end]
 
-        assert "brand-badge" not in header_html, f"{rel_path} header has brand-badge"
-        assert "v2.0" not in header_html, f"{rel_path} header has v2.0"
-        assert "AIDEN GAME LABS" not in header_html, (
-            f"{rel_path} should not display large 'AIDEN GAME LABS' branding in learning HUD"
+        # 3. Home control is the brand link only (no separate home button)
+        assert "ag-hud__brand" in header_html, (
+            f"{rel_path} header must own the brand link"
+        )
+        assert "ag-hud__brand-home" in header_html, (
+            f"{rel_path} brand must carry the visible home affordance"
+        )
+        assert "ag-hud__home" not in header_html, (
+            f"{rel_path} header must not keep a standalone home button"
+        )
+        assert "compact-hud-home" not in html, (
+            f"{rel_path} must not keep a standalone .compact-hud-home button"
+        )
+        assert 'data-action="go-home"' not in html, (
+            f"{rel_path} must not keep a dead go-home action"
         )
 
-        # 3. Must have compact home button with data-action="go-home"
-        assert 'data-action="go-home"' in html, (
-            f'{rel_path} compact home link must have data-action="go-home"'
-        )
-        assert "compact-hud-home" in html, f"{rel_path} must use .compact-hud-home"
-
-        # 4. Must have the exact subject title in h1.compact-hud-title
-        assert f'<h1 class="compact-hud-title">{subject_title}</h1>' in html, (
-            f'{rel_path} must have <h1 class="compact-hud-title">{subject_title}</h1>'
+        # 4. Must expose the subject title for assistive tech
+        assert subject_title in header_html, (
+            f"{rel_path} header must expose the subject title {subject_title}"
         )
 
         # 5. Must have gem-only reward mount

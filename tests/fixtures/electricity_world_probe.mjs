@@ -74,6 +74,9 @@ const report = {
   normalMappedMaterials: 0,
   vertexColorMeshes: 0,
   walkwayMeshes: 0,
+  oceanShaderWaves: false,
+  contactShadowInstances: 0,
+  worldSurfaceMaterials: 0,
   multiMaterialGroups: [],
   islandTopY: null,
   fogType: scene.fog ? scene.fog.constructor.name : "",
@@ -84,6 +87,7 @@ const report = {
 };
 
 const seenMaterials = new Set();
+const surfSeen = new Set();
 scene.traverse((obj) => {
   if (obj.isLight) {
     if (obj.isHemisphereLight) report.lights.hemisphere += 1;
@@ -92,6 +96,10 @@ scene.traverse((obj) => {
   }
   if (obj.isSprite) report.sprites += 1;
   if (obj.isInstancedMesh) report.instancedMeshes += 1;
+  // 접지 그림자 인스턴스(알파 블롭)는 별도로 센다
+  if (obj.isInstancedMesh && obj.name === "contact-shadows") {
+    report.contactShadowInstances = obj.count;
+  }
   if (!obj.isMesh || !obj.geometry) return;
 
   report.meshes += 1;
@@ -107,6 +115,15 @@ scene.traverse((obj) => {
 
   const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
   materials.forEach((mat) => {
+    if (mat && mat.userData && mat.userData.surfaceUniforms) {
+      if (!surfSeen.has(mat.uuid)) {
+        surfSeen.add(mat.uuid);
+        report.worldSurfaceMaterials += 1;
+      }
+    }
+    if (mat && mat.onBeforeCompile && mat.isMeshPhysicalMaterial && mat.clearcoat > 0) {
+      report.oceanShaderWaves = true;
+    }
     if (!mat || seenMaterials.has(mat.uuid)) return;
     seenMaterials.add(mat.uuid);
     if (mat.normalMap) report.normalMappedMaterials += 1;

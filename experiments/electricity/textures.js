@@ -149,6 +149,104 @@ function seededRandom(seed) {
   };
 }
 
+/**
+ * 타일링 가능한 값 노이즈 fBm.
+ * 바다 거품·풀밭 얼룩처럼 "같은 결이 반복되어도 경계가 보이지 않아야" 하는
+ * 셰이더 유니폼용 텍스처를 만든다. 모든 옥타브를 정수 주기로 감아 두므로
+ * 이음매 없이 반복된다.
+ */
+function tileableFbm(size, { octaves = 4, seed = 1, baseFrequency = 4, persistence = 0.5 } = {}) {
+  const rand = seededRandom(seed);
+  const out = new Float32Array(size * size);
+  const lattice = (freq) => {
+    const grid = new Float32Array(freq * freq);
+    for (let i = 0; i < grid.length; i += 1) grid[i] = rand();
+    return grid;
+  };
+  let amplitude = 1;
+  let total = 0;
+  for (let o = 0; o < octaves; o += 1) {
+    const freq = baseFrequency * 2 ** o;
+    const grid = lattice(freq);
+    for (let y = 0; y < size; y += 1) {
+      const gy = (y / size) * freq;
+      const y0 = Math.floor(gy) % freq;
+      const y1 = (y0 + 1) % freq;
+      const ty = gy - Math.floor(gy);
+      const sy = ty * ty * (3 - 2 * ty);
+      for (let x = 0; x < size; x += 1) {
+        const gx = (x / size) * freq;
+        const x0 = Math.floor(gx) % freq;
+        const x1 = (x0 + 1) % freq;
+        const tx = gx - Math.floor(gx);
+        const sx = tx * tx * (3 - 2 * tx);
+        const a = grid[y0 * freq + x0];
+        const b = grid[y0 * freq + x1];
+        const c = grid[y1 * freq + x0];
+        const d = grid[y1 * freq + x1];
+        const top = a + (b - a) * sx;
+        const bottom = c + (d - c) * sx;
+        out[y * size + x] += (top + (bottom - top) * sy) * amplitude;
+      }
+    }
+    total += amplitude;
+    amplitude *= persistence;
+  }
+  for (let i = 0; i < out.length; i += 1) out[i] /= total;
+  return out;
+}
+
+/**
+ * 알베도 휘도에서 러프니스 맵을 뽑는다.
+ * 지면·암벽·목재가 같은 광택으로 번들거리지 않고, 마른 흙은 거칠고
+ * 다져진 길은 살짝 윤이 나는 식으로 표면 반사가 나뉜다.
+ */
+function roughnessFromCanvas(source, { min = 0.62, max = 0.98, repeat = null, variation = 0.1 } = {}) {
+  const fallback = () => {
+    const tex = new THREE.DataTexture(
+      new Uint8Array([Math.round(((min + max) * 0.5) * 255), 0, 0, 255]),
+      1,
+      1,
+      THREE.RGBAFormat
+    );
+    tex.needsUpdate = true;
+    return tex;
+  };
+  if (!source || typeof source.getContext !== "function") return fallback();
+  const size = source.width;
+  const height = source.height || size;
+  let src;
+  try {
+    src = source.getContext("2d").getImageData(0, 0, size, height);
+  } catch {
+    return fallback();
+  }
+  const surface = makeCanvas(size, height);
+  if (!surface) return fallback();
+  const { el, ctx } = surface;
+  const out = ctx.createImageData(size, height);
+  const span = Math.max(0.0001, max - min);
+  for (let i = 0; i < size * height; i += 1) {
+    const luma =
+      (src.data[i * 4] * 0.299 + src.data[i * 4 + 1] * 0.587 + src.data[i * 4 + 2] * 0.114) / 255;
+    const value = THREE.MathUtils.clamp(min + (1 - luma) * span + (0.5 - luma) * variation, min, max);
+    const v = Math.round(value * 255);
+    out.data[i * 4] = v;
+    out.data[i * 4 + 1] = v;
+    out.data[i * 4 + 2] = v;
+    out.data[i * 4 + 3] = 255;
+  }
+  ctx.putImageData(out, 0, 0);
+  const tex = new THREE.CanvasTexture(el);
+  tex.colorSpace = THREE.NoColorSpace;
+  if (repeat) {
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(repeat[0], repeat[1]);
+  }
+  return tex;
+}
+
 export function createIslandTextures() {
   const created = [];
   const track = (tex) => {
@@ -482,42 +580,49 @@ export function createIslandTextures() {
     (ctx) => {
       const rand = seededRandom(2024);
       const bg = ctx.createLinearGradient(0, 0, 256, 256);
-      bg.addColorStop(0, "#2a7448");
-      bg.addColorStop(0.5, "#1f6540");
-      bg.addColorStop(1, "#245f3d");
+      bg.addColorStop(0, "#276b43");
+      bg.addColorStop(0.5, "#24603e");
+      bg.addColorStop(1, "#275f3f");
       ctx.fillStyle = bg;
       ctx.fillRect(0, 0, 256, 256);
-      for (let i = 0; i < 260; i += 1) {
+      // 큰 얼룩은 월드 스케일 셰이더가 담당한다 — 여기서는 이음매가 안 보이는
+      // 작은 결만 남겨, 타일이 격자처럼 반복되는 느낌을 없앤다.
+      for (let i = 0; i < 520; i += 1) {
         const x = rand() * 256;
         const y = rand() * 256;
-        const r = 6 + rand() * 22;
+        const r = 3 + rand() * 9;
         const dark = rand() > 0.5;
         const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-        g.addColorStop(0, dark ? "rgba(11, 52, 33, 0.3)" : "rgba(78, 160, 96, 0.26)");
+        g.addColorStop(0, dark ? "rgba(16, 58, 38, 0.16)" : "rgba(96, 170, 108, 0.13)");
         g.addColorStop(1, "rgba(0, 0, 0, 0)");
         ctx.fillStyle = g;
         ctx.beginPath();
         ctx.arc(x, y, r, 0, Math.PI * 2);
         ctx.fill();
       }
-      // 풀잎 결
-      for (let i = 0; i < 900; i += 1) {
+      // 풀잎 결 — 타일 경계를 넘어가도 이어지도록 가장자리를 넘겨 그린다
+      for (let i = 0; i < 1500; i += 1) {
         const x = rand() * 256;
         const y = rand() * 256;
         const len = 2 + rand() * 5;
-        const lean = (rand() - 0.5) * 2;
+        const lean = (rand() - 0.5) * 2.4;
         ctx.strokeStyle = rand() > 0.55
-          ? `rgba(126, 196, 118, ${0.1 + rand() * 0.24})`
-          : `rgba(12, 48, 30, ${0.1 + rand() * 0.24})`;
+          ? `rgba(126, 196, 118, ${0.08 + rand() * 0.2})`
+          : `rgba(12, 48, 30, ${0.08 + rand() * 0.2})`;
         ctx.lineWidth = 0.8;
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x + lean, y - len);
-        ctx.stroke();
+        for (const [ox, oy] of [[0, 0], [0, 256], [256, 0], [256, 256]]) {
+          const px = x + ox;
+          const py = y + oy;
+          if (px > 280 || py > 280) continue;
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.lineTo(px + lean, py - len);
+          ctx.stroke();
+        }
       }
     },
     [29, 95, 70, 255],
-    { repeat: [10, 10] }
+    { repeat: [2.1, 2.1] }
   );
   track(grassTex.texture);
 
@@ -566,7 +671,7 @@ export function createIslandTextures() {
       }
     },
     [222, 200, 158, 255],
-    { repeat: [9, 9] }
+    { repeat: [3.0, 3.0] }
   );
   track(sandTex.texture);
 
@@ -781,9 +886,141 @@ export function createIslandTextures() {
   );
   track(foamTex.texture);
 
-  // 17. 알베도에서 뽑아낸 노멀맵 — 조명을 받을 때 표면에 실제 요철이 생긴다
-  const grassNormal = normalFromCanvas(grassTex.canvas, 1.5, [10, 10]);
-  const sandNormal = normalFromCanvas(sandTex.canvas, 1.9, [9, 9]);
+  // 17. 셰이더용 타일링 노이즈 — 바다 잔물결·거품·지면 얼룩의 공통 결
+  const noiseFbm = tileableFbm(128, { octaves: 4, seed: 3301, baseFrequency: 3, persistence: 0.55 });
+  let noiseTex;
+  const noiseSurface = makeCanvas(128, 128);
+  if (noiseSurface) {
+    const { el, ctx } = noiseSurface;
+    try {
+      const img = ctx.createImageData(128, 128);
+      for (let i = 0; i < noiseFbm.length; i += 1) {
+        const v = Math.round(THREE.MathUtils.clamp(noiseFbm[i], 0, 1) * 255);
+        img.data[i * 4] = v;
+        img.data[i * 4 + 1] = v;
+        img.data[i * 4 + 2] = v;
+        img.data[i * 4 + 3] = 255;
+      }
+      ctx.putImageData(img, 0, 0);
+      noiseTex = new THREE.CanvasTexture(el);
+      noiseTex.colorSpace = THREE.NoColorSpace;
+      noiseTex.wrapS = THREE.RepeatWrapping;
+      noiseTex.wrapT = THREE.RepeatWrapping;
+    } catch {
+      noiseTex = solidDataTexture(128, 128, 128);
+    }
+  } else {
+    noiseTex = solidDataTexture(128, 128, 128);
+  }
+  track(noiseTex);
+
+  // 18. 볼륨감 있는 구름 스프라이트 — fBm 침식으로 가장자리를 부드럽게 깎는다
+  const cloudSoftTex = canvasTexture(
+    512,
+    256,
+    (ctx) => {
+      const W = 512;
+      const H = 256;
+      const img = ctx.createImageData(W, H);
+      const sample = (arr, size, u, v) => {
+        const x = ((u % 1) + 1) % 1;
+        const y = ((v % 1) + 1) % 1;
+        const fx = x * size;
+        const fy = y * size;
+        const x0 = Math.floor(fx) % size;
+        const y0 = Math.floor(fy) % size;
+        const x1 = (x0 + 1) % size;
+        const y1 = (y0 + 1) % size;
+        const tx = fx - Math.floor(fx);
+        const ty = fy - Math.floor(fy);
+        const a = arr[y0 * size + x0];
+        const b = arr[y0 * size + x1];
+        const c = arr[y1 * size + x0];
+        const d = arr[y1 * size + x1];
+        const top = a + (b - a) * tx;
+        const bottom = c + (d - c) * tx;
+        return top + (bottom - top) * ty;
+      };
+      for (let y = 0; y < H; y += 1) {
+        const v = y / H;
+        // 위는 봉긋하고 아래는 평평한 구름 밑동
+        const dome = 1 - Math.min(1, Math.abs(v - 0.42) * 2.15);
+        for (let x = 0; x < W; x += 1) {
+          const u = x / W;
+          const nx = (u - 0.5) * 2;
+          const lateral = 1 - Math.min(1, Math.abs(nx) * 1.05);
+          const shape = Math.max(0, dome) * Math.max(0, lateral);
+          const detail = sample(noiseFbm, 128, u * 3.1, v * 2.2);
+          const erosion = sample(noiseFbm, 128, u * 6.7 + 0.31, v * 4.3 + 0.77);
+          const density = shape * 1.28 - (1 - detail) * 0.52 - (1 - erosion) * 0.16;
+          const alpha = THREE.MathUtils.smoothstep(density, 0.03, 0.52);
+          // 아래쪽은 회색으로 눌러 스스로 음영을 갖게 한다 (스프라이트 1장으로 입체감)
+          const shade = 0.82 + 0.18 * (1 - THREE.MathUtils.smoothstep(v, 0.28, 0.95));
+          const i = (y * W + x) * 4;
+          img.data[i] = Math.round(255 * shade);
+          img.data[i + 1] = Math.round(255 * shade);
+          img.data[i + 2] = Math.round(255 * Math.min(1, shade + 0.02));
+          img.data[i + 3] = Math.round(alpha * 235);
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+    },
+    [236, 244, 255, 255]
+  );
+  track(cloudSoftTex.texture);
+
+  // 19. 풀잎 카드 — 원뿔 대신 알파 컷 잎사귀를 교차시켜 지면 디테일을 만든다
+  const grassBladeTex = canvasTexture(
+    128,
+    128,
+    (ctx) => {
+      const rand = seededRandom(6161);
+      ctx.clearRect(0, 0, 128, 128);
+      for (let i = 0; i < 13; i += 1) {
+        const baseX = 12 + rand() * 104;
+        const baseY = 128;
+        const tipX = baseX + (rand() - 0.5) * 46;
+        const tipY = 128 - (46 + rand() * 76);
+        const width = 3.4 + rand() * 3.2;
+        const ctrlX = baseX + (tipX - baseX) * 0.25 + (rand() - 0.5) * 10;
+        const ctrlY = 128 - (30 + rand() * 44);
+        const grad = ctx.createLinearGradient(baseX, baseY, tipX, tipY);
+        grad.addColorStop(0, "rgba(58, 116, 72, 0.98)");
+        grad.addColorStop(0.55, "rgba(96, 176, 104, 0.98)");
+        grad.addColorStop(1, "rgba(154, 214, 132, 0.95)");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(baseX - width * 0.5, baseY);
+        ctx.quadraticCurveTo(ctrlX - width * 0.2, ctrlY, tipX, tipY);
+        ctx.quadraticCurveTo(ctrlX + width * 0.6, ctrlY, baseX + width * 0.5, baseY);
+        ctx.closePath();
+        ctx.fill();
+      }
+    },
+    [112, 186, 116, 255]
+  );
+  track(grassBladeTex.texture);
+
+  // 20. 접지 그림자 블롭 — 소품 밑동을 어둡게 눌러 땅에 붙어 있게 만든다
+  const shadowBlobTex = canvasTexture(
+    128,
+    128,
+    (ctx) => {
+      const grad = ctx.createRadialGradient(64, 64, 4, 64, 64, 62);
+      grad.addColorStop(0, "rgba(0, 0, 0, 0.62)");
+      grad.addColorStop(0.45, "rgba(0, 0, 0, 0.34)");
+      grad.addColorStop(0.78, "rgba(0, 0, 0, 0.1)");
+      grad.addColorStop(1, "rgba(0, 0, 0, 0)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 128, 128);
+    },
+    [0, 0, 0, 0]
+  );
+  track(shadowBlobTex.texture);
+
+  // 21. 알베도에서 뽑아낸 노멀맵 — 조명을 받을 때 표면에 실제 요철이 생긴다
+  const grassNormal = normalFromCanvas(grassTex.canvas, 1.5, [2.1, 2.1]);
+  const sandNormal = normalFromCanvas(sandTex.canvas, 1.9, [3.0, 3.0]);
   const rockNormal = normalFromCanvas(rockTex.canvas, 2.6, [4, 3]);
   const roofNormal = normalFromCanvas(roofTex.canvas, 1.7, [3, 2]);
   const woodNormal = normalFromCanvas(woodTex.canvas, 1.8, [2, 2]);
@@ -792,6 +1029,16 @@ export function createIslandTextures() {
   [grassNormal, sandNormal, rockNormal, roofNormal, woodNormal, cobbleNormal, stoneNormal].forEach(
     track
   );
+
+  // 18. 러프니스 맵 — 표면마다 다른 광택으로 빛을 흩뿌린다
+  const grassRough = roughnessFromCanvas(grassTex.canvas, { min: 0.78, max: 0.98, repeat: [2.1, 2.1] });
+  const sandRough = roughnessFromCanvas(sandTex.canvas, { min: 0.72, max: 0.94, repeat: [3.0, 3.0] });
+  const rockRough = roughnessFromCanvas(rockTex.canvas, { min: 0.66, max: 0.95, repeat: [4, 3] });
+  const roofRough = roughnessFromCanvas(roofTex.canvas, { min: 0.52, max: 0.82, repeat: [3, 2] });
+  const woodRough = roughnessFromCanvas(woodTex.canvas, { min: 0.58, max: 0.9, repeat: [2, 2] });
+  const cobbleRough = roughnessFromCanvas(cobbleTex.canvas, { min: 0.62, max: 0.9, repeat: [4, 4] });
+  const stoneRough = roughnessFromCanvas(stoneTex.canvas, { min: 0.7, max: 0.96, repeat: [2, 2] });
+  [grassRough, sandRough, rockRough, roofRough, woodRough, cobbleRough, stoneRough].forEach(track);
 
   return {
     glow,
@@ -811,6 +1058,10 @@ export function createIslandTextures() {
     waterNormal,
     moon: moonTex.texture,
     foam: foamTex.texture,
+    noise: noiseTex,
+    cloudSoft: cloudSoftTex.texture,
+    grassBlade: grassBladeTex.texture,
+    shadowBlob: shadowBlobTex.texture,
     grassNormal,
     sandNormal,
     rockNormal,
@@ -818,6 +1069,13 @@ export function createIslandTextures() {
     woodNormal,
     cobbleNormal,
     stoneNormal,
+    grassRough,
+    sandRough,
+    rockRough,
+    roofRough,
+    woodRough,
+    cobbleRough,
+    stoneRough,
     dispose() {
       created.forEach((tex) => tex.dispose());
     },

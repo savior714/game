@@ -21,8 +21,8 @@ const DEG = Math.PI / 180;
 export const CAMERA_PRESETS = Object.freeze({
   overview: {
     label: "섬 전체보기",
-    position: [11.5, 25.5, 56],
-    target: [7.4, 6.2, -5.4],
+    position: [10.0, 40.0, 78.0],
+    target: [10.5, 4.0, -6.0],
   },
   generator: {
     label: "크랭크 발전 광장",
@@ -129,27 +129,43 @@ function makeIslandBodyGeometry({
   rimY = 1.94,
   baseY = -3.6,
   seed = 1,
+  radius = 34.4 * 1.16,
+  withBeach = true,
 } = {}) {
-  const R = 34.4 * 1.16;
+  const R = radius;
+  const wallRepeat = Math.max(18, Math.round(radius * 2.6));
+  const rimRepeat = Math.max(18, Math.round(radius * 2.4));
   const shoreline = (a) =>
     1 + 0.12 * Math.sin(a * 3 + 0.6) + 0.066 * Math.cos(a * 5 - 1.1) + 0.028 * Math.sin(a * 7 + seed);
   const inner = (a) =>
     1 + 0.05 * Math.sin(a * 2 + 1.2) + 0.032 * Math.cos(a * 4 - 0.4) + 0.016 * Math.sin(a * 6 + seed);
   const lift = (a) => Math.sin(a * 3.1 + 0.7) * 0.07 + Math.cos(a * 5.3 + 1.9) * 0.05;
 
-  // 위에서 아래로: 잔디 상판 → 모래 해변 띠 → 암벽 절벽
-  const rings = [
-    { y: topY, r: 0.0, vari: inner, mat: 0, uv: "top" },
-    { y: topY, r: 0.58, vari: inner, mat: 0, uv: "top" },
-    { y: topY, r: 0.9, vari: inner, mat: 0, uv: "top" },
-    { y: topY + 0.04, r: 1.0, vari: inner, mat: 0, uv: "top" },
-    { y: rimY + 0.2, r: 1.05, vari: shoreline, mat: 1, uv: "rim" },
-    { y: rimY, r: 1.075, vari: shoreline, mat: 1, uv: "rim" },
-    { y: rimY - 0.12, r: 1.07, vari: shoreline, mat: 2, uv: "wall" },
-    { y: rimY - 1.05, r: 1.085, vari: shoreline, mat: 2, uv: "wall" },
-    { y: baseY + 1.5, r: 1.13, vari: shoreline, mat: 2, uv: "wall" },
-    { y: baseY, r: 1.17, vari: shoreline, mat: 2, uv: "wall" },
-  ];
+  // 위에서 아래로: 잔디 상판 → (모래 해변 띠) → 암벽 절벽
+  // 풍력 절벽처럼 섬 안쪽에 솟은 대지는 모래 띠 없이 잔디 상판 + 암벽만 쓴다.
+  const rings = withBeach
+    ? [
+        { y: topY, r: 0.0, vari: inner, mat: 0, uv: "top" },
+        { y: topY, r: 0.58, vari: inner, mat: 0, uv: "top" },
+        { y: topY, r: 0.9, vari: inner, mat: 0, uv: "top" },
+        { y: topY + 0.04, r: 1.0, vari: inner, mat: 0, uv: "top" },
+        { y: rimY + 0.2, r: 1.05, vari: shoreline, mat: 1, uv: "rim" },
+        { y: rimY, r: 1.075, vari: shoreline, mat: 1, uv: "rim" },
+        { y: rimY - 0.12, r: 1.07, vari: shoreline, mat: 2, uv: "wall" },
+        { y: rimY - 1.05, r: 1.085, vari: shoreline, mat: 2, uv: "wall" },
+        { y: baseY + 1.5, r: 1.13, vari: shoreline, mat: 2, uv: "wall" },
+        { y: baseY, r: 1.17, vari: shoreline, mat: 2, uv: "wall" },
+      ]
+    : [
+        { y: topY, r: 0.0, vari: inner, mat: 0, uv: "top" },
+        { y: topY, r: 0.52, vari: inner, mat: 0, uv: "top" },
+        { y: topY, r: 0.86, vari: inner, mat: 0, uv: "top" },
+        { y: topY + 0.03, r: 0.97, vari: inner, mat: 0, uv: "top" },
+        { y: topY - 0.1, r: 1.0, vari: shoreline, mat: 2, uv: "wall" },
+        { y: topY - 1.1, r: 1.03, vari: shoreline, mat: 2, uv: "wall" },
+        { y: baseY + 1.2, r: 1.1, vari: shoreline, mat: 2, uv: "wall" },
+        { y: baseY, r: 1.16, vari: shoreline, mat: 2, uv: "wall" },
+      ];
 
   const ringPoint = (ringDef, angle) => {
     const radius = R * ringDef.r * ringDef.vari(angle);
@@ -193,9 +209,9 @@ function makeIslandBodyGeometry({
       if (ringDef.uv === "top") {
         uvs.push(p.x / 7, p.z / 7);
       } else if (ringDef.uv === "rim") {
-        uvs.push((i / rows) * 96, ringDef.r > 1.06 ? 1 : 0);
+        uvs.push((i / rows) * rimRepeat, ringDef.r > 1.06 ? 1 : 0);
       } else {
-        uvs.push((i / rows) * 104, (p.y - baseY) / 4.2);
+        uvs.push((i / rows) * wallRepeat, (p.y - baseY) / Math.max(1.6, (topY - baseY) / 1.6));
       }
     }
   });
@@ -246,6 +262,152 @@ function makeIslandBodyGeometry({
   groups.forEach((g) => geo.addGroup(g.start, g.count, g.mat));
   geo.computeVertexNormals();
   return geo;
+}
+
+/**
+ * 지면 디테일 주입기.
+ * 타일 알베도의 반복 무늬 위에 월드 좌표 기준 fBm 얼룩을 곱해, 같은 텍스처가
+ * 격자처럼 반복되는 느낌을 없애고 큰 스케일의 색 변화(마른 흙·이끼·그늘)를 얹는다.
+ */
+function attachWorldSurface(mat, {
+  noise,
+  scale = 0.055,
+  strength = 0.26,
+  warm = 0x9c8b52,
+  cool = 0x2f5c46,
+  sparkle = 0,
+} = {}) {
+  if (!mat || !noise) return mat;
+  const uniforms = {
+    uSurfNoise: { value: noise },
+    uSurfScale: { value: scale },
+    uSurfStrength: { value: strength },
+    uSurfWarm: { value: new THREE.Color(warm) },
+    uSurfCool: { value: new THREE.Color(cool) },
+    uSurfSparkle: { value: sparkle },
+  };
+  mat.userData.surfaceUniforms = uniforms;
+  const prevCompile = mat.onBeforeCompile;
+  mat.onBeforeCompile = (shader, renderer) => {
+    if (typeof prevCompile === "function") prevCompile(shader, renderer);
+    Object.assign(shader.uniforms, uniforms);
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        "#include <common>",
+        "#include <common>\nvarying vec3 vSurfWorld;"
+      )
+      .replace(
+        "#include <begin_vertex>",
+        "#include <begin_vertex>\nvSurfWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;"
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <common>",
+        `#include <common>
+        uniform sampler2D uSurfNoise;
+        uniform float uSurfScale;
+        uniform float uSurfStrength;
+        uniform vec3 uSurfWarm;
+        uniform vec3 uSurfCool;
+        uniform float uSurfSparkle;
+        varying vec3 vSurfWorld;
+        float surfFbm(vec2 p) {
+          float a = texture2D(uSurfNoise, p).r;
+          float b = texture2D(uSurfNoise, p * 2.13 + 0.37).r;
+          float c = texture2D(uSurfNoise, p * 4.41 - 0.19).r;
+          return a * 0.55 + b * 0.3 + c * 0.15;
+        }`
+      )
+      .replace(
+        "#include <color_fragment>",
+        `#include <color_fragment>
+        vec2 surfUv = vSurfWorld.xz * uSurfScale;
+        float surfMacro = surfFbm(surfUv);
+        float surfMacro2 = surfFbm(surfUv * 0.37 + 0.61);
+        vec3 surfTint = mix(uSurfCool, uSurfWarm, smoothstep(0.34, 0.72, surfMacro2));
+        diffuseColor.rgb *= mix(vec3(1.0), surfTint * 1.32, uSurfStrength * smoothstep(0.28, 0.82, surfMacro));
+        diffuseColor.rgb *= 0.84 + surfMacro * 0.32;
+        if (uSurfSparkle > 0.001) {
+          float spark = smoothstep(0.72, 0.95, texture2D(uSurfNoise, surfUv * 9.0).r);
+          diffuseColor.rgb += spark * uSurfSparkle;
+        }`
+      );
+  };
+  mat.customProgramCacheKey = () => "surf-detail-v1";
+  mat.needsUpdate = true;
+  return mat;
+}
+
+/**
+ * 볼륨 빛기둥 재질.
+ * 예전에는 반투명 원뿔 메시라 실루엣이 종이 삼각형처럼 각져 보였다.
+ * 지금은 시선 방향과 표면이 이루는 각으로 밀도를 계산해 가장자리를 부드럽게
+ * 날리고, 광원 쪽은 진하고 먼 쪽은 옅어지며, 느린 노이즈로 공기 입자를 흉내 낸다.
+ */
+function makeBeamMaterial({
+  color = 0xffe9b8,
+  opacity = 0.2,
+  noise = null,
+  fade = 1.35,
+  softness = 1.9,
+  speed = 0.09,
+} = {}) {
+  return new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+    uniforms: {
+      uColor: { value: new THREE.Color(color) },
+      uOpacity: { value: opacity },
+      uNoise: { value: noise },
+      uTime: { value: 0 },
+      uFade: { value: fade },
+      uSoftness: { value: softness },
+      uSpeed: { value: speed },
+    },
+    vertexShader: /* glsl */ `
+      varying vec2 vUvBeam;
+      varying vec3 vViewNormal;
+      varying vec3 vViewPos;
+      varying vec3 vBeamWorld;
+      void main() {
+        vUvBeam = uv;
+        vec4 worldPos = modelMatrix * vec4(position, 1.0);
+        vBeamWorld = worldPos.xyz;
+        vec4 mvPosition = viewMatrix * worldPos;
+        vViewPos = mvPosition.xyz;
+        vViewNormal = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `,
+    fragmentShader: /* glsl */ `
+      uniform vec3 uColor;
+      uniform float uOpacity;
+      uniform sampler2D uNoise;
+      uniform float uTime;
+      uniform float uFade;
+      uniform float uSoftness;
+      uniform float uSpeed;
+      varying vec2 vUvBeam;
+      varying vec3 vViewNormal;
+      varying vec3 vViewPos;
+      varying vec3 vBeamWorld;
+      void main() {
+        // 원뿔 옆면은 시선이 스칠수록 두껍게 보인다 → 페레넬로 밀도 계산
+        vec3 viewDir = normalize(-vViewPos);
+        float facing = abs(dot(normalize(vViewNormal), viewDir));
+        float density = pow(1.0 - facing, uSoftness);
+        // 광원(uv.y = 1)에서 멀어질수록 옅어진다
+        float lengthFade = pow(clamp(vUvBeam.y, 0.0, 1.0), uFade);
+        // 아주 옅은 공기 흐름
+        float grain = 0.82 + 0.18 * texture2D(uNoise, vec2(vUvBeam.x * 1.4, vUvBeam.y * 0.7 - uTime * uSpeed)).r;
+        float alpha = density * lengthFade * grain * uOpacity;
+        if (alpha < 0.0015) discard;
+        gl_FragColor = vec4(uColor * alpha, alpha);
+      }
+    `,
+  });
 }
 
 function makeGlowSprite(glowMap, colorHex, scale, opacity = 0.85) {
@@ -327,7 +489,7 @@ function makePineTree(scale = 1, tint = 0x1e6b4b) {
     const t = tier / (tiers - 1);
     const radius = (1.34 - t * 0.82) * scale;
     const h = (1.62 - t * 0.42) * scale;
-    const cone = new THREE.Mesh(new THREE.ConeGeometry(radius, h, 7), foliageMat);
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(radius, h, 9, 2), foliageMat);
     cone.position.set(
       Math.cos(tier * 2.1) * 0.06 * scale,
       (1.42 + tier * 0.78) * scale,
@@ -367,7 +529,18 @@ function makeBroadleafTree(scale = 1, tint = 0x2f8f5b) {
     [0.15, 3.55, 0.25, 0.78],
   ];
   clumps.forEach(([x, y, z, r], i) => {
-    const blob = new THREE.Mesh(new THREE.IcosahedronGeometry(r * scale, 1), foliageMat);
+    const blobGeo = new THREE.IcosahedronGeometry(r * scale, 2);
+    const blobPos = blobGeo.attributes.position;
+    for (let v = 0; v < blobPos.count; v += 1) {
+      const nx = blobPos.getX(v);
+      const ny = blobPos.getY(v);
+      const nz = blobPos.getZ(v);
+      const wobble =
+        1 + Math.sin(nx * 3.1 + i) * 0.06 + Math.cos(nz * 2.7 - i) * 0.05 + Math.sin(ny * 4.3) * 0.03;
+      blobPos.setXYZ(v, nx * wobble, ny * wobble * 0.96, nz * wobble);
+    }
+    blobGeo.computeVertexNormals();
+    const blob = new THREE.Mesh(blobGeo, foliageMat);
     blob.position.set(x * scale, y * scale, z * scale);
     blob.rotation.set(i * 0.7, i * 1.3, i * 0.4);
     blob.castShadow = true;
@@ -441,11 +614,18 @@ function makePalmTree(scale = 1) {
 
 /** 바위 — 비정형으로 눌러 자연스러운 실루엣을 만든다 */
 function makeRock(scale, tint, rockMap) {
-  const geo = new THREE.IcosahedronGeometry(1, 1);
+  const geo = new THREE.IcosahedronGeometry(1, 2);
   const pos = geo.attributes.position;
   for (let i = 0; i < pos.count; i += 1) {
-    const n = 1 + Math.sin(i * 4.7) * 0.14 + Math.cos(i * 2.3) * 0.1;
-    pos.setXYZ(i, pos.getX(i) * n, pos.getY(i) * n * 0.78, pos.getZ(i) * n);
+    const x = pos.getX(i);
+    const y = pos.getY(i);
+    const z = pos.getZ(i);
+    const n =
+      1 +
+      Math.sin(x * 3.1 + y * 2.2 + i * 0.6) * 0.12 +
+      Math.cos(z * 2.7 - y * 1.9) * 0.1 +
+      Math.sin(i * 4.7) * 0.05;
+    pos.setXYZ(i, x * n, y * n * 0.78, z * n);
   }
   geo.computeVertexNormals();
   const mesh = new THREE.Mesh(
@@ -516,10 +696,24 @@ export function createPowerWorld({
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
         renderer.setSize(widthInitial, heightInitial, false);
         renderer.outputColorSpace = THREE.SRGBColorSpace;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        // AgX는 밝은 네온과 달빛을 흰 덩어리로 태우지 않고 필름처럼 굴려 준다
+        renderer.toneMapping =
+          THREE.AgXToneMapping !== undefined ? THREE.AgXToneMapping : THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.02;
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        // 비스듬히 내려다보는 지면/바다가 뭉개지거나 반짝이지 않도록 이방성 필터를 최대로
+        try {
+          const maxAniso = renderer.capabilities.getMaxAnisotropy();
+          Object.values(textures).forEach((tex) => {
+            if (tex && tex.isTexture) {
+              tex.anisotropy = Math.min(8, maxAniso);
+              tex.needsUpdate = true;
+            }
+          });
+        } catch {
+          /* 이방성 필터 미지원 환경은 기본값 유지 */
+        }
         // 금속 재질이 검게 죽지 않도록 이미지 기반 조명(IBL)을 넣는다
         try {
           pmrem = new THREE.PMREMGenerator(renderer);
@@ -540,21 +734,28 @@ export function createPowerWorld({
         composer.addPass(renderPass);
         bloomPass = new UnrealBloomPass(
           new THREE.Vector2(widthInitial, heightInitial),
-          reducedMotion ? 0.32 : 0.5,
-          0.62,
-          0.86
+          reducedMotion ? 0.24 : 0.38,
+          0.55,
+          0.92
         );
         composer.addPass(bloomPass);
 
-        // 비네트 + 미세 그레인 + 살짝 따뜻한 컬러 그레이딩
+        // 디오라마 그레이딩 — 미니어처 사진처럼 가장자리를 살짝 풀고,
+        // 어두운 곳은 차갑게 밝은 곳은 따뜻하게 나눈 뒤 미세하게 선명도를 올린다.
         gradePass = new ShaderPass({
           uniforms: {
             tDiffuse: { value: null },
-            uVignette: { value: 0.46 },
-            uGrain: { value: 0.03 },
-            uSaturation: { value: 1.1 },
+            uVignette: { value: 0.44 },
+            uGrain: { value: 0.022 },
+            uSaturation: { value: 1.12 },
             uTime: { value: 0 },
             uTint: { value: new THREE.Color(0.94, 0.97, 1.06) },
+            uSharpen: { value: 0.42 },
+            uContrast: { value: 1.16 },
+            uBlur: { value: 0.00042 },
+            uFocus: { value: 0.52 },
+            uAberration: { value: 0.0016 },
+            uTexel: { value: new THREE.Vector2(1 / widthInitial, 1 / heightInitial) },
           },
           vertexShader: /* glsl */ `
             varying vec2 vUv;
@@ -570,21 +771,80 @@ export function createPowerWorld({
             uniform float uSaturation;
             uniform float uTime;
             uniform vec3 uTint;
+            uniform float uSharpen;
+            uniform float uContrast;
+            uniform float uBlur;
+            uniform float uFocus;
+            uniform float uAberration;
+            uniform vec2 uTexel;
             varying vec2 vUv;
+
             float hash(vec2 p) {
               return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
             }
+            float lumaOf(vec3 c) {
+              return dot(c, vec3(0.2126, 0.7152, 0.0722));
+            }
+
             void main() {
-              vec3 color = texture2D(tDiffuse, vUv).rgb;
-              float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
-              color = mix(vec3(luma), color, uSaturation);
+              vec2 uv = vUv;
+              vec2 centered = uv - 0.5;
+              float r2 = dot(centered, centered);
+              // 가장자리로 갈수록 색이 살짝 갈라지는 렌즈 느낌
+              vec2 offset = centered * uAberration * r2;
+              vec3 color;
+              color.r = texture2D(tDiffuse, uv + offset).r;
+              color.g = texture2D(tDiffuse, uv).g;
+              color.b = texture2D(tDiffuse, uv - offset).b;
+
+              // 틸트시프트: 화면 중앙 띠는 선명하게, 위아래는 부드럽게 풀어 미니어처 느낌
+              float band = smoothstep(0.3, 1.0, abs(uv.y - uFocus));
+              if (band > 0.001) {
+                vec2 step1 = uTexel * 2.0;
+                vec2 step2 = uTexel * 4.5;
+                vec2 step3 = uTexel * 8.0;
+                vec3 blur = color * 0.04;
+                blur += texture2D(tDiffuse, uv + vec2(step1.x, 0.0)).rgb * 0.12;
+                blur += texture2D(tDiffuse, uv - vec2(step1.x, 0.0)).rgb * 0.12;
+                blur += texture2D(tDiffuse, uv + vec2(0.0, step1.y)).rgb * 0.12;
+                blur += texture2D(tDiffuse, uv - vec2(0.0, step1.y)).rgb * 0.12;
+                blur += texture2D(tDiffuse, uv + vec2(step2.x, step2.y)).rgb * 0.08;
+                blur += texture2D(tDiffuse, uv - vec2(step2.x, step2.y)).rgb * 0.08;
+                blur += texture2D(tDiffuse, uv + vec2(-step2.x, step2.y)).rgb * 0.08;
+                blur += texture2D(tDiffuse, uv + vec2(step2.x, -step2.y)).rgb * 0.08;
+                blur += texture2D(tDiffuse, uv + vec2(step3.x, 0.0)).rgb * 0.04;
+                blur += texture2D(tDiffuse, uv - vec2(step3.x, 0.0)).rgb * 0.04;
+                blur += texture2D(tDiffuse, uv + vec2(0.0, step3.y)).rgb * 0.04;
+                blur += texture2D(tDiffuse, uv - vec2(0.0, step3.y)).rgb * 0.04;
+                color = mix(color, blur, clamp(band * uBlur * 300.0, 0.0, 0.8));
+              }
+
+              // 언샤프 마스크: 블룸으로 번진 경계를 다시 조여 준다
+              vec3 sharpBase = color;
+              vec3 neighbours =
+                texture2D(tDiffuse, uv + vec2(uTexel.x * 1.5, 0.0)).rgb +
+                texture2D(tDiffuse, uv - vec2(uTexel.x * 1.5, 0.0)).rgb +
+                texture2D(tDiffuse, uv + vec2(0.0, uTexel.y * 1.5)).rgb +
+                texture2D(tDiffuse, uv - vec2(0.0, uTexel.y * 1.5)).rgb;
+              color = max(color + (sharpBase * 4.0 - neighbours) * uSharpen * 0.25, 0.0);
+
+              // 대비 — 밝은 곳과 어두운 곳을 벌려 뿌옇게 뜬 느낌을 걷어낸다
+              color = max((color - 0.2) * uContrast + 0.2, 0.0);
+
+              float luma = lumaOf(color);
+              // 스플릿 톤 — 그림자는 밤하늘 쪽으로, 하이라이트는 따뜻하게
+              vec3 shadowTint = vec3(0.93, 0.98, 1.09);
+              vec3 highTint = vec3(1.05, 1.0, 0.94);
+              color *= mix(shadowTint, highTint, smoothstep(0.08, 0.85, luma));
+              color = mix(vec3(lumaOf(color)), color, uSaturation);
               color *= uTint;
-              vec2 centered = vUv - 0.5;
-              float vignette = 1.0 - smoothstep(0.28, 0.86, length(centered) * 1.28);
+
+              float vignette = 1.0 - smoothstep(0.3, 0.92, length(centered) * 1.24);
               color *= mix(1.0, vignette, uVignette);
-              float grain = hash(vUv * vec2(1920.0, 1080.0) + uTime * 41.0) - 0.5;
-              color += grain * uGrain * (0.15 + (1.0 - luma) * 0.55);
-              gl_FragColor = vec4(color, 1.0);
+
+              float grain = hash(uv * vec2(1920.0, 1080.0) + uTime * 41.0) - 0.5;
+              color += grain * uGrain * (0.12 + (1.0 - luma) * 0.5);
+              gl_FragColor = vec4(max(color, 0.0), 1.0);
             }
           `,
         });
@@ -663,7 +923,7 @@ export function createPowerWorld({
       if (envTarget && envTarget !== next) envTarget.dispose();
       envTarget = next;
       scene.environment = next.texture;
-      if ("environmentIntensity" in scene) scene.environmentIntensity = 0.9;
+      if ("environmentIntensity" in scene) scene.environmentIntensity = 0.72;
     } catch {
       /* IBL 생성 실패 시 기존 조명으로 계속 진행 */
     }
@@ -694,10 +954,16 @@ export function createPowerWorld({
     uTop: { value: new THREE.Color(0x040b1d) },
     uHorizon: { value: new THREE.Color(0x14294c) },
     uGlow: { value: new THREE.Color(0x2b6fa8) },
+    uFog: { value: new THREE.Color(0x0a1a33) },
     uSunDir: { value: new THREE.Vector3(-0.35, 0.42, 0.84).normalize() },
     uSunColor: { value: new THREE.Color(0xffe9b8) },
+    uMoonDir: { value: new THREE.Vector3(50, 88, -82).normalize() },
+    uMoonColor: { value: new THREE.Color(0xbcd4ff) },
+    uMoon: { value: 1 },
     uSunPower: { value: 240 },
     uSunStrength: { value: 0.55 },
+    uMilky: { value: 1 },
+    uCloud: { value: 0.4 },
     uTime: { value: 0 },
   };
 
@@ -718,38 +984,84 @@ export function createPowerWorld({
       uniform vec3 uTop;
       uniform vec3 uHorizon;
       uniform vec3 uGlow;
+      uniform vec3 uFog;
       uniform vec3 uSunDir;
       uniform vec3 uSunColor;
+      uniform vec3 uMoonDir;
+      uniform vec3 uMoonColor;
+      uniform float uMoon;
       uniform float uSunPower;
       uniform float uSunStrength;
+      uniform float uMilky;
+      uniform float uCloud;
       uniform float uTime;
       varying vec3 vDir;
 
-      float hash(vec2 p) {
-        return fract(sin(dot(p, vec2(41.7, 289.3))) * 18731.17);
+      float hash21(vec2 p) {
+        p = fract(p * vec2(123.34, 456.21));
+        p += dot(p, p + 45.32);
+        return fract(p.x * p.y);
+      }
+      float valueNoise(vec2 p) {
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        float a = hash21(i);
+        float b = hash21(i + vec2(1.0, 0.0));
+        float c = hash21(i + vec2(0.0, 1.0));
+        float d = hash21(i + vec2(1.0, 1.0));
+        return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+      }
+      float fbm(vec2 p) {
+        float value = 0.0;
+        float amplitude = 0.5;
+        for (int i = 0; i < 4; i += 1) {
+          value += amplitude * valueNoise(p);
+          p *= 2.03;
+          amplitude *= 0.5;
+        }
+        return value;
       }
 
       void main() {
         vec3 dir = normalize(vDir);
         float h = dir.y;
-        float t = pow(clamp(h, 0.0, 1.0), 0.62);
-        vec3 color = mix(uHorizon, uTop, t);
+        float up = clamp(h, 0.0, 1.0);
 
-        // 지평선 근처 대기 산란 띠
-        float band = exp(-abs(h) * 8.5);
-        color += uGlow * band * 0.38;
+        // 3단 그라디언트: 지평선 헤이즈 → 중간 하늘 → 천정
+        vec3 color = mix(uHorizon, uTop, pow(up, 0.55));
+        color = mix(color, mix(uHorizon, uGlow, 0.35), exp(-up * 5.0) * 0.55);
 
-        // 지평선 아래(바다 너머)는 안개색으로 부드럽게
-        color = mix(color, uHorizon * 0.72, 1.0 - smoothstep(-0.22, 0.02, h));
-
-        // 태양/달 주변 헤일로
+        // 태양/달 주변의 큰 헤일로와 지평선 발광
         vec3 sunDir = normalize(uSunDir);
         float sunDot = max(dot(dir, sunDir), 0.0);
-        color += uSunColor * pow(sunDot, uSunPower) * uSunStrength * 2.6;
-        color += uSunColor * pow(sunDot, 6.0) * uSunStrength * 0.16;
+        color += uSunColor * pow(sunDot, max(6.0, uSunPower * 0.06)) * uSunStrength * 0.22;
+        color += uSunColor * pow(sunDot, uSunPower) * uSunStrength * 2.4;
+
+        vec3 moonDir = normalize(uMoonDir);
+        float moonDot = max(dot(dir, moonDir), 0.0);
+        color += uMoonColor * (pow(moonDot, 26.0) * 0.16 + pow(moonDot, 900.0) * 0.7) * uMoon;
+
+        // 은하수 띠 — 아주 옅은 대각선 띠에 성운 결을 얹는다
+        float milkyBand = exp(-pow(dot(dir, normalize(vec3(0.42, 0.36, -0.82))) * 2.6, 2.0));
+        vec2 milkyUv = vec2(atan(dir.z, dir.x) * 2.2, dir.y * 6.0);
+        float milkyNoise = fbm(milkyUv * 2.4 + 7.0);
+        color += vec3(0.32, 0.38, 0.62) * milkyBand * smoothstep(0.35, 0.9, milkyNoise) * uMilky * 0.5;
+        color += vec3(0.1, 0.12, 0.22) * milkyBand * uMilky * 0.22;
+
+        // 높은 권운 — 구름이 많을 때만 지평선 위로 옅게 흐른다
+        vec2 skyPlane = dir.xz / max(0.18, h * 1.1 + 0.28);
+        float cirrus = fbm(skyPlane * vec2(0.55, 1.9) + vec2(uTime * 0.006, uTime * 0.002));
+        float cirrusMask = smoothstep(0.52, 0.9, cirrus) * smoothstep(0.02, 0.3, h);
+        color = mix(color, mix(uHorizon, vec3(1.0), 0.32), cirrusMask * uCloud * 0.34);
+
+        // 지평선 아래는 바다 안개색으로 — 바다와 하늘이 한 색으로 만난다
+        float below = 1.0 - smoothstep(-0.16, 0.02, h);
+        color = mix(color, uFog, below * 0.92);
+        color = mix(color, uFog, exp(-abs(h) * 42.0) * 0.35);
 
         // 밴딩 제거용 디더
-        float dither = (hash(gl_FragCoord.xy + uTime * 0.5) - 0.5) * 0.006;
+        float dither = (hash21(gl_FragCoord.xy + uTime * 0.5) - 0.5) * 0.005;
         gl_FragColor = vec4(max(color + dither, 0.0), 1.0);
       }
     `,
@@ -842,9 +1154,9 @@ export function createPowerWorld({
     new THREE.MeshBasicMaterial({ color: 0xf2f6ff, map: textures.moon, fog: false })
   );
   moonGroup.add(moonMesh);
-  const moonHalo = makeGlowSprite(textures.glow, 0x9dc0ff, 26, 0.34);
+  const moonHalo = makeGlowSprite(textures.glow, 0x9dc0ff, 13, 0.28);
   moonGroup.add(moonHalo);
-  const moonHaloOuter = makeGlowSprite(textures.glow, 0x5f86d8, 46, 0.16);
+  const moonHaloOuter = makeGlowSprite(textures.glow, 0x5f86d8, 24, 0.12);
   moonGroup.add(moonHaloOuter);
   moonGroup.position.set(50, 88, -82);
   scene.add(moonGroup);
@@ -865,6 +1177,8 @@ export function createPowerWorld({
   mainLight.shadow.camera.bottom = -46;
   mainLight.shadow.bias = -0.00042;
   mainLight.shadow.normalBias = 0.035;
+  // r155+ PCF는 shadow.radius로 샘플을 퍼뜨린다 — 딱딱한 계단 그림자를 부드럽게
+  mainLight.shadow.radius = 3.4;
   scene.add(mainLight);
 
   // 반대편 차가운 림 라이트 — 실루엣을 떼어 놓아 입체감을 만든다
@@ -878,46 +1192,46 @@ export function createPowerWorld({
   scene.add(warmFill);
 
   const villageWarmLight = new THREE.PointLight(0xffb85c, 0, 42, 1.7);
-  villageWarmLight.userData.gain = 18;
+  villageWarmLight.userData.gain = 9;
   villageWarmLight.position.set(20, 9.5, -6);
   scene.add(villageWarmLight);
 
   const ferrisLight = new THREE.PointLight(0xd7ff00, 0, 30, 1.8);
-  ferrisLight.userData.gain = 18;
+  ferrisLight.userData.gain = 9;
   ferrisLight.position.set(22.5, 14, -19);
   scene.add(ferrisLight);
 
   const substationLight = new THREE.PointLight(0xd7ff00, 1.2, 26, 1.6);
-  substationLight.userData.gain = 14;
+  substationLight.userData.gain = 8;
   substationLight.position.set(0, 7.5, 0);
   scene.add(substationLight);
 
   // 항만·과일 전지 덱·수력 댐의 실내등 — 각 구역이 자기 색의 빛 웅덩이를 갖게 한다
-  const pierLight = new THREE.PointLight(0xffd08a, 26, 22, 1.8);
+  const pierLight = new THREE.PointLight(0xffd08a, 15, 22, 1.8);
   pierLight.position.set(12.5, 6.2, 18.5);
-  pierLight.userData.baseIntensity = 26;
+  pierLight.userData.baseIntensity = 15;
   scene.add(pierLight);
 
-  const fruitDeckLight = new THREE.PointLight(0xd9ff6a, 22, 20, 1.8);
+  const fruitDeckLight = new THREE.PointLight(0xd9ff6a, 13, 20, 1.8);
   fruitDeckLight.position.set(24.5, 6.4, 13.5);
-  fruitDeckLight.userData.baseIntensity = 22;
+  fruitDeckLight.userData.baseIntensity = 13;
   scene.add(fruitDeckLight);
 
-  const damLight = new THREE.PointLight(0x8fd8ff, 26, 24, 1.8);
+  const damLight = new THREE.PointLight(0x8fd8ff, 15, 24, 1.8);
   damLight.position.set(-21, 9.0, -16);
-  damLight.userData.baseIntensity = 26;
+  damLight.userData.baseIntensity = 15;
   scene.add(damLight);
 
-  const solarDeckLight = new THREE.PointLight(0xffe9b0, 24, 20, 1.8);
+  const solarDeckLight = new THREE.PointLight(0xffe9b0, 14, 20, 1.8);
   solarDeckLight.position.set(-14.5, 6.5, 15.5);
-  solarDeckLight.userData.baseIntensity = 24;
+  solarDeckLight.userData.baseIntensity = 14;
   scene.add(solarDeckLight);
 
   // 정전 체험에서도 구역등이 함께 꺼지도록 전력 비율에 묶어 둔다
   const zoneLights = [pierLight, fruitDeckLight, damLight, solarDeckLight];
 
   const crankGlowLight = new THREE.PointLight(0xffb449, 0.4, 20, 1.6);
-  crankGlowLight.userData.gain = 16;
+  crankGlowLight.userData.gain = 10;
   crankGlowLight.position.set(-1, 6.2, 14.5);
   scene.add(crankGlowLight);
 
@@ -931,25 +1245,145 @@ export function createPowerWorld({
     return mesh;
   };
 
-  // 잔잔히 일렁이는 바다 — 노멀맵 + 환경 반사 + 클리어코트로 젖은 수면 광택
-  const seaGeo = new THREE.PlaneGeometry(560, 560, 64, 64);
+  // 일렁이는 바다 — 표면 기복·거품·수심 색을 셰이더에서 직접 만든다.
+  // (물리 재질의 clearcoat 반사는 그대로 두고, 파형/거품만 주입한다)
+  const seaUniforms = {
+    uTime: { value: 0 },
+    uSunDir: { value: new THREE.Vector3(-0.4, 0.5, 0.75).normalize() },
+    uSunColor: { value: new THREE.Color(0xffe9b8) },
+    uSkyColor: { value: new THREE.Color(0x2a5a94) },
+    uDeepColor: { value: new THREE.Color(0x04121f) },
+    uShallowColor: { value: new THREE.Color(0x0f4a5e) },
+    uFoamColor: { value: new THREE.Color(0xcfe9f7) },
+    uNoise: { value: textures.noise },
+    uFoamAmount: { value: 1 },
+  };
+
+  const seaWaveGLSL = /* glsl */ `
+    float seaWaveHeight(vec2 p, float t) {
+      float h = 0.0;
+      h += sin(p.x * 0.11 + t * 0.95) * 0.5;
+      h += sin(p.y * 0.14 - t * 1.1) * 0.42;
+      h += sin((p.x + p.y) * 0.06 + t * 0.7) * 0.3;
+      h += sin(dot(p, vec2(0.42, -0.31)) + t * 1.7) * 0.12;
+      h += sin(dot(p, vec2(-0.27, 0.51)) + t * 2.3) * 0.07;
+      return h;
+    }
+    float seaShoreRadius(float a) {
+      return 34.0 * (1.0 + 0.12 * sin(a * 3.0 + 0.6) + 0.066 * cos(a * 5.0 - 1.1)) * 0.955;
+    }
+  `;
+
+  const seaAmount = 1680;
+  const seaGeo = new THREE.PlaneGeometry(seaAmount, seaAmount, 200, 200);
   seaGeo.rotateX(-Math.PI / 2);
-  const seaBaseY = new Float32Array(seaGeo.attributes.position.count);
-  for (let i = 0; i < seaBaseY.length; i += 1) {
-    seaBaseY[i] = seaGeo.attributes.position.getY(i);
-  }
   const seaMat = new THREE.MeshPhysicalMaterial({
     color: 0x0a2f57,
     emissive: 0x061a30,
-    emissiveIntensity: 0.62,
-    roughness: 0.13,
-    metalness: 0.06,
+    emissiveIntensity: 0.34,
+    roughness: 0.14,
+    metalness: 0.03,
     clearcoat: 1,
     clearcoatRoughness: 0.08,
-    envMapIntensity: 1.45,
+    envMapIntensity: 1.05,
     normalMap: textures.waterNormal,
-    normalScale: new THREE.Vector2(0.5, 0.5),
+    normalScale: new THREE.Vector2(0.55, 0.55),
   });
+  seaMat.onBeforeCompile = (shader) => {
+    shader.uniforms.uTime = seaUniforms.uTime;
+    shader.uniforms.uSunDir = seaUniforms.uSunDir;
+    shader.uniforms.uSunColor = seaUniforms.uSunColor;
+    shader.uniforms.uSkyColor = seaUniforms.uSkyColor;
+    shader.uniforms.uDeepColor = seaUniforms.uDeepColor;
+    shader.uniforms.uShallowColor = seaUniforms.uShallowColor;
+    shader.uniforms.uFoamColor = seaUniforms.uFoamColor;
+    shader.uniforms.uNoise = seaUniforms.uNoise;
+    shader.uniforms.uFoamAmount = seaUniforms.uFoamAmount;
+
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        "#include <common>",
+        `#include <common>
+        uniform float uTime;
+        varying vec3 vSeaWorld;
+        ${seaWaveGLSL}`
+      )
+      .replace(
+        "#include <begin_vertex>",
+        `#include <begin_vertex>
+        vec3 seaOrigin = (modelMatrix * vec4(position, 1.0)).xyz;
+        float seaAmp = mix(0.14, 0.5, smoothstep(80.0, 22.0, length(seaOrigin.xz)));
+        transformed.y += seaWaveHeight(seaOrigin.xz, uTime) * seaAmp;
+        vSeaWorld = (modelMatrix * vec4(transformed, 1.0)).xyz;`
+      );
+
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <common>",
+        `#include <common>
+        uniform float uTime;
+        uniform vec3 uSunDir;
+        uniform vec3 uSunColor;
+        uniform vec3 uSkyColor;
+        uniform vec3 uDeepColor;
+        uniform vec3 uShallowColor;
+        uniform vec3 uFoamColor;
+        uniform sampler2D uNoise;
+        uniform float uFoamAmount;
+        varying vec3 vSeaWorld;
+        ${seaWaveGLSL}`
+      )
+      .replace(
+        "#include <color_fragment>",
+        `#include <color_fragment>
+        vec2 seaP = vSeaWorld.xz;
+        float seaDist = length(seaP);
+        float seaAngle = atan(seaP.y, seaP.x);
+        float seaShore = seaShoreRadius(seaAngle);
+        float seaDepth = smoothstep(seaShore - 0.4, seaShore + 26.0, seaDist);
+        float seaBand = texture2D(uNoise, seaP * 0.035 + vec2(uTime * 0.004, -uTime * 0.003)).r;
+        float seaBand2 = texture2D(uNoise, seaP * 0.11 + vec2(-uTime * 0.01, uTime * 0.008)).r;
+        float seaRipple = texture2D(uNoise, seaP * 0.26 + vec2(uTime * 0.02, uTime * 0.013)).r;
+        float seaCrest = smoothstep(0.74, 1.15, seaWaveHeight(seaP, uTime) + seaBand2 * 0.45);
+        // 해안선을 따라 밀려오는 거품 띠 (두 겹으로 물결 끝을 만든다)
+        float shoreGap = seaDist - seaShore;
+        float surge = 1.5 + sin(uTime * 0.9 + seaAngle * 4.0) * 0.9;
+        float seaShoreBand = 1.0 - smoothstep(0.0, 2.6 + seaBand * 3.6, abs(shoreGap - surge));
+        float seaShoreBand2 = 1.0 - smoothstep(0.0, 1.3 + seaBand * 2.0, abs(shoreGap - surge * 2.4));
+        float seaFoam = clamp(
+          seaShoreBand * (0.55 + seaBand * 1.1) +
+          seaShoreBand2 * 0.42 +
+          seaCrest * (0.35 + seaRipple * 0.4),
+          0.0, 1.0
+        ) * uFoamAmount;
+        vec3 seaColor = mix(uShallowColor, uDeepColor, seaDepth);
+        seaColor += uSkyColor * smoothstep(seaShore, seaShore + 22.0, seaDist) * 0.18;
+        // 수면에 비스듬히 내려앉는 빛의 길 (태양/달 글리터)
+        vec3 viewDirSea = normalize(cameraPosition - vSeaWorld);
+        float seaSpec = pow(max(dot(reflect(-normalize(uSunDir), vec3(0.0, 1.0, 0.0)), viewDirSea), 0.0), 14.0);
+        float seaGlint = smoothstep(0.72, 1.0, seaRipple) * seaSpec * 2.6;
+        seaColor += uSunColor * (seaSpec * 0.09 + seaGlint);
+        diffuseColor.rgb = mix(seaColor, uFoamColor, seaFoam * 0.86);`
+      )
+      .replace(
+        "#include <roughnessmap_fragment>",
+        `#include <roughnessmap_fragment>
+        roughnessFactor = clamp(0.08 + seaDepth * 0.06 + seaFoam * 0.36, 0.05, 0.85);`
+      )
+      .replace(
+        "#include <normal_fragment_maps>",
+        `#include <normal_fragment_maps>
+        float seaEps = 0.55;
+        float seaH0 = seaWaveHeight(seaP, uTime);
+        float seaHX = seaWaveHeight(seaP + vec2(seaEps, 0.0), uTime);
+        float seaHZ = seaWaveHeight(seaP + vec2(0.0, seaEps), uTime);
+        vec2 seaSlope = vec2(seaHX - seaH0, seaHZ - seaH0) / seaEps;
+        seaSlope += (vec2(seaBand2, seaBand) - 0.5) * 0.24;
+        seaSlope += (vec2(seaRipple, seaBand2) - 0.5) * 0.12;
+        vec3 seaNormalWorld = normalize(vec3(-seaSlope.x * 0.75, 1.0, -seaSlope.y * 0.75));
+        normal = normalize((viewMatrix * vec4(seaNormalWorld, 0.0)).xyz);`
+      );
+  };
   const ocean = new THREE.Mesh(seaGeo, seaMat);
   ocean.position.y = -0.04;
   ocean.receiveShadow = true;
@@ -1000,32 +1434,47 @@ export function createPowerWorld({
   beachSandNormal.repeat.set(2.4, 1.0);
   beachSandNormal.needsUpdate = true;
 
-  const islandBody = new THREE.Mesh(makeIslandBodyGeometry({ rows: 116, seed: 1 }), [
+  const islandGrassMat = attachWorldSurface(
     new THREE.MeshStandardMaterial({
       color: 0xf2fbf4,
       map: textures.grass,
       normalMap: textures.grassNormal,
-      normalScale: new THREE.Vector2(0.9, 0.9),
+      normalScale: new THREE.Vector2(1.15, 1.15),
+      roughnessMap: textures.grassRough,
       vertexColors: true,
-      roughness: 0.96,
+      roughness: 0.92,
     }),
+    { noise: textures.noise, scale: 0.021, strength: 0.72, warm: 0xa8c65a, cool: 0x24583f, sparkle: 0.03 }
+  );
+  const islandSandMat = attachWorldSurface(
     new THREE.MeshStandardMaterial({
-      color: 0xfff6e4,
+      color: 0xe8d3ab,
       map: beachSand,
       normalMap: beachSandNormal,
       normalScale: new THREE.Vector2(0.8, 0.8),
+      roughnessMap: textures.sandRough,
       vertexColors: true,
       roughness: 0.9,
     }),
+    { noise: textures.noise, scale: 0.06, strength: 0.3, warm: 0xf0e2bd, cool: 0xa8967a }
+  );
+  const islandCliffMat = attachWorldSurface(
     new THREE.MeshStandardMaterial({
-      color: 0xd6dfec,
+      color: 0xe7eef8,
       map: textures.rock,
       normalMap: textures.rockNormal,
-      normalScale: new THREE.Vector2(1.1, 1.1),
+      normalScale: new THREE.Vector2(1.35, 1.35),
+      roughnessMap: textures.rockRough,
       vertexColors: true,
-      roughness: 0.98,
+      roughness: 0.92,
       flatShading: true,
     }),
+    { noise: textures.noise, scale: 0.075, strength: 0.42, warm: 0x8a93a6, cool: 0x2c3547 }
+  );
+  const islandBody = new THREE.Mesh(makeIslandBodyGeometry({ rows: 116, seed: 1 }), [
+    islandGrassMat,
+    islandSandMat,
+    islandCliffMat,
   ]);
   islandBody.castShadow = true;
   islandBody.receiveShadow = true;
@@ -1037,18 +1486,37 @@ export function createPowerWorld({
     return 2.42 + Math.sin(angle * 3.1 + 0.7) * 0.07 + Math.cos(angle * 5.3 + 1.9) * 0.05;
   }
 
-  // 서쪽 풍력 해안 절벽 대지
+  // 접지 그림자 — 방향광 그림자만으로는 소품이 땅에 "떠 보인다".
+  // 밑동에 부드러운 어두운 블롭을 깔아 물체를 지면에 단단히 붙인다.
+  const contactShadowSpots = [];
+  function addContactShadow(x, z, radius, { y = null, strength = 1 } = {}) {
+    contactShadowSpots.push({
+      x,
+      z,
+      y: (y == null ? terrainTopY(x, z) : y) + 0.045,
+      radius,
+      strength,
+    });
+  }
+
+  // 서쪽 풍력 해안 절벽 대지 — 섬 본체와 같은 3층 문법(잔디 상판 + 화강암 벽)으로
   const windBluff = new THREE.Mesh(
-    sculptedIslandGeometry(11.5, 13.8, 3.2, 24, 0.1),
-    new THREE.MeshStandardMaterial({
-      color: 0xdff3e6,
-      map: textures.grass,
-      normalMap: textures.grassNormal,
-      normalScale: new THREE.Vector2(0.9, 0.9),
-      roughness: 0.93,
-    })
+    makeIslandBodyGeometry({
+      rows: 64,
+      radius: 12.9,
+      topY: 4.78,
+      rimY: 4.5,
+      baseY: 0.2,
+      seed: 4,
+      withBeach: false,
+    }),
+    [
+      islandBody.material[0],
+      islandBody.material[1],
+      islandBody.material[2],
+    ]
   );
-  windBluff.position.set(-27.5, 3.2, 4.5);
+  windBluff.position.set(-27.5, 0, 4.5);
   windBluff.castShadow = true;
   windBluff.receiveShadow = true;
   scene.add(windBluff);
@@ -1085,6 +1553,7 @@ export function createPowerWorld({
     { x: -15.5, z: -26, r: 6.2, h: 13, tint: 0x66748e, snow: 0.56, seed: 11 },
     { x: -30.5, z: -13.5, r: 4.6, h: 7.6, tint: 0x6e7c95, snow: 0.72, seed: 17 },
   ];
+  const mountainMaterials = [];
   mountainSpecs.forEach((spec) => {
     const baseY = 1.1;
     const radiusY = spec.h * 0.62;
@@ -1106,17 +1575,18 @@ export function createPowerWorld({
       colors[i * 3 + 2] = tmp.b;
     }
     rockGeo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-    const rock = new THREE.Mesh(
-      rockGeo,
-      new THREE.MeshStandardMaterial({
-        color: 0xffffff,
-        map: textures.rock,
-        normalMap: textures.rockNormal,
-        normalScale: new THREE.Vector2(1.25, 1.25),
-        vertexColors: true,
-        roughness: 0.94,
-      })
-    );
+    const mountainMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      map: textures.rock,
+      normalMap: textures.rockNormal,
+      normalScale: new THREE.Vector2(1.25, 1.25),
+      vertexColors: true,
+      roughness: 0.94,
+      emissive: 0x0b1a2c,
+      emissiveIntensity: 0.5,
+    });
+    mountainMaterials.push({ mat: mountainMat, base: new THREE.Color(0x0b1a2c) });
+    const rock = new THREE.Mesh(rockGeo, mountainMat);
     rock.scale.set(spec.r, radiusY, spec.r * 0.94);
     rock.position.set(spec.x, baseY + radiusY * 0.82, spec.z);
     rock.rotation.y = spec.seed;
@@ -1345,10 +1815,10 @@ export function createPowerWorld({
   }
   // 광장 가로등 4기 — 계단 양옆과 동/서 테두리
   const plazaLampMat = new THREE.MeshStandardMaterial({
-    color: 0xfff2cf,
-    emissive: 0xffc45c,
-    emissiveIntensity: 1.7,
-    roughness: 0.24,
+    color: 0xffe6b4,
+    emissive: 0xffb347,
+    emissiveIntensity: 0.85,
+    roughness: 0.3,
   });
   [[-0.5 + 3.4, 8.3], [-0.5 - 3.4, 8.3], [-0.5 + 7.2, 4.0], [-0.5 - 7.2, 4.0]].forEach(([lx, lz]) => {
     const post = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.15, 3.1, 8), plazaKerbMat);
@@ -1358,7 +1828,7 @@ export function createPowerWorld({
     const lantern = new THREE.Mesh(new THREE.SphereGeometry(0.27, 12, 12), plazaLampMat);
     lantern.position.set(lx, 5.95, lz);
     scene.add(lantern);
-    const halo = makeGlowSprite(textures.glow, 0xffc45c, 2.8, 0.5);
+    const halo = makeGlowSprite(textures.glow, 0xffc45c, 1.7, 0.36);
     halo.position.copy(lantern.position);
     scene.add(halo);
   });
@@ -1449,15 +1919,41 @@ export function createPowerWorld({
     scene.add(rock);
   }
 
-  // 풀포기 (인스턴스) — 지면 디테일을 대량으로 얹어 밋밋함을 없앤다
-  const grassTuftGeo = new THREE.ConeGeometry(0.26, 0.46, 5);
-  grassTuftGeo.translate(0, 0.23, 0);
+  // 풀포기 (인스턴스) — 원뿔 대신 알파 컷 잎 카드를 교차시켜 실제 풀처럼 보이게 한다
+  const grassTuftGeo = (() => {
+    const planes = new THREE.BufferGeometry();
+    const positions = [];
+    const uvs = [];
+    const indices = [];
+    const halfW = 0.42;
+    const height = 0.72;
+    for (let i = 0; i < 3; i += 1) {
+      const a = (i / 3) * Math.PI;
+      const dx = Math.cos(a) * halfW;
+      const dz = Math.sin(a) * halfW;
+      const base = i * 4;
+      positions.push(-dx, 0, -dz, dx, 0, dz, dx, height, dz, -dx, height, -dz);
+      uvs.push(0, 0, 1, 0, 1, 1, 0, 1);
+      indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+    }
+    planes.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    planes.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    planes.setIndex(indices);
+    planes.computeVertexNormals();
+    return planes;
+  })();
   const grassTuftMat = new THREE.MeshStandardMaterial({
-    color: 0x63c483,
-    roughness: 0.9,
-    flatShading: true,
+    color: 0xd6f2cf,
+    map: textures.grassBlade,
+    alphaMap: textures.grassBlade,
+    transparent: true,
+    alphaTest: 0.34,
+    side: THREE.DoubleSide,
+    roughness: 0.92,
+    emissive: 0x0d2a1a,
+    emissiveIntensity: 0.35,
   });
-  const tuftCount = 620;
+  const tuftCount = 900;
   const tuftMesh = new THREE.InstancedMesh(grassTuftGeo, grassTuftMat, tuftCount);
   const tuftDummy = new THREE.Object3D();
   let tuftIndex = 0;
@@ -1467,10 +1963,10 @@ export function createPowerWorld({
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius * 0.96;
     if (!isFreeSpot(x, z, -1.2)) continue;
-    tuftDummy.position.set(x, terrainTopY(x, z) + 0.02, z);
-    tuftDummy.rotation.set(randRange(-0.18, 0.18), randRange(0, TAU), randRange(-0.18, 0.18));
-    const s = randRange(0.45, 0.85);
-    tuftDummy.scale.set(s * 1.2, s * randRange(0.7, 1.05), s * 1.2);
+    tuftDummy.position.set(x, terrainTopY(x, z) - 0.04, z);
+    tuftDummy.rotation.set(0, randRange(0, TAU), randRange(-0.12, 0.12));
+    const s = randRange(0.5, 1.05);
+    tuftDummy.scale.set(s * 1.15, s * randRange(0.8, 1.25), s * 1.15);
     tuftDummy.updateMatrix();
     tuftMesh.setMatrixAt(tuftIndex, tuftDummy.matrix);
     tuftIndex += 1;
@@ -1580,6 +2076,7 @@ export function createPowerWorld({
         : makePineTree(ts, idx % 2 === 0 ? 0x36a877 : 0x44bf8c);
     tree.position.set(tx, ty, tz);
     scene.add(tree);
+    addContactShadow(tx, tz, ts * (kind === "broad" ? 1.5 : 1.2), { y: ty, strength: 0.85 });
   });
 
   const palmSpots = [
@@ -1592,12 +2089,14 @@ export function createPowerWorld({
     const palm = makePalmTree(ps);
     palm.position.set(px, py, pz);
     scene.add(palm);
+    addContactShadow(px, pz, ps * 1.1, { y: py, strength: 0.8 });
   });
 
   /* ── 3. 중앙 변전소 · 주 회로 스위치 · 플라스마 축전기 · 테슬라 코일 ── */
 
   const substationGroup = new THREE.Group();
   substationGroup.position.set(-0.5, 2.75, -0.5);
+  addContactShadow(-0.5, -0.5, 5.6, { y: 2.75, strength: 0.8 });
   scene.add(substationGroup);
 
   const copperMat = new THREE.MeshStandardMaterial({
@@ -1629,9 +2128,9 @@ export function createPowerWorld({
   const teslaColumn = new THREE.Mesh(
     new THREE.CylinderGeometry(0.95, 1.15, 9.2, 20),
     new THREE.MeshStandardMaterial({
-      color: 0xc96f2d,
+      color: 0xb9662a,
       emissive: 0xff8c2b,
-      emissiveIntensity: 0.3,
+      emissiveIntensity: 0.16,
       metalness: 0.72,
       roughness: 0.28,
     })
@@ -1664,26 +2163,41 @@ export function createPowerWorld({
   }
 
   const teslaToroidMat = new THREE.MeshStandardMaterial({
-    color: 0xeaf4ff,
-    emissive: 0x6ce5ff,
-    emissiveIntensity: 0.85,
-    metalness: 0.9,
-    roughness: 0.12,
+    color: 0x8ea6bd,
+    emissive: 0x2ec2ff,
+    emissiveIntensity: 0.14,
+    metalness: 0.92,
+    roughness: 0.28,
   });
-  const teslaToroid = new THREE.Mesh(new THREE.TorusGeometry(2.15, 0.68, 16, 36), teslaToroidMat);
+  const teslaToroid = new THREE.Mesh(new THREE.TorusGeometry(2.15, 0.66, 18, 40), teslaToroidMat);
   teslaToroid.rotation.x = Math.PI / 2;
   teslaToroid.position.y = 10.9;
   teslaToroid.castShadow = true;
   teslaGroup.add(teslaToroid);
 
+  // 토로이드 테두리를 감싸는 구리 밴드 — 금속 반사가 생겨 형태가 또렷해진다
+  const teslaBand = new THREE.Mesh(new THREE.TorusGeometry(2.16, 0.1, 8, 44), copperMat);
+  teslaBand.rotation.x = Math.PI / 2;
+  teslaBand.position.y = 10.9;
+  teslaGroup.add(teslaBand);
+  const teslaBandTop = teslaBand.clone();
+  teslaBandTop.position.y = 11.24;
+  teslaGroup.add(teslaBandTop);
+
   const teslaCrownOrb = new THREE.Mesh(
-    new THREE.SphereGeometry(0.85, 20, 20),
-    new THREE.MeshBasicMaterial({ color: 0xe6ffff })
+    new THREE.SphereGeometry(0.42, 18, 18),
+    new THREE.MeshStandardMaterial({
+      color: 0xdff7ff,
+      emissive: 0x7fe4ff,
+      emissiveIntensity: 0.9,
+      metalness: 0.2,
+      roughness: 0.2,
+    })
   );
-  teslaCrownOrb.position.y = 11.7;
+  teslaCrownOrb.position.y = 11.62;
   teslaGroup.add(teslaCrownOrb);
-  const teslaHalo = makeGlowSprite(textures.glow, 0x72f5ff, 11, 0.6);
-  teslaHalo.position.y = 11.4;
+  const teslaHalo = makeGlowSprite(textures.glow, 0x63e6ff, 2.2, 0.2);
+  teslaHalo.position.y = 11.5;
   teslaGroup.add(teslaHalo);
 
   const teslaHit = new THREE.Mesh(
@@ -1774,7 +2288,7 @@ export function createPowerWorld({
   );
   bulbArm.position.set(3.8, 4.3, -1.6);
   substationGroup.add(bulbArm);
-  const circuitBulbHalo = makeGlowSprite(textures.glow, 0xffd85c, 6.5, 0.55);
+  const circuitBulbHalo = makeGlowSprite(textures.glow, 0xffd85c, 4.0, 0.32);
   circuitBulbHalo.position.copy(circuitBulb.position);
   substationGroup.add(circuitBulbHalo);
 
@@ -1985,7 +2499,7 @@ export function createPowerWorld({
   crankGrip.rotation.x = Math.PI / 2;
   crankGrip.position.set(2.85, 0, 0.95);
   crankWheelPivot.add(crankGrip);
-  const crankGripHalo = makeGlowSprite(textures.glow, 0xd7ff00, 3.4, 0.65);
+  const crankGripHalo = makeGlowSprite(textures.glow, 0xd7ff00, 2.6, 0.42);
   crankGripHalo.position.set(2.85, 0, 1.3);
   crankWheelPivot.add(crankGripHalo);
 
@@ -2027,7 +2541,7 @@ export function createPowerWorld({
   const dynamoBulbPedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.65, 2.2, 12), darkMetalMat);
   dynamoBulbPedestal.position.set(-2.9, 4.4, 0);
   crankGroup.add(dynamoBulbPedestal);
-  const dynamoBulbHalo = makeGlowSprite(textures.glow, 0xffbe55, 7.2, 0.0);
+  const dynamoBulbHalo = makeGlowSprite(textures.glow, 0xffbe55, 4.6, 0.0);
   dynamoBulbHalo.position.copy(dynamoBulb.position);
   crankGroup.add(dynamoBulbHalo);
 
@@ -2049,6 +2563,9 @@ export function createPowerWorld({
     { x: -32.2, y: 4.5, z: -2.2, towerH: 11.4, scale: 0.86 },
     { x: -24.2, y: 4.6, z: 10.5, towerH: 11.8, scale: 0.9 },
   ];
+  turbineSpecs.forEach((spec) => {
+    addContactShadow(spec.x, spec.z, 2.6 * spec.scale, { y: spec.y, strength: 0.85 });
+  });
   const turbines = [];
   const bladeMaterial = new THREE.MeshStandardMaterial({
     color: 0xf1f7ff,
@@ -2108,21 +2625,62 @@ export function createPowerWorld({
     unit.position.set(spec.x, spec.y, spec.z);
     windGroup.add(unit);
 
+    // 타워: 살짝 도톰한 받침 + 이음매 링 + 무광 스틸 (하얀 파이프처럼 보이지 않게)
+    const towerMat = new THREE.MeshStandardMaterial({
+      color: 0x9aa9bd,
+      roughness: 0.46,
+      metalness: 0.38,
+      envMapIntensity: 0.85,
+    });
     const tower = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.42 * spec.scale, 0.92 * spec.scale, spec.towerH, 16),
-      new THREE.MeshStandardMaterial({ color: 0xbccadf, roughness: 0.34, metalness: 0.32 })
+      new THREE.CylinderGeometry(0.4 * spec.scale, 0.9 * spec.scale, spec.towerH, 22, 1, true),
+      towerMat
     );
     tower.position.y = spec.towerH * 0.5;
     tower.castShadow = true;
+    tower.receiveShadow = true;
     unit.add(tower);
 
-    const nacelle = new THREE.Mesh(
-      new THREE.BoxGeometry(1.4 * spec.scale, 1.3 * spec.scale, 2.7 * spec.scale),
-      new THREE.MeshStandardMaterial({ color: 0xa9bcd6, roughness: 0.3, metalness: 0.34 })
+    const towerFoot = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.98 * spec.scale, 1.15 * spec.scale, 0.5, 18),
+      new THREE.MeshStandardMaterial({ color: 0x6d7787, roughness: 0.72, metalness: 0.24 })
     );
-    nacelle.position.y = spec.towerH;
+    towerFoot.position.y = 0.25;
+    towerFoot.castShadow = true;
+    towerFoot.receiveShadow = true;
+    unit.add(towerFoot);
+
+    [0.28, 0.52, 0.76].forEach((t) => {
+      const seam = new THREE.Mesh(
+        new THREE.TorusGeometry((0.9 - 0.5 * t) * spec.scale, 0.035 * spec.scale, 6, 20),
+        new THREE.MeshStandardMaterial({ color: 0x6f7c8e, roughness: 0.5, metalness: 0.45 })
+      );
+      seam.rotation.x = Math.PI / 2;
+      seam.position.y = spec.towerH * t;
+      unit.add(seam);
+    });
+
+    // 나셀: 뒤로 갈수록 가늘어지는 캡슐 + 꼬리 핀
+    const nacelleMat = new THREE.MeshStandardMaterial({
+      color: 0xa6b6cb,
+      roughness: 0.32,
+      metalness: 0.42,
+    });
+    const nacelle = new THREE.Mesh(
+      new THREE.CapsuleGeometry(0.62 * spec.scale, 1.5 * spec.scale, 8, 18),
+      nacelleMat
+    );
+    nacelle.rotation.x = Math.PI / 2;
+    nacelle.position.set(0, spec.towerH, -0.15 * spec.scale);
     nacelle.castShadow = true;
     unit.add(nacelle);
+    const tailFin = new THREE.Mesh(
+      new THREE.BoxGeometry(0.08, 0.72 * spec.scale, 1.0 * spec.scale),
+      nacelleMat
+    );
+    tailFin.position.set(0, spec.towerH + 0.5 * spec.scale, -1.15 * spec.scale);
+    tailFin.castShadow = true;
+    unit.add(tailFin);
 
     const beacon = new THREE.Mesh(
       new THREE.SphereGeometry(0.24, 10, 10),
@@ -2185,13 +2743,25 @@ export function createPowerWorld({
   scene.add(solarGroup);
 
   const solarPanels = [];
-  const solarPanelMat = new THREE.MeshStandardMaterial({
-    color: 0x8fb6ee,
+  const solarPanelMat = new THREE.MeshPhysicalMaterial({
+    color: 0x5d80b8,
     map: textures.solar,
-    emissive: 0x3f7bff,
-    emissiveIntensity: 0.5,
-    roughness: 0.14,
+    emissive: 0x1d3f9e,
+    emissiveIntensity: 0.12,
+    roughness: 0.26,
+    metalness: 0.25,
+    clearcoat: 1,
+    clearcoatRoughness: 0.08,
+  });
+  const solarTrimMat = new THREE.MeshStandardMaterial({
+    color: 0xb9c7da,
+    metalness: 0.92,
+    roughness: 0.28,
+  });
+  const solarCellRibMat = new THREE.MeshStandardMaterial({
+    color: 0x2b3a55,
     metalness: 0.6,
+    roughness: 0.42,
   });
 
   for (let i = 0; i < 4; i += 1) {
@@ -2210,19 +2780,33 @@ export function createPowerWorld({
     pivot.position.y = 2.25;
     mount.add(pivot);
 
-    // 알루미늄 테두리 위에 태양전지판을 얹어 셀 무늬가 정면에서 보이게 한다
-    const frame = new THREE.Mesh(
-      new THREE.BoxGeometry(4.44, 0.1, 3.32),
-      new THREE.MeshStandardMaterial({ color: 0x9fb0c8, metalness: 0.9, roughness: 0.3 })
-    );
-    frame.position.y = -0.06;
-    pivot.add(frame);
+    // 알루미늄 테두리(레일 4개) 위에 유리 셀 판을 얹는다 — 두께가 읽혀 종이처럼 보이지 않는다
+    const frameRail = (w, d, x, z) => {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(w, 0.14, d), solarTrimMat);
+      rail.position.set(x, -0.03, z);
+      rail.castShadow = true;
+      pivot.add(rail);
+    };
+    frameRail(4.46, 0.12, 0, 1.6);
+    frameRail(4.46, 0.12, 0, -1.6);
+    frameRail(0.12, 3.32, 2.17, 0);
+    frameRail(0.12, 3.32, -2.17, 0);
 
-    const plate = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.08, 3.12), solarPanelMat);
-    plate.position.y = 0.04;
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(4.24, 0.09, 3.14), solarPanelMat);
+    plate.position.y = 0.03;
     plate.castShadow = true;
     plate.receiveShadow = true;
     pivot.add(plate);
+
+    // 셀 구획 리본 — 판 위의 격자 무늬가 가까이서도 살아난다
+    for (let c = -1; c <= 1; c += 1) {
+      const rib = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.012, 0.05), solarCellRibMat);
+      rib.position.set(0, 0.082, c * 0.78);
+      pivot.add(rib);
+    }
+    const midRib = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.012, 3.1), solarCellRibMat);
+    midRib.position.set(0, 0.082, 0);
+    pivot.add(midRib);
 
     // 접합 상자 & 케이블
     const junction = new THREE.Mesh(
@@ -2232,13 +2816,19 @@ export function createPowerWorld({
     junction.position.set(1.2, 0.02, 1.35);
     pivot.add(junction);
 
-    const support = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.07, 0.07, 1.5, 6),
-      new THREE.MeshStandardMaterial({ color: 0x8896ab, metalness: 0.8, roughness: 0.35 })
-    );
-    support.position.set(0, -0.75, 0.9);
-    support.rotation.x = 0.55;
-    pivot.add(support);
+    [-1.25, 1.25].forEach((offsetX) => {
+      [-1.0, 1.0].forEach((offsetZ) => {
+        const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 1.62, 6), solarTrimMat);
+        strut.position.set(offsetX, -0.72, offsetZ * 0.62);
+        strut.rotation.x = offsetZ * 0.42;
+        strut.castShadow = true;
+        pivot.add(strut);
+      });
+    });
+    const crossBar = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.07, 0.07), solarTrimMat);
+    crossBar.position.set(0, -1.02, 0.62);
+    crossBar.rotation.z = 0;
+    pivot.add(crossBar);
 
     solarPanels.push(pivot);
 
@@ -2256,10 +2846,10 @@ export function createPowerWorld({
   scene.add(sunOrbGroup);
 
   const sunSphere = new THREE.Mesh(
-    new THREE.SphereGeometry(3.4, 32, 32),
-    new THREE.MeshBasicMaterial({ color: 0xfff0b8, fog: false, toneMapped: false })
+    new THREE.SphereGeometry(5.4, 32, 32),
+    new THREE.MeshBasicMaterial({ color: 0xfff0b8, fog: false })
   );
-  sunSphere.material.color.setRGB(2.4, 2.0, 1.25);
+  sunSphere.material.color.setRGB(1.55, 1.32, 0.86);
   sunOrbGroup.add(sunSphere);
 
   const sunRays = new THREE.Sprite(
@@ -2273,56 +2863,70 @@ export function createPowerWorld({
       fog: false,
     })
   );
-  sunRays.scale.set(34, 34, 1);
+  sunRays.scale.set(30, 30, 1);
   sunOrbGroup.add(sunRays);
 
-  const sunCorona = makeGlowSprite(textures.glow, 0xffbe3b, 24, 0.85);
+  const sunCorona = makeGlowSprite(textures.glow, 0xffbe3b, 15, 0.42);
   sunOrbGroup.add(sunCorona);
 
+  // 태양은 멀리 떠 있어도 손으로 잡아 끌 수 있도록 보이지 않는 판정 구를 크게 둔다
   const sunHit = new THREE.Mesh(
-    new THREE.SphereGeometry(7.6, 10, 10),
+    new THREE.SphereGeometry(24, 12, 12),
     new THREE.MeshBasicMaterial({ visible: false })
   );
   sunOrbGroup.add(sunHit);
   registerHit(sunHit, "solar", "sun");
 
   // 태양 → 태양광 테라스 빛 기둥
-  const sunBeamMat = new THREE.MeshBasicMaterial({
-    color: 0xffe484,
-    transparent: true,
-    opacity: 0.12,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    side: THREE.DoubleSide,
+  const sunBeamMat = makeBeamMaterial({
+    color: 0xffe08a,
+    opacity: 0.16,
+    noise: textures.noise,
+    fade: 1.5,
+    softness: 2.1,
+    speed: 0.05,
   });
-  const sunBeam = new THREE.Mesh(new THREE.CylinderGeometry(1.8, 6.2, 42, 14, 1, true), sunBeamMat);
+  const sunBeam = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 7.4, 42, 28, 1, true), sunBeamMat);
   scene.add(sunBeam);
 
-  // 하늘 구름 — 폴리곤 덩어리 대신 부드러운 스프라이트 퍼프 클러스터
+  // 하늘 구름 — fBm으로 깎은 볼륨 스프라이트를 겹쳐 두께를 만들고,
+  // 아래쪽 퍼프는 어둡게 깔아 스스로 음영을 갖게 한다.
   const cloudClusters = [];
-  const cloudSpriteMat = new THREE.SpriteMaterial({
-    map: textures.cloud,
-    color: 0xe8f0ff,
-    transparent: true,
-    opacity: 0,
-    depthWrite: false,
-    fog: false,
-  });
-  for (let c = 0; c < 7; c += 1) {
+  const cloudMaterials = [];
+  for (let c = 0; c < 12; c += 1) {
     const cluster = new THREE.Group();
     const puffs = 4 + (c % 3);
+    const shadeSeed = 0.72 + (c % 4) * 0.06;
     for (let puff = 0; puff < puffs; puff += 1) {
-      const sprite = new THREE.Sprite(cloudSpriteMat);
-      const width = 13 + randRange(-2.5, 4.5) + (c % 2) * 3;
-      sprite.scale.set(width, width * 0.52, 1);
+      const isBase = puff % 3 === 0;
+      const mat = new THREE.SpriteMaterial({
+        map: textures.cloudSoft,
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        fog: true,
+      });
+      mat.userData.shade = isBase ? shadeSeed * 0.72 : 0.92 + (puff % 2) * 0.08;
+      const sprite = new THREE.Sprite(mat);
+      const width = 30 + randRange(-5, 10) + (c % 2) * 7;
+      sprite.scale.set(width, width * randRange(0.46, 0.62), 1);
       sprite.position.set(
-        (puff - (puffs - 1) * 0.5) * 7.4 + randRange(-1.5, 1.5),
-        randRange(-1.2, 1.6) + (puff % 2) * 0.9,
-        randRange(-3, 3)
+        (puff - (puffs - 1) * 0.5) * 17.5 + randRange(-3, 3),
+        randRange(-2.2, 1.8) + (isBase ? -2.6 : 1.4),
+        randRange(-5.5, 5.5)
       );
       cluster.add(sprite);
+      cloudMaterials.push(mat);
     }
-    cluster.position.set(-52 + c * 15, 30 + (c % 3) * 4.5, 2 + (c % 4) * 7);
+    const angle = (c / 12) * TAU + randRange(-0.14, 0.14);
+    const radius = randRange(120, 200);
+    cluster.position.set(
+      Math.cos(angle) * radius,
+      randRange(52, 96),
+      Math.sin(angle) * radius * 0.92
+    );
+    cluster.userData = { angle, radius, baseY: cluster.position.y, phase: randRange(0, TAU) };
     scene.add(cluster);
     cloudClusters.push(cluster);
   }
@@ -2780,7 +3384,7 @@ export function createPowerWorld({
     balloonPivot.add(new THREE.Line(tetherGeo, tetherMat));
   }
 
-  const balloonAura = makeGlowSprite(textures.glow, 0xc77dff, 6.8, 0.0);
+  const balloonAura = makeGlowSprite(textures.glow, 0xc77dff, 4.4, 0.0);
   balloonPivot.add(balloonAura);
 
   const balloonHit = new THREE.Mesh(
@@ -2920,7 +3524,7 @@ export function createPowerWorld({
   );
   fruitLedDome.position.set(5.1, 2.15, 0);
   fruitGroup.add(fruitLedDome);
-  const fruitLedHalo = makeGlowSprite(textures.glow, 0xff4d6d, 6.2, 0.0);
+  const fruitLedHalo = makeGlowSprite(textures.glow, 0xff4d6d, 4.0, 0.0);
   fruitLedHalo.position.copy(fruitLedDome.position);
   fruitGroup.add(fruitLedHalo);
 
@@ -2976,6 +3580,7 @@ export function createPowerWorld({
     house.position.set(hs.x, 2.8, hs.z);
     house.rotation.y = hs.rot;
     villageGroup.add(house);
+    addContactShadow(hs.x, hs.z, Math.max(hs.w, hs.d) * 0.85, { y: 2.8, strength: 1 });
 
     // 석조 주춧돌
     const plinth = new THREE.Mesh(
@@ -3243,6 +3848,7 @@ export function createPowerWorld({
   // 곶 위의 줄무늬 회전 등대 (Tier 2: harbor)
   const lighthouseGroup = new THREE.Group();
   lighthouseGroup.position.set(33.2, 2.3, -4.5);
+  addContactShadow(33.2, -4.5, 3.2, { y: 2.3, strength: 0.9 });
   villageGroup.add(lighthouseGroup);
 
   for (let seg = 0; seg < 5; seg += 1) {
@@ -3326,7 +3932,7 @@ export function createPowerWorld({
   });
   const lanternGlass = new THREE.Mesh(new THREE.CylinderGeometry(0.92, 0.92, 1.7, 16, 1, true), lanternGlassMat);
   lanternHead.add(lanternGlass);
-  const lanternHalo = makeGlowSprite(textures.glow, 0xffe08a, 7.5, 0);
+  const lanternHalo = makeGlowSprite(textures.glow, 0xffe08a, 4.6, 0);
   lanternHalo.position.y = 0.1;
   lanternHead.add(lanternHalo);
   for (let b = 0; b < 8; b += 1) {
@@ -3339,16 +3945,16 @@ export function createPowerWorld({
     lanternHead.add(bar);
   }
 
-  const searchBeamMat = new THREE.MeshBasicMaterial({
-    color: 0xfff099,
-    transparent: true,
+  const searchBeamMat = makeBeamMaterial({
+    color: 0xfff0a8,
     opacity: 0,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    side: THREE.DoubleSide,
+    noise: textures.noise,
+    fade: 1.25,
+    softness: 2.4,
+    speed: 0.14,
   });
   const searchBeam = new THREE.Mesh(
-    new THREE.ConeGeometry(4.2, 24, 16, 1, true),
+    new THREE.ConeGeometry(4.6, 26, 28, 1, true),
     searchBeamMat
   );
   searchBeam.rotation.x = Math.PI / 2;
@@ -3473,13 +4079,14 @@ export function createPowerWorld({
       car.userData.lampHalo = lampHalo;
 
       const headlight = new THREE.Mesh(
-        new THREE.ConeGeometry(1.4, 5.5, 12, 1, true),
-        new THREE.MeshBasicMaterial({
+        new THREE.ConeGeometry(1.5, 6.0, 20, 1, true),
+        makeBeamMaterial({
           color: 0xfff3a3,
-          transparent: true,
           opacity: 0,
-          blending: THREE.AdditiveBlending,
-          depthWrite: false,
+          noise: textures.noise,
+          fade: 1.1,
+          softness: 2.2,
+          speed: 0.2,
         })
       );
       headlight.rotation.x = -Math.PI / 2;
@@ -3495,6 +4102,7 @@ export function createPowerWorld({
   // 밤하늘 네온 대관람차 (Tier 4: ferris)
   const ferrisGroup = new THREE.Group();
   ferrisGroup.position.set(22.5, 2.8, -19.2);
+  addContactShadow(22.5, -19.2, 7.4, { y: 2.8, strength: 0.7 });
   villageGroup.add(ferrisGroup);
 
   const ferrisHubY = 10.6;
@@ -3777,7 +4385,7 @@ export function createPowerWorld({
       emissiveIntensity: 0.08,
       roughness: 0.4,
     });
-    const wireMesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 36, 0.09, 6, false), wireMat);
+    const wireMesh = new THREE.Mesh(new THREE.TubeGeometry(curve, 48, 0.07, 6, false), wireMat);
     scene.add(wireMesh);
 
     const pulses = [];
@@ -3860,9 +4468,10 @@ export function createPowerWorld({
 
   // 수평선 너머의 먼 섬 능선 — 허공에 뜬 섬이 아니라 바다 위 섬나라처럼 보이게 한다
   const farRidgeMat = new THREE.MeshStandardMaterial({
-    color: 0x1d3a5e,
-    roughness: 1,
+    color: 0xffffff,
+    roughness: 0.94,
     metalness: 0,
+    vertexColors: true,
   });
   const farIslandSpecs = [
     { a: 2.42, r: 128, w: 42, h: 24, seed: 41 },
@@ -3872,11 +4481,27 @@ export function createPowerWorld({
     { a: -0.72, r: 126, w: 34, h: 16, seed: 59 },
   ];
   farIslandSpecs.forEach((spec) => {
-    const island = new THREE.Mesh(makeMountainGeometry(spec.seed, 1), farRidgeMat);
-    island.scale.set(spec.w, spec.h, spec.w * 0.72);
+    const farGeo = makeMountainGeometry(spec.seed, 2);
+    // 원경 산맥은 대기 원근으로 위쪽이 하늘색에 녹아들게 정점 색을 준다
+    const farPos = farGeo.attributes.position;
+    const farColors = new Float32Array(farPos.count * 3);
+    const farLow = new THREE.Color(0x1b3350);
+    const farHigh = new THREE.Color(0x5d7ea6);
+    const farTmp = new THREE.Color();
+    for (let i = 0; i < farPos.count; i += 1) {
+      const h = THREE.MathUtils.clamp((farPos.getY(i) + 1) * 0.5, 0, 1);
+      farTmp.copy(farLow).lerp(farHigh, Math.pow(h, 0.75));
+      if (h > 0.72) farTmp.lerp(new THREE.Color(0xdfeaf7), (h - 0.72) * 1.6);
+      farColors[i * 3] = farTmp.r;
+      farColors[i * 3 + 1] = farTmp.g;
+      farColors[i * 3 + 2] = farTmp.b;
+    }
+    farGeo.setAttribute("color", new THREE.Float32BufferAttribute(farColors, 3));
+    const island = new THREE.Mesh(farGeo, farRidgeMat);
+    island.scale.set(spec.w * 0.86, spec.h * 0.8, spec.w * 0.62);
     island.position.set(
       Math.cos(spec.a) * spec.r,
-      spec.h * 0.34 - 3.4,
+      spec.h * 0.16 - 3.4,
       Math.sin(spec.a) * spec.r
     );
     island.rotation.y = spec.seed * 0.7;
@@ -3885,21 +4510,21 @@ export function createPowerWorld({
 
   // 수면 위 낮게 깔리는 해무 — 원경과 근경 사이에 공기층을 만든다
   const hazeSprites = [];
-  for (let i = 0; i < 12; i += 1) {
-    const angle = (i / 12) * TAU + 0.18;
-    const radius = randRange(52, 78);
+  for (let i = 0; i < 9; i += 1) {
+    const angle = (i / 9) * TAU + 0.18;
+    const radius = randRange(58, 88);
     const haze = new THREE.Sprite(
       new THREE.SpriteMaterial({
-        map: textures.cloud,
+        map: textures.cloudSoft,
         color: 0x2f5b8c,
         transparent: true,
-        opacity: randRange(0.07, 0.16),
+        opacity: randRange(0.02, 0.05),
         depthWrite: false,
         fog: false,
       })
     );
-    haze.position.set(Math.cos(angle) * radius, randRange(1.1, 3.4), Math.sin(angle) * radius * 0.9);
-    haze.scale.set(randRange(34, 62), randRange(7, 13), 1);
+    haze.position.set(Math.cos(angle) * radius, randRange(0.8, 2.2), Math.sin(angle) * radius * 0.9);
+    haze.scale.set(randRange(40, 70), randRange(4, 7), 1);
     scene.add(haze);
     hazeSprites.push({ sprite: haze, baseX: haze.position.x, baseZ: haze.position.z, phase: randRange(0, TAU) });
   }
@@ -3912,8 +4537,9 @@ export function createPowerWorld({
     color: 0x8e9cb2,
     map: textures.cobble,
     normalMap: textures.cobbleNormal,
-    normalScale: new THREE.Vector2(0.9, 0.9),
-    roughness: 0.92,
+    normalScale: new THREE.Vector2(1.05, 1.05),
+    roughnessMap: textures.cobbleRough,
+    roughness: 0.9,
     polygonOffset: true,
     polygonOffsetFactor: -1,
     polygonOffsetUnits: -1,
@@ -3981,8 +4607,9 @@ export function createPowerWorld({
     color: 0xeefaf0,
     map: textures.grass,
     normalMap: textures.grassNormal,
-    normalScale: new THREE.Vector2(0.9, 0.9),
-    roughness: 0.95,
+    normalScale: new THREE.Vector2(1.05, 1.05),
+    roughnessMap: textures.grassRough,
+    roughness: 0.94,
   });
   const moundGeo = new THREE.SphereGeometry(1, 26, 12, 0, TAU, 0, Math.PI * 0.5);
   for (let i = 0; i < 26; i += 1) {
@@ -4340,15 +4967,18 @@ export function createPowerWorld({
       moon: 1,
       hemiSky: 0x7aa6ee,
       hemiGround: 0x1b2c42,
-      hemi: 0.78,
-      mainColor: 0xc4dcff,
-      main: 1.4,
-      rim: 0.52,
-      warmth: 0.24,
+      hemi: 0.5,
+      mainColor: 0xc9e0ff,
+      main: 1.85,
+      rim: 0.82,
+      warmth: 0.3,
       fog: 0x0a1a33,
-      fogDensity: 0.0042,
-      bloom: 0.52,
-      exposure: 1.04,
+      fogDensity: 0.0034,
+      seaDeep: 0x04121f,
+      seaShallow: 0x0d3f52,
+      seaFoam: 0xd6ecff,
+      bloom: 0.28,
+      exposure: 0.92,
       gradeTint: [0.94, 0.97, 1.06],
     },
     dusk: {
@@ -4362,43 +4992,49 @@ export function createPowerWorld({
       moon: 0.55,
       hemiSky: 0xffb98a,
       hemiGround: 0x2a2038,
-      hemi: 0.92,
+      hemi: 0.8,
       mainColor: 0xffb377,
-      main: 1.55,
-      rim: 0.45,
+      main: 1.7,
+      rim: 0.62,
       warmth: 0.85,
       fog: 0x3a2a44,
       fogDensity: 0.0046,
-      bloom: 0.5,
+      seaDeep: 0x1a1a33,
+      seaShallow: 0x4a3a58,
+      seaFoam: 0xffd9c0,
+      bloom: 0.36,
       exposure: 1.0,
       gradeTint: [1.07, 0.99, 0.93],
     },
     day: {
-      top: 0x2f7fe0,
-      horizon: 0xb9dfff,
+      top: 0x1f6cd6,
+      horizon: 0xb4dcff,
       glow: 0xd6ecff,
       sunColor: 0xfff6da,
       sunStrength: 1.3,
       sunPower: 220,
       stars: 0.03,
       moon: 0,
-      hemiSky: 0xdcefff,
-      hemiGround: 0x5a6c7a,
-      hemi: 1.28,
-      mainColor: 0xfff2d4,
-      main: 2.15,
-      rim: 0.42,
-      warmth: 0.22,
-      fog: 0x93bfe4,
-      fogDensity: 0.0032,
-      bloom: 0.3,
-      exposure: 0.96,
+      hemiSky: 0xd2e8ff,
+      hemiGround: 0x3d5566,
+      hemi: 0.62,
+      mainColor: 0xfff4dc,
+      main: 3.05,
+      rim: 0.62,
+      warmth: 0.18,
+      fog: 0x9cc6e8,
+      fogDensity: 0.0013,
+      seaDeep: 0x0a4a78,
+      seaShallow: 0x27a9bd,
+      seaFoam: 0xf2feff,
+      bloom: 0.16,
+      exposure: 0.86,
       gradeTint: [1.02, 1.0, 0.99],
     },
     storm: {
-      top: 0x070d1a,
-      horizon: 0x1d2c42,
-      glow: 0x2c4a68,
+      top: 0x0b1526,
+      horizon: 0x2b4058,
+      glow: 0x3d6185,
       sunColor: 0x9fc2ff,
       sunStrength: 0.2,
       sunPower: 340,
@@ -4413,7 +5049,10 @@ export function createPowerWorld({
       warmth: 0.15,
       fog: 0x0a1220,
       fogDensity: 0.0062,
-      bloom: 0.46,
+      seaDeep: 0x0a1b2b,
+      seaShallow: 0x224155,
+      seaFoam: 0xd2e4f0,
+      bloom: 0.34,
       exposure: 0.95,
       gradeTint: [0.93, 0.96, 1.05],
     },
@@ -4437,6 +5076,9 @@ export function createPowerWorld({
     warmth: ATMOSPHERES.night.warmth,
     fog: new THREE.Color(ATMOSPHERES.night.fog),
     fogDensity: ATMOSPHERES.night.fogDensity,
+    seaDeep: new THREE.Color(ATMOSPHERES.night.seaDeep),
+    seaShallow: new THREE.Color(ATMOSPHERES.night.seaShallow),
+    seaFoam: new THREE.Color(ATMOSPHERES.night.seaFoam),
     bloom: ATMOSPHERES.night.bloom,
     exposure: ATMOSPHERES.night.exposure,
     gradeTint: new THREE.Color(...ATMOSPHERES.night.gradeTint),
@@ -4452,12 +5094,18 @@ export function createPowerWorld({
     mainColor: new THREE.Color(),
     fog: new THREE.Color(),
     gradeTint: new THREE.Color(),
+    seaDeep: new THREE.Color(),
+    seaShallow: new THREE.Color(),
+    seaFoam: new THREE.Color(),
   };
 
   const sunDirWorld = new THREE.Vector3(-0.4, 0.5, 0.75);
+  const TINT_HELPER = new THREE.Color();
+  const CLOUD_WHITE = new THREE.Color(1, 1, 1);
+  const cloudTint = new THREE.Color();
   const sunWorldPos = new THREE.Vector3();
 
-  function applyAtmosphere(weather, sunAltitudeDeg, cloudRatio, dt = 0.016) {
+  function applyAtmosphere(weather, sunAltitudeDeg, cloudRatio, dt = 0.016, sunLevel = 0.5) {
     const preset = ATMOSPHERES[weather] || ATMOSPHERES.night;
     const k = Math.min(1, dt * 2.6);
 
@@ -4485,10 +5133,12 @@ export function createPowerWorld({
 
     // 태양 궤도 위치 (고도 슬라이더와 연동) — 하늘/구름/IBL 이 모두 같은 방향을 본다
     const altRad = THREE.MathUtils.clamp(sunAltitudeDeg, 5, 90) * DEG;
+    // 태양은 섬에서 150 유닛 떨어진 하늘에 뜬다 (드래그로 고도가 바뀐다)
+    const sunDist = 150;
     sunOrbGroup.position.set(
-      -26 + Math.cos(altRad) * 14,
-      Math.max(7.5, Math.sin(altRad) * 52),
-      15.5 - Math.cos(altRad) * 8.5
+      -0.42 * sunDist * Math.cos(altRad) * 0.55 - 18,
+      Math.sin(altRad) * sunDist,
+      0.78 * sunDist * Math.cos(altRad) * 0.55 + 12
     );
     sunDirWorld.copy(sunOrbGroup.position).sub(new THREE.Vector3(0, 3, 0)).normalize();
     sunWorldPos.copy(sunOrbGroup.position);
@@ -4497,10 +5147,15 @@ export function createPowerWorld({
     skyUniforms.uTop.value.copy(atmo.top);
     skyUniforms.uHorizon.value.copy(atmo.horizon);
     skyUniforms.uGlow.value.copy(atmo.glow);
+    skyUniforms.uFog.value.copy(atmo.fog);
     skyUniforms.uSunDir.value.copy(sunDirWorld);
     skyUniforms.uSunColor.value.copy(atmo.sunColor);
     skyUniforms.uSunStrength.value = atmo.sunStrength * (1 - cloudRatio * 0.45) * (weather === "day" ? 1.5 : 1);
     skyUniforms.uSunPower.value = atmo.sunPower;
+    skyUniforms.uMoonDir.value.copy(moonGroup.position).normalize();
+    skyUniforms.uMoon.value = atmo.moon;
+    skyUniforms.uMilky.value = atmo.stars;
+    skyUniforms.uCloud.value = cloudRatio;
 
     // 조명
     hemiLight.color.copy(atmo.hemiSky);
@@ -4514,12 +5169,27 @@ export function createPowerWorld({
     starMat.uniforms.uOpacity.value = atmo.stars;
     starField.visible = atmo.stars > 0.02;
     moonGroup.visible = atmo.moon > 0.03;
-    moonMesh.material.opacity = 1;
-    moonHalo.material.opacity = 0.34 * atmo.moon;
-    moonHaloOuter.material.opacity = 0.16 * atmo.moon;
+    moonMesh.material.color.setRGB(0.86, 0.9, 1.0).multiplyScalar(0.92 + atmo.moon * 0.1);
+    moonHalo.material.opacity = 0.3 * atmo.moon;
+    moonHaloOuter.material.opacity = 0.14 * atmo.moon;
 
     scene.fog.color.copy(atmo.fog);
     scene.fog.density = atmo.fogDensity;
+
+    // 원경 산맥은 대기 원근으로 하늘색을 머금는다 — 낮에는 멀리 옅어지고 밤에는 남색으로 가라앉는다
+    mountainMaterials.forEach(({ mat, base }) => {
+      mat.emissive.copy(base).lerp(atmo.horizon, weather === "day" ? 0.55 : weather === "dusk" ? 0.42 : 0.2);
+      mat.emissiveIntensity = weather === "day" ? 0.55 : 0.42;
+    });
+
+    // 바다 — 수심 색과 거품 밝기가 하늘/날씨를 따라간다
+    seaUniforms.uSunDir.value.copy(sunDirWorld);
+    seaUniforms.uSunColor.value.copy(atmo.sunColor);
+    seaUniforms.uSkyColor.value.copy(atmo.horizon);
+    seaUniforms.uDeepColor.value.copy(atmo.seaDeep);
+    seaUniforms.uShallowColor.value.copy(atmo.seaShallow);
+    seaUniforms.uFoamColor.value.copy(atmo.seaFoam);
+    seaUniforms.uFoamAmount.value = weather === "storm" ? 1.6 : 1;
 
     if (renderer) renderer.toneMappingExposure = atmo.exposure + flashBoost * 0.12;
     if (bloomPass) {
@@ -4531,26 +5201,44 @@ export function createPowerWorld({
 
     // 태양 오브 외형
     const sunBrightness = weather === "night" ? 0.4 : 1 - cloudRatio * 0.5;
-    sunCorona.material.opacity = 0.3 + sunBrightness * 0.55;
-    sunRays.material.opacity = 0.22 + sunBrightness * 0.6;
+    const nightDim = weather === "night" ? 0.5 : 1;
+    sunCorona.material.opacity = (0.26 + sunBrightness * 0.3) * nightDim;
+    sunRays.material.opacity = (0.14 + sunBrightness * 0.32) * nightDim;
     sunRays.material.rotation += dt * 0.03;
-    sunSphere.scale.setScalar(weather === "night" ? 0.66 : 1);
+    sunSphere.scale.setScalar(weather === "night" ? 0.62 : 1);
+    sunOrbGroup.scale.setScalar(1);
     sunSphere.visible = weather !== "storm";
 
-    // 태양 → 태양광 패널 빛 기둥
+    // 태양광 테라스 위로 비스듬히 내리꽂히는 빛 기둥 (태양 방향과 정렬)
     const panelCenter = new THREE.Vector3(-14.5, 4.4, 15.5);
-    const mid = new THREE.Vector3().addVectors(sunOrbGroup.position, panelCenter).multiplyScalar(0.5);
-    sunBeam.position.copy(mid);
-    sunBeam.lookAt(sunOrbGroup.position);
-    sunBeam.rotateX(Math.PI / 2);
-    const beamLen = sunOrbGroup.position.distanceTo(panelCenter);
-    sunBeam.scale.set(1, beamLen / 42, 1);
+    const shaftDir = sunDirWorld.clone().normalize();
+    sunBeam.position.copy(panelCenter).addScaledVector(shaftDir, 13.5);
+    sunBeam.quaternion.setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      shaftDir
+    );
+    const dayFactor = weather === "day" ? 1.5 : weather === "dusk" ? 1.05 : 0.5;
+    sunBeam.scale.setScalar(dayFactor * (0.4 + sunLevel * 0.6));
 
-    // 구름 밀도
-    cloudSpriteMat.opacity = cloudRatio * 0.9;
+    // 구름 밀도 — 날씨의 지평선 색을 받아 밤에는 남색, 낮에는 흰색으로 물든다
+    cloudTint
+      .copy(atmo.horizon)
+      .lerp(atmo.top, 0.22)
+      .lerp(CLOUD_WHITE, weather === "day" ? 0.72 : weather === "dusk" ? 0.5 : 0.46);
+    const cloudOpacity = cloudRatio * (weather === "day" ? 0.95 : weather === "night" ? 0.42 : 0.62);
+    cloudMaterials.forEach((mat) => {
+      mat.opacity = cloudOpacity;
+      mat.color.copy(cloudTint).multiplyScalar(mat.userData.shade);
+    });
     cloudClusters.forEach((cluster, idx) => {
       cluster.visible = cloudRatio > 0.02;
-      cluster.position.x = -52 + ((idx * 21 + performanceNow * 0.55) % 104);
+      const drift = cloudRatio > 0.02 ? performanceNow * (weather === "storm" ? 0.03 : 0.008) : 0;
+      const angle = cluster.userData.angle + drift + (idx % 2 ? 0.02 : -0.015);
+      const radius = cluster.userData.radius;
+      cluster.position.x = Math.cos(angle) * radius;
+      cluster.position.z = Math.sin(angle) * radius * 0.92;
+      cluster.position.y =
+        cluster.userData.baseY + Math.sin(performanceNow * 0.18 + cluster.userData.phase) * 0.7;
     });
 
     // 환경 조명(IBL)은 날씨/태양 고도가 실제로 바뀔 때만 다시 굽는다
@@ -4585,25 +5273,14 @@ export function createPowerWorld({
       grid,
     } = snapshot;
 
-    applyAtmosphere(weather, solar.altitude, solar.cloud / 100, dt);
+    applyAtmosphere(weather, solar.altitude, solar.cloud / 100, dt, solar.output.level);
     skyUniforms.uTime.value = performanceNow;
+    if (gradePass) gradePass.uniforms.uTime.value = performanceNow;
     starMat.uniforms.uTime.value = performanceNow;
 
     // 1) 바다 물결 · 노멀맵 흐름 · 해안 거품
+    seaUniforms.uTime.value = performanceNow * (reducedMotion ? 0.35 : 1);
     if (!reducedMotion) {
-      const seaPos = seaGeo.attributes.position;
-      for (let i = 0; i < seaPos.count; i += 1) {
-        const sx = seaPos.getX(i);
-        const sz = seaPos.getZ(i);
-        seaPos.setY(
-          i,
-          seaBaseY[i] +
-            Math.sin(sx * 0.11 + performanceNow * 1.25) * 0.17 +
-            Math.cos(sz * 0.14 + performanceNow * 0.95) * 0.14 +
-            Math.sin((sx + sz) * 0.06 + performanceNow * 0.7) * 0.09
-        );
-      }
-      seaPos.needsUpdate = true;
       seaMat.normalMap.offset.set(performanceNow * 0.012, performanceNow * 0.007);
     }
     const shorePulse = 0.34 + Math.sin(performanceNow * 1.15) * 0.09;
@@ -4639,8 +5316,8 @@ export function createPowerWorld({
       core.material.emissiveIntensity = 0.4 + capRatio * 2.4;
     });
 
-    teslaToroidMat.emissiveIntensity = 0.45 + grid.gridRatio * 2.5 + flashBoost * 2.0;
-    teslaHalo.material.opacity = 0.25 + grid.gridRatio * 0.65 + flashBoost * 0.4;
+    teslaToroidMat.emissiveIntensity = 0.1 + grid.gridRatio * 0.6 + flashBoost * 0.8;
+    teslaHalo.material.opacity = 0.14 + grid.gridRatio * 0.36 + flashBoost * 0.3;
     substationLight.intensity =
       (0.7 + grid.gridRatio * 2.8 + flashBoost * 3.0) * substationLight.userData.gain;
     const zoneLevel = 0.18 + grid.gridRatio * 0.82;
@@ -4721,8 +5398,9 @@ export function createPowerWorld({
     solarPanels.forEach((pivot) => {
       pivot.rotation.z = -tiltRad * 0.85;
     });
-    solarPanelMat.emissiveIntensity = 0.14 + solar.output.level * 1.15;
-    sunBeamMat.opacity = 0.014 + solar.output.level * 0.038;
+    solarPanelMat.emissiveIntensity = 0.06 + solar.output.level * 0.34;
+    sunBeamMat.uniforms.uOpacity.value = 0.02 + solar.output.level * 0.14;
+    sunBeamMat.uniforms.uTime.value = performanceNow;
 
     // 6) 수력 저수지 수위 · 폭포 · 물레바퀴
     const headNorm = (hydro.head - 0.2) / 2.3;
@@ -4838,7 +5516,7 @@ export function createPowerWorld({
         ls.id === "townMain" || ls.id === "townPark"
           ? grid.deliveredWatts > 0.3
           : lv > 0.03;
-      ls.wireMat.emissiveIntensity = flowing ? 0.12 + lv * 1.4 : 0.04;
+      ls.wireMat.emissiveIntensity = flowing ? 0.05 + lv * 0.42 : 0.03;
       ls.phase = (ls.phase + dt * (0.28 + lv * 1.35)) % 1;
       ls.pulses.forEach((p) => {
         if (!flowing) {
@@ -4884,7 +5562,10 @@ export function createPowerWorld({
     lanternGlassMat.emissiveIntensity = lm.harbor * 2.2;
     lanternGlassMat.opacity = 0.22 + lm.harbor * 0.4;
     lanternHalo.material.opacity = lm.harbor * 0.7;
-    searchBeamMat.opacity = lm.harbor * 0.11;
+    searchBeamMat.uniforms.uOpacity.value = lm.harbor * 0.34;
+    searchBeamMat.uniforms.uTime.value = performanceNow;
+    searchBeam.rotation.z = performanceNow * 0.22;
+    searchBeam.rotation.x = Math.PI / 2 + Math.sin(performanceNow * 0.33) * 0.1;
     if (lm.harbor > 0) {
       lanternHead.rotation.y += dt * (0.9 + lm.harbor * 0.9);
     }
@@ -4901,7 +5582,8 @@ export function createPowerWorld({
       car.position.copy(pt);
       car.lookAt(ahead);
       if (car.userData.headlight) {
-        car.userData.headlight.material.opacity = lm.train * 0.34;
+        car.userData.headlight.material.uniforms.uOpacity.value = lm.train * 0.85;
+        car.userData.headlight.material.uniforms.uTime.value = performanceNow;
       }
       if (car.userData.lampHalo) {
         car.userData.lampHalo.material.opacity = lm.train * 0.7;
@@ -5040,7 +5722,8 @@ export function createPowerWorld({
       h.sprite.position.x = h.baseX + drift;
       h.sprite.position.z = h.baseZ + Math.cos(performanceNow * 0.09 + h.phase) * 1.1;
       h.sprite.material.opacity =
-        (0.07 + 0.05 * Math.sin(performanceNow * 0.35 + h.phase)) * (idx % 2 ? 0.9 : 1);
+        (0.028 + 0.016 * Math.sin(performanceNow * 0.35 + h.phase)) * (idx % 2 ? 0.9 : 1);
+      h.sprite.material.color.copy(atmo.horizon).lerp(atmo.fog, 0.5).multiplyScalar(1.15);
     });
     moonGlitter.material.opacity = 0.17 + 0.05 * Math.sin(performanceNow * 0.9);
     glitterSheen.material.opacity = 0.09 + 0.04 * Math.sin(performanceNow * 1.35 + 1.4);
@@ -5069,6 +5752,12 @@ export function createPowerWorld({
   };
   resolution.current = resolution.max;
 
+  function updateGradeTexel(w, h) {
+    if (!gradePass) return;
+    const texel = gradePass.uniforms.uTexel;
+    if (texel) texel.value.set(1 / Math.max(1, w), 1 / Math.max(1, h));
+  }
+
   function applyPixelRatio() {
     if (!renderer) return;
     renderer.setPixelRatio(resolution.current);
@@ -5078,6 +5767,7 @@ export function createPowerWorld({
     renderer.setSize(w, h, false);
     if (composer) composer.setSize(w, h);
     if (bloomPass) bloomPass.setSize(w, h);
+    updateGradeTexel(w, h);
   }
 
   // 태블릿에서 프레임이 흔들리면 해상도를 한 단계 낮춰 부드러움을 우선한다
@@ -5108,6 +5798,7 @@ export function createPowerWorld({
     }
     if (composer) composer.setSize(w, h);
     if (bloomPass) bloomPass.setSize(w, h);
+    updateGradeTexel(w, h);
   }
 
   if (typeof window !== "undefined") {
@@ -5131,6 +5822,43 @@ export function createPowerWorld({
       };
     });
     return out;
+  }
+
+  /* ── 14-b. 접지 그림자 인스턴스 ────────────────────────────── */
+
+  if (contactShadowSpots.length) {
+    const shadowGeo = new THREE.PlaneGeometry(1, 1);
+    shadowGeo.rotateX(-Math.PI / 2);
+    const shadowMat = new THREE.MeshBasicMaterial({
+      map: textures.shadowBlob,
+      transparent: true,
+      opacity: 0.6,
+      depthWrite: false,
+      toneMapped: false,
+      polygonOffset: true,
+      polygonOffsetFactor: -2,
+      polygonOffsetUnits: -2,
+    });
+    shadowMat.color.setHex(0x04060c);
+    const contactShadows = new THREE.InstancedMesh(
+      shadowGeo,
+      shadowMat,
+      contactShadowSpots.length
+    );
+    const shadowDummy = new THREE.Object3D();
+    contactShadowSpots.forEach((spot, idx) => {
+      shadowDummy.position.set(spot.x, spot.y, spot.z);
+      shadowDummy.rotation.set(0, (idx % 7) * 0.42, 0);
+      const r = spot.radius;
+      shadowDummy.scale.set(r * 2.1, 1, r * 1.9);
+      shadowDummy.updateMatrix();
+      contactShadows.setMatrixAt(idx, shadowDummy.matrix);
+    });
+    contactShadows.name = "contact-shadows";
+    contactShadows.instanceMatrix.needsUpdate = true;
+    contactShadows.frustumCulled = false;
+    contactShadows.renderOrder = 2;
+    scene.add(contactShadows);
   }
 
   /* ── 15. 표면 요철 자동 배선 ─────────────────────────────────── */
@@ -5165,6 +5893,13 @@ export function createPowerWorld({
       mat.needsUpdate = true;
     });
   });
+
+  if (typeof window !== "undefined") {
+    window.__islandDebug = {
+      scene, camera, renderer, composer, bloomPass, gradePass, mainLight, hemiLight, rimLight,
+      warmFill, ATMOSPHERES, applyAtmosphere, focusZone, controls,
+    };
+  }
 
   return {
     scene,

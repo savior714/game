@@ -402,7 +402,9 @@ def test_power_lab_3d_world_stages_a_finished_castle_grade_diorama() -> None:
     data = json.loads(result.stdout.strip().splitlines()[-1])
 
     assert data["errors"] == [], f"씬 스텝 중 예외: {data['errors']}"
-    assert data["stepped"] == 48, "네 가지 날씨 × 12프레임 스텝이 모두 실행되어야 합니다"
+    assert data["stepped"] == 48, (
+        "네 가지 날씨 × 12프레임 스텝이 모두 실행되어야 합니다"
+    )
 
     # 1) 프로시저럴 텍스처 세트 — 외부 이미지 없이 지표/암벽/물/구름을 합성한다
     texture_names = {item["key"] for item in data["textures"]}
@@ -424,20 +426,42 @@ def test_power_lab_3d_world_stages_a_finished_castle_grade_diorama() -> None:
         "moon",
         "foam",
         "sand",
+        # 그래픽 상향: 월드 스케일 노이즈 · 볼륨 구름 · 알파 풀잎 · 접지 그림자 + 러프니스
+        "noise",
+        "cloudSoft",
+        "grassBlade",
+        "shadowBlob",
+        "grassRough",
+        "sandRough",
+        "rockRough",
+        "roofRough",
+        "woodRough",
+        "cobbleRough",
+        "stoneRough",
     ):
         assert required in texture_names, f"3D 텍스처가 없습니다: {required}"
-    assert all(item["isTexture"] for item in data["textures"]), "텍스처 세트가 THREE.Texture 여야 합니다"
-    assert all(item["hasDispose"] for item in data["textures"]), "텍스처는 dispose 가능해야 합니다"
+    assert all(item["isTexture"] for item in data["textures"]), (
+        "텍스처 세트가 THREE.Texture 여야 합니다"
+    )
+    assert all(item["hasDispose"] for item in data["textures"]), (
+        "텍스처는 dispose 가능해야 합니다"
+    )
 
-    # 2) 재질 계층 — 하늘/별 셰이더, 젖은 바다 clearcoat, 대량의 PBR 재질
-    assert data["shaderMaterials"] >= 1, "대기 셰이더(하늘 그라디언트)가 있어야 합니다"
-    assert data["physicalMaterials"] >= 1, "바다 표면은 clearcoat 물리 재질이어야 합니다"
+    # 2) 재질 계층 — 하늘/별 셰이더 + 볼륨 빛기둥 셰이더, 젖은 바다 clearcoat, 대량의 PBR 재질
+    assert data["shaderMaterials"] >= 4, (
+        "하늘·별·볼륨 빛기둥(태양/등대/기차) 셰이더가 있어야 합니다"
+    )
+    assert data["physicalMaterials"] >= 1, (
+        "바다 표면은 clearcoat 물리 재질이어야 합니다"
+    )
     assert data["standardMaterials"] >= 300, "PBR 재질이 충분히 쓰여야 합니다"
 
     # 3) 섬 본체는 잔디/모래/절벽 3개 재질 그룹을 가진 단일 지오메트리
     assert data["multiMaterialMeshes"] >= 1
     assert sorted(data["multiMaterialGroups"]) == [0, 1, 2]
-    assert 2.2 <= data["islandTopY"] <= 2.9, "잔디 상판이 소품과 같은 높이대에 있어야 합니다"
+    assert 2.2 <= data["islandTopY"] <= 2.9, (
+        "잔디 상판이 소품과 같은 높이대에 있어야 합니다"
+    )
 
     # 4) 조명 — 하늘광 + 키/림/보조 방향광 + 발전소·마을 포인트광
     assert data["lights"]["hemisphere"] >= 1
@@ -445,14 +469,23 @@ def test_power_lab_3d_world_stages_a_finished_castle_grade_diorama() -> None:
     assert data["lights"]["point"] >= 4
 
     # 5) 그림자·인스턴싱·스프라이트 레이어
-    assert data["castShadowMeshes"] >= 120, "그림자를 만드는 주요 구조물이 있어야 합니다"
+    assert data["castShadowMeshes"] >= 120, (
+        "그림자를 만드는 주요 구조물이 있어야 합니다"
+    )
     assert data["receiveShadowMeshes"] >= 80
     assert data["instancedMeshes"] >= 5, "풀·관목·꽃은 인스턴싱으로 깔려야 합니다"
 
     # 6) 표면 요철(노멀맵) — 지면·암벽·목재·기와가 빛을 받아 요철로 반응해야 한다
     assert data["normalMappedMaterials"] >= 60, "노멀맵이 붙은 재질이 충분해야 합니다"
-    for required in ("grassNormal", "sandNormal", "rockNormal", "roofNormal", "woodNormal",
-                     "cobbleNormal", "stoneNormal"):
+    for required in (
+        "grassNormal",
+        "sandNormal",
+        "rockNormal",
+        "roofNormal",
+        "woodNormal",
+        "cobbleNormal",
+        "stoneNormal",
+    ):
         assert required in texture_names, f"노멀맵이 없습니다: {required}"
     # 7) 지형 색 얼룩과 구역을 잇는 산책로
     assert data["vertexColorMeshes"] >= 2, "섬 상판은 정점 색으로 얼룩을 가져야 합니다"
@@ -461,6 +494,16 @@ def test_power_lab_3d_world_stages_a_finished_castle_grade_diorama() -> None:
     assert data["lights"]["point"] >= 8
     assert data["sprites"] >= 60, "구름·연기·광원 글로우 스프라이트 레이어가 필요합니다"
     assert data["triangles"] >= 40000, "디오라마 밀도가 너무 낮습니다"
+    # 9) 바다가 CPU 정점 변형이 아니라 셰이더 파형 + 거품으로 그려져야 한다
+    assert data["oceanShaderWaves"] is True, (
+        "바다 표면은 셰이더 파형/거품을 써야 합니다"
+    )
+    # 10) 접지 그림자 — 방향광 그림자와 별도로 소품 밑동을 눌러 주는 인스턴스 블롭
+    assert data["contactShadowInstances"] >= 20, "소품 밑동 접지 그림자가 필요합니다"
+    # 11) 지면 월드 스케일 디테일 — 타일 반복을 감추는 재질 주입
+    assert data["worldSurfaceMaterials"] >= 2, (
+        "섬 지면에 월드 좌표 디테일이 주입되어야 합니다"
+    )
 
     # 6) 카메라 프리셋 — 섬 전체가 화면에 들어오도록 충분히 물러나 있어야 한다
     overview = data["cameras"]["overview"]

@@ -76,12 +76,50 @@ const RewardSystem = (() => {
     }
   }
 
+  const SYNC_QUEUE_KEY = 'sync_queue';
+
+  /**
+   * 보상 상태를 계정 단위 클라우드 동기화 큐에 기록한다.
+   * SyncEngine이 아직 로드되지 않은 시점에서도 호출 가능하며,
+   * SyncEngine 로드 후 인증·온라인 상태가 되면 flushQueue가 해당 큐를
+   * Supabase public.user_data(user_id 기준)에 upsert 한다.
+   * 이렇게 하면 태블릿·노트북 기기 간에 동일한 계정으로 로그인했을 때
+   * 보상(보석·자유시간·간식·인벤토리)이 누락 없이 연동된다.
+   */
+  function _enqueueSyncQueue(key, payload) {
+    if (!payload) return;
+    if (!payload._updated_at) payload._updated_at = Date.now();
+    try {
+      let q = {};
+      const raw = localStorage.getItem(SYNC_QUEUE_KEY);
+      if (raw) {
+        try {
+          q = JSON.parse(raw);
+          if (!q || typeof q !== 'object') q = {};
+        } catch (e) {
+          q = {};
+        }
+      }
+      q[key] = payload;
+      localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(q));
+    } catch (e) {
+      console.warn('[RewardSystem] sync queue enqueue failed:', e);
+    }
+  }
+
   function save() {
     state.last_updated = new Date().toISOString();
     state._updated_at = Date.now();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+    // 보상 변경을 계정 단위 클라우드 DB(Supabase user_data)에 연동한다.
+    // SyncEngine이 준비되어 있으면 즉시 푸시(온라인 + 로그인 시 Supabase upsert),
+    // 아직 준비되지 않았어도 동기화 큐에 기록해 두고 SyncEngine 로드 후
+    // 인증/온라인 복구 시 flush가 처리하게 한다.
     if (window.SyncEngine) {
       window.SyncEngine.pushStats(STORAGE_KEY, state);
+    } else {
+      _enqueueSyncQueue(STORAGE_KEY, state);
     }
     if (typeof RewardSystemUI !== 'undefined') {
       RewardSystemUI.syncInventoryBarWithState(state);

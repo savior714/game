@@ -1514,6 +1514,21 @@ body.se-page {
   margin-top: 0;
 }
 
+/* 성공 모달은 "다시/다음"만 있으면 홈 동선이 없다. modal 안의 명시적 종료 CTA. */
+.paint-modal-actions .paint-home-link {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  min-height: 44px;
+}
+
+.paint-modal-actions .paint-home-link:focus-visible {
+  outline: 3px solid var(--neon-volt);
+  outline-offset: 2px;
+}
+
 .paint-help-steps {
   text-align: left;
   line-height: 1.65;

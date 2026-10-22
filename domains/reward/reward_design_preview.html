@@ -11,9 +11,20 @@
         body {
             font-family: 'Pretendard', sans-serif;
             background-color: var(--bg-color);
-            margin: 0; padding: 40px;
+            margin: 0; padding: 84px 40px 40px;
             display: flex; flex-direction: column; align-items: center; gap: 60px;
         }
+        .preview-home-link {
+            position: fixed; top: 16px; left: 16px; z-index: 20;
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 18px; border-radius: 999px;
+            background: #0f172a; color: #ffffff;
+            font-size: 13px; font-weight: 800; letter-spacing: -0.01em;
+            text-decoration: none; box-shadow: 0 8px 22px rgba(15, 23, 42, 0.18);
+            transition: background 0.2s ease, transform 0.2s ease;
+        }
+        .preview-home-link:hover { background: #1e293b; transform: translateY(-1px); }
+        .preview-home-link:focus-visible { outline: 3px solid #2563eb; outline-offset: 2px; }
         .container {
             width: 100%; max-width: 800px;
             padding: 40px; border-radius: 20px;
@@ -78,6 +89,11 @@
 </head>
 <body>
 
+    <a class="preview-home-link" href="../../index.html" aria-label="AIDEN GAME LABS · 놀이터 홈">
+        <span aria-hidden="true">🏠</span>
+        <span>놀이터 홈</span>
+    </a>
+
     <div class="container">
         <h2>디자인 시안 A: Modern (현재)</h2>
         <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 20px;">글래스모피즘(Glassmorphism)과 미세한 그라데이션을 사용한 현대적이고 세련된 스타일입니다.</p>
@@ -120,7 +136,7 @@
             const state = RewardSystem.getState();
             state.theme = theme;
             localStorage.setItem('study_rewards', JSON.stringify(state));
-            window.location.href = '../index.html';
+            window.location.href = '../../index.html';
         };
     </script>
 </body>

@@ -735,3 +735,64 @@ html:-moz-full-screen {
     transform: none;
   }
 }
+
+/* ── Quiz result exit actions ─────────────────────────────
+   결과 화면은 "다시 하기"만 있으면 홈으로 돌아갈 동선이 사라진다.
+   상단 brand와 별개로, 결과 맥락의 유일한 종료 CTA를 명시적으로 둔다. */
+.quiz-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+}
+
+.quiz-home-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  box-sizing: border-box;
+  min-height: 48px;
+  padding: 14px 28px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #cbd5e1;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.1;
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.quiz-home-link:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.quiz-home-link:focus-visible {
+  outline: 3px solid var(--subject-accent, #d7ff00);
+  outline-offset: 2px;
+}
+
+@media (max-width: 420px) {
+  .quiz-result-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  .quiz-home-link {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quiz-home-link {
+    transition: none;
+  }
+  .quiz-home-link:hover {
+    transform: none;
+  }
+}

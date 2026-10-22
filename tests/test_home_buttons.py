@@ -20,7 +20,7 @@ BRAND_HOME_PAGES = [
     ("domains/korean/index.html", "../../index.html"),
     ("domains/science/index.html", "../../index.html"),
     ("domains/reward/guardian/index.html", "../../../index.html"),
-    ("domains/auth/admin/index.html", "../../index.html"),
+    ("domains/auth/admin/index.html", "../../../index.html"),
     ("experiments/space-explorer/index.html", "../../index.html"),
     ("experiments/space-explorer/dino-escape.html", "../../index.html"),
     ("experiments/space-explorer/orbit-eclipse.html", "../../index.html"),
@@ -34,7 +34,9 @@ BRAND_HOME_PAGES = [
 # brand cluster가 없는 페이지 → 명시적 홈 링크가 유일한 홈 컨트롤
 EXPLICIT_HOME_PAGES = [
     ("ocean-rescue/index.html", "../index.html"),
+    ("domains/ocean-rescue/index.html", "../../index.html"),
     ("domains/ocean-rescue/src/index.template.html", "../index.html"),
+    ("domains/reward/reward_design_preview.html", "../../index.html"),
 ]
 
 BRAND_CLASSES = (

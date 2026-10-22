@@ -6,11 +6,16 @@
 <title>모치팝! | 마블 머지</title>
 <style>
 html,body{margin:0;height:100%;display:grid;place-items:center;background:#ffeef4;color:#5b3b4d;font:800 16px system-ui,sans-serif}
+body{grid-auto-rows:min-content;gap:10px;padding:24px;box-sizing:border-box}
 #loadError{max-width:32rem;padding:24px;text-align:center;line-height:1.6}
+.load-error-home{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 20px;border-radius:999px;background:#5b3b4d;color:#ffeef4;font-size:14px;font-weight:800;text-decoration:none;box-shadow:0 6px 16px rgba(91,59,77,.24)}
+.load-error-home:hover{background:#6f4a5f}
+.load-error-home:focus-visible{outline:3px solid #5b3b4d;outline-offset:2px}
 </style>
 </head>
 <body>
 <p id="loadError">마블 게임을 불러오는 중이에요…</p>
+<a class="load-error-home" href="../../index.html" target="_top">🏠 놀이터 홈으로</a>
 <script src="mochipop.bundle.1.js"></script>
 <script src="mochipop.bundle.2.js"></script>
 <script src="mochipop.bundle.3.js"></script>

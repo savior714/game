@@ -48,10 +48,17 @@ const DiversityReward = (() => {
     return 0;
   }
 
-  function awardGems(count) {
-    if (count > 0 && typeof RewardSystem !== 'undefined') {
-      RewardSystem.add('gems', count);
+  /**
+   * 과목 다양성 보석은 날짜 기반 영수증으로 지급한다(하루 1회, 기기 간 중복 방지).
+   */
+  function awardGems(count, dateKey) {
+    if (count <= 0 || typeof RewardSystem === 'undefined') return;
+    const receiptId = 'reward.diversity.' + (dateKey || getTodayKey());
+    if (typeof RewardSystem.grantOnce === 'function') {
+      RewardSystem.grantOnce(receiptId, 'gems', count, { reason: 'diversity' });
+      return;
     }
+    RewardSystem.add('gems', count);
   }
 
   function checkMidnightReset() {
@@ -75,7 +82,7 @@ const DiversityReward = (() => {
       const gems = getDiversityGems(state.subjectsWithCorrect.length);
       if (gems > 0) {
         state.gemAwarded = true;
-        awardGems(gems);
+        awardGems(gems, state.today);
       }
     }
 

@@ -569,6 +569,93 @@ const RewardSystemUI = (() => {
     RewardSystem.add('gems', 1);
   }
 
+
+  // ── 보상 기록(감사 로그) ──
+  const ACTIVITY_LABELS = {
+    gems: '💎 보석',
+    youtube_minutes: '📺 자유시간',
+    snacks: '🍪 간식',
+    marble_plays: '🎮 마블',
+    bubble_plays: '🫧 비눗방울',
+  };
+
+  const ACTIVITY_TYPE_LABELS = {
+    grant: '획득',
+    consume: '사용',
+    exchange: '교환',
+    adjust: '조정',
+  };
+
+  function describeActivityKey(key, state) {
+    if (ACTIVITY_LABELS[key]) return ACTIVITY_LABELS[key];
+    if (typeof key === 'string' && key.startsWith('custom:')) {
+      const id = key.slice('custom:'.length);
+      const item = (state && Array.isArray(state.shop_items))
+        ? state.shop_items.find(entry => entry.id === id)
+        : null;
+      return item ? `${item.icon || '🎁'} ${item.label || id}` : `🎁 ${id}`;
+    }
+    return '🎁 보상';
+  }
+
+  function formatActivityTime(at) {
+    const value = Number(at) || 0;
+    if (value <= 0) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    const pad = (num) => String(num).padStart(2, '0');
+    return `${pad(date.getMonth() + 1)}.${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  /**
+   * 최근 획득/사용 기록을 렌더링한다.
+   * 아이·보호자가 "무엇이 언제 들어오고 나갔는지"를 같은 화면에서 확인할 수 있게 한다.
+   */
+  function renderActivityLog(state) {
+    if (typeof RewardSystem === 'undefined' || typeof RewardSystem.getRecentActivity !== 'function') {
+      return '';
+    }
+    let entries = [];
+    try {
+      entries = RewardSystem.getRecentActivity(8) || [];
+    } catch (e) {
+      entries = [];
+    }
+    const integrityOk = (typeof RewardSystem.verifyIntegrity === 'function')
+      ? Boolean(RewardSystem.verifyIntegrity().ok)
+      : false;
+
+    const rows = entries.length === 0
+      ? '<li style="color:#64748b; font-size:0.78rem; padding:6px 0;">아직 획득·사용 기록이 없어요.</li>'
+      : entries.map((entry) => {
+        const isPositive = Number(entry.delta) > 0;
+        const color = isPositive ? '#0f766e' : '#be123c';
+        const sign = isPositive ? '+' : '−';
+        const unit = entry.key === 'youtube_minutes' ? '분' : (entry.key === 'marble_plays' || entry.key === 'bubble_plays') ? '회' : '개';
+        const typeLabel = ACTIVITY_TYPE_LABELS[entry.type] || '기록';
+        const timeText = formatActivityTime(entry.at);
+        const metaText = `남은 ${entry.balanceAfter}${unit}${timeText ? ' · ' + timeText : ''}`;
+        return `<li style="display:flex; justify-content:space-between; gap:8px; padding:6px 0; border-bottom:1px dashed #e2e8f0; font-size:0.8rem; color:#334155;">
+          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${describeActivityKey(entry.key, state)} <span style="color:#94a3b8; font-size:0.72rem;">${typeLabel}</span></span>
+          <span style="flex-shrink:0; font-weight:800; color:${color};">${sign}${Math.abs(Number(entry.delta) || 0)}${unit}</span>
+          <span style="flex-shrink:0; color:#64748b; font-size:0.72rem;">${metaText}</span>
+        </li>`;
+      }).join('');
+
+    return `
+      <div class="reward-activity-log" style="margin: 0 0 14px; padding: 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; text-align:left; color:#0f172a;">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:4px;">
+          <strong style="font-size:0.9rem; color:#0f172a;">🧾 최근 보상 기록</strong>
+          <span style="font-size:0.72rem; font-weight:800; color:${integrityOk ? '#0f766e' : '#b45309'};">
+            ${integrityOk ? '✅ 기록 확인됨' : '⚠️ 확인 필요'}
+          </span>
+        </div>
+        <p style="margin:0 0 6px; font-size:0.72rem; color:#64748b;">보유량은 실제 획득(+)과 사용(−) 기록의 합계예요.</p>
+        <ul style="margin:0; padding:0; list-style:none; max-height:150px; overflow-y:auto;">${rows}</ul>
+      </div>
+    `;
+  }
+
   function openShopModal(state) {
     if (document.getElementById('reward-shop-overlay')) return;
 
@@ -588,6 +675,7 @@ const RewardSystemUI = (() => {
         <div class="shop-inventory-info" style="margin: 15px 0; padding: 10px; background: #f1f5f9; border-radius: 12px; font-weight: bold; color:#0f172a;">
           보유 보석: <span style="color:#8b5cf6;">💎 ${state.gems}개</span>
         </div>
+        ${renderActivityLog(state)}
         <div class="shop-grid" style="display: grid; gap: 12px; margin: 20px 0; max-height:50vh; overflow-y:auto; padding-right:5px;">
           ${shopItems.map(item => `
             <div class="shop-card" data-action="exchange-gem" data-item-id="${item.id}" style="cursor:pointer; padding:15px; border:2px solid #e2e8f0; border-radius:18px; display:flex; align-items:center; gap:15px; text-align:left; transition:all 0.2s; color:#0f172a;">
@@ -880,6 +968,10 @@ const RewardSystemUI = (() => {
     });
 
     deductYtBtn.addEventListener('click', () => {
+      // 두 번 눌러도 두 번 차감되지 않도록 커밋 직후 잠깐 잠근다.
+      if (deductYtBtn.disabled) return;
+      deductYtBtn.disabled = true;
+      setTimeout(() => { deductYtBtn.disabled = false; }, 500);
       const quantity = Math.floor(Number(ytQuantityInput.value));
       if (!Number.isSafeInteger(quantity) || quantity < 1) return;
       if (!ensureYtUnlocked()) return;
@@ -898,9 +990,9 @@ const RewardSystemUI = (() => {
     if (ytNormalizeBtn) {
       ytNormalizeBtn.addEventListener('click', () => {
         const curr = Number(RewardSystem.getState().youtube_minutes) || 0;
-        const normalized = Math.max(0, Math.floor(curr / 10) * 10);
-        RewardSystem.getState().youtube_minutes = normalized;
-        try { localStorage.setItem('study_rewards', JSON.stringify(RewardSystem.getState())); } catch(e){}
+        const normalized = (typeof RewardSystem.normalizeYoutubeMinutes === 'function')
+          ? RewardSystem.normalizeYoutubeMinutes()
+          : Math.max(0, Math.floor(curr / 10) * 10);
         RewardSystemUI.showToast(`찌꺼기 정리 완료: ${normalized}분`);
         overlay.remove();
         if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.updateUI(RewardSystem.getState());
@@ -1120,6 +1212,9 @@ const RewardSystemUI = (() => {
     });
 
     deductBtn.addEventListener('click', () => {
+      if (deductBtn.disabled) return;
+      deductBtn.disabled = true;
+      setTimeout(() => { deductBtn.disabled = false; }, 500);
       const quantity = Math.floor(Number(quantityInput.value));
       if (!Number.isSafeInteger(quantity) || quantity < 1) return;
       if (!ensureSnackUnlocked()) return;
@@ -1310,6 +1405,9 @@ const RewardSystemUI = (() => {
     updateCustomQuantity();
 
     deductBtn.addEventListener('click', () => {
+      if (deductBtn.disabled) return;
+      deductBtn.disabled = true;
+      setTimeout(() => { deductBtn.disabled = false; }, 500);
       const quantity = Math.floor(Number(quantityInput.value));
       RewardSystem.consumeInternal(item.id, (newState) => {
         const remaining = Number(newState.custom_inventory[item.id]) || 0;

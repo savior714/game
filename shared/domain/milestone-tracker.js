@@ -102,10 +102,16 @@ const MilestoneTracker = (() => {
     }
   }
 
-  function awardGems(count) {
-    if (count > 0 && typeof RewardSystem !== 'undefined') {
-      RewardSystem.add('gems', count);
+  /**
+   * 마일스톤 보석은 마일스톤 키 기반 영수증으로 지급한다(평생 1회).
+   */
+  function awardGems(count, milestoneKey) {
+    if (count <= 0 || typeof RewardSystem === 'undefined') return;
+    if (milestoneKey && typeof RewardSystem.grantOnce === 'function') {
+      RewardSystem.grantOnce('reward.milestone.' + milestoneKey, 'gems', count, { reason: 'milestone' });
+      return;
     }
+    RewardSystem.add('gems', count);
   }
 
   function showToast(message) {
@@ -119,7 +125,7 @@ const MilestoneTracker = (() => {
       if (streakValue >= m.threshold && !state.achieved[m.key]) {
         state.achieved[m.key] = true;
         showToast(m.message);
-        awardGems(m.gems);
+        awardGems(m.gems, m.key);
       }
     }
   }

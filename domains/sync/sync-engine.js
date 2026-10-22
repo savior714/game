@@ -47,17 +47,43 @@ window.SyncEngine = (() => {
   let _syncInProgress = false;
   let _broadcastChannel = null;
 
-  /** 로그인 직후 pull 시 서버 빈 값이 로컬 진행을 덮지 않도록 study_rewards만 병합 */
+  /**
+   * study_rewards 병합.
+   * 보상은 "현재 값"이 아니라 "획득/사용 델타의 합"으로 병합한다(RewardLedger).
+   * 값 기반 Math.max 병합은 이미 사용한 보상을 되살리므로 사용하지 않는다.
+   * 원장 모듈을 읽지 못한 경우에는 클라우드 값으로 로컬 소비를 덮지 않도록
+   * 키별 최솟값(하향)만 반영하는 보수적 병합으로 동작한다.
+   */
   function mergeStudyRewardsPayload(local, remote) {
     const L = local && typeof local === 'object' ? local : {};
     const R = remote && typeof remote === 'object' ? remote : {};
+
+    const rewardLedger = window.RewardLedger;
+    if (rewardLedger && typeof rewardLedger.mergeStates === 'function') {
+      const merged = rewardLedger.mergeStates(L, R, { adoptFields: true });
+      if (!Array.isArray(merged.shop_items) || merged.shop_items.length === 0) {
+        merged.shop_items = DEFAULT_STUDY_SHOP_ITEMS.slice();
+      }
+      DEFAULT_STUDY_SHOP_ITEMS.forEach((defaultItem) => {
+        if (!merged.shop_items.some((item) => item.id === defaultItem.id)) {
+          merged.shop_items.push({ ...defaultItem });
+        }
+      });
+      return merged;
+    }
+
+    const minOf = (a, b) => {
+      const left = Number.isFinite(Number(a)) ? Number(a) : 0;
+      const right = Number.isFinite(Number(b)) ? Number(b) : 0;
+      return Math.min(left, right);
+    };
     const keySet = new Set([
       ...Object.keys(L.custom_inventory || {}),
       ...Object.keys(R.custom_inventory || {})
     ]);
     const custom_inventory = {};
     keySet.forEach((k) => {
-      custom_inventory[k] = Math.max(L.custom_inventory?.[k] || 0, R.custom_inventory?.[k] || 0);
+      custom_inventory[k] = minOf(L.custom_inventory?.[k], R.custom_inventory?.[k]);
     });
 
     let shop_items;
@@ -72,21 +98,36 @@ window.SyncEngine = (() => {
     });
 
     // 10분 단위가 아닌 찌꺼기는 병합 후에도 사용 불가이므로 정규화
-    const rawYoutube = Math.max(L.youtube_minutes || 0, R.youtube_minutes || 0);
+    const rawYoutube = minOf(L.youtube_minutes, R.youtube_minutes);
     const normalizedYoutube = rawYoutube % 10 === 0 ? rawYoutube : Math.max(0, Math.floor(rawYoutube / 10) * 10);
 
     return {
       ...L,
       ...R,
-      gems: Math.max(L.gems || 0, R.gems || 0),
+      gems: minOf(L.gems, R.gems),
       youtube_minutes: normalizedYoutube,
-      snacks: Math.max(L.snacks || 0, R.snacks || 0),
-      marble_plays: Math.max(L.marble_plays || 0, R.marble_plays || 0),
-      bubble_plays: Math.max(L.bubble_plays || 0, R.bubble_plays || 0),
+      snacks: minOf(L.snacks, R.snacks),
+      marble_plays: minOf(L.marble_plays, R.marble_plays),
+      bubble_plays: minOf(L.bubble_plays, R.bubble_plays),
       custom_inventory,
       shop_items,
       _updated_at: Math.max(L._updated_at || 0, R._updated_at || 0)
     };
+  }
+
+  /** 병합 결과가 클라우드보다 더 많은 획득/사용 이벤트·영수증을 가지고 있는지 확인한다. */
+  function hasMoreRewardFacts(merged, remote) {
+    const readCounts = (payload) => {
+      const ledgerRaw = payload && payload.reward_ledger;
+      const events = ledgerRaw && Array.isArray(ledgerRaw.events) ? ledgerRaw.events.length : 0;
+      const receipts = payload && payload.claimed_receipts && typeof payload.claimed_receipts === 'object'
+        ? Object.keys(payload.claimed_receipts).length
+        : 0;
+      return { events, receipts };
+    };
+    const next = readCounts(merged);
+    const prev = readCounts(remote);
+    return next.events > prev.events || next.receipts > prev.receipts;
   }
 
   function normalizePulledRows(data) {
@@ -243,14 +284,27 @@ window.SyncEngine = (() => {
           continue;
         }
 
-        // study_rewards는 보존 병합하고, subject stats는 현재 full-snapshot 계약대로 LWW 처리한다.
+        // study_rewards는 시각 비교 없이 항상 원장 병합한다.
+        // (클라우드가 더 오래되어도 영수증/사용 이벤트 합집합이 필요하고,
+        //  로컬이 더 최신이면 병합 결과를 다시 푸시한다.)
+        if (row.data_key === 'study_rewards') {
+          const mergedRewards = mergeStudyRewardsPayload(localParsed || {}, row.payload);
+          const mergedRaw = JSON.stringify(mergedRewards);
+          if (mergedRaw !== localRaw) {
+            localStorage.setItem(row.data_key, mergedRaw);
+            hasUpdates = true;
+          }
+          // 클라우드에 없는 이벤트/영수증이 있으면 합집합을 올려 기기 간 수렴을 보장한다.
+          // (JSONB 키 순서 차이로 매번 재푸시하지 않도록 개수 비교만 사용)
+          if (localTime > dbTime || hasMoreRewardFacts(mergedRewards, row.payload)) {
+            pushStats(row.data_key, mergedRewards);
+          }
+          continue;
+        }
+
+        // subject stats는 현재 full-snapshot 계약대로 LWW 처리한다.
         if (dbTime > localTime) {
           let toStore = row.payload;
-          let safeLocal = localParsed || {};
-
-          if (row.data_key === 'study_rewards') {
-            toStore = mergeStudyRewardsPayload(safeLocal, row.payload);
-          }
           localStorage.setItem(row.data_key, JSON.stringify(toStore));
           hasUpdates = true;
 

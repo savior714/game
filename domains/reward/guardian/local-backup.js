@@ -25,6 +25,7 @@
     MATH_GOAL_PREFERENCE: 'aiden_math_goal_preference_v1',
     MATH_STREAK: 'aiden_math_streak_v1',
     STUDY_REWARDS: 'study_rewards',
+    REWARD_LEDGER_JOURNAL: 'study_rewards_ledger_v1',
     RECEIPT_PREFIX: 'aiden_receipt_',
     WEEKLY_WORDS: 'englishWeeklyWords',
     SUBJECT_STATS_MATH: 'aiden_math_stats',
@@ -479,6 +480,7 @@
       STORAGE_KEYS.MATH_GOAL_PREFERENCE,
       STORAGE_KEYS.MATH_STREAK,
       STORAGE_KEYS.STUDY_REWARDS,
+      STORAGE_KEYS.REWARD_LEDGER_JOURNAL,
       STORAGE_KEYS.WEEKLY_WORDS,
       STORAGE_KEYS.SESSION_LOG,
       ...SUBJECT_STAT_KEYS,
@@ -557,6 +559,13 @@
           restoredKeys.push(k);
         } else {
           storage.removeItem(k);
+        }
+        // 복원은 "그 시점으로 되돌리기"다. 복구 저널이 남아 있으면
+        // 복원 이전의 획득/사용 이벤트가 다시 병합되므로 함께 지운다.
+        try {
+          storage.removeItem(STORAGE_KEYS.REWARD_LEDGER_JOURNAL);
+        } catch (journalErr) {
+          console.warn('[LocalBackupCore] reward ledger journal cleanup failed:', journalErr);
         }
       }
 

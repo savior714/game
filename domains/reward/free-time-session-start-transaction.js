@@ -170,6 +170,23 @@
     return null;
   }
 
+  /**
+   * 보상 원장 모듈을 주입/전역에서 찾는다. 없으면 기존 스냅샷 차감 경로로 동작한다.
+   * (원장이 있으면 자유시간 시작 차감도 감사 가능한 consume 이벤트로 남는다.)
+   */
+  function _resolveRewardLedger(deps) {
+    if (deps && deps.RewardLedger && typeof deps.RewardLedger.normalizeState === "function") {
+      return deps.RewardLedger;
+    }
+    if (typeof globalThis !== "undefined" && globalThis.RewardLedger && typeof globalThis.RewardLedger.normalizeState === "function") {
+      return globalThis.RewardLedger;
+    }
+    if (typeof self !== "undefined" && self.RewardLedger && typeof self.RewardLedger.normalizeState === "function") {
+      return self.RewardLedger;
+    }
+    return null;
+  }
+
   function attemptStart(deps) {
     if (!deps || typeof deps !== "object") {
       throw new TypeError("attemptStart: deps required");
@@ -270,6 +287,7 @@
 
     // 4: check reward balance
     const rewardRawIn = storage.getItem(REWARD_STORAGE_KEY);
+    const Ledger = _resolveRewardLedger(deps);
     let reward;
     try {
       reward = JSON.parse(rewardRawIn);
@@ -278,6 +296,10 @@
     }
     if (!_isPlainObject(reward)) {
       return { code: RESULT.CORRUPT_REWARD_STATE };
+    }
+    if (Ledger) {
+      // 저장된 잔액과 원장이 어긋나 있으면 원장 합계를 신뢰한다.
+      reward = Ledger.normalizeState(reward, { adoptFields: true, at: now });
     }
     const minutes = reward.youtube_minutes;
     if (
@@ -300,11 +322,24 @@
     }
 
     // 6: compute target states
-    const targetReward = Object.assign({}, reward, {
-      youtube_minutes: minutes - durationMinutes,
-      last_updated: new Date(now).toISOString(),
-      _updated_at: now,
-    });
+    let targetReward;
+    if (Ledger) {
+      const applied = Ledger.applyDeltas(
+        reward,
+        [{ key: "youtube_minutes", delta: -durationMinutes }],
+        { at: now, type: "consume", reason: "free_time_session", receipt: sessionId }
+      );
+      targetReward = Object.assign({}, applied.state, {
+        last_updated: new Date(now).toISOString(),
+        _updated_at: now,
+      });
+    } else {
+      targetReward = Object.assign({}, reward, {
+        youtube_minutes: minutes - durationMinutes,
+        last_updated: new Date(now).toISOString(),
+        _updated_at: now,
+      });
+    }
     const targetSession = FreeTimeSession.start({
       now: now,
       sessionId: sessionId,

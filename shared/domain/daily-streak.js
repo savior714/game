@@ -53,11 +53,19 @@ const DailyStreak = (() => {
     return gems;
   }
 
-  function awardGems(streak) {
+  /**
+   * 오늘의 출석 보석은 날짜 기반 영수증으로 지급한다.
+   * 같은 날 여러 번 호출되거나 다른 기기에서 다시 기록되어도 두 번 지급되지 않는다.
+   */
+  function awardGems(streak, dateKey) {
     const gems = calculateStreakGems(streak);
-    if (gems > 0 && typeof RewardSystem !== 'undefined') {
-      RewardSystem.add('gems', gems);
+    if (gems <= 0 || typeof RewardSystem === 'undefined') return;
+    const receiptId = 'reward.daily-streak.' + (dateKey || getTodayKey());
+    if (typeof RewardSystem.grantOnce === 'function') {
+      RewardSystem.grantOnce(receiptId, 'gems', gems, { reason: 'daily_streak' });
+      return;
     }
+    RewardSystem.add('gems', gems);
   }
 
   function checkMidnightReset() {
@@ -92,7 +100,7 @@ const DailyStreak = (() => {
     state.history[today] = true;
 
     if (!state.gemAwarded[today]) {
-      awardGems(state.currentStreak);
+      awardGems(state.currentStreak, today);
       state.gemAwarded[today] = calculateStreakGems(state.currentStreak);
     }
 

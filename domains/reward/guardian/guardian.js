@@ -342,12 +342,30 @@ function resetDifficultyOverride() {
 // ──────────────────────────────────────────
 let rewardState = null;
 
-function loadRewards() {
+function rewardLedgerModule() {
+  return (typeof RewardLedger !== 'undefined' && RewardLedger &&
+    typeof RewardLedger.normalizeState === 'function') ? RewardLedger : null;
+}
+
+function readStoredRewardState() {
   const saved = localStorage.getItem('study_rewards');
-  if (saved) {
-    try {
-      rewardState = JSON.parse(saved);
-    } catch(e) {}
+  if (!saved) return null;
+  try {
+    const parsed = JSON.parse(saved);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function loadRewards() {
+  const stored = readStoredRewardState();
+  const Ledger = rewardLedgerModule();
+  if (stored && Ledger) {
+    // 원장이 있으면 잔액은 항상 원장 합계로 복원한다(스냅샷 값 신뢰 금지).
+    rewardState = Ledger.normalizeState(stored, { adoptFields: true });
+  } else if (stored) {
+    rewardState = stored;
   }
   if (!rewardState) {
     rewardState = {
@@ -380,13 +398,39 @@ function loadRewards() {
   // 보상 코어와 동일: 10분 단위가 아닌 찌꺼기(5분 등)는 사용 불가로 고착되므로 자동 정리
   if (Number.isFinite(Number(rewardState.youtube_minutes)) && Number(rewardState.youtube_minutes) % 10 !== 0) {
     const before = rewardState.youtube_minutes;
-    rewardState.youtube_minutes = Math.max(0, Math.floor(Number(rewardState.youtube_minutes) / 10) * 10);
-    if (before !== rewardState.youtube_minutes) {
-      console.warn('[Guardian] normalizing stray youtube_minutes', before, '→', rewardState.youtube_minutes);
-      saveRewards();
+    if (Ledger) {
+      const applied = Ledger.setQuantity(rewardState, 'youtube_minutes', Math.max(0, Math.floor(Number(before) / 10) * 10), {
+        type: 'adjust',
+        reason: 'youtube_stray',
+        at: Date.now(),
+      });
+      rewardState = applied.state;
+    } else {
+      rewardState.youtube_minutes = Math.max(0, Math.floor(Number(rewardState.youtube_minutes) / 10) * 10);
     }
+    console.warn('[Guardian] normalizing stray youtube_minutes', before, '→', rewardState.youtube_minutes);
+    saveRewards();
   }
   renderRewardList();
+}
+
+/**
+ * 보상 잔액을 원장 델타로 조정한다(절대값 지정).
+ * 스냅샷을 통째로 덮어쓰지 않으므로 다른 탭의 소비 기록을 되돌리지 않는다.
+ */
+function setRewardInventory(key, value, reason) {
+  const Ledger = rewardLedgerModule();
+  if (!Ledger) {
+    if (key.startsWith('custom:')) rewardState.custom_inventory[key.slice('custom:'.length)] = value;
+    else rewardState[key] = value;
+    return;
+  }
+  const memory = Ledger.normalizeState(rewardState, { adoptFields: false });
+  rewardState = Ledger.setQuantity(memory, key, value, {
+    type: 'adjust',
+    reason: reason,
+    at: Date.now(),
+  }).state;
 }
 
 function renderRewardList() {
@@ -452,8 +496,34 @@ function renderRewardList() {
 }
 
 function saveRewards() {
-  rewardState._updated_at = Date.now();
-  localStorage.setItem('study_rewards', JSON.stringify(rewardState));
+  const Ledger = rewardLedgerModule();
+  const now = Date.now();
+  if (!rewardState) return;
+
+  if (!Ledger) {
+    rewardState._updated_at = now;
+    localStorage.setItem('study_rewards', JSON.stringify(rewardState));
+    if (window.SyncEngine) window.SyncEngine.pushStats('study_rewards', rewardState);
+    return;
+  }
+
+  // 상점 항목(shop_items) 편집만 이 화면의 권한이다. 잔액은 디스크 원장과 병합해 보존한다.
+  rewardState._meta_at = { ...(rewardState._meta_at || {}), shop_items: now };
+  const fresh = Ledger.normalizeState(readStoredRewardState() || {}, { adoptFields: true, at: now });
+  const memory = Ledger.normalizeState(rewardState, { adoptFields: false, at: now });
+  const merged = Ledger.mergeStates(fresh, memory, { adoptFields: false, at: now });
+  merged.shop_items = memory.shop_items;
+  merged._meta_at = { ...(merged._meta_at || {}), shop_items: now };
+  merged._updated_at = Math.max(now, (Number(merged._updated_at) || 0) + 1);
+  localStorage.setItem('study_rewards', JSON.stringify(merged));
+  try {
+    if (merged.reward_ledger) {
+      localStorage.setItem('study_rewards_ledger_v1', JSON.stringify(merged.reward_ledger));
+    }
+  } catch (e) {
+    console.warn('[Guardian] reward ledger journal write failed:', e);
+  }
+  rewardState = merged;
   if (window.SyncEngine) window.SyncEngine.pushStats('study_rewards', rewardState);
 }
 
@@ -612,10 +682,10 @@ function deleteCustomReward(id) {
     const confirmDelete = confirm('⚠️ 아이가 이미 이 보상을 인벤토리에 보유하고 있습니다.\\n삭제 시 아이의 인벤토리에서도 영구적으로 삭제되며 복구할 수 없습니다.\\n\\n정말 삭제하시겠습니까?');
     if (!confirmDelete) return;
     
-    if (id === 'youtube') rewardState.youtube_minutes = 0;
-    else if (id === 'snack') rewardState.snacks = 0;
-    else if (id === 'marble') rewardState.marble_plays = 0;
-    else delete rewardState.custom_inventory[id];
+    if (id === 'youtube') setRewardInventory('youtube_minutes', 0, 'guardian_reward_removed');
+    else if (id === 'snack') setRewardInventory('snacks', 0, 'guardian_reward_removed');
+    else if (id === 'marble') setRewardInventory('marble_plays', 0, 'guardian_reward_removed');
+    else setRewardInventory('custom:' + id, 0, 'guardian_reward_removed');
   } else {
     const confirmDelete = confirm('[' + item.label + '] 보상을 목록에서 삭제하시겠습니까?');
     if (!confirmDelete) return;

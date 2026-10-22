@@ -288,6 +288,8 @@
   <!-- Domain & Reward Integration Scripts -->
   <!-- 인증은 body 시작 직후 auth-gate.js가 Supabase/auth를 선로드한다.
        동기화 엔진은 로그인 gate가 auth module을 읽은 뒤 연결된다. -->
+  <!-- 보상 원장: 획득/사용 델타 병합으로 소비가 되살아나지 않게 한다. -->
+  <script src="./shared/domain/reward-ledger.js"></script>
   <script src="./domains/sync/sync-engine.js"></script>
   <script src="shared/domain/free-time-allowance.js"></script>
   <script src="shared/domain/free-time-session.js"></script>

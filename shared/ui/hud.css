@@ -649,6 +649,30 @@ button.ag-fs-toggle[aria-pressed="true"]:hover {
   color: #FFFFFF;
 }
 
+/* 밝은 종이 배경(물감 실험실 등) 위에서도 읽히도록 대비를 높인다 */
+.paint-page button.ag-fs-toggle {
+  border-color: rgba(36, 49, 73, 0.22);
+  background-color: rgba(36, 49, 73, 0.08);
+  color: #243149;
+}
+
+.paint-page button.ag-fs-toggle:hover {
+  background-color: rgba(36, 49, 73, 0.14);
+  border-color: rgba(36, 49, 73, 0.36);
+  color: #111827;
+}
+
+.paint-page button.ag-fs-toggle[aria-pressed="true"] {
+  background-color: #27344b;
+  border-color: #27344b;
+  color: #fffdf8;
+}
+
+.paint-page button.ag-fs-toggle[aria-pressed="true"]:hover {
+  background-color: #1e293b;
+  color: #ffffff;
+}
+
 .ag-fs-toggle__icon {
   display: inline-flex;
   align-items: center;

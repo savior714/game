@@ -79,10 +79,14 @@ body{grid-auto-rows:min-content;gap:10px;padding:24px;box-sizing:border-box}
           </div>
         </a>
       </div>
+      <div class="ag-hud__right"></div>
     `;
     if (document.head) document.head.appendChild(homeButtonCss);
     if (document.head) document.head.appendChild(style);
     if (document.body) document.body.appendChild(hud);
+    if (window.AidenFullscreenToggle && typeof window.AidenFullscreenToggle.mount === 'function') {
+      window.AidenFullscreenToggle.mount();
+    }
 
     const syncTopHudOffset = () => {
       const rect = hud.getBoundingClientRect();
@@ -101,5 +105,6 @@ body{grid-auto-rows:min-content;gap:10px;padding:24px;box-sizing:border-box}
   }
 })();
 </script>
+<script src="../../shared/ui/fullscreen-toggle.js"></script>
 </body>
 </html>

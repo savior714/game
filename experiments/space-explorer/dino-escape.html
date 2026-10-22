@@ -35,6 +35,9 @@
   <link rel="stylesheet" href="../../shared/ui/home-button.css">
 </head>
 <body class="dino-page">
+
+  <!-- 로그인 gate: 세션이 확인되기 전에는 기능 surface를 fail-closed로 차단한다. -->
+  <script src="../../domains/auth/auth-gate.js"></script>
   <section id="dino-admission-gate" class="admission-screen" aria-labelledby="dino-admission-title">
     <div class="admission-card">
       <span class="admission-icon" aria-hidden="true">

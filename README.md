@@ -23,7 +23,8 @@ skill goal
 - 첫 구현 대상은 Math이며, 검증된 skill/mastery 계약만 다른 과목으로 확장합니다.
 - Ocean Rescue는 학습 문제를 내부에 넣는 교육게임이 아니라 **학습 완료 후 즐기는 active reward game**입니다.
 - Space Explorer는 계속 `PAUSED_REFERENCE_ONLY`입니다.
-- 새로운 대형 게임, RPG식 meta progression, backend/cloud 선행 개발, runtime LLM, 전체 framework/TypeScript 통일은 현재 기본 개발 목표가 아닙니다.
+- 새로운 대형 게임, RPG식 meta progression, 새 backend API/인증 provider 확장, runtime LLM, 전체 framework/TypeScript 통일은 현재 기본 개발 목표가 아닙니다.
+- child-facing 기능은 Supabase Google 로그인 후 이용할 수 있습니다. session이 없거나 확인할 수 없으면 로그인 gate가 기능을 차단합니다.
 
 ## 🚀 핵심 제품 surface
 
@@ -32,7 +33,8 @@ skill goal
 - **Reward loop:** 보석, streak, collection/unlock, 자유시간
 - **Ocean Rescue:** 학습 목표 완료 후 이용하는 보상 게임
 - **Guardian:** skill 성장/약점, 간단한 목표 preset, 현실 보상 상점
-- **Persistence:** local-first, export/import backup 우선
+- **Persistence:** local-first, export/import backup 우선, 로그인 계정 단위 cloud sync
+- **Login:** Supabase Google OAuth 기반 child-facing 기능 gate
 
 ## 📱 기준 사용 환경
 
@@ -57,6 +59,7 @@ skill goal
 - Ocean Rescue source/package: `domains/ocean-rescue/`
 - Ocean Rescue production artifact: `ocean-rescue/index.html`
 - 배포 라우팅 설정: `vercel.json`
+- 로그인 gate: `domains/auth/auth-gate.js`
 - 검증 진입점: 루트 `verify.sh`
 - 주요 상태 분류:
   - Ocean Rescue | 운영중·active feature

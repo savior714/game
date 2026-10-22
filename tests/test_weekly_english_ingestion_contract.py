@@ -153,9 +153,10 @@ def test_no_secret_hardcoded_in_repository() -> None:
             assert "sb_secret" not in content, f"Secret pattern in {file}"
 
 
-def test_direct_entry_html_includes_sync_bootstrap() -> None:
+def test_direct_entry_html_includes_login_gate_and_sync_bootstrap() -> None:
     """Verifies that direct entry to domains/english and domains/english/weekly-test
-    includes Supabase, Auth, and SyncEngine to ensure immediate remote sync.
+    includes the login gate and SyncEngine. The gate loads Supabase/auth before
+    opening the surface, so remote sync starts only after an authenticated session.
     """
     eng_html = ENGLISH_INDEX.read_text(encoding="utf-8")
     wt_html = WEEKLY_TEST_INDEX.read_text(encoding="utf-8")
@@ -164,8 +165,7 @@ def test_direct_entry_html_includes_sync_bootstrap() -> None:
         ("english/index.html", eng_html),
         ("weekly-test/index.html", wt_html),
     ]:
-        assert "supabase" in html.lower(), f"{html_name} lacks Supabase client script"
-        assert "auth.js" in html, f"{html_name} lacks auth.js bootstrap"
+        assert "auth-gate.js" in html, f"{html_name} lacks the login gate"
         assert "sync-engine.js" in html, f"{html_name} lacks sync-engine.js bootstrap"
 
 

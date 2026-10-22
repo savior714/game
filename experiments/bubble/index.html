@@ -185,6 +185,9 @@
 </style>
 </head>
 <body>
+
+  <!-- 로그인 gate: 세션이 확인되기 전에는 기능 surface를 fail-closed로 차단한다. -->
+  <script src="../../domains/auth/auth-gate.js"></script>
 <header class="game-top-hud">
   <div style="display: flex; align-items: center; gap: 10px;">
     <a href="../../index.html" target="_top" class="ag-home-btn" aria-label="놀이터 홈으로 이동" title="놀이터 홈으로">

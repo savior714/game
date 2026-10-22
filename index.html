@@ -28,6 +28,9 @@
 </head>
 <body class="bg-[#07090e] text-slate-100 min-h-screen relative overflow-x-hidden selection:bg-[#d7ff00]/30 selection:text-[#d7ff00]">
 
+  <!-- 로그인 gate: 세션이 확인되기 전에는 기능 surface를 fail-closed로 차단한다. -->
+  <script src="./domains/auth/auth-gate.js"></script>
+
   <!-- Ambient Glow Background -->
   <div class="console-bg-glow"></div>
 
@@ -283,11 +286,8 @@
   </script>
 
   <!-- Domain & Reward Integration Scripts -->
-  <!-- Supabase + 인증·동기화 엔진: 로그인 계정(user_id) 단위로 보상 데이터를
-       Supabase DB(public.user_data, RLS per user_id)와 연동한다.
-       과목별 페이지와 동일하게 정적 스크립트로 선적재해 동적 로드 경로 의존을 줄인다. -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./domains/auth/auth.js"></script>
+  <!-- 인증은 body 시작 직후 auth-gate.js가 Supabase/auth를 선로드한다.
+       동기화 엔진은 로그인 gate가 auth module을 읽은 뒤 연결된다. -->
   <script src="./domains/sync/sync-engine.js"></script>
   <script src="shared/domain/free-time-allowance.js"></script>
   <script src="shared/domain/free-time-session.js"></script>

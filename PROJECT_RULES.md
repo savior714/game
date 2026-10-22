@@ -24,6 +24,7 @@ AidenGame은 어린이를 위한 local-first 웹 기반 학습 게임 플랫폼�
 | 공용 스타일 | `styles.css` |
 | 과목별 게임 | `domains/math/`, `domains/english/`, `domains/korean/`, `domains/science/` |
 | 지원 도메인 | `domains/reward/`, `domains/auth/`, `domains/sync/` |
+| 로그인 gate | `domains/auth/auth-gate.js` |
 | 공용 로직 | `shared/domain/`, `shared/ui/`, `shared/event-bus.js` |
 | Ocean Rescue source/package | `domains/ocean-rescue/` |
 | Ocean Rescue production artifact | `ocean-rescue/index.html` |
@@ -119,6 +120,9 @@ just ci
 
 - API 키, 토큰, 쿠키, `.env` 원문을 노출하지 않는다.
 - 인증·동기화·보호자 기능은 권한이 불명확할 때 fail-closed한다.
+- child-facing 기능 표면(학습·주간 시험·실험·보호자 화면 포함)은 확인된 로그인 session 없이는 사용할 수 없다. gate는 `domains/auth/auth-gate.js`가 소유하고, 새 child-facing HTML entry는 gate 연결 없이 추가하지 않는다.
+- gate는 Supabase/auth module을 읽지 못하거나 session을 확인할 수 없을 때도 열리지 않는다(fail-closed). 로그인 화면을 닫거나 우회하는 fallback을 두지 않는다.
+- Ocean Rescue standalone artifact는 offline/deterministic 실행 계약 때문에 자체 네트워크 인증을 넣지 않는다. 진입은 허브의 로그인 gate가 소유한다.
 - 외부 입력을 검증하고 안전한 DOM API를 사용한다.
 - 가족/개인 local-first 범위를 공개 다중 사용자 서비스로 암묵적으로 확장하지 않는다.
 

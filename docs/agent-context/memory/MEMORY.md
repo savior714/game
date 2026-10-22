@@ -2,7 +2,7 @@
 id: MEMORY
 type: MEM
 status: active
-last_verified: 2026-08-16
+last_verified: 2026-10-22
 ---
 
 # Memory
@@ -26,7 +26,7 @@ last_verified: 2026-08-16
 - 아이에게 mastery percentage를 노출하지 않고, 보호자에게 약점/성장을 자세히 보여준다.
 - LLM은 콘텐츠 제작 보조까지만 허용한다. runtime 문제 생성·mastery·next-question 판단에는 사용하지 않는다.
 - game layer는 gems/streak/collection/unlock/현실 보상까지 허용하지만 RPG식 level/stat/quest/meta progression은 비목표다.
-- persistence는 local-first + export/import backup을 먼저 한다. backend/cloud sync는 현재 필수가 아니다.
+- persistence는 local-first + export/import backup을 먼저 한다. child-facing 기능은 Supabase Google 로그인 session이 필수이며, session이 없거나 확인할 수 없으면 `domains/auth/auth-gate.js`가 fail-closed로 차단한다.
 - 기준 기기는 Galaxy Tab S10급이며 landscape-first지만 portrait/split-screen/resize에서 핵심 흐름이 깨지지 않아야 한다.
 
 ## Verified baseline

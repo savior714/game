@@ -1,7 +1,7 @@
 # AidenGame Active Product Scope
 
 - **Status:** `CANONICAL_ACTIVE_PRODUCT_SSOT`
-- **Effective:** 2026-08-16
+- **Effective:** 2026-10-22
 - **Owner:** product direction only
 - **Does not own:** Git/workspace procedure, generic verification procedure, feature-internal implementation details
 
@@ -24,7 +24,7 @@ AidenGame은 **초등 저학년 어린이가 Galaxy Tab에서 스스로 매일 �
 
 ## 2. Primary user and device
 
-- 현재 1차 운영 대상은 가족/개인 사용이다. 장기적으로 공개 서비스 가능성을 열어 두되, 현재 backend·account·규제 대응을 선행 개발하지 않는다.
+- 현재 1차 운영 대상은 가족/개인 사용이다. 장기적으로 공개 서비스 가능성을 열어 두되, 현재 별도 backend·새 account 체계·규제 대응을 선행 개발하지 않는다.
 - 초기 학습 기준은 초등 저학년이며, **실제 사용하는 아이의 현재 수준을 canonical target**으로 삼고 성장에 맞춰 범위를 확장한다.
 - 기준 기기는 **Galaxy Tab S10급 Android 태블릿**이다.
 - UX는 **landscape-first**로 설계하되 portrait, split-screen, resize에서 핵심 기능이 깨지지 않아야 한다.
@@ -181,13 +181,15 @@ Ocean Rescue는 **학습 문제를 내부에 삽입하는 교육게임이 아니
 - 공통화 우선 대상은 framework가 아니라 **skill, mastery, reward, free-time 같은 domain meaning과 persistence contract**다.
 - 전체 TypeScript 전환, framework migration, backend 도입을 현재 milestone의 전제조건으로 만들지 않는다.
 
-## 10. Persistence and network direction
+## 10. Persistence, login, and network direction
 
 - 현재 데이터 ownership은 **local-first**다.
 - UX는 online-first여도 되며 완전 offline 제품을 현재 목표로 하지 않는다.
-- cloud sync는 있으면 좋은 장기 기능이지 현재 필수 조건이 아니다.
-- 현재 우선은 local persistence의 신뢰성 + export/import backup이다.
-- 별도 backend API, account system, Google/Samsung account 연동을 지금 선행 개발하지 않는다.
+- child-facing 기능 표면(학습·주간 시험·실험·보호자 화면 포함)은 **로그인 session을 필수 진입 조건**으로 사용한다. session이 없거나 확인할 수 없으면 기능은 fail-closed로 차단한다. gate 구현은 `domains/auth/auth-gate.js`가 소유한다.
+- 로그인은 Supabase Google OAuth를 사용한다. 같은 계정으로 로그인한 기기 간 학습 기록·보상 동기화를 허용한다.
+- 로그인 계정 단위 cloud sync는 접근 조건의 일부이지만, 별도 backend API를 새로 도입하지 않는다.
+- local persistence의 신뢰성 + export/import backup 방향은 유지한다.
+- 보호자·관리자 도구는 로그인에 더해 자체 역할/권한 경계를 따른다.
 
 ## 11. Explicit non-goals for the current phase
 
@@ -198,7 +200,7 @@ Ocean Rescue는 **학습 문제를 내부에 삽입하는 교육게임이 아니
 - RPG/meta-game 확장
 - 모든 runtime의 framework 통일
 - 전체 TypeScript 전환
-- backend/cloud sync/account system
+- 새 backend API 또는 새 인증 provider 도입(현재 Supabase Google 로그인 gate는 운영 범위)
 - runtime LLM
 - runtime AI 문제 생성
 - BKT부터 시작하는 학습 모델 과설계
@@ -215,6 +217,7 @@ Ocean Rescue는 **학습 문제를 내부에 삽입하는 교육게임이 아니
 | Math mastery/adaptive loop | **현재 최우선 개발 영역** |
 | Ocean Rescue | active reward-game product; 학습 완료 후 이용 |
 | Guardian / Reward | active supporting product surface; mastery loop 뒤에서 통합 |
+| Login gate (Supabase Google) | active access boundary; child-facing 기능의 필수 진입 조건 |
 | Space Explorer | `PAUSED_REFERENCE_ONLY`; 명시적 방향 변경 전 신규 개발 금지 |
 | YouTube/free-time | 별도 승인된 feature contract가 있을 수 있으나 현재 기본 priority를 자동 변경하지 않음 |
 

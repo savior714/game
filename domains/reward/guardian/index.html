@@ -80,6 +80,9 @@
 </head>
 <body class="bg-[#07090e] min-h-screen text-slate-100 pb-16 relative selection:bg-[#d7ff00]/30 selection:text-[#d7ff00]">
 
+  <!-- 로그인 gate: 세션이 확인되기 전에는 보호자 기능 surface를 fail-closed로 차단한다. -->
+  <script src="../../../domains/auth/auth-gate.js"></script>
+
   <!-- Ambient Glow Background -->
   <div class="console-bg-glow"></div>
 

@@ -20,6 +20,9 @@
 </head>
 <body class="se-page paint-page">
 
+  <!-- 로그인 gate: 세션이 확인되기 전에는 기능 surface를 fail-closed로 차단한다. -->
+  <script src="../../domains/auth/auth-gate.js"></script>
+
   <!-- Paper texture and celebration layer -->
   <div id="paint-confetti-layer" class="paint-confetti-layer" aria-hidden="true"></div>
 

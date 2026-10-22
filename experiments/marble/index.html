@@ -14,6 +14,9 @@ body{grid-auto-rows:min-content;gap:10px;padding:24px;box-sizing:border-box}
 </style>
 </head>
 <body>
+
+  <!-- 로그인 gate: 세션이 확인되기 전에는 기능 surface를 fail-closed로 차단한다. -->
+  <script src="../../domains/auth/auth-gate.js"></script>
 <p id="loadError">마블 게임을 불러오는 중이에요…</p>
 <a class="load-error-home" href="../../index.html" target="_top">🏠 놀이터 홈으로</a>
 <script src="mochipop.bundle.1.js"></script>

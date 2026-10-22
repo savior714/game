@@ -22,6 +22,9 @@
   </script>
 </head>
 <body>
+
+  <!-- 로그인 gate: 세션이 확인되기 전에는 기능 surface를 fail-closed로 차단한다. -->
+  <script src="../../domains/auth/auth-gate.js"></script>
   <div id="space-app">
     <canvas id="space-canvas" tabindex="0" aria-label="3D 태양계 시뮬레이션. 드래그로 회전하고 스크롤로 확대할 수 있습니다."></canvas>
     <div id="labels-layer" aria-hidden="true"></div>

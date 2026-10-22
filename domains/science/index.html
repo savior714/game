@@ -18,6 +18,9 @@
 </head>
 <body class="selection:bg-[#d7ff00]/30 selection:text-[#d7ff00]">
 
+  <!-- 로그인 gate: 세션이 확인되기 전에는 기능 surface를 fail-closed로 차단한다. -->
+  <script src="../../domains/auth/auth-gate.js"></script>
+
   <!-- Unified Learning HUD -->
   <header class="ag-hud ag-hud--compact study-compact-hud" data-subject="science" aria-label="학습 상단 내비게이션">
     <div class="ag-hud__left">

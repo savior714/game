@@ -17,6 +17,9 @@
 </head>
 <body class="selection:bg-[#d7ff00]/30 selection:text-[#d7ff00]">
 
+  <!-- 로그인 gate: 세션이 확인되기 전에는 기능 surface를 fail-closed로 차단한다. -->
+  <script src="../../../domains/auth/auth-gate.js"></script>
+
   <!-- Ambient Glow Background -->
   <div class="console-bg-glow"></div>
 
@@ -151,9 +154,7 @@
   <script src="../../../shared/domain/daily-streak.js"></script>
   <script src="../../../shared/domain/diversity-reward.js"></script>
 
-  <!-- Supabase & Auth/Sync Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../../../domains/auth/auth.js"></script>
+  <!-- 인증은 auth-gate.js가 선로드하고, sync는 완료 뒤 연결된다. -->
   <script src="../../../domains/sync/sync-engine.js"></script>
 
   <!-- Weekly Test Scripts -->

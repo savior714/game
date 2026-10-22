@@ -225,6 +225,24 @@ const RewardSystemUI = (() => {
     document.head.appendChild(style);
   }
 
+  function ensureAuthAndSyncScripts() {
+    if (
+      !window.Auth
+      && !document.getElementById('aiden-canonical-auth')
+      && !document.querySelector('script[src$="/domains/auth/auth.js"]')
+      && !document.querySelector('script[src$="domains/auth/auth.js"]')
+    ) {
+      const s2 = document.createElement('script');
+      s2.src = resolveGlobalAsset('auth.js');
+      document.head.appendChild(s2);
+    }
+    if (!window.SyncEngine && !document.getElementById('aiden-canonical-sync')) {
+      const s3 = document.createElement('script');
+      s3.src = resolveGlobalAsset('sync-engine.js');
+      document.head.appendChild(s3);
+    }
+  }
+
   function injectStyles(state, onLoad) {
     if (document.getElementById('reward-system-css')) {
       if (onLoad) onLoad();
@@ -244,17 +262,22 @@ const RewardSystemUI = (() => {
     };
     document.head.appendChild(link);
 
-    // Inject Supabase & Auth scripts
-    if (!document.getElementById('supabase-js')) {
+    // Inject Supabase & Auth scripts.
+    // auth-gate.js가 먼저 Supabase/auth를 읽고 있을 수 있으므로, 이미 준비된
+    // 의존성은 다시 읽지 않고 아직 없는 sync 모듈만 보완한다.
+    if (typeof supabase === 'undefined' && !document.getElementById('supabase-js')) {
       const s1 = document.createElement('script');
       s1.id = 'supabase-js';
       s1.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
-      s1.onload = () => {
-        const s2 = document.createElement('script'); s2.src = resolveGlobalAsset('auth.js');
-        const s3 = document.createElement('script'); s3.src = resolveGlobalAsset('sync-engine.js');
-        document.head.append(s2, s3);
-      };
+      s1.onload = ensureAuthAndSyncScripts;
       document.head.appendChild(s1);
+    } else if (typeof supabase !== 'undefined') {
+      ensureAuthAndSyncScripts();
+    } else {
+      const existing = document.getElementById('supabase-js');
+      if (existing && typeof existing.addEventListener === 'function') {
+        existing.addEventListener('load', ensureAuthAndSyncScripts, { once: true });
+      }
     }
 
     if (state.theme === 'analog') {
@@ -352,12 +375,20 @@ const RewardSystemUI = (() => {
     mountTarget.appendChild(bar);
     applyBodyTopOffset();
 
+    const authLabel = document.getElementById('inv-auth');
+    if (authLabel && window.Auth && typeof window.Auth.getUser === 'function') {
+      authLabel.textContent = window.Auth.getUser() ? '로그아웃' : '로그인';
+    }
+
     if (!authListenerBound) {
       authListenerBound = true;
       window.addEventListener('auth-changed', (e) => {
-        const authLabel = document.getElementById('inv-auth');
-        if (authLabel) {
-          authLabel.textContent = e.detail.user ? '로그아웃' : '로그인';
+        const label = document.getElementById('inv-auth');
+        const user = e && e.detail && Object.prototype.hasOwnProperty.call(e.detail, 'user')
+          ? e.detail.user
+          : (window.Auth && typeof window.Auth.getUser === 'function' ? window.Auth.getUser() : null);
+        if (label) {
+          label.textContent = user ? '로그아웃' : '로그인';
         }
       });
     }

@@ -8,7 +8,8 @@
 - domains/sync/sync-engine.js: study_rewards를 user_id 기준 풀/푸시 키로 다룬다.
 - domains/reward/reward.js: 보상 저장 시 SyncEngine이 없더라도 동기화 큐(sync_queue)에
   기록해 클라우드 연동이 누락되지 않는다.
-- index.html: 메인 허브에서 Supabase/인증/동기화 엔진을 정적 스크립트로 선적재한다.
+- index.html: 메인 허브가 로그인 gate와 동기화 엔진을 정적 스크립트로 선적재한다.
+- domains/auth/auth-gate.js: Supabase/auth를 동적으로 선로드하고, 확인된 session에만 연다.
 """
 
 from __future__ import annotations
@@ -49,12 +50,14 @@ def test_reward_save_enqueues_to_cloud_sync_queue_without_sync_engine():
     )
 
 
-def test_index_html_loads_supabase_auth_sync_statically():
-    """메인 허브(index.html)가 인증·동기화 엔진을 정적 스크립트로 선적재한다."""
+def test_index_html_loads_the_login_gate_and_sync_statically():
+    """메인 허브(index.html)가 로그인 gate와 동기화 엔진을 정적 스크립트로 선적재한다."""
     html = _read(INDEX_HTML)
-    assert "@supabase/supabase-js@2" in html, "supabase-js 스크립트 선적재가 없다."
-    assert "./domains/auth/auth.js" in html, "인증 스크립트 선적재가 없다."
+    gate = _read(ROOT / "domains" / "auth" / "auth-gate.js")
+    assert "./domains/auth/auth-gate.js" in html, "로그인 gate 스크립트 선적재가 없다."
     assert "./domains/sync/sync-engine.js" in html, "동기화 엔진 스크립트 선적재가 없다."
+    assert "@supabase/supabase-js@2" in gate, "gate가 Supabase client를 선로드하지 않는다."
+    assert "new URL('auth.js'" in gate, "gate가 canonical auth module을 선로드하지 않는다."
 
 
 def test_user_data_rls_is_per_user_id():

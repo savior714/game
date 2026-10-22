@@ -27,6 +27,9 @@ from playwright.sync_api import Page, Route, sync_playwright
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
+# 실제 Supabase SDK와 REST route mock이 필요하므로 브라우저 stub을 쓰지 않는다.
+pytestmark = pytest.mark.real_supabase
+
 NEW_WEEKLY_SET = {
     "schemaVersion": 1,
     "setId": "2026-09-25",
@@ -97,6 +100,14 @@ def browser_context():
         browser.close()
 
 
+def _wait_for_auth_ready(page: Page) -> None:
+    """Gate가 auth module을 비동기로 읽으므로, 직접 조작 전에 준비를 기다린다."""
+    page.wait_for_function(
+        "() => Boolean(window.Auth && typeof window.Auth.getUser === 'function')",
+        timeout=15000,
+    )
+
+
 def _setup_supabase_routes(page: Page) -> None:
     """Intercepts Supabase auth & REST calls to simulate authenticated session and sync."""
 
@@ -165,6 +176,7 @@ def test_browser_direct_entry_english_pulls_new_set(
 
     # Direct entry to domains/english/index.html
     page.goto(f"{static_server}/domains/english/index.html")
+    _wait_for_auth_ready(page)
 
     page.evaluate(
         f"""async () => {{
@@ -254,6 +266,7 @@ def test_browser_direct_entry_weekly_test_pulls_new_set(
 
     # Direct entry to weekly test
     page.goto(f"{static_server}/domains/english/weekly-test/index.html")
+    _wait_for_auth_ready(page)
 
     page.evaluate(
         f"""async () => {{

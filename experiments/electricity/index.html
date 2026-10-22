@@ -18,6 +18,9 @@
   </script>
 </head>
 <body>
+
+  <!-- 로그인 gate: 세션이 확인되기 전에는 기능 surface를 fail-closed로 차단한다. -->
+  <script src="../../domains/auth/auth-gate.js"></script>
   <!-- ─────────────── 전체 화면 3D 발전소 섬 스테이지 ─────────────── -->
   <div class="world-stage" id="world-stage">
     <canvas

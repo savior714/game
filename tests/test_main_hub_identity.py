@@ -16,9 +16,10 @@ def test_templates_index_is_aidengame_hub_page() -> None:
     assert "과학 놀이" in html
     assert "태양계 탐험 (실험)" in html
     assert "experiments/space-explorer/index.html" in html
-    # 상단 크롬은 홈 컨트롤 하나(brand 링크)만 갖는다
+    # 허브는 이미 홈이다: 상단 크롬에 별도 홈 버튼을 두지 않고 brand 링크만 남긴다
     assert 'id="main-top-nav"' not in html
     assert "ag-hud__home" not in html
+    assert "ag-home-btn" not in html
     assert "ag-hud__brand-home" in html
 
     # Modern Hub UI Structure & Functional Verification
@@ -62,13 +63,14 @@ def test_main_hub_unified_topbar_structure() -> None:
     assert "12,500" not in html
     assert "🪙" not in html
 
-    # 2. 홈 컨트롤은 brand 링크 하나뿐 (자기 자신을 가리키는 nav는 두지 않는다)
+    # 2. 허브 상단 크롬: brand 링크만 홈을 가리키고, 눌러도 제자리인 홈 버튼은 두지 않는다
     header_start = html.index("<header")
     header_end = html.index("</header>", header_start)
     header_html = html[header_start:header_end]
     assert 'href="./index.html"' in header_html
     assert "ag-hud__brand-home" in header_html
     assert "ag-hud__home" not in header_html
+    assert "ag-home-btn" not in header_html
     assert "aria-current" not in header_html
 
     # 3. reward_ui.js mount support

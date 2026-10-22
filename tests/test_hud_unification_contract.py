@@ -117,18 +117,39 @@ def test_legacy_aliases_remain_for_backward_compatibility():
     assert ".topbar.glass" in hud_css, "HUD CSS must alias Space Explorer topbar"
 
 
-def test_hud_pages_expose_single_home_control():
-    """HUD 크롬의 홈 컨트롤은 brand 링크 하나뿐이다 (별도 홈 버튼 금지)."""
+def test_hud_pages_expose_explicit_home_button():
+    """HUD 크롬에는 아이가 알아볼 수 있는 명시적 홈 버튼이 있다.
+
+    brand 링크도 여전히 홈으로 가지만(보조 동선), 아이가 로고를 홈 버튼으로
+    인식하지 못하므로 집 아이콘 + "홈" 라벨 버튼이 primary control이다.
+    메인 허브(index.html)는 이미 홈이므로 홈 버튼을 두지 않는다.
+    """
     for rel_path in GAME_PAGES:
         html = (ROOT / rel_path).read_text(encoding="utf-8")
         assert "ag-hud__home" not in html, (
-            f"{rel_path} must not keep a standalone .ag-hud__home button"
+            f"{rel_path} must not keep the dead .ag-hud__home class"
         )
         assert "compact-hud-home" not in html, (
-            f"{rel_path} must not keep a standalone .compact-hud-home button"
+            f"{rel_path} must not keep the dead .compact-hud-home class"
         )
         assert "ag-hud__brand-home" in html, (
-            f"{rel_path} brand must carry the visible home affordance"
+            f"{rel_path} brand must carry its small home hint"
+        )
+
+        if rel_path == "index.html":
+            assert "ag-home-btn" not in html, (
+                "허브 화면에는 홈 버튼을 두지 않는다 (이미 홈이다)"
+            )
+            continue
+
+        assert "ag-home-btn" in html, (
+            f"{rel_path} HUD must expose the explicit .ag-home-btn home button"
+        )
+        assert "ag-home-btn__label" in html, (
+            f"{rel_path} home button must show a text label, not a bare icon"
+        )
+        assert "shared/ui/home-button.css" in html, (
+            f"{rel_path} must load the shared home button stylesheet"
         )
 
 

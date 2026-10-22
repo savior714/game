@@ -139,10 +139,11 @@ def test_dino_escape_page_is_offline_and_module_based() -> None:
     assert "space-explorer.css" not in html
     assert "space-explorer-minigames.css" not in html
     assert '<script type="module" src="./dino-admission.js"></script>' in html
+    assert '<script src="../../shared/ui/fullscreen-toggle.js"></script>' in html
     assert 'href="./dino-admission.css"' in html
     assert 'id="dino-admission-gate"' in html
     assert 'id="game-shell"' in html and 'class="game-shell" aria-label="공룡 추격 탈출 게임" hidden' in html
-    assert html.count("<script") == 1
+    assert html.count("<script") == 2
 
     # Nothing at all is fetched at runtime: the 3D engine, the fonts and the
     # stylesheet are all local, so the page renders identically offline.

@@ -49,7 +49,7 @@ body.paint-page {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
-.paint-page .hud-left-section { width: 100%; justify-content: space-between; gap: 12px; }
+.paint-page .hud-left-section { flex: 1 1 auto; justify-content: space-between; gap: 12px; min-width: 0; }
 .paint-page .brand-badge { color: var(--ink); gap: 10px; }
 .paint-page .brand-dot {
   width: 30px;

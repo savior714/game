@@ -37,7 +37,12 @@
 <body class="dino-page">
   <section id="dino-admission-gate" class="admission-screen" aria-labelledby="dino-admission-title">
     <div class="admission-card">
-      <span class="admission-icon" aria-hidden="true">🦖</span>
+      <span class="admission-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="#ffb82e" aria-hidden="true">
+          <path d="M4.7 8.1c0-2.5 2-4.5 4.5-4.5h2.1c1 0 1.9.4 2.5 1.1l2.2 2.4 2.6.9c1.5.5 2.4 1.9 2.2 3.4l-.3 2.1-2.2.7-.5 1.6c-.2.5-.8.8-1.3.6l-2.1-.6-1.2 3.6c-.2.6-.8.9-1.4.7-.6-.2-.9-.8-.7-1.4l1-3.1-3.6-.1-1.9 3.1c-.3.5-1 .7-1.5.4-.5-.3-.7-1-.4-1.5l1.7-2.8c-1.2-1-1.9-2.5-1.9-4.1z"/>
+          <circle cx="15.6" cy="8.6" r="0.9" fill="#0a1214"/>
+        </svg>
+      </span>
       <p class="admission-kicker">DINO ESCAPE · DAILY REWARD</p>
       <h1 id="dino-admission-title">오늘 공부 목표를 완료하면 열려요!</h1>
       <p id="dino-admission-message" class="admission-copy">
@@ -115,8 +120,8 @@
           </div>
         </div>
 
-        <div class="hud-top-right">
-          <button id="btn-fullscreen" class="hud-icon-btn hud-icon-btn--fullscreen" type="button" data-action="toggle-fullscreen" aria-label="전체 화면으로 보기" aria-pressed="false">
+        <div class="hud-top-right ag-hud__right">
+          <button id="btn-fullscreen" class="hud-icon-btn hud-icon-btn--fullscreen" type="button" aria-label="전체 화면으로 보기" aria-pressed="false">
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
               <path d="M16 3h3a2 2 0 0 1 2 2v3"></path>
@@ -590,5 +595,6 @@
   </main>
 
   <script type="module" src="./dino-admission.js"></script>
+  <script src="../../shared/ui/fullscreen-toggle.js"></script>
 </body>
 </html>

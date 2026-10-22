@@ -1,13 +1,26 @@
 /* Daily learning-goal admission screen for Dino Escape. */
-.admission-screen[hidden],
+.admission-screen[hidden] {
+  display: none !important;
+}
+
 .game-shell[hidden] {
+  display: block !important;
+  pointer-events: none;
+}
+
+.game-shell[hidden] > :not(#hud),
+.game-shell[hidden] #hud > :not(.hud-top),
+.game-shell[hidden] .hud-center,
+.game-shell[hidden] #btn-sound,
+.game-shell[hidden] #btn-settings,
+.game-shell[hidden] #btn-pause {
   display: none !important;
 }
 
 .admission-screen {
   position: fixed;
   inset: 0;
-  z-index: 10000;
+  z-index: 38;
   display: grid;
   place-items: center;
   overflow: auto;

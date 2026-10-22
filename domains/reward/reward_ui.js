@@ -1110,7 +1110,7 @@ const RewardSystemUI = (() => {
     overlay.style.backgroundColor = 'rgba(0,0,0,0.92)';
     overlay.innerHTML = `
       <div class="reward-marble-content">
-         <iframe src="${marbleUrl}" class="reward-mini-game-frame" title="마블 머지 게임"></iframe>
+         <iframe src="${marbleUrl}" class="reward-mini-game-frame" title="마블 머지 게임" allowfullscreen allow="fullscreen"></iframe>
          <button class="btn-close-marble" data-action="close-overlay">학습으로 돌아가기</button>
       </div>
     `;
@@ -1130,7 +1130,7 @@ const RewardSystemUI = (() => {
     overlay.style.backgroundColor = 'rgba(0,0,0,0.92)';
     overlay.innerHTML = `
       <div class="reward-marble-content">
-         <iframe src="${bubbleUrl}" class="reward-mini-game-frame" title="버블팡 게임"></iframe>
+         <iframe src="${bubbleUrl}" class="reward-mini-game-frame" title="버블팡 게임" allowfullscreen allow="fullscreen"></iframe>
          <button class="btn-close-marble" data-action="close-overlay">학습으로 돌아가기</button>
       </div>
     `;

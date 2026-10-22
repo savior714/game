@@ -278,18 +278,30 @@ kbd {
 .hud {
   position: absolute;
   inset: 0;
-  z-index: 10;
+  z-index: 42;
   padding: calc(14px + var(--safe-top)) calc(18px + var(--safe-right)) calc(16px + var(--safe-bottom))
     calc(18px + var(--safe-left));
   pointer-events: none;
+}
+
+.hud > :not(.hud-top),
+.hud-center,
+#btn-pause {
   opacity: 0;
   transform: translateY(-6px);
+  pointer-events: none;
   transition: opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out);
 }
 
-.hud[data-visible="true"] {
+.hud[data-visible="true"] > :not(.hud-top),
+.hud[data-visible="true"] .hud-center,
+.hud[data-visible="true"] #btn-pause {
   opacity: 1;
   transform: none;
+}
+
+.hud[data-visible="true"] #btn-pause {
+  pointer-events: auto;
 }
 
 .hud button,
@@ -1242,7 +1254,7 @@ body.is-touch .hud-top-right {
 /* Fullscreen -------------------------------------------------------------- */
 
 .hud-icon-btn--fullscreen {
-  display: none;
+  display: inline-flex;
 }
 
 body.is-touch .hud-icon-btn--fullscreen,

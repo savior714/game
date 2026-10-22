@@ -32,6 +32,7 @@
   <link rel="modulepreload" href="./vendor/three/build/three.core.min.js" />
   <link rel="stylesheet" href="./dino-escape.css" />
   <link rel="stylesheet" href="./dino-admission.css" />
+  <link rel="stylesheet" href="../../shared/ui/home-button.css">
 </head>
 <body class="dino-page">
   <section id="dino-admission-gate" class="admission-screen" aria-labelledby="dino-admission-title">
@@ -74,6 +75,10 @@
     <div id="hud" class="hud" data-visible="false">
       <header class="hud-top">
         <div class="hud-top-left">
+          <a href="../../index.html" class="ag-home-btn" aria-label="놀이터 홈으로 이동" title="놀이터 홈으로">
+            <span class="ag-home-btn__icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg></span>
+            <span class="ag-home-btn__label">홈</span>
+          </a>
           <a class="hud-brand" href="../../index.html" aria-label="AIDEN GAME LABS · 놀이터 홈">
             <span class="brand-dot" aria-hidden="true"></span>
             <span class="hud-brand-home" aria-hidden="true">

@@ -133,6 +133,14 @@ a {
   -webkit-backdrop-filter: blur(18px) saturate(130%);
 }
 
+/* 홈 버튼 + 로고를 한 덩어리로 묶어 topbar의 space-between 레이아웃을 지킨다 */
+.lab-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
 .lab-brand {
   display: inline-flex;
   align-items: center;

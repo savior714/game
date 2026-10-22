@@ -73,15 +73,19 @@ def test_core_learning_screens_have_compact_hud_and_gem_only_mount() -> None:
         assert header_start != -1 and header_end != -1, f"{rel_path} header not found"
         header_html = html[header_start:header_end]
 
-        # 3. Home control is the brand link only (no separate home button)
+        # 3. Primary home control is the explicit home button; the brand link
+        #    stays as the secondary (adult-convention) way home.
+        assert "ag-home-btn" in header_html, (
+            f"{rel_path} header must expose the explicit home button"
+        )
         assert "ag-hud__brand" in header_html, (
             f"{rel_path} header must own the brand link"
         )
         assert "ag-hud__brand-home" in header_html, (
-            f"{rel_path} brand must carry the visible home affordance"
+            f"{rel_path} brand must carry its small home hint"
         )
         assert "ag-hud__home" not in header_html, (
-            f"{rel_path} header must not keep a standalone home button"
+            f"{rel_path} header must not resurrect the dead .ag-hud__home class"
         )
         assert "compact-hud-home" not in html, (
             f"{rel_path} must not keep a standalone .compact-hud-home button"

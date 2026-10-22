@@ -159,3 +159,55 @@ def test_domain_base_stylesheets_muted_contrast() -> None:
         assert "#CBD5E1" in base_css, (
             f"domains/{domain}/base.css brand-category must use #CBD5E1"
         )
+
+
+HOME_BUTTON_CSS = ROOT / "shared/ui/home-button.css"
+
+
+def _declaration_block(css: str, selector: str) -> str:
+    start = css.index(selector)
+    open_brace = css.index("{", start)
+    close_brace = css.index("}", open_brace)
+    return css[open_brace + 1 : close_brace]
+
+
+def test_explicit_home_button_meets_contrast_and_touch_targets() -> None:
+    """아이용 홈 버튼: 라벨 대비 AAA, 40px 탭 영역, 3px focus ring."""
+    assert HOME_BUTTON_CSS.is_file(), "shared/ui/home-button.css must exist"
+    css = HOME_BUTTON_CSS.read_text(encoding="utf-8")
+
+    button_block = _declaration_block(css, ".ag-home-btn {")
+
+    accent_match = re.search(
+        r"--ag-home-accent:\s*var\(--neon-volt,\s*(#[0-9a-fA-F]{6})\)", button_block
+    )
+    ink_match = re.search(r"--ag-home-ink:\s*(#[0-9a-fA-F]{6})", button_block)
+    assert accent_match and ink_match, (
+        "home button must declare its accent and ink tokens as hex colors"
+    )
+
+    accent = parse_hex_color(accent_match.group(1))
+    ink = parse_hex_color(ink_match.group(1))
+    ratio = wcag_contrast_ratio(ink, accent)
+    assert ratio >= 7.0, (
+        f"home button label on its accent fill must satisfy WCAG AAA (>= 7:1), got {ratio:.2f}:1"
+    )
+
+    # Tap target: 태블릿을 쓰는 아이 손가락 기준 최소 40px
+    height_match = re.search(r"min-height:\s*(\d+)px", button_block)
+    assert height_match, "home button must declare a min-height tap target"
+    assert int(height_match.group(1)) >= 40, (
+        f"home button tap target must be >= 40px, got {height_match.group(1)}px"
+    )
+
+    # Keyboard focus ring must stay solid and >= 3px
+    focus_block = _declaration_block(css, ".ag-home-btn:focus-visible")
+    outline_match = re.search(r"outline:\s*(\d+)px\s+solid", focus_block)
+    assert outline_match, "home button must define a solid focus-visible outline"
+    assert int(outline_match.group(1)) >= 3, (
+        f"home button focus outline must be >= 3px, got {outline_match.group(1)}px"
+    )
+
+    # 라벨 없는 아이콘-only 버튼으로 퇴행하지 않는다
+    assert ".ag-home-btn__label" in css, "home button must keep a text label slot"
+    assert "prefers-reduced-motion" in css, "home button must respect reduced motion"

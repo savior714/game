@@ -7,7 +7,10 @@ ids, local-only assets, module boundaries and the persisted data version.
 
 from __future__ import annotations
 
+import json
 import re
+import shutil
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -88,13 +91,57 @@ def test_dino_escape_page_has_full_hud_and_screen_contract() -> None:
     assert "<noscript>" in html
 
 
+def test_dino_admission_requires_a_completed_goal_for_today() -> None:
+    node = shutil.which("node")
+    if not node:
+        return
+
+    admission = (EXPERIMENTS / "dino-admission.js").resolve().as_uri()
+    result = subprocess.run(
+        [
+            node,
+            "--input-type=module",
+            "-e",
+            f'''import {{ isDailyGoalComplete }} from "{admission}";
+const now = new Date(2026, 9, 22, 12, 0, 0);
+const today = "2026-10-22";
+const valid = JSON.stringify({{ schemaVersion: 1, date: today, completed: true }});
+const incomplete = JSON.stringify({{ schemaVersion: 1, date: today, completed: false }});
+const stale = JSON.stringify({{ schemaVersion: 1, date: "2026-10-21", completed: true }});
+console.log(JSON.stringify({{
+  valid: isDailyGoalComplete(valid, now),
+  incomplete: isDailyGoalComplete(incomplete, now),
+  stale: isDailyGoalComplete(stale, now),
+  malformed: isDailyGoalComplete("{{", now),
+  missing: isDailyGoalComplete(null, now),
+}}));''',
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert json.loads(result.stdout) == {
+        "valid": True,
+        "incomplete": False,
+        "stale": False,
+        "malformed": False,
+        "missing": False,
+    }
+
+
 def test_dino_escape_page_is_offline_and_module_based() -> None:
     html = PAGE.read_text(encoding="utf-8")
 
     assert 'href="./dino-escape.css"' in html
     assert "space-explorer.css" not in html
     assert "space-explorer-minigames.css" not in html
-    assert '<script type="module" src="./dino-escape.js"></script>' in html
+    assert '<script type="module" src="./dino-admission.js"></script>' in html
+    assert 'href="./dino-admission.css"' in html
+    assert 'id="dino-admission-gate"' in html
+    assert 'id="game-shell"' in html and 'class="game-shell" aria-label="공룡 추격 탈출 게임" hidden' in html
     assert html.count("<script") == 1
 
     # Nothing at all is fetched at runtime: the 3D engine, the fonts and the

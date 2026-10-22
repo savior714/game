@@ -31,9 +31,27 @@
   <link rel="modulepreload" href="./vendor/three/build/three.module.min.js" />
   <link rel="modulepreload" href="./vendor/three/build/three.core.min.js" />
   <link rel="stylesheet" href="./dino-escape.css" />
+  <link rel="stylesheet" href="./dino-admission.css" />
 </head>
 <body class="dino-page">
-  <main class="game-shell" aria-label="공룡 추격 탈출 게임">
+  <section id="dino-admission-gate" class="admission-screen" aria-labelledby="dino-admission-title">
+    <div class="admission-card">
+      <span class="admission-icon" aria-hidden="true">🦖</span>
+      <p class="admission-kicker">DINO ESCAPE · DAILY REWARD</p>
+      <h1 id="dino-admission-title">오늘 공부 목표를 완료하면 열려요!</h1>
+      <p id="dino-admission-message" class="admission-copy">
+        오늘의 수학 공부 목표를 달성하면 공룡 탈출 게임을 플레이할 수 있어요.
+      </p>
+      <div class="admission-actions">
+        <a class="admission-button admission-button--primary" href="../../domains/math/index.html">오늘 목표 도전하기</a>
+        <a class="admission-button" href="../../index.html">홈으로 돌아가기</a>
+      </div>
+      <p class="admission-note">목표를 완료한 뒤 이 페이지로 돌아오면 게임이 열려요.</p>
+      <noscript><p class="admission-note">이 페이지를 이용하려면 자바스크립트를 켜 주세요.</p></noscript>
+    </div>
+  </section>
+
+  <main id="game-shell" class="game-shell" aria-label="공룡 추격 탈출 게임" hidden>
     <canvas
       id="dino-escape-canvas"
       class="game-canvas"
@@ -565,6 +583,6 @@
     </noscript>
   </main>
 
-  <script type="module" src="./dino-escape.js"></script>
+  <script type="module" src="./dino-admission.js"></script>
 </body>
 </html>

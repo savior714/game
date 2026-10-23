@@ -5,7 +5,9 @@
  */
 
 import { createSoundEngine } from "./audio.js";
-import { CAMERA_PRESETS, createPowerWorld } from "./world.js";
+
+// Load Three.js addons and the full diorama only after the initial page can paint.
+let CAMERA_PRESETS = {};
 
 const P = globalThis.PowerPhysics || (typeof window !== "undefined" ? window.PowerPhysics : null);
 if (!P) {
@@ -37,6 +39,64 @@ function setWidth(element, ratio) {
   const value = Math.round(P.clamp(ratio, 0, 1) * 1000) / 10;
   const next = value + "%";
   if (element.style.width !== next) element.style.width = next;
+}
+
+const loadingUi = {
+  root: doc.getElementById("world-loading"),
+  title: doc.getElementById("world-loading-title"),
+  message: doc.getElementById("world-loading-message"),
+  progress: doc.getElementById("world-loading-progress"),
+  fill: doc.getElementById("world-loading-fill"),
+  percent: doc.getElementById("world-loading-percent"),
+  retry: doc.getElementById("world-loading-retry"),
+};
+
+function setLoadingProgress(value, message) {
+  const percent = Math.round(P.clamp(value, 0, 100));
+  if (loadingUi.root) loadingUi.root.hidden = false;
+  if (loadingUi.progress) loadingUi.progress.setAttribute("aria-valuenow", String(percent));
+  if (loadingUi.fill) loadingUi.fill.style.width = percent + "%";
+  setText(loadingUi.percent, percent + "%");
+  setText(loadingUi.message, message);
+}
+
+function finishLoading() {
+  if (!loadingUi.root) return;
+  loadingUi.root.setAttribute("aria-busy", "false");
+  loadingUi.root.classList.add("is-ready");
+  window.setTimeout(() => {
+    loadingUi.root.hidden = true;
+  }, 240);
+}
+
+function showBootError() {
+  if (!loadingUi.root) return;
+  loadingUi.root.hidden = false;
+  loadingUi.root.classList.remove("is-ready");
+  loadingUi.root.setAttribute("aria-busy", "false");
+  setText(loadingUi.title, "발전소를 준비하지 못했어요");
+  setText(loadingUi.message, "잠시 후 다시 시도해 주세요.");
+  if (loadingUi.retry) {
+    loadingUi.retry.hidden = false;
+    loadingUi.retry.addEventListener("click", () => window.location.reload(), { once: true });
+  }
+}
+
+function waitForAuthGate() {
+  const gate = window.AidenAuthGate;
+  if (!gate || typeof gate.isLocked !== "function") {
+    return Promise.reject(new Error("Auth gate is unavailable"));
+  }
+  if (!gate.isLocked()) return Promise.resolve();
+  return new Promise((resolve) => {
+    window.addEventListener("auth-gate-unlocked", resolve, { once: true });
+  });
+}
+
+function yieldForPaint() {
+  return new Promise((resolve) => {
+    window.setTimeout(() => window.setTimeout(resolve, 0), 0);
+  });
 }
 
 /* ── 설정: 움직임 줄이기 · 진행 저장 · 사운드 ──────────────────── */
@@ -1403,7 +1463,9 @@ function bindControls() {
 
 /* ── 부팅 및 애니메이션 루프 ──────────────────────────────────── */
 
-function boot() {
+async function boot() {
+  await waitForAuthGate();
+
   buildDots();
   STATION_IDS.forEach((id) => {
     const canvas = doc.getElementById("canvas-" + id);
@@ -1425,65 +1487,96 @@ function boot() {
   initWorldLabels();
   renderFound();
   computeAllPhysics();
+  setLoadingProgress(2, "섬과 발전 장치를 준비하고 있어요.");
+  await yieldForPaint();
 
-  world = createPowerWorld({
-    canvas: $("#island-canvas"),
-    reducedMotion: prefersReducedMotion,
-    onZoneSelect(zoneId) {
-      selectZone(zoneId);
-    },
-    onCrankDrag(deltaRad, speedPx) {
-      game.generator.angle += deltaRad;
-      game.generator.rpm = P.clamp(game.generator.rpm * 0.65 + (Math.abs(deltaRad) * 900 + speedPx * 4), 25, 420);
-      sound.crankTick(game.generator.rpm);
-    },
-    onBalloonDrag(dx, dy, speedPx) {
-      const scope = scopes.static;
-      const sw = scope ? scope.width : 320;
-      const sh = scope ? scope.height : 112;
-      game.staticState.balloon.x = P.clamp(game.staticState.balloon.x + dx * 26, 16, sw - 16);
-      game.staticState.balloon.y = P.clamp(game.staticState.balloon.y - dy * 18, 16, sh - 16);
-      game.staticState.pointerSpeed = P.clamp(speedPx / 9, 0, 1);
-    },
-    onSunDrag(deltaDeg) {
-      game.solar.altitude = P.clamp(Math.round(game.solar.altitude + deltaDeg), 5, 90);
-      if ($("#sun-range")) $("#sun-range").value = String(game.solar.altitude);
-      setText($("#sun-output"), game.solar.altitude + "°");
-      computeAllPhysics();
-    },
-    onPanelDrag(deltaDeg) {
-      game.solar.tilt = P.clamp(Math.round(game.solar.tilt + deltaDeg), 0, 90);
-      if ($("#tilt-range")) $("#tilt-range").value = String(game.solar.tilt);
-      setText($("#tilt-output"), game.solar.tilt + "°");
-      computeAllPhysics();
-    },
-    onWindGust() {
-      game.wind.gustBoost = Math.min(8, game.wind.gustBoost + 4.5);
-      sound.gust();
-      showToast("🌬️ 해안 절벽에 돌풍이 불어 터빈 회전이 빨라졌어요!");
-    },
-    onHydroToggle() {
-      game.hydro.flow = game.hydro.flow >= 4.5 ? 1.5 : 5;
-      if ($("#flow-range")) $("#flow-range").value = String(game.hydro.flow);
-      setText($("#flow-output"), game.hydro.flow.toFixed(1) + " L/s");
-      sound.splash();
-      computeAllPhysics();
-    },
-    onSwitchToggle() {
-      const sw = $("#switch-circuit");
-      if (sw) sw.click();
-    },
-    onFruitTap() {
-      game.fruit.cells = (game.fruit.cells % 6) + 1;
-      setText($("#cells-count"), game.fruit.cells + "개");
-      sound.pop();
-      computeAllPhysics();
-    },
-    onTeslaFire() {
-      const btn = $("#tesla-fire-btn");
-      if (btn) btn.click();
+  setLoadingProgress(5, "3D 그래픽 도구를 불러오고 있어요.");
+  const [worldModule, textureModule] = await Promise.all([
+    import("./world.js"),
+    import("./textures.js"),
+  ]);
+  CAMERA_PRESETS = worldModule.CAMERA_PRESETS;
+
+  setLoadingProgress(8, "섬의 지형과 재질을 만드는 중이에요.");
+  let textureSet = await textureModule.createIslandTexturesAsync({
+    budgetMs: 6,
+    onProgress(ratio) {
+      setLoadingProgress(8 + ratio * 49, "섬의 지형과 재질을 만드는 중이에요.");
     },
   });
+
+  setLoadingProgress(60, "발전기와 밤마을을 조립하고 있어요.");
+  await yieldForPaint();
+  try {
+    world = worldModule.createPowerWorld({
+      canvas: $("#island-canvas"),
+      textureSet,
+      reducedMotion: prefersReducedMotion,
+      onZoneSelect(zoneId) {
+        selectZone(zoneId);
+      },
+      onCrankDrag(deltaRad, speedPx) {
+        game.generator.angle += deltaRad;
+        game.generator.rpm = P.clamp(game.generator.rpm * 0.65 + (Math.abs(deltaRad) * 900 + speedPx * 4), 25, 420);
+        sound.crankTick(game.generator.rpm);
+      },
+      onBalloonDrag(dx, dy, speedPx) {
+        const scope = scopes.static;
+        const sw = scope ? scope.width : 320;
+        const sh = scope ? scope.height : 112;
+        game.staticState.balloon.x = P.clamp(game.staticState.balloon.x + dx * 26, 16, sw - 16);
+        game.staticState.balloon.y = P.clamp(game.staticState.balloon.y - dy * 18, 16, sh - 16);
+        game.staticState.pointerSpeed = P.clamp(speedPx / 9, 0, 1);
+      },
+      onSunDrag(deltaDeg) {
+        game.solar.altitude = P.clamp(Math.round(game.solar.altitude + deltaDeg), 5, 90);
+        if ($("#sun-range")) $("#sun-range").value = String(game.solar.altitude);
+        setText($("#sun-output"), game.solar.altitude + "°");
+        computeAllPhysics();
+      },
+      onPanelDrag(deltaDeg) {
+        game.solar.tilt = P.clamp(Math.round(game.solar.tilt + deltaDeg), 0, 90);
+        if ($("#tilt-range")) $("#tilt-range").value = String(game.solar.tilt);
+        setText($("#tilt-output"), game.solar.tilt + "°");
+        computeAllPhysics();
+      },
+      onWindGust() {
+        game.wind.gustBoost = Math.min(8, game.wind.gustBoost + 4.5);
+        sound.gust();
+        showToast("🌬️ 해안 절벽에 돌풍이 불어 터빈 회전이 빨라졌어요!");
+      },
+      onHydroToggle() {
+        game.hydro.flow = game.hydro.flow >= 4.5 ? 1.5 : 5;
+        if ($("#flow-range")) $("#flow-range").value = String(game.hydro.flow);
+        setText($("#flow-output"), game.hydro.flow.toFixed(1) + " L/s");
+        sound.splash();
+        computeAllPhysics();
+      },
+      onSwitchToggle() {
+        const sw = $("#switch-circuit");
+        if (sw) sw.click();
+      },
+      onFruitTap() {
+        game.fruit.cells = (game.fruit.cells % 6) + 1;
+        setText($("#cells-count"), game.fruit.cells + "개");
+        sound.pop();
+        computeAllPhysics();
+      },
+      onTeslaFire() {
+        const btn = $("#tesla-fire-btn");
+        if (btn) btn.click();
+      },
+    });
+    textureSet = null; // World now owns and disposes the textures.
+  } catch (error) {
+    if (textureSet) textureSet.dispose();
+    throw error;
+  }
+
+  setLoadingProgress(74, "빛과 그림자를 준비하고 있어요.");
+  await yieldForPaint();
+  await world.prepare();
+  setLoadingProgress(94, "마지막으로 발전기를 깨우고 있어요.");
 
   bindControls();
   // 첫 진입 시 섬 전체가 한눈에 들어오도록 와이드 뷰 + 열린 계기판으로 시작
@@ -1492,6 +1585,8 @@ function boot() {
 
   let last = 0;
   let hudAccum = 0;
+  let visualAccum = 0;
+  let firstFrame = true;
   function frame(now) {
     const dt = last ? Math.min((now - last) / 1000, 0.05) : 0.016;
     last = now;
@@ -1501,8 +1596,13 @@ function boot() {
     computeAllPhysics();
     updateStationUI(dt);
     if (world) world.step(dt, game);
-    drawActiveMiniScope();
-    updateWorldLabels();
+
+    visualAccum += dt;
+    if (visualAccum >= 1 / 30) {
+      visualAccum = 0;
+      drawActiveMiniScope();
+      updateWorldLabels();
+    }
 
     if (game.grid.deliveredWatts > 0) {
       progress.energy += P.energyJoules(game.grid.deliveredWatts, dt);
@@ -1515,13 +1615,30 @@ function boot() {
       updateHudDashboard();
     }
 
+    if (firstFrame) {
+      firstFrame = false;
+      finishLoading();
+    }
     window.requestAnimationFrame(frame);
   }
   window.requestAnimationFrame(frame);
 }
 
+function startBoot() {
+  const ready = boot();
+  window.__electricityReady = ready;
+  ready.catch((error) => {
+    window.__electricityBootError = error && error.message ? error.message : String(error);
+    if (world) {
+      world.dispose();
+      world = null;
+    }
+    showBootError();
+  });
+}
+
 if (doc.readyState === "loading") {
-  doc.addEventListener("DOMContentLoaded", boot);
+  doc.addEventListener("DOMContentLoaded", startBoot, { once: true });
 } else {
-  boot();
+  startBoot();
 }

@@ -31,6 +31,19 @@
     <div class="surge-flash" id="surge-flash" aria-hidden="true"></div>
   </div>
 
+  <section class="world-loading" id="world-loading" role="status" aria-live="polite" aria-busy="true">
+    <div class="world-loading__card">
+      <span class="world-loading__bolt" aria-hidden="true">⚡</span>
+      <h2 id="world-loading-title">밤섬 발전소 준비 중</h2>
+      <p id="world-loading-message">섬과 발전 장치를 불러오고 있어요.</p>
+      <div class="world-loading__progress" id="world-loading-progress" role="progressbar" aria-label="발전소 준비 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <span id="world-loading-fill"></span>
+      </div>
+      <span class="world-loading__percent" id="world-loading-percent">0%</span>
+      <button class="world-loading__retry" id="world-loading-retry" type="button" hidden>다시 불러오기</button>
+    </div>
+  </section>
+
   <!-- ─────────────── 상단 플로팅 콘솔 HUD ─────────────── -->
   <header class="lab-topbar">
     <div class="lab-brand-row">

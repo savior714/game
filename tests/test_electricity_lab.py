@@ -372,6 +372,13 @@ def test_power_lab_runs_without_runtime_errors() -> None:
     data = json.loads(result.stdout.strip().splitlines()[-1])
 
     assert data["errors"] == [], f"실험 실행 중 예외가 발생했습니다: {data['errors']}"
+    assert data["loader"]["present"] is True, "3D 씬 준비 진행률 UI가 있어야 합니다"
+    assert data["loader"]["progress"] >= 90, (
+        "씬 준비 후 첫 렌더 프레임까지 부팅되어야 합니다"
+    )
+    assert data["loader"]["hasFrame"] is True, (
+        "3D 부팅이 완료되면 렌더 루프가 시작되어야 합니다"
+    )
     assert data["physics"] is True, "PowerPhysics 전역 모듈이 등록되지 않았습니다"
     assert data["dots"] == len(STATION_IDS)
     assert data["worldTags"] == 8, "3D 섬 플로팅 구역 라벨 8개가 생성되어야 합니다"
@@ -475,7 +482,13 @@ def test_power_lab_3d_world_stages_a_finished_castle_grade_diorama() -> None:
         "그림자를 만드는 주요 구조물이 있어야 합니다"
     )
     assert data["receiveShadowMeshes"] >= 80
-    assert data["instancedMeshes"] >= 5, "풀·관목·꽃은 인스턴싱으로 깔려야 합니다"
+    assert data["instancedMeshes"] >= 30, (
+        "반복되는 식생·가로등·꽃 장식은 인스턴싱되어야 합니다"
+    )
+    assert data["meshes"] <= 850, "정적 디오라마 mesh 제출 수가 성능 예산을 넘었습니다"
+    assert data["castShadowMeshes"] <= 220, (
+        "그림자 패스에 장식용 소형 메시가 과도하게 제출됩니다"
+    )
 
     # 6) 표면 요철(노멀맵) — 지면·암벽·목재·기와가 빛을 받아 요철로 반응해야 한다
     assert data["normalMappedMaterials"] >= 60, "노멀맵이 붙은 재질이 충분해야 합니다"

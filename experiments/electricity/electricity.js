@@ -1021,7 +1021,9 @@ function bindControls() {
       sound.switchThrow(false);
       selectZone("circuit", { keepDrawerState: true });
       computeAllPhysics();
-      showToast("🌑 주 스위치를 열어 송전을 차단했어요! 마을 불빛이 모두 꺼집니다.");
+      showToast(
+        "🌑 주 스위치를 열어 송전을 차단했어요! 섬의 등불과 마을 불빛이 모두 꺼집니다."
+      );
     });
   }
 

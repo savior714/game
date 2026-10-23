@@ -1061,11 +1061,40 @@ export function createPowerWorld({
 
   // 정전 체험에서도 구역등이 함께 꺼지도록 전력 비율에 묶어 둔다
   const zoneLights = [pierLight, fruitDeckLight, damLight, solarDeckLight];
+  substationLight.userData.gridSupplied = true;
+  zoneLights.forEach((lamp) => {
+    lamp.userData.gridSupplied = true;
+  });
 
   const crankGlowLight = new THREE.PointLight(0xffb449, 0.4, 20, 1.6);
   crankGlowLight.userData.gain = 10;
+  crankGlowLight.userData.gridSupplied = true;
   crankGlowLight.position.set(-1, 6.2, 14.5);
   scene.add(crankGlowLight);
+
+  /* ── 섬 전력망에 직접 물린 조명 등록부 ──────────────────────────
+   * 부두·광장·댐 마루·전신주·수력 관사의 등불은 발전기 실험대의 표시등과 달리
+   * 오직 송전된 전력으로만 켜진다. 여기에 모아 두고 정전이면 한 번에 끈다.
+   * (발전기·전지·정전기 실험대의 표시등은 각자의 회로를 따르므로 제외) */
+  const gridLamps = [];
+  const gridHalos = [];
+  function addGridLamp(material, baseIntensity) {
+    if (!material) return material;
+    material.userData.gridSupplied = true;
+    material.userData.baseEmissive = baseIntensity === undefined
+      ? material.emissiveIntensity
+      : baseIntensity;
+    gridLamps.push(material);
+    return material;
+  }
+  function addGridHalo(sprite, baseOpacity) {
+    if (!sprite) return sprite;
+    const mat = sprite.material;
+    mat.userData.gridSupplied = true;
+    mat.userData.baseOpacity = baseOpacity === undefined ? mat.opacity : baseOpacity;
+    gridHalos.push(mat);
+    return sprite;
+  }
 
   /* ── 2. 바다 · 해안 물결 · 다층 지형 디오라마 ─────────────────── */
 
@@ -1573,20 +1602,20 @@ export function createPowerWorld({
     );
     lanternPost.position.set(8.6 + i * 3.6, 3.8, 23.6);
     scene.add(lanternPost);
-    const lantern = new THREE.Mesh(
-      new THREE.SphereGeometry(0.26, 12, 12),
-      new THREE.MeshStandardMaterial({
-        color: 0xfff0c0,
-        emissive: 0xffc04a,
-        emissiveIntensity: 1.4,
-        roughness: 0.2,
-      })
-    );
+    const lanternMat = new THREE.MeshStandardMaterial({
+      color: 0xfff0c0,
+      emissive: 0xffc04a,
+      emissiveIntensity: 1.4,
+      roughness: 0.2,
+    });
+    const lantern = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 12), lanternMat);
     lantern.position.set(8.6 + i * 3.6, 5.1, 23.6);
     scene.add(lantern);
+    addGridLamp(lanternMat, 1.4);
     const halo = makeGlowSprite(textures.glow, 0xffc45c, 2.6, 0.5);
     halo.position.copy(lantern.position);
     scene.add(halo);
+    addGridHalo(halo, 0.5);
   }
 
   // 중앙 변전소 원형 석조 광장 & 남쪽 크랭크 발명가 광장
@@ -1652,6 +1681,7 @@ export function createPowerWorld({
     emissiveIntensity: 0.85,
     roughness: 0.3,
   });
+  addGridLamp(plazaLampMat, 0.85);
   [[-0.5 + 3.4, 8.3], [-0.5 - 3.4, 8.3], [-0.5 + 7.2, 4.0], [-0.5 - 7.2, 4.0]].forEach(([lx, lz]) => {
     const post = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.15, 3.1, 8), plazaKerbMat);
     post.position.set(lx, 4.3, lz);
@@ -1663,6 +1693,7 @@ export function createPowerWorld({
     const halo = makeGlowSprite(textures.glow, 0xffc45c, 1.7, 0.36);
     halo.position.copy(lantern.position);
     scene.add(halo);
+    addGridHalo(halo, 0.36);
   });
   // 변압기 캐비닛 2기 — 방열핀 · 경고 스트라이프 · 부싱
   const cabinetMat = new THREE.MeshStandardMaterial({ color: 0x5f7186, metalness: 0.45, roughness: 0.52 });
@@ -3104,9 +3135,11 @@ export function createPowerWorld({
     const crestLamp = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 10), crestLampMat);
     crestLamp.position.set(l * 4.2, 10.28, -0.85);
     hydroGroup.add(crestLamp);
+    addGridLamp(crestLampMat, 1.8);
     const crestLampGlow = makeGlowSprite(textures.glow, 0xffc45c, 1.9, 0.42);
     crestLampGlow.position.copy(crestLamp.position);
     hydroGroup.add(crestLampGlow);
+    addGridHalo(crestLampGlow, 0.42);
   }
 
   // 콘크리트 벽면의 석조 줄눈 3단 — 밋밋한 회색 판을 쌓아 올린 벽처럼
@@ -3330,16 +3363,15 @@ export function createPowerWorld({
   }
 
   // 따뜻한 창문 · 문 · 문 앞 계단
-  const houseWindow = new THREE.Mesh(
-    new THREE.PlaneGeometry(1.15, 0.92),
-    new THREE.MeshStandardMaterial({
-      map: textures.windowPane,
-      color: 0xffd98a,
-      emissive: 0xffb347,
-      emissiveIntensity: 1.25,
-      roughness: 0.3,
-    })
-  );
+  const houseWindowMat = new THREE.MeshStandardMaterial({
+    map: textures.windowPane,
+    color: 0xffd98a,
+    emissive: 0xffb347,
+    emissiveIntensity: 1.25,
+    roughness: 0.3,
+  });
+  addGridLamp(houseWindowMat, 1.25);
+  const houseWindow = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 0.92), houseWindowMat);
   houseWindow.position.set(-0.1, 3.0, 1.88);
   hydroHouse.add(houseWindow);
   const houseDoor = new THREE.Mesh(
@@ -4208,16 +4240,15 @@ export function createPowerWorld({
       }
       car.userData.smoke = trainSmoke;
 
-      const lamp = new THREE.Mesh(
-        new THREE.SphereGeometry(0.16, 10, 10),
-        new THREE.MeshStandardMaterial({
-          color: 0xfff6c8,
-          emissive: 0xffe066,
-          emissiveIntensity: 1.6,
-        })
-      );
+      const lampMat = new THREE.MeshStandardMaterial({
+        color: 0xfff6c8,
+        emissive: 0xffe066,
+        emissiveIntensity: 0,
+      });
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 10), lampMat);
       lamp.position.set(0, 0.62, -1.15);
       car.add(lamp);
+      car.userData.lampMat = lampMat;
       const lampHalo = makeGlowSprite(textures.glow, 0xffe27a, 2.2, 0);
       lampHalo.position.copy(lamp.position);
       car.add(lampHalo);
@@ -4505,16 +4536,15 @@ export function createPowerWorld({
       scene.add(insulator);
     });
 
-    const beacon = new THREE.Mesh(
-      new THREE.SphereGeometry(0.09, 8, 8),
-      new THREE.MeshStandardMaterial({
-        color: 0xffffff,
-        emissive: colorHex,
-        emissiveIntensity: 1.1,
-      })
-    );
+    const beaconMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: colorHex,
+      emissiveIntensity: 1.1,
+    });
+    const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), beaconMat);
     beacon.position.set(x, y + 0.16, z);
     scene.add(beacon);
+    addGridLamp(beaconMat, 1.1);
   }
 
   const lineSystems = powerLines.map((spec) => {
@@ -4955,6 +4985,8 @@ export function createPowerWorld({
 
   let cameraTween = null;
   let flashBoost = 0;
+  // 섬 전력망 공급 레벨(0 = 완전 정전, 1 = 정상 송전). 스위치가 열리면 짧게 0으로 떨어진다.
+  let supplyFade = 0;
   let trainProgress = 0;
   let ferrisAngle = 0;
   let windSpin = 0;
@@ -5418,6 +5450,25 @@ export function createPowerWorld({
       grid,
     } = snapshot;
 
+    /* ── 섬 전력망 공급 판정 ──────────────────────────────────────
+     * 발전량(rawWatts)이 아니라 실제로 송전된 전력(deliveredWatts)만 본다.
+     * 주 스위치가 열리거나 부도체가 끼면 deliveredWatts 는 곧바로 0이 되고,
+     * 섬에 물린 모든 등불·표시등·전류 흐름이 한꺼번에 꺼진다. */
+    const deliveredWatts = Math.max(0, Number(grid.deliveredWatts) || 0);
+    const gridRatio = Math.min(1, Math.max(0, Number(grid.gridRatio) || 0));
+    const islandPowered =
+      (grid.powered === undefined ? deliveredWatts > 0 : Boolean(grid.powered)) &&
+      deliveredWatts > 0;
+    supplyFade += ((islandPowered ? 1 : 0) - supplyFade) * Math.min(1, dt * 16);
+    if (supplyFade < 0.002) supplyFade = 0;
+    // 정상 송전 중에도 공급량이 적으면 등불이 어두워진다(최소 30%).
+    const supply = islandPowered ? supplyFade * (0.3 + 0.7 * gridRatio) : 0;
+    // 전류가 실제로 흐르는가 — 회로가 닫히고 도체일 때만 참
+    const currentFlow =
+      Boolean(circuit.output && circuit.output.transmission > 0) &&
+      Boolean(circuit.closed) &&
+      deliveredWatts > 0;
+
     applyAtmosphere(weather, solar.altitude, solar.cloud / 100, dt, solar.output.level);
     skyUniforms.uTime.value = performanceNow;
     if (gradePass) gradePass.uniforms.uTime.value = performanceNow;
@@ -5446,28 +5497,31 @@ export function createPowerWorld({
 
     const activeBoosterCount = Math.round(circuit.voltage / 1.5);
     boosterCells.forEach((cell, idx) => {
-      cell.material.color.setHex(idx < activeBoosterCount ? 0xf59e0b : 0x263854);
-      cell.material.emissiveIntensity = idx < activeBoosterCount ? 0.85 : 0.06;
+      const active = idx < activeBoosterCount && currentFlow;
+      cell.material.color.setHex(active ? 0xf59e0b : 0x263854);
+      cell.material.emissiveIntensity = active ? 0.85 : 0.05;
     });
 
-    circuitBulbMat.emissiveIntensity = 0.08 + circuit.output.brightness * 2.8;
+    // 기준 전구는 회로를 실제로 흐르는 전류만큼만 밝아진다(정전 시 완전 소등)
+    circuitBulbMat.emissiveIntensity = circuit.output.brightness * 2.9;
     circuitBulbHalo.material.opacity = circuit.output.brightness * 0.78;
 
-    const capRatio = Math.max(grid.gridRatio, circuit.output.brightness * 0.35);
+    const capRatio = currentFlow
+      ? Math.max(gridRatio, circuit.output.brightness * 0.35)
+      : 0;
     capacitorCores.forEach((core, idx) => {
       const pulse = 0.92 + Math.sin(performanceNow * 5 + idx * 1.4) * 0.08;
-      core.scale.y = Math.max(0.08, capRatio * pulse);
+      core.scale.y = Math.max(0.02, capRatio * pulse);
       core.position.y = 0.65 + core.scale.y * 1.9;
-      core.material.emissiveIntensity = 0.4 + capRatio * 2.4;
+      core.material.emissiveIntensity = capRatio * 2.8;
     });
 
-    teslaToroidMat.emissiveIntensity = 0.1 + grid.gridRatio * 0.6 + flashBoost * 0.8;
-    teslaHalo.material.opacity = 0.14 + grid.gridRatio * 0.36 + flashBoost * 0.3;
+    teslaToroidMat.emissiveIntensity = (0.08 + gridRatio * 0.62) * supplyFade;
+    teslaHalo.material.opacity = (0.14 + gridRatio * 0.36) * supplyFade;
     substationLight.intensity =
-      (0.7 + grid.gridRatio * 2.8 + flashBoost * 3.0) * substationLight.userData.gain;
-    const zoneLevel = 0.18 + grid.gridRatio * 0.82;
+      (0.3 + gridRatio * 3.1) * supplyFade * substationLight.userData.gain;
     zoneLights.forEach((lamp) => {
-      lamp.intensity = lamp.userData.baseIntensity * zoneLevel;
+      lamp.intensity = lamp.userData.baseIntensity * supply;
     });
 
     // 스위치 열림 상태에서 발전 중이면 단자 틈새에서 스파크!
@@ -5488,15 +5542,18 @@ export function createPowerWorld({
     // 3) 손잡이 크랭크 발전기 회전 & 불꽃
     rotorPivot.rotation.x = generator.angle;
     crankWheelPivot.rotation.z = -generator.angle;
-    coilStatorMat.emissiveIntensity = 0.12 + generator.output.level * 2.2;
+    // 회로가 끊긴 동안에는 전류가 흐르지 않으므로 코일·전구는 빛나지 않는다.
+    coilStatorMat.emissiveIntensity = 0.06 + generator.output.level * 2.2 * (currentFlow ? 1 : 0);
     const activeRings = Math.max(2, Math.round((generator.turns / 600) * statorRings.length));
     statorRings.forEach((ring, idx) => {
       ring.visible = idx < activeRings;
     });
-    dynamoBulbMat.emissiveIntensity = 0.08 + generator.output.level * 3.0;
-    dynamoBulbHalo.material.opacity = generator.output.level * 0.85;
+    dynamoBulbMat.emissiveIntensity =
+      currentFlow ? 0.08 + generator.output.level * 3.0 : 0.015;
+    filamentMat.emissiveIntensity = currentFlow ? 0.25 + generator.output.level * 1.6 : 0.08;
+    dynamoBulbHalo.material.opacity = currentFlow ? generator.output.level * 0.85 : 0;
     crankGlowLight.intensity =
-      (0.25 + generator.output.level * 2.6) * crankGlowLight.userData.gain;
+      (0.1 + generator.output.level * 2.6) * supplyFade * crankGlowLight.userData.gain;
 
     if (!reducedMotion && generator.rpm > 35 && Math.random() < dt * (generator.rpm * 0.14)) {
       emitSpark(
@@ -5523,7 +5580,8 @@ export function createPowerWorld({
     }
     const visualWindRpm = Math.min(wind.rpm, 220) * (reducedMotion ? 0.35 : 1);
     windSpin += (visualWindRpm * TAU * dt) / 60;
-    bladeMaterial.emissiveIntensity = 0.08 + wind.output.level * 0.85;
+    bladeMaterial.emissiveIntensity =
+      0.04 + wind.output.level * 0.85 * (currentFlow ? 1 : 0.12);
     turbines.forEach((tb, idx) => {
       tb.rotor.rotation.z = -windSpin * (1 - idx * 0.08) + idx * 1.1;
     });
@@ -5560,7 +5618,7 @@ export function createPowerWorld({
     const visualHydroRpm = Math.min(hydro.rpm, 240) * (reducedMotion ? 0.35 : 1);
     hydroSpin += (visualHydroRpm * TAU * dt) / 60;
     waterWheel.rotation.x = hydroSpin;
-    hydroBeaconMat.emissiveIntensity = 0.15 + hydro.output.level * 2.4;
+    hydroBeaconMat.emissiveIntensity = 0.03 + hydro.output.level * 2.4 * (currentFlow ? 1 : 0);
     splashPool.material.opacity = 0.2 + flowNorm * 0.5;
     splashPool.scale.setScalar(0.82 + flowNorm * 0.25 + Math.sin(performanceNow * 3.1) * 0.05);
     hydroMist.forEach((mist, idx) => {
@@ -5657,10 +5715,8 @@ export function createPowerWorld({
     };
     lineSystems.forEach((ls) => {
       const lv = sourceLevels[ls.id] || 0;
-      const flowing =
-        ls.id === "townMain" || ls.id === "townPark"
-          ? grid.deliveredWatts > 0.3
-          : lv > 0.03;
+      // 송전이 끊기면 발전소→변전소 선로에도 전류가 흐르지 않는다.
+      const flowing = islandPowered && lv > 0.03 && deliveredWatts > 0.3;
       ls.wireMat.emissiveIntensity = flowing ? 0.05 + lv * 0.42 : 0.03;
       ls.phase = (ls.phase + dt * (0.28 + lv * 1.35)) % 1;
       ls.pulses.forEach((p) => {
@@ -5735,6 +5791,9 @@ export function createPowerWorld({
       if (car.userData.lampHalo) {
         car.userData.lampHalo.material.opacity = lm.train * 0.7;
       }
+      if (car.userData.lampMat) {
+        car.userData.lampMat.emissiveIntensity = lm.train * 1.6;
+      }
       if (car.userData.smoke) {
         car.userData.smoke.forEach((puff, pIdx) => {
           const t = (performanceNow * 0.9 + pIdx * 0.33) % 1;
@@ -5773,8 +5832,16 @@ export function createPowerWorld({
       jetMat.opacity = lm.fountain * 0.52;
     });
 
+    // 섬 전력망에 물린 등불(부두·광장·댐 마루·전신주·수력 관사) — 공급 레벨만큼만 켠다
+    gridLamps.forEach((mat) => {
+      mat.emissiveIntensity = mat.userData.baseEmissive * supply;
+    });
+    gridHalos.forEach((mat) => {
+      mat.opacity = mat.userData.baseOpacity * supply;
+    });
+
     // 바닥 빛무리 & 반딧불
-    substationGlow.material.opacity = 0.03 + grid.gridRatio * 0.13 + flashBoost * 0.08;
+    substationGlow.material.opacity = gridRatio * 0.16 * supplyFade;
     villageGlow.material.opacity = lm.cottages * 0.16;
     ferrisGlow.material.opacity = lm.ferris * 0.14;
     const glowPulse = 0.94 + Math.sin(performanceNow * 2.2) * 0.06;

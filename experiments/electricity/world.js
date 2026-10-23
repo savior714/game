@@ -466,152 +466,6 @@ function gableEndGeometry(widthAcross, height, overhang = 0.3) {
   return geo;
 }
 
-/** 침엽수 — 4단 가지를 살짝 비틀고 아래로 처지게 만들어 실루엣을 살린다 */
-function makePineTree(scale = 1, tint = 0x1e6b4b) {
-  const group = new THREE.Group();
-  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5a3b25, roughness: 0.94 });
-  const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.14 * scale, 0.3 * scale, 1.9 * scale, 8),
-    trunkMat
-  );
-  trunk.position.y = 0.95 * scale;
-  trunk.castShadow = true;
-  trunk.receiveShadow = true;
-  group.add(trunk);
-
-  const foliageMat = new THREE.MeshStandardMaterial({
-    color: tint,
-    roughness: 0.82,
-    flatShading: true,
-  });
-  const tiers = 4;
-  for (let tier = 0; tier < tiers; tier += 1) {
-    const t = tier / (tiers - 1);
-    const radius = (1.34 - t * 0.82) * scale;
-    const h = (1.62 - t * 0.42) * scale;
-    const cone = new THREE.Mesh(new THREE.ConeGeometry(radius, h, 9, 2), foliageMat);
-    cone.position.set(
-      Math.cos(tier * 2.1) * 0.06 * scale,
-      (1.42 + tier * 0.78) * scale,
-      Math.sin(tier * 2.1) * 0.06 * scale
-    );
-    cone.rotation.z = Math.cos(tier * 1.7) * 0.06;
-    cone.rotation.y = tier * 0.7;
-    cone.castShadow = true;
-    cone.receiveShadow = true;
-    group.add(cone);
-  }
-  group.rotation.y = randRange(0, TAU);
-  return group;
-}
-
-/** 활엽수 — 둥근 잎 덩어리 3~5개를 겹쳐 부피감을 준다 */
-function makeBroadleafTree(scale = 1, tint = 0x2f8f5b) {
-  const group = new THREE.Group();
-  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b4a2f, roughness: 0.92 });
-  const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.16 * scale, 0.34 * scale, 2.4 * scale, 8),
-    trunkMat
-  );
-  trunk.position.y = 1.2 * scale;
-  trunk.castShadow = true;
-  group.add(trunk);
-
-  const foliageMat = new THREE.MeshStandardMaterial({
-    color: tint,
-    roughness: 0.84,
-    flatShading: true,
-  });
-  const clumps = [
-    [0, 2.9, 0, 1.35],
-    [-0.85, 2.45, 0.4, 0.92],
-    [0.9, 2.55, -0.3, 0.86],
-    [0.15, 3.55, 0.25, 0.78],
-  ];
-  clumps.forEach(([x, y, z, r], i) => {
-    const blobGeo = new THREE.IcosahedronGeometry(r * scale, 2);
-    const blobPos = blobGeo.attributes.position;
-    for (let v = 0; v < blobPos.count; v += 1) {
-      const nx = blobPos.getX(v);
-      const ny = blobPos.getY(v);
-      const nz = blobPos.getZ(v);
-      const wobble =
-        1 + Math.sin(nx * 3.1 + i) * 0.06 + Math.cos(nz * 2.7 - i) * 0.05 + Math.sin(ny * 4.3) * 0.03;
-      blobPos.setXYZ(v, nx * wobble, ny * wobble * 0.96, nz * wobble);
-    }
-    blobGeo.computeVertexNormals();
-    const blob = new THREE.Mesh(blobGeo, foliageMat);
-    blob.position.set(x * scale, y * scale, z * scale);
-    blob.rotation.set(i * 0.7, i * 1.3, i * 0.4);
-    blob.castShadow = true;
-    blob.receiveShadow = true;
-    group.add(blob);
-  });
-  group.rotation.y = randRange(0, TAU);
-  return group;
-}
-
-/** 야자수 — 해변 부두 옆에 어울리는 곡선 줄기 + 잎 */
-function makePalmTree(scale = 1) {
-  const group = new THREE.Group();
-  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8a6544, roughness: 0.9 });
-  const segments = 6;
-  let prev = new THREE.Vector3(0, 0, 0);
-  for (let i = 1; i <= segments; i += 1) {
-    const t = i / segments;
-    const pos = new THREE.Vector3(Math.sin(t * 1.1) * 0.95 * scale, t * 4.6 * scale, 0);
-    const mid = prev.clone().lerp(pos, 0.5);
-    const len = prev.distanceTo(pos) * 1.08;
-    const seg = new THREE.Mesh(
-      new THREE.CylinderGeometry(
-        (0.24 - t * 0.1) * scale,
-        (0.3 - t * 0.1) * scale,
-        len,
-        7
-      ),
-      trunkMat
-    );
-    seg.position.copy(mid);
-    seg.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), pos.clone().sub(prev).normalize());
-    seg.castShadow = true;
-    group.add(seg);
-    prev = pos;
-  }
-  const leafMat = new THREE.MeshStandardMaterial({
-    color: 0x35a86a,
-    roughness: 0.78,
-    side: THREE.DoubleSide,
-    flatShading: true,
-  });
-  const crown = prev.clone();
-  for (let f = 0; f < 7; f += 1) {
-    const angle = (f / 7) * TAU;
-    const frond = new THREE.Mesh(new THREE.ConeGeometry(0.36 * scale, 2.9 * scale, 4), leafMat);
-    frond.position.set(
-      crown.x + Math.cos(angle) * 1.05 * scale,
-      crown.y + 0.1 * scale,
-      crown.z + Math.sin(angle) * 1.05 * scale
-    );
-    frond.rotation.z = Math.PI / 2 - 0.42;
-    frond.rotation.y = -angle;
-    frond.scale.set(1, 1, 0.3);
-    frond.castShadow = true;
-    group.add(frond);
-  }
-  const coconutMat = new THREE.MeshStandardMaterial({ color: 0x5c4128, roughness: 0.9 });
-  for (let c = 0; c < 3; c += 1) {
-    const nut = new THREE.Mesh(new THREE.SphereGeometry(0.16 * scale, 8, 8), coconutMat);
-    nut.position.set(
-      crown.x + Math.cos((c / 3) * TAU) * 0.35 * scale,
-      crown.y - 0.18 * scale,
-      crown.z + Math.sin((c / 3) * TAU) * 0.35 * scale
-    );
-    group.add(nut);
-  }
-  group.rotation.y = randRange(0, TAU);
-  return group;
-}
-
 /** 바위 — 비정형으로 눌러 자연스러운 실루엣을 만든다 */
 function makeRock(scale, tint, rockMap) {
   const geo = new THREE.IcosahedronGeometry(1, 2);
@@ -646,6 +500,7 @@ function makeRock(scale, tint, rockMap) {
 
 export function createPowerWorld({
   canvas,
+  textureSet = null,
   headless = false,
   reducedMotion = false,
   onZoneSelect,
@@ -659,7 +514,9 @@ export function createPowerWorld({
   onFruitTap,
   onTeslaFire,
 } = {}) {
-  const textures = createIslandTextures();
+  // The page can hand textures generated over several animation frames so loading never
+  // blocks the first paint. Headless probes and legacy callers still get the sync path.
+  const textures = textureSet || createIslandTextures();
   const scene = new THREE.Scene();
 
   const widthInitial = Math.max(320, canvas?.clientWidth || 1280);
@@ -671,6 +528,7 @@ export function createPowerWorld({
 
   let renderer = null;
   let composer = null;
+  let softwareRenderer = false;
   let bloomPass = null;
   let gradePass = null;
   let controls = null;
@@ -688,20 +546,33 @@ export function createPowerWorld({
     }
     if (glProbe) {
       try {
+        try {
+          const debugInfo = glProbe.getExtension("WEBGL_debug_renderer_info");
+          const rendererName = String(
+            glProbe.getParameter(debugInfo ? debugInfo.UNMASKED_RENDERER_WEBGL : glProbe.RENDERER) || ""
+          );
+          softwareRenderer = /swiftshader|llvmpipe|software/i.test(rendererName);
+        } catch {
+          softwareRenderer = false;
+        }
         renderer = new THREE.WebGLRenderer({
           canvas,
-          antialias: true,
+          // Post-processing already supplies anti-aliasing on its render target.
+          // A second multisampled default framebuffer just wastes tablet bandwidth.
+          antialias: false,
           powerPreference: "high-performance",
         });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
+        // Start at native CSS resolution. A small frame-budget controller lifts or lowers
+        // this after warm-up; opening the game shouldn't begin with a 2.5x pixel workload.
+        renderer.setPixelRatio(softwareRenderer ? 0.5 : 1);
         renderer.setSize(widthInitial, heightInitial, false);
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         // AgX는 밝은 네온과 달빛을 흰 덩어리로 태우지 않고 필름처럼 굴려 준다
         renderer.toneMapping =
           THREE.AgXToneMapping !== undefined ? THREE.AgXToneMapping : THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.02;
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.shadowMap.enabled = !softwareRenderer;
+        renderer.shadowMap.type = THREE.PCFShadowMap;
         // 비스듬히 내려다보는 지면/바다가 뭉개지거나 반짝이지 않도록 이방성 필터를 최대로
         try {
           const maxAniso = renderer.capabilities.getMaxAnisotropy();
@@ -714,142 +585,101 @@ export function createPowerWorld({
         } catch {
           /* 이방성 필터 미지원 환경은 기본값 유지 */
         }
-        // 금속 재질이 검게 죽지 않도록 이미지 기반 조명(IBL)을 넣는다
-        try {
-          pmrem = new THREE.PMREMGenerator(renderer);
-          pmrem.compileEquirectangularShader();
-        } catch {
-          pmrem = null;
+        // 금속 재질이 검게 죽지 않도록 하드웨어 렌더러에만 이미지 기반 조명(IBL)을 넣는다.
+        // SwiftShader/소프트웨어 GL에서는 PMREM 큐브맵 생성이 수 초 이상 막힐 수 있다.
+        if (!softwareRenderer) {
+          try {
+            pmrem = new THREE.PMREMGenerator(renderer);
+            pmrem.compileEquirectangularShader();
+          } catch {
+            pmrem = null;
+          }
         }
 
-        composer = new EffectComposer(renderer);
-        // 병합 후처리에서도 계단이 보이지 않도록 멀티샘플 렌더 타깃 사용
-        try {
-          composer.renderTarget1.samples = 4;
-          composer.renderTarget2.samples = 4;
-        } catch {
-          /* WebGL1 등 samples 미지원 환경은 그대로 진행 */
-        }
-        const renderPass = new RenderPass(scene, camera);
-        composer.addPass(renderPass);
-        bloomPass = new UnrealBloomPass(
-          new THREE.Vector2(widthInitial, heightInitial),
-          reducedMotion ? 0.24 : 0.38,
-          0.55,
-          0.92
-        );
-        composer.addPass(bloomPass);
+        if (!softwareRenderer) {
+          composer = new EffectComposer(renderer);
+          // 병합 후처리에서도 계단이 보이지 않도록 멀티샘플 렌더 타깃 사용
+          try {
+            composer.renderTarget1.samples = 2;
+            composer.renderTarget2.samples = 2;
+          } catch {
+            /* WebGL1 등 samples 미지원 환경은 그대로 진행 */
+          }
+          const renderPass = new RenderPass(scene, camera);
+          composer.addPass(renderPass);
+          bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(widthInitial, heightInitial),
+            reducedMotion ? 0.24 : 0.38,
+            0.55,
+            0.92
+          );
+          composer.addPass(bloomPass);
 
-        // 디오라마 그레이딩 — 미니어처 사진처럼 가장자리를 살짝 풀고,
-        // 어두운 곳은 차갑게 밝은 곳은 따뜻하게 나눈 뒤 미세하게 선명도를 올린다.
-        gradePass = new ShaderPass({
-          uniforms: {
-            tDiffuse: { value: null },
-            uVignette: { value: 0.44 },
-            uGrain: { value: 0.022 },
-            uSaturation: { value: 1.12 },
-            uTime: { value: 0 },
-            uTint: { value: new THREE.Color(0.94, 0.97, 1.06) },
-            uSharpen: { value: 0.42 },
-            uContrast: { value: 1.16 },
-            uBlur: { value: 0.00042 },
-            uFocus: { value: 0.52 },
-            uAberration: { value: 0.0016 },
-            uTexel: { value: new THREE.Vector2(1 / widthInitial, 1 / heightInitial) },
-          },
-          vertexShader: /* glsl */ `
-            varying vec2 vUv;
-            void main() {
-              vUv = uv;
-              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-          `,
-          fragmentShader: /* glsl */ `
-            uniform sampler2D tDiffuse;
-            uniform float uVignette;
-            uniform float uGrain;
-            uniform float uSaturation;
-            uniform float uTime;
-            uniform vec3 uTint;
-            uniform float uSharpen;
-            uniform float uContrast;
-            uniform float uBlur;
-            uniform float uFocus;
-            uniform float uAberration;
-            uniform vec2 uTexel;
-            varying vec2 vUv;
+          // 디오라마 그레이딩 — 미니어처 사진처럼 가장자리를 살짝 풀고,
+          // 어두운 곳은 차갑게 밝은 곳은 따뜻하게 나눈 뒤 미세하게 선명도를 올린다.
+          gradePass = new ShaderPass({
+            uniforms: {
+              tDiffuse: { value: null },
+              uVignette: { value: 0.38 },
+              uGrain: { value: 0.018 },
+              uSaturation: { value: 1.08 },
+              uTime: { value: 0 },
+              uTint: { value: new THREE.Color(0.94, 0.97, 1.06) },
+              uContrast: { value: 1.12 },
+              uAberration: { value: 0.0012 },
+            },
+            vertexShader: /* glsl */ `
+              varying vec2 vUv;
+              void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }
+            `,
+            fragmentShader: /* glsl */ `
+              uniform sampler2D tDiffuse;
+              uniform float uVignette;
+              uniform float uGrain;
+              uniform float uSaturation;
+              uniform float uTime;
+              uniform vec3 uTint;
+              uniform float uContrast;
+              uniform float uAberration;
+              varying vec2 vUv;
 
-            float hash(vec2 p) {
-              return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-            }
-            float lumaOf(vec3 c) {
-              return dot(c, vec3(0.2126, 0.7152, 0.0722));
-            }
-
-            void main() {
-              vec2 uv = vUv;
-              vec2 centered = uv - 0.5;
-              float r2 = dot(centered, centered);
-              // 가장자리로 갈수록 색이 살짝 갈라지는 렌즈 느낌
-              vec2 offset = centered * uAberration * r2;
-              vec3 color;
-              color.r = texture2D(tDiffuse, uv + offset).r;
-              color.g = texture2D(tDiffuse, uv).g;
-              color.b = texture2D(tDiffuse, uv - offset).b;
-
-              // 틸트시프트: 화면 중앙 띠는 선명하게, 위아래는 부드럽게 풀어 미니어처 느낌
-              float band = smoothstep(0.3, 1.0, abs(uv.y - uFocus));
-              if (band > 0.001) {
-                vec2 step1 = uTexel * 2.0;
-                vec2 step2 = uTexel * 4.5;
-                vec2 step3 = uTexel * 8.0;
-                vec3 blur = color * 0.04;
-                blur += texture2D(tDiffuse, uv + vec2(step1.x, 0.0)).rgb * 0.12;
-                blur += texture2D(tDiffuse, uv - vec2(step1.x, 0.0)).rgb * 0.12;
-                blur += texture2D(tDiffuse, uv + vec2(0.0, step1.y)).rgb * 0.12;
-                blur += texture2D(tDiffuse, uv - vec2(0.0, step1.y)).rgb * 0.12;
-                blur += texture2D(tDiffuse, uv + vec2(step2.x, step2.y)).rgb * 0.08;
-                blur += texture2D(tDiffuse, uv - vec2(step2.x, step2.y)).rgb * 0.08;
-                blur += texture2D(tDiffuse, uv + vec2(-step2.x, step2.y)).rgb * 0.08;
-                blur += texture2D(tDiffuse, uv + vec2(step2.x, -step2.y)).rgb * 0.08;
-                blur += texture2D(tDiffuse, uv + vec2(step3.x, 0.0)).rgb * 0.04;
-                blur += texture2D(tDiffuse, uv - vec2(step3.x, 0.0)).rgb * 0.04;
-                blur += texture2D(tDiffuse, uv + vec2(0.0, step3.y)).rgb * 0.04;
-                blur += texture2D(tDiffuse, uv - vec2(0.0, step3.y)).rgb * 0.04;
-                color = mix(color, blur, clamp(band * uBlur * 300.0, 0.0, 0.8));
+              float hash(vec2 p) {
+                return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+              }
+              float lumaOf(vec3 c) {
+                return dot(c, vec3(0.2126, 0.7152, 0.0722));
               }
 
-              // 언샤프 마스크: 블룸으로 번진 경계를 다시 조여 준다
-              vec3 sharpBase = color;
-              vec3 neighbours =
-                texture2D(tDiffuse, uv + vec2(uTexel.x * 1.5, 0.0)).rgb +
-                texture2D(tDiffuse, uv - vec2(uTexel.x * 1.5, 0.0)).rgb +
-                texture2D(tDiffuse, uv + vec2(0.0, uTexel.y * 1.5)).rgb +
-                texture2D(tDiffuse, uv - vec2(0.0, uTexel.y * 1.5)).rgb;
-              color = max(color + (sharpBase * 4.0 - neighbours) * uSharpen * 0.25, 0.0);
+              void main() {
+                vec2 centered = vUv - 0.5;
+                vec2 offset = centered * uAberration * dot(centered, centered);
+                // RGB 가장자리 분리 효과는 유지하면서 19회 이상이던 화면 샘플을 3회로 줄인다.
+                vec3 color;
+                color.r = texture2D(tDiffuse, vUv + offset).r;
+                color.g = texture2D(tDiffuse, vUv).g;
+                color.b = texture2D(tDiffuse, vUv - offset).b;
+                color = max((color - 0.2) * uContrast + 0.2, 0.0);
 
-              // 대비 — 밝은 곳과 어두운 곳을 벌려 뿌옇게 뜬 느낌을 걷어낸다
-              color = max((color - 0.2) * uContrast + 0.2, 0.0);
+                float luma = lumaOf(color);
+                vec3 shadowTint = vec3(0.93, 0.98, 1.09);
+                vec3 highTint = vec3(1.05, 1.0, 0.94);
+                color *= mix(shadowTint, highTint, smoothstep(0.08, 0.85, luma));
+                color = mix(vec3(luma), color, uSaturation) * uTint;
 
-              float luma = lumaOf(color);
-              // 스플릿 톤 — 그림자는 밤하늘 쪽으로, 하이라이트는 따뜻하게
-              vec3 shadowTint = vec3(0.93, 0.98, 1.09);
-              vec3 highTint = vec3(1.05, 1.0, 0.94);
-              color *= mix(shadowTint, highTint, smoothstep(0.08, 0.85, luma));
-              color = mix(vec3(lumaOf(color)), color, uSaturation);
-              color *= uTint;
-
-              float vignette = 1.0 - smoothstep(0.3, 0.92, length(centered) * 1.24);
-              color *= mix(1.0, vignette, uVignette);
-
-              float grain = hash(uv * vec2(1920.0, 1080.0) + uTime * 41.0) - 0.5;
-              color += grain * uGrain * (0.12 + (1.0 - luma) * 0.5);
-              gl_FragColor = vec4(max(color, 0.0), 1.0);
-            }
-          `,
-        });
-        composer.addPass(gradePass);
-        composer.addPass(new OutputPass());
+                float vignette = 1.0 - smoothstep(0.3, 0.92, length(centered) * 1.24);
+                color *= mix(1.0, vignette, uVignette);
+                float grain = hash(vUv * vec2(1920.0, 1080.0) + uTime * 41.0) - 0.5;
+                color += grain * uGrain * (0.12 + (1.0 - luma) * 0.5);
+                gl_FragColor = vec4(max(color, 0.0), 1.0);
+              }
+            `,
+          });
+          composer.addPass(gradePass);
+          composer.addPass(new OutputPass());
+        }
       } catch {
         renderer = null;
         composer = null;
@@ -912,7 +742,9 @@ export function createPowerWorld({
   let envWeatherKey = "";
 
   function updateEnvironmentLighting(topColor, horizonColor, groundColor, sunDir, sunColor) {
-    if (!renderer || !pmrem) return;
+    // Software WebGL has no practical realtime PMREM budget; direct scene lights remain
+    // active and keep fallback devices responsive instead of baking a costly cubemap.
+    if (!renderer || !pmrem || softwareRenderer) return;
     envUniforms.uTop.value.copy(topColor);
     envUniforms.uHorizon.value.copy(horizonColor);
     envUniforms.uGround.value.copy(groundColor);
@@ -1168,7 +1000,7 @@ export function createPowerWorld({
   const mainLight = new THREE.DirectionalLight(0xc4dcff, 1.65);
   mainLight.position.set(-34, 52, 30);
   mainLight.castShadow = true;
-  mainLight.shadow.mapSize.set(2048, 2048);
+  mainLight.shadow.mapSize.set(1024, 1024);
   mainLight.shadow.camera.near = 4;
   mainLight.shadow.camera.far = 150;
   mainLight.shadow.camera.left = -46;
@@ -2069,14 +1901,161 @@ export function createPowerWorld({
     [-4, 2.32, -14, 0.78, "pine"],
     [16, 2.32, 14, 0.72, "broad"],
   ];
-  treeCoords.forEach(([tx, ty, tz, ts, kind], idx) => {
-    const tree =
-      kind === "broad"
-        ? makeBroadleafTree(ts, idx % 2 === 0 ? 0x4fbf85 : 0x5ed495)
-        : makePineTree(ts, idx % 2 === 0 ? 0x36a877 : 0x44bf8c);
-    tree.position.set(tx, ty, tz);
-    scene.add(tree);
-    addContactShadow(tx, tz, ts * (kind === "broad" ? 1.5 : 1.2), { y: ty, strength: 0.85 });
+
+  // Trees are static scenery. Instancing their shared parts replaces ~160 tiny mesh
+  // submissions with 13 batches without removing the handcrafted silhouettes.
+  const instanceRoot = new THREE.Object3D();
+  const instancePart = new THREE.Object3D();
+  const instanceWorldMatrix = new THREE.Matrix4();
+  const instanceUp = new THREE.Vector3(0, 1, 0);
+  const instanceDirection = new THREE.Vector3();
+  const setInstancedPart = (
+    mesh, index, rootX, rootY, rootZ, rootYaw, rootScale,
+    partX, partY, partZ, rotX, rotY, rotZ, scaleX, scaleY, scaleZ
+  ) => {
+    instanceRoot.position.set(rootX, rootY, rootZ);
+    instanceRoot.rotation.set(0, rootYaw, 0);
+    instanceRoot.scale.setScalar(rootScale);
+    instanceRoot.updateMatrix();
+    instancePart.position.set(partX, partY, partZ);
+    instancePart.rotation.set(rotX, rotY, rotZ);
+    instancePart.scale.set(scaleX, scaleY, scaleZ);
+    instancePart.updateMatrix();
+    instanceWorldMatrix.multiplyMatrices(instanceRoot.matrix, instancePart.matrix);
+    mesh.setMatrixAt(index, instanceWorldMatrix);
+  };
+  const setQuaternionPart = (mesh, index, rootX, rootY, rootZ, rootYaw, rootScale, part, quaternion) => {
+    instanceRoot.position.set(rootX, rootY, rootZ);
+    instanceRoot.rotation.set(0, rootYaw, 0);
+    instanceRoot.scale.setScalar(rootScale);
+    instanceRoot.updateMatrix();
+    instancePart.position.copy(part.position);
+    instancePart.quaternion.copy(quaternion);
+    instancePart.scale.copy(part.scale);
+    instancePart.updateMatrix();
+    instanceWorldMatrix.multiplyMatrices(instanceRoot.matrix, instancePart.matrix);
+    mesh.setMatrixAt(index, instanceWorldMatrix);
+  };
+
+  const pineTrees = treeCoords.filter((tree) => tree[4] === "pine");
+  const broadleafTrees = treeCoords.filter((tree) => tree[4] === "broad");
+  const pineTrunkMesh = new THREE.InstancedMesh(
+    new THREE.CylinderGeometry(0.14, 0.3, 1.9, 8),
+    new THREE.MeshStandardMaterial({ color: 0x5a3b25, roughness: 0.94 }),
+    pineTrees.length
+  );
+  pineTrunkMesh.name = "pine-trunks";
+  pineTrunkMesh.castShadow = true;
+  pineTrunkMesh.receiveShadow = true;
+  pineTrunkMesh.frustumCulled = false;
+  const pineCanopyMeshes = Array.from({ length: 4 }, (_, tier) =>
+    new THREE.InstancedMesh(
+      new THREE.ConeGeometry(1, 1, 9, 2),
+      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.82, flatShading: true }),
+      pineTrees.length
+    )
+  );
+  pineCanopyMeshes.forEach((mesh, tier) => {
+    mesh.name = "pine-canopy-tier-" + tier;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.frustumCulled = false;
+  });
+
+  pineTrees.forEach(([tx, ty, tz, scale], index) => {
+    const yaw = randRange(0, TAU);
+    const tint = new THREE.Color(index % 2 === 0 ? 0x36a877 : 0x44bf8c);
+    setInstancedPart(pineTrunkMesh, index, tx, ty, tz, yaw, scale, 0, 0.95, 0, 0, 0, 0, 1, 1, 1);
+    pineCanopyMeshes.forEach((mesh, tier) => {
+      const t = tier / 3;
+      const radius = 1.34 - t * 0.82;
+      const height = 1.62 - t * 0.42;
+      setInstancedPart(
+        mesh, index, tx, ty, tz, yaw, scale,
+        Math.cos(tier * 2.1) * 0.06,
+        1.42 + tier * 0.78,
+        Math.sin(tier * 2.1) * 0.06,
+        0,
+        tier * 0.7,
+        Math.cos(tier * 1.7) * 0.06,
+        radius,
+        height,
+        radius
+      );
+      mesh.setColorAt(index, tint);
+    });
+    addContactShadow(tx, tz, scale * 1.2, { y: ty, strength: 0.85 });
+  });
+
+  const broadleafClumpSpecs = [
+    [0, 2.9, 0, 1.35],
+    [-0.85, 2.45, 0.4, 0.92],
+    [0.9, 2.55, -0.3, 0.86],
+    [0.15, 3.55, 0.25, 0.78],
+  ];
+  const broadleafTrunkMesh = new THREE.InstancedMesh(
+    new THREE.CylinderGeometry(0.16, 0.34, 2.4, 8),
+    new THREE.MeshStandardMaterial({ color: 0x6b4a2f, roughness: 0.92 }),
+    broadleafTrees.length
+  );
+  broadleafTrunkMesh.name = "broadleaf-trunks";
+  broadleafTrunkMesh.castShadow = true;
+  broadleafTrunkMesh.frustumCulled = false;
+  const broadleafMeshes = broadleafClumpSpecs.map(([cx, cy, cz, radius], clumpIndex) => {
+    const geometry = new THREE.IcosahedronGeometry(radius, 2);
+    const positions = geometry.attributes.position;
+    for (let vertex = 0; vertex < positions.count; vertex += 1) {
+      const nx = positions.getX(vertex);
+      const ny = positions.getY(vertex);
+      const nz = positions.getZ(vertex);
+      const wobble = 1 + Math.sin(nx * 3.1 + clumpIndex) * 0.06 + Math.cos(nz * 2.7 - clumpIndex) * 0.05 + Math.sin(ny * 4.3) * 0.03;
+      positions.setXYZ(vertex, nx * wobble, ny * wobble * 0.96, nz * wobble);
+    }
+    geometry.computeVertexNormals();
+    const mesh = new THREE.InstancedMesh(
+      geometry,
+      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.84, flatShading: true }),
+      broadleafTrees.length
+    );
+    mesh.name = "broadleaf-clump-" + clumpIndex;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.frustumCulled = false;
+    return mesh;
+  });
+
+  broadleafTrees.forEach(([tx, ty, tz, scale], index) => {
+    const yaw = randRange(0, TAU);
+    const tint = new THREE.Color(index % 2 === 0 ? 0x4fbf85 : 0x5ed495);
+    setInstancedPart(broadleafTrunkMesh, index, tx, ty, tz, yaw, scale, 0, 1.2, 0, 0, 0, 0, 1, 1, 1);
+    broadleafMeshes.forEach((mesh, clumpIndex) => {
+      const [cx, cy, cz] = broadleafClumpSpecs[clumpIndex];
+      setInstancedPart(
+        mesh, index, tx, ty, tz, yaw, scale,
+        cx, cy, cz,
+        clumpIndex * 0.7,
+        clumpIndex * 1.3,
+        clumpIndex * 0.4,
+        1, 0.96, 1
+      );
+      mesh.setColorAt(index, tint);
+    });
+    addContactShadow(tx, tz, scale * 1.5, { y: ty, strength: 0.85 });
+  });
+
+  pineTrunkMesh.instanceMatrix.needsUpdate = true;
+  pineCanopyMeshes.forEach((mesh) => {
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    scene.add(mesh);
+  });
+  scene.add(pineTrunkMesh);
+  broadleafTrunkMesh.instanceMatrix.needsUpdate = true;
+  scene.add(broadleafTrunkMesh);
+  broadleafMeshes.forEach((mesh) => {
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    scene.add(mesh);
   });
 
   const palmSpots = [
@@ -2085,11 +2064,117 @@ export function createPowerWorld({
     [30.5, 2.34, 18.8, 1.0],
     [-4.5, 2.32, 26.5, 0.86],
   ];
-  palmSpots.forEach(([px, py, pz, ps]) => {
-    const palm = makePalmTree(ps);
-    palm.position.set(px, py, pz);
-    scene.add(palm);
-    addContactShadow(px, pz, ps * 1.1, { y: py, strength: 0.8 });
+  const palmTrunkMat = new THREE.MeshStandardMaterial({ color: 0x8a6544, roughness: 0.9 });
+  const palmLeafMat = new THREE.MeshStandardMaterial({
+    color: 0x35a86a,
+    roughness: 0.78,
+    side: THREE.DoubleSide,
+    flatShading: true,
+  });
+  const palmCoconutMat = new THREE.MeshStandardMaterial({ color: 0x5c4128, roughness: 0.9 });
+  const palmSegmentCount = 6;
+  const palmFrondCount = 7;
+  const palmCoconutCount = 3;
+  const palmTrunkMesh = new THREE.InstancedMesh(
+    new THREE.CylinderGeometry(0.8, 1, 1, 7),
+    palmTrunkMat,
+    palmSpots.length * palmSegmentCount
+  );
+  const palmFrondMesh = new THREE.InstancedMesh(
+    new THREE.ConeGeometry(0.36, 2.9, 4),
+    palmLeafMat,
+    palmSpots.length * palmFrondCount
+  );
+  const palmCoconutMesh = new THREE.InstancedMesh(
+    new THREE.SphereGeometry(0.16, 8, 8),
+    palmCoconutMat,
+    palmSpots.length * palmCoconutCount
+  );
+  palmTrunkMesh.name = "palm-trunks";
+  palmFrondMesh.name = "palm-fronds";
+  palmCoconutMesh.name = "palm-coconuts";
+  palmTrunkMesh.castShadow = true;
+  palmFrondMesh.castShadow = true;
+  [palmTrunkMesh, palmFrondMesh, palmCoconutMesh].forEach((mesh) => {
+    mesh.frustumCulled = false;
+  });
+  const palmQuaternion = new THREE.Quaternion();
+
+  palmSpots.forEach(([px, py, pz, scale], palmIndex) => {
+    const yaw = randRange(0, TAU);
+    const rootX = px;
+    const rootY = py;
+    const rootZ = pz;
+    let previousX = 0;
+    let previousY = 0;
+    let previousZ = 0;
+
+    // Six curved trunk segments, seven fronds, and three coconuts render as three batches.
+    for (let i = 1; i <= palmSegmentCount; i += 1) {
+      const t = i / palmSegmentCount;
+      const endX = Math.sin(t * 1.1) * 0.95;
+      const endY = t * 4.6;
+      const endZ = 0;
+      const dx = endX - previousX;
+      const dy = endY - previousY;
+      const dz = endZ - previousZ;
+      const length = Math.hypot(dx, dy, dz) * 1.08;
+      instanceDirection.set(dx, dy, dz).normalize();
+      palmQuaternion.setFromUnitVectors(instanceUp, instanceDirection);
+      instancePart.position.set(
+        (previousX + endX) * 0.5,
+        (previousY + endY) * 0.5,
+        (previousZ + endZ) * 0.5
+      );
+      instancePart.scale.set(0.3 - t * 0.1, length, 0.3 - t * 0.1);
+      setQuaternionPart(
+        palmTrunkMesh,
+        palmIndex * palmSegmentCount + i - 1,
+        rootX, rootY, rootZ, yaw, scale,
+        instancePart,
+        palmQuaternion
+      );
+      previousX = endX;
+      previousY = endY;
+      previousZ = endZ;
+    }
+
+    for (let frondIndex = 0; frondIndex < palmFrondCount; frondIndex += 1) {
+      const angle = (frondIndex / palmFrondCount) * TAU;
+      setInstancedPart(
+        palmFrondMesh,
+        palmIndex * palmFrondCount + frondIndex,
+        rootX, rootY, rootZ, yaw, scale,
+        previousX + Math.cos(angle) * 1.05,
+        previousY + 0.1,
+        previousZ + Math.sin(angle) * 1.05,
+        0,
+        -angle,
+        Math.PI / 2 - 0.42,
+        1,
+        1,
+        0.3
+      );
+    }
+
+    for (let coconutIndex = 0; coconutIndex < palmCoconutCount; coconutIndex += 1) {
+      const angle = (coconutIndex / palmCoconutCount) * TAU;
+      setInstancedPart(
+        palmCoconutMesh,
+        palmIndex * palmCoconutCount + coconutIndex,
+        rootX, rootY, rootZ, yaw, scale,
+        previousX + Math.cos(angle) * 0.35,
+        previousY - 0.18,
+        previousZ + Math.sin(angle) * 0.35,
+        0, 0, 0, 1, 1, 1
+      );
+    }
+    addContactShadow(px, pz, scale * 1.1, { y: py, strength: 0.8 });
+  });
+
+  [palmTrunkMesh, palmFrondMesh, palmCoconutMesh].forEach((mesh) => {
+    mesh.instanceMatrix.needsUpdate = true;
+    scene.add(mesh);
   });
 
   /* ── 3. 중앙 변전소 · 주 회로 스위치 · 플라스마 축전기 · 테슬라 코일 ── */
@@ -2575,6 +2660,17 @@ export function createPowerWorld({
     metalness: 0.18,
   });
 
+  const bladeHubGeometry = new THREE.SphereGeometry(0.17, 8, 8);
+  const bladeHubMaterial = new THREE.MeshStandardMaterial({
+    color: 0xdfe8f5,
+    metalness: 0.3,
+    roughness: 0.35,
+  });
+  const rotorHolderTransform = new THREE.Object3D();
+  const rotorPartTransform = new THREE.Object3D();
+  const rotorInstanceMatrix = new THREE.Matrix4();
+  const rotorHolderMatrix = new THREE.Matrix4();
+
   /** 날개 단면을 뽑아 만든 실제 풍력 블레이드 (뿌리는 두껍고 끝은 가늘게) */
   function makeBladeGeometry(len) {
     const shape = new THREE.Shape();
@@ -2597,27 +2693,44 @@ export function createPowerWorld({
 
   function populateRotorBlades(rotor, count, bladeScale) {
     while (rotor.children.length) {
-      const old = rotor.children.pop();
+      const old = rotor.children[0];
+      rotor.remove(old);
       if (old.geometry) old.geometry.dispose();
     }
-    const len = 3.2 + bladeScale * 4.2;
-    for (let i = 0; i < count; i += 1) {
-      const holder = new THREE.Group();
-      holder.rotation.z = (i / count) * TAU;
-      const blade = new THREE.Mesh(makeBladeGeometry(len), bladeMaterial);
-      blade.position.y = 0.28;
-      blade.rotation.y = 0.26 + (i % 2) * 0.06;
-      blade.rotation.z = 0.04;
-      holder.add(blade);
+    const bladeMesh = new THREE.InstancedMesh(
+      makeBladeGeometry(3.2 + bladeScale * 4.2),
+      bladeMaterial,
+      count
+    );
+    const hubMesh = new THREE.InstancedMesh(bladeHubGeometry, bladeHubMaterial, count);
+    bladeMesh.name = "turbine-blades";
+    hubMesh.name = "turbine-blade-hubs";
+    bladeMesh.frustumCulled = false;
+    hubMesh.frustumCulled = false;
 
-      const root = new THREE.Mesh(
-        new THREE.SphereGeometry(0.17, 8, 8),
-        new THREE.MeshStandardMaterial({ color: 0xdfe8f5, metalness: 0.3, roughness: 0.35 })
-      );
-      root.position.y = 0.24;
-      holder.add(root);
-      rotor.add(holder);
+    for (let i = 0; i < count; i += 1) {
+      rotorHolderTransform.position.set(0, 0, 0);
+      rotorHolderTransform.rotation.set(0, 0, (i / count) * TAU);
+      rotorHolderTransform.scale.set(1, 1, 1);
+      rotorHolderTransform.updateMatrix();
+      rotorHolderMatrix.copy(rotorHolderTransform.matrix);
+
+      rotorPartTransform.position.set(0, 0.28, 0);
+      rotorPartTransform.rotation.set(0, 0.26 + (i % 2) * 0.06, 0.04);
+      rotorPartTransform.scale.set(1, 1, 1);
+      rotorPartTransform.updateMatrix();
+      rotorInstanceMatrix.multiplyMatrices(rotorHolderMatrix, rotorPartTransform.matrix);
+      bladeMesh.setMatrixAt(i, rotorInstanceMatrix);
+
+      rotorPartTransform.position.set(0, 0.24, 0);
+      rotorPartTransform.rotation.set(0, 0, 0);
+      rotorPartTransform.updateMatrix();
+      rotorInstanceMatrix.multiplyMatrices(rotorHolderMatrix, rotorPartTransform.matrix);
+      hubMesh.setMatrixAt(i, rotorInstanceMatrix);
     }
+    bladeMesh.instanceMatrix.needsUpdate = true;
+    hubMesh.instanceMatrix.needsUpdate = true;
+    rotor.add(bladeMesh, hubMesh);
   }
 
   turbineSpecs.forEach((spec) => {
@@ -3555,16 +3668,63 @@ export function createPowerWorld({
     { x: 20.5, z: 1.4, w: 3.6, h: 2.8, d: 2.9, roof: 0xe8783a, wall: 0xe6dcc8, trim: 0x4a3a2c, rot: 2.8 },
   ];
 
-  const planterBloomMats = [0xff8fb3, 0xffd166, 0xc084fc].map(
-    (hex) =>
-      new THREE.MeshStandardMaterial({
-        color: hex,
-        emissive: hex,
-        emissiveIntensity: 0.16,
-        roughness: 0.62,
-      })
+  const planterBloomMat = new THREE.MeshStandardMaterial({ color: 0xe86a8d, roughness: 0.85 });
+  const planterLeafMat = new THREE.MeshStandardMaterial({ color: 0x3f9d63, roughness: 0.9 });
+  const planterBoxMat = new THREE.MeshStandardMaterial({ color: 0x6b4a30, roughness: 0.9 });
+  const porchMat = new THREE.MeshStandardMaterial({
+    color: 0xffd7a0,
+    emissive: 0xffb15c,
+    emissiveIntensity: 0,
+    roughness: 0.3,
+  });
+  const cottageWindowMaterial = new THREE.MeshStandardMaterial({
+    color: 0x2a3448,
+    map: textures.windowPane,
+    emissive: 0xffbe42,
+    emissiveMap: textures.windowPane,
+    emissiveIntensity: 0,
+    roughness: 0.22,
+    metalness: 0.1,
+  });
+  const cottageFrameMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8 });
+  const windowFrameFrontMesh = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(0.9, 0.96, 0.08), cottageFrameMaterial, houseSpecs.length * 4
   );
-  const planterLeafMat = new THREE.MeshStandardMaterial({ color: 0x3f9b6c, roughness: 0.85 });
+  const windowFrameSideMesh = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(0.78, 0.9, 0.08), cottageFrameMaterial, houseSpecs.length
+  );
+  const windowPaneFrontMesh = new THREE.InstancedMesh(
+    new THREE.PlaneGeometry(0.74, 0.8), cottageWindowMaterial, houseSpecs.length * 4
+  );
+  const windowPaneSideMesh = new THREE.InstancedMesh(
+    new THREE.PlaneGeometry(0.62, 0.74), cottageWindowMaterial, houseSpecs.length
+  );
+  const planterBoxMesh = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(0.84, 0.2, 0.22), planterBoxMat, houseSpecs.length * 2
+  );
+  const planterBloomMesh = new THREE.InstancedMesh(
+    new THREE.SphereGeometry(0.08, 6, 6), planterBloomMat, houseSpecs.length * 6
+  );
+  const planterLeafMesh = new THREE.InstancedMesh(
+    new THREE.SphereGeometry(0.09, 6, 6), planterLeafMat, houseSpecs.length * 6
+  );
+  const porchMesh = new THREE.InstancedMesh(
+    new THREE.SphereGeometry(0.12, 10, 10), porchMat, houseSpecs.length
+  );
+  const houseBatches = [
+    windowFrameFrontMesh, windowFrameSideMesh, windowPaneFrontMesh, windowPaneSideMesh,
+    planterBoxMesh, planterBloomMesh, planterLeafMesh, porchMesh,
+  ];
+  houseBatches.forEach((mesh) => {
+    mesh.frustumCulled = false;
+    villageGroup.add(mesh);
+  });
+  let frontWindowIndex = 0;
+  let sideWindowIndex = 0;
+  let planterBoxIndex = 0;
+  let planterFlowerIndex = 0;
+  let porchIndex = 0;
+  cottageWindows.push(cottageWindowMaterial);
 
   const roofTileMat = new THREE.MeshStandardMaterial({
     color: 0xffffff,
@@ -3680,60 +3840,32 @@ export function createPowerWorld({
       smokePuffs.push({ sprite: puff, baseY: puff.position.y, phase: houseIndex * 1.3 + s * 0.7 });
     }
 
-    // 창문 (앞·뒤·측면) + 창틀
-    const winMat = new THREE.MeshStandardMaterial({
-      color: 0x2a3448,
-      map: textures.windowPane,
-      emissive: 0xffbe42,
-      emissiveMap: textures.windowPane,
-      emissiveIntensity: 0,
-      roughness: 0.22,
-      metalness: 0.1,
-    });
-    const addWindow = (x, y, z, rotY, wdt = 0.74, hgt = 0.8) => {
-      const frame = new THREE.Mesh(
-        new THREE.BoxGeometry(wdt + 0.16, hgt + 0.16, 0.08),
-        new THREE.MeshStandardMaterial({ color: hs.trim, roughness: 0.8 })
-      );
-      const pane = new THREE.Mesh(new THREE.PlaneGeometry(wdt, hgt), winMat);
-      const holder = new THREE.Group();
-      holder.position.set(x, y, z);
-      holder.rotation.y = rotY;
-      frame.position.z = 0.01;
-      pane.position.z = 0.06;
-      holder.add(frame);
-      holder.add(pane);
-      // 창가 화분 — 벽면에 작은 색 포인트를 얹어 오두막이 살아 있게 보이게 한다
-      const planter = new THREE.Mesh(
-        new THREE.BoxGeometry(wdt + 0.24, 0.16, 0.24),
-        new THREE.MeshStandardMaterial({ color: 0x6f4b31, map: textures.wood, roughness: 0.9 })
-      );
-      planter.position.set(0, -hgt * 0.5 - 0.16, 0.16);
-      planter.castShadow = true;
-      holder.add(planter);
-      for (let b = 0; b < 4; b += 1) {
-        const bloom = new THREE.Mesh(
-          new THREE.SphereGeometry(0.075, 6, 6),
-          planterBloomMats[b % planterBloomMats.length]
-        );
-        bloom.position.set(
-          -wdt * 0.34 + b * (wdt * 0.23),
-          -hgt * 0.5 - 0.07,
-          0.16 + (b % 2 === 0 ? 0.03 : -0.03)
-        );
-        holder.add(bloom);
-        const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.09, 6, 6), planterLeafMat);
-        leaf.scale.set(1.4, 0.7, 1);
-        leaf.position.set(bloom.position.x + 0.05, bloom.position.y - 0.03, bloom.position.z);
-        holder.add(leaf);
-      }
-      house.add(holder);
-      return holder;
-    };
+    // 창문 5개는 동일 형상의 인스턴스 배치로 렌더링한다.
     const frontZ = hs.d * 0.5 + 0.02;
+    const trimColor = new THREE.Color(hs.trim);
+    const addWindow = (x, y, z, rotY, wdt = 0.74, hgt = 0.8) => {
+      const isSideWindow = wdt < 0.7;
+      const frameIndex = isSideWindow ? sideWindowIndex++ : frontWindowIndex++;
+      const frameMesh = isSideWindow ? windowFrameSideMesh : windowFrameFrontMesh;
+      const paneMesh = isSideWindow ? windowPaneSideMesh : windowPaneFrontMesh;
+      const frameOffset = 0.01;
+      const paneOffset = 0.06;
+      setInstancedPart(
+        frameMesh, frameIndex, hs.x, 2.8, hs.z, hs.rot, 1,
+        x + Math.sin(rotY) * frameOffset, y, z + Math.cos(rotY) * frameOffset,
+        0, rotY, 0, 1, 1, 1
+      );
+      frameMesh.setColorAt(frameIndex, trimColor);
+      setInstancedPart(
+        paneMesh, frameIndex, hs.x, 2.8, hs.z, hs.rot, 1,
+        x + Math.sin(rotY) * paneOffset, y, z + Math.cos(rotY) * paneOffset,
+        0, rotY, 0, 1, 1, 1
+      );
+    };
     addWindow(-hs.w * 0.26, hs.h * 0.66, frontZ, 0);
     addWindow(hs.w * 0.26, hs.h * 0.66, frontZ, 0);
     addWindow(-hs.w * 0.26, hs.h * 0.66, -frontZ, Math.PI);
+    addWindow(hs.w * 0.26, hs.h * 0.66, -frontZ, Math.PI);
     addWindow(hs.w * 0.5 + 0.02, hs.h * 0.66, 0, Math.PI / 2, 0.62, 0.74);
 
     // 현관문 + 문 위 등불
@@ -3753,42 +3885,48 @@ export function createPowerWorld({
 
     house.add(canopy);
 
-    const porchMat = new THREE.MeshStandardMaterial({
-      color: 0xffd7a0,
-      emissive: 0xffb15c,
-      emissiveIntensity: 0,
-      roughness: 0.3,
-    });
-    const porch = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 10), porchMat);
-    porch.position.set(hs.w * 0.02, 1.86, frontZ + 0.14);
-    house.add(porch);
+    const porchIndexForHouse = porchIndex++;
+    setInstancedPart(
+      porchMesh, porchIndexForHouse, hs.x, 2.8, hs.z, hs.rot, 1,
+      hs.w * 0.02, 1.86, frontZ + 0.14,
+      0, 0, 0, 1, 1, 1
+    );
     const porchHalo = makeGlowSprite(textures.glow, 0xffc06a, 1.7, 0);
-    porchHalo.position.copy(porch.position);
+    porchHalo.position.set(hs.w * 0.02, 1.86, frontZ + 0.14);
     house.add(porchHalo);
-    porchLights.push({ porchMat, halo: porchHalo.material });
+    porchLights.push(porchHalo.material);
 
-    // 창가 꽃상자
-    const flowerMat = new THREE.MeshStandardMaterial({ color: 0xe86a8d, roughness: 0.85 });
-    const leafMat = new THREE.MeshStandardMaterial({ color: 0x3f9d63, roughness: 0.9 });
+    // Front flower boxes use three compact instance batches instead of six meshes per window.
     [-1, 1].forEach((side) => {
-      const box = new THREE.Mesh(
-        new THREE.BoxGeometry(0.84, 0.2, 0.22),
-        new THREE.MeshStandardMaterial({ color: 0x6b4a30, roughness: 0.9 })
+      const boxIndex = planterBoxIndex++;
+      setInstancedPart(
+        planterBoxMesh, boxIndex, hs.x, 2.8, hs.z, hs.rot, 1,
+        side * hs.w * 0.26, hs.h * 0.66 - 0.5, frontZ + 0.1,
+        0, 0, 0, 1, 1, 1
       );
-      box.position.set(side * hs.w * 0.26, hs.h * 0.66 - 0.5, frontZ + 0.1);
-      house.add(box);
       for (let f = 0; f < 3; f += 1) {
-        const bloom = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 6), flowerMat);
-        bloom.position.set(side * hs.w * 0.26 - 0.26 + f * 0.26, hs.h * 0.66 - 0.37, frontZ + 0.12);
-        house.add(bloom);
-        const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.09, 6, 6), leafMat);
-        leaf.position.set(side * hs.w * 0.26 - 0.3 + f * 0.3, hs.h * 0.66 - 0.46, frontZ + 0.08);
-        leaf.scale.set(1.2, 0.6, 0.8);
-        house.add(leaf);
+        const flowerIndex = planterFlowerIndex++;
+        setInstancedPart(
+          planterBloomMesh, flowerIndex, hs.x, 2.8, hs.z, hs.rot, 1,
+          side * hs.w * 0.26 - 0.26 + f * 0.26,
+          hs.h * 0.66 - 0.37,
+          frontZ + 0.12,
+          0, 0, 0, 1, 1, 1
+        );
+        setInstancedPart(
+          planterLeafMesh, flowerIndex, hs.x, 2.8, hs.z, hs.rot, 1,
+          side * hs.w * 0.26 - 0.3 + f * 0.3,
+          hs.h * 0.66 - 0.46,
+          frontZ + 0.08,
+          0, 0, 0, 1.2, 0.6, 0.8
+        );
       }
     });
 
-    cottageWindows.push(winMat);
+  });
+  houseBatches.forEach((mesh) => {
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   });
 
   // 마을 길 8개의 주철 가로등 — 받침·기둥·랜턴 케이지까지
@@ -3807,42 +3945,49 @@ export function createPowerWorld({
     metalness: 0.72,
     roughness: 0.42,
   });
-  lampCoords.forEach(([lx, lz]) => {
-    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.34, 0.32, 10), lampIronMat);
-    base.position.set(lx, 2.98, lz);
+  const lampBaseMesh = new THREE.InstancedMesh(
+    new THREE.CylinderGeometry(0.24, 0.34, 0.32, 10), lampIronMat, lampCoords.length
+  );
+  const lampPostMesh = new THREE.InstancedMesh(
+    new THREE.CylinderGeometry(0.075, 0.13, 2.7, 10), lampIronMat, lampCoords.length
+  );
+  const lampCollarMesh = new THREE.InstancedMesh(
+    new THREE.TorusGeometry(0.12, 0.035, 6, 12), lampIronMat, lampCoords.length
+  );
+  const lampGlobeMat = new THREE.MeshStandardMaterial({
+    color: 0x39424f,
+    emissive: 0xffd166,
+    emissiveIntensity: 0,
+    roughness: 0.18,
+    metalness: 0.2,
+  });
+  const lampGlobeMesh = new THREE.InstancedMesh(
+    new THREE.SphereGeometry(0.3, 16, 14), lampGlobeMat, lampCoords.length
+  );
+  const lampCapMesh = new THREE.InstancedMesh(
+    new THREE.ConeGeometry(0.34, 0.26, 10), lampIronMat, lampCoords.length
+  );
+  [lampBaseMesh, lampPostMesh, lampCollarMesh, lampGlobeMesh, lampCapMesh].forEach((mesh, i) => {
+    mesh.name = ["street-lamp-bases", "street-lamp-posts", "street-lamp-collars", "street-lamp-globes", "street-lamp-caps"][i];
+    mesh.frustumCulled = false;
+    villageGroup.add(mesh);
+  });
+  streetLampBulbs.push(lampGlobeMat);
 
-    villageGroup.add(base);
-
-    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.13, 2.7, 10), lampIronMat);
-    post.position.set(lx, 4.4, lz);
-
-    villageGroup.add(post);
-
-    const collar = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.035, 6, 12), lampIronMat);
-    collar.rotation.x = Math.PI / 2;
-    collar.position.set(lx, 5.5, lz);
-    villageGroup.add(collar);
-
-    const globeMat = new THREE.MeshStandardMaterial({
-      color: 0x39424f,
-      emissive: 0xffd166,
-      emissiveIntensity: 0,
-      roughness: 0.18,
-      metalness: 0.2,
-    });
-    const globe = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 14), globeMat);
-    globe.position.set(lx, 5.86, lz);
-    villageGroup.add(globe);
-    streetLampBulbs.push(globeMat);
-
-    const cap = new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.26, 10), lampIronMat);
-    cap.position.set(lx, 6.13, lz);
-    villageGroup.add(cap);
+  lampCoords.forEach(([lx, lz], index) => {
+    setInstancedPart(lampBaseMesh, index, lx, 0, lz, 0, 1, 0, 2.98, 0, 0, 0, 0, 1, 1, 1);
+    setInstancedPart(lampPostMesh, index, lx, 0, lz, 0, 1, 0, 4.4, 0, 0, 0, 0, 1, 1, 1);
+    setInstancedPart(lampCollarMesh, index, lx, 0, lz, 0, 1, 0, 5.5, 0, Math.PI / 2, 0, 0, 1, 1, 1);
+    setInstancedPart(lampGlobeMesh, index, lx, 0, lz, 0, 1, 0, 5.86, 0, 0, 0, 0, 1, 1, 1);
+    setInstancedPart(lampCapMesh, index, lx, 0, lz, 0, 1, 0, 6.13, 0, 0, 0, 0, 1, 1, 1);
 
     const halo = makeGlowSprite(textures.glow, 0xffca58, 3.4, 0);
-    halo.position.copy(globe.position);
+    halo.position.set(lx, 5.86, lz);
     villageGroup.add(halo);
     streetLampHalos.push(halo);
+  });
+  [lampBaseMesh, lampPostMesh, lampCollarMesh, lampGlobeMesh, lampCapMesh].forEach((mesh) => {
+    mesh.instanceMatrix.needsUpdate = true;
   });
 
   // 곶 위의 줄무늬 회전 등대 (Tier 2: harbor)
@@ -5538,14 +5683,16 @@ export function createPowerWorld({
     cottageWindows.forEach((mat) => {
       mat.emissiveIntensity += (lm.cottages * 2.5 - mat.emissiveIntensity) * Math.min(1, dt * 6);
     });
-    streetLampBulbs.forEach((mat, i) => {
+    streetLampBulbs.forEach((mat) => {
       mat.emissiveIntensity += (lm.cottages * 2.8 - mat.emissiveIntensity) * Math.min(1, dt * 6);
-      streetLampHalos[i].material.opacity = lm.cottages * 0.65;
+    });
+    streetLampHalos.forEach((halo) => {
+      halo.material.opacity = lm.cottages * 0.65;
     });
     villageWarmLight.intensity =
       (lm.cottages * 3.0 + lm.ferris * 1.2) * villageWarmLight.userData.gain;
-    porchLights.forEach(({ porchMat, halo }) => {
-      porchMat.emissiveIntensity += (lm.cottages * 2.6 - porchMat.emissiveIntensity) * Math.min(1, dt * 5);
+    porchMat.emissiveIntensity += (lm.cottages * 2.6 - porchMat.emissiveIntensity) * Math.min(1, dt * 5);
+    porchLights.forEach((halo) => {
       halo.opacity = lm.cottages * 0.55;
     });
     smokePuffs.forEach(({ sprite, baseY, phase }) => {
@@ -5745,42 +5892,50 @@ export function createPowerWorld({
   }
 
   const resolution = {
-    max: Math.min(typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1, 1.6),
-    current: 0,
+    max: softwareRenderer
+      ? 0.75
+      : Math.min(typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1, 1.25),
+    min: softwareRenderer ? 0.4 : 0.85,
+    current: softwareRenderer ? 0.5 : 1,
     sampleTime: 0,
     sampleFrames: 0,
   };
-  resolution.current = resolution.max;
+  resolution.current = Math.min(resolution.current, resolution.max);
+  resolution.min = Math.min(resolution.min, resolution.max);
 
-  function updateGradeTexel(w, h) {
-    if (!gradePass) return;
-    const texel = gradePass.uniforms.uTexel;
-    if (texel) texel.value.set(1 / Math.max(1, w), 1 / Math.max(1, h));
+  function resizeRenderer(w, h) {
+    if (!renderer) return;
+    renderer.setPixelRatio(resolution.current);
+    renderer.setSize(w, h, false);
+    if (composer) composer.setSize(w, h);
   }
 
   function applyPixelRatio() {
-    if (!renderer) return;
-    renderer.setPixelRatio(resolution.current);
+    if (!renderer || !canvas) return;
     const rect = canvas.getBoundingClientRect();
     const w = Math.max(280, Math.round(rect.width || canvas.clientWidth || 1280));
     const h = Math.max(200, Math.round(rect.height || canvas.clientHeight || 800));
-    renderer.setSize(w, h, false);
-    if (composer) composer.setSize(w, h);
-    if (bloomPass) bloomPass.setSize(w, h);
-    updateGradeTexel(w, h);
+    resizeRenderer(w, h);
   }
 
-  // 태블릿에서 프레임이 흔들리면 해상도를 한 단계 낮춰 부드러움을 우선한다
+  // 초기 픽셀 비율은 1.0으로 시작해, 60프레임 실제 budget에 맞춰 서서히 품질을 올리거나 내린다.
   function trackFrameBudget(dt) {
-    if (!renderer || reducedMotion) return;
+    if (!renderer) return;
     resolution.sampleTime += dt;
     resolution.sampleFrames += 1;
-    if (resolution.sampleFrames < 90) return;
+    if (resolution.sampleFrames < 60) return;
     const average = resolution.sampleTime / resolution.sampleFrames;
     resolution.sampleTime = 0;
     resolution.sampleFrames = 0;
-    if (average > 0.028 && resolution.current > 1.0) {
-      resolution.current = Math.max(1, resolution.current - 0.25);
+
+    let next = resolution.current;
+    if (average > 0.022 && next > resolution.min) {
+      next = Math.max(resolution.min, next - 0.15);
+    } else if (average < 0.018 && next < resolution.max) {
+      next = Math.min(resolution.max, next + 0.1);
+    }
+    if (Math.abs(next - resolution.current) > 0.001) {
+      resolution.current = next;
       applyPixelRatio();
     }
   }
@@ -5792,13 +5947,7 @@ export function createPowerWorld({
     const h = Math.max(200, Math.round(rect.height || canvas.clientHeight || 800));
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    if (renderer) {
-      renderer.setPixelRatio(resolution.current);
-      renderer.setSize(w, h, false);
-    }
-    if (composer) composer.setSize(w, h);
-    if (bloomPass) bloomPass.setSize(w, h);
-    updateGradeTexel(w, h);
+    resizeRenderer(w, h);
   }
 
   if (typeof window !== "undefined") {
@@ -5894,10 +6043,22 @@ export function createPowerWorld({
     });
   });
 
+  async function prepare() {
+    // Bake the starting environment and compile scene programs while the loading
+    // cover is still visible, avoiding a shader/PMREM stall on the first frame.
+    applyAtmosphere("night", 40, 0.1, 1 / 60, 0);
+    const hasParallelCompile = renderer && renderer.extensions &&
+      typeof renderer.extensions.has === "function" &&
+      renderer.extensions.has("KHR_parallel_shader_compile");
+    if (!renderer || softwareRenderer || !hasParallelCompile || typeof renderer.compileAsync !== "function") return false;
+    await renderer.compileAsync(scene, camera);
+    return true;
+  }
+
   if (typeof window !== "undefined") {
     window.__islandDebug = {
       scene, camera, renderer, composer, bloomPass, gradePass, mainLight, hemiLight, rimLight,
-      warmFill, ATMOSPHERES, applyAtmosphere, focusZone, controls,
+      warmFill, ATMOSPHERES, applyAtmosphere, focusZone, controls, prepare, softwareRenderer,
     };
   }
 
@@ -5906,6 +6067,7 @@ export function createPowerWorld({
     camera,
     controls,
     focusZone,
+    prepare,
     resize,
     step,
     triggerTeslaSpectacle,

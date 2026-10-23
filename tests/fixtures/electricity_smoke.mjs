@@ -317,6 +317,9 @@ win.innerWidth = 1280;
 win.innerHeight = 800;
 win.devicePixelRatio = 2;
 win.matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} });
+// The standalone browser entry always loads auth-gate.js. The DOM-only smoke harness
+// models the already-authenticated state so it can exercise the actual lazy boot path.
+win.AidenAuthGate = { isLocked: () => false, getState: () => "unlocked" };
 win.requestAnimationFrame = (callback) => {
   rafQueue.push(callback);
   return rafQueue.length;
@@ -375,6 +378,16 @@ const hasPhysics = Boolean(win.PowerPhysics);
 if (!hasPhysics) errors.push("PowerPhysics 전역 모듈이 등록되지 않았습니다");
 
 await import(pathToFileURL(path.join(pageDir, "electricity.js")).href);
+if (win.__electricityReady) await win.__electricityReady;
+if (win.__electricityBootError) errors.push("boot: " + win.__electricityBootError);
+const loadingRoot = doc.getElementById("world-loading");
+const loadingProgress = doc.getElementById("world-loading-progress");
+const bootLoadingSnapshot = {
+  present: Boolean(loadingRoot),
+  ariaBusy: loadingRoot ? loadingRoot.getAttribute("aria-busy") : null,
+  progress: loadingProgress ? Number(loadingProgress.getAttribute("aria-valuenow")) : null,
+  hasFrame: rafQueue.length > 0,
+};
 
 /* -------------------------------------------------------------- 시뮬레이션 */
 
@@ -524,6 +537,7 @@ frames(4);
 const stationIds = ["circuit", "static", "fruit", "generator", "solar", "wind", "hydro"];
 const result = {
   errors,
+  loader: bootLoadingSnapshot,
   physics: hasPhysics,
   peakWatts,
   blackoutWatts,

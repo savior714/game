@@ -118,6 +118,117 @@ a {
   touch-action: none;
 }
 
+/* The HUD paints immediately; the 3D scene warms up beneath this responsive cover. */
+.world-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+  background: radial-gradient(circle at 50% 40%, rgba(16, 46, 83, 0.92), rgba(4, 11, 29, 0.98) 72%);
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 220ms ease, visibility 220ms ease;
+}
+
+.world-loading[hidden] {
+  display: none;
+}
+
+.world-loading.is-ready {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.world-loading__card {
+  width: min(420px, 100%);
+  padding: 30px clamp(20px, 5vw, 34px) 24px;
+  border: 1px solid rgba(148, 189, 255, 0.24);
+  border-radius: 24px;
+  background: rgba(7, 16, 35, 0.86);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42), inset 0 1px rgba(255, 255, 255, 0.06);
+  text-align: center;
+}
+
+.world-loading__bolt {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(215, 255, 0, 0.3);
+  background: rgba(215, 255, 0, 0.1);
+  color: var(--volt);
+  font-size: 28px;
+  animation: power-loading-pulse 1.4s ease-in-out infinite;
+}
+
+.world-loading h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.world-loading p {
+  min-height: 1.5em;
+  margin: 8px 0 18px;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.world-loading__progress {
+  height: 9px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 189, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(2, 8, 20, 0.88);
+}
+
+.world-loading__progress span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #72d8ff, var(--volt));
+  box-shadow: 0 0 14px rgba(215, 255, 0, 0.56);
+  transition: width 120ms ease-out;
+}
+
+.world-loading__percent {
+  display: block;
+  margin-top: 8px;
+  color: var(--volt);
+  font-family: var(--font-num);
+  font-size: 11px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.world-loading__retry {
+  margin-top: 16px;
+  padding: 8px 18px;
+  border: 1px solid var(--panel-line-strong);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ink);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.world-loading__retry[hidden] {
+  display: none;
+}
+
+@keyframes power-loading-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.86; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
+
 .surge-flash {
   position: fixed;
   inset: 0;

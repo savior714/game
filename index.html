@@ -1,303 +1,347 @@
 <!DOCTYPE html>
-<html lang="ko" class="dark">
+<html lang="ko">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>학습 게임 놀이터 | AIDEN GAME LABS</title>
-  
-  <!-- Fonts -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&family=Outfit:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
-  
-  <!-- GSAP Animation Core -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <meta name="theme-color" content="#FFF9EC">
+  <meta name="description" content="숫자, 글자, 과학 놀이와 신나는 모험이 가득한 아이든 학습 게임 놀이터">
+  <title>아이든 학습 게임 놀이터</title>
 
-  <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./shared/ui/hud.css">
-  
-  <style>
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar { width: 8px; }
-    ::-webkit-scrollbar-track { background: #07090e; }
-    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #334155; }
-  </style>
+  <link rel="stylesheet" href="./styles.css">
 </head>
-<body class="bg-[#07090e] text-slate-100 min-h-screen relative overflow-x-hidden selection:bg-[#d7ff00]/30 selection:text-[#d7ff00]">
-
+<body class="kids-hub">
   <!-- 로그인 gate: 세션이 확인되기 전에는 기능 surface를 fail-closed로 차단한다. -->
   <script src="./domains/auth/auth-gate.js"></script>
   <script src="./shared/ui/study-game-admission.js"></script>
 
-  <!-- Ambient Glow Background -->
-  <div class="console-bg-glow"></div>
+  <a class="skip-link" href="#playground">놀이 목록으로 바로가기</a>
 
-  <!-- Console Shell Wrapper -->
+  <!-- 포근한 하늘과 구름 장식 -->
+  <div class="console-bg-glow" aria-hidden="true">
+    <span class="sky-cloud sky-cloud--one"></span>
+    <span class="sky-cloud sky-cloud--two"></span>
+    <span class="sky-doodle sky-doodle--one">✦</span>
+    <span class="sky-doodle sky-doodle--two">✿</span>
+    <span class="sky-doodle sky-doodle--three">●</span>
+  </div>
+
   <div class="console-wrapper">
-
-    <!-- Top Console HUD Navigation Bar (Unified Header) -->
+    <!-- 통합 상단 내비게이션 -->
     <header class="console-hud ag-hud ag-hud--full gsap-stagger-item" data-subject="hub" aria-label="메인 내비게이션">
       <div class="ag-hud__left hud-left-section">
-        <a href="./index.html" class="ag-hud__brand brand-badge group focus:outline-none" aria-label="AIDEN GAME LABS · 놀이터 홈">
-          <div class="ag-hud__brand-dot brand-dot"></div>
-          <span class="ag-hud__brand-home" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        <a href="./index.html" class="ag-hud__brand brand-badge group" aria-label="AIDEN GAME LABS · 놀이터 홈">
+          <span class="brand-play-mark" aria-hidden="true">
+            <span class="ag-hud__brand-home">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5.5 9.5V21h13V9.5"></path><path d="M9.5 21v-6h5v6"></path></svg>
+            </span>
+            <span class="brand-spark">✦</span>
           </span>
-          <span class="ag-hud__brand-word text-xs font-black tracking-widest text-[#d7ff00] uppercase group-hover:text-white transition-colors drop-shadow-sm">AIDEN GAME LABS</span>
-          <span class="ag-hud__brand-ver text-[11px] px-2.5 py-0.5 rounded-full bg-white/15 border border-white/20 text-slate-100 font-bold">v2.0</span>
+          <span class="brand-copy">
+            <span class="ag-hud__brand-word text-xs font-black tracking-widest text-[#d7ff00] uppercase">AIDEN GAME LABS</span>
+            <span class="brand-friendly-name">아이든 놀이터</span>
+          </span>
+          <span class="ag-hud__brand-ver text-[11px] text-slate-100">v2.0</span>
         </a>
         <span class="ag-hud__divider" aria-hidden="true"></span>
         <span class="ag-hud__subject"><span class="ag-hud__subject-emoji" aria-hidden="true">🎮</span> 학습 게임 놀이터</span>
       </div>
       <div class="ag-hud__right">
-        <!-- Integrated Reward System & User Control Mount -->
         <div id="reward-inventory-mount" class="ag-hud__reward hud-reward-mount" data-reward-surface="full"></div>
       </div>
     </header>
 
-    <main class="relative z-10 py-6">
-      
-      <!-- Big Arena Title Hero -->
-      <header class="arena-header gsap-stagger-item">
-        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#d7ff00]/15 border border-[#d7ff00]/30 text-xs text-[#d7ff00] font-black uppercase tracking-wider mb-2 shadow-sm">
-          <span>⚡</span>
-          <span>INTERACTIVE LEARNING PLAYGROUND</span>
+    <main id="main-content" class="hub-main" aria-label="오늘은 어떤 배움을 시작해볼까요?">
+      <!-- 아이가 처음 만나는 환영 마당 -->
+      <section class="arena-header gsap-stagger-item" aria-labelledby="arena-title">
+        <div class="hero-copy">
+          <div class="hero-eyebrow">
+            <span aria-hidden="true">✨</span>
+            <span>INTERACTIVE LEARNING PLAYGROUND</span>
+          </div>
+          <h1 id="arena-title" class="arena-title">
+            오늘은 어떤<br>
+            <span class="hero-title-highlight">신나는 놀이</span>를 해볼까?
+          </h1>
+          <p class="arena-subtitle">
+            숫자와 글자를 만나고, 바다와 우주로 떠나요!<br>
+            하고 싶은 카드를 눌러보세요.
+          </p>
+          <div class="hero-actions">
+            <a href="#playground" class="hero-cta">
+              <span class="hero-cta__icon" aria-hidden="true">☝</span>
+              <span>놀이 고르러 가요</span>
+              <span class="hero-cta__arrow" aria-hidden="true">↓</span>
+            </a>
+            <span class="hero-note"><span aria-hidden="true">💛</span> 천천히 해도 괜찮아요</span>
+          </div>
         </div>
-        <h1 class="arena-title">
-          AIDEN GAME LABS
-        </h1>
-        <p class="arena-subtitle">
-          오늘은 어떤 배움을 시작해볼까요? 퀴즈를 풀며 기초 실력을 차곡차곡 쌓아보세요.
-        </p>
-      </header>
 
-      <!-- 4-Grid Big Console Cards Section -->
-      <div class="dream-grid">
+        <div class="hero-visual" aria-hidden="true">
+          <span class="hero-speech">같이 놀아요!</span>
+          <svg class="hero-illustration" viewBox="0 0 540 340" role="img">
+            <defs>
+              <linearGradient id="book-page" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#FFFFFF"></stop>
+                <stop offset="1" stop-color="#FFF4D8"></stop>
+              </linearGradient>
+              <linearGradient id="dino-body" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#83E1BA"></stop>
+                <stop offset="1" stop-color="#4CC59C"></stop>
+              </linearGradient>
+            </defs>
 
-        <!-- Card 1: EVENTS / Ocean Rescue (Left Big Card) -->
-        <a href="./ocean-rescue/index.html" id="ocean-rescue-card" class="console-card group gsap-stagger-item" aria-labelledby="ocean-rescue-card-title">
-          <div class="card-watermark">OCEAN</div>
-          
-          <div class="relative z-10">
-            <div class="card-category text-cyan-400">EVENTS & EXPLORATION</div>
-            <div class="card-icon card-icon--cyan" aria-hidden="true">
-              <span class="card-icon-pulse"></span>
-              <span class="card-icon-glyph">🌊</span>
+            <!-- 무지개와 구름 -->
+            <path d="M95 174a72 72 0 0 1 144 0" fill="none" stroke="#FF8B78" stroke-width="16" stroke-linecap="round"></path>
+            <path d="M111 174a56 56 0 0 1 112 0" fill="none" stroke="#FFD55C" stroke-width="16" stroke-linecap="round"></path>
+            <path d="M127 174a40 40 0 0 1 80 0" fill="none" stroke="#73D4B0" stroke-width="16" stroke-linecap="round"></path>
+            <g fill="#FFFFFF" stroke="#34425A" stroke-width="3.5">
+              <path d="M55 177c-13 0-17-18-5-23 1-17 25-20 31-6 14-7 28 3 25 16 13 1 14 18 1 19H55Z"></path>
+              <path d="M206 176c-11 0-14-15-4-20 2-13 21-15 26-4 12-5 23 3 20 14 11 1 11 15 1 16h-43Z"></path>
+            </g>
+
+            <!-- 반짝이는 별과 학습 말풍선 -->
+            <path d="m431 62 7 15 16 6-16 7-7 16-7-16-16-7 16-6 7-15Z" fill="#FFD55C" stroke="#34425A" stroke-width="3.5" stroke-linejoin="round"></path>
+            <path d="m472 139 4 9 10 4-10 4-4 10-4-10-10-4 10-4 4-9Z" fill="#FF9C8C"></path>
+            <circle cx="92" cy="83" r="6" fill="#7CC9F5"></circle>
+            <circle cx="118" cy="53" r="4" fill="#FF9C8C"></circle>
+            <g transform="rotate(-8 391 118)">
+              <rect x="350" y="87" width="82" height="60" rx="22" fill="#FFFFFF" stroke="#34425A" stroke-width="3.5"></rect>
+              <text x="391" y="127" text-anchor="middle" font-family="Arial Rounded MT Bold, sans-serif" font-size="27" font-weight="900" fill="#7C6DE2">ABC</text>
+            </g>
+            <g transform="rotate(8 99 244)">
+              <rect x="48" y="216" width="102" height="57" rx="22" fill="#FFFFFF" stroke="#34425A" stroke-width="3.5"></rect>
+              <text x="99" y="254" text-anchor="middle" font-family="Arial Rounded MT Bold, sans-serif" font-size="26" font-weight="900" fill="#F27B65">1 2 3</text>
+            </g>
+
+            <!-- 공룡 꼬리와 몸 -->
+            <ellipse cx="281" cy="302" rx="164" ry="18" fill="#E9D9B7" opacity=".6"></ellipse>
+            <path d="M324 244c60 14 86-17 67-40-3 24-34 18-57 6Z" fill="#55C69F" stroke="#34425A" stroke-width="5" stroke-linejoin="round"></path>
+            <path d="M231 270c-8 22-3 35 14 36 14 1 22-8 20-25m45-11c-2 24 5 35 20 34 15-1 20-12 13-31" fill="#55C69F" stroke="#34425A" stroke-width="5" stroke-linecap="round"></path>
+            <ellipse cx="281" cy="224" rx="76" ry="72" fill="url(#dino-body)" stroke="#34425A" stroke-width="5"></ellipse>
+            <ellipse cx="281" cy="235" rx="44" ry="48" fill="#C9F3D9"></ellipse>
+
+            <!-- 공룡 얼굴 -->
+            <path d="m225 112-8-25 25 12m30-19 8-25 16 24m22 10 18-18 4 28" fill="#FF8B78" stroke="#34425A" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="M207 157c0-54 33-83 79-78 47 5 70 39 58 88-10 42-126 45-137-10Z" fill="url(#dino-body)" stroke="#34425A" stroke-width="5" stroke-linejoin="round"></path>
+            <ellipse cx="278" cy="163" rx="55" ry="35" fill="#A8EACB"></ellipse>
+            <ellipse cx="246" cy="135" rx="8" ry="11" fill="#34425A"></ellipse>
+            <ellipse cx="307" cy="135" rx="8" ry="11" fill="#34425A"></ellipse>
+            <circle cx="249" cy="131" r="2.8" fill="#FFFFFF"></circle>
+            <circle cx="310" cy="131" r="2.8" fill="#FFFFFF"></circle>
+            <ellipse cx="224" cy="157" rx="12" ry="7" fill="#FF9C9C" opacity=".85"></ellipse>
+            <ellipse cx="329" cy="157" rx="12" ry="7" fill="#FF9C9C" opacity=".85"></ellipse>
+            <circle cx="263" cy="157" r="3" fill="#34425A"></circle>
+            <circle cx="291" cy="157" r="3" fill="#34425A"></circle>
+            <path d="M263 176c10 10 22 10 31 0" fill="none" stroke="#34425A" stroke-width="4" stroke-linecap="round"></path>
+
+            <!-- 연필을 든 손 -->
+            <path d="M221 213c-26 0-35 19-25 32 9 11 25 4 39-9m96-24c24-9 40 4 35 19-4 13-20 12-37 5" fill="#69D2AA" stroke="#34425A" stroke-width="5" stroke-linecap="round"></path>
+            <g transform="rotate(28 363 205)">
+              <rect x="356" y="160" width="15" height="86" rx="6" fill="#FFD55C" stroke="#34425A" stroke-width="4"></rect>
+              <path d="m356 160 7-19 8 19" fill="#F5C7A4" stroke="#34425A" stroke-width="4" stroke-linejoin="round"></path>
+              <path d="m360 149 3-8 4 8" fill="#34425A"></path>
+              <path d="M356 229h15v17h-15Z" fill="#FF8B78" stroke="#34425A" stroke-width="4"></path>
+            </g>
+
+            <!-- 펼친 책 -->
+            <path d="M109 269c60-24 118-18 172 14 54-32 112-38 172-14l-10 48c-59-18-113-10-162 17-49-27-103-35-162-17Z" fill="url(#book-page)" stroke="#34425A" stroke-width="5" stroke-linejoin="round"></path>
+            <path d="M281 283v51" fill="none" stroke="#34425A" stroke-width="4" stroke-linecap="round"></path>
+            <path d="M137 283c36-8 68-4 99 10m-92 9c29-5 55-2 79 7m202-26c-36-8-68-4-99 10m92 9c-29-5-55-2-79 7" fill="none" stroke="#E7C989" stroke-width="4" stroke-linecap="round"></path>
+          </svg>
+          <span class="hero-visual__shadow"></span>
+        </div>
+      </section>
+
+      <!-- 공부 놀이와 모험을 한눈에 고르는 카드 마당 -->
+      <section id="playground" class="dream-grid" aria-label="놀이 목록">
+        <div class="console-card console-card-featured gsap-stagger-item">
+          <div class="card-watermark" aria-hidden="true">PLAY</div>
+          <div class="featured-heading">
+            <div class="featured-heading__copy">
+              <div class="card-category">CORE QUIZ LABS</div>
+              <h2 class="card-title">공부도 <span>놀이처럼!</span></h2>
+              <p class="card-desc">하고 싶은 카드를 눌러보세요.</p>
             </div>
-            <h2 id="ocean-rescue-card-title" class="card-title text-cyan-100">
-              Ocean Rescue
-            </h2>
-            <p class="card-desc">
-              잠수정을 타고 바다 생물을 구조해요. 원하는 과목에서 정답 5개를 맞히면 5분 동안 출동할 수 있어요!
-            </p>
-          </div>
-
-          <div class="card-action-bar">
-            <span id="ocean-rescue-card-action-text" class="text-xs font-black tracking-wider text-cyan-400 uppercase">공부하고 5분 출동</span>
-            <span class="card-action-btn" aria-hidden="true">→</span>
-          </div>
-        </a>
-
-        <!-- Card 2: FEATURED / Core Subjects (Center Neon Volt Highlight Card) -->
-        <div class="console-card console-card-featured group gsap-stagger-item">
-          <div class="card-watermark">SUBJECTS</div>
-
-          <div class="relative z-10">
-            <div class="card-category">CORE SUBJECTS</div>
             <div class="card-icon card-icon--featured" aria-hidden="true">
               <span class="card-icon-pulse"></span>
               <span class="card-icon-glyph">✏️</span>
             </div>
-            <h2 class="card-title">
-              CORE QUIZ LABS
-            </h2>
-            <p class="card-desc">
-              수학 놀이 · 영어 놀이 · 국어 놀이 · 과학 놀이 등 4대 핵심 기초 과목 퀴즈입니다. 원하는 과목을 선택하여 즐겁게 학습해보세요.
-            </p>
+          </div>
 
-            <div class="core-subject-grid">
-              <a href="./domains/math/index.html" class="core-subject-btn group/btn" aria-label="수학 놀이 시작">
-                <div class="flex items-center">
-                  <span class="btn-emoji" aria-hidden="true">🔢</span>
-                  <div class="flex flex-col text-left">
-                    <span class="leading-tight">수학 놀이</span>
-                    <span class="text-[11px] font-extrabold opacity-70 group-hover/btn:opacity-90">수리와 계산</span>
-                  </div>
-                </div>
-                <span class="btn-arrow" aria-hidden="true">→</span>
-              </a>
-              <a href="./domains/english/index.html" class="core-subject-btn group/btn" aria-label="영어 놀이 시작">
-                <div class="flex items-center">
-                  <span class="btn-emoji" aria-hidden="true">📚</span>
-                  <div class="flex flex-col text-left">
-                    <span class="leading-tight">영어 놀이</span>
-                    <span class="text-[11px] font-extrabold opacity-70 group-hover/btn:opacity-90">알파벳과 단어</span>
-                  </div>
-                </div>
-                <span class="btn-arrow" aria-hidden="true">→</span>
-              </a>
-              <a href="./domains/korean/index.html" class="core-subject-btn group/btn" aria-label="국어 놀이 시작">
-                <div class="flex items-center">
-                  <span class="btn-emoji" aria-hidden="true">📖</span>
-                  <div class="flex flex-col text-left">
-                    <span class="leading-tight">국어 놀이</span>
-                    <span class="text-[11px] font-extrabold opacity-70 group-hover/btn:opacity-90">어휘와 맞춤법</span>
-                  </div>
-                </div>
-                <span class="btn-arrow" aria-hidden="true">→</span>
-              </a>
-              <a href="./domains/science/index.html" class="core-subject-btn group/btn" aria-label="과학 놀이 시작">
-                <div class="flex items-center">
-                  <span class="btn-emoji" aria-hidden="true">🔬</span>
-                  <div class="flex flex-col text-left">
-                    <span class="leading-tight">과학 놀이</span>
-                    <span class="text-[11px] font-extrabold opacity-70 group-hover/btn:opacity-90">자연과 원리</span>
-                  </div>
-                </div>
-                <span class="btn-arrow" aria-hidden="true">→</span>
-              </a>
-            </div>
+          <div class="core-subject-grid">
+            <a href="./domains/math/index.html" class="core-subject-btn core-subject-btn--math" aria-label="수학 놀이 시작">
+              <span class="subject-icon-wrap"><span class="btn-emoji" aria-hidden="true">🔢</span></span>
+              <span class="subject-copy"><strong>수학 놀이</strong><small>숫자와 계산</small></span>
+              <span class="btn-arrow" aria-hidden="true">→</span>
+            </a>
+            <a href="./domains/english/index.html" class="core-subject-btn core-subject-btn--english" aria-label="영어 놀이 시작">
+              <span class="subject-icon-wrap"><span class="btn-emoji" aria-hidden="true">📚</span></span>
+              <span class="subject-copy"><strong>영어 놀이</strong><small>알파벳과 단어</small></span>
+              <span class="btn-arrow" aria-hidden="true">→</span>
+            </a>
+            <a href="./domains/korean/index.html" class="core-subject-btn core-subject-btn--korean" aria-label="국어 놀이 시작">
+              <span class="subject-icon-wrap"><span class="btn-emoji" aria-hidden="true">📖</span></span>
+              <span class="subject-copy"><strong>국어 놀이</strong><small>글자와 이야기</small></span>
+              <span class="btn-arrow" aria-hidden="true">→</span>
+            </a>
+            <a href="./domains/science/index.html" class="core-subject-btn core-subject-btn--science" aria-label="과학 놀이 시작">
+              <span class="subject-icon-wrap"><span class="btn-emoji" aria-hidden="true">🔬</span></span>
+              <span class="subject-copy"><strong>과학 놀이</strong><small>호기심과 발견</small></span>
+              <span class="btn-arrow" aria-hidden="true">→</span>
+            </a>
+          </div>
 
-            <!-- 주간 영단어 시험 직접 진입점 -->
-            <div class="weekly-test-direct-mount">
-              <a href="./domains/english/weekly-test/index.html" id="main-weekly-test-link" class="weekly-test-direct-btn group/wt" aria-label="주간 영단어 시험 바로 시작">
-                <div class="flex items-center gap-3">
-                  <span class="wt-badge-icon" aria-hidden="true">📝</span>
-                  <div class="flex flex-col text-left">
-                    <div class="flex items-center gap-2">
-                      <span class="text-sm font-black text-[#d7ff00] group-hover/wt:text-white transition-colors">주간 영단어 시험</span>
-                      <span class="wt-direct-tag">TEST</span>
-                    </div>
-                    <span class="text-[11px] font-semibold text-slate-300 mt-0.5">영어 정의 보고 단어 직접 맞히기</span>
-                  </div>
-                </div>
-                <div class="flex items-center gap-1.5 text-xs font-black text-[#d7ff00] group-hover/wt:text-white transition-colors">
-                  <span>시험 보기</span>
-                  <span class="transform group-hover/wt:translate-x-1 transition-transform" aria-hidden="true">→</span>
-                </div>
-              </a>
-            </div>
+          <div class="weekly-test-direct-mount">
+            <a href="./domains/english/weekly-test/index.html" id="main-weekly-test-link" class="weekly-test-direct-btn" aria-label="주간 영단어 시험 바로 시작">
+              <span class="weekly-test-direct-btn__label">
+                <span class="wt-badge-icon" aria-hidden="true">📝</span>
+                <span><strong>주간 영단어 시험</strong><small>이번 주 단어에 도전해요</small></span>
+              </span>
+              <span class="weekly-test-direct-btn__action"><span class="wt-direct-tag">도전</span><span aria-hidden="true">→</span></span>
+            </a>
           </div>
         </div>
 
-        <!-- Card 3: FRIENDS MATCH / Space Explorer (Top Right Card) -->
-        <a href="./experiments/space-explorer/index.html" class="console-card group gsap-stagger-item" aria-labelledby="space-explorer-card-title">
-          <div class="card-watermark">SPACE</div>
-
-          <div class="relative z-10">
-            <div class="card-category text-indigo-400">INTERACTIVE SIMULATION</div>
-            <div class="card-icon card-icon--indigo" aria-hidden="true">
-              <span class="card-icon-pulse"></span>
-              <span class="card-icon-glyph">🪐</span>
+        <!-- 바다 보상 게임 -->
+        <a href="./ocean-rescue/index.html" id="ocean-rescue-card" class="console-card console-card--ocean gsap-stagger-item" aria-labelledby="ocean-rescue-card-title">
+          <div class="card-watermark" aria-hidden="true">OCEAN</div>
+          <div class="adventure-card__heading">
+            <div>
+              <div class="card-category">파랑파랑 바다 모험</div>
+              <h2 id="ocean-rescue-card-title" class="card-title">바다 구조대 <span>Ocean Rescue</span></h2>
             </div>
-            <h2 id="space-explorer-card-title" class="card-title text-indigo-100">
-              SPACE EXPLORER
-            </h2>
-            <p class="card-desc">
-              태양계 탐험 (실험) - 행성의 궤도, 자전, 일식과 월식의 우주 물리 현상을 직접 관찰해보세요.
-            </p>
+            <div class="card-icon card-icon--cyan" aria-hidden="true">
+              <span class="card-icon-pulse"></span>
+              <span class="card-icon-glyph">🌊</span>
+            </div>
           </div>
-
+          <div class="adventure-art adventure-art--ocean" aria-hidden="true">
+            <svg viewBox="0 0 460 185">
+              <path d="M0 110c48-25 84 25 132 0s84 25 132 0 84 25 132 0 84 25 132 0v75H0Z" fill="#8DDDE9"></path>
+              <path d="M0 135c48-25 84 25 132 0s84 25 132 0 84 25 132 0 84 25 132 0v50H0Z" fill="#5BC4DB"></path>
+              <g transform="translate(55 36)">
+                <path d="M30 46h168c24 0 42 18 42 40s-18 38-42 38H30C13 124 0 108 0 85S13 46 30 46Z" fill="#FFD55C" stroke="#34425A" stroke-width="5"></path>
+                <path d="M85 46V24h70v22" fill="#FFBE45" stroke="#34425A" stroke-width="5" stroke-linejoin="round"></path>
+                <path d="M120 24V5h36" fill="none" stroke="#34425A" stroke-width="5" stroke-linecap="round"></path>
+                <circle cx="65" cy="84" r="22" fill="#DFF8FF" stroke="#34425A" stroke-width="5"></circle>
+                <circle cx="125" cy="84" r="22" fill="#DFF8FF" stroke="#34425A" stroke-width="5"></circle>
+                <circle cx="185" cy="84" r="22" fill="#DFF8FF" stroke="#34425A" stroke-width="5"></circle>
+                <path d="M240 76h22v22h-22" fill="#FF8B78" stroke="#34425A" stroke-width="5"></path>
+              </g>
+              <g transform="translate(346 74)">
+                <ellipse cx="43" cy="49" rx="38" ry="27" fill="#74D2A8" stroke="#34425A" stroke-width="4"></ellipse>
+                <circle cx="83" cy="46" r="16" fill="#9BE4BF" stroke="#34425A" stroke-width="4"></circle>
+                <circle cx="88" cy="42" r="2.8" fill="#34425A"></circle>
+                <path d="M88 52c5 3 9 2 12-1" fill="none" stroke="#34425A" stroke-width="3" stroke-linecap="round"></path>
+                <path d="M22 26 7 10c-7 14 1 25 15 28m42 36 15 14c6-14-1-24-15-27" fill="#9BE4BF" stroke="#34425A" stroke-width="4" stroke-linejoin="round"></path>
+                <path d="m28 48 14-13 16 13-4 17H32Z" fill="#4DB98D"></path>
+              </g>
+              <circle cx="383" cy="31" r="7" fill="#FFFFFF" opacity=".85"></circle>
+              <circle cx="407" cy="51" r="4" fill="#FFFFFF" opacity=".85"></circle>
+              <circle cx="34" cy="40" r="6" fill="#FFFFFF" opacity=".85"></circle>
+            </svg>
+          </div>
+          <p class="card-desc">잠수정을 타고 바다 생물을 구조해요.<span class="play-time"><span aria-hidden="true">⏱</span> 정답 5개 맞히면 5분 출동!</span></p>
           <div class="card-action-bar">
-            <span class="text-xs font-black tracking-wider text-indigo-400 uppercase">시뮬레이션 접속</span>
+            <span id="ocean-rescue-card-action-text">바다로 떠나요</span>
             <span class="card-action-btn" aria-hidden="true">→</span>
           </div>
         </a>
 
-        <!-- Card 4: QUICK MATCH / Mini Games & Labs (Bottom Right Card) -->
-        <div class="console-card group gsap-stagger-item">
-          <div class="card-watermark">GAMES</div>
+        <!-- 우주 실험 -->
+        <a href="./experiments/space-explorer/index.html" class="console-card console-card--space gsap-stagger-item" aria-labelledby="space-explorer-card-title">
+          <div class="card-watermark" aria-hidden="true">SPACE</div>
+          <div class="adventure-card__heading">
+            <div>
+              <div class="card-category">반짝반짝 우주 실험실</div>
+              <h2 id="space-explorer-card-title" class="card-title">우주로 떠나요! <span>Space Explorer</span></h2>
+            </div>
+            <div class="card-icon card-icon--indigo" aria-hidden="true">
+              <span class="card-icon-pulse"></span>
+              <span class="card-icon-glyph">🪐</span>
+            </div>
+          </div>
+          <div class="adventure-art adventure-art--space" aria-hidden="true">
+            <svg viewBox="0 0 460 185">
+              <circle cx="369" cy="53" r="44" fill="#FFD55C" stroke="#34425A" stroke-width="5"></circle>
+              <ellipse cx="369" cy="55" rx="74" ry="18" fill="none" stroke="#FF9C8C" stroke-width="11" transform="rotate(-15 369 55)"></ellipse>
+              <path d="m69 37 5 12 12 5-12 5-5 12-5-12-12-5 12-5Zm323 88 4 9 9 4-9 4-4 9-4-9-9-4 9-4Z" fill="#FFFFFF"></path>
+              <circle cx="100" cy="116" r="5" fill="#FFD55C"></circle>
+              <circle cx="299" cy="28" r="5" fill="#8DDDE9"></circle>
+              <g transform="translate(129 13) rotate(15 85 82)">
+                <path d="M85 8c35 24 48 66 28 108H57C37 74 50 32 85 8Z" fill="#FFFFFF" stroke="#34425A" stroke-width="5" stroke-linejoin="round"></path>
+                <path d="M85 8c10 7 18 16 24 26H61C67 24 75 15 85 8Z" fill="#FF8B78"></path>
+                <circle cx="85" cy="65" r="21" fill="#A9E6F2" stroke="#34425A" stroke-width="5"></circle>
+                <path d="m57 88-29 30 32-2m53-28 29 30-32-2" fill="#FF8B78" stroke="#34425A" stroke-width="5" stroke-linejoin="round"></path>
+                <path d="M68 116h34l-6 25H74Z" fill="#7C6DE2" stroke="#34425A" stroke-width="5"></path>
+                <path d="M77 141c-8 15-3 28 8 36 11-8 16-21 8-36Z" fill="#FFD55C" stroke="#34425A" stroke-width="4"></path>
+                <path d="M82 142c-3 10-1 17 3 22 5-5 7-12 3-22Z" fill="#FF8B78"></path>
+              </g>
+            </svg>
+          </div>
+          <p class="card-desc">태양계 탐험 (실험)<span class="card-desc__small">행성의 움직임과 일식·월식을 살펴봐요.</span></p>
+          <div class="card-action-bar">
+            <span>우주 보러 가요</span>
+            <span class="card-action-btn" aria-hidden="true">→</span>
+          </div>
+        </a>
 
-          <div class="relative z-10">
-            <div class="card-category text-amber-400">QUICK MATCH & LABS</div>
+        <!-- 작은 놀이와 실험 -->
+        <div class="console-card console-card--play gsap-stagger-item">
+          <div class="card-watermark" aria-hidden="true">FUN</div>
+          <div class="adventure-card__heading">
+            <div>
+              <div class="card-category">만지고, 섞고, 통통!</div>
+              <h2 class="card-title">신나는 놀이마당 <span>Quick Labs</span></h2>
+              <p class="card-desc">오늘은 어떤 걸 해볼까?</p>
+            </div>
             <div class="card-icon card-icon--amber" aria-hidden="true">
               <span class="card-icon-pulse"></span>
               <span class="card-icon-glyph">🎮</span>
             </div>
-            <h2 class="card-title text-amber-100">
-              QUICK LABS
-            </h2>
-            <p class="card-desc">
-              자석으로 자기장을 그리는 자석 실험실, 태양-지구-달 움직임을 눈으로 보는 신기한 실험, 목표 색을 섞어 맞히는 물감 게임도 즐겨요. 바다 구조대·발전소·공룡·마블·버블은 원하는 과목에서 정답 5개를 맞힌 뒤 5분 동안 플레이해요.
-            </p>
+          </div>
 
-            <div class="quick-labs-list">
-              <a href="./experiments/electricity/index.html" class="quick-lab-item group/lab quick-lab-item--power">
-                <span class="quick-lab-name">⚡ 3D 전기 발전 섬 · 밤마을에 불을 켜요</span>
-                <span class="quick-lab-arrow" aria-hidden="true">→</span>
-              </a>
-              <a href="./experiments/marble/index.html" class="quick-lab-item group/lab">
-                <span class="quick-lab-name">🎮 마블 게임 · 공부하고 5분 놀이</span>
-                <span class="quick-lab-arrow" aria-hidden="true">→</span>
-              </a>
-              <a href="./experiments/bubble/index.html" class="quick-lab-item group/lab">
-                <span class="quick-lab-name">🫧 버블 게임 · 공부하고 5분 놀이</span>
-                <span class="quick-lab-arrow" aria-hidden="true">→</span>
-              </a>
-              <a href="./experiments/magnet/index.html" class="quick-lab-item group/lab quick-lab-item--magnet">
-                <span class="quick-lab-name">🧲 자석 실험실 · 자기장 놀이</span>
-                <span class="quick-lab-arrow" aria-hidden="true">→</span>
-              </a>
-              <a href="./experiments/space-explorer/orbit-eclipse.html" class="quick-lab-item group/lab">
-                <span class="quick-lab-name">🌍 공전·자전과 일식/월식</span>
-                <span class="quick-lab-arrow" aria-hidden="true">→</span>
-              </a>
-              <a href="./experiments/space-explorer/paint-mixing.html" class="quick-lab-item group/lab">
-                <span class="quick-lab-name">🎨 물감 색 섞기 실험</span>
-                <span class="quick-lab-arrow" aria-hidden="true">→</span>
-              </a>
-              <a href="./experiments/space-explorer/dino-escape.html" class="quick-lab-item group/lab">
-                <span class="quick-lab-name">🦖 공룡 추격 탈출 게임</span>
-                <span class="quick-lab-arrow" aria-hidden="true">→</span>
-              </a>
-            </div>
+          <div class="quick-labs-list">
+            <a href="./experiments/electricity/index.html" class="quick-lab-item quick-lab-item--power">
+              <span class="quick-lab-emoji" aria-hidden="true">⚡</span><span class="quick-lab-name"><strong>3D 전기 발전 섬</strong><small>밤마을에 불을 켜요</small></span><span class="quick-lab-arrow" aria-hidden="true">→</span>
+            </a>
+            <a href="./experiments/marble/index.html" class="quick-lab-item quick-lab-item--marble">
+              <span class="quick-lab-emoji" aria-hidden="true">🎮</span><span class="quick-lab-name"><strong>마블 게임</strong><small>공부하고 5분 놀이</small></span><span class="quick-lab-arrow" aria-hidden="true">→</span>
+            </a>
+            <a href="./experiments/bubble/index.html" class="quick-lab-item quick-lab-item--bubble">
+              <span class="quick-lab-emoji" aria-hidden="true">🫧</span><span class="quick-lab-name"><strong>버블 게임</strong><small>공부하고 5분 놀이</small></span><span class="quick-lab-arrow" aria-hidden="true">→</span>
+            </a>
+            <a href="./experiments/magnet/index.html" class="quick-lab-item quick-lab-item--magnet">
+              <span class="quick-lab-emoji" aria-hidden="true">🧲</span><span class="quick-lab-name"><strong>자석 실험실</strong><small>자기장 놀이</small></span><span class="quick-lab-arrow" aria-hidden="true">→</span>
+            </a>
+            <a href="./experiments/space-explorer/orbit-eclipse.html" class="quick-lab-item quick-lab-item--orbit">
+              <span class="quick-lab-emoji" aria-hidden="true">🌍</span><span class="quick-lab-name"><strong>공전·자전과 일식/월식</strong><small>지구와 달이 빙글빙글</small></span><span class="quick-lab-arrow" aria-hidden="true">→</span>
+            </a>
+            <a href="./experiments/space-explorer/paint-mixing.html" class="quick-lab-item quick-lab-item--paint">
+              <span class="quick-lab-emoji" aria-hidden="true">🎨</span><span class="quick-lab-name"><strong>물감 색 섞기 실험</strong><small>어떤 색이 될까?</small></span><span class="quick-lab-arrow" aria-hidden="true">→</span>
+            </a>
+            <a href="./experiments/space-explorer/dino-escape.html" class="quick-lab-item quick-lab-item--dino">
+              <span class="quick-lab-emoji" aria-hidden="true">🦖</span><span class="quick-lab-name"><strong>공룡 추격 탈출 게임</strong><small>공룡을 피해 달려요</small></span><span class="quick-lab-arrow" aria-hidden="true">→</span>
+            </a>
           </div>
         </div>
+      </section>
 
-      </div>
-
-      <!-- Footer Information & Quick Links -->
       <footer class="console-footer gsap-stagger-item">
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full">
-          <div class="flex items-center gap-3 text-xs text-slate-400">
-            <span class="font-extrabold text-white">AIDEN GAME LABS</span>
-            <span class="text-slate-600">|</span>
-            <span>아이들을 위한 인터랙티브 학습 놀이터</span>
-          </div>
-          <div class="flex items-center gap-4 text-xs font-semibold text-slate-400">
-            <a href="./domains/reward/guardian/index.html" class="hover:text-white transition-colors">보호자 관리</a>
-            <span class="text-slate-600">·</span>
-            <span class="font-mono text-slate-500">© 2026</span>
-          </div>
+        <div class="footer-cheer">
+          <span class="footer-cheer__icon" aria-hidden="true">🌱</span>
+          <span><strong>오늘도 즐겁게 배웠어요!</strong><small>조금씩, 천천히, 즐겁게.</small></span>
+        </div>
+        <div class="footer-meta">
+          <span class="footer-brand">AIDEN GAME LABS · © 2026</span>
+          <a href="./domains/reward/guardian/index.html" class="guardian-link"><span aria-hidden="true">🛡️</span> 보호자 관리 <span aria-hidden="true">→</span></a>
         </div>
       </footer>
-
     </main>
-
   </div>
 
-  <!-- GSAP Stagger Entrance Script -->
-  <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      if (typeof gsap !== 'undefined') {
-        gsap.from(".gsap-stagger-item", {
-          duration: 0.6,
-          y: 20,
-          opacity: 0,
-          stagger: 0.05,
-          ease: "power2.out"
-        });
-      }
-    });
-  </script>
-
-  <!-- Domain & Reward Integration Scripts -->
-  <!-- 인증은 body 시작 직후 auth-gate.js가 Supabase/auth를 선로드한다.
-       동기화 엔진은 로그인 gate가 auth module을 읽은 뒤 연결된다. -->
-  <!-- 보상 원장: 획득/사용 델타 병합으로 소비가 되살아나지 않게 한다. -->
+  <!-- 보상 원장과 인증/동기화 연결은 기존 흐름을 그대로 유지한다. -->
   <script src="./shared/domain/reward-ledger.js"></script>
   <script src="./domains/sync/sync-engine.js"></script>
   <script src="shared/domain/free-time-allowance.js"></script>
@@ -307,8 +351,6 @@
   <script src="domains/reward/reward_ui.js"></script>
   <script src="domains/reward/reward.js"></script>
   <script src="domains/math/daily-goal.js"></script>
-
-  <!-- 태블릿 전체 화면 토글 (같은 버튼으로 되돌아오기) -->
   <script src="./shared/ui/fullscreen-toggle.js"></script>
 </body>
 </html>

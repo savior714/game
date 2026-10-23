@@ -146,6 +146,7 @@ scene.traverse((obj) => {
 
 const errors = [];
 let stepped = 0;
+let blackoutStepped = 0;
 try {
   const snapshot = {
     weather: "night",
@@ -174,6 +175,80 @@ try {
       stepped += 1;
     }
   }
+
+  /* ── 4. 정전 계약 — 송전이 0W면 섬에 물린 등불은 하나도 켜지지 않는다 ── */
+
+  // 정전 중에도 발전기·터빈은 계속 돌아간다(발전 ≠ 송전). 그래도 불은 꺼져야 한다.
+  const blackoutSnapshot = {
+    ...snapshot,
+    circuit: {
+      closed: false,
+      material: "copper",
+      voltage: 4.5,
+      output: { brightness: 0, conductive: true, transmission: 0, current: 0 },
+    },
+    grid: {
+      powered: false,
+      gridRatio: 0,
+      deliveredWatts: 0,
+      rawWatts: 150,
+      blockedWatts: 150,
+      landmarks: { cottages: 0, harbor: 0, train: 0, ferris: 0, fountain: 0, festival: 0 },
+    },
+  };
+
+  const measureGridSupplied = () => {
+    const lampMaterials = new Set();
+    const haloMaterials = new Set();
+    let emissiveSum = 0;
+    let haloSum = 0;
+    let lightSum = 0;
+    let gridLightCount = 0;
+    let allPointLightSum = 0;
+    scene.traverse((obj) => {
+      if (obj.isLight && obj.isPointLight) {
+        allPointLightSum += obj.intensity || 0;
+        if (obj.userData.gridSupplied) {
+          gridLightCount += 1;
+          lightSum += obj.intensity || 0;
+        }
+      }
+      const materials = [];
+      if (obj.material) {
+        (Array.isArray(obj.material) ? obj.material : [obj.material]).forEach((m) => materials.push(m));
+      }
+      materials.forEach((mat) => {
+        if (!mat || !mat.userData || !mat.userData.gridSupplied) return;
+        if (obj.isSprite) {
+          if (!haloMaterials.has(mat.uuid)) {
+            haloMaterials.add(mat.uuid);
+            haloSum += mat.opacity || 0;
+          }
+          return;
+        }
+        if (!lampMaterials.has(mat.uuid)) {
+          lampMaterials.add(mat.uuid);
+          emissiveSum += mat.emissiveIntensity || 0;
+        }
+      });
+    });
+    return {
+      lampCount: lampMaterials.size,
+      haloCount: haloMaterials.size,
+      emissiveSum: Number(emissiveSum.toFixed(4)),
+      haloSum: Number(haloSum.toFixed(4)),
+      gridLightCount,
+      gridLightIntensity: Number(lightSum.toFixed(4)),
+      allPointLightIntensity: Number(allPointLightSum.toFixed(4)),
+    };
+  };
+
+  report.lit = measureGridSupplied();
+  for (let i = 0; i < 48; i += 1) {
+    world.step(1 / 60, { ...blackoutSnapshot, weather: "night" });
+    blackoutStepped += 1;
+  }
+  report.blackout = measureGridSupplied();
 } catch (error) {
   errors.push(`step: ${error.message}`);
 }
@@ -184,6 +259,7 @@ console.log(
   JSON.stringify({
     errors,
     stepped,
+    blackoutStepped,
     ...report,
   })
 );

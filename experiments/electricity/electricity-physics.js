@@ -486,6 +486,8 @@
       rawWatts: round(rawWatts, 3),
       deliveredWatts: delivered,
       blockedWatts: round(Math.max(0, rawWatts - delivered), 3),
+      // 송전이 실제로 이뤄졌는가 — 정전(0W 공급) 판정의 단일 기준
+      powered: delivered > 0,
       litCount: litCount,
       totalLandmarks: VILLAGE_LANDMARKS.length,
       gridRatio: round(clamp(delivered / 52, 0, 1), 4),

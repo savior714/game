@@ -355,8 +355,10 @@ def test_island_power_grid_lights_six_village_landmarks_and_cuts_on_blackout() -
     assert result["low"]["landmarks"]["festival"] == 0
     assert result["full"]["litCount"] == 6
     assert result["full"]["landmarks"]["festival"] == 1
+    assert result["full"]["powered"] is True
     assert result["blackout"]["deliveredWatts"] == 0
     assert result["blackout"]["litCount"] == 0
+    assert result["blackout"]["powered"] is False, "송전 0W면 정전 상태여야 합니다"
 
 
 def test_power_lab_runs_without_runtime_errors() -> None:
@@ -390,6 +392,51 @@ def test_power_lab_runs_without_runtime_errors() -> None:
             f"{station} 목표에 도달하지 못했습니다"
         )
         assert data["play"]["reads"][station], f"{station} 안내 문구가 비어 있습니다"
+
+
+def test_blackout_switches_off_every_grid_supplied_lamp_in_the_3d_world() -> None:
+    """정전 체험은 마을뿐 아니라 섬의 모든 등불·조명을 한 번에 끈다.
+
+    `world.js`는 송전량(deliveredWatts)이 0이면 전력망에 물린 등불·광원·
+    조명을 모두 0으로 되돌려야 한다. 발전기와 터빈은 계속 돌아가지만
+    (발전 ≠ 송전) 불빛은 하나도 남지 않아야 한다.
+    """
+
+    node = _node()
+    result = subprocess.run(
+        [node, str(WORLD_PROBE)],
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=180,
+    )
+    data = json.loads(result.stdout.strip().splitlines()[-1])
+
+    assert data["errors"] == [], f"씬 스텝 중 예외: {data['errors']}"
+    assert data["blackoutStepped"] == 48
+
+    lit = data["lit"]
+    blackout = data["blackout"]
+
+    # 관측이 실제로 무언가를 재고 있는지 먼저 확인한다(정상 송전 상태)
+    assert lit["lampCount"] >= 10, "전력망에 물린 등불 재질이 충분히 등록되어야 합니다"
+    assert lit["emissiveSum"] > 1, "정상 송전 중에는 등불이 켜져 있어야 합니다"
+    assert lit["gridLightIntensity"] > 1, "정상 송전 중에는 구역 조명이 켜져 있어야 합니다"
+
+    # 정전 상태에서는 전부 0
+    assert blackout["emissiveSum"] == 0, (
+        "정전인데 전력망 등불이 남아 있습니다: " + str(blackout["emissiveSum"])
+    )
+    assert blackout["haloSum"] == 0, (
+        "정전인데 등불 광채 스프라이트가 남아 있습니다: " + str(blackout["haloSum"])
+    )
+    assert blackout["gridLightIntensity"] == 0, (
+        "정전인데 구역 포인트광이 켜져 있습니다: " + str(blackout["gridLightIntensity"])
+    )
+    assert blackout["allPointLightIntensity"] == 0, (
+        "정전인데 섬 어딘가의 포인트광이 켜져 있습니다: "
+        + str(blackout["allPointLightIntensity"])
+    )
 
 
 def test_power_lab_3d_world_stages_a_finished_castle_grade_diorama() -> None:

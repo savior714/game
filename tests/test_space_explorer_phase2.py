@@ -29,6 +29,9 @@ def test_three_is_served_from_the_repository_not_a_cdn() -> None:
 
     assert '"three": "./vendor/three/build/three.module.min.js"' in mapping
     assert '"three/addons/": "./vendor/three/addons/"' in mapping
+    # WebGPU 경로도 CDN 없이 저장소 안의 벤더 빌드를 쓴다.
+    assert '"three/webgpu": "./vendor/three/build/three.webgpu.min.js"' in mapping
+    assert '"three/tsl": "./vendor/three/build/three.tsl.min.js"' in mapping
     assert "cdn.jsdelivr.net" not in html
     assert "unpkg.com" not in html
     assert "https://" not in "".join(re.findall(r'<script[^>]*src="([^"]+)"', html))
@@ -39,12 +42,20 @@ def test_three_is_served_from_the_repository_not_a_cdn() -> None:
     [
         "vendor/three/build/three.module.min.js",
         "vendor/three/build/three.core.min.js",
+        "vendor/three/build/three.webgpu.min.js",
+        "vendor/three/build/three.tsl.min.js",
         "vendor/three/addons/controls/OrbitControls.js",
         "vendor/three/addons/postprocessing/EffectComposer.js",
         "vendor/three/addons/postprocessing/RenderPass.js",
         "vendor/three/addons/postprocessing/UnrealBloomPass.js",
         "vendor/three/addons/postprocessing/OutputPass.js",
+        "vendor/three/addons/tsl/display/BloomNode.js",
         "vendor/three/LICENSE/THREE_LICENSE.txt",
+        "webgpu/renderer-factory.js",
+        "webgpu/tsl.js",
+        "webgpu/instanced-sprites.js",
+        "webgpu/noise.js",
+        "webgpu/solar-webgpu.js",
     ],
 )
 def test_vendored_three_files_exist(relative_path: str) -> None:

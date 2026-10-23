@@ -1510,7 +1510,7 @@ async function boot() {
   setLoadingProgress(60, "발전기와 밤마을을 조립하고 있어요.");
   await yieldForPaint();
   try {
-    world = worldModule.createPowerWorld({
+    world = await worldModule.createPowerWorld({
       canvas: $("#island-canvas"),
       textureSet,
       reducedMotion: prefersReducedMotion,

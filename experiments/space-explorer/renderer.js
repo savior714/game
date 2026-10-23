@@ -8,6 +8,9 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 
+import { createBestRenderer, BACKEND_WEBGPU } from "./webgpu/renderer-factory.js";
+import { createBillboardCloud } from "./webgpu/instanced-sprites.js";
+
 import { BELT, KUIPER_BELT, MOONS, PLANETS, SKY_TEXTURE, SUN } from "./data.js";
 import { createTextureLibrary } from "./textures.js";
 import {
@@ -113,7 +116,7 @@ function createBelt(scene, { innerAU, outerAU, count, color, size = 0.32, spread
   return mesh;
 }
 
-function createKuiperBelt(scene, { innerAU, outerAU, count, color }) {
+function createKuiperBelt(scene, { innerAU, outerAU, count, color }, gfx = null) {
   const positions = new Float32Array(count * 3);
   const innerRadius = orbitRadiusForDistance(innerAU);
   const outerRadius = orbitRadiusForDistance(outerAU);
@@ -124,6 +127,22 @@ function createKuiperBelt(scene, { innerAU, outerAU, count, color }) {
     positions[i * 3] = Math.cos(angle) * radius;
     positions[i * 3 + 1] = (Math.random() - 0.5) * 24;
     positions[i * 3 + 2] = Math.sin(angle) * radius;
+  }
+
+  // WebGPU는 point가 1픽셀로 고정되므로 인스턴스 빌보드로 같은 크기감을 재현한다.
+  if (gfx?.backend === BACKEND_WEBGPU) {
+    const sizes = new Float32Array(count).fill(0.65);
+    const alphas = new Float32Array(count).fill(0.5);
+    const cloud = createBillboardCloud(gfx.three, {
+      count,
+      positions,
+      sizes,
+      alphas,
+      baseColor: color,
+      additive: true,
+    });
+    scene.add(cloud.mesh);
+    return cloud.mesh;
   }
 
   const geometry = new THREE.BufferGeometry();
@@ -143,7 +162,7 @@ function createKuiperBelt(scene, { innerAU, outerAU, count, color }) {
   return points;
 }
 
-function createStarLayer(scene) {
+function createStarLayer(scene, gfx = null) {
   const positions = new Float32Array(STAR_COUNT * 3);
   const colors = new Float32Array(STAR_COUNT * 3);
   const tints = [new THREE.Color(0xffffff), new THREE.Color(0xcfddff), new THREE.Color(0xffe4c4), new THREE.Color(0x9fc7ff)];
@@ -160,6 +179,22 @@ function createStarLayer(scene) {
     colors[i * 3] = tint.r;
     colors[i * 3 + 1] = tint.g;
     colors[i * 3 + 2] = tint.b;
+  }
+
+  // WebGPU 빌드에서는 1픽셀 point 대신 인스턴스 빌보드로 별을 그린다.
+  if (gfx?.backend === BACKEND_WEBGPU) {
+    const sizes = new Float32Array(STAR_COUNT).fill(0.72);
+    const alphas = new Float32Array(STAR_COUNT).fill(0.62);
+    const cloud = createBillboardCloud(gfx.three, {
+      count: STAR_COUNT,
+      positions,
+      sizes,
+      colors,
+      alphas,
+      additive: true,
+    });
+    scene.add(cloud.mesh);
+    return cloud.mesh;
   }
 
   const geometry = new THREE.BufferGeometry();
@@ -214,8 +249,16 @@ function createGlowSprites(scene, sunRadius) {
   return { outer, inner };
 }
 
-function materialForPlanet(planet, maps) {
+function materialForPlanet(planet, maps, gfx, gpuMaterials) {
   if (planet.id === "earth") {
+    if (gfx.backend === BACKEND_WEBGPU) {
+      return gpuMaterials.createEarthMaterial(gfx.three, {
+        day: maps.get("earth_day.jpg"),
+        night: maps.get("earth_night.jpg"),
+        normal: maps.get("earth_normal.jpg"),
+        specular: maps.get("earth_specular.jpg"),
+      }).material;
+    }
     return createEarthMaterial({
       day: maps.get("earth_day.jpg"),
       night: maps.get("earth_night.jpg"),
@@ -236,7 +279,7 @@ function materialForPlanet(planet, maps) {
   return new THREE.MeshStandardMaterial(config);
 }
 
-function createPlanetGroup(planet, maps, scene) {
+function createPlanetGroup(planet, maps, scene, gfx, gpuMaterials) {
   const group = new THREE.Group();
   const tilt = new THREE.Group();
   tilt.rotation.z = planet.axialTilt * DEG;
@@ -245,7 +288,7 @@ function createPlanetGroup(planet, maps, scene) {
   const geometry = new THREE.SphereGeometry(planet.displayRadius, 128, 64);
   if (planet.id === "earth") ensureTangents(geometry);
 
-  const material = materialForPlanet(planet, maps);
+  const material = materialForPlanet(planet, maps, gfx, gpuMaterials);
   const mesh = new THREE.Mesh(geometry, material);
   mesh.userData.bodyId = planet.id;
   tilt.add(mesh);
@@ -268,7 +311,10 @@ function createPlanetGroup(planet, maps, scene) {
 
   if (planet.id === "earth") {
     const cloudGeometry = new THREE.SphereGeometry(planet.displayRadius * 1.012, 96, 48);
-    const cloudMaterial = createCloudMaterial(maps.get(planet.cloudTexture), { opacity: 0.82 });
+    const cloudMaterial =
+      gfx.backend === BACKEND_WEBGPU
+        ? gpuMaterials.createCloudMaterial(gfx.three, maps.get(planet.cloudTexture), { opacity: 0.82 }).material
+        : createCloudMaterial(maps.get(planet.cloudTexture), { opacity: 0.82 });
     const clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
     clouds.userData.bodyId = planet.id;
     tilt.add(clouds);
@@ -278,10 +324,16 @@ function createPlanetGroup(planet, maps, scene) {
 
   if (planet.atmosphereColor) {
     const atmosphereGeometry = new THREE.SphereGeometry(planet.displayRadius * 1.035, 96, 48);
-    const atmosphereMaterial = createAtmosphereMaterial(planet.atmosphereColor, {
-      strength: planet.atmosphereStrength ?? 0.9,
-      planetRadius: planet.displayRadius,
-    });
+    const atmosphereMaterial =
+      gfx.backend === BACKEND_WEBGPU
+        ? gpuMaterials.createAtmosphereMaterial(gfx.three, planet.atmosphereColor, {
+            strength: planet.atmosphereStrength ?? 0.9,
+            planetRadius: planet.displayRadius,
+          }).material
+        : createAtmosphereMaterial(planet.atmosphereColor, {
+            strength: planet.atmosphereStrength ?? 0.9,
+            planetRadius: planet.displayRadius,
+          });
     const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
     atmosphere.userData.bodyId = planet.id;
     tilt.add(atmosphere);
@@ -293,10 +345,16 @@ function createPlanetGroup(planet, maps, scene) {
     const inner = planet.displayRadius * (planet.ringInner ?? 1.3);
     const outer = planet.displayRadius * (planet.ringOuter ?? 2.2);
     const ringGeometry = createRingGeometry(inner, outer);
-    const ringMaterial = createRingMaterial(maps.get(planet.ringTexture), {
-      opacity: 0.96,
-      planetRadius: planet.displayRadius,
-    });
+    const ringMaterial =
+      gfx.backend === BACKEND_WEBGPU
+        ? gpuMaterials.createRingMaterial(gfx.three, maps.get(planet.ringTexture), {
+            opacity: 0.96,
+            planetRadius: planet.displayRadius,
+          }).material
+        : createRingMaterial(maps.get(planet.ringTexture), {
+            opacity: 0.96,
+            planetRadius: planet.displayRadius,
+          });
     const ring = new THREE.Mesh(ringGeometry, ringMaterial);
     ring.userData.bodyId = planet.id;
     ring.rotation.x = 0;
@@ -388,13 +446,23 @@ function findMoonParentPosition(moon, planetRecords) {
  * @param {{canvas: HTMLCanvasElement, onTextureProgress?: Function}} options
  */
 export async function createSolarScene({ canvas, onTextureProgress = () => {} }) {
-  const renderer = new THREE.WebGLRenderer({
+  // WebGPU 지원 기기에서는 WebGPURenderer를, 그 외에는 기존 WebGLRenderer를 쓴다.
+  // 초기화에 실패하면 팩토리가 동일 옵션으로 WebGL에 자동 폴백한다.
+  const selected = await createBestRenderer(THREE, {
     canvas,
-    antialias: true,
-    powerPreference: "high-performance",
-    alpha: false,
-    stencil: false,
+    parameters: {
+      antialias: true,
+      powerPreference: "high-performance",
+      alpha: false,
+      stencil: false,
+    },
   });
+  const renderer = selected.renderer;
+  const backend = selected.backend;
+  const gfx = { backend, three: selected.three, tsl: selected.tsl };
+  // TSL 머티리얼/후처리는 WebGPU 경로에서만 적재해 WebGL 기기의 적재 비용을 막는다.
+  const gpuMaterials =
+    backend === BACKEND_WEBGPU ? await import("./webgpu/solar-webgpu.js") : null;
   let pixelRatioCap = Math.min(window.devicePixelRatio || 1, 1.85);
   renderer.setPixelRatio(pixelRatioCap);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -407,7 +475,8 @@ export async function createSolarScene({ canvas, onTextureProgress = () => {} })
   const camera = new THREE.PerspectiveCamera(47, 1, 0.1, 8000);
   camera.position.set(0, 110, 300);
 
-  const controls = new OrbitControls(camera, canvas);
+  const activeCanvas = selected.canvas;
+  const controls = new OrbitControls(camera, activeCanvas);
   controls.enableDamping = true;
   controls.dampingFactor = 0.075;
   controls.rotateSpeed = 0.52;
@@ -427,11 +496,14 @@ export async function createSolarScene({ canvas, onTextureProgress = () => {} })
 
   // 은하수 배경 + 가까운 별 입자
   const skyGeometry = new THREE.SphereGeometry(SKY_RADIUS, 64, 32);
-  const skyMaterial = createSkyMaterial(maps.get(SKY_TEXTURE), { brightness: 1.5 });
+  const skyMaterial =
+    backend === BACKEND_WEBGPU
+      ? gpuMaterials.createSkyMaterial(gfx.three, maps.get(SKY_TEXTURE), { brightness: 1.5 }).material
+      : createSkyMaterial(maps.get(SKY_TEXTURE), { brightness: 1.5 });
   const sky = new THREE.Mesh(skyGeometry, skyMaterial);
   sky.frustumCulled = false;
   scene.add(sky);
-  const starLayer = createStarLayer(scene);
+  const starLayer = createStarLayer(scene, gfx);
 
   scene.add(new THREE.HemisphereLight(0x2e4a72, 0x05060a, 0.42));
   const sunLight = new THREE.PointLight(0xfff3df, 2.7, 0, 0);
@@ -439,7 +511,10 @@ export async function createSolarScene({ canvas, onTextureProgress = () => {} })
 
   // 태양
   const sunGeometry = new THREE.SphereGeometry(SUN.displayRadius, 128, 64);
-  const sunMaterial = createSunMaterial(maps.get(SUN.texture), { intensity: 1.05 });
+  const sunMaterial =
+    backend === BACKEND_WEBGPU
+      ? gpuMaterials.createSunMaterial(gfx.three, maps.get(SUN.texture), { intensity: 1.05 }).material
+      : createSunMaterial(maps.get(SUN.texture), { intensity: 1.05 });
   const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
   sunMesh.userData.bodyId = SUN.id;
   scene.add(sunMesh);
@@ -460,7 +535,7 @@ export async function createSolarScene({ canvas, onTextureProgress = () => {} })
   });
 
   for (const planet of PLANETS) {
-    const record = createPlanetGroup(planet, maps, scene);
+    const record = createPlanetGroup(planet, maps, scene, gfx, gpuMaterials);
     planetRecords.set(planet.id, record);
     bodies.set(planet.id, record);
     pickables.push(record.mesh);
@@ -487,14 +562,27 @@ export async function createSolarScene({ canvas, onTextureProgress = () => {} })
     outerAU: KUIPER_BELT.outerAU,
     count: KUIPER_BELT.count,
     color: KUIPER_BELT.color,
-  });
+  }, gfx);
 
-  // 후처리 — 블룸(태양/도시 불빛)과 톤매핑
-  const composer = new EffectComposer(renderer);
-  composer.addPass(new RenderPass(scene, camera));
-  const bloomPass = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.52, 0.48, 0.86);
-  composer.addPass(bloomPass);
-  composer.addPass(new OutputPass());
+  // 후처리 — 블룸(태양/도시 불빛)과 톤매핑.
+  // WebGPU 경로는 TSL BloomNode 기반 PostProcessing으로 동일한 효과를 낸다.
+  let composer = null;
+  let bloomPass = null;
+  let gpuPost = null;
+  if (backend === BACKEND_WEBGPU) {
+    gpuPost = gpuMaterials.createSolarPostProcessing(renderer, scene, camera, {
+      strength: 0.52,
+      radius: 0.4,
+      threshold: 0.86,
+    });
+  } else {
+    // 후처리 — 블룸(태양/도시 불빛)과 톤매핑
+    composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(scene, camera));
+    bloomPass = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.52, 0.48, 0.86);
+    composer.addPass(bloomPass);
+    composer.addPass(new OutputPass());
+  }
 
   let bloomEnabled = true;
   let orbitsVisible = true;
@@ -524,14 +612,18 @@ export async function createSolarScene({ canvas, onTextureProgress = () => {} })
   }
 
   function resize() {
-    const parent = canvas.parentElement || document.body;
+    const parent = activeCanvas.parentElement || document.body;
     width = Math.max(1, parent.clientWidth);
     height = Math.max(1, parent.clientHeight);
     const pixelRatio = Math.min(window.devicePixelRatio || 1, pixelRatioCap);
     renderer.setPixelRatio(pixelRatio);
     renderer.setSize(width, height, false);
-    composer.setPixelRatio(pixelRatio);
-    composer.setSize(width, height);
+    if (composer) {
+      composer.setPixelRatio(pixelRatio);
+      composer.setSize(width, height);
+    } else if (gpuPost) {
+      gpuPost.setSize(width, height);
+    }
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
     applyViewOffset();
@@ -539,6 +631,7 @@ export async function createSolarScene({ canvas, onTextureProgress = () => {} })
 
   function setBloomEnabled(enabled) {
     bloomEnabled = enabled;
+    if (gpuPost) gpuPost.setBloomEnabled(enabled);
   }
 
   function setPixelRatioCap(cap) {
@@ -569,7 +662,7 @@ export async function createSolarScene({ canvas, onTextureProgress = () => {} })
   const pointer = new THREE.Vector2();
 
   function raycastFromEvent(event) {
-    const rect = canvas.getBoundingClientRect();
+    const rect = activeCanvas.getBoundingClientRect();
     pointer.x = ((event.clientX - rect.left) / Math.max(1, rect.width)) * 2 - 1;
     pointer.y = -((event.clientY - rect.top) / Math.max(1, rect.height)) * 2 + 1;
     raycaster.setFromCamera(pointer, camera);
@@ -666,7 +759,10 @@ const axisQuaternion = new THREE.Quaternion();
   }
 
   function render() {
-    if (bloomEnabled) {
+    if (gpuPost) {
+      // 블룸 토글 상태는 gpuPost의 outputNode가 기억한다.
+      gpuPost.render();
+    } else if (bloomEnabled) {
       composer.render();
     } else {
       renderer.render(scene, camera);
@@ -706,6 +802,8 @@ const axisQuaternion = new THREE.Quaternion();
     controls,
     composer,
     bloomPass,
+    backend,
+    postProcessing: gpuPost,
     bodies,
     pickables,
     textures,
@@ -725,7 +823,8 @@ const axisQuaternion = new THREE.Quaternion();
     orbitPathPoints,
     dispose() {
       controls.dispose();
-      composer.dispose();
+      if (composer) composer.dispose();
+      if (gpuPost) gpuPost.dispose();
       renderer.dispose();
     },
   };

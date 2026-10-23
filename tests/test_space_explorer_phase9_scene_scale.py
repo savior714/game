@@ -21,7 +21,10 @@ def test_scene_builds_every_body_from_textures() -> None:
         in renderer
     )
     assert "const maps = await textures.loadAll();" in renderer
-    assert "function createPlanetGroup(planet, maps, scene)" in renderer
+    assert (
+        "function createPlanetGroup(planet, maps, scene, gfx, gpuMaterials)"
+        in renderer
+    )
     assert "function createMoonRecord(moon, maps, scene)" in renderer
     assert "new THREE.SphereGeometry(planet.displayRadius, 128, 64)" in renderer
     assert 'maps.get("earth_day.jpg")' in renderer
@@ -42,10 +45,21 @@ def test_post_processing_brings_out_sun_and_city_lights() -> None:
         'import { OutputPass } from "three/addons/postprocessing/OutputPass.js";'
         in renderer
     )
-    assert "const composer = new EffectComposer(renderer);" in renderer
+    # WebGL 경로는 기존 EffectComposer 체인을 그대로 유지한다.
+    assert "composer = new EffectComposer(renderer);" in renderer
     assert "composer.addPass(new RenderPass(scene, camera));" in renderer
     assert "composer.addPass(bloomPass);" in renderer
     assert "composer.addPass(new OutputPass());" in renderer
+    # WebGPU 경로는 TSL BloomNode 기반 RenderPipeline(r183+ PostProcessing 후신)으로
+    # 동일한 블룸을 만들며, 톤매핑/색공간 변환은 파이프라인이 자동 적용한다.
+    assert 'BACKEND_WEBGPU' in renderer
+    assert "gpuMaterials.createSolarPostProcessing(renderer, scene, camera" in renderer
+    webgpu_pipeline = (
+        ROOT / "experiments" / "space-explorer" / "webgpu" / "solar-webgpu.js"
+    ).read_text(encoding="utf-8")
+    assert 'import { bloom } from "three/addons/tsl/display/BloomNode.js";' in webgpu_pipeline
+    assert "new RenderPipeline(renderer)" in webgpu_pipeline
+    assert "post.outputNode = sceneColor.add(bloomNode);" in webgpu_pipeline
 
 
 def test_shader_materials_are_limited_to_real_effects() -> None:

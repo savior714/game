@@ -2,6 +2,12 @@ import * as THREE from "../vendor/three/build/three.module.min.js";
 import { BIOMES, PARTICLE_LIMITS, REX_LAYER, SCENERY } from "./constants.js";
 import { clamp, damp, randRange, randInt, pick } from "./util.js";
 import { buildMergedGeometry, createHazardModel } from "./models.js";
+import { BACKEND_WEBGPU } from "../webgpu/renderer-factory.js";
+import {
+  applyWindNode,
+  createWebGpuAmbient,
+  createWebGpuSky,
+} from "./webgpu-materials.js";
 
 export const SUN_DIRECTION = new THREE.Vector3(-0.78, 0.27, 0.56).normalize();
 
@@ -378,7 +384,13 @@ function volcanoGeometry() {
 /* Wind shader hook                                                     */
 /* ------------------------------------------------------------------ */
 
-function applyWind(material, strength, windShaders) {
+function applyWind(material, strength, windShaders, gfx = null) {
+  if (gfx?.backend === BACKEND_WEBGPU) {
+    // WebGPU는 onBeforeCompile(GLSL)이 없어 TSL positionNode로 동일한 흔들림을 만든다.
+    const uniforms = applyWindNode(gfx.three, gfx.tsl, material, strength);
+    windShaders.push({ uniforms });
+    return;
+  }
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uWindTime = { value: 0 };
     shader.vertexShader = `uniform float uWindTime;\n${shader.vertexShader}`;
@@ -408,6 +420,7 @@ function applyWind(material, strength, windShaders) {
 
 export function createWorld(scene, renderer, options = {}) {
   const quality = options.quality === "low" ? "low" : "high";
+  const gfx = options.gfx ?? null;
   const windShaders = [];
   let targetBiome = BIOME_TARGETS[0];
   const scratchObject = new THREE.Object3D();
@@ -416,7 +429,18 @@ export function createWorld(scene, renderer, options = {}) {
   scene.fog = new THREE.Fog(BIOMES[0].fog, BIOMES[0].fogNear, BIOMES[0].fogFar);
 
   /* Sky ------------------------------------------------------------ */
-  const skyUniforms = {
+  let skyUniforms;
+  let skyMaterial;
+  let sky;
+  if (gfx?.backend === BACKEND_WEBGPU) {
+    const skyGpu = createWebGpuSky(gfx.three, gfx.tsl, BIOMES[0], SKY_RADIUS, SUN_DIRECTION);
+    skyUniforms = skyGpu.uniforms;
+    skyMaterial = skyGpu.mesh.material;
+    sky = skyGpu.mesh;
+    sky.layers.enable(REX_LAYER);
+    scene.add(sky);
+  } else {
+  skyUniforms = {
     uTop: { value: new THREE.Color(BIOMES[0].skyTop) },
     uHorizon: { value: new THREE.Color(BIOMES[0].skyHorizon) },
     uLow: { value: new THREE.Color(BIOMES[0].skyLow) },
@@ -424,7 +448,7 @@ export function createWorld(scene, renderer, options = {}) {
     uSunDirection: { value: SUN_DIRECTION.clone() },
     uTime: { value: 0 },
   };
-  const skyMaterial = new THREE.ShaderMaterial({
+  skyMaterial = new THREE.ShaderMaterial({
     uniforms: skyUniforms,
     side: THREE.BackSide,
     depthWrite: false,
@@ -481,11 +505,12 @@ export function createWorld(scene, renderer, options = {}) {
       }
     `,
   });
-  const sky = new THREE.Mesh(new THREE.SphereGeometry(SKY_RADIUS, 32, 18), skyMaterial);
+  sky = new THREE.Mesh(new THREE.SphereGeometry(SKY_RADIUS, 32, 18), skyMaterial);
   sky.frustumCulled = false;
   sky.renderOrder = -10;
   sky.layers.enable(REX_LAYER);
   scene.add(sky);
+  }
 
   /* Lights --------------------------------------------------------- */
   const initial = BIOMES[0];
@@ -577,9 +602,9 @@ export function createWorld(scene, renderer, options = {}) {
     metalness: 0,
     flatShading: true,
   });
-  applyWind(foliageMaterial, 0.05, windShaders);
+  applyWind(foliageMaterial, 0.05, windShaders, gfx);
   const trunkMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, flatShading: true });
-  applyWind(trunkMaterial, 0.028, windShaders);
+  applyWind(trunkMaterial, 0.028, windShaders, gfx);
 
   const crystalMaterial = new THREE.MeshStandardMaterial({
     vertexColors: true,
@@ -893,12 +918,31 @@ export function createWorld(scene, renderer, options = {}) {
     ambientSizes[i] = p.size;
     ambientPhases[i] = p.phase;
   }
-  const ambientGeometry = new THREE.BufferGeometry();
+  let ambientGeometry = new THREE.BufferGeometry();
   ambientGeometry.setAttribute("position", new THREE.BufferAttribute(ambientPositions, 3).setUsage(THREE.DynamicDrawUsage));
   ambientGeometry.setAttribute("aSize", new THREE.BufferAttribute(ambientSizes, 1));
   ambientGeometry.setAttribute("aPhase", new THREE.BufferAttribute(ambientPhases, 1));
   ambientGeometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1000000);
-  const ambientUniforms = {
+  let ambientUniforms;
+  let ambientPoints;
+  if (gfx?.backend === BACKEND_WEBGPU) {
+    // WebGPU는 1픽셀 point만 지원해 트윙클 꽃가루를 인스턴스 빌보드로 그린다.
+    const ambientGpu = createWebGpuAmbient(gfx.three, gfx.tsl, {
+      positions: ambientPositions,
+      sizes: ambientSizes,
+      phases: ambientPhases,
+      count: ambientCount,
+      pollenColor: BIOMES[0].pollen,
+    });
+    ambientUniforms = ambientGpu.uniforms;
+    ambientPoints = ambientGpu.mesh;
+    ambientGeometry = ambientGpu.mesh.geometry;
+    ambientPoints.frustumCulled = false;
+    ambientPoints.renderOrder = 4;
+    ambientPoints.layers.enable(REX_LAYER);
+    scene.add(ambientPoints);
+  } else {
+  ambientUniforms = {
     uTime: { value: 0 },
     uColor: { value: new THREE.Color(BIOMES[0].pollen) },
     uOpacity: { value: 0.55 },
@@ -937,11 +981,12 @@ export function createWorld(scene, renderer, options = {}) {
       }
     `,
   });
-  const ambientPoints = new THREE.Points(ambientGeometry, ambientMaterial);
+  ambientPoints = new THREE.Points(ambientGeometry, ambientMaterial);
   ambientPoints.frustumCulled = false;
   ambientPoints.renderOrder = 4;
   ambientPoints.layers.enable(REX_LAYER);
   scene.add(ambientPoints);
+  }
 
   /* Biome blending -------------------------------------------------- */
   let volcanoBlend = 0;
@@ -1091,7 +1136,9 @@ export function createWorld(scene, renderer, options = {}) {
       ambientPositions[i * 3 + 1] = p.y;
       ambientPositions[i * 3 + 2] = p.z;
     }
-    ambientGeometry.attributes.position.needsUpdate = true;
+    const ambientPositionAttr =
+      ambientGeometry.attributes.aCloudPosition ?? ambientGeometry.attributes.position;
+    ambientPositionAttr.needsUpdate = true;
     ambientUniforms.uTime.value = time;
   }
 

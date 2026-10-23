@@ -13,7 +13,16 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 
+import { createBestRenderer, BACKEND_WEBGPU } from "../space-explorer/webgpu/renderer-factory.js";
 import { createIslandTextures } from "./textures.js";
+
+/**
+ * WebGPU 경로 컨텍스트. createPowerWorld 진입 시 한 번만 설정되고,
+ * makeBeamMaterial/attachWorldSurface 등 모듈 최상위 헬퍼가 분기에 쓴다.
+ * @type {null | {backend:string, three:object, tsl:object, builders:object}}
+ */
+let webgpuCtx = null;
+const isWebGpu = () => webgpuCtx?.backend === BACKEND_WEBGPU;
 
 const TAU = Math.PI * 2;
 const DEG = Math.PI / 180;
@@ -278,6 +287,27 @@ function attachWorldSurface(mat, {
   sparkle = 0,
 } = {}) {
   if (!mat || !noise) return mat;
+  if (isWebGpu()) {
+    // WebGL MeshStandardMaterial을 동일 속성의 노드 머티리얼로 옮겨 TSL colorNode를 단다.
+    const GpuThree = webgpuCtx.three;
+    const nodeMat = new GpuThree.MeshStandardNodeMaterial({
+      color: mat.color?.getHex?.() ?? 0xffffff,
+      map: mat.map ?? null,
+      normalMap: mat.normalMap ?? null,
+      normalScale: mat.normalScale ? mat.normalScale.clone() : new GpuThree.Vector2(1, 1),
+      roughnessMap: mat.roughnessMap ?? null,
+      roughness: mat.roughness ?? 1,
+      metalness: mat.metalness ?? 0,
+      vertexColors: Boolean(mat.vertexColors),
+      flatShading: Boolean(mat.flatShading),
+    });
+    return webgpuCtx.builders.attachWorldSurfaceNode(
+      GpuThree,
+      webgpuCtx.tsl,
+      nodeMat,
+      { noise, scale, strength, warm, cool, sparkle }
+    );
+  }
   const uniforms = {
     uSurfNoise: { value: noise },
     uSurfScale: { value: scale },
@@ -352,6 +382,16 @@ function makeBeamMaterial({
   softness = 1.9,
   speed = 0.09,
 } = {}) {
+  if (isWebGpu()) {
+    return webgpuCtx.builders.createWebGpuBeamMaterial(webgpuCtx.three, webgpuCtx.tsl, {
+      color,
+      opacity,
+      noise,
+      fade,
+      softness,
+      speed,
+    });
+  }
   return new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
@@ -498,7 +538,7 @@ function makeRock(scale, tint, rockMap) {
   return mesh;
 }
 
-export function createPowerWorld({
+export async function createPowerWorld({
   canvas,
   textureSet = null,
   headless = false,
@@ -536,6 +576,123 @@ export function createPowerWorld({
   let envTarget = null;
 
   if (!headless && canvas) {
+    // WebGPU 지원 기기부터 차례로 프로브한다. 폴백 시 팩토리가 WebGLRenderer를 돌려준다.
+    // 단, 가용 컨텍스트가 전혀 없는 환경(Node 하니스·SW WebGL 차단)에서는 렌더러
+    // 생성 자체를 건너뛰어 three.js의 컨텍스트 오류 경고가 stderr에 남지 않게 한다.
+    let gpuAvailable = false;
+    try {
+      gpuAvailable = typeof globalThis.navigator?.gpu?.requestAdapter === "function";
+    } catch {
+      gpuAvailable = false;
+    }
+    let glProbe = null;
+    if (!gpuAvailable) {
+      try {
+        glProbe =
+          canvas.getContext("webgl2", { antialias: true, powerPreference: "high-performance" }) ||
+          canvas.getContext("webgl", { antialias: true, powerPreference: "high-performance" });
+      } catch {
+        glProbe = null;
+      }
+    }
+    let selected = null;
+    if (gpuAvailable || glProbe) {
+      try {
+        selected = await createBestRenderer(THREE, {
+          canvas,
+          parameters: { antialias: false, powerPreference: "high-performance" },
+        });
+      } catch {
+        selected = null;
+      }
+    }
+    if (selected?.backend === BACKEND_WEBGPU) {
+      try {
+        renderer = selected.renderer;
+        const GpuThree = selected.three;
+        const tsl = selected.tsl;
+        const builders = await import("./world-webgpu.js");
+        webgpuCtx = {
+          backend: BACKEND_WEBGPU,
+          three: GpuThree,
+          tsl,
+          builders,
+        };
+        softwareRenderer = false;
+        renderer.setPixelRatio(1);
+        renderer.setSize(widthInitial, heightInitial, false);
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.toneMapping =
+          GpuThree.AgXToneMapping !== undefined ? GpuThree.AgXToneMapping : GpuThree.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.02;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = GpuThree.PCFShadowMap;
+        try {
+          const maxAniso = renderer.capabilities.getMaxAnisotropy();
+          Object.values(textures).forEach((tex) => {
+            if (tex && tex.isTexture) {
+              tex.anisotropy = Math.min(8, maxAniso);
+              tex.needsUpdate = true;
+            }
+          });
+        } catch {
+          /* 이방성 필터 미지원 환경은 기본값 유지 */
+        }
+        try {
+          pmrem = new GpuThree.PMREMGenerator(renderer);
+          pmrem.compileEquirectangularShader();
+        } catch {
+          pmrem = null;
+        }
+        // EffectComposer(UnrealBloom+grade)를 RenderPipeline+TSL 노드로 대체.
+        // 외부 갱신 코드가 composer/bloomPass/gradePass 인터페이스를 그대로 쓰게 씌운다.
+        const gradeUniforms = {
+          uVignette: tsl.uniform(0.38),
+          uGrain: tsl.uniform(0.018),
+          uSaturation: tsl.uniform(1.08),
+          uTime: tsl.uniform(0),
+          uTint: tsl.uniform(new GpuThree.Color(0.94, 0.97, 1.06)),
+          uContrast: tsl.uniform(1.12),
+          uAberration: tsl.uniform(0.0012),
+        };
+        const bloomUniforms = {
+          uBloomStrength: tsl.uniform(reducedMotion ? 0.24 : 0.38),
+          uBloomRadius: tsl.uniform(0.55),
+          uBloomThreshold: tsl.uniform(0.92),
+        };
+        const pipeline = builders.createWebGpuPost(renderer, scene, camera, tsl, {
+          gradeUniforms,
+          bloomUniforms,
+        });
+        composer = {
+          render() {
+            pipeline.render();
+          },
+          setSize(w, h) {
+            pipeline.setSize(w, h);
+          },
+          dispose() {
+            pipeline.dispose();
+          },
+        };
+        bloomPass = {
+          get strength() {
+            return bloomUniforms.uBloomStrength.value;
+          },
+          set strength(value) {
+            bloomUniforms.uBloomStrength.value = value;
+          },
+        };
+        gradePass = { uniforms: gradeUniforms };
+      } catch {
+        renderer = null;
+        composer = null;
+        pmrem = null;
+        webgpuCtx = null;
+      }
+    } else {
+      // WebGL 폴백: 기존 GL 프로브 + EffectComposer 경로를 그대로 유지한다.
+      webgpuCtx = null;
     let glProbe = null;
     try {
       glProbe =
@@ -686,56 +843,68 @@ export function createPowerWorld({
         pmrem = null;
       }
     }
+    }
   }
 
   /* ── 0. 날씨에 반응하는 환경 조명(IBL) ──────────────────────── */
 
-  const envUniforms = {
-    uTop: { value: new THREE.Color(0x0b1d3d) },
-    uHorizon: { value: new THREE.Color(0x2a5a94) },
-    uGround: { value: new THREE.Color(0x081423) },
-    uSunDir: { value: new THREE.Vector3(-0.4, 0.55, 0.7).normalize() },
-    uSunColor: { value: new THREE.Color(0xfff0d0) },
-    uSunPower: { value: 0.85 },
-  };
+  const envUniforms = isWebGpu()
+    ? {
+        uTop: webgpuCtx.tsl.uniform(new THREE.Color(0x0b1d3d)),
+        uHorizon: webgpuCtx.tsl.uniform(new THREE.Color(0x2a5a94)),
+        uGround: webgpuCtx.tsl.uniform(new THREE.Color(0x081423)),
+        uSunDir: webgpuCtx.tsl.uniform(new THREE.Vector3(-0.4, 0.55, 0.7).normalize()),
+        uSunColor: webgpuCtx.tsl.uniform(new THREE.Color(0xfff0d0)),
+        uSunPower: webgpuCtx.tsl.uniform(0.85),
+      }
+    : {
+        uTop: { value: new THREE.Color(0x0b1d3d) },
+        uHorizon: { value: new THREE.Color(0x2a5a94) },
+        uGround: { value: new THREE.Color(0x081423) },
+        uSunDir: { value: new THREE.Vector3(-0.4, 0.55, 0.7).normalize() },
+        uSunColor: { value: new THREE.Color(0xfff0d0) },
+        uSunPower: { value: 0.85 },
+      };
 
   const envScene = new THREE.Scene();
-  const envDome = new THREE.Mesh(
-    new THREE.SphereGeometry(60, 20, 12),
-    new THREE.ShaderMaterial({
-      side: THREE.BackSide,
-      depthWrite: false,
-      uniforms: envUniforms,
-      vertexShader: /* glsl */ `
-        varying vec3 vDir;
-        void main() {
-          vDir = normalize(position);
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-      `,
-      fragmentShader: /* glsl */ `
-        uniform vec3 uTop;
-        uniform vec3 uHorizon;
-        uniform vec3 uGround;
-        uniform vec3 uSunDir;
-        uniform vec3 uSunColor;
-        uniform float uSunPower;
-        varying vec3 vDir;
-        void main() {
-          vec3 dir = normalize(vDir);
-          float h = dir.y;
-          vec3 sky = mix(uHorizon, uTop, pow(clamp(h, 0.0, 1.0), 0.55));
-          vec3 ground = mix(uHorizon * 0.55, uGround, clamp(-h * 2.2, 0.0, 1.0));
-          vec3 color = mix(ground, sky, smoothstep(-0.08, 0.05, h));
-          float sun = pow(max(dot(dir, normalize(uSunDir)), 0.0), 22.0);
-          color += uSunColor * sun * uSunPower;
-          float horizonGlow = exp(-abs(h) * 5.5);
-          color += uHorizon * horizonGlow * 0.35;
-          gl_FragColor = vec4(color, 1.0);
-        }
-      `,
-    })
-  );
+  const envDome = isWebGpu()
+    ? webgpuCtx.builders.createWebGpuEnvDome(webgpuCtx.three, webgpuCtx.tsl, envUniforms)
+    : new THREE.Mesh(
+        new THREE.SphereGeometry(60, 20, 12),
+        new THREE.ShaderMaterial({
+          side: THREE.BackSide,
+          depthWrite: false,
+          uniforms: envUniforms,
+          vertexShader: /* glsl */ `
+            varying vec3 vDir;
+            void main() {
+              vDir = normalize(position);
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+          `,
+          fragmentShader: /* glsl */ `
+            uniform vec3 uTop;
+            uniform vec3 uHorizon;
+            uniform vec3 uGround;
+            uniform vec3 uSunDir;
+            uniform vec3 uSunColor;
+            uniform float uSunPower;
+            varying vec3 vDir;
+            void main() {
+              vec3 dir = normalize(vDir);
+              float h = dir.y;
+              vec3 sky = mix(uHorizon, uTop, pow(clamp(h, 0.0, 1.0), 0.55));
+              vec3 ground = mix(uHorizon * 0.55, uGround, clamp(-h * 2.2, 0.0, 1.0));
+              vec3 color = mix(ground, sky, smoothstep(-0.08, 0.05, h));
+              float sun = pow(max(dot(dir, normalize(uSunDir)), 0.0), 22.0);
+              color += uSunColor * sun * uSunPower;
+              float horizonGlow = exp(-abs(h) * 5.5);
+              color += uHorizon * horizonGlow * 0.35;
+              gl_FragColor = vec4(color, 1.0);
+            }
+          `,
+        })
+      );
   envDome.frustumCulled = false;
   envScene.add(envDome);
 
@@ -782,25 +951,34 @@ export function createPowerWorld({
   scene.fog = new THREE.FogExp2(0x0a1a33, 0.0042);
 
   // 대기 산란을 흉내 낸 그라디언트 스카이 셰이더 (지평선 발광 + 태양 헤일로)
+  // WebGPU에서는 동일 키를 TSL uniform 노드로 만든다(둘 다 .value 인터페이스).
+  const u = (v) => (isWebGpu() ? webgpuCtx.tsl.uniform(v) : { value: v });
   const skyUniforms = {
-    uTop: { value: new THREE.Color(0x040b1d) },
-    uHorizon: { value: new THREE.Color(0x14294c) },
-    uGlow: { value: new THREE.Color(0x2b6fa8) },
-    uFog: { value: new THREE.Color(0x0a1a33) },
-    uSunDir: { value: new THREE.Vector3(-0.35, 0.42, 0.84).normalize() },
-    uSunColor: { value: new THREE.Color(0xffe9b8) },
-    uMoonDir: { value: new THREE.Vector3(50, 88, -82).normalize() },
-    uMoonColor: { value: new THREE.Color(0xbcd4ff) },
-    uMoon: { value: 1 },
-    uSunPower: { value: 240 },
-    uSunStrength: { value: 0.55 },
-    uMilky: { value: 1 },
-    uCloud: { value: 0.4 },
-    uTime: { value: 0 },
+    uTop: u(new THREE.Color(0x040b1d)),
+    uHorizon: u(new THREE.Color(0x14294c)),
+    uGlow: u(new THREE.Color(0x2b6fa8)),
+    uFog: u(new THREE.Color(0x0a1a33)),
+    uSunDir: u(new THREE.Vector3(-0.35, 0.42, 0.84).normalize()),
+    uSunColor: u(new THREE.Color(0xffe9b8)),
+    uMoonDir: u(new THREE.Vector3(50, 88, -82).normalize()),
+    uMoonColor: u(new THREE.Color(0xbcd4ff)),
+    uMoon: u(1),
+    uSunPower: u(240),
+    uSunStrength: u(0.55),
+    uMilky: u(1),
+    uCloud: u(0.4),
+    uTime: u(0),
   };
 
   const skyGeo = new THREE.SphereGeometry(400, 48, 32);
-  const skyMat = new THREE.ShaderMaterial({
+  let skyMat = null;
+  let skyDome;
+  if (isWebGpu()) {
+    skyDome = webgpuCtx.builders
+      .createWebGpuSky(webgpuCtx.three, webgpuCtx.tsl, skyUniforms, 400)
+      .mesh;
+  } else {
+  skyMat = new THREE.ShaderMaterial({
     side: THREE.BackSide,
     depthWrite: false,
     fog: false,
@@ -898,7 +1076,8 @@ export function createPowerWorld({
       }
     `,
   });
-  const skyDome = new THREE.Mesh(skyGeo, skyMat);
+  skyDome = new THREE.Mesh(skyGeo, skyMat);
+  }
   skyDome.frustumCulled = false;
   skyDome.renderOrder = -10;
   scene.add(skyDome);
@@ -932,12 +1111,31 @@ export function createPowerWorld({
     starSizes[i] = i % 17 === 0 ? 9.5 : 3.2 + (i % 5) * 1.15;
     starPhases[i] = ((i * 91) % 628) / 100;
   }
+  let starMat;
+  let starField;
+  let gpuStarField = null;
+  if (isWebGpu()) {
+    // WebGPU는 point가 1픽셀 고정이라 gl_PointSize 별밭을 인스턴스 빌보드로 재현한다.
+    gpuStarField = webgpuCtx.builders.createWebGpuStarField(webgpuCtx.three, webgpuCtx.tsl, {
+      positions: starPositions,
+      sizes: starSizes,
+      phases: starPhases,
+      colors: starColors,
+      count: starCount,
+      map: textures.star,
+      fovDeg: 44,
+      pixelRatio: Math.min(typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1, 2),
+      viewportHeight: heightInitial,
+    });
+    starMat = { uniforms: gpuStarField.uniforms };
+    starField = gpuStarField.mesh;
+  } else {
   const starGeo = new THREE.BufferGeometry();
   starGeo.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
   starGeo.setAttribute("aColor", new THREE.BufferAttribute(starColors, 3));
   starGeo.setAttribute("aSize", new THREE.BufferAttribute(starSizes, 1));
   starGeo.setAttribute("aPhase", new THREE.BufferAttribute(starPhases, 1));
-  const starMat = new THREE.ShaderMaterial({
+  starMat = new THREE.ShaderMaterial({
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
@@ -976,7 +1174,8 @@ export function createPowerWorld({
       }
     `,
   });
-  const starField = new THREE.Points(starGeo, starMat);
+  starField = new THREE.Points(starGeo, starMat);
+  }
   starField.frustumCulled = false;
   scene.add(starField);
 
@@ -1109,15 +1308,15 @@ export function createPowerWorld({
   // 일렁이는 바다 — 표면 기복·거품·수심 색을 셰이더에서 직접 만든다.
   // (물리 재질의 clearcoat 반사는 그대로 두고, 파형/거품만 주입한다)
   const seaUniforms = {
-    uTime: { value: 0 },
-    uSunDir: { value: new THREE.Vector3(-0.4, 0.5, 0.75).normalize() },
-    uSunColor: { value: new THREE.Color(0xffe9b8) },
-    uSkyColor: { value: new THREE.Color(0x2a5a94) },
-    uDeepColor: { value: new THREE.Color(0x04121f) },
-    uShallowColor: { value: new THREE.Color(0x0f4a5e) },
-    uFoamColor: { value: new THREE.Color(0xcfe9f7) },
-    uNoise: { value: textures.noise },
-    uFoamAmount: { value: 1 },
+    uTime: u(0),
+    uSunDir: u(new THREE.Vector3(-0.4, 0.5, 0.75).normalize()),
+    uSunColor: u(new THREE.Color(0xffe9b8)),
+    uSkyColor: u(new THREE.Color(0x2a5a94)),
+    uDeepColor: u(new THREE.Color(0x04121f)),
+    uShallowColor: u(new THREE.Color(0x0f4a5e)),
+    uFoamColor: u(new THREE.Color(0xcfe9f7)),
+    uNoise: u(textures.noise),
+    uFoamAmount: u(1),
   };
 
   const seaWaveGLSL = /* glsl */ `
@@ -1138,7 +1337,25 @@ export function createPowerWorld({
   const seaAmount = 1680;
   const seaGeo = new THREE.PlaneGeometry(seaAmount, seaAmount, 200, 200);
   seaGeo.rotateX(-Math.PI / 2);
-  const seaMat = new THREE.MeshPhysicalMaterial({
+  let seaMat;
+  if (isWebGpu()) {
+    seaMat = webgpuCtx.builders.createWebGpuSeaMaterial(webgpuCtx.three, webgpuCtx.tsl, {
+      config: {
+        color: 0x0a2f57,
+        emissive: 0x061a30,
+        emissiveIntensity: 0.34,
+        roughness: 0.14,
+        metalness: 0.03,
+        clearcoat: 1,
+        clearcoatRoughness: 0.08,
+        envMapIntensity: 1.05,
+        normalMap: textures.waterNormal,
+        normalScale: new THREE.Vector2(0.55, 0.55),
+      },
+      uniforms: seaUniforms,
+    });
+  } else {
+  seaMat = new THREE.MeshPhysicalMaterial({
     color: 0x0a2f57,
     emissive: 0x061a30,
     emissiveIntensity: 0.34,
@@ -1245,6 +1462,7 @@ export function createPowerWorld({
         normal = normalize((viewMatrix * vec4(seaNormalWorld, 0.0)).xyz);`
       );
   };
+  }
   const ocean = new THREE.Mesh(seaGeo, seaMat);
   ocean.position.y = -0.04;
   ocean.receiveShadow = true;
@@ -3422,7 +3640,6 @@ export function createPowerWorld({
 
   // 물방울 & 물보라 파티클 풀
   const hydroDropCount = 72;
-  const hydroDropGeo = new THREE.BufferGeometry();
   const hydroDropPos = new Float32Array(hydroDropCount * 3);
   const hydroDropVel = new Float32Array(hydroDropCount * 3);
   for (let i = 0; i < hydroDropCount; i += 1) {
@@ -3430,8 +3647,25 @@ export function createPowerWorld({
     hydroDropPos[i * 3 + 1] = 2.5 + (i % 12) * 0.7;
     hydroDropPos[i * 3 + 2] = -15.4 + ((i % 5) - 2) * 0.25;
   }
+  let hydroDropGeo;
+  let hydroDrops;
+  if (isWebGpu()) {
+    const hydroCloud = webgpuCtx.builders.createWebGpuPointCloud(webgpuCtx.three, webgpuCtx.tsl, {
+      positions: hydroDropPos,
+      count: hydroDropCount,
+      size: 0.75,
+      map: textures.glow,
+      color: 0xbef0ff,
+      opacity: 0.85,
+      additive: true,
+      dynamic: true,
+    });
+    hydroDrops = hydroCloud.mesh;
+    hydroDropGeo = hydroCloud.geometry;
+  } else {
+  hydroDropGeo = new THREE.BufferGeometry();
   hydroDropGeo.setAttribute("position", new THREE.BufferAttribute(hydroDropPos, 3));
-  const hydroDrops = new THREE.Points(
+  hydroDrops = new THREE.Points(
     hydroDropGeo,
     new THREE.PointsMaterial({
       size: 0.75,
@@ -3443,6 +3677,7 @@ export function createPowerWorld({
       blending: THREE.AdditiveBlending,
     })
   );
+  }
   scene.add(hydroDrops);
 
   const hydroHit = new THREE.Mesh(
@@ -4623,9 +4858,38 @@ export function createPowerWorld({
       speed: randRange(0.25, 0.7),
     });
   }
-  const fireflyGeo = new THREE.BufferGeometry();
+  let fireflyGeo;
+  let fireflyMat;
+  let fireflies;
+  if (isWebGpu()) {
+    const fireflyCloud = webgpuCtx.builders.createWebGpuPointCloud(webgpuCtx.three, webgpuCtx.tsl, {
+      positions: fireflyPos,
+      count: fireflyCount,
+      size: 0.85,
+      map: textures.glow,
+      color: 0xc8ff9a,
+      opacity: 0.9,
+      additive: true,
+      dynamic: true,
+      fog: false,
+    });
+    fireflies = fireflyCloud.mesh;
+    fireflyGeo = fireflyCloud.geometry;
+    // 낮/폭풍/밤 투명도 전환이 인스턴스 alpha 배열을 직접 갱신하게 씌운다.
+    const alphaAttr = fireflyCloud.attributes.alpha;
+    fireflyMat = {
+      get opacity() {
+        return alphaAttr.array[0];
+      },
+      set opacity(value) {
+        alphaAttr.array.fill(value);
+        alphaAttr.needsUpdate = true;
+      },
+    };
+  } else {
+  fireflyGeo = new THREE.BufferGeometry();
   fireflyGeo.setAttribute("position", new THREE.BufferAttribute(fireflyPos, 3));
-  const fireflyMat = new THREE.PointsMaterial({
+  fireflyMat = new THREE.PointsMaterial({
     size: 0.85,
     map: textures.glow,
     color: 0xc8ff9a,
@@ -4635,7 +4899,8 @@ export function createPowerWorld({
     blending: THREE.AdditiveBlending,
     fog: false,
   });
-  const fireflies = new THREE.Points(fireflyGeo, fireflyMat);
+  fireflies = new THREE.Points(fireflyGeo, fireflyMat);
+  }
   fireflies.frustumCulled = false;
   scene.add(fireflies);
 
@@ -4896,10 +5161,27 @@ export function createPowerWorld({
       gravity: 16,
     });
   }
-  const sparkGeo = new THREE.BufferGeometry();
+  let sparkGeo;
+  let sparkPoints;
+  if (isWebGpu()) {
+    const sparkCloud = webgpuCtx.builders.createWebGpuPointCloud(webgpuCtx.three, webgpuCtx.tsl, {
+      positions: sparkPositions,
+      colors: sparkColors,
+      count: sparkPoolSize,
+      size: 1.55,
+      map: textures.glow,
+      opacity: 0.95,
+      additive: true,
+      dynamic: true,
+      fog: false,
+    });
+    sparkPoints = sparkCloud.mesh;
+    sparkGeo = sparkCloud.geometry;
+  } else {
+  sparkGeo = new THREE.BufferGeometry();
   sparkGeo.setAttribute("position", new THREE.BufferAttribute(sparkPositions, 3));
   sparkGeo.setAttribute("color", new THREE.BufferAttribute(sparkColors, 3));
-  const sparkPoints = new THREE.Points(
+  sparkPoints = new THREE.Points(
     sparkGeo,
     new THREE.PointsMaterial({
       size: 1.55,
@@ -4912,6 +5194,7 @@ export function createPowerWorld({
       fog: false,
     })
   );
+  }
   sparkPoints.frustumCulled = false;
   scene.add(sparkPoints);
 
@@ -5975,6 +6258,10 @@ export function createPowerWorld({
     renderer.setPixelRatio(resolution.current);
     renderer.setSize(w, h, false);
     if (composer) composer.setSize(w, h);
+    // WebGPU 별 빌보드는 프레임버퍼 높이 기준으로 픽셀 크기를 환산한다.
+    if (isWebGpu() && gpuStarField) {
+      gpuStarField.setViewport(h * resolution.current, resolution.current);
+    }
   }
 
   function applyPixelRatio() {
@@ -6114,10 +6401,23 @@ export function createPowerWorld({
     // Bake the starting environment and compile scene programs while the loading
     // cover is still visible, avoiding a shader/PMREM stall on the first frame.
     applyAtmosphere("night", 40, 0.1, 1 / 60, 0);
-    const hasParallelCompile = renderer && renderer.extensions &&
+    if (!renderer) return false;
+    if (isWebGpu()) {
+      // WebGPURenderer는 KHR_parallel_shader_compile 확장이 없고 노드 그래프를
+      // 첫 렌더 전에 compileAsync로 미리 빌드할 수 있다.
+      try {
+        if (typeof renderer.compileAsync === "function") {
+          await renderer.compileAsync(scene, camera);
+        }
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    const hasParallelCompile = renderer.extensions &&
       typeof renderer.extensions.has === "function" &&
       renderer.extensions.has("KHR_parallel_shader_compile");
-    if (!renderer || softwareRenderer || !hasParallelCompile || typeof renderer.compileAsync !== "function") return false;
+    if (softwareRenderer || !hasParallelCompile || typeof renderer.compileAsync !== "function") return false;
     await renderer.compileAsync(scene, camera);
     return true;
   }

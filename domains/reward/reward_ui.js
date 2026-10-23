@@ -478,6 +478,18 @@ const RewardSystemUI = (() => {
         if (unitEl) unitEl.textContent = '분';
       }
 
+      if (type === 'marble' || type === 'bubble') {
+        if (valEl) valEl.textContent = '5';
+        const unitEl = el.querySelector('.unit');
+        if (unitEl) unitEl.textContent = '분 놀이';
+        el.title = '정답 5개를 맞히고 5분 동안 놀아요';
+        el.setAttribute('role', 'button');
+        el.tabIndex = 0;
+        el.classList.add('has-reward');
+        el.classList.remove('empty-slot');
+        return;
+      }
+
       if (type === 'gems') {
         el.classList.add('has-reward');
         el.classList.remove('empty-slot');
@@ -678,13 +690,13 @@ const RewardSystemUI = (() => {
         ${renderActivityLog(state)}
         <div class="shop-grid" style="display: grid; gap: 12px; margin: 20px 0; max-height:50vh; overflow-y:auto; padding-right:5px;">
           ${shopItems.map(item => `
-            <div class="shop-card" data-action="exchange-gem" data-item-id="${item.id}" style="cursor:pointer; padding:15px; border:2px solid #e2e8f0; border-radius:18px; display:flex; align-items:center; gap:15px; text-align:left; transition:all 0.2s; color:#0f172a;">
+            <div class="shop-card" data-action="${item.id === 'marble' || item.id === 'bubble' ? 'consume' : 'exchange-gem'}" data-item-id="${item.id}" style="cursor:pointer; padding:15px; border:2px solid #e2e8f0; border-radius:18px; display:flex; align-items:center; gap:15px; text-align:left; transition:all 0.2s; color:#0f172a;">
               <div style="font-size:2rem;">${item.icon}</div>
               <div style="flex:1;">
                 <div style="font-weight:bold; font-size:1.05rem; color:#0f172a;">${item.label}</div>
-                <div style="font-size:0.8rem; color:#64748b; word-break:keep-all;">${item.desc}</div>
+                <div style="font-size:0.8rem; color:#64748b; word-break:keep-all;">${item.id === 'marble' || item.id === 'bubble' ? '원하는 과목 정답 5개를 맞히고 입장해요' : item.desc}</div>
               </div>
-              <div style="background:#8b5cf6; color:white; padding:4px 10px; border-radius:10px; font-size:0.85rem; font-weight:bold; flex-shrink:0;">💎 ${item.price || 1}</div>
+              <div style="background:#8b5cf6; color:white; padding:4px 10px; border-radius:10px; font-size:0.85rem; font-weight:bold; flex-shrink:0;">${item.id === 'marble' || item.id === 'bubble' ? '공부하고 5분' : `💎 ${item.price || 1}`}</div>
             </div>
           `).join('')}
         </div>
@@ -1230,43 +1242,13 @@ const RewardSystemUI = (() => {
   }
 
   function openMarbleModal() {
-    const marbleUrl = new URL('../../experiments/marble/', getGlobalBaseUrl()).href;
-
-    const overlay = createModalOverlay('reward-marble-modal');
-    overlay.style.backgroundColor = 'rgba(0,0,0,0.92)';
-    overlay.innerHTML = `
-      <div class="reward-marble-content">
-         <iframe src="${marbleUrl}" class="reward-mini-game-frame" title="마블 머지 게임" allowfullscreen allow="fullscreen"></iframe>
-         <button class="btn-close-marble" data-action="close-overlay">학습으로 돌아가기</button>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-    
-    window.addEventListener('message', (e) => {
-      if (e.data === 'closeMarble') {
-        overlay.remove();
-      }
-    }, { once: true });
+    // Route all entry points through the shared per-entry learning gate.
+    if (window.StudyGameAdmission) window.StudyGameAdmission.request('marble');
   }
 
   function openBubbleModal() {
-    const bubbleUrl = new URL('../../experiments/bubble/', getGlobalBaseUrl()).href;
-
-    const overlay = createModalOverlay('reward-bubble-modal');
-    overlay.style.backgroundColor = 'rgba(0,0,0,0.92)';
-    overlay.innerHTML = `
-      <div class="reward-marble-content">
-         <iframe src="${bubbleUrl}" class="reward-mini-game-frame" title="버블팡 게임" allowfullscreen allow="fullscreen"></iframe>
-         <button class="btn-close-marble" data-action="close-overlay">학습으로 돌아가기</button>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-    
-    window.addEventListener('message', (e) => {
-      if (e.data === 'closeBubble') {
-        overlay.remove();
-      }
-    }, { once: true });
+    // Route all entry points through the shared per-entry learning gate.
+    if (window.StudyGameAdmission) window.StudyGameAdmission.request('bubble');
   }
 
   function createModalOverlay(id) {

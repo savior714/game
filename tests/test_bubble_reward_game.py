@@ -43,7 +43,9 @@ def test_reward_system_bubble_integration():
 
     reward_ui_content = REWARD_UI_SCRIPT.read_text(encoding="utf-8")
     assert "openBubbleModal" in reward_ui_content
-    assert "../../experiments/bubble/" in reward_ui_content
+    assert "StudyGameAdmission.request('bubble')" in reward_ui_content
+    admission = (ROOT / "shared/ui/study-game-admission.js").read_text(encoding="utf-8")
+    assert "experiments/bubble/index.html" in admission
 
     guardian_content = GUARDIAN_SCRIPT.read_text(encoding="utf-8")
     assert "bubble_plays" in guardian_content

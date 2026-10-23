@@ -38,6 +38,7 @@
 
   <!-- 로그인 gate: 세션이 확인되기 전에는 기능 surface를 fail-closed로 차단한다. -->
   <script src="../../domains/auth/auth-gate.js"></script>
+  <script src="../../shared/ui/study-game-admission.js"></script>
   <section id="dino-admission-gate" class="admission-screen" aria-labelledby="dino-admission-title">
     <div class="admission-card">
       <span class="admission-icon" aria-hidden="true">
@@ -47,15 +48,15 @@
         </svg>
       </span>
       <p class="admission-kicker">DINO ESCAPE · DAILY REWARD</p>
-      <h1 id="dino-admission-title">오늘 공부 목표를 완료하면 열려요!</h1>
+      <h1 id="dino-admission-title">공부하고 공룡 게임에 도전해요!</h1>
       <p id="dino-admission-message" class="admission-copy">
-        오늘의 수학 공부 목표를 달성하면 공룡 탈출 게임을 플레이할 수 있어요.
+        선택한 과목에서 정답 5개를 맞히면 5분 동안 공룡 게임을 즐길 수 있어요.
       </p>
       <div class="admission-actions">
         <a class="admission-button admission-button--primary" href="../../domains/math/index.html">오늘 목표 도전하기</a>
         <a class="admission-button" href="../../index.html">홈으로 돌아가기</a>
       </div>
-      <p class="admission-note">목표를 완료한 뒤 이 페이지로 돌아오면 게임이 열려요.</p>
+      <p class="admission-note">입장할 때마다 새로운 학습 미션에 도전해요.</p>
       <noscript><p class="admission-note">이 페이지를 이용하려면 자바스크립트를 켜 주세요.</p></noscript>
     </div>
   </section>

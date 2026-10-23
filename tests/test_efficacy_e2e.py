@@ -5,7 +5,8 @@ Playwright 설치 후 실제 브라우저 테스트로 확장 가능.
 
 테스트 시나리오 (Blueprint §12.2):
 1. test_milestone_streak_toast: 수학 세션 3연속 정답 → "3연속!" 토스트
-2. test_milestone_session_gems: 영어 세션 5문제 정답 → 토스트 + 보석+1
+2. test_milestone_session_gems: 영어 세션 5문제 정답 → 격려 토스트만 (보석 없음,
+   정답 보석은 20연속 로켓 발사 시에만 +1)
 3. test_diversity_reward: 수학+영어 정답 → 다양성 보석+1
 4. test_daily_streak_simulation: 7일 연속 출석 → 보석+2
 5. test_level_up_toast: 난이도 상승 → 토스트 표시

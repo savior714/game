@@ -13,11 +13,13 @@ const MilestoneTracker = (() => {
     { key: 'streak_15', threshold: 15, message: '15연속! 로켓 발사 임무! 🚀', gems: 0 },
   ];
 
+  // 세션 누적 마일스톤은 격려 토스트만 제공한다(보석 없음).
+  // 정답 기반 보석은 20연속 정답의 로켓 발사 보상(shared/ui/rocket-core.js)으로만 지급한다.
   const SESSION_MILESTONES = [
     { key: 'session_3', threshold: 3, message: '오늘 3문제 맞혔어요! 미션 달성! 🎯', gems: 0 },
-    { key: 'session_5', threshold: 5, message: '오늘 5문제 성공! 훌륭해요! 🌟', gems: 1 },
-    { key: 'session_10', threshold: 10, message: '완벽 세션! 10문제 전부 정답! 💯', gems: 1 },
-    { key: 'session_20', threshold: 20, message: '20문제 달성! 퀴즈 왕이에요! 🏆', gems: 1 },
+    { key: 'session_5', threshold: 5, message: '오늘 5문제 성공! 훌륭해요! 🌟', gems: 0 },
+    { key: 'session_10', threshold: 10, message: '완벽 세션! 10문제 전부 정답! 💯', gems: 0 },
+    { key: 'session_20', threshold: 20, message: '20문제 달성! 퀴즈 왕이에요! 🏆', gems: 0 },
   ];
 
   const FIRST_MILESTONES = [

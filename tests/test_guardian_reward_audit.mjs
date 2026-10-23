@@ -1,7 +1,7 @@
 /**
  * @fileoverview 보호자 보상 감사 패널(guardian-audit.js), 위임 이벤트(guardian-events.js),
- * 모든 보상 획득 프로듀서(daily-streak, diversity-reward, milestone-tracker, daily-goal, rocket-core),
- * CSV/JSON 내보내기 및 전체 초기화 실행 End-to-End 검증.
+ * 모든 보상 획득 프로듀서(daily-streak, diversity-reward, daily-goal, rocket-core),
+ * 보석을 지급하지 않는 milestone-tracker(세션 누적 마일스톤), CSV/JSON 내보내기 및 전체 초기화 실행 End-to-End 검증.
  *
  * 실행: node tests/test_guardian_reward_audit.mjs
  */
@@ -206,7 +206,8 @@ ctx.window.DailyStreak.recordAnswer("english", true);
 // (b) 다과목 다양성 보상 (수학 추가 -> 2과목 달성)
 ctx.window.DiversityReward.recordCorrect("english");
 ctx.window.DiversityReward.recordCorrect("math");
-// (c) 정답 마일스톤 보상 (20문제 연속 정답 누적)
+// (c) 정답 마일스톤은 격려 토스트만 제공 (20문제 정답 → 보석 없음 확인).
+// 정답 기반 보석은 20연속 정답의 로켓 발사 보상(아래 (e))으로만 지급한다.
 for (let i = 0; i < 20; i += 1) {
   ctx.window.MilestoneTracker.record(true);
 }
@@ -255,7 +256,7 @@ assert.match(initialHtml, /Epoch #1/);
 assert.match(initialHtml, /원장 무결성 검증 통과/);
 assert.match(initialHtml, /일일 출석 학습 보상 \(1일차 · 영어\)/);
 assert.match(initialHtml, /다과목 학습 보상 \(영어·수학 2과목 달성\)/);
-assert.match(initialHtml, /학습 마일스톤 달성/);
+assert.doesNotMatch(initialHtml, /학습 마일스톤 달성/, "세션 누적 마일스톤은 보석을 지급하지 않아야 합니다.");
 assert.match(initialHtml, /수학 오늘의 목표 달성/);
 assert.match(initialHtml, /연속 정답 로켓 발사 보상 \(과학\)/);
 assert.match(initialHtml, /간식 사용 승인 차감 \(1개 사용\)/);
@@ -302,4 +303,4 @@ assert.ok(
   "초기화된 Epoch #2 상태가 즉시 SyncEngine 클라우드 큐로 전송되어야 한다."
 );
 
-console.log("PASS: Guardian audit UI, all 5 reward grant producers, filters, CSV/JSON exports, and epoch reset verified.");
+console.log("PASS: Guardian audit UI, all 4 reward grant producers, no-gem milestone tracker, filters, CSV/JSON exports, and epoch reset verified.");

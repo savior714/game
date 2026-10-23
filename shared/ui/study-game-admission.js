@@ -3,7 +3,8 @@
   'use strict';
   const root = new URL('../../', document.currentScript.src);
   const KEY = 'aiden_study_game_admission_v1';
-  // Same minimum workload as MilestoneTracker's session_5 gem reward.
+  // Minimum per-admission learning workload (see ACTIVE_PRODUCT_SCOPE.md).
+  // Not tied to gem rewards: quiz gems come only from the 20-streak rocket launch.
   const REQUIRED = 5;
   const DURATION = 5 * 60 * 1000;
   const games = {

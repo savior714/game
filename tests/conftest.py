@@ -249,15 +249,49 @@ _E2E_SESSION_SEED_JS = r"""
     "session": json.dumps(json.dumps(_E2E_SESSION)),
 }
 
-_E2E_AUTH_MODE = {"value": "signed_in"}
+_E2E_OCEAN_ADMISSION_SEED_JS = r"""
+(() => {
+  try {
+    const pathname = window.location && window.location.pathname ? window.location.pathname : "";
+    if (!(/\/ocean-rescue\/|\/domains\/ocean-rescue\//).test(pathname)) {
+      return;
+    }
+    const key = "aiden_study_game_admission_v1";
+    if (!sessionStorage.getItem(key)) {
+      const startedAt = Date.now();
+      sessionStorage.setItem(key, JSON.stringify({
+        version: 1,
+        phase: "playing",
+        game: "ocean-rescue",
+        subject: "math",
+        correct: 5,
+        startedAt,
+        deadline: startedAt + 300000
+      }));
+    }
+  } catch (error) {
+    // about:blank 등 storage를 쓸 수 없는 문서에서는 무시한다.
+  }
+})();
+"""
+
+_UNENTITLED_STUDY_MODULES = {
+    "test_study_game_admission_browser",
+    "test_ocean_rescue_daily_goal_gate_browser",
+    "test_math_reward_ocean_rescue_gate_browser",
+}
+
+_E2E_AUTH_MODE = {"value": "signed_in", "seed_ocean_admission": True}
 
 
-def _e2e_auth_init_script(mode: str) -> str:
+def _e2e_auth_init_script(mode: str, seed_ocean_admission: bool = True) -> str:
     parts = []
     if mode != "real_supabase":
         parts.append(_E2E_SUPABASE_STUB_JS)
     if mode == "signed_in":
         parts.append(_E2E_SESSION_SEED_JS)
+    if seed_ocean_admission:
+        parts.append(_E2E_OCEAN_ADMISSION_SEED_JS)
     return "\n".join(parts)
 
 
@@ -269,11 +303,18 @@ def _e2e_auth_mode(request: pytest.FixtureRequest):
         mode = "real_supabase"
     else:
         mode = "signed_in"
+    module_name = getattr(request.node.module, "__name__", "").rsplit(".", 1)[-1]
+    seed_ocean = (
+        request.node.get_closest_marker("unentitled_study_game") is None
+        and module_name not in _UNENTITLED_STUDY_MODULES
+    )
     _E2E_AUTH_MODE["value"] = mode
+    _E2E_AUTH_MODE["seed_ocean_admission"] = seed_ocean
     try:
         yield mode
     finally:
         _E2E_AUTH_MODE["value"] = "signed_in"
+        _E2E_AUTH_MODE["seed_ocean_admission"] = True
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -293,7 +334,10 @@ def _seed_signed_in_browser_session():
     def goto_with_session(self, *args, **kwargs):
         # init script는 이후 모든 navigation에 적용되며, 중복 주입은 JS guard로 무해하다.
         try:
-            script = _e2e_auth_init_script(_E2E_AUTH_MODE["value"])
+            script = _e2e_auth_init_script(
+                str(_E2E_AUTH_MODE["value"]),
+                bool(_E2E_AUTH_MODE["seed_ocean_admission"]),
+            )
             if script:
                 self.add_init_script(script=script)
         except Exception:

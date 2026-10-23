@@ -55,7 +55,9 @@ def test_migration_reference_is_stable_technical_context_not_next_work() -> None
 def test_cross_feature_learning_gate_is_owned_by_active_scope() -> None:
     scope = read(ACTIVE_SCOPE)
 
-    assert "현재 목표를 완료해야 Ocean Rescue 자유시간을 사용할 수 있다" in scope
+    assert "바다 구조대(`ocean-rescue/index.html`)" in scope
+    assert "새 정답 5개" in scope
+    assert "5분(`300,000ms`)" in scope
     assert "goal 완료" in scope
     assert "gems + free-time" in scope
-    assert "→ Ocean Rescue / 허용된 자유시간 콘텐츠" in scope
+    assert "허용된 자유시간 콘텐츠" in scope

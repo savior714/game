@@ -277,6 +277,7 @@ def test_production_paths_outside_write_scope() -> None:
         "domains/ocean-rescue/src/contracts/runtime-abi.ts",
         "domains/ocean-rescue/src/esm/app.js",
         "domains/ocean-rescue/src/esm/render-runtime.js",
+        "domains/ocean-rescue/src/style.css",
     }
     changed = {line for line in diff.splitlines() if line}
     assert changed <= allowed, (

@@ -1,4 +1,4 @@
-/** Shared per-entry learning gate for the four short-play reward games. */
+/** Shared per-entry learning gate for the short-play reward games. */
 (function (global) {
   'use strict';
   const root = new URL('../../', document.currentScript.src);
@@ -10,7 +10,8 @@
     electricity: ['experiments/electricity/index.html', '⚡ 발전소'],
     dino: ['experiments/space-explorer/dino-escape.html', '🦖 공룡 게임'],
     marble: ['experiments/marble/index.html', '🎮 마블 게임'],
-    bubble: ['experiments/bubble/index.html', '🫧 버블 게임']
+    bubble: ['experiments/bubble/index.html', '🫧 버블 게임'],
+    'ocean-rescue': ['ocean-rescue/index.html', '🌊 바다 구조대']
   };
   const subjects = { math: '🔢 수학', english: '🔤 영어', korean: '📚 국어', science: '🔬 과학' };
   const path = location.pathname;

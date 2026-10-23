@@ -91,12 +91,12 @@
               Ocean Rescue
             </h2>
             <p class="card-desc">
-              잠수정을 타고 바다 생물을 구조해요. 해양 생태계를 탐험하며 신나는 미션을 완수해보세요!
+              잠수정을 타고 바다 생물을 구조해요. 원하는 과목에서 정답 5개를 맞히면 5분 동안 출동할 수 있어요!
             </p>
           </div>
 
           <div class="card-action-bar">
-            <span id="ocean-rescue-card-action-text" class="text-xs font-black tracking-wider text-cyan-400 uppercase">탐험 미션 시작</span>
+            <span id="ocean-rescue-card-action-text" class="text-xs font-black tracking-wider text-cyan-400 uppercase">공부하고 5분 출동</span>
             <span class="card-action-btn" aria-hidden="true">→</span>
           </div>
         </a>
@@ -221,7 +221,7 @@
               QUICK LABS
             </h2>
             <p class="card-desc">
-              자석으로 자기장을 그리는 자석 실험실, 태양-지구-달 움직임을 눈으로 보는 신기한 실험, 목표 색을 섞어 맞히는 물감 게임도 즐겨요. 발전소·공룡·마블·버블은 원하는 과목에서 정답 5개를 맞힌 뒤 5분 동안 플레이해요.
+              자석으로 자기장을 그리는 자석 실험실, 태양-지구-달 움직임을 눈으로 보는 신기한 실험, 목표 색을 섞어 맞히는 물감 게임도 즐겨요. 바다 구조대·발전소·공룡·마블·버블은 원하는 과목에서 정답 5개를 맞힌 뒤 5분 동안 플레이해요.
             </p>
 
             <div class="quick-labs-list">
@@ -307,84 +307,6 @@
   <script src="domains/reward/reward_ui.js"></script>
   <script src="domains/reward/reward.js"></script>
   <script src="domains/math/daily-goal.js"></script>
-
-  <!-- Ocean Rescue Daily Goal Gate Controller -->
-  <script>
-    function hasCompletedTodayMathGoal(now = Date.now()) {
-      try {
-        const rawGoal = localStorage.getItem('aiden_math_daily_goal_v1');
-        if (!rawGoal) return false;
-
-        const goal = JSON.parse(rawGoal);
-        if (!goal || typeof goal !== 'object') return false;
-
-        let today;
-        if (typeof MathDailyGoalEngine !== 'undefined' && typeof MathDailyGoalEngine.getTodayDateString === 'function') {
-          today = MathDailyGoalEngine.getTodayDateString(now);
-        } else {
-          const d = typeof now === 'number' ? new Date(now) : (now instanceof Date ? now : new Date());
-          const year = d.getFullYear();
-          const month = String(d.getMonth() + 1).padStart(2, '0');
-          const day = String(d.getDate()).padStart(2, '0');
-          today = `${year}-${month}-${day}`;
-        }
-        return goal.schemaVersion === 1 && goal.date === today && goal.completed === true;
-      } catch (e) {
-        return false;
-      }
-    }
-
-    function updateOceanRescueCardState() {
-      const card = document.getElementById('ocean-rescue-card');
-      const actionText = document.getElementById('ocean-rescue-card-action-text');
-      if (!card || !actionText) return false;
-
-      const hasEntitlement = hasCompletedTodayMathGoal();
-
-      if (hasEntitlement) {
-        card.setAttribute('data-locked', 'false');
-        card.classList.remove('opacity-70', 'grayscale-[30%]');
-        actionText.textContent = '탐험 미션 시작';
-        actionText.className = 'text-xs font-black tracking-wider text-cyan-400 uppercase';
-      } else {
-        card.setAttribute('data-locked', 'true');
-        card.classList.add('opacity-70', 'grayscale-[30%]');
-        actionText.textContent = '🔒 오늘 목표 완료 시 오픈';
-        actionText.className = 'text-xs font-bold tracking-wider text-slate-400';
-      }
-      return hasEntitlement;
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-      updateOceanRescueCardState();
-      window.addEventListener('storage', updateOceanRescueCardState);
-      window.addEventListener('cloud-sync-complete', updateOceanRescueCardState);
-      window.addEventListener('pageshow', updateOceanRescueCardState);
-      document.addEventListener('visibilitychange', function() {
-        if (document.visibilityState === 'visible') {
-          updateOceanRescueCardState();
-        }
-      });
-
-      const card = document.getElementById('ocean-rescue-card');
-      if (card) {
-        card.addEventListener('click', function(e) {
-          const isUnlocked = hasCompletedTodayMathGoal();
-          if (!isUnlocked) {
-            e.preventDefault();
-            updateOceanRescueCardState();
-            if (typeof RewardSystemUI !== 'undefined' && typeof RewardSystemUI.showToast === 'function') {
-              RewardSystemUI.showToast('🔒 오늘의 퀴즈 목표를 완료하면 바다 구조대가 열려요!');
-            } else {
-              alert('🔒 오늘의 퀴즈 목표를 완료하면 바다 구조대가 열려요!');
-            }
-          } else {
-            updateOceanRescueCardState();
-          }
-        });
-      }
-    });
-  </script>
 
   <!-- 태블릿 전체 화면 토글 (같은 버튼으로 되돌아오기) -->
   <script src="./shared/ui/fullscreen-toggle.js"></script>

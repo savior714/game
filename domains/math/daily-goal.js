@@ -38,6 +38,26 @@
     return null;
   }
 
+  function _pushCloudIfBrowserStorage(key, payload, customStorage) {
+    if (customStorage || !payload || typeof payload !== 'object') return;
+    if (typeof window !== 'undefined' && window.SyncEngine && typeof window.SyncEngine.pushStats === 'function') {
+      window.SyncEngine.pushStats(key, payload);
+      return;
+    }
+    if (typeof localStorage !== 'undefined' && typeof localStorage.getItem === 'function') {
+      try {
+        const raw = localStorage.getItem('sync_queue');
+        const q = raw ? JSON.parse(raw) : {};
+        if (q && typeof q === 'object') {
+          q[key] = { ...payload, _updated_at: Date.now() };
+          localStorage.setItem('sync_queue', JSON.stringify(q));
+        }
+      } catch (e) {
+        // ignore queue fallback error
+      }
+    }
+  }
+
   function getTodayDateString(now) {
     const d = typeof now === 'number' ? new Date(now) : (now instanceof Date ? now : new Date());
     const year = d.getFullYear();
@@ -186,6 +206,7 @@
     streakState.lastObservedDate = today;
     streakState.updatedAt = new Date(now).toISOString();
     saveStreak(streakState, { storage: storage, key: key });
+    _pushCloudIfBrowserStorage(key, streakState, opts.storage);
 
     return {
       currentStreak: streakState.currentStreak,
@@ -252,6 +273,7 @@
 
     try {
       storage.setItem(key, JSON.stringify(payload));
+      _pushCloudIfBrowserStorage(key, payload, opts.storage);
     } catch (e) {
       console.error('[MathDailyGoal] Failed to save goal preference:', e);
     }
@@ -416,6 +438,7 @@
         streakResult = recordStreakGoalCompletion({ storage: storage, key: opts.streakKey, now: now });
       }
       saveDailyGoal(goal, { storage: storage, key: opts.key });
+      _pushCloudIfBrowserStorage(opts.key || STORAGE_KEY, goal, opts.storage);
     }
 
     return { goal: goal, completedJustNow: completedJustNow, streakResult: streakResult };
@@ -506,6 +529,7 @@
 
     goal.rewardGranted = true;
     saveDailyGoal(goal, { storage: storage, key: opts.key });
+    _pushCloudIfBrowserStorage(opts.key || STORAGE_KEY, goal, opts.storage);
 
     return {
       success: true,

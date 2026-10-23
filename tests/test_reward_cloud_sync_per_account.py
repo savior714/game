@@ -33,9 +33,15 @@ def test_study_rewards_is_pulled_and_pushed_per_user_id():
     sync_code = _read(SYNC_ENGINE)
     assert "'study_rewards'" in sync_code, "study_rewards가 동기화 대상 키에 없다."
     assert "DEFAULT_PULL_KEYS" in sync_code, "DEFAULT_PULL_KEYS 정의가 없다."
-    assert "user_id: user.id" in sync_code, "Supabase upsert에 user_id(계정) 바인딩이 없다."
-    assert ".eq('user_id', user.id)" in sync_code, "Supabase 조회에 user_id 필터가 없다."
-    assert "onConflict: 'user_id, data_key'" in sync_code, "계정·키 기준 upsert 갈등 처리가 없다."
+    assert "user_id: user.id" in sync_code, (
+        "Supabase upsert에 user_id(계정) 바인딩이 없다."
+    )
+    assert ".eq('user_id', user.id)" in sync_code, (
+        "Supabase 조회에 user_id 필터가 없다."
+    )
+    assert "onConflict: 'user_id, data_key'" in sync_code, (
+        "계정·키 기준 upsert 갈등 처리가 없다."
+    )
 
 
 def test_reward_save_enqueues_to_cloud_sync_queue_without_sync_engine():
@@ -55,9 +61,15 @@ def test_index_html_loads_the_login_gate_and_sync_statically():
     html = _read(INDEX_HTML)
     gate = _read(ROOT / "domains" / "auth" / "auth-gate.js")
     assert "./domains/auth/auth-gate.js" in html, "로그인 gate 스크립트 선적재가 없다."
-    assert "./domains/sync/sync-engine.js" in html, "동기화 엔진 스크립트 선적재가 없다."
-    assert "@supabase/supabase-js@2" in gate, "gate가 Supabase client를 선로드하지 않는다."
-    assert "new URL('auth.js'" in gate, "gate가 canonical auth module을 선로드하지 않는다."
+    assert "./domains/sync/sync-engine.js" in html, (
+        "동기화 엔진 스크립트 선적재가 없다."
+    )
+    assert "@supabase/supabase-js@2" in gate, (
+        "gate가 Supabase client를 선로드하지 않는다."
+    )
+    assert "new URL('auth.js'" in gate, (
+        "gate가 canonical auth module을 선로드하지 않는다."
+    )
 
 
 def test_user_data_rls_is_per_user_id():
@@ -67,7 +79,9 @@ def test_user_data_rls_is_per_user_id():
     assert "CONSTRAINT unique_user_data_key UNIQUE (user_id, data_key)" in ddl, (
         "user_data에 (user_id, data_key) 유일 제약이 없다."
     )
-    assert "auth.uid() = user_id" in rls, "user_data RLS가 사용자 본인 데이터만 보도록 제한돼 있지 않다."
-    assert "REVOKE ALL ON public.user_data FROM public" in ddl, (
+    assert "auth.uid() = user_id" in rls, (
+        "user_data RLS가 사용자 본인 데이터만 보도록 제한돼 있지 않다."
+    )
+    assert "REVOKE ALL ON public.user_data FROM public" in rls, (
         "public 접근 차단(revoke)이 없다."
     )

@@ -135,6 +135,20 @@
         items: Array.isArray(state.items) ? state.items : [],
       };
       storage.setItem(key, JSON.stringify(payload));
+      if (!opts.storage) {
+        if (typeof window !== 'undefined' && window.SyncEngine && typeof window.SyncEngine.pushStats === 'function') {
+          window.SyncEngine.pushStats(key, payload);
+        } else if (typeof localStorage !== 'undefined' && typeof localStorage.getItem === 'function') {
+          try {
+            const rawQ = localStorage.getItem('sync_queue');
+            const q = rawQ ? JSON.parse(rawQ) : {};
+            if (q && typeof q === 'object') {
+              q[key] = { ...payload, _updated_at: Date.now() };
+              localStorage.setItem('sync_queue', JSON.stringify(q));
+            }
+          } catch (e) {}
+        }
+      }
       return true;
     } catch (err) {
       console.error('[MathEvidenceStore] Failed to save evidence:', err);

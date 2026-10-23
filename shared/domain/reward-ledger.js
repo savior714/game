@@ -108,6 +108,18 @@
     };
   }
 
+  function isZeroBalances(balances) {
+    if (!isPlainObject(balances)) return true;
+    for (const key of FIELD_KEYS) {
+      if (safeAmount(balances[key]) !== 0) return false;
+    }
+    const custom = isPlainObject(balances.custom_inventory) ? balances.custom_inventory : {};
+    for (const id of Object.keys(custom)) {
+      if (isSafeCustomId(id) && safeAmount(custom[id]) !== 0) return false;
+    }
+    return true;
+  }
+
   function cloneBalances(source) {
     const out = emptyBalances();
     const src = isPlainObject(source) ? source : {};
@@ -191,6 +203,9 @@
   }
 
   function compactEvent(raw) {
+    // 초기 병합 결함이 빈 브라우저({})를 하향 스냅샷으로 오인해 남긴
+    // legacy_snapshot_downward 가짜 차감 이벤트는 정규화 시 제거해 자가 치유한다.
+    if (raw && raw.reason === 'legacy_snapshot_downward') return null;
     const event = {
       id: safeLabel(raw.id, MAX_ID_LENGTH),
       at: Math.max(0, finiteNumber(raw.at, 0)),
@@ -211,7 +226,13 @@
   function normalizeLedger(raw) {
     const src = isPlainObject(raw) ? raw : {};
     const base = cloneBalances(src.base);
-    const baseAt = Math.max(0, finiteNumber(src.base_at, 0));
+    const foldedAt = Math.max(0, finiteNumber(src.folded_at, 0));
+    const rawBaseAt = Math.max(0, finiteNumber(src.base_at, 0));
+    // 접힌 이벤트가 없는 상태에서 빈 base(0)에 찍힌 base_at은
+    // 다른 기기의 초기 이관 base나 같은 시각의 첫 적립 이벤트를 덮지 못하도록 0으로 정규화한다.
+    const baseAt = foldedAt > 0
+      ? Math.max(rawBaseAt, foldedAt)
+      : (isZeroBalances(base) ? 0 : rawBaseAt);
     const rawEvents = Array.isArray(src.events) ? src.events : [];
     const seen = new Set();
     const events = [];
@@ -219,18 +240,22 @@
       if (!isPlainObject(item)) continue;
       const event = compactEvent(item);
       if (!event || seen.has(event.id)) continue;
+      if (foldedAt > 0 && event.at <= foldedAt) continue;
       seen.add(event.id);
       events.push(event);
     }
     events.sort(compareEvents);
-    return { v: VERSION, base, base_at: baseAt, events };
+    return { v: VERSION, base, base_at: baseAt, folded_at: foldedAt, events };
   }
 
   function createLedger(balances, at) {
+    const cloned = cloneBalances(balances);
+    const baseAt = isZeroBalances(cloned) ? 0 : Math.max(0, finiteNumber(at, 0));
     return {
       v: VERSION,
-      base: cloneBalances(balances),
-      base_at: Math.max(0, finiteNumber(at, 0)),
+      base: cloned,
+      base_at: baseAt,
+      folded_at: 0,
       events: [],
     };
   }
@@ -252,17 +277,34 @@
 
   /** 이벤트가 너무 많아지면 오래된 이벤트를 base로 접는다(잔액은 그대로 유지). */
   function foldEvents(ledger) {
-    if (ledger.events.length <= MAX_EVENTS) return ledger;
+    const currentFoldedAt = Math.max(0, finiteNumber(ledger.folded_at, 0));
+    if (ledger.events.length <= MAX_EVENTS) {
+      return {
+        v: VERSION,
+        base: ledger.base,
+        base_at: ledger.base_at,
+        folded_at: currentFoldedAt,
+        events: ledger.events,
+      };
+    }
     const sorted = ledger.events.slice().sort(compareEvents);
-    const foldCount = sorted.length - KEEP_EVENTS;
+    let foldCount = sorted.length - KEEP_EVENTS;
+    const cutoffAt = sorted[foldCount - 1].at;
+    // 같은 밀리초(at === cutoffAt)에 생성된 이벤트가 경계에 걸치면 함께 접어
+    // folded_at 기준 필터링(event.at <= folded_at)에서 누락되는 이벤트가 없게 한다.
+    while (foldCount < sorted.length && sorted[foldCount].at <= cutoffAt) {
+      foldCount += 1;
+    }
     const folded = sorted.slice(0, foldCount);
     const base = cloneBalances(ledger.base);
     for (const event of folded) applyDeltaToBalances(base, event.key, event.delta);
     clampBalances(base);
+    const nextFoldedAt = Math.max(currentFoldedAt, folded[folded.length - 1].at);
     return {
       v: VERSION,
       base,
-      base_at: Math.max(ledger.base_at, folded[folded.length - 1].at),
+      base_at: Math.max(ledger.base_at || 0, nextFoldedAt),
+      folded_at: nextFoldedAt,
       events: sorted.slice(foldCount),
     };
   }
@@ -295,7 +337,13 @@
       eventIds.push(event.id);
     }
     return {
-      ledger: foldEvents({ v: VERSION, base: base.base, base_at: base.base_at, events }),
+      ledger: foldEvents({
+        v: VERSION,
+        base: base.base,
+        base_at: base.base_at,
+        folded_at: base.folded_at || 0,
+        events,
+      }),
       eventIds,
     };
   }
@@ -338,8 +386,10 @@
     let ledger;
 
     if (hadLedger) {
+      const hadPoisonedLegacyDownward = Array.isArray(src.reward_ledger.events)
+        && src.reward_ledger.events.some((item) => item && item.reason === 'legacy_snapshot_downward');
       ledger = normalizeLedger(src.reward_ledger);
-      if (opts.adoptFields !== false) {
+      if (opts.adoptFields !== false && !hadPoisonedLegacyDownward) {
         const expected = balancesToSnapshot(computeBalances(ledger));
         const actual = balancesToSnapshot(observed);
         // 외부 스냅샷 쓰기는 "줄어든 사실"만 인정한다.
@@ -412,6 +462,18 @@
   }
 
   function pickBase(ledgerA, ledgerB) {
+    const foldedA = Math.max(0, finiteNumber(ledgerA.folded_at, 0));
+    const foldedB = Math.max(0, finiteNumber(ledgerB.folded_at, 0));
+    if (foldedA !== foldedB) {
+      return foldedA > foldedB ? ledgerA.base : ledgerB.base;
+    }
+    if (foldedA === 0) {
+      const zeroA = isZeroBalances(ledgerA.base);
+      const zeroB = isZeroBalances(ledgerB.base);
+      if (zeroA !== zeroB) {
+        return zeroA ? ledgerB.base : ledgerA.base;
+      }
+    }
     if (ledgerA.base_at !== ledgerB.base_at) {
       return ledgerA.base_at > ledgerB.base_at ? ledgerA.base : ledgerB.base;
     }
@@ -422,20 +484,26 @@
   function mergeLedgers(ledgerA, ledgerB) {
     const a = normalizeLedger(ledgerA);
     const b = normalizeLedger(ledgerB);
-    const baseAt = Math.max(a.base_at, b.base_at);
+    const foldedAt = Math.max(a.folded_at || 0, b.folded_at || 0);
+    const base = pickBase(a, b);
+    const baseAt = foldedAt > 0
+      ? Math.max(a.base_at, b.base_at, foldedAt)
+      : (isZeroBalances(base) ? 0 : Math.max(a.base_at, b.base_at));
     return foldEvents({
       v: VERSION,
-      base: pickBase(a, b),
+      base,
       base_at: baseAt,
-      events: mergeEvents(a.events, b.events, baseAt),
+      folded_at: foldedAt,
+      events: mergeEvents(a.events, b.events, foldedAt),
     });
   }
 
-  function mergeEvents(eventsA, eventsB, baseAt) {
+  function mergeEvents(eventsA, eventsB, foldedAt) {
+    const cutoff = Math.max(0, finiteNumber(foldedAt, 0));
     const seen = new Set();
     const merged = [];
     for (const event of [...eventsA, ...eventsB]) {
-      if (event.at <= baseAt) continue;
+      if (cutoff > 0 && event.at <= cutoff) continue;
       if (seen.has(event.id)) continue;
       seen.add(event.id);
       merged.push(event);
@@ -478,9 +546,15 @@
   }
 
   function pickMeta(local, remote, key) {
+    const hasLocal = isPlainObject(local) && local[key] !== undefined;
+    const hasRemote = isPlainObject(remote) && remote[key] !== undefined;
+    if (hasLocal !== hasRemote) return hasLocal ? local[key] : remote[key];
     const localAt = metaAt(local, key);
     const remoteAt = metaAt(remote, key);
     if (localAt !== remoteAt) return localAt > remoteAt ? local[key] : remote[key];
+    if (Array.isArray(local[key]) && Array.isArray(remote[key]) && local[key].length !== remote[key].length) {
+      return local[key].length > remote[key].length ? local[key] : remote[key];
+    }
     const localJson = stableJson(local[key]);
     const remoteJson = stableJson(remote[key]);
     return localJson >= remoteJson ? local[key] : remote[key];
@@ -498,34 +572,9 @@
   }
 
   /**
-   * 원장이 없는(업데이트 이전 형식) 스냅샷은 "줄어든 사실"만 반영한다.
-   * 원장 없는 스냅샷의 큰 값은 획득 근거가 없으므로 잔액을 늘릴 수 없다.
-   * 이 규칙이 "쓰지 않았는데 다시 채워지는" 회귀를 막는 마지막 방어선이다.
-   */
-  function applyLegacySnapshotDownward(merged, observed, at) {
-    const current = balanceSnapshot(merged);
-    const deltas = [];
-    const keys = new Set([...Object.keys(observed), ...Object.keys(current)]);
-    for (const key of keys) {
-      const normalized = normalizeKey(key);
-      if (!normalized) continue;
-      const observedValue = safeAmount(observed[key] || 0);
-      const currentValue = safeAmount(current[key] || 0);
-      if (observedValue < currentValue) {
-        deltas.push({ key: normalized, delta: observedValue - currentValue });
-      }
-    }
-    if (deltas.length === 0) return merged;
-    return applyDeltas(merged, deltas, {
-      at,
-      type: 'adjust',
-      reason: 'legacy_snapshot_downward',
-    }).state;
-  }
-
-  /**
    * 두 보상 상태를 병합한다.
-   * 잔액은 이벤트 합집합으로만 결정되므로, 어느 한쪽 스냅샷의 큰 값이 소비를 덮어쓰지 못한다.
+   * 잔액은 이벤트 합집합으로만 결정되므로, 어느 한쪽 스냅샷의 큰 값이 소비를 덮어쓰지 못하며
+   * 빈 브라우저({})의 0 잔액도 클라우드 원장을 깎아내리지 못한다(교환 가능·멱등·항등원 보장).
    * @param {object} local
    * @param {object} remote
    * @param {{adoptFields?: boolean, at?: number}} [options]
@@ -537,16 +586,22 @@
     const remoteHadLedger = hasLedgerShape(remote && remote.reward_ledger);
     const a = normalizeState(local, { adoptFields, at: opts.at });
     const b = normalizeState(remote, { adoptFields, at: opts.at });
-    // 원장 없는 쪽은 병합 기준(base)이 될 수 없다. 관찰값만 아래에서 하향 반영한다.
+    // 한쪽만 원장을 가지고 있다면, 원장 없는 쪽의 미검증 스냅샷 잔액은 base가 될 수 없다
+    // (사용 완료한 보상이 옛 스냅샷으로 되살아나는 현상 차단).
     const legacySide = localHadLedger === remoteHadLedger ? null : localHadLedger ? b : a;
-    const legacyObserved = legacySide ? balanceSnapshot(legacySide) : null;
-    const legacyAt = legacySide ? Math.max(0, finiteNumber(legacySide._updated_at, 0)) : 0;
     if (legacySide) {
       legacySide.reward_ledger = createLedger({}, 0);
     }
     const ledger = mergeLedgers(a.reward_ledger, b.reward_ledger);
 
-    let merged = composeState(a, ledger);
+    const combinedMetaSource = {};
+    for (const src of [b, a]) {
+      for (const key of Object.keys(src)) {
+        if (isBlockedKey(key)) continue;
+        safeAssign(combinedMetaSource, key, src[key]);
+      }
+    }
+    const merged = composeState(combinedMetaSource, ledger);
     merged.claimed_receipts = mergeReceipts(a.claimed_receipts, b.claimed_receipts);
     if (Array.isArray(a.shop_items) || Array.isArray(b.shop_items)) {
       merged.shop_items = pickMeta(a, b, 'shop_items');
@@ -559,11 +614,6 @@
       Math.max(0, finiteNumber(a._updated_at, 0)),
       Math.max(0, finiteNumber(b._updated_at, 0))
     );
-
-    // 한쪽만 원장을 가지고 있다면, 원장 없는 쪽은 "차감"만 반영한다.
-    if (legacyObserved) {
-      merged = applyLegacySnapshotDownward(merged, legacyObserved, legacyAt);
-    }
     return merged;
   }
 

@@ -37,8 +37,22 @@ const DiversityReward = (() => {
     state = getDefaultState();
   }
 
-  function save() {
+  function save(pushCloud = false) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    if (pushCloud) {
+      if (typeof window !== 'undefined' && window.SyncEngine && typeof window.SyncEngine.pushStats === 'function') {
+        window.SyncEngine.pushStats(STORAGE_KEY, state);
+      } else {
+        try {
+          const rawQ = localStorage.getItem('sync_queue');
+          const q = rawQ ? JSON.parse(rawQ) : {};
+          if (q && typeof q === 'object') {
+            q[STORAGE_KEY] = { ...state, _updated_at: Date.now() };
+            localStorage.setItem('sync_queue', JSON.stringify(q));
+          }
+        } catch (e) {}
+      }
+    }
   }
 
   function getDiversityGems(subjectCount) {
@@ -86,7 +100,7 @@ const DiversityReward = (() => {
       }
     }
 
-    save();
+    save(true);
   }
 
   function getTodaySubjectCount() {
@@ -100,6 +114,12 @@ const DiversityReward = (() => {
   }
 
   load();
+  if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+    window.addEventListener('cloud-sync-complete', load);
+    window.addEventListener('storage', (e) => {
+      if (!e || !e.key || e.key === STORAGE_KEY) load();
+    });
+  }
 
   return {
     recordCorrect,

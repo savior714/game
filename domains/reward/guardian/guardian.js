@@ -51,10 +51,26 @@ const STORAGE_KEYS = {
 let currentSubject = 'math';
 let currentLevel = 1;
 
+function refreshGuardianFromSync() {
+  loadRewards();
+  if (currentSubject === 'math') {
+    renderMathGoalPresets();
+    renderMathProgressSnapshot();
+  } else {
+    syncDifficultySlider(currentSubject);
+  }
+}
+
 // 초기화
 window.addEventListener('DOMContentLoaded', () => {
   setSubject('math');
   loadRewards();
+});
+
+window.addEventListener('cloud-sync-complete', refreshGuardianFromSync);
+window.addEventListener('storage', (event) => {
+  if (event && event.key === 'aiden_sync_trigger') return;
+  refreshGuardianFromSync();
 });
 
 function setSubject(sub) {
@@ -524,7 +540,18 @@ function saveRewards() {
     console.warn('[Guardian] reward ledger journal write failed:', e);
   }
   rewardState = merged;
-  if (window.SyncEngine) window.SyncEngine.pushStats('study_rewards', rewardState);
+  if (window.SyncEngine && typeof window.SyncEngine.pushStats === 'function') {
+    window.SyncEngine.pushStats('study_rewards', rewardState);
+  } else {
+    try {
+      const rawQ = localStorage.getItem('sync_queue');
+      const q = rawQ ? JSON.parse(rawQ) : {};
+      if (q && typeof q === 'object') {
+        q.study_rewards = rewardState;
+        localStorage.setItem('sync_queue', JSON.stringify(q));
+      }
+    } catch (e) {}
+  }
 }
 
 function openEditReward(id) {

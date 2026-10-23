@@ -210,6 +210,15 @@ const RewardSystem = (() => {
     }
   }
 
+  function pushKeyToCloud(key, payload) {
+    if (!payload || typeof payload !== 'object') return;
+    if (window.SyncEngine && typeof window.SyncEngine.pushStats === 'function') {
+      window.SyncEngine.pushStats(key, payload);
+    } else {
+      _enqueueSyncQueue(key, payload);
+    }
+  }
+
   function pushToCloud() {
     // 보상 변경을 계정 단위 클라우드 DB(Supabase user_data)에 연동한다.
     // SyncEngine이 준비되어 있으면 즉시 푸시(온라인 + 로그인 시 Supabase upsert),
@@ -628,6 +637,34 @@ const RewardSystem = (() => {
   // ──────────────────────────────────────────
   // 2. 초기화 (Initialization)
   // ──────────────────────────────────────────
+  function reconcileFreeTimeSessionUI() {
+    try {
+      const rawSession = localStorage.getItem('study_youtube_free_time_session_v1');
+      if (!rawSession || typeof FreeTimeSession === 'undefined') {
+        if (typeof RewardSystemUI !== 'undefined' && typeof RewardSystemUI.clearFreeTimeSessionUI === 'function') {
+          RewardSystemUI.clearFreeTimeSessionUI();
+        }
+        return;
+      }
+      const saved = JSON.parse(rawSession);
+      const nowMs = Date.now();
+      const restored = FreeTimeSession.restore({ savedSession: saved, now: nowMs });
+      const sel = FreeTimeSession.select(restored, nowMs);
+      if (sel.active && typeof RewardSystemUI !== 'undefined' && typeof RewardSystemUI.renderFreeTimeTimerUI === 'function') {
+        RewardSystemUI.renderFreeTimeTimerUI(restored, { isDirectUserStart: false });
+      } else if (sel.expired && typeof RewardSystemUI !== 'undefined' && typeof RewardSystemUI.renderExpiredFreeTimeSessionUI === 'function') {
+        try {
+          localStorage.setItem('study_youtube_free_time_session_v1', JSON.stringify(restored));
+        } catch (e) {}
+        RewardSystemUI.renderExpiredFreeTimeSessionUI(restored);
+      } else if (typeof RewardSystemUI !== 'undefined' && typeof RewardSystemUI.clearFreeTimeSessionUI === 'function') {
+        RewardSystemUI.clearFreeTimeSessionUI();
+      }
+    } catch (e) {
+      // ignore session UI reconciliation failure
+    }
+  }
+
   function refreshFromStorage() {
     load();
     if (typeof RewardSystemUI !== 'undefined') {
@@ -635,6 +672,7 @@ const RewardSystem = (() => {
       RewardSystemUI.updateUI(state);
       RewardSystemUI.applyBodyTopOffset();
     }
+    reconcileFreeTimeSessionUI();
   }
 
   function startYouTubeSession(durationMinutes, options) {
@@ -656,12 +694,13 @@ const RewardSystem = (() => {
     }
 
     const openExternal = ExternalTabLauncher.createOpenExternal(window, 'https://www.youtube.com/');
-    const sessionId = 'yt-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+    const nowMs = options && Number.isFinite(options.nowMs) ? options.nowMs : Date.now();
+    const sessionId = 'yt-' + nowMs + '-' + Math.random().toString(36).slice(2, 8);
 
     const result = FreeTimeSessionStartTransaction.attemptStart({
       storage: localStorage,
       openExternal: openExternal,
-      now: Date.now(),
+      now: nowMs,
       sessionId: sessionId,
       FreeTimeSession: FreeTimeSession,
       FreeTimeAllowance: FreeTimeAllowance,
@@ -670,9 +709,24 @@ const RewardSystem = (() => {
     });
 
     if (result.code === 'started') {
-      refreshFromStorage();
-      if (typeof RewardSystemUI !== 'undefined' && typeof RewardSystemUI.renderFreeTimeTimerUI === 'function') {
-        RewardSystemUI.renderFreeTimeTimerUI(result.session, options);
+      load();
+      pushToCloud();
+      if (result.session) {
+        pushKeyToCloud('study_youtube_free_time_session_v1', result.session);
+      }
+      try {
+        const rawUsage = localStorage.getItem('study_youtube_free_time_daily_usage_v1');
+        if (rawUsage) {
+          pushKeyToCloud('study_youtube_free_time_daily_usage_v1', JSON.parse(rawUsage));
+        }
+      } catch (e) {}
+      if (typeof RewardSystemUI !== 'undefined') {
+        RewardSystemUI.syncInventoryBarWithState(state);
+        RewardSystemUI.updateUI(state);
+        RewardSystemUI.applyBodyTopOffset();
+        if (typeof RewardSystemUI.renderFreeTimeTimerUI === 'function') {
+          RewardSystemUI.renderFreeTimeTimerUI(result.session, options);
+        }
       }
     }
 
@@ -685,7 +739,15 @@ const RewardSystem = (() => {
     // 다른 탭이 보상을 쓰거나 사용하면 메모리 스냅샷을 즉시 최신화한다.
     // (오래된 메모리 상태가 다시 저장되어 소비를 되돌리는 경로를 차단)
     window.addEventListener('storage', (event) => {
-      if (event && event.key && event.key !== STORAGE_KEY) return;
+      if (
+        event
+        && event.key
+        && event.key !== STORAGE_KEY
+        && event.key !== 'study_youtube_free_time_session_v1'
+        && event.key !== 'study_youtube_free_time_daily_usage_v1'
+      ) {
+        return;
+      }
       refreshFromStorage();
     });
     window.addEventListener('cloud-sync-complete', refreshFromStorage);
@@ -704,25 +766,7 @@ const RewardSystem = (() => {
       });
     }
     bindSyncListeners();
-    // Check for active or expired youtube free time session on init
-    try {
-      const rawSession = localStorage.getItem('study_youtube_free_time_session_v1');
-      if (rawSession && typeof FreeTimeSession !== 'undefined') {
-        const saved = JSON.parse(rawSession);
-        const restored = FreeTimeSession.restore({ savedSession: saved, now: Date.now() });
-        const sel = FreeTimeSession.select(restored, Date.now());
-        if (sel.active && typeof RewardSystemUI !== 'undefined' && typeof RewardSystemUI.renderFreeTimeTimerUI === 'function') {
-          RewardSystemUI.renderFreeTimeTimerUI(restored, { isDirectUserStart: false });
-        } else if (sel.expired && typeof RewardSystemUI !== 'undefined' && typeof RewardSystemUI.renderExpiredFreeTimeSessionUI === 'function') {
-          try {
-            localStorage.setItem('study_youtube_free_time_session_v1', JSON.stringify(restored));
-          } catch (e) {}
-          RewardSystemUI.renderExpiredFreeTimeSessionUI(restored);
-        }
-      }
-    } catch (e) {
-      // ignore init restore failure
-    }
+    reconcileFreeTimeSessionUI();
   }
 
   /** 최근 획득/사용 기록 — "무엇이 언제 들어오고 나갔는지"를 사용자에게 보여준다. */
@@ -763,6 +807,10 @@ const RewardSystem = (() => {
     }
   };
 })();
+
+if (typeof window !== 'undefined') {
+  window.RewardSystem = RewardSystem;
+}
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => RewardSystem.init());

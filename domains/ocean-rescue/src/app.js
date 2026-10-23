@@ -6483,8 +6483,330 @@
     return true;
   }
 
+  var ADMISSION_KEY = "aiden_study_game_admission_v1";
+  var ADMISSION_REQUIRED = 5;
+  var ADMISSION_DURATION = 5 * 60 * 1000;
+  var ADMISSION_GAME_ID = "ocean-rescue";
+  var ADMISSION_GAME_LABEL = "🌊 바다 구조대";
+  var ADMISSION_KNOWN_GAMES = {
+    electricity: true,
+    dino: true,
+    marble: true,
+    bubble: true,
+    "ocean-rescue": true
+  };
+  var ADMISSION_KNOWN_SUBJECTS = {
+    math: true,
+    english: true,
+    korean: true,
+    science: true
+  };
+  var ADMISSION_SUBJECTS = [
+    ["math", "🔢 수학", "domains/math/index.html"],
+    ["english", "🔤 영어", "domains/english/index.html"],
+    ["korean", "📚 국어", "domains/korean/index.html"],
+    ["science", "🔬 과학", "domains/science/index.html"]
+  ];
+  var admissionDialog = null;
+  var admissionClock = null;
+  var admissionTimer = null;
+  var oceanRuntimeBooted = false;
+
+  function isBrowserAdmissionEnforced() {
+    return Boolean(window && window.location && typeof window.location.href === "string");
+  }
+
+  function resolveRepoTargetUrl(relativeTarget) {
+    var pathname = window.location && typeof window.location.pathname === "string"
+      ? window.location.pathname
+      : "";
+    var prefix = "../";
+    if (pathname.indexOf("/domains/ocean-rescue/dist/") !== -1) {
+      prefix = "../../../";
+    } else if (pathname.indexOf("/domains/ocean-rescue/") !== -1) {
+      prefix = "../../";
+    }
+    return new URL(prefix + relativeTarget, window.location.href).href;
+  }
+
+  function readAdmission() {
+    try {
+      if (!window.sessionStorage) {
+        return null;
+      }
+      var raw = window.sessionStorage.getItem(ADMISSION_KEY);
+      if (!raw) {
+        return null;
+      }
+      var s = JSON.parse(raw);
+      if (!s || s.version !== 1 || !ADMISSION_KNOWN_GAMES[s.game] || !ADMISSION_KNOWN_SUBJECTS[s.subject]) {
+        return null;
+      }
+      if (s.phase === "learning" && Number.isInteger(s.correct) && s.correct >= 0 && s.correct <= ADMISSION_REQUIRED) {
+        return s;
+      }
+      if (
+        s.phase === "playing" &&
+        s.correct === ADMISSION_REQUIRED &&
+        Number.isFinite(s.startedAt) &&
+        Number.isFinite(s.deadline) &&
+        s.deadline - s.startedAt === ADMISSION_DURATION &&
+        s.startedAt <= Date.now()
+      ) {
+        return s;
+      }
+    } catch (_err) {
+      return null;
+    }
+    return null;
+  }
+
+  function writeAdmission(value) {
+    try {
+      window.sessionStorage.setItem(ADMISSION_KEY, JSON.stringify(value));
+      return true;
+    } catch (_err) {
+      if (typeof window.alert === "function") {
+        window.alert("학습 기록을 저장할 수 없어요. 브라우저 저장 공간을 확인해 주세요.");
+      }
+      return false;
+    }
+  }
+
+  function clearAdmission() {
+    try {
+      if (window.sessionStorage) {
+        window.sessionStorage.removeItem(ADMISSION_KEY);
+      }
+    } catch (_err) {
+      /* ignore storage errors on cleanup */
+    }
+  }
+
+  function isAdmissionPlaying(gameId) {
+    var s = readAdmission();
+    var target = gameId || ADMISSION_GAME_ID;
+    return Boolean(s && s.phase === "playing" && s.game === target && s.deadline > Date.now());
+  }
+
+  function setDocumentLocked(locked) {
+    if (!document || !document.documentElement) {
+      return;
+    }
+    if (locked) {
+      if (typeof document.documentElement.setAttribute === "function") {
+        document.documentElement.setAttribute("data-study-game-locked", "true");
+      } else if (document.documentElement.dataset) {
+        document.documentElement.dataset.studyGameLocked = "true";
+      }
+      return;
+    }
+    if (typeof document.documentElement.removeAttribute === "function") {
+      document.documentElement.removeAttribute("data-study-game-locked");
+    }
+    if (document.documentElement.dataset) {
+      delete document.documentElement.dataset.studyGameLocked;
+    }
+  }
+
+  function appendChildCompat(parent, child) {
+    if (!parent || !child) {
+      return;
+    }
+    if (typeof parent.append === "function") {
+      parent.append(child);
+    } else if (typeof parent.appendChild === "function") {
+      parent.appendChild(child);
+    }
+  }
+
+  function stopOceanRescueForAdmissionExit() {
+    if (!oceanRuntimeBooted) {
+      return;
+    }
+    try {
+      App.stopTravelRuntime();
+      App.cancelLaunchRuntime();
+      App.cancelRescueSiteRuntime();
+      App.shutdownActiveRescueForMenu();
+      App.cancelMissionSuccessPresentationForMenu();
+    } catch (_err) {
+      /* best-effort shutdown before leaving page */
+    }
+  }
+
+  function redirectAdmissionHome() {
+    clearAdmission();
+    setDocumentLocked(true);
+    if (window.location && typeof window.location.replace === "function") {
+      window.location.replace(resolveRepoTargetUrl("index.html"));
+    }
+  }
+
+  function openSubjectChoiceDialog() {
+    if (!document || !document.body || typeof document.createElement !== "function") {
+      return;
+    }
+    if (!admissionDialog) {
+      admissionDialog = document.createElement("dialog");
+      admissionDialog.className = "study-game-choice";
+      if (typeof admissionDialog.setAttribute === "function") {
+        admissionDialog.setAttribute("aria-labelledby", "study-game-title");
+      }
+      if (typeof admissionDialog.addEventListener === "function") {
+        admissionDialog.addEventListener("cancel", function (event) {
+          if (event && typeof event.preventDefault === "function") {
+            event.preventDefault();
+          }
+          redirectAdmissionHome();
+        });
+      }
+      appendChildCompat(document.body, admissionDialog);
+    }
+    var heading = document.createElement("h2");
+    heading.id = "study-game-title";
+    heading.textContent = "어떤 과목을 풀고 싶어?";
+    var intro = document.createElement("p");
+    intro.textContent = ADMISSION_GAME_LABEL + " 입장 전에 정답 " + ADMISSION_REQUIRED + "개에 도전해요!";
+    var note = document.createElement("p");
+    note.textContent = "보석 1개를 얻을 만큼 공부하면 5분 동안 놀 수 있어요. 보석은 쓰지 않아요.";
+    var wrap = document.createElement("div");
+    wrap.className = "study-game-subjects";
+    for (var i = 0; i < ADMISSION_SUBJECTS.length; i += 1) {
+      (function (entry) {
+        var subjectId = entry[0];
+        var subjectLabel = entry[1];
+        var subjectPath = entry[2];
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = subjectLabel;
+        btn.addEventListener("click", function () {
+          if (!writeAdmission({
+            version: 1,
+            phase: "learning",
+            game: ADMISSION_GAME_ID,
+            subject: subjectId,
+            correct: 0
+          })) {
+            return;
+          }
+          window.location.assign(resolveRepoTargetUrl(subjectPath));
+        });
+        appendChildCompat(wrap, btn);
+      })(ADMISSION_SUBJECTS[i]);
+    }
+    var cancelBtn = document.createElement("button");
+    cancelBtn.type = "button";
+    cancelBtn.textContent = "홈으로 돌아가기";
+    cancelBtn.addEventListener("click", function () {
+      redirectAdmissionHome();
+    });
+    if (typeof admissionDialog.replaceChildren === "function") {
+      admissionDialog.replaceChildren(heading, intro, note, wrap, cancelBtn);
+    } else {
+      admissionDialog.innerHTML = "";
+      appendChildCompat(admissionDialog, heading);
+      appendChildCompat(admissionDialog, intro);
+      appendChildCompat(admissionDialog, note);
+      appendChildCompat(admissionDialog, wrap);
+      appendChildCompat(admissionDialog, cancelBtn);
+    }
+    if (!admissionDialog.open) {
+      if (typeof admissionDialog.showModal === "function") {
+        admissionDialog.showModal();
+      } else {
+        admissionDialog.open = true;
+      }
+    }
+  }
+
+  function cancelAdmissionTick() {
+    if (admissionTimer !== null && typeof window.clearTimeout === "function") {
+      window.clearTimeout(admissionTimer);
+      admissionTimer = null;
+    }
+  }
+
+  function scheduleAdmissionTick() {
+    if (!isBrowserAdmissionEnforced() || admissionTimer !== null || typeof window.setTimeout !== "function") {
+      return;
+    }
+    admissionTimer = window.setTimeout(function () {
+      admissionTimer = null;
+      if (checkAdmission()) {
+        scheduleAdmissionTick();
+      }
+    }, 250);
+  }
+
+  function checkAdmission() {
+    if (!isBrowserAdmissionEnforced()) {
+      return true;
+    }
+    var s = readAdmission();
+    if (!s || s.phase !== "playing" || s.game !== ADMISSION_GAME_ID || s.deadline <= Date.now()) {
+      cancelAdmissionTick();
+      stopOceanRescueForAdmissionExit();
+      if (s && s.phase === "playing") {
+        redirectAdmissionHome();
+        return false;
+      }
+      setDocumentLocked(true);
+      var authLocked = Boolean(
+        window.AidenAuthGate &&
+        typeof window.AidenAuthGate.isLocked === "function" &&
+        window.AidenAuthGate.isLocked()
+      );
+      if ((!admissionDialog || !admissionDialog.open) && !authLocked) {
+        openSubjectChoiceDialog();
+      }
+      return false;
+    }
+    setDocumentLocked(false);
+    if (admissionDialog && admissionDialog.open && typeof admissionDialog.close === "function") {
+      admissionDialog.close();
+    }
+    if (!admissionClock && document && document.body && typeof document.createElement === "function") {
+      admissionClock = document.createElement("aside");
+      admissionClock.className = "study-game-clock";
+      appendChildCompat(document.body, admissionClock);
+    }
+    if (admissionClock) {
+      var seconds = Math.ceil((s.deadline - Date.now()) / 1000);
+      var mins = Math.floor(seconds / 60);
+      var rem = String(seconds % 60);
+      if (rem.length < 2) {
+        rem = "0" + rem;
+      }
+      admissionClock.textContent = "⏱ " + mins + ":" + rem + " 남음 · 5분 뒤 홈으로 돌아가요";
+    }
+    return true;
+  }
+
+  function bootOceanRescueRuntimeOnce() {
+    if (oceanRuntimeBooted) {
+      return;
+    }
+    oceanRuntimeBooted = true;
+    if (RenderRuntime) {
+      RenderRuntime.boot()
+        .then(function () {
+          App.boot();
+        })
+        .catch(function () {
+          RenderRuntime.showCompatibilityFailure();
+        });
+      return;
+    }
+    App.boot();
+  }
+
   var App = {
     boot: function () {
+      if (isBrowserAdmissionEnforced() && !isAdmissionPlaying(ADMISSION_GAME_ID)) {
+        checkAdmission();
+        return false;
+      }
       var root = document.getElementById("ocean-rescue-root");
       var status = document.getElementById("ocean-rescue-status");
       if (!root || !status) {
@@ -6594,17 +6916,38 @@
     compute: computeTravelProgress
   });
 
-  document.addEventListener("DOMContentLoaded", function () {
-    if (RenderRuntime) {
-      RenderRuntime.boot()
-        .then(function () {
-          App.boot();
-        })
-        .catch(function () {
-          RenderRuntime.showCompatibilityFailure();
-        });
+  if (!window.StudyGameAdmission) {
+    window.StudyGameAdmission = {
+      request: function () {
+        openSubjectChoiceDialog();
+      },
+      recordAnswer: function () {},
+      isPlaying: isAdmissionPlaying
+    };
+  }
+
+  if (isBrowserAdmissionEnforced() && !isAdmissionPlaying(ADMISSION_GAME_ID)) {
+    setDocumentLocked(true);
+  }
+
+  function startOrCheckOceanAdmission() {
+    if (!checkAdmission()) {
       return;
     }
-    App.boot();
+    scheduleAdmissionTick();
+    bootOceanRescueRuntimeOnce();
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    if (isBrowserAdmissionEnforced()) {
+      if (typeof window.addEventListener === "function") {
+        window.addEventListener("pageshow", startOrCheckOceanAdmission);
+        window.addEventListener("auth-gate-unlocked", startOrCheckOceanAdmission);
+      }
+      if (typeof document.addEventListener === "function") {
+        document.addEventListener("visibilitychange", startOrCheckOceanAdmission);
+      }
+    }
+    startOrCheckOceanAdmission();
   });
 })();

@@ -18,6 +18,7 @@ GAMES = {
     "dino": "experiments/space-explorer/dino-escape.html",
     "marble": "experiments/marble/index.html",
     "bubble": "experiments/bubble/index.html",
+    "ocean-rescue": "ocean-rescue/index.html",
 }
 SUBJECTS = {
     "math": "🔢 수학",
@@ -97,7 +98,10 @@ def answer_question(page, subject, correct=True):
     raise AssertionError("Sequential question did not finish")
 
 
-@pytest.mark.parametrize("game,subject", list(zip(GAMES, SUBJECTS)))
+@pytest.mark.parametrize(
+    "game,subject",
+    [(game, list(SUBJECTS)[idx % len(SUBJECTS)]) for idx, game in enumerate(GAMES)],
+)
 def test_fresh_quota_real_answers_reload_and_five_minute_exit(
     page, server, game, subject
 ):

@@ -501,21 +501,9 @@ const RewardSystem = (() => {
       return;
     }
 
-    if (!has(type)) {
-      alert('보유 중인 보상이 없습니다.');
-      return;
-    }
-
-    const before = balanceSnapshot(state);
-    if (type === 'marble') {
-      state.marble_plays -= 1;
-      commit(before, { type: 'consume', reason: 'marble_play' });
-      RewardSystemUI.openMarbleModal();
-    } else if (type === 'bubble') {
-      state.bubble_plays -= 1;
-      commit(before, { type: 'consume', reason: 'bubble_play' });
-      RewardSystemUI.openBubbleModal();
-    }
+    // Short-play games require fresh study, not purchased play tickets.
+    if (type === 'marble') RewardSystemUI.openMarbleModal();
+    else if (type === 'bubble') RewardSystemUI.openBubbleModal();
   }
 
   // reward_ui.js에서 호출하는 내부 데이터 수정 함수
@@ -582,6 +570,10 @@ const RewardSystem = (() => {
   }
 
   function exchangeGem(targetType) {
+    if (targetType === 'marble' || targetType === 'bubble') {
+      consume(targetType);
+      return;
+    }
     const item = state.shop_items.find(i => i.id === targetType);
     const price = item && item.price ? item.price : 1;
 

@@ -501,6 +501,7 @@ function recordResult(correct, elapsed) {
   }
 
   saveStats(); updateStreak(correct);
+  if (window.StudyGameAdmission) window.StudyGameAdmission.recordAnswer('english', correct);
 
   // 효능감 시스템 — 마일스톤/출석/다양성
   if (typeof MilestoneTracker !== 'undefined') {

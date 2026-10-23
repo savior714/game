@@ -1,38 +1,7 @@
 /**
- * Gate Dino Escape behind completion of today's Math daily goal.
+ * Gate Dino Escape behind the shared per-entry learning session.
  * Keep the 3D entrypoint unloaded until admission is granted.
  */
-
-export function isDailyGoalComplete(rawGoal, now = new Date()) {
-  try {
-    const goal = typeof rawGoal === "string" ? JSON.parse(rawGoal) : rawGoal;
-    if (!goal || typeof goal !== "object" || Array.isArray(goal)) return false;
-
-    const date = now instanceof Date ? now : new Date(now);
-    if (!Number.isFinite(date.getTime())) return false;
-    const today = [
-      date.getFullYear(),
-      String(date.getMonth() + 1).padStart(2, "0"),
-      String(date.getDate()).padStart(2, "0"),
-    ].join("-");
-
-    return goal.schemaVersion === 1 && goal.date === today && goal.completed === true;
-  } catch {
-    return false;
-  }
-}
-
-function hasCompletedTodayGoal() {
-  try {
-    return isDailyGoalComplete(
-      window.localStorage.getItem("aiden_math_daily_goal_v1"),
-      new Date(),
-    );
-  } catch {
-    // Fail closed if browser storage is unavailable or blocked.
-    return false;
-  }
-}
 
 function initializeAdmissionGate() {
   const gate = document.getElementById("dino-admission-gate");
@@ -43,7 +12,7 @@ function initializeAdmissionGate() {
   let loading = false;
 
   const admitIfEligible = () => {
-    if (!hasCompletedTodayGoal()) return false;
+    if (!window.StudyGameAdmission?.isPlaying("dino")) return false;
 
     gate.hidden = true;
     game.hidden = false;
@@ -69,7 +38,7 @@ function initializeAdmissionGate() {
 
   admitIfEligible();
   window.addEventListener("storage", (event) => {
-    if (!event.key || event.key === "aiden_math_daily_goal_v1") admitIfEligible();
+    if (!event.key || event.key === "aiden_study_game_admission_v1") admitIfEligible();
   });
   window.addEventListener("pageshow", admitIfEligible);
   document.addEventListener("visibilitychange", () => {

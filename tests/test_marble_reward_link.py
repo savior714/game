@@ -12,15 +12,16 @@ def test_marble_reward_link_target_exists():
     assert MARBLE_INDEX.is_file(), f"Marble game index file missing at {MARBLE_INDEX}"
 
 
-def test_reward_ui_marble_url_resolution():
-    """Ensure openMarbleModal in reward_ui.js resolves URL to experiments/marble/ instead of missing domains/marble/."""
+def test_reward_ui_marble_uses_shared_admission():
+    """Reward UI must not embed a game before the per-entry study quota."""
     content = REWARD_UI_SCRIPT.read_text(encoding="utf-8")
-    assert "../../experiments/marble/" in content, (
-        "reward_ui.js openMarbleModal must use '../../experiments/marble/' relative path"
-    )
-    assert "../marble/" not in content, (
-        "reward_ui.js must not refer to outdated '../marble/' path"
-    )
+    admission = (ROOT / "shared/ui/study-game-admission.js").read_text(encoding="utf-8")
+    assert "StudyGameAdmission.request('marble')" in content
+    assert "experiments/marble/index.html" in admission
+    marble_entry = content.split("function openMarbleModal()", 1)[1].split(
+        "function openBubbleModal()", 1
+    )[0]
+    assert "<iframe" not in marble_entry
 
 
 def test_marble_top_hud_does_not_cover_game_hud():

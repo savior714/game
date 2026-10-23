@@ -30,6 +30,7 @@
 
   <!-- 로그인 gate: 세션이 확인되기 전에는 기능 surface를 fail-closed로 차단한다. -->
   <script src="./domains/auth/auth-gate.js"></script>
+  <script src="./shared/ui/study-game-admission.js"></script>
 
   <!-- Ambient Glow Background -->
   <div class="console-bg-glow"></div>
@@ -220,12 +221,20 @@
               QUICK LABS
             </h2>
             <p class="card-desc">
-              자석으로 자기장을 그리는 자석 실험실, 태양-지구-달 움직임을 눈으로 보는 신기한 실험, 목표 색을 섞어 맞히는 물감 게임, 공룡 탈출 게임을 직접 플레이하세요.
+              자석으로 자기장을 그리는 자석 실험실, 태양-지구-달 움직임을 눈으로 보는 신기한 실험, 목표 색을 섞어 맞히는 물감 게임도 즐겨요. 발전소·공룡·마블·버블은 원하는 과목에서 정답 5개를 맞힌 뒤 5분 동안 플레이해요.
             </p>
 
             <div class="quick-labs-list">
               <a href="./experiments/electricity/index.html" class="quick-lab-item group/lab quick-lab-item--power">
                 <span class="quick-lab-name">⚡ 3D 전기 발전 섬 · 밤마을에 불을 켜요</span>
+                <span class="quick-lab-arrow" aria-hidden="true">→</span>
+              </a>
+              <a href="./experiments/marble/index.html" class="quick-lab-item group/lab">
+                <span class="quick-lab-name">🎮 마블 게임 · 공부하고 5분 놀이</span>
+                <span class="quick-lab-arrow" aria-hidden="true">→</span>
+              </a>
+              <a href="./experiments/bubble/index.html" class="quick-lab-item group/lab">
+                <span class="quick-lab-name">🫧 버블 게임 · 공부하고 5분 놀이</span>
                 <span class="quick-lab-arrow" aria-hidden="true">→</span>
               </a>
               <a href="./experiments/magnet/index.html" class="quick-lab-item group/lab quick-lab-item--magnet">

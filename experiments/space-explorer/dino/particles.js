@@ -35,22 +35,45 @@ const FRAGMENT_SHADER = /* glsl */ `
  * CPU-simulated point particles (dust, sparks, embers) sharing one draw call.
  * The pool is a ring buffer: when full, the oldest particle is recycled.
  * @param {THREE.Scene} scene
- * @param {{max?: number, additive?: boolean}} options
+ * @param {{max?: number, additive?: boolean, gfx?: object}} options
  */
-export function createParticlePool(scene, options = {}) {
+export async function createParticlePool(scene, options = {}) {
   const max = options.max ?? 200;
-  const positions = new Float32Array(max * 3);
-  const sizes = new Float32Array(max);
-  const alphas = new Float32Array(max);
-  const colors = new Float32Array(max * 3);
-  const geometry = new THREE.BufferGeometry();
+  let positions = new Float32Array(max * 3);
+  let sizes = new Float32Array(max);
+  let alphas = new Float32Array(max);
+  let colors = new Float32Array(max * 3);
+  // WebGPU는 1픽셀 point만 지원해 인스턴스 빌보드 풀로 만든다. 두 경로 모두 같은
+  // typed array를 공유하므로 spawn/update의 시뮬레이션 코드는 한 벌만 유지한다.
+  let geometry;
+  let material;
+  let points;
+  if (options.gfx?.backend === "webgpu") {
+    const { createWebGpuParticlePool } = await import("./webgpu-materials.js");
+    const gpu = createWebGpuParticlePool(
+      options.gfx.three,
+      options.gfx.tsl,
+      scene,
+      { max, additive: options.additive ?? false },
+    );
+    // 시뮬레이션이 인스턴스 속성의 실제 배열을 직접 갱신하게 참조를 맞춘다.
+    positions = gpu.attributes.position.array;
+    sizes = gpu.attributes.aSize.array;
+    alphas = gpu.attributes.aAlpha.array;
+    colors = gpu.attributes.aColor.array;
+    geometry = gpu.geometry;
+    material = gpu.material;
+    points = gpu.mesh;
+    points.renderOrder = options.additive ? 6 : 5;
+  } else {
+  geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3).setUsage(THREE.DynamicDrawUsage));
   geometry.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1).setUsage(THREE.DynamicDrawUsage));
   geometry.setAttribute("aAlpha", new THREE.BufferAttribute(alphas, 1).setUsage(THREE.DynamicDrawUsage));
   geometry.setAttribute("aColor", new THREE.BufferAttribute(colors, 3).setUsage(THREE.DynamicDrawUsage));
   geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1000000);
 
-  const material = new THREE.ShaderMaterial({
+  material = new THREE.ShaderMaterial({
     uniforms: { uScale: { value: 500 } },
     vertexShader: VERTEX_SHADER,
     fragmentShader: FRAGMENT_SHADER,
@@ -60,10 +83,11 @@ export function createParticlePool(scene, options = {}) {
     blending: options.additive ? THREE.AdditiveBlending : THREE.NormalBlending,
   });
 
-  const points = new THREE.Points(geometry, material);
+  points = new THREE.Points(geometry, material);
   points.frustumCulled = false;
   points.renderOrder = options.additive ? 6 : 5;
   scene.add(points);
+  }
 
   const particles = new Array(max);
   for (let i = 0; i < max; i += 1) {
@@ -156,15 +180,19 @@ export function createParticlePool(scene, options = {}) {
       alphas[i] = Math.min(1, ratio * 2.2) * 0.9;
       sizes[i] = particle.size * (0.55 + ratio * 0.65);
     }
-    geometry.attributes.position.needsUpdate = true;
-    geometry.attributes.aSize.needsUpdate = true;
-    geometry.attributes.aAlpha.needsUpdate = true;
-    geometry.attributes.aColor.needsUpdate = true;
+    const attr = geometry.attributes;
+    (attr.aCloudPosition ?? attr.position).needsUpdate = true;
+    (attr.aCloudSize ?? attr.aSize).needsUpdate = true;
+    (attr.aCloudAlpha ?? attr.aAlpha).needsUpdate = true;
+    (attr.aCloudColor ?? attr.aColor).needsUpdate = true;
   }
 
   function setViewport(heightPx, pixelRatio) {
     scale = Math.max(120, heightPx * 0.5 * Math.min(pixelRatio, 2));
-    material.uniforms.uScale.value = scale;
+    // WebGPU 빌보드는 월드 크기를 직접 쓰므로 uScale 훅이 없다(WebGL 전용).
+    if (material.uniforms?.uScale) {
+      material.uniforms.uScale.value = scale;
+    }
   }
 
   function dispose() {

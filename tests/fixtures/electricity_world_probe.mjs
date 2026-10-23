@@ -56,7 +56,7 @@ const textureReport = textureKeys.map((key) => {
 
 /* ── 2. 씬 구성 ───────────────────────────────────────────────── */
 
-const world = createPowerWorld({ headless: true });
+const world = await createPowerWorld({ headless: true });
 const { scene, camera } = world;
 
 const report = {

@@ -41,9 +41,10 @@ import {
   stepRun,
   throwBait,
 } from "./dino/run-model.js";
-import { createExplorer, createShieldBubble, createTRex } from "./dino/models.js";
+import { createExplorer, createShieldBubble, createTRex, upgradeHazardMaterialsForWebGPU } from "./dino/models.js";
 import { createWorld } from "./dino/world.js";
 import { createParticlePool } from "./dino/particles.js";
+import { createBestRenderer, BACKEND_WEBGPU } from "./webgpu/renderer-factory.js";
 import { createAudioEngine } from "./dino/audio.js";
 import { createInput } from "./dino/input.js";
 import { createHud } from "./dino/hud.js";
@@ -110,7 +111,7 @@ function dustColorFor(biome) {
   return new THREE.Color(biome.road).lerp(new THREE.Color(0xffffff), 0.18);
 }
 
-function boot() {
+async function boot() {
   const hud = createHud();
   const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
   const profile = loadProfile();
@@ -262,19 +263,31 @@ function boot() {
   /* Stage                                                               */
   /* ------------------------------------------------------------------ */
 
-  function initStage() {
+  async function initStage() {
     const denseTouchPanel =
       (navigator.maxTouchPoints ?? 0) > 0 &&
       (window.devicePixelRatio || 1) >= 2;
-    renderer = new THREE.WebGLRenderer({
+    // WebGPU 지원 기기에서는 WebGPURenderer를, 실패 시 팩토리가 WebGL로 폴백한다.
+    const selected = await createBestRenderer(THREE, {
       canvas,
       // A 1.75x buffer already antialiases edges on a retina tablet; 4x MSAA
       // there costs a lot of fill rate for a difference nobody can see.
-      antialias: !denseTouchPanel,
-      alpha: false,
-      stencil: false,
-      powerPreference: "high-performance",
+      parameters: {
+        antialias: !denseTouchPanel,
+        alpha: false,
+        stencil: false,
+        powerPreference: "high-performance",
+      },
     });
+    renderer = selected.renderer;
+    const gfx = {
+      backend: selected.backend,
+      three: selected.three,
+      tsl: selected.tsl,
+    };
+    if (gfx.backend === BACKEND_WEBGPU) {
+      await upgradeHazardMaterialsForWebGPU(gfx);
+    }
     renderer.setClearColor(0x0a1214, 1);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -298,7 +311,10 @@ function boot() {
     rexCamera = new THREE.PerspectiveCamera(46, 1.6, 0.1, 640);
     rexCamera.layers.set(REX_LAYER);
 
-    world = createWorld(scene, renderer, { quality: resolveQuality(profile.settings.quality) });
+    world = createWorld(scene, renderer, {
+      quality: resolveQuality(profile.settings.quality),
+      gfx,
+    });
 
     explorer = createExplorer();
     explorer.root.traverse((object) => object.layers.enable(REX_LAYER));
@@ -312,8 +328,8 @@ function boot() {
     shieldBubble.root.traverse((object) => object.layers.enable(REX_LAYER));
     scene.add(shieldBubble.root);
 
-    dust = createParticlePool(scene, { max: PARTICLE_LIMITS.dust });
-    sparks = createParticlePool(scene, { max: PARTICLE_LIMITS.sparks, additive: true });
+    dust = await createParticlePool(scene, { max: PARTICLE_LIMITS.dust, gfx });
+    sparks = await createParticlePool(scene, { max: PARTICLE_LIMITS.sparks, additive: true, gfx });
 
     entities = createEntityLayer(scene);
     spawner = createSpawner();
@@ -1676,7 +1692,7 @@ function boot() {
   /* ------------------------------------------------------------------ */
 
   try {
-    initStage();
+    await initStage();
     createAudio();
     spawner = spawner ?? createSpawner();
     resetRun();

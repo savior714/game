@@ -750,6 +750,16 @@ let geyserColumnGeometry;
 let ribGeometry;
 let ventGeometry;
 
+/**
+ * WebGPU 경계에서만 호출한다. GLSL lavaColumn ShaderMaterial을 동등한 TSL
+ * 머티리얼로 교체한다. 지오서 모델 생성 전에 한 번만 적용하면 된다.
+ * @param {{backend:string, three:object, tsl:object}} gfx
+ */
+export async function upgradeHazardMaterialsForWebGPU(gfx) {
+  const { createWebGpuLavaColumn } = await import("./webgpu-materials.js");
+  HAZARD_MAT.lavaColumn = createWebGpuLavaColumn(gfx.three, gfx.tsl);
+}
+
 function getRockGeometry() {
   if (!rockGeometry) {
     rockGeometry = buildMergedGeometry([

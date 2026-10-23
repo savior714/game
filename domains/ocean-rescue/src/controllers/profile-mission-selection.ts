@@ -104,6 +104,88 @@ function suppressLegacyProfileContinueBinding<T>(run: () => T): T {
   }
 }
 
+interface CrewProfileCopy {
+  readonly role: string;
+  readonly line: string;
+}
+
+const CREW_PROFILE_COPY: Readonly<Record<string, CrewProfileCopy>> = Object.freeze({
+  "arctic-fox": Object.freeze({
+    role: "Ice Scout",
+    line: "Sniffs out the safest path under the ice.",
+  }),
+  beaver: Object.freeze({
+    role: "Master Builder",
+    line: "Fixes nets, hulls and anything that cracks.",
+  }),
+  "red-panda": Object.freeze({
+    role: "High Climber",
+    line: "Spots animals hiding in the kelp and rocks.",
+  }),
+});
+
+const FALLBACK_CREW_COPY: CrewProfileCopy = Object.freeze({
+  role: "Octonaut",
+  line: "Ready to dive and help.",
+});
+
+function crewProfileCopy(animalId: string): CrewProfileCopy {
+  const copy = CREW_PROFILE_COPY[animalId];
+  return copy === undefined ? FALLBACK_CREW_COPY : copy;
+}
+
+function buildCrewPortrait(animalId: string): HTMLSpanElement {
+  const portrait = document.createElement("span");
+  portrait.className = "ocean-rescue-crew-card-portrait";
+  portrait.setAttribute("aria-hidden", "true");
+  portrait.innerHTML =
+    '<svg viewBox="0 0 200 200" aria-hidden="true" focusable="false">' +
+    `<use href="#ocean-rescue-portrait-${animalId}"></use>` +
+    "</svg>";
+  return portrait;
+}
+
+function buildCrewCard(animal: {
+  readonly id: string;
+  readonly name: string;
+}): HTMLButtonElement {
+  const copy = crewProfileCopy(animal.id);
+  const button = document.createElement("button");
+  button.type = "button";
+  button.setAttribute("data-profile-animal-id", animal.id);
+  button.setAttribute("aria-pressed", "false");
+  button.setAttribute("aria-label", `${animal.name}, ${copy.role}`);
+  button.appendChild(buildCrewPortrait(animal.id));
+
+  const body = document.createElement("span");
+  body.className = "ocean-rescue-crew-card-body";
+
+  const name = document.createElement("span");
+  name.className = "ocean-rescue-crew-card-name";
+  name.textContent = animal.name;
+  body.appendChild(name);
+
+  const role = document.createElement("span");
+  role.className = "ocean-rescue-crew-card-role";
+  role.textContent = copy.role;
+  body.appendChild(role);
+
+  const line = document.createElement("span");
+  line.className = "ocean-rescue-crew-card-line";
+  line.textContent = copy.line;
+  body.appendChild(line);
+
+  button.appendChild(body);
+
+  const check = document.createElement("span");
+  check.className = "ocean-rescue-crew-card-check";
+  check.setAttribute("aria-hidden", "true");
+  check.textContent = "\u2713";
+  button.appendChild(check);
+
+  return button;
+}
+
 export function installProfileMissionSelectionController(
   host: LegacyAppApi,
 ): ProfileMissionSelectionAppApi {
@@ -262,14 +344,7 @@ export function installProfileMissionSelectionController(
     animalList.innerHTML = "";
     for (let index = 0; index < Profile.Catalog.length; index += 1) {
       const animal = Profile.Catalog[index];
-      const button = document.createElement("button");
-      button.type = "button";
-      button.setAttribute("data-profile-animal-id", animal.id);
-      button.setAttribute("aria-pressed", "false");
-
-      const name = document.createElement("span");
-      name.textContent = animal.name;
-      button.appendChild(name);
+      const button = buildCrewCard(animal);
       button.addEventListener("click", () => {
         selectProfileAnimal(animal.id);
       });

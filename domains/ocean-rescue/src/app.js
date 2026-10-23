@@ -6384,6 +6384,81 @@
     controlsBound = true;
   }
 
+  var CREW_PROFILE_COPY = {
+    "arctic-fox": {
+      role: "Ice Scout",
+      line: "Sniffs out the safest path under the ice."
+    },
+    beaver: {
+      role: "Master Builder",
+      line: "Fixes nets, hulls and anything that cracks."
+    },
+    "red-panda": {
+      role: "High Climber",
+      line: "Spots animals hiding in the kelp and rocks."
+    }
+  };
+
+  function crewProfileCopy(animalId) {
+    if (
+      typeof animalId === "string" &&
+      Object.prototype.hasOwnProperty.call(CREW_PROFILE_COPY, animalId)
+    ) {
+      return CREW_PROFILE_COPY[animalId];
+    }
+    return { role: "Octonaut", line: "Ready to dive and help." };
+  }
+
+  function buildCrewPortrait(animalId) {
+    var portrait = document.createElement("span");
+    portrait.className = "ocean-rescue-crew-card-portrait";
+    portrait.setAttribute("aria-hidden", "true");
+    portrait.innerHTML =
+      '<svg viewBox="0 0 200 200" aria-hidden="true" focusable="false">' +
+      '<use href="#ocean-rescue-portrait-' +
+      animalId +
+      '"></use></svg>';
+    return portrait;
+  }
+
+  function buildCrewCard(animal) {
+    var copy = crewProfileCopy(animal.id);
+    var button = document.createElement("button");
+    button.type = "button";
+    button.setAttribute("data-profile-animal-id", animal.id);
+    button.setAttribute("aria-pressed", "false");
+    button.setAttribute("aria-label", animal.name + ", " + copy.role);
+    button.appendChild(buildCrewPortrait(animal.id));
+
+    var body = document.createElement("span");
+    body.className = "ocean-rescue-crew-card-body";
+
+    var name = document.createElement("span");
+    name.className = "ocean-rescue-crew-card-name";
+    name.textContent = animal.name;
+    body.appendChild(name);
+
+    var role = document.createElement("span");
+    role.className = "ocean-rescue-crew-card-role";
+    role.textContent = copy.role;
+    body.appendChild(role);
+
+    var line = document.createElement("span");
+    line.className = "ocean-rescue-crew-card-line";
+    line.textContent = copy.line;
+    body.appendChild(line);
+
+    button.appendChild(body);
+
+    var check = document.createElement("span");
+    check.className = "ocean-rescue-crew-card-check";
+    check.setAttribute("aria-hidden", "true");
+    check.textContent = "\u2713";
+    button.appendChild(check);
+
+    return button;
+  }
+
   function renderProfileChoice() {
     var section = document.getElementById("ocean-rescue-profile-choice");
     var playerNameEl = document.getElementById("ocean-rescue-profile-player-name");
@@ -6397,15 +6472,7 @@
     var catalog = Profile.Catalog;
     for (var i = 0; i < catalog.length; i += 1) {
       var animal = catalog[i];
-      var button = document.createElement("button");
-      button.type = "button";
-      button.setAttribute("data-profile-animal-id", animal.id);
-      button.setAttribute("aria-pressed", "false");
-
-      var name = document.createElement("span");
-      name.textContent = animal.name;
-      button.appendChild(name);
-
+      var button = buildCrewCard(animal);
       if (typeof button.addEventListener === "function") {
         button.addEventListener("click", (function (id) {
           return function () {

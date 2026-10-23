@@ -31,32 +31,293 @@
       data-selection-step="profile"
       style="display:none"
     >
-      <div
-        class="ocean-rescue-selection-step"
-        aria-hidden="true"
-      >
-        <span class="ocean-rescue-selection-step-number">1</span>
-        <span class="ocean-rescue-selection-step-glyph">★</span>
-        <span class="ocean-rescue-selection-step-label">CREW</span>
+      <div class="ocean-rescue-crew-scene" aria-hidden="true">
+        <span class="ocean-rescue-crew-ray ocean-rescue-crew-ray-a"></span>
+        <span class="ocean-rescue-crew-ray ocean-rescue-crew-ray-b"></span>
+        <span class="ocean-rescue-crew-ray ocean-rescue-crew-ray-c"></span>
+        <span class="ocean-rescue-crew-bubble ocean-rescue-crew-bubble-a"></span>
+        <span class="ocean-rescue-crew-bubble ocean-rescue-crew-bubble-b"></span>
+        <span class="ocean-rescue-crew-bubble ocean-rescue-crew-bubble-c"></span>
+        <span class="ocean-rescue-crew-bubble ocean-rescue-crew-bubble-d"></span>
+        <span class="ocean-rescue-crew-bubble ocean-rescue-crew-bubble-e"></span>
+        <span class="ocean-rescue-crew-seabed"></span>
       </div>
 
-      <h2 id="ocean-rescue-profile-choice-title">Choose your Octonaut</h2>
+      <div class="ocean-rescue-crew-panel">
+        <div
+          class="ocean-rescue-selection-step"
+          aria-hidden="true"
+        >
+          <span class="ocean-rescue-selection-step-number">1</span>
+          <span class="ocean-rescue-selection-step-glyph">★</span>
+          <span class="ocean-rescue-selection-step-label">CREW</span>
+        </div>
 
-      <p
-        id="ocean-rescue-profile-player-name"
-      ></p>
+        <h2 id="ocean-rescue-profile-choice-title">Choose your Octonaut</h2>
 
-      <div
-        id="ocean-rescue-profile-animal-list"
-        aria-label="Animal choices"
-      ></div>
+        <p
+          id="ocean-rescue-profile-player-name"
+        ></p>
 
-      <button
-        id="ocean-rescue-profile-continue"
-        type="button"
+        <p class="ocean-rescue-crew-lead">
+          Every Octonaut has a special job. Who dives with you today?
+        </p>
+
+        <div
+          id="ocean-rescue-profile-animal-list"
+          role="group"
+          aria-label="Animal choices"
+        ></div>
+
+        <div class="ocean-rescue-crew-actions">
+          <button
+            id="ocean-rescue-profile-continue"
+            type="button"
+          >
+            Continue
+          </button>
+
+          <p class="ocean-rescue-crew-next">
+            Next: choose your rescue mission
+          </p>
+        </div>
+      </div>
+
+      <svg
+        id="ocean-rescue-profile-portrait-sprite"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+        focusable="false"
+        width="0"
+        height="0"
       >
-        Continue
-      </button>
+        <defs>
+          <radialGradient
+            id="ocean-rescue-portrait-light"
+            cx="50%"
+            cy="26%"
+            r="78%"
+          >
+            <stop offset="0%" stop-color="#2f7893" stop-opacity="0.95"/>
+            <stop offset="100%" stop-color="#0c2a3d" stop-opacity="0.95"/>
+          </radialGradient>
+          <clipPath id="ocean-rescue-portrait-clip-arctic-fox">
+            <circle cx="100" cy="100" r="100"/>
+          </clipPath>
+          <clipPath id="ocean-rescue-portrait-clip-beaver">
+            <circle cx="100" cy="100" r="100"/>
+          </clipPath>
+          <clipPath id="ocean-rescue-portrait-clip-red-panda">
+            <circle cx="100" cy="100" r="100"/>
+          </clipPath>
+        </defs>
+        <symbol
+          id="ocean-rescue-portrait-arctic-fox"
+          viewBox="0 0 200 200"
+        >
+          <g clip-path="url(#ocean-rescue-portrait-clip-arctic-fox)">
+            <circle cx="100" cy="100" r="100" fill="#164257"/>
+            <circle cx="100" cy="100" r="100" fill="url(#ocean-rescue-portrait-light)"/>
+            <circle cx="46" cy="52" r="6" fill="#bfe6f2" opacity="0.22"/>
+            <circle cx="62" cy="34" r="3.4" fill="#bfe6f2" opacity="0.18"/>
+            <circle cx="158" cy="66" r="4.4" fill="#bfe6f2" opacity="0.18"/>
+            <path d="M100 146 C74 146 50 160 42 188 H158 C150 160 126 146 100 146 Z" fill="#1d4763" stroke="#243746" stroke-width="5" stroke-linejoin="round"/>
+
+            <path d="M100 150 C86 150 74 154 65 162 C80 168 100 170 120 168 C128 168 134 166 139 163 C128 154 114 150 100 150 Z" fill="#f2b53c" opacity="0.9"/>
+
+            <circle cx="100" cy="176" r="8" fill="#3ddad7" opacity="0.85"/>
+
+            <path d="M96 175 l3.5 5 5-9" fill="none" stroke="#0d2a3c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+
+            <path d="M74 76 C60 68 48 46 48 24 C68 30 86 46 92 66 Z" fill="#f8fbff" stroke="#243746" stroke-width="5" stroke-linejoin="round"/>
+
+            <path d="M126 76 C140 68 152 46 152 24 C132 30 114 46 108 66 Z" fill="#f8fbff" stroke="#243746" stroke-width="5" stroke-linejoin="round"/>
+
+            <path d="M76 68 C68 58 62 44 62 34 C72 40 82 52 86 64 Z" fill="#efb3bd"/>
+
+            <path d="M124 68 C132 58 138 44 138 34 C128 40 118 52 114 64 Z" fill="#efb3bd"/>
+
+            <path d="M100 42 C128 42 152 58 158 84 C164 110 158 136 138 148 C126 155 112 158 100 158 C88 158 74 155 62 148 C42 136 36 110 42 84 C48 58 72 42 100 42 Z" fill="#f8fbff" stroke="#243746" stroke-width="6" stroke-linejoin="round"/>
+
+            <path d="M42 92 C46 64 68 48 100 48 C132 48 154 64 158 92 C144 76 126 70 100 70 C74 70 56 76 42 92 Z" fill="#d9e7f3"/>
+
+            <path d="M44 104 C46 128 56 142 70 150 C54 146 45 134 42 118 C41 112 42 108 44 104 Z" fill="#dbe8f4" opacity="0.8"/>
+
+            <path d="M156 104 C154 128 144 142 130 150 C146 146 155 134 158 118 C159 112 158 108 156 104 Z" fill="#dbe8f4" opacity="0.8"/>
+
+            <ellipse cx="78" cy="104" rx="9.5" ry="11" fill="#20303f"/>
+
+            <ellipse cx="122" cy="104" rx="9.5" ry="11" fill="#20303f"/>
+
+            <circle cx="75" cy="100" r="3.4" fill="#ffffff"/>
+
+            <circle cx="119" cy="100" r="3.4" fill="#ffffff"/>
+
+            <circle cx="81" cy="109" r="1.8" fill="#ffffff" opacity="0.7"/>
+
+            <circle cx="125" cy="109" r="1.8" fill="#ffffff" opacity="0.7"/>
+
+            <ellipse cx="100" cy="130" rx="24" ry="17" fill="#ffffff"/>
+
+            <path d="M100 120 C106 120 110 124 110 128 C110 133 105 137 100 137 C95 137 90 133 90 128 C90 124 94 120 100 120 Z" fill="#2a3b4c"/>
+
+            <path d="M100 136 L100 141" stroke="#243746" stroke-width="3" stroke-linecap="round"/>
+
+            <path d="M88 143 Q100 154 112 143" fill="none" stroke="#243746" stroke-width="3.5" stroke-linecap="round"/>
+
+            <path d="M92 147 Q100 155 108 147 Q100 152 92 147 Z" fill="#d2555f"/>
+
+            <ellipse cx="64" cy="126" rx="8" ry="5" fill="#f7b8c0" opacity="0.55"/>
+
+            <ellipse cx="136" cy="126" rx="8" ry="5" fill="#f7b8c0" opacity="0.55"/>
+          </g>
+        </symbol>
+        <symbol
+          id="ocean-rescue-portrait-beaver"
+          viewBox="0 0 200 200"
+        >
+          <g clip-path="url(#ocean-rescue-portrait-clip-beaver)">
+            <circle cx="100" cy="100" r="100" fill="#164257"/>
+            <circle cx="100" cy="100" r="100" fill="url(#ocean-rescue-portrait-light)"/>
+            <circle cx="46" cy="52" r="6" fill="#bfe6f2" opacity="0.22"/>
+            <circle cx="62" cy="34" r="3.4" fill="#bfe6f2" opacity="0.18"/>
+            <circle cx="158" cy="66" r="4.4" fill="#bfe6f2" opacity="0.18"/>
+            <path d="M150 178 C170 176 186 162 188 142 C190 126 178 116 166 122 C154 128 150 146 152 160 Z" fill="#6b4529" stroke="#243746" stroke-width="5" stroke-linejoin="round"/>
+
+            <path d="M160 168 C174 166 182 156 183 144 M158 156 C170 154 178 146 179 136" fill="none" stroke="#4d2f1c" stroke-width="3" stroke-linecap="round" opacity="0.75"/>
+
+            <path d="M100 146 C74 146 50 160 42 188 H158 C150 160 126 146 100 146 Z" fill="#1d4763" stroke="#243746" stroke-width="5" stroke-linejoin="round"/>
+
+            <path d="M100 150 C86 150 74 154 65 162 C80 168 100 170 120 168 C128 168 134 166 139 163 C128 154 114 150 100 150 Z" fill="#f2b53c" opacity="0.9"/>
+
+            <circle cx="100" cy="176" r="8" fill="#3ddad7" opacity="0.85"/>
+
+            <path d="M96 175 l3.5 5 5-9" fill="none" stroke="#0d2a3c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+
+            <circle cx="54" cy="66" r="17" fill="#a8734b" stroke="#243746" stroke-width="5"/>
+
+            <circle cx="146" cy="66" r="17" fill="#a8734b" stroke="#243746" stroke-width="5"/>
+
+            <circle cx="55" cy="67" r="8" fill="#d8a97f"/>
+
+            <circle cx="145" cy="67" r="8" fill="#d8a97f"/>
+
+            <path d="M100 44 C126 44 148 60 154 84 C160 108 154 132 136 144 C124 152 112 155 100 155 C88 155 76 152 64 144 C46 132 40 108 46 84 C52 60 74 44 100 44 Z" fill="#b8814f" stroke="#243746" stroke-width="6" stroke-linejoin="round"/>
+
+            <path d="M46 92 C50 66 70 50 100 50 C130 50 150 66 154 92 C140 78 122 72 100 72 C78 72 60 78 46 92 Z" fill="#c9946a"/>
+
+            <path d="M48 104 C50 126 58 140 70 148 C55 144 47 132 45 118 C44 112 45 108 48 104 Z" fill="#a8734b" opacity="0.75"/>
+
+            <path d="M152 104 C150 126 142 140 130 148 C145 144 153 132 155 118 C156 112 155 108 152 104 Z" fill="#a8734b" opacity="0.75"/>
+
+            <ellipse cx="72" cy="128" rx="20" ry="16" fill="#e0b98f"/>
+
+            <ellipse cx="128" cy="128" rx="20" ry="16" fill="#e0b98f"/>
+
+            <ellipse cx="100" cy="128" rx="22" ry="17" fill="#e8c69f"/>
+
+            <ellipse cx="77" cy="100" rx="9" ry="10.5" fill="#20303f"/>
+
+            <ellipse cx="123" cy="100" rx="9" ry="10.5" fill="#20303f"/>
+
+            <circle cx="74" cy="96" r="3.2" fill="#ffffff"/>
+
+            <circle cx="120" cy="96" r="3.2" fill="#ffffff"/>
+
+            <circle cx="80" cy="105" r="1.7" fill="#ffffff" opacity="0.7"/>
+
+            <circle cx="126" cy="105" r="1.7" fill="#ffffff" opacity="0.7"/>
+
+            <path d="M100 118 C107 118 112 122 112 126 C112 130 107 133 100 133 C93 133 88 130 88 126 C88 122 93 118 100 118 Z" fill="#3b2a20"/>
+
+            <ellipse cx="93" cy="123" rx="3" ry="2" fill="#6b5245" opacity="0.8"/>
+
+            <rect x="91" y="133" width="8.5" height="12" rx="2.5" fill="#fffaf0" stroke="#243746" stroke-width="2.6"/>
+
+            <rect x="100.5" y="133" width="8.5" height="12" rx="2.5" fill="#fffaf0" stroke="#243746" stroke-width="2.6"/>
+
+            <path d="M100 134 L100 147" stroke="#243746" stroke-width="2.6"/>
+
+            <circle cx="72" cy="122" r="1.6" fill="#a8734b"/>
+
+            <circle cx="66" cy="128" r="1.6" fill="#a8734b"/>
+
+            <circle cx="128" cy="122" r="1.6" fill="#a8734b"/>
+
+            <circle cx="134" cy="128" r="1.6" fill="#a8734b"/>
+          </g>
+        </symbol>
+        <symbol
+          id="ocean-rescue-portrait-red-panda"
+          viewBox="0 0 200 200"
+        >
+          <g clip-path="url(#ocean-rescue-portrait-clip-red-panda)">
+            <circle cx="100" cy="100" r="100" fill="#164257"/>
+            <circle cx="100" cy="100" r="100" fill="url(#ocean-rescue-portrait-light)"/>
+            <circle cx="46" cy="52" r="6" fill="#bfe6f2" opacity="0.22"/>
+            <circle cx="62" cy="34" r="3.4" fill="#bfe6f2" opacity="0.18"/>
+            <circle cx="158" cy="66" r="4.4" fill="#bfe6f2" opacity="0.18"/>
+            <path d="M100 146 C74 146 50 160 42 188 H158 C150 160 126 146 100 146 Z" fill="#1d4763" stroke="#243746" stroke-width="5" stroke-linejoin="round"/>
+
+            <path d="M100 150 C86 150 74 154 65 162 C80 168 100 170 120 168 C128 168 134 166 139 163 C128 154 114 150 100 150 Z" fill="#f2b53c" opacity="0.9"/>
+
+            <circle cx="100" cy="176" r="8" fill="#3ddad7" opacity="0.85"/>
+
+            <path d="M96 175 l3.5 5 5-9" fill="none" stroke="#0d2a3c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+
+            <path d="M70 70 C54 66 42 48 44 26 C62 32 82 46 90 64 Z" fill="#b5542c" stroke="#243746" stroke-width="5" stroke-linejoin="round"/>
+
+            <path d="M130 70 C146 66 158 48 156 26 C138 32 118 46 110 64 Z" fill="#b5542c" stroke="#243746" stroke-width="5" stroke-linejoin="round"/>
+
+            <path d="M72 62 C62 56 54 44 54 34 C66 40 78 50 84 62 Z" fill="#f6e3d3"/>
+
+            <path d="M128 62 C138 56 146 44 146 34 C134 40 122 50 116 62 Z" fill="#f6e3d3"/>
+
+            <path d="M100 44 C126 44 148 60 154 84 C160 108 154 132 136 144 C124 152 112 155 100 155 C88 155 76 152 64 144 C46 132 40 108 46 84 C52 60 74 44 100 44 Z" fill="#cf6733" stroke="#243746" stroke-width="6" stroke-linejoin="round"/>
+
+            <path d="M46 92 C50 66 70 50 100 50 C130 50 150 66 154 92 C140 78 122 72 100 72 C78 72 60 78 46 92 Z" fill="#dd7a44"/>
+
+            <path d="M100 62 C84 62 70 74 66 92 C62 112 72 132 88 140 C94 143 99 144 100 144 C101 144 106 143 112 140 C128 132 138 112 134 92 C130 74 116 62 100 62 Z" fill="#fbf1e6"/>
+
+            <path d="M100 66 C88 66 78 74 74 88 C70 104 76 122 88 132 C98 140 102 140 112 132 C124 122 130 104 126 88 C122 74 112 66 100 66 Z" fill="#fffaf2"/>
+
+            <path d="M56 104 C52 118 56 134 66 143 C52 140 44 128 44 114 C44 110 48 106 56 104 Z" fill="#9e4423"/>
+
+            <path d="M144 104 C148 118 144 134 134 143 C148 140 156 128 156 114 C156 110 152 106 144 104 Z" fill="#9e4423"/>
+
+            <ellipse cx="77" cy="104" rx="8.5" ry="10" fill="#25313c"/>
+
+            <ellipse cx="123" cy="104" rx="8.5" ry="10" fill="#25313c"/>
+
+            <circle cx="74" cy="100" r="3.1" fill="#ffffff"/>
+
+            <circle cx="120" cy="100" r="3.1" fill="#ffffff"/>
+
+            <circle cx="80" cy="109" r="1.6" fill="#ffffff" opacity="0.7"/>
+
+            <circle cx="126" cy="109" r="1.6" fill="#ffffff" opacity="0.7"/>
+
+            <path d="M66 88 Q77 83 87 88" fill="none" stroke="#b25a2d" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+
+            <path d="M113 88 Q123 83 134 88" fill="none" stroke="#b25a2d" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+
+            <path d="M100 114 C106 114 110 118 110 122 C110 126 106 129 100 129 C94 129 90 126 90 122 C90 118 94 114 100 114 Z" fill="#3b2a22"/>
+
+            <path d="M100 129 L100 134" stroke="#3b2a22" stroke-width="3" stroke-linecap="round"/>
+
+            <path d="M88 136 Q100 147 112 136" fill="none" stroke="#3b2a22" stroke-width="3.4" stroke-linecap="round"/>
+
+            <ellipse cx="66" cy="126" rx="8" ry="5" fill="#f0a0a8" opacity="0.5"/>
+
+            <ellipse cx="134" cy="126" rx="8" ry="5" fill="#f0a0a8" opacity="0.5"/>
+
+            <path d="M72 122 L52 118 M72 128 L52 130" stroke="#243746" stroke-width="2.2" stroke-linecap="round" opacity="0.5"/>
+
+            <path d="M128 122 L148 118 M128 128 L148 130" stroke="#243746" stroke-width="2.2" stroke-linecap="round" opacity="0.5"/>
+          </g>
+        </symbol>
+      </svg>
+
     </section>
 
     <section

@@ -68,14 +68,14 @@ def test_youtube_allowance_ux_comprehensive_acceptance() -> None:
                     schemaVersion: 1,
                     dateKey: dateKey,
                     morningMinutes: 20,
-                    afternoonMinutes: 0
+                    afternoonMinutes: 0,
+                    resetEpoch: 1
                 };
                 localStorage.setItem(FreeTimeAllowance.STORAGE_KEY, JSON.stringify(usage));
-                localStorage.setItem('study_rewards', JSON.stringify({ gems: 10, youtube_minutes: 80 }));
-                if (typeof RewardSystem !== 'undefined') {
-                    const s = RewardSystem.getState();
-                    s.youtube_minutes = 80;
-                }
+                RewardSystem.resetAllRewards({ note: 'test_seed' });
+                localStorage.setItem(FreeTimeAllowance.STORAGE_KEY, JSON.stringify(usage));
+                RewardSystem.add('gems', 10);
+                RewardSystem.add('youtube', 8);
             }""")
 
             # Open modal
@@ -128,13 +128,11 @@ def test_youtube_allowance_ux_comprehensive_acceptance() -> None:
             # ── D & E & G. 20-minute direct start, exact deduction, contextual countdown, no global timer ─
             # Set fresh usage & 80 minutes inventory
             page.evaluate("""() => {
+                RewardSystem.resetAllRewards({ note: 'test_seed_20' });
                 localStorage.removeItem(FreeTimeAllowance.STORAGE_KEY);
                 localStorage.removeItem('study_youtube_free_time_session_v1');
-                localStorage.setItem('study_rewards', JSON.stringify({ gems: 10, youtube_minutes: 80 }));
-                if (typeof RewardSystem !== 'undefined') {
-                    const s = RewardSystem.getState();
-                    s.youtube_minutes = 80;
-                }
+                RewardSystem.add('gems', 10);
+                RewardSystem.add('youtube', 8);
                 if (typeof ExternalTabLauncher !== 'undefined') {
                     ExternalTabLauncher.createOpenExternal = () => () => ({ close: () => {} });
                 }

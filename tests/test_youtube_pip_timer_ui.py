@@ -65,11 +65,9 @@ def test_youtube_contextual_countdown_and_no_fixed_bar() -> None:
 
             # Pre-seed youtube_minutes and patch ExternalTabLauncher
             page.evaluate("""() => {
-                localStorage.setItem('study_rewards', JSON.stringify({ gems: 10, youtube_minutes: 30 }));
-                if (typeof RewardSystem !== 'undefined') {
-                    const s = RewardSystem.getState();
-                    s.youtube_minutes = 30;
-                }
+                RewardSystem.resetAllRewards({ note: 'pip_test_seed' });
+                RewardSystem.add('gems', 10);
+                RewardSystem.add('youtube', 3);
                 if (typeof ExternalTabLauncher !== 'undefined') {
                     ExternalTabLauncher.createOpenExternal = () => () => ({ close: () => {}, closed: false, focus: () => {} });
                 }

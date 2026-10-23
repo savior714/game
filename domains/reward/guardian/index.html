@@ -115,6 +115,7 @@
       <button data-action="set-subject" data-subject="korean" id="tab-korean" class="tab-btn px-5 py-2.5 rounded-full text-sm shrink-0 transition-all inactive-tab">📖 국어</button>
       <button data-action="set-subject" data-subject="science" id="tab-science" class="tab-btn px-5 py-2.5 rounded-full text-sm shrink-0 transition-all inactive-tab">🔬 과학</button>
       <button data-action="show-growth" id="tab-growth" class="tab-btn px-5 py-2.5 rounded-full text-sm shrink-0 transition-all inactive-tab">📊 성장</button>
+      <button data-action="show-audit" id="tab-audit" class="tab-btn px-5 py-2.5 rounded-full text-sm shrink-0 transition-all inactive-tab">🧾 보상 감사</button>
     </div>
 
     <!-- Math Learning Progress Snapshot Section (Math Only) -->
@@ -296,9 +297,14 @@
 
     <!-- Reward Customization Panel -->
     <div class="border-t border-white/10 pt-8" id="reward-custom-section">
-      <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2">
-        <span>💎</span> 보상 상점 관리
-      </h3>
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <span>💎</span> 보상 상점 관리
+        </h3>
+        <button type="button" data-action="show-audit" class="text-xs px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-[#d7ff00] border border-[#d7ff00]/30 font-bold transition-all cursor-pointer">
+          🧾 획득·사용 감사 로그 / 전체 초기화 →
+        </button>
+      </div>
       <div class="bg-[#0e1422]/90 backdrop-blur-xl rounded-2xl p-6 shadow-2xl border border-white/10 mb-6">
         <p class="text-xs text-slate-400 mb-4">유튜브·간식·마블은 기본 예시입니다. 이름·가격·아이콘은 각 행에서 <strong class="text-slate-200">편집</strong>할 수 있고, 완전히 새 보상은 아래 양식에서 <strong class="text-slate-200">추가하기</strong>로 넣을 수 있습니다.</p>
         
@@ -346,6 +352,14 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Reward Audit & Reset Panel (hidden by default unless #audit selected) -->
+    <div id="audit-panel" class="hidden">
+      <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2">
+        <span>🧾</span> 보상 획득·사용 원장 감사 및 전체 초기화
+      </h3>
+      <div id="audit-panel-body"></div>
     </div>
 
     <!-- Local Backup and Restore Section -->
@@ -408,6 +422,41 @@
       </div>
     </div>
 
+    <!-- Reward Full Reset Confirmation Modal (Hidden by default) -->
+    <div id="reward-reset-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm hidden" role="dialog" aria-modal="true" aria-labelledby="reward-reset-modal-title">
+      <div class="bg-[#0e1422] border border-white/15 rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center justify-center text-lg shrink-0">
+            🔄
+          </div>
+          <div>
+            <h4 id="reward-reset-modal-title" class="font-bold text-white text-base">모든 획득 보상 0 초기화 확인</h4>
+            <p class="text-xs text-slate-400">새 감사 기준점(Epoch)을 시작하고 모든 보유 보상을 0으로 정리합니다.</p>
+          </div>
+        </div>
+
+        <div id="reward-reset-modal-summary" class="bg-black/30 border border-white/10 rounded-xl p-4 space-y-2 text-xs text-slate-300 font-mono"></div>
+
+        <div>
+          <label for="reward-reset-note-input" class="block text-xs font-bold text-slate-300 mb-1.5">초기화 메모 (감사 로그에 영구 기록됨 · 선택)</label>
+          <input type="text" id="reward-reset-note-input" placeholder="예: 주간 정산 완료 / 테스트 초기화" class="w-full px-3 py-2 bg-black/40 border border-white/15 rounded-lg text-xs text-white focus:outline-none focus:border-[#d7ff00]">
+        </div>
+
+        <div class="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-xs text-rose-300 leading-relaxed font-medium">
+          ⚠️ 실행 즉시 현재 기기 및 연결된 클라우드 계정의 보석·자유시간·간식·커스텀 수량·진행 중 자유시간 세션이 모두 <strong>0</strong>으로 초기화되며, 이전 기기의 예전 잔액도 다시 살아나지 않습니다. (단, 영어 주간 단어 및 학습 통계는 그대로 보존됩니다.)
+        </div>
+
+        <div class="flex gap-2 justify-end pt-2">
+          <button type="button" data-action="cancel-reward-reset" id="cancel-reward-reset-btn" class="px-4 py-2.5 rounded-xl border border-white/15 text-slate-300 text-sm font-medium hover:bg-white/10 transition-all">
+            취소
+          </button>
+          <button type="button" data-action="confirm-reward-reset" id="confirm-reward-reset-btn" class="px-5 py-2.5 rounded-xl bg-rose-500 text-white text-sm font-black hover:bg-rose-400 transition-all shadow-[0_0_15px_rgba(244,63,94,0.4)]">
+            0으로 초기화 실행
+          </button>
+        </div>
+      </div>
+    </div>
+
   </main>
 
   <script src="../../../shared/domain/progress-engine.js"></script>
@@ -426,6 +475,7 @@
   <script src="../../../domains/math/guardian-summary.js"></script>
   <script src="local-backup.js"></script>
   <script src="guardian.js"></script>
+  <script src="guardian-audit.js"></script>
   <script src="guardian-events.js"></script>
 
   <!-- 태블릿 전체 화면 토글 (같은 버튼으로 되돌아오기) -->

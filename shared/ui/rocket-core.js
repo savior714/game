@@ -202,7 +202,15 @@
 
       // 보석 획득 연출 호출 (RewardSystem.js 필요)
       if (typeof RewardSystem !== "undefined" && typeof RewardSystem.playEntranceAndAddGem === "function") {
-        RewardSystem.playEntranceAndAddGem("rp-rocket");
+        const subjectMap = { math: "수학", english: "영어", korean: "국어", science: "과학" };
+        const rawSubject = typeof SUBJECT_NAME === "string" ? SUBJECT_NAME : "";
+        const subjectKo = rawSubject ? (subjectMap[rawSubject] || rawSubject) : "";
+        RewardSystem.playEntranceAndAddGem("rp-rocket", {
+          reason: "rocket_launch",
+          source: rawSubject || "quiz",
+          actor: "system",
+          detail: `연속 정답 로켓 발사 보상${subjectKo ? " (" + subjectKo + ")" : ""}`,
+        });
       }
     }
 

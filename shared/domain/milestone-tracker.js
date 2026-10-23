@@ -81,6 +81,7 @@ const MilestoneTracker = (() => {
         if (parsed.achieved) {
           state.achieved = { ...getDefaultState().achieved, ...parsed.achieved };
         }
+        if (Number(parsed.resetEpoch) > 0) state.resetEpoch = Number(parsed.resetEpoch);
         return;
       } catch (e) {
         console.error('[MilestoneTracker] Failed to load state:', e);
@@ -89,7 +90,20 @@ const MilestoneTracker = (() => {
     state = getDefaultState();
   }
 
+  function currentRewardEpoch() {
+    if (typeof RewardSystem !== 'undefined' && typeof RewardSystem.getState === 'function') {
+      const st = RewardSystem.getState();
+      const ep = Number(st && st.reward_ledger && st.reward_ledger.reset_epoch);
+      if (ep > 0) return ep;
+    }
+    if (typeof RewardLedger !== 'undefined' && typeof RewardLedger.BASELINE_RESET_EPOCH === 'number') {
+      return RewardLedger.BASELINE_RESET_EPOCH;
+    }
+    return 1;
+  }
+
   function save(pushCloud = false) {
+    state.resetEpoch = Math.max(Number(state.resetEpoch) || 0, currentRewardEpoch());
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     if (pushCloud) {
       if (typeof window !== 'undefined' && window.SyncEngine && typeof window.SyncEngine.pushStats === 'function') {
@@ -116,16 +130,27 @@ const MilestoneTracker = (() => {
     }
   }
 
+  let currentSubject = '';
+
   /**
    * 마일스톤 보석은 마일스톤 키 기반 영수증으로 지급한다(평생 1회).
    */
-  function awardGems(count, milestoneKey) {
+  function awardGems(count, milestoneKey, milestoneMessage) {
     if (count <= 0 || typeof RewardSystem === 'undefined') return;
+    const cleanMsg = typeof milestoneMessage === 'string'
+      ? milestoneMessage.replace(/\s*\(💎.*?\)\s*/g, '').trim()
+      : milestoneKey;
+    const meta = {
+      reason: milestoneKey ? 'milestone:' + milestoneKey : 'milestone',
+      source: currentSubject || 'quiz',
+      actor: 'system',
+      detail: `학습 마일스톤 달성 (${cleanMsg || milestoneKey || '목표 달성'})`,
+    };
     if (milestoneKey && typeof RewardSystem.grantOnce === 'function') {
-      RewardSystem.grantOnce('reward.milestone.' + milestoneKey, 'gems', count, { reason: 'milestone' });
+      RewardSystem.grantOnce('reward.milestone.' + milestoneKey, 'gems', count, meta);
       return;
     }
-    RewardSystem.add('gems', count);
+    RewardSystem.add('gems', count, meta);
   }
 
   function showToast(message) {
@@ -139,12 +164,13 @@ const MilestoneTracker = (() => {
       if (streakValue >= m.threshold && !state.achieved[m.key]) {
         state.achieved[m.key] = true;
         showToast(m.message);
-        awardGems(m.gems, m.key);
+        awardGems(m.gems, m.key, m.message);
       }
     }
   }
 
   function initSession(subject) {
+    if (typeof subject === 'string' && subject) currentSubject = subject;
     ensureAchievedKeys();
     state.session.sessionCorrect = 0;
     save();
@@ -251,5 +277,6 @@ const MilestoneTracker = (() => {
     resetSessionData,
     getSessionData,
     getLifetimeData,
+    reload: load,
   };
 })();

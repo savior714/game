@@ -39,6 +39,8 @@
   doc.addEventListener('input', (event) => {
     if (event.target?.id === 'level-slider' && typeof global.onSliderChange === 'function') {
       global.onSliderChange(event.target.value);
+    } else if (event.target?.id === 'audit-search-input' && typeof global.onAuditSearchInput === 'function') {
+      global.onAuditSearchInput(event.target.value);
     }
   });
 
@@ -55,6 +57,15 @@
       'add-weekly-word': () => global.addWeeklyWord?.(),
       'add-custom-reward': () => global.addCustomReward?.(),
       'show-growth': () => global.showGrowthTab?.(),
+      'show-audit': () => global.showAuditTab?.(),
+      'audit-filter-type': () => global.setAuditFilter?.('type', target.dataset.filterValue),
+      'audit-filter-key': () => global.setAuditFilter?.('key', target.dataset.filterValue),
+      'audit-filter-period': () => global.setAuditFilter?.('period', target.dataset.filterValue),
+      'export-audit-csv': () => global.exportAuditCsv?.(),
+      'export-audit-json': () => global.exportAuditJson?.(),
+      'open-reward-reset-modal': () => global.openRewardResetModal?.(),
+      'confirm-reward-reset': () => global.confirmRewardReset?.(),
+      'cancel-reward-reset': () => global.cancelRewardReset?.(),
       'delete-weekly-word': () => global.deleteWeeklyWord?.(Number.parseInt(target.dataset.idx, 10)),
       'export-backup': () => global.exportBackup?.(),
       'import-backup-trigger': () => global.importBackupTrigger?.(),

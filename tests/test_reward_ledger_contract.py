@@ -21,6 +21,7 @@ GUARDIAN_JS = ROOT / "domains" / "reward" / "guardian" / "guardian.js"
 LEDGER_JS = ROOT / "shared" / "domain" / "reward-ledger.js"
 LEDGER_MJS = ROOT / "tests" / "test_reward_ledger.mjs"
 ACTIVITY_UI_MJS = ROOT / "tests" / "test_reward_activity_ui.mjs"
+GUARDIAN_AUDIT_MJS = ROOT / "tests" / "test_guardian_reward_audit.mjs"
 
 ENTRY_POINTS = [
     ROOT / "index.html",
@@ -58,6 +59,21 @@ def test_reward_activity_ui_node_suite() -> None:
     assert node is not None, "node is required"
     proc = subprocess.run(
         [node, str(ACTIVITY_UI_MJS)],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert proc.returncode == 0, f"{proc.stderr}\n{proc.stdout}"
+    assert "PASS:" in proc.stdout
+
+
+def test_guardian_reward_audit_node_suite() -> None:
+    """보호자 감사 패널, 5개 보상 프로듀서, CSV/JSON 내보내기, 전체 초기화를 검증한다."""
+    node = shutil.which("node")
+    assert node is not None, "node is required"
+    proc = subprocess.run(
+        [node, str(GUARDIAN_AUDIT_MJS)],
         capture_output=True,
         text=True,
         timeout=30,

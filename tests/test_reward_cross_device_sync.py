@@ -1,16 +1,16 @@
-"""크로스 브라우저·크로스 기기 상단 보상 체계 통합 동기화 검증.
+"""크로스 브라우저·크로스 기기 상단 보상 초기화 기준점 및 감사 동기화 검증.
 
 검증 범위:
+0. 기존 클라우드/태블릿에 쌓여 있던 모든 이전 누적 보상(Epoch 0)과 진행 중 자유시간 세션·수령 플래그는
+   새 버전 접속 즉시 로컬·Supabase 양쪽 모두 0으로 초기화되며, 다른 기기가 뒤늦게 켜져도 옛 보상이 부활하지 않는다.
 1. 새 브라우저 첫 보상 획득 후 새로고침(boot) 시 보석이 0으로 증발하지 않는다.
-2. 기기 A(기존 보상 보유)와 새 브라우저 B(빈 localStorage)가 같은 계정으로 로그인하면
-   양쪽 모두 동일한 잔액·상점 항목·테마로 수렴한다(0 초기화 및 영구 분기 재발 방지).
-3. 이미 legacy_snapshot_downward로 오염된 클라우드/로컬 원장도 동기화 시 자동 복구된다.
+2. 초기화 이후 기기 A에서 획득한 보상이 새 브라우저 B(빈 localStorage) 로그인 시 0으로 깎이지 않고
+   양쪽 모두 동일한 잔액·감사 내역·상점 항목·테마로 수렴한다.
+3. 현행 epoch에서 legacy_snapshot_downward로 오염된 클라우드 원장도 동기화 시 자동 복구된다.
 4. 브라우저 A와 B에서 동시 획득·유튜브 자유시간 세션 시작·수학 오늘의 목표 달성이 일어나도
-   pull-merge-before-flush 및 merge-before-upsert를 통해 양쪽 상단 보상/목표가 일치한다.
-5. 기존 로컬 보상이 있고 클라우드가 비어 있는 기기가 로그인하면 로컬 보상을 클라우드에 시드하여
-   다른 브라우저에서도 즉시 동일하게 보인다.
-6. sync-engine.js 로드 전에 Auth 세션 확인이 먼저 끝난 경우(Auth.whenReady resolved)에도
-   초기 pullAndMerge가 누락되지 않는다.
+   pull-merge-before-flush 및 merge-before-upsert를 통해 양쪽 상단 보상/목표/감사 로그가 일치한다.
+5. 보호자 수동 전체 초기화(Epoch 증가) 시 다른 기기의 이전 Epoch 잔액도 자동으로 0 수렴한다.
+6. sync-engine.js 로드 전에 Auth 세션 확인이 먼저 끝난 경우에도 초기 pullAndMerge가 누락되지 않는다.
 7. 동일 브라우저에서 다른 계정(user-1 -> user-2)으로 전환하면 이전 계정의 로컬 캐시가 섞이지 않는다.
 8. 모든 학습 진입점(index, english, math, korean, science, weekly-test, guardian)이
    reward-ledger.js 직후 정적으로 sync-engine.js를 로드한다.
@@ -53,8 +53,68 @@ const FILES = {
   dailyGoal: './domains/math/daily-goal.js',
 };
 
+function makeEpoch1State(balances = {}, extra = {}) {
+  const events = [];
+  let idx = 1;
+  for (const [key, delta] of Object.entries(balances)) {
+    if (!delta) continue;
+    events.push({
+      id: `seed-ev-${idx++}-${key}`,
+      at: 1000 + idx,
+      key,
+      delta,
+      type: 'grant',
+      reason: 'post_reset_seed',
+      source: 'math',
+      detail: `초기화 이후 적립 (${key} +${delta})`,
+    });
+  }
+  const customInv = extra.custom_inventory || {};
+  for (const [cid, delta] of Object.entries(customInv)) {
+    if (!delta) continue;
+    events.push({
+      id: `seed-ev-${idx++}-custom-${cid}`,
+      at: 1000 + idx,
+      key: `custom:${cid}`,
+      delta,
+      type: 'grant',
+      reason: 'post_reset_seed',
+      source: 'shop',
+      detail: `커스텀 적립 (${cid} +${delta})`,
+    });
+  }
+  return {
+    gems: balances.gems || 0,
+    youtube_minutes: balances.youtube_minutes || 0,
+    snacks: balances.snacks || 0,
+    marble_plays: balances.marble_plays || 0,
+    bubble_plays: balances.bubble_plays || 0,
+    custom_inventory: { ...customInv },
+    ...extra,
+    reward_ledger: {
+      v: 1,
+      reset_epoch: 1,
+      reset_at: 500,
+      reset_reason: 'initial_audit_cutover',
+      reset_history: [],
+      base: {
+        gems: 0,
+        youtube_minutes: 0,
+        snacks: 0,
+        marble_plays: 0,
+        bubble_plays: 0,
+        custom_inventory: {},
+      },
+      base_at: 0,
+      folded_at: 0,
+      folded_count: 0,
+      events,
+    },
+    _updated_at: extra._updated_at || 2000,
+  };
+}
+
 function createCloudDb(initialRows = {}) {
-  // Map of `${user_id}::${data_key}` -> { user_id, data_key, payload, updated_at }
   const table = new Map();
   let clock = 10_000;
   for (const [userId, entries] of Object.entries(initialRows)) {
@@ -136,6 +196,8 @@ function createBrowser(cloud, {
     : new Promise((res) => { resolveReady = res; });
 
   const localStorage = {
+    get length() { return store.size; },
+    key(idx) { return Array.from(store.keys())[idx] || null; },
     getItem(k) { return store.has(k) ? store.get(k) : null; },
     setItem(k, v) { store.set(k, String(v)); },
     removeItem(k) { store.delete(k); },
@@ -167,7 +229,7 @@ function createBrowser(cloud, {
   const window = {
     localStorage,
     document,
-    navigator: { onLine: true },
+    navigator: { onLine: true, userAgent: 'Mozilla/5.0 (Linux; Android 14; SM-X820)' },
     supabaseClient: cloud.clientFor(),
     Event: class Event {
       constructor(type) {
@@ -180,80 +242,98 @@ function createBrowser(cloud, {
         this.detail = init.detail;
       }
     },
-    Auth: {
-      getUser() { return currentUser; },
-      isReady() { return readyResolved; },
-      whenReady() { return readyPromise; },
-    },
-    RewardSystemUI: {
-      injectCriticalStyles() {},
-      injectInventoryBar() {},
-      injectStyles(_state, cb) { if (cb) cb(); },
-      syncInventoryBarWithState(state) { window._lastRenderedRewardState = JSON.parse(JSON.stringify(state)); },
-      updateUI(state) { window._lastRenderedRewardState = JSON.parse(JSON.stringify(state)); },
-      applyBodyTopOffset() {},
-      renderFreeTimeTimerUI(snap) { window._lastBannerSnap = snap ? JSON.parse(JSON.stringify(snap)) : null; },
-      renderExpiredFreeTimeSessionUI(snap) { window._lastBannerSnap = snap ? JSON.parse(JSON.stringify(snap)) : null; },
-      showToast() {},
-    },
     addEventListener(type, fn) {
-      if (!listeners.has(type)) listeners.set(type, []);
-      listeners.get(type).push(fn);
+      if (!listeners.has(`win:${type}`)) listeners.set(`win:${type}`, []);
+      listeners.get(`win:${type}`).push(fn);
     },
-    removeEventListener(type, fn) {
-      const arr = listeners.get(type) || [];
-      const idx = arr.indexOf(fn);
-      if (idx >= 0) arr.splice(idx, 1);
-    },
-    dispatchEvent(evt) {
-      for (const fn of [...(listeners.get(evt.type) || [])]) fn(evt);
+    dispatchEvent(ev) {
+      const fns = listeners.get(`win:${ev.type}`) || [];
+      for (const fn of fns) fn(ev);
+      return true;
     },
     open() {
-      return { closed: false, opener: null, location: { href: '' }, close() {} };
+      return { opener: null, location: { href: '' }, close() {} };
     },
-    setTimeout,
-    clearTimeout,
-    // 주기 타이머가 테스트 프로세스를 붙잡지 않도록 더미 id 반환
-    setInterval() { return 1; },
-    clearInterval() {},
+    location: { href: 'https://example.test/index.html', pathname: '/index.html', reload() {} },
+    alert() {},
+    confirm() { return true; },
+    _lastBannerSnap: null,
   };
   window.window = window;
-  window.globalThis = window;
+  window.self = window;
 
-  Object.assign(window, {
+  window.Auth = {
+    getUser() { return readyResolved ? currentUser : null; },
+    whenReady() { return readyPromise; },
+  };
+  window.RewardSystemUI = {
+    injectCriticalStyles() {},
+    injectInventoryBar() {},
+    injectStyles(_st, cb) { if (cb) cb(); },
+    syncInventoryBarWithState() {},
+    updateUI() {},
+    applyBodyTopOffset() {},
+    showToast() {},
+    renderFreeTimeTimerUI(session) { window._lastBannerSnap = session; },
+    renderExpiredFreeTimeSessionUI(session) { window._lastBannerSnap = session; },
+    clearFreeTimeSessionUI() { window._lastBannerSnap = null; },
+  };
+
+  const ctx = vm.createContext({
+    window,
     self: window,
+    globalThis: null,
+    document,
+    location: window.location,
+    localStorage,
+    navigator: window.navigator,
+    Event: window.Event,
+    CustomEvent: window.CustomEvent,
+    alert: window.alert,
+    confirm: window.confirm,
     console,
+    setTimeout,
+    clearTimeout,
+    setInterval: () => 1,
+    clearInterval: () => {},
     Date,
     Math,
-    JSON,
     Number,
-    String,
-    Boolean,
+    JSON,
     Object,
     Array,
     Set,
     Map,
+    String,
     Promise,
     Error,
     TypeError,
-    RegExp,
-    parseInt,
-    parseFloat,
-    isNaN,
-    isFinite,
+    URL,
   });
-
-  const ctx = vm.createContext(window);
+  ctx.globalThis = ctx;
+  ctx.RewardSystemUI = window.RewardSystemUI;
+  ctx.Auth = window.Auth;
 
   for (const key of ['ledger', 'allowance', 'session', 'launcher', 'tx', 'sync']) {
     vm.runInContext(fs.readFileSync(FILES[key], 'utf8'), ctx, { filename: FILES[key] });
   }
+  for (const name of [
+    'RewardLedger',
+    'FreeTimeAllowance',
+    'FreeTimeSession',
+    'ExternalTabLauncher',
+    'FreeTimeSessionStartTransaction',
+    'SyncEngine',
+  ]) {
+    vm.runInContext(`if (window.${name}) globalThis.${name} = window.${name};`, ctx);
+  }
   if (loadDailyGoal) {
     vm.runInContext(fs.readFileSync(FILES.dailyGoal, 'utf8'), ctx, { filename: FILES.dailyGoal });
+    vm.runInContext('if (window.MathDailyGoalEngine) globalThis.MathDailyGoalEngine = window.MathDailyGoalEngine;', ctx);
   }
   if (loadRewardSystem) {
     vm.runInContext(fs.readFileSync(FILES.reward, 'utf8'), ctx, { filename: FILES.reward });
-    vm.runInContext('globalThis.RewardSystem = RewardSystem;', ctx);
+    vm.runInContext('globalThis.RewardSystem = RewardSystem; window.RewardSystem = RewardSystem;', ctx);
   }
 
   async function flushMicrotasks(rounds = 8) {
@@ -283,6 +363,120 @@ function createBrowser(cloud, {
 """
 
 
+def test_pre_existing_cloud_and_multi_device_rewards_wipe_to_zero_and_audit_post_reset_earns():
+    """기존 Supabase 클라우드 + 다중 기기 로컬에 쌓여 있던 모든 보상이 0으로 초기화되고 이후 획득만 남는다."""
+    result = _run_node(
+        MULTI_DEVICE_HARNESS
+        + """
+        // 실제 운영 상태 재현: Supabase user_data와 태블릿 로컬 모두 구 Epoch 보상이 잔뜩 쌓여 있음
+        const cloud = createCloudDb({
+          'user-1': {
+            study_rewards: {
+              gems: 25,
+              youtube_minutes: 90,
+              snacks: 6,
+              marble_plays: 2,
+              bubble_plays: 1,
+              custom_inventory: { lego: 3 },
+              reward_ledger: {
+                v: 1,
+                base: { gems: 20, youtube_minutes: 90, snacks: 6, marble_plays: 2, bubble_plays: 1, custom_inventory: { lego: 3 } },
+                base_at: 1000,
+                events: [{ id: 'legacy-ev-1', at: 1500, key: 'gems', delta: 5, type: 'grant', reason: 'old_goal' }],
+              },
+              _updated_at: 5000,
+            },
+            study_youtube_free_time_session_v1: {
+              schemaVersion: 1,
+              status: 'running',
+              sessionId: 'legacy-yt-session',
+              startedAt: 4000,
+              endsAt: 9999999999999,
+            },
+          },
+        });
+
+        // 1) 노트북이 새 버전으로 접속 -> 즉시 0 초기화 + Supabase 클라우드 덮어쓰기
+        const laptop = createBrowser(cloud, {
+          userId: 'user-1',
+          initialLocal: {
+            study_rewards: { gems: 14, youtube_minutes: 40, snacks: 2, _updated_at: 3000 },
+          },
+        });
+        await laptop.signIn('user-1');
+
+        const afterResetCloud = cloud.read('user-1', 'study_rewards');
+        const afterResetSession = cloud.read('user-1', 'study_youtube_free_time_session_v1');
+
+        // 2) 초기화 이후 노트북에서 수학 학습으로 보석 2개 + 자유시간 10분 신규 획득
+        laptop.window.RewardSystem.grantWithReceipt(
+          'receipt-math-post-reset-1',
+          [{ type: 'gems', amount: 2 }, { type: 'youtube', amount: 1 }],
+          {
+            now: Date.UTC(2026, 9, 23, 10, 0, 0),
+            reason: 'math_daily_goal',
+            source: 'math',
+            actor: 'system',
+            detail: '수학 오늘의 목표 달성 (10 이하 덧셈 5문제)',
+          }
+        );
+        await laptop.flushMicrotasks();
+
+        // 3) 뒤늦게 예전 로컬 캐시(보석 30개, 자유시간 120분)를 들고 있던 갤럭시 탭이 켜짐!
+        const tablet = createBrowser(cloud, {
+          userId: 'user-1',
+          initialLocal: {
+            study_rewards: {
+              gems: 30,
+              youtube_minutes: 120,
+              snacks: 8,
+              reward_ledger: {
+                v: 1,
+                base: { gems: 30, youtube_minutes: 120, snacks: 8, marble_plays: 0, bubble_plays: 0, custom_inventory: {} },
+                base_at: 2000,
+                events: [],
+              },
+              _updated_at: 999999,
+            },
+          },
+        });
+        await tablet.signIn('user-1');
+        await laptop.window.SyncEngine.syncNow('recheck');
+        await laptop.flushMicrotasks();
+
+        const tabletAudit = tablet.window.RewardSystem.getAuditReport({ type: 'grant' });
+
+        console.log(JSON.stringify({
+          afterResetCloudZero: {
+            gems: afterResetCloud.gems,
+            yt: afterResetCloud.youtube_minutes,
+            snacks: afterResetCloud.snacks,
+            epoch: afterResetCloud.reward_ledger.reset_epoch,
+          },
+          afterResetSessionStatus: afterResetSession.status,
+          tabletFinal: {
+            gems: tablet.window.RewardSystem.getState().gems,
+            yt: tablet.window.RewardSystem.getState().youtube_minutes,
+            snacks: tablet.window.RewardSystem.getState().snacks,
+          },
+          laptopFinal: {
+            gems: laptop.window.RewardSystem.getState().gems,
+            yt: laptop.window.RewardSystem.getState().youtube_minutes,
+            snacks: laptop.window.RewardSystem.getState().snacks,
+          },
+          grantAuditCountOnTablet: tabletAudit.entries.length,
+          grantDetailOnTablet: tabletAudit.entries[0]?.detail || '',
+        }));
+        """
+    )
+    assert result["afterResetCloudZero"] == {"gems": 0, "yt": 0, "snacks": 0, "epoch": 1}
+    assert result["afterResetSessionStatus"] == "inactive"
+    assert result["tabletFinal"] == {"gems": 2, "yt": 10, "snacks": 0}
+    assert result["laptopFinal"] == {"gems": 2, "yt": 10, "snacks": 0}
+    assert result["grantAuditCountOnTablet"] == 2
+    assert "수학 오늘의 목표 달성" in result["grantDetailOnTablet"]
+
+
 def test_single_browser_first_earn_survives_reload():
     """빈 브라우저에서 첫 보석을 획득한 뒤 새로고침해도 0으로 증발하지 않는다."""
     result = _run_node(
@@ -293,7 +487,6 @@ def test_single_browser_first_earn_survives_reload():
         b1.window.RewardSystem.add('gems', 2, { reason: 'quiz_clear' });
         const beforeReload = b1.window.RewardSystem.getState().gems;
 
-        // 동일 localStorage를 가진 채 페이지 새로고침 시뮬레이션
         const snapshotLocal = Object.fromEntries(b1.store.entries());
         const b1Reloaded = createBrowser(cloud, { userId: null, initialLocal: snapshotLocal });
         const afterReload = b1Reloaded.window.RewardSystem.getState().gems;
@@ -302,13 +495,11 @@ def test_single_browser_first_earn_survives_reload():
         """
     )
     assert result["beforeReload"] == 2
-    assert result["afterReload"] == 2, (
-        f"첫 보석 적립 후 새로고침 시 잔액이 유지되어야 하나 {result['afterReload']}이 되었다."
-    )
+    assert result["afterReload"] == 2
 
 
-def test_fresh_browser_converges_with_existing_cloud_device_without_zero_wipe():
-    """기기 A의 클라우드 보상이 새 브라우저 B(빈 localStorage) 로그인 시 0으로 깎이지 않고 양쪽 모두 수렴한다."""
+def test_fresh_browser_converges_with_post_reset_cloud_device_without_zero_wipe():
+    """초기화 이후 기기 A에서 적립한 클라우드 보상이 새 브라우저 B(빈 localStorage) 로그인 시 0으로 깎이지 않고 수렴한다."""
     result = _run_node(
         MULTI_DEVICE_HARNESS
         + """
@@ -316,32 +507,27 @@ def test_fresh_browser_converges_with_existing_cloud_device_without_zero_wipe():
         const deviceA = createBrowser(cloud, {
           userId: 'user-1',
           initialLocal: {
-            study_rewards: {
-              gems: 7,
-              youtube_minutes: 30,
-              snacks: 3,
-              marble_plays: 1,
-              bubble_plays: 2,
-              theme: 'analog',
-              shop_items: [
-                { id: 'youtube', name: '유튜브 10분', icon: '📺', cost: 2 },
-                { id: 'snack', name: '맛있는 간식', icon: '🍪', cost: 2 },
-                { id: 'marble', name: '마블 플레이 1회', icon: '🎮', cost: 3 },
-                { id: 'bubble', name: '버블 게임 1회', icon: '🫧', cost: 2 },
-                { id: 'custom_lego', name: '레고 조립 20분', icon: '🧱', cost: 4 },
-              ],
-              custom_inventory: { custom_lego: 1 },
-              _updated_at: 1000,
-            },
+            study_rewards: makeEpoch1State(
+              { gems: 7, youtube_minutes: 30, snacks: 3, marble_plays: 1, bubble_plays: 2 },
+              {
+                theme: 'analog',
+                custom_inventory: { custom_lego: 1 },
+                shop_items: [
+                  { id: 'youtube', name: '유튜브 10분', icon: '📺', cost: 2 },
+                  { id: 'snack', name: '맛있는 간식', icon: '🍪', cost: 2 },
+                  { id: 'marble', name: '마블 플레이 1회', icon: '🎮', cost: 3 },
+                  { id: 'bubble', name: '버블 게임 1회', icon: '🫧', cost: 2 },
+                  { id: 'custom_lego', name: '레고 조립 20분', icon: '🧱', cost: 4 },
+                ],
+              }
+            ),
           },
         });
         await deviceA.signIn('user-1');
 
-        // 완전히 비어 있는 새 브라우저 B가 동일 계정으로 로그인
         const browserB = createBrowser(cloud, { userId: 'user-1', initialLocal: {} });
         await browserB.signIn('user-1');
 
-        // 기기 A가 다시 동기화해도 그대로 동일한 잔액이어야 한다
         await deviceA.window.SyncEngine.syncNow('recheck');
         await deviceA.flushMicrotasks();
 
@@ -378,7 +564,7 @@ def test_fresh_browser_converges_with_existing_cloud_device_without_zero_wipe():
 
 
 def test_poisoned_legacy_snapshot_downward_cloud_row_self_heals_across_devices():
-    """이미 legacy_snapshot_downward로 0이 된 클라우드 데이터도 동기화 시 원래 잔액으로 복구된다."""
+    """현행 Epoch에서 legacy_snapshot_downward로 0이 된 클라우드 데이터도 동기화 시 원래 잔액으로 복구된다."""
     result = _run_node(
         MULTI_DEVICE_HARNESS
         + """
@@ -391,12 +577,16 @@ def test_poisoned_legacy_snapshot_downward_cloud_row_self_heals_across_devices()
           custom_inventory: {},
           reward_ledger: {
             v: 1,
-            base: { gems: 9, youtube_minutes: 20, snacks: 2, marble_plays: 1, bubble_plays: 1, custom_inventory: {} },
-            base_at: 2000,
+            reset_epoch: 1,
+            base: { gems: 0, youtube_minutes: 0, snacks: 0, marble_plays: 0, bubble_plays: 0, custom_inventory: {} },
+            base_at: 0,
             events: [
-              { id: 'ev-poison-1', at: 0, key: 'gems', delta: -9, type: 'adjust', reason: 'legacy_snapshot_downward' },
-              { id: 'ev-poison-2', at: 0, key: 'youtube_minutes', delta: -20, type: 'adjust', reason: 'legacy_snapshot_downward' },
-              { id: 'ev-poison-3', at: 0, key: 'snacks', delta: -2, type: 'adjust', reason: 'legacy_snapshot_downward' },
+              { id: 'ev-earn-gems', at: 2100, key: 'gems', delta: 9, type: 'grant', reason: 'quiz' },
+              { id: 'ev-earn-yt', at: 2200, key: 'youtube_minutes', delta: 20, type: 'grant', reason: 'goal' },
+              { id: 'ev-earn-snack', at: 2300, key: 'snacks', delta: 2, type: 'grant', reason: 'shop' },
+              { id: 'ev-poison-1', at: 2400, key: 'gems', delta: -9, type: 'adjust', reason: 'legacy_snapshot_downward' },
+              { id: 'ev-poison-2', at: 2401, key: 'youtube_minutes', delta: -20, type: 'adjust', reason: 'legacy_snapshot_downward' },
+              { id: 'ev-poison-3', at: 2402, key: 'snacks', delta: -2, type: 'adjust', reason: 'legacy_snapshot_downward' },
               { id: 'ev-real-earn', at: 2500, key: 'gems', delta: 2, type: 'grant', reason: 'quiz' },
             ],
           },
@@ -424,19 +614,11 @@ def test_poisoned_legacy_snapshot_downward_cloud_row_self_heals_across_devices()
 
 
 def test_concurrent_rewards_youtube_session_and_math_daily_goal_converge():
-    """브라우저 A(목표 달성·보석 획득)와 브라우저 B(유튜브 자유시간 세션 시작)가 모든 상단 상태를 일치시킨다."""
+    """브라우저 A(목표 달성·보석 획득)와 브라우저 B(유튜브 자유시간 세션 시작)가 모든 상단 상태와 감사 내역을 일치시킨다."""
     result = _run_node(
         MULTI_DEVICE_HARNESS
         + """
-        const initialRewards = {
-          gems: 5,
-          youtube_minutes: 30,
-          snacks: 2,
-          marble_plays: 0,
-          bubble_plays: 0,
-          custom_inventory: {},
-          _updated_at: 1000,
-        };
+        const initialRewards = makeEpoch1State({ gems: 5, youtube_minutes: 30, snacks: 2 });
         const cloud = createCloudDb();
         const browserA = createBrowser(cloud, {
           userId: 'user-1',
@@ -452,7 +634,6 @@ def test_concurrent_rewards_youtube_session_and_math_daily_goal_converge():
         });
         await browserB.signIn('user-1');
 
-        // 브라우저 A: 오늘의 수학 목표 생성 및 완료 + 보상(보석 2개 + 유튜브 10분) 수령
         const now = Date.now();
         let goal = browserA.window.MathDailyGoalEngine.initOrGetDailyGoal({
           now,
@@ -476,12 +657,10 @@ def test_concurrent_rewards_youtube_session_and_math_daily_goal_converge():
         });
         await browserA.flushMicrotasks();
 
-        // 브라우저 B: 아직 A의 최신 상태를 안 당긴 상태에서 유튜브 10분 자유시간 시작!
         const ytNow = now + 50;
         const ytRes = browserB.window.RewardSystem.startYouTubeSession(10, { nowMs: ytNow });
         await browserB.flushMicrotasks();
 
-        // 양쪽 브라우저가 포커스/주기 동기화를 수행하면 모든 상단 수치가 완전히 일치해야 한다
         await browserA.window.SyncEngine.syncNow('focus');
         await browserA.flushMicrotasks();
         await browserB.window.SyncEngine.syncNow('focus');
@@ -525,18 +704,9 @@ def test_sync_engine_bootstraps_even_when_auth_resolved_before_script_load():
         + """
         const cloud = createCloudDb({
           'user-1': {
-            study_rewards: {
-              gems: 12,
-              youtube_minutes: 40,
-              snacks: 4,
-              marble_plays: 0,
-              bubble_plays: 0,
-              custom_inventory: {},
-              _updated_at: 2000,
-            },
+            study_rewards: makeEpoch1State({ gems: 12, youtube_minutes: 40, snacks: 4 }),
           },
         });
-        // auth-changed 이벤트를 다시 쏘지 않고 Auth.whenReady()만 이미 resolve된 상태
         const browser = createBrowser(cloud, {
           userId: 'user-1',
           authAlreadyReady: true,
@@ -560,21 +730,8 @@ def test_switching_accounts_on_same_browser_isolates_local_cache():
         MULTI_DEVICE_HARNESS
         + """
         const cloud = createCloudDb({
-          'user-1': { study_rewards: { gems: 15, youtube_minutes: 30, snacks: 5, _updated_at: 1000 } },
-          'user-2': {
-            study_rewards: {
-              gems: 2,
-              youtube_minutes: 0,
-              snacks: 1,
-              reward_ledger: {
-                v: 1,
-                base: { gems: 2, youtube_minutes: 0, snacks: 1, marble_plays: 0, bubble_plays: 0, custom_inventory: {} },
-                base_at: 1000,
-                events: [],
-              },
-              _updated_at: 1000,
-            },
-          },
+          'user-1': { study_rewards: makeEpoch1State({ gems: 15, youtube_minutes: 30, snacks: 5 }) },
+          'user-2': { study_rewards: makeEpoch1State({ gems: 2, youtube_minutes: 0, snacks: 1 }) },
         });
         const browser = createBrowser(cloud, { userId: 'user-1', initialLocal: {} });
         await browser.signIn('user-1');
@@ -582,7 +739,6 @@ def test_switching_accounts_on_same_browser_isolates_local_cache():
         await browser.flushMicrotasks();
         const user1Gems = browser.window.RewardSystem.getState().gems;
 
-        // 동일 브라우저에서 user-2로 전환
         await browser.signIn('user-2');
         const user2Gems = browser.window.RewardSystem.getState().gems;
         const user2CloudGems = cloud.read('user-2', 'study_rewards').gems;

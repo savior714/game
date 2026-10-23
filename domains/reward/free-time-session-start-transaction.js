@@ -327,7 +327,15 @@
       const applied = Ledger.applyDeltas(
         reward,
         [{ key: "youtube_minutes", delta: -durationMinutes }],
-        { at: now, type: "consume", reason: "free_time_session", receipt: sessionId }
+        {
+          at: now,
+          type: "consume",
+          reason: "free_time_session",
+          receipt: sessionId,
+          source: "youtube_timer",
+          actor: "guardian",
+          detail: `유튜브 브라우저 타이머 시작 (${durationMinutes}분)`,
+        }
       );
       targetReward = Object.assign({}, applied.state, {
         last_updated: new Date(now).toISOString(),
@@ -340,19 +348,28 @@
         _updated_at: now,
       });
     }
-    const targetSession = FreeTimeSession.start({
+    const baseSession = FreeTimeSession.start({
       now: now,
       sessionId: sessionId,
       source: "reward",
       durationMinutes: durationMinutes,
     });
+    const activeEpoch = Ledger && typeof Ledger.getEpoch === "function"
+      ? Ledger.getEpoch(targetReward)
+      : 0;
+    const targetSession = activeEpoch > 0
+      ? Object.assign({}, baseSession, { resetEpoch: activeEpoch })
+      : baseSession;
+    const stampedUsage = targetUsage && activeEpoch > 0
+      ? Object.assign({}, targetUsage, { resetEpoch: activeEpoch })
+      : targetUsage;
 
     const previousRewardRaw = rewardRawIn;
     const previousSessionRaw = sessionRawIn;
     const previousUsageRaw = usageRawIn;
     const targetRewardRaw = JSON.stringify(targetReward);
     const targetSessionRaw = JSON.stringify(targetSession);
-    const targetUsageRaw = targetUsage ? JSON.stringify(targetUsage) : null;
+    const targetUsageRaw = stampedUsage ? JSON.stringify(stampedUsage) : null;
 
     // 7: build journal
     const journal = {
@@ -418,11 +435,18 @@
       return { code: rollbackOk ? RESULT.COMMIT_FAILED : RESULT.RECOVERY_REQUIRED };
     }
 
-    // 8.5: remove journal
+    // 8.5: remove journal and sync ledger journal best-effort
     try {
       storage.removeItem(JOURNAL_STORAGE_KEY);
     } catch (e) {
       // data already committed — journal cleanup failure does not invalidate success
+    }
+    if (Ledger && targetReward && targetReward.reward_ledger) {
+      try {
+        storage.setItem("study_rewards_ledger_v1", JSON.stringify(targetReward.reward_ledger));
+      } catch (e) {
+        // best-effort recovery journal sync
+      }
     }
 
     return {

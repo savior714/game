@@ -113,7 +113,12 @@ def test_app_separates_visible_input_from_paint_surface_and_gates_production_boo
     assert "function mapRescueCoordinates" in source
     assert "RenderRuntime.boot()" in source
     assert "RenderRuntime.showCompatibilityFailure()" in source
-    assert "travelPaintCanvas" in source
+    # The travel loop must not keep its own paint-surface handle any more:
+    # the rescue-site frame is painted by the single arrival handoff owner.
+    assert "travelPaintCanvas" not in source
+    assert (
+        "renderRescueSiteFrame(resolvePaintCanvas(), resolvePaintContext())" in source
+    )
     pointer_source = (SRC / "pointer-input.js").read_text(encoding="utf-8")
     assert "RenderRuntime.mapClientToLogical" in pointer_source, (
         "pointer module must own the renderer coordinate-mapper call"

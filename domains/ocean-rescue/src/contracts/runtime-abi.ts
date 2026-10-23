@@ -89,6 +89,10 @@ export interface RescueMissionContent {
   readonly toolLabel: string;
   readonly situation: string;
   readonly tutorial: string;
+  /** English line the trapped target shouts at the rescue site. */
+  readonly targetLine: string;
+  /** English line the companion says at the rescue site. */
+  readonly companionLine: string;
 }
 
 export interface RescueApi {
@@ -98,7 +102,22 @@ export interface RescueApi {
   readonly getMissionContent: (
     missionId: unknown,
   ) => RescueMissionContent | null;
+  readonly getDialogueLine: (
+    missionId: unknown,
+    speaker: "target" | "companion",
+  ) => string | null;
   readonly hasArrived: (travelSnapshot: unknown) => boolean;
+}
+
+/**
+ * Minimal sea-turtle discovery contract. The rescue site may only open once
+ * the child has looked through the net and found the turtle.
+ */
+export interface SeaTurtleDiscoveryApi {
+  readonly getSnapshot: () => {
+    readonly active: boolean;
+    readonly readyForRescue: boolean;
+  };
 }
 
 export interface MissionRuntimeApi {
@@ -247,11 +266,18 @@ export interface AudioSettings {
 
 export interface SpeakOptions {
   readonly companion?: string;
+  readonly lang?: string;
   readonly pitch?: number;
   readonly rate?: number;
   readonly onStart?: () => void;
   readonly onEnd?: () => void;
   readonly onError?: () => void;
+}
+
+/** One queued narration line: the text and the voice that reads it. */
+export interface SpeakSequenceItem {
+  readonly text: string;
+  readonly options?: SpeakOptions;
 }
 
 export interface AudioApi {
@@ -275,6 +301,7 @@ export interface AudioApi {
   readonly playDoorOpen: () => void;
   readonly playGoalBanner: () => void;
   readonly speak: (text: string, options?: SpeakOptions) => boolean;
+  readonly speakSequence: (items: readonly SpeakSequenceItem[]) => boolean;
   readonly cancelSpeech: () => void;
   readonly pauseSpeech: () => void;
   readonly resumeSpeech: () => void;
@@ -292,6 +319,7 @@ export interface OceanRescueNamespace {
   Rescue?: RescueApi;
   SeaTurtle?: SeaTurtleApi;
   SeaTurtleScene?: SeaTurtleSceneApi;
+  SeaTurtleDiscovery?: SeaTurtleDiscoveryApi;
   Crab?: MissionRuntimeApi;
   CrabScene?: RescueSceneApi;
   YoungWhale?: MissionRuntimeApi;

@@ -11,6 +11,7 @@
  */
 
 import type {
+   AudioApi,
    GupId,
    GupsApi,
    MissionId,
@@ -21,6 +22,7 @@ import type {
    RescueSceneApi,
    RenderRuntimeTravelApi,
    SeaTurtleApi,
+   SeaTurtleDiscoveryApi,
    StateApi,
    TravelApi,
 } from "../contracts/runtime-abi";
@@ -30,6 +32,7 @@ export interface RescueSiteSequence {
   readonly sequenceId: number;
   readonly missionId: MissionId;
   readonly gupId: GupId;
+  readonly companion: string;
   readonly missionContent: RescueMissionContent;
   tutorialComplete: boolean;
   tutorialSkipped: boolean;
@@ -52,6 +55,14 @@ export interface RescueSiteTutorialHostApi extends LaunchTravelAppApi {
   clearPauseSensitiveHoldTimer(): void;
   shutdownActiveRescueForMenu(): void;
   abandonRescueToMenu(): void;
+  /** Show the rescue-site speech bubbles (companion + target). */
+  showRescueSpeech(content: RescueMissionContent, companionName: string): boolean;
+  /** Hide the rescue-site speech bubbles. */
+  hideRescueSpeech(): boolean;
+  /** Hide the travel-only chrome (instruction line, distance meter, scan). */
+  hideTravelChrome(): boolean;
+  /** Restore the travel-only chrome. */
+  showTravelChrome(): boolean;
 }
 
 export interface RescueSiteTutorialAppApi extends RescueSiteTutorialHostApi {}
@@ -77,8 +88,10 @@ interface ControllerDependencies {
    readonly RenderRuntime: RenderRuntimeTravelApi | null;
    readonly SeaTurtle: SeaTurtleApi | null;
    readonly SeaTurtleScene: RescueSceneApi | null;
+   readonly SeaTurtleDiscovery: SeaTurtleDiscoveryApi | null;
    readonly Crab: MissionRuntimeApi | null;
    readonly CrabScene: RescueSceneApi | null;
+   readonly Audio: AudioApi | null;
 }
 
 function resolveDependencies(): ControllerDependencies {
@@ -100,8 +113,10 @@ function resolveDependencies(): ControllerDependencies {
     RenderRuntime: namespace?.RenderRuntime ?? null,
     SeaTurtle: namespace?.SeaTurtle ?? null,
     SeaTurtleScene: namespace?.SeaTurtleScene ?? null,
+    SeaTurtleDiscovery: namespace?.SeaTurtleDiscovery ?? null,
     Crab: namespace?.Crab ?? null,
     CrabScene: namespace?.CrabScene ?? null,
+    Audio: namespace?.Audio ?? null,
   };
 }
 
@@ -117,8 +132,10 @@ export function installRescueSiteTutorialController(
     RenderRuntime,
     SeaTurtle,
     SeaTurtleScene,
+    SeaTurtleDiscovery,
     Crab,
     CrabScene,
+    Audio,
   } = resolveDependencies();
 
   let rescueSequenceCounter = 0;
@@ -359,6 +376,7 @@ export function installRescueSiteTutorialController(
       sequenceId: rescueSequenceCounter,
       missionId: mission.id,
       gupId: gup.id,
+      companion: mission.companion,
       missionContent: content,
       tutorialComplete: false,
       tutorialSkipped: false,
@@ -384,6 +402,12 @@ export function installRescueSiteTutorialController(
     elements.ready.hidden = false;
     elements.tutorial.hidden = true;
 
+    // The travel chrome describes the travel stage, not the rescue site.
+    host.hideTravelChrome();
+    // The target shouts for help in English; the companion answers in English.
+    host.showRescueSpeech(content, mission.companion);
+    speakRescueDialogue(content, mission.companion);
+
     const status = document.getElementById("ocean-rescue-status");
     if (status) {
       status.textContent = "Rescue site: " + content.situation;
@@ -392,6 +416,38 @@ export function installRescueSiteTutorialController(
     scheduleSiteTransitionCompletion(sequence);
     host.syncPauseButton();
     return true;
+  }
+
+  /**
+   * Read the rescue-site dialogue out loud. The target asks for help first,
+   * then the companion answers. The queue keeps both lines audible instead of
+   * cancelling one with the other.
+   */
+  function speakRescueDialogue(
+    content: RescueMissionContent,
+    companionName: string,
+  ): void {
+    if (!Audio || typeof Audio.speakSequence !== "function") {
+      return;
+    }
+    const companionVoice = companionName.toLowerCase();
+    const items: { text: string; options: { companion: string } }[] = [];
+    if (typeof content.targetLine === "string" && content.targetLine.length > 0) {
+      items.push({ text: content.targetLine, options: { companion: "target" } });
+    }
+    if (
+      typeof content.companionLine === "string" &&
+      content.companionLine.length > 0
+    ) {
+      items.push({
+        text: content.companionLine,
+        options: { companion: companionVoice },
+      });
+    }
+    if (items.length === 0) {
+      return;
+    }
+    Audio.speakSequence(items);
   }
 
   function handoffTravelArrival(): boolean {
@@ -411,6 +467,16 @@ export function installRescueSiteTutorialController(
     const elements = resolveRescueElements();
     if (mission === null || content === null || gup === null || elements === null) {
       return false;
+    }
+    // The sea-turtle rescue site only opens after the child looked through the
+    // net and found the turtle. The scan button lives in the bottom-right
+    // corner of the stage, so skipping the scan would also leave a control
+    // sitting on top of the rescue interaction area.
+    if (mission.id === "sea-turtle" && SeaTurtleDiscovery) {
+      const discovery = SeaTurtleDiscovery.getSnapshot();
+      if (discovery.active && !discovery.readyForRescue) {
+        return false;
+      }
     }
     if (!beginRescueArrival(mission, gup, content, elements)) {
       return false;
@@ -595,6 +661,7 @@ export function installRescueSiteTutorialController(
     clearSiteTransitionTimer();
     clearTutorialTimer();
     host.setActiveRescueSequence(null);
+    host.hideRescueSpeech();
     if (SeaTurtleScene?.isMounted()) {
       SeaTurtleScene.exit();
     }
@@ -621,25 +688,6 @@ export function installRescueSiteTutorialController(
   function clearPauseSensitiveHoldTimer(): void {
     // Crab hold timer cleanup is owned by WP-33F. This bridge is a no-op
     // placeholder for the typed controller boundary.
-  }
-
-  function shutdownActiveRescueForMenu(): void {
-    const sequence = host.getActiveRescueSequence();
-    clearSiteTransitionTimer();
-    clearTutorialTimer();
-    host.setActiveRescueSequence(null);
-    if (SeaTurtleScene?.isMounted()) {
-      SeaTurtleScene.exit();
-    }
-    if (CrabScene?.isMounted()) {
-      CrabScene.exit();
-    }
-    const elements = resolveRescueElements();
-    if (elements) {
-      setTutorialActiveClass(elements.tutorial, false);
-      setTutorialHoldClass(elements.tutorial, false);
-      elements.hand.hidden = true;
-    }
   }
 
   const controller = host as RescueSiteTutorialAppApi;

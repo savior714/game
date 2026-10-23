@@ -570,21 +570,27 @@ def test_rescue_catalog_timing_and_public_contract() -> None:
             targetLabel: "Sea turtle",
             toolLabel: "Cutter",
             situation: "The sea turtle is tangled in three ropes.",
-            tutorial: "Start here. Follow the rope to the end!"
+            tutorial: "Start here. Follow the rope to the end!",
+            targetLine: "Help! I am tangled in ropes. Please cut them and save me!",
+            companionLine: "I found a sea turtle tangled in ropes. Let\u2019s cut them free!"
           },
           {
             missionId: "crab",
             targetLabel: "Crab",
             toolLabel: "Grabber arm",
             situation: "The crab is trapped under three rocks.",
-            tutorial: "Hold the rock. Move it. Release it in the zone!"
+            tutorial: "Hold the rock. Move it. Release it in the zone!",
+            targetLine: "Help! Rocks are on my back. Please move them and save me!",
+            companionLine: "A crab is stuck under rocks. Let\u2019s lift them and set it free!"
           },
           {
             missionId: "young-whale",
             targetLabel: "Young whale",
             toolLabel: "GUP hook",
             situation: "Debris is blocking the young whale\u2019s path.",
-            tutorial: "Drag from the debris to the GUP hook!"
+            tutorial: "Drag from the debris to the GUP hook!",
+            targetLine: "Help! Trash blocks my way. Please tow it away and save me!",
+            companionLine: "A young whale is stuck behind debris. Let\u2019s tow it away!"
           }
         ];
         assert.deepStrictEqual(plain(Rescue.Catalog), expected);
@@ -596,6 +602,7 @@ def test_rescue_catalog_timing_and_public_contract() -> None:
             "Catalog",
             "SiteTransitionMs",
             "TutorialDurationMs",
+            "getDialogueLine",
             "getMissionContent",
             "hasArrived"
           ].sort()

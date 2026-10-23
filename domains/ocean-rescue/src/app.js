@@ -26,7 +26,19 @@
   var lastSpokenText = "";
   var lastSpokenOptions = null;
   var isPausedSpeaking = false;
+  var speechQueue = [];
   var AUDIO_STORAGE_KEY = "ocean_rescue_audio_settings";
+
+  // Per-character voices for the spoken rescue dialogue. Every line the child
+  // hears in Ocean Rescue is English, so the default utterance language is
+  // English too; a Korean line opts back in explicitly.
+  var DEFAULT_SPEECH_LANG = "en-US";
+  var SPEECH_VOICES = {
+    peso: { pitch: 1.18, rate: 1.0 },
+    tweak: { pitch: 1.32, rate: 1.05 },
+    barnacles: { pitch: 0.82, rate: 0.9 },
+    target: { pitch: 1.45, rate: 1.08 }
+  };
 
   function loadAudioSettings() {
     try {
@@ -71,6 +83,24 @@
 
   loadAudioSettings();
 
+  // Speak the queued lines in order. `speakSynthesis.cancel()` runs before
+  // every utterance, so a plain sequence of `speak()` calls would cancel the
+  // previous line; the queue keeps each line audible in turn.
+  function runSpeechQueue() {
+    if (speechQueue.length === 0) {
+      return false;
+    }
+    if (typeof Audio._speakUtterance !== "function") {
+      speechQueue.length = 0;
+      return false;
+    }
+    var item = speechQueue.shift();
+    Audio._speakUtterance(item.text, item.options, function () {
+      runSpeechQueue();
+    });
+    return true;
+  }
+
   var Audio = window.OceanRescue.Audio || {
     prime: function () {
       var ctx = getAudioContext();
@@ -97,7 +127,7 @@
       this.playClick();
     },
     testVoiceVolume: function () {
-      this.speak("옥토넛 출동 준비 완료!", { companion: "barnacles" });
+      this.speak("옥토넛 출동 준비 완료!", { companion: "barnacles", lang: "ko-KR" });
     },
     playClick: function () {
       if (soundVolume <= 0) return;
@@ -340,30 +370,44 @@
         osc.stop(now + 0.75);
       } catch (e) {}
     },
-    speak: function (text, options) {
-      if (!text || typeof text !== "string" || voiceVolume <= 0) return false;
-      if (typeof window === "undefined" || !window.speechSynthesis || typeof window.SpeechSynthesisUtterance === "undefined") return false;
-      lastSpokenText = text;
-      lastSpokenOptions = options || null;
+    // Speak one utterance. A direct line interrupts whatever is queued.
+    _speakUtterance: function (text, options, onDone) {
+      var voice = null;
+      if (
+        options &&
+        typeof options.companion === "string" &&
+        Object.prototype.hasOwnProperty.call(SPEECH_VOICES, options.companion)
+      ) {
+        voice = SPEECH_VOICES[options.companion];
+      }
+      var finish = function () {
+        if (options && typeof options.onEnd === "function") options.onEnd();
+        if (typeof onDone === "function") onDone();
+      };
       var doSpeak = function () {
         try {
-          window.speechSynthesis.cancel();
           var utterance = new window.SpeechSynthesisUtterance(text);
-          utterance.lang = "ko-KR";
+          utterance.lang = (
+            options &&
+            typeof options.lang === "string" &&
+            options.lang.length > 0
+          ) ? options.lang : DEFAULT_SPEECH_LANG;
           utterance.volume = voiceVolume / 100;
-          utterance.rate = (options && typeof options.rate === "number") ? options.rate : 0.95;
-          utterance.pitch = (options && typeof options.pitch === "number") ? options.pitch : 1.0;
+          utterance.rate = (options && typeof options.rate === "number") ? options.rate : (voice ? voice.rate : 0.95);
+          utterance.pitch = (options && typeof options.pitch === "number") ? options.pitch : (voice ? voice.pitch : 1.0);
           currentUtterance = utterance;
           utterance.onend = function () {
             currentUtterance = null;
-            if (options && typeof options.onEnd === "function") options.onEnd();
+            finish();
           };
           utterance.onerror = function () {
             currentUtterance = null;
-            if (options && typeof options.onEnd === "function") options.onEnd();
+            finish();
           };
           window.speechSynthesis.speak(utterance);
-        } catch (e) {}
+        } catch (e) {
+          finish();
+        }
       };
       if (typeof window !== "undefined" && typeof window.setTimeout === "function") {
         window.setTimeout(doSpeak, 0);
@@ -372,8 +416,44 @@
       }
       return true;
     },
+    speak: function (text, options) {
+      if (!text || typeof text !== "string" || voiceVolume <= 0) return false;
+      if (typeof window === "undefined" || !window.speechSynthesis || typeof window.SpeechSynthesisUtterance === "undefined") return false;
+      if (typeof this._speakUtterance !== "function") return false;
+      lastSpokenText = text;
+      lastSpokenOptions = options || null;
+      speechQueue.length = 0;
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+      this._speakUtterance(text, options, null);
+      return true;
+    },
+    // Speak several lines one after another. Each line keeps its own voice,
+    // so the companion and the rescue target are heard as different speakers.
+    speakSequence: function (items) {
+      if (!Array.isArray(items) || items.length === 0) return false;
+      if (voiceVolume <= 0) return false;
+      if (typeof window === "undefined" || !window.speechSynthesis || typeof window.SpeechSynthesisUtterance === "undefined") return false;
+      if (typeof this._speakUtterance !== "function") return false;
+      var pending = [];
+      for (var i = 0; i < items.length; i += 1) {
+        var item = items[i];
+        if (!item || typeof item.text !== "string" || item.text.length === 0) continue;
+        pending.push(item);
+      }
+      if (pending.length === 0) return false;
+      lastSpokenText = pending[pending.length - 1].text;
+      lastSpokenOptions = pending[pending.length - 1].options || null;
+      speechQueue.length = 0;
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+      for (var q = 0; q < pending.length; q += 1) {
+        speechQueue.push(pending[q]);
+      }
+      runSpeechQueue();
+      return true;
+    },
     cancelSpeech: function () {
       currentUtterance = null;
+      speechQueue.length = 0;
       if (typeof window !== "undefined" && window.speechSynthesis) {
         try { window.speechSynthesis.cancel(); } catch (e) {}
       }
@@ -412,7 +492,6 @@
   var travelInputBound = false;
   var travelScanButtonBound = false;
   var travelCanvas = null;
-  var travelPaintCanvas = null;
 
   var rescueSequenceCounter = 0;
   var activeRescueSequence = null;
@@ -1344,6 +1423,7 @@
 
     hideTravelProgress();
     showTravelProgress(Travel.getSnapshot());
+    showTravelChrome();
     travelRunIdCounter += 1;
     var runId = travelRunIdCounter;
     activeTravelRunId = runId;
@@ -1356,7 +1436,6 @@
 
     var inputCanvas = resolveVisibleInputCanvas();
     travelCanvas = inputCanvas;
-    travelPaintCanvas = resolvePaintCanvas();
     bindTravelPointerInput(inputCanvas);
     bindTravelScanButton();
 
@@ -1424,8 +1503,11 @@
     }
     travelLastTimestamp = timestamp;
     syncTravelProgress(Travel.getSnapshot());
-    if (tryBeginRescueArrival()) {
-      renderRescueSiteFrame(travelPaintCanvas, resolveTravelContext());
+    // The rescue handoff is owned by the installed rescue-site controller when
+    // one is present. Calling the public `App.handoffTravelArrival()` keeps a
+    // single owner of the rescue-site flow instead of running a second, subtly
+    // different copy of the arrival rules from this loop.
+    if (App.handoffTravelArrival()) {
       return;
     }
     if (TravelScene && TravelScene.isMounted()) {
@@ -1438,10 +1520,6 @@
         travelAnimationFrame(runId, nextTimestamp);
       });
     }
-  }
-
-  function resolveTravelContext() {
-    return resolvePaintContext();
   }
 
   function resolveVisibleInputCanvas() {
@@ -1670,6 +1748,102 @@
     };
   }
 
+  // Rescue-site speech bubbles.
+  //
+  // The rescue target asks for help in its own English words and the
+  // companion answers, so the child reads and hears the rescue request before
+  // touching anything. The copy itself is owned by `Rescue.getMissionContent`
+  // so the bubble, the narration and the spoken line can never drift apart.
+  function resolveRescueSpeechElements() {
+    var bubbles = document.getElementById("ocean-rescue-rescue-bubbles");
+    var companionBubble = document.getElementById("ocean-rescue-rescue-companion-bubble");
+    var companionLine = document.getElementById("ocean-rescue-rescue-companion-line");
+    var companionName = document.getElementById("ocean-rescue-rescue-companion-name");
+    var targetBubble = document.getElementById("ocean-rescue-rescue-target-bubble");
+    var targetLine = document.getElementById("ocean-rescue-rescue-target-line");
+    var targetName = document.getElementById("ocean-rescue-rescue-target-name");
+    if (
+      !bubbles ||
+      !companionBubble ||
+      !companionLine ||
+      !companionName ||
+      !targetBubble ||
+      !targetLine ||
+      !targetName
+    ) {
+      return null;
+    }
+    return {
+      bubbles: bubbles,
+      companionBubble: companionBubble,
+      companionLine: companionLine,
+      companionName: companionName,
+      targetBubble: targetBubble,
+      targetLine: targetLine,
+      targetName: targetName
+    };
+  }
+
+  function showRescueSpeech(content, companionName) {
+    var els = resolveRescueSpeechElements();
+    if (els === null || !content || typeof content !== "object") {
+      return false;
+    }
+    var targetLine = typeof content.targetLine === "string" ? content.targetLine : "";
+    var companionLine = typeof content.companionLine === "string" ? content.companionLine : "";
+    if (targetLine.length === 0 || companionLine.length === 0) {
+      hideRescueSpeech();
+      return false;
+    }
+    els.targetLine.textContent = targetLine;
+    els.targetName.textContent =
+      typeof content.targetLabel === "string" ? content.targetLabel : "";
+    els.companionLine.textContent = companionLine;
+    els.companionName.textContent =
+      typeof companionName === "string" ? companionName : "";
+    els.bubbles.hidden = false;
+    return true;
+  }
+
+  function hideRescueSpeech() {
+    var els = resolveRescueSpeechElements();
+    if (els === null) {
+      return false;
+    }
+    els.bubbles.hidden = true;
+    els.targetLine.textContent = "";
+    els.targetName.textContent = "";
+    els.companionLine.textContent = "";
+    els.companionName.textContent = "";
+    return true;
+  }
+
+  // The travel instruction and the distance meter describe the travel stage.
+  // They must not stay on screen while the rescue site is open.
+  function setTravelHelpVisible(visible) {
+    var help = document.getElementById("ocean-rescue-travel-help");
+    if (!help) {
+      return false;
+    }
+    help.hidden = visible !== true;
+    return true;
+  }
+
+  function hideTravelChrome() {
+    setTravelHelpVisible(false);
+    hideTravelProgress();
+    var scan = document.getElementById("ocean-rescue-travel-scan");
+    if (scan) {
+      scan.hidden = true;
+    }
+    return true;
+  }
+
+  function showTravelChrome() {
+    setTravelHelpVisible(true);
+    return true;
+  }
+
   function handoffTravelArrival() {
     if (!tryBeginRescueArrival()) {
       return false;
@@ -1781,6 +1955,7 @@
       sequenceId: rescueSequenceCounter,
       missionId: mission.id,
       gupId: gup.id,
+      companion: mission.companion,
       missionContent: content,
       tutorialComplete: false,
       tutorialSkipped: false
@@ -1834,15 +2009,34 @@
     els.ready.hidden = false;
     els.tutorial.hidden = true;
 
+    // The travel chrome describes the travel stage, not the rescue site.
+    hideTravelChrome();
+    // The target asks for help in English; the companion answers in English.
+    showRescueSpeech(content, mission.companion);
+
     var status = document.getElementById("ocean-rescue-status");
     if (status) {
       status.textContent = "Rescue site: " + content.situation;
     }
 
-    if (Audio && typeof Audio.speak === "function") {
-      Audio.speak(content.situation, {
-        companion: (mission.companion || "").toLowerCase()
-      });
+    // The target shouts for help first, then the companion answers. The queue
+    // keeps both lines audible instead of cancelling one with the other.
+    if (Audio && typeof Audio.speakSequence === "function") {
+      var companionVoice = (mission.companion || "").toLowerCase();
+      var speechItems = [];
+      if (typeof content.targetLine === "string" && content.targetLine.length > 0) {
+        speechItems.push({ text: content.targetLine, options: { companion: "target" } });
+      }
+      if (typeof content.companionLine === "string" && content.companionLine.length > 0) {
+        speechItems.push({ text: content.companionLine, options: { companion: companionVoice } });
+      }
+      if (speechItems.length > 0) {
+        Audio.speakSequence(speechItems);
+      }
+    } else if (Audio && typeof Audio.speak === "function") {
+      if (typeof content.targetLine === "string" && content.targetLine.length > 0) {
+        Audio.speak(content.targetLine, { companion: "target" });
+      }
     }
 
     scheduleSiteTransitionCompletion(sequence);
@@ -2037,6 +2231,7 @@
     cancelPauseableTimer("site-transition");
     clearTutorialTimer();
     activeRescueSequence = null;
+    hideRescueSpeech();
     if (SeaTurtleScene && SeaTurtleScene.isMounted()) {
       SeaTurtleScene.exit();
     }
@@ -3317,6 +3512,7 @@
   function completeSeaTurtleSuccess() {
     clearSeaTurtleSuccessVisual();
     hideAssistHand();
+    hideRescueSpeech();
     var sequence = activeRescueSequence;
     if (sequence === null) {
       return;
@@ -3668,6 +3864,7 @@
   function completeCrabSuccess() {
     clearCrabSuccessVisual();
     hideAssistHand();
+    hideRescueSpeech();
     var sequence = activeRescueSequence;
     if (sequence === null) {
       return;
@@ -4058,6 +4255,7 @@
   function completeYoungWhaleSuccess() {
     clearYoungWhaleSuccessVisual();
     hideAssistHand();
+    hideRescueSpeech();
     var sequence = activeRescueSequence;
     if (sequence === null) {
       return;
@@ -4153,6 +4351,7 @@
   }
 
   function shutdownRescueInteractionState() {
+    hideRescueSpeech();
     if (typeof App.stopSeaTurtleSession === "function") {
       App.stopSeaTurtleSession();
     } else {
@@ -6950,6 +7149,10 @@
       activeRescueSequence = sequence;
     },
     renderRescueSiteFrame: renderRescueSiteFrame,
+    showRescueSpeech: showRescueSpeech,
+    hideRescueSpeech: hideRescueSpeech,
+    hideTravelChrome: hideTravelChrome,
+    showTravelChrome: showTravelChrome,
     startRescueInteraction: startRescueInteraction,
     resolveVisibleInputCanvas: resolveVisibleInputCanvas,
     resolvePaintCanvas: resolvePaintCanvas,

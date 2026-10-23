@@ -502,3 +502,33 @@ function showWeaknessClear() {
   fb.textContent = '✨ 약점 연산 정복! 정말 똑똑해요! ✨';
   fb.className = 'weakness-clear-message';
 }
+
+function refreshMathFromSync() {
+  try {
+    stats = loadStats();
+    initMathLearningLoop();
+    if (typeof updateDailyGoalUI === 'function') {
+      updateDailyGoalUI();
+    }
+  } catch (e) {
+    console.warn('[MathEngine] Sync refresh error:', e);
+  }
+}
+
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  window.addEventListener('cloud-sync-complete', refreshMathFromSync);
+  window.addEventListener('storage', (event) => {
+    if (
+      event
+      && event.key
+      && event.key !== STATS_KEY
+      && event.key !== 'aiden_math_daily_goal_v1'
+      && event.key !== 'aiden_math_streak_v1'
+      && event.key !== 'aiden_math_goal_preference_v1'
+      && event.key !== 'aiden_math_learning_evidence_v1'
+    ) {
+      return;
+    }
+    refreshMathFromSync();
+  });
+}

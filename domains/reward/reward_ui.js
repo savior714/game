@@ -1545,11 +1545,31 @@ const RewardSystemUI = (() => {
       try {
         localStorage.setItem('study_youtube_free_time_session_v1', JSON.stringify(session));
       } catch (e) {}
+      if (window.SyncEngine && typeof window.SyncEngine.pushStats === 'function') {
+        window.SyncEngine.pushStats('study_youtube_free_time_session_v1', session);
+      }
 
       overlay.remove();
       currentActiveSession = null;
       restoreContextualControl();
     });
+  }
+
+  function clearFreeTimeSessionUI() {
+    if (sessionMonitorIntervalId) {
+      clearInterval(sessionMonitorIntervalId);
+      sessionMonitorIntervalId = null;
+    }
+    currentActiveSession = null;
+    const existingOverlay = document.getElementById('yt-expired-overlay');
+    if (existingOverlay) {
+      existingOverlay.remove();
+    }
+    if (activePipWindow && !activePipWindow.closed) {
+      try { activePipWindow.close(); } catch (e) {}
+      activePipWindow = null;
+    }
+    restoreContextualControl();
   }
 
   function startSessionMonitor(session) {
@@ -1565,6 +1585,10 @@ const RewardSystemUI = (() => {
         if (raw) {
           const saved = JSON.parse(raw);
           if (saved && saved.sessionId === session.sessionId) {
+            if (saved.status === 'acknowledged') {
+              clearFreeTimeSessionUI();
+              return;
+            }
             session.endsAt = saved.endsAt || session.endsAt;
             session.status = saved.status || session.status;
             session.warningEmittedAt = saved.warningEmittedAt || session.warningEmittedAt;
@@ -1594,6 +1618,9 @@ const RewardSystemUI = (() => {
         try {
           localStorage.setItem('study_youtube_free_time_session_v1', JSON.stringify(session));
         } catch (e) {}
+        if (window.SyncEngine && typeof window.SyncEngine.pushStats === 'function') {
+          window.SyncEngine.pushStats('study_youtube_free_time_session_v1', session);
+        }
         currentActiveSession = null;
         restoreContextualControl();
         if (activePipWindow && !activePipWindow.closed) {
@@ -1656,7 +1683,8 @@ const RewardSystemUI = (() => {
   return {
     injectCriticalStyles, injectStyles, injectInventoryBar, syncInventoryBarWithState, applyBodyTopOffset, updateUI,
     playEntranceAndAddGem, openShopModal, spawnExplosion, showToast, showGrowthToast,
-    openYoutubeModal, openSnackModal, openMarbleModal, openBubbleModal, openCustomModal, renderFreeTimeTimerUI, renderExpiredFreeTimeSessionUI
+    openYoutubeModal, openSnackModal, openMarbleModal, openBubbleModal, openCustomModal,
+    renderFreeTimeTimerUI, renderExpiredFreeTimeSessionUI, clearFreeTimeSessionUI
   };
 })();
 

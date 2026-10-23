@@ -111,6 +111,8 @@ function setSubject(sub) {
   if (backupSection) backupSection.style.display = 'block';
   const growthPanel = document.getElementById('growth-panel');
   if (growthPanel) growthPanel.classList.add('hidden');
+  const auditPanel = document.getElementById('audit-panel');
+  if (auditPanel) auditPanel.classList.add('hidden');
 
   // 탭 라벨 스타일 변환
   document.querySelectorAll('.tab-btn').forEach(b => {
@@ -377,9 +379,19 @@ function readStoredRewardState() {
 function loadRewards() {
   const stored = readStoredRewardState();
   const Ledger = rewardLedgerModule();
+  const hadCurrentEpoch = Boolean(stored && Ledger && Ledger.getEpoch(stored) >= Ledger.BASELINE_RESET_EPOCH);
   if (stored && Ledger) {
     // 원장이 있으면 잔액은 항상 원장 합계로 복원한다(스냅샷 값 신뢰 금지).
-    rewardState = Ledger.normalizeState(stored, { adoptFields: true });
+    rewardState = Ledger.normalizeState(stored, { adoptFields: true, at: Date.now() });
+    if (!hadCurrentEpoch) {
+      localStorage.setItem('study_rewards', JSON.stringify(rewardState));
+      try {
+        localStorage.setItem('study_rewards_ledger_v1', JSON.stringify(rewardState.reward_ledger));
+      } catch (_e) {}
+      if (window.SyncEngine && typeof window.SyncEngine.pushStats === 'function') {
+        window.SyncEngine.pushStats('study_rewards', rewardState);
+      }
+    }
   } else if (stored) {
     rewardState = stored;
   }
@@ -434,7 +446,7 @@ function loadRewards() {
  * 보상 잔액을 원장 델타로 조정한다(절대값 지정).
  * 스냅샷을 통째로 덮어쓰지 않으므로 다른 탭의 소비 기록을 되돌리지 않는다.
  */
-function setRewardInventory(key, value, reason) {
+function setRewardInventory(key, value, reason, detail) {
   const Ledger = rewardLedgerModule();
   if (!Ledger) {
     if (key.startsWith('custom:')) rewardState.custom_inventory[key.slice('custom:'.length)] = value;
@@ -445,6 +457,10 @@ function setRewardInventory(key, value, reason) {
   rewardState = Ledger.setQuantity(memory, key, value, {
     type: 'adjust',
     reason: reason,
+    source: 'guardian',
+    actor: 'guardian',
+    surface: 'guardian',
+    detail: detail || '보호자 관리에서 보상 수량 정리',
     at: Date.now(),
   }).state;
 }
@@ -709,10 +725,10 @@ function deleteCustomReward(id) {
     const confirmDelete = confirm('⚠️ 아이가 이미 이 보상을 인벤토리에 보유하고 있습니다.\\n삭제 시 아이의 인벤토리에서도 영구적으로 삭제되며 복구할 수 없습니다.\\n\\n정말 삭제하시겠습니까?');
     if (!confirmDelete) return;
     
-    if (id === 'youtube') setRewardInventory('youtube_minutes', 0, 'guardian_reward_removed');
-    else if (id === 'snack') setRewardInventory('snacks', 0, 'guardian_reward_removed');
-    else if (id === 'marble') setRewardInventory('marble_plays', 0, 'guardian_reward_removed');
-    else setRewardInventory('custom:' + id, 0, 'guardian_reward_removed');
+    if (id === 'youtube') setRewardInventory('youtube_minutes', 0, 'guardian_reward_removed', `보호자 상점 항목 삭제 정리 (${item.label})`);
+    else if (id === 'snack') setRewardInventory('snacks', 0, 'guardian_reward_removed', `보호자 상점 항목 삭제 정리 (${item.label})`);
+    else if (id === 'marble') setRewardInventory('marble_plays', 0, 'guardian_reward_removed', `보호자 상점 항목 삭제 정리 (${item.label})`);
+    else setRewardInventory('custom:' + id, 0, 'guardian_reward_removed', `보호자 상점 항목 삭제 정리 (${item.label})`);
   } else {
     const confirmDelete = confirm('[' + item.label + '] 보상을 목록에서 삭제하시겠습니까?');
     if (!confirmDelete) return;
@@ -1090,6 +1106,8 @@ function showGrowthTab() {
   document.getElementById('reward-custom-section').style.display = 'none';
   const backupSection = document.getElementById('local-backup-section');
   if (backupSection) backupSection.style.display = 'block';
+  const auditPanel = document.getElementById('audit-panel');
+  if (auditPanel) auditPanel.classList.add('hidden');
   document.getElementById('growth-panel').classList.remove('hidden');
 
   // Update tab styles

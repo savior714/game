@@ -136,10 +136,13 @@ def _set_popup_blocked(page: Page) -> None:
 
 def _set_already_active(page: Page, initial_minutes: int = 30) -> None:
     """Pre-seed an active session so start returns already_active."""
+    units = initial_minutes // 10
     page.evaluate(f"""() => {{
-      localStorage.setItem('study_rewards', JSON.stringify({{ youtube_minutes: {initial_minutes} }}));
+      RewardSystem.resetAllRewards({{ note: 'active_seed' }});
+      if ({units} > 0) RewardSystem.add('youtube', {units});
       if (typeof FreeTimeSession !== 'undefined') {{
         const session = FreeTimeSession.start({{ now: Date.now(), sessionId: 'sess-active', source: 'reward' }});
+        session.resetEpoch = 2;
         localStorage.setItem('study_youtube_free_time_session_v1', JSON.stringify(session));
       }}
     }}""")
@@ -239,15 +242,12 @@ def test_youtube_atomic_start_flow() -> None:
             page.goto(domain_url, wait_until="domcontentloaded", timeout=15000)
             page.wait_for_timeout(2000)  # Let scripts load
 
-            # Pre-seed reward state: set localStorage AND update RewardSystem internal state
+            # Pre-seed reward state via audited ledger grants
             page.evaluate("""() => {
-              localStorage.setItem('study_rewards', JSON.stringify({ gems: 10, youtube_minutes: 30, snacks: 2 }));
-              if (typeof RewardSystem !== 'undefined') {
-                const s = RewardSystem.getState();
-                s.gems = 10;
-                s.youtube_minutes = 30;
-                s.snacks = 2;
-              }
+              RewardSystem.resetAllRewards({ note: 'test_seed' });
+              RewardSystem.add('gems', 10);
+              RewardSystem.add('youtube', 3);
+              RewardSystem.add('snack', 2);
             }""")
 
             # Verify reward scripts loaded
@@ -413,11 +413,8 @@ def test_youtube_popup_blocked() -> None:
             page.wait_for_timeout(2000)
 
             page.evaluate("""() => {
-              localStorage.setItem('study_rewards', JSON.stringify({ youtube_minutes: 30 }));
-              if (typeof RewardSystem !== 'undefined') {
-                const s = RewardSystem.getState();
-                s.youtube_minutes = 30;
-              }
+              RewardSystem.resetAllRewards({ note: 'popup_blocked_seed' });
+              RewardSystem.add('youtube', 3);
             }""")
 
             _open_youtube_modal(page)
@@ -489,13 +486,11 @@ def test_youtube_already_active() -> None:
 
             # Pre-seed active session after page loads
             page.evaluate("""() => {
-              localStorage.setItem('study_rewards', JSON.stringify({ youtube_minutes: 30 }));
-              if (typeof RewardSystem !== 'undefined') {
-                const s = RewardSystem.getState();
-                s.youtube_minutes = 30;
-              }
+              RewardSystem.resetAllRewards({ note: 'already_active_seed' });
+              RewardSystem.add('youtube', 3);
               if (typeof FreeTimeSession !== 'undefined') {
                 const session = FreeTimeSession.start({ now: Date.now(), sessionId: 'sess-active', source: 'reward' });
+                session.resetEpoch = 2;
                 localStorage.setItem('study_youtube_free_time_session_v1', JSON.stringify(session));
               }
             }""")
@@ -554,13 +549,10 @@ def test_youtube_audio_context_is_primed_on_start_click_and_reused_at_expiry() -
             page.wait_for_timeout(2000)
 
             page.evaluate("""() => {
-              localStorage.setItem('study_rewards', JSON.stringify({ gems: 10, youtube_minutes: 30, snacks: 2 }));
-              if (typeof RewardSystem !== 'undefined') {
-                const s = RewardSystem.getState();
-                s.gems = 10;
-                s.youtube_minutes = 30;
-                s.snacks = 2;
-              }
+              RewardSystem.resetAllRewards({ note: 'audio_prime_seed' });
+              RewardSystem.add('gems', 10);
+              RewardSystem.add('youtube', 3);
+              RewardSystem.add('snack', 2);
             }""")
 
             _open_youtube_modal(page)

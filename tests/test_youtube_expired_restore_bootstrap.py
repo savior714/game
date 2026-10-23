@@ -121,8 +121,16 @@ def test_youtube_expired_session_restored_on_bootstrap() -> None:
             # Pre-seed an elapsed running session (endsAt < now) before bootstrap
             page.evaluate("""() => {
                 const now = Date.now();
+                const seededRewards = RewardLedger.applyDeltas(
+                    {},
+                    [{ key: 'gems', delta: 5 }, { key: 'youtube_minutes', delta: 15 }],
+                    { at: now - 2000000, type: 'grant', reason: 'test_seed' }
+                ).state;
+                localStorage.setItem('study_rewards', JSON.stringify(seededRewards));
+                localStorage.setItem('study_rewards_ledger_v1', JSON.stringify(seededRewards.reward_ledger));
                 const session = {
                     schemaVersion: 1,
+                    resetEpoch: 1,
                     sessionId: 'yt-expired-seed-123',
                     status: 'running',
                     startedAt: now - 1000000,
@@ -135,7 +143,6 @@ def test_youtube_expired_session_restored_on_bootstrap() -> None:
                     acknowledgedAt: null
                 };
                 localStorage.setItem('study_youtube_free_time_session_v1', JSON.stringify(session));
-                localStorage.setItem('study_rewards', JSON.stringify({ gems: 5, youtube_minutes: 15 }));
             }""")
 
             # Reload page to trigger real RewardSystem.init() bootstrap with seeded storage
@@ -228,8 +235,16 @@ def test_youtube_acknowledged_session_restored_on_bootstrap() -> None:
             # Pre-seed an acknowledged session (endsAt < now, acknowledgedAt is finite) before bootstrap
             page.evaluate("""() => {
                 const now = Date.now();
+                const seededRewards = RewardLedger.applyDeltas(
+                    {},
+                    [{ key: 'gems', delta: 5 }, { key: 'youtube_minutes', delta: 15 }],
+                    { at: now - 2000000, type: 'grant', reason: 'test_seed' }
+                ).state;
+                localStorage.setItem('study_rewards', JSON.stringify(seededRewards));
+                localStorage.setItem('study_rewards_ledger_v1', JSON.stringify(seededRewards.reward_ledger));
                 const session = {
                     schemaVersion: 1,
+                    resetEpoch: 1,
                     sessionId: 'yt-ack-seed-456',
                     status: 'acknowledged',
                     startedAt: now - 1000000,
@@ -242,7 +257,6 @@ def test_youtube_acknowledged_session_restored_on_bootstrap() -> None:
                     acknowledgedAt: now - 50000
                 };
                 localStorage.setItem('study_youtube_free_time_session_v1', JSON.stringify(session));
-                localStorage.setItem('study_rewards', JSON.stringify({ gems: 5, youtube_minutes: 15 }));
             }""")
 
             # Reload page to trigger real RewardSystem.init() bootstrap with seeded storage

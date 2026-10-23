@@ -112,22 +112,26 @@ def test_guardian_export_backup_flow(
         localStorage.setItem('aiden_math_daily_goal_v1', JSON.stringify(goalData));
 
         // 3. Rewards & receipt
-        const rewardData = {
-          gems: 15,
-          youtube_minutes: 20,
-          snacks: 3,
-          marble_plays: 1,
-          bubble_plays: 0,
-          shop_items: [
-            { id: 'youtube', icon: '📺', label: '유튜브 10분', price: 1 },
-            { id: 'snack', icon: '🍪', label: '간식 1개', price: 1 }
+        let rewardData = RewardLedger.applyDeltas(
+          {},
+          [
+            { key: 'gems', delta: 15 },
+            { key: 'youtube_minutes', delta: 20 },
+            { key: 'snacks', delta: 3 },
+            { key: 'marble_plays', delta: 1 },
+            { key: 'custom:custom_badge', delta: 1 },
           ],
-          custom_inventory: { 'custom_badge': 1 },
-          claimed_receipts: {
-            'prev-receipt-01': { receiptId: 'prev-receipt-01', grantedAt: now }
-          }
+          { at: now, type: 'grant', reason: 'test_seed' }
+        ).state;
+        rewardData.shop_items = [
+          { id: 'youtube', icon: '📺', label: '유튜브 10분', price: 1 },
+          { id: 'snack', icon: '🍪', label: '간식 1개', price: 1 }
+        ];
+        rewardData.claimed_receipts = {
+          'prev-receipt-01': { receiptId: 'prev-receipt-01', grantedAt: now }
         };
         localStorage.setItem('study_rewards', JSON.stringify(rewardData));
+        localStorage.setItem('study_rewards_ledger_v1', JSON.stringify(rewardData.reward_ledger));
         localStorage.setItem('aiden_receipt_prev-receipt-01', JSON.stringify({ receiptId: 'prev-receipt-01', gems: 2 }));
     }"""
     )
@@ -360,7 +364,9 @@ def test_guardian_import_invalid_backup_safety(
     page.evaluate(
         """() => {
         localStorage.clear();
-        localStorage.setItem('study_rewards', JSON.stringify({ gems: 99 }));
+        const seeded = RewardLedger.applyDeltas({}, [{ key: 'gems', delta: 99 }], { at: Date.now(), type: 'grant' }).state;
+        localStorage.setItem('study_rewards', JSON.stringify(seeded));
+        localStorage.setItem('study_rewards_ledger_v1', JSON.stringify(seeded.reward_ledger));
     }"""
     )
     page.reload()

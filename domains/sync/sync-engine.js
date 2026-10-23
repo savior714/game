@@ -213,57 +213,141 @@
     return Array.isArray(data) ? data : [];
   }
 
+  function activeRewardEpochContext() {
+    const rewardLedger = typeof window !== 'undefined' && window.RewardLedger;
+    const minEpoch = rewardLedger && Number(rewardLedger.BASELINE_RESET_EPOCH) > 0
+      ? Number(rewardLedger.BASELINE_RESET_EPOCH)
+      : 1;
+    let epoch = minEpoch;
+    let resetAt = 0;
+    try {
+      const raw = localStorage.getItem('study_rewards');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && isPlainObject(parsed.reward_ledger)) {
+          epoch = Math.max(epoch, Number(parsed.reward_ledger.reset_epoch) || 0);
+          resetAt = Math.max(0, Number(parsed.reward_ledger.reset_at) || 0);
+        }
+      }
+    } catch (_e) {}
+    return { epoch, resetAt };
+  }
+
   function mergeFreeTimeSessionPayload(local, remote) {
+    const ctx = activeRewardEpochContext();
+    const isCurrentEpochSession = (s) => {
+      if (!isPlainObject(s)) return false;
+      if ((Number(s.resetEpoch) || 0) >= ctx.epoch) return true;
+      if (ctx.resetAt > 0 && Number.isFinite(Number(s.startedAt)) && Number(s.startedAt) > ctx.resetAt) {
+        return true;
+      }
+      return false;
+    };
+    const sanitize = (s) => {
+      if (!isPlainObject(s)) return {};
+      if (!isCurrentEpochSession(s)) {
+        return { schemaVersion: 1, status: 'inactive', sessionId: null, resetEpoch: ctx.epoch, resetAt: ctx.resetAt };
+      }
+      return s;
+    };
+    const L = sanitize(local);
+    const R = sanitize(remote);
     const valid = (s) => isPlainObject(s)
       && s.schemaVersion === 1
       && typeof s.sessionId === 'string'
       && s.sessionId.length > 0
       && Number.isFinite(Number(s.startedAt));
-    const vL = valid(local);
-    const vR = valid(remote);
-    if (!vL && !vR) return isPlainObject(remote) ? remote : (isPlainObject(local) ? local : {});
-    if (!vL) return remote;
-    if (!vR) return local;
+    const vL = valid(L);
+    const vR = valid(R);
+    if (!vL && !vR) {
+      return isPlainObject(R) && Object.keys(R).length > 0
+        ? R
+        : (isPlainObject(L) && Object.keys(L).length > 0 ? L : { schemaVersion: 1, status: 'inactive', sessionId: null, resetEpoch: ctx.epoch });
+    }
+    if (!vL) return { ...R, resetEpoch: ctx.epoch };
+    if (!vR) return { ...L, resetEpoch: ctx.epoch };
 
     const statusRank = { inactive: 0, running: 1, expired: 2, acknowledged: 3 };
-    if (local.sessionId === remote.sessionId) {
-      const rankL = statusRank[local.status] ?? 0;
-      const rankR = statusRank[remote.status] ?? 0;
-      const primary = rankL >= rankR ? local : remote;
-      const secondary = rankL >= rankR ? remote : local;
+    if (L.sessionId === R.sessionId) {
+      const rankL = statusRank[L.status] ?? 0;
+      const rankR = statusRank[R.status] ?? 0;
+      const primary = rankL >= rankR ? L : R;
+      const secondary = rankL >= rankR ? R : L;
       return {
         ...secondary,
         ...primary,
+        resetEpoch: ctx.epoch,
         warningEmittedAt: primary.warningEmittedAt || secondary.warningEmittedAt || null,
         expiredAt: primary.expiredAt || secondary.expiredAt || null,
         acknowledgedAt: primary.acknowledgedAt || secondary.acknowledgedAt || null,
       };
     }
-    return Number(local.startedAt) >= Number(remote.startedAt) ? local : remote;
+    return {
+      ...(Number(L.startedAt) >= Number(R.startedAt) ? L : R),
+      resetEpoch: ctx.epoch,
+    };
   }
 
   function mergeFreeTimeUsagePayload(local, remote) {
+    const ctx = activeRewardEpochContext();
+    const cleanUsage = (u) => {
+      if (!isPlainObject(u)) return null;
+      if ((Number(u.resetEpoch) || 0) < ctx.epoch) {
+        return {
+          schemaVersion: 1,
+          dateKey: typeof u.dateKey === 'string' && u.dateKey ? u.dateKey : new Date().toISOString().slice(0, 10),
+          morningMinutes: 0,
+          afternoonMinutes: 0,
+          resetEpoch: ctx.epoch,
+        };
+      }
+      return u;
+    };
+    const L = cleanUsage(local);
+    const R = cleanUsage(remote);
     const valid = (u) => isPlainObject(u)
       && u.schemaVersion === 1
       && typeof u.dateKey === 'string'
       && u.dateKey.length > 0;
-    const vL = valid(local);
-    const vR = valid(remote);
-    if (!vL && !vR) return isPlainObject(remote) ? remote : (isPlainObject(local) ? local : {});
-    if (!vL) return remote;
-    if (!vR) return local;
-    if (local.dateKey !== remote.dateKey) {
-      return local.dateKey > remote.dateKey ? local : remote;
+    const vL = valid(L);
+    const vR = valid(R);
+    if (!vL && !vR) return { schemaVersion: 1, dateKey: new Date().toISOString().slice(0, 10), morningMinutes: 0, afternoonMinutes: 0, resetEpoch: ctx.epoch };
+    if (!vL) return { ...R, resetEpoch: ctx.epoch };
+    if (!vR) return { ...L, resetEpoch: ctx.epoch };
+    if (L.dateKey !== R.dateKey) {
+      return { ...(L.dateKey > R.dateKey ? L : R), resetEpoch: ctx.epoch };
     }
     return {
       schemaVersion: 1,
-      dateKey: remote.dateKey,
-      morningMinutes: Math.max(Number(local.morningMinutes) || 0, Number(remote.morningMinutes) || 0),
-      afternoonMinutes: Math.max(Number(local.afternoonMinutes) || 0, Number(remote.afternoonMinutes) || 0),
+      dateKey: R.dateKey,
+      morningMinutes: Math.max(Number(L.morningMinutes) || 0, Number(R.morningMinutes) || 0),
+      afternoonMinutes: Math.max(Number(L.afternoonMinutes) || 0, Number(R.afternoonMinutes) || 0),
+      resetEpoch: ctx.epoch,
     };
   }
 
   function mergeMathDailyGoalPayload(local, remote) {
+    const ctx = activeRewardEpochContext();
+    const cleanGoal = (g) => {
+      if (!isPlainObject(g)) return {};
+      const gEpoch = Number(g.resetEpoch) || 0;
+      const completedAfterReset = ctx.resetAt > 0
+        && Number.isFinite(Number(g.completedAt))
+        && Number(g.completedAt) > ctx.resetAt;
+      if (gEpoch < ctx.epoch && !completedAfterReset && typeof g.date === 'string' && g.date) {
+        return {
+          ...g,
+          currentCount: 0,
+          completed: false,
+          completedAt: null,
+          rewardGranted: false,
+          resetEpoch: ctx.epoch,
+        };
+      }
+      return g;
+    };
+    local = cleanGoal(local);
+    remote = cleanGoal(remote);
     const valid = (g) => isPlainObject(g)
       && g.schemaVersion === 1
       && typeof g.date === 'string'
@@ -271,11 +355,11 @@
     const vL = valid(local);
     const vR = valid(remote);
     if (!vL && !vR) return isPlainObject(remote) ? remote : (isPlainObject(local) ? local : {});
-    if (!vL) return remote;
-    if (!vR) return local;
+    if (!vL) return { ...remote, resetEpoch: ctx.epoch };
+    if (!vR) return { ...local, resetEpoch: ctx.epoch };
 
     if (local.date !== remote.date) {
-      return local.date > remote.date ? local : remote;
+      return { ...(local.date > remote.date ? local : remote), resetEpoch: ctx.epoch };
     }
 
     const score = (g) => (g.rewardGranted ? 2000 : 0)
@@ -301,14 +385,15 @@
         completed,
         completedAt: primary.completedAt || secondary.completedAt || null,
         rewardGranted: Boolean(local.rewardGranted || remote.rewardGranted),
+        resetEpoch: ctx.epoch,
       };
     }
 
     if (scoreL !== scoreR) {
-      return scoreL > scoreR ? local : remote;
+      return { ...(scoreL > scoreR ? local : remote), resetEpoch: ctx.epoch };
     }
     // 둘 다 아직 진행도 0인 초기 상태라면 클라우드 목표를 기준으로 수렴한다.
-    return remote;
+    return { ...remote, resetEpoch: ctx.epoch };
   }
 
   function mergeMathStreakPayload(local, remote) {
@@ -364,8 +449,21 @@
   }
 
   function mergeDailyStreakPayload(local, remote) {
-    const L = isPlainObject(local) ? local : {};
-    const R = isPlainObject(remote) ? remote : {};
+    const ctx = activeRewardEpochContext();
+    const sanitizeStreak = (s) => {
+      if (!isPlainObject(s)) return {};
+      if ((Number(s.resetEpoch) || 0) < ctx.epoch) {
+        return {
+          ...s,
+          todayRecorded: false,
+          gemAwarded: {},
+          resetEpoch: ctx.epoch,
+        };
+      }
+      return s;
+    };
+    const L = sanitizeStreak(local);
+    const R = sanitizeStreak(remote);
     const history = { ...(isPlainObject(R.history) ? R.history : {}) };
     if (isPlainObject(L.history)) {
       for (const [d, cnt] of Object.entries(L.history)) {
@@ -398,16 +496,30 @@
       todayRecorded,
       gemAwarded,
       history,
+      resetEpoch: ctx.epoch,
     };
   }
 
   function mergeDiversityPayload(local, remote) {
-    const L = isPlainObject(local) ? local : {};
-    const R = isPlainObject(remote) ? remote : {};
+    const ctx = activeRewardEpochContext();
+    const sanitizeDiv = (d) => {
+      if (!isPlainObject(d)) return {};
+      if ((Number(d.resetEpoch) || 0) < ctx.epoch) {
+        return {
+          today: d.today || null,
+          subjectsWithCorrect: [],
+          gemAwarded: false,
+          resetEpoch: ctx.epoch,
+        };
+      }
+      return d;
+    };
+    const L = sanitizeDiv(local);
+    const R = sanitizeDiv(remote);
     const dayL = typeof L.today === 'string' ? L.today : '';
     const dayR = typeof R.today === 'string' ? R.today : '';
     if (dayL !== dayR) {
-      return dayL > dayR ? L : R;
+      return { ...(dayL > dayR ? L : R), resetEpoch: ctx.epoch };
     }
     const subjects = Array.from(new Set([
       ...(Array.isArray(R.subjectsWithCorrect) ? R.subjectsWithCorrect : []),
@@ -417,12 +529,26 @@
       today: dayR || dayL || null,
       subjectsWithCorrect: subjects,
       gemAwarded: Boolean(L.gemAwarded || R.gemAwarded),
+      resetEpoch: ctx.epoch,
     };
   }
 
   function mergeMilestonesPayload(local, remote) {
-    const L = isPlainObject(local) ? local : {};
-    const R = isPlainObject(remote) ? remote : {};
+    const ctx = activeRewardEpochContext();
+    const sanitizeMile = (m) => {
+      if (!isPlainObject(m)) return {};
+      if ((Number(m.resetEpoch) || 0) < ctx.epoch) {
+        return {
+          ...m,
+          achieved: {},
+          session: { rocketStreak: 0, milestoneStreak: 0, sessionCorrect: 0 },
+          resetEpoch: ctx.epoch,
+        };
+      }
+      return m;
+    };
+    const L = sanitizeMile(local);
+    const R = sanitizeMile(remote);
     const achieved = { ...(isPlainObject(R.achieved) ? R.achieved : {}) };
     if (isPlainObject(L.achieved)) {
       for (const [k, v] of Object.entries(L.achieved)) {
@@ -445,6 +571,7 @@
         totalRockets: Math.max(Number(lifeL.totalRockets) || 0, Number(lifeR.totalRockets) || 0),
         subjectsCompleted,
       },
+      resetEpoch: ctx.epoch,
     };
   }
 
@@ -461,11 +588,25 @@
     aiden_milestones: mergeMilestonesPayload,
   };
 
-  /** 병합된 보상 상태가 클라우드 행과 다른 사실(새 이벤트·영수증·치유된 잔액·메타)을 담고 있는지 확인한다. */
+  /** 병합된 보상 상태가 클라우드 행과 다른 사실(새 epoch·이벤트·영수증·치유된 잔액·메타)을 담고 있는지 확인한다. */
   function hasMoreRewardFacts(merged, remote, localTime = 0, dbTime = 0) {
     if (!merged || !remote) return true;
     const remoteLedger = isPlainObject(remote.reward_ledger) ? remote.reward_ledger : null;
     if (!remoteLedger || Number(remoteLedger.v) !== 1 || !Array.isArray(remoteLedger.events)) {
+      return true;
+    }
+    const mergedEpoch = Number(merged.reward_ledger?.reset_epoch) || 1;
+    const remoteEpoch = Number(remoteLedger.reset_epoch) || 0;
+    if (mergedEpoch !== remoteEpoch) {
+      return true;
+    }
+    const mergedResetCount = Array.isArray(merged.reward_ledger?.reset_history)
+      ? merged.reward_ledger.reset_history.length
+      : 0;
+    const remoteResetCount = Array.isArray(remoteLedger.reset_history)
+      ? remoteLedger.reset_history.length
+      : 0;
+    if (mergedResetCount > remoteResetCount) {
       return true;
     }
     if (remoteLedger.events.some((ev) => ev && ev.reason === 'legacy_snapshot_downward')) {
@@ -516,6 +657,12 @@
         return true;
       }
       if (Array.isArray(parsed.reward_ledger?.events) && parsed.reward_ledger.events.length > 0) {
+        return true;
+      }
+      if ((Number(parsed.reward_ledger?.reset_epoch) || 0) > 1) {
+        return true;
+      }
+      if (Array.isArray(parsed.reward_ledger?.reset_history) && parsed.reward_ledger.reset_history.length > 0) {
         return true;
       }
       if (Object.keys(parsed.claimed_receipts || {}).length > 0) return true;
@@ -673,7 +820,14 @@
         return;
       }
 
-      const rows = normalizePulledRows(data);
+      const rows = normalizePulledRows(data).slice().sort((a, b) => {
+        const aKey = a && a.data_key;
+        const bKey = b && b.data_key;
+        if (aKey === bKey) return 0;
+        if (aKey === 'study_rewards') return -1;
+        if (bKey === 'study_rewards') return 1;
+        return 0;
+      });
       const rowMap = new Map(rows.map((r) => [r.data_key, r]));
       const handledTargetKeys = new Set(rowMap.keys());
       const q = getQueue();
@@ -741,11 +895,16 @@
               : q.study_rewards;
           }
           const localTime = Number(localParsed && localParsed._updated_at) || 0;
+          const localEpochBefore = Number(localParsed && localParsed.reward_ledger && localParsed.reward_ledger.reset_epoch) || 0;
           const mergedRewards = mergeStudyRewardsPayload(localParsed || {}, row.payload);
+          const mergedEpoch = Number(mergedRewards && mergedRewards.reward_ledger && mergedRewards.reward_ledger.reset_epoch) || 1;
           const nextStr = JSON.stringify(mergedRewards);
           if (localRaw !== nextStr) {
             persistRewardsLocally(mergedRewards);
             updatedAny = true;
+          }
+          if (mergedEpoch > localEpochBefore && window.RewardSystem && typeof window.RewardSystem.syncCompanionEpoch === 'function') {
+            window.RewardSystem.syncCompanionEpoch(mergedEpoch, { pushCompanion: false });
           }
           const shouldPushMerged = hasMoreRewardFacts(
             mergedRewards,

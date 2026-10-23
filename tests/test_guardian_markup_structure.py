@@ -44,10 +44,16 @@ VOID_TAGS = frozenset(
     }
 )
 
-# guardian.js의 showGrowthTab()은 #reward-custom-section을 display:none으로 숨기고
+# guardian.js의 showGrowthTab() / showAuditTab()은 #reward-custom-section을 display:none으로 숨기고
 # 같은 순간 아래 패널을 보여 준다. 따라서 이 패널들은 #reward-custom-section의
 # 후손이면 안 된다.
-PEER_PANEL_IDS = ("growth-panel", "local-backup-section", "backup-restore-modal")
+PEER_PANEL_IDS = (
+    "growth-panel",
+    "audit-panel",
+    "local-backup-section",
+    "backup-restore-modal",
+    "reward-reset-modal",
+)
 
 
 class Node:

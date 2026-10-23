@@ -554,8 +554,100 @@
       // 3. Study Rewards
       if (datasets.studyRewards) {
         const k = STORAGE_KEYS.STUDY_REWARDS;
+        let existingEpoch = 1;
+        try {
+          const prevRaw = storage.getItem(k);
+          if (prevRaw) {
+            const prevParsed = JSON.parse(prevRaw);
+            existingEpoch = Math.max(1, Number(prevParsed?.reward_ledger?.reset_epoch) || 1);
+          }
+        } catch (_prevErr) {}
+
         if (datasets.studyRewards.present && datasets.studyRewards.data) {
-          storage.setItem(k, JSON.stringify(datasets.studyRewards.data));
+          const rawRewards = JSON.parse(JSON.stringify(datasets.studyRewards.data));
+          const hasLedgerRuntime = (typeof RewardLedger !== 'undefined' && Boolean(RewardLedger))
+            || (typeof window !== 'undefined' && Boolean(window && window.RewardLedger));
+          if (hasLedgerRuntime && rawRewards && typeof rawRewards === 'object' && !Array.isArray(rawRewards)) {
+            const restoreAt = Date.now();
+            const restoredEpoch = Math.max(existingEpoch, Number(rawRewards?.reward_ledger?.reset_epoch) || 0, 1);
+            if (rawRewards.reward_ledger && Number(rawRewards.reward_ledger.reset_epoch) >= 1) {
+              rawRewards.reward_ledger.reset_epoch = restoredEpoch;
+            } else {
+              const restoreEvents = [];
+              const fieldKeys = ['gems', 'youtube_minutes', 'snacks', 'marble_plays', 'bubble_plays'];
+              for (const fk of fieldKeys) {
+                const amt = Math.max(0, Math.trunc(Number(rawRewards[fk]) || 0));
+                if (amt > 0) {
+                  restoreEvents.push({
+                    id: `backup-restore-${restoreAt}-${fk}`,
+                    at: restoreAt,
+                    key: fk,
+                    delta: amt,
+                    type: 'adjust',
+                    reason: 'guardian_backup_restore',
+                    source: 'guardian',
+                    actor: 'guardian',
+                    surface: 'guardian',
+                    detail: '보호자 로컬 백업 파일 수동 복원',
+                  });
+                }
+              }
+              if (rawRewards.custom_inventory && typeof rawRewards.custom_inventory === 'object') {
+                for (const [cid, cv] of Object.entries(rawRewards.custom_inventory)) {
+                  const amt = Math.max(0, Math.trunc(Number(cv) || 0));
+                  if (amt > 0) {
+                    restoreEvents.push({
+                      id: `backup-restore-${restoreAt}-custom-${cid}`,
+                      at: restoreAt,
+                      key: `custom:${cid}`,
+                      delta: amt,
+                      type: 'adjust',
+                      reason: 'guardian_backup_restore',
+                      source: 'guardian',
+                      actor: 'guardian',
+                      surface: 'guardian',
+                      detail: `보호자 로컬 백업 파일 수동 복원 (${cid})`,
+                    });
+                  }
+                }
+              }
+              rawRewards.reward_ledger = {
+                v: 1,
+                reset_epoch: restoredEpoch,
+                reset_at: restoreAt,
+                reset_reason: 'guardian_backup_restore',
+                reset_history: [{
+                  epoch: restoredEpoch,
+                  at: restoreAt,
+                  reason: 'guardian_backup_restore',
+                  actor: 'guardian',
+                  surface: 'guardian',
+                  note: '보호자 로컬 백업 파일 수동 복원',
+                  previous_balances: {
+                    gems: 0,
+                    youtube_minutes: 0,
+                    snacks: 0,
+                    marble_plays: 0,
+                    bubble_plays: 0,
+                    custom_inventory: {},
+                  },
+                }],
+                base: {
+                  gems: 0,
+                  youtube_minutes: 0,
+                  snacks: 0,
+                  marble_plays: 0,
+                  bubble_plays: 0,
+                  custom_inventory: {},
+                },
+                base_at: 0,
+                folded_at: 0,
+                folded_count: 0,
+                events: restoreEvents,
+              };
+            }
+          }
+          storage.setItem(k, JSON.stringify(rawRewards));
           restoredKeys.push(k);
         } else {
           storage.removeItem(k);

@@ -39,8 +39,11 @@ const RewardSystem = (() => {
   // 1. 상태 관리 (State Management)
   // ──────────────────────────────────────────
   function ledger() {
-    return (typeof RewardLedger !== 'undefined' && RewardLedger &&
-      typeof RewardLedger.normalizeState === 'function') ? RewardLedger : null;
+    if (typeof RewardLedger !== 'undefined' && RewardLedger &&
+      typeof RewardLedger.normalizeState === 'function') return RewardLedger;
+    if (typeof window !== 'undefined' && window && window.RewardLedger &&
+      typeof window.RewardLedger.normalizeState === 'function') return window.RewardLedger;
+    return null;
   }
 
   function ensureDefaultShopItems(targetState) {
@@ -131,9 +134,168 @@ const RewardSystem = (() => {
     }
   }
 
+  function localDateKey(ms) {
+    const d = new Date(Number.isFinite(ms) ? ms : Date.now());
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
+  /**
+   * 보상 초기화 기준점(`targetEpoch`) 이전의 부속 보상 상태(진행 중/만료 자유시간 세션, 일일 사용량,
+   * 일일 목표 수령 플래그, 출석/다양성/마일스톤 보석 지급 플래그, 로컬 영수증 키)를 일괄 초기화한다.
+   */
+  function syncCompanionEpoch(targetEpoch, options) {
+    const epoch = Math.max(1, Math.trunc(Number(targetEpoch) || 1));
+    const opts = options && typeof options === 'object' ? options : {};
+    const nowTs = Number.isFinite(Number(opts.now)) ? Number(opts.now) : Date.now();
+    const force = Boolean(opts.force);
+    const shouldPush = opts.pushCompanion !== false;
+
+    const companionUpdates = [];
+    const writeCompanion = (key, nextObj) => {
+      try {
+        localStorage.setItem(key, JSON.stringify(nextObj));
+        companionUpdates.push([key, nextObj]);
+      } catch (e) {
+        console.warn('[RewardSystem] companion epoch write failed:', key, e);
+      }
+    };
+
+    try {
+      const rawSession = localStorage.getItem('study_youtube_free_time_session_v1');
+      if (rawSession || force) {
+        let parsedSession = null;
+        try { parsedSession = rawSession ? JSON.parse(rawSession) : null; } catch (_e) { parsedSession = null; }
+        if (force || !parsedSession || (Number(parsedSession.resetEpoch) || 0) < epoch) {
+          writeCompanion('study_youtube_free_time_session_v1', {
+            schemaVersion: 1,
+            status: 'inactive',
+            sessionId: null,
+            resetEpoch: epoch,
+            resetAt: nowTs,
+          });
+        }
+      }
+
+      const rawUsage = localStorage.getItem('study_youtube_free_time_daily_usage_v1');
+      if (rawUsage || force) {
+        let parsedUsage = null;
+        try { parsedUsage = rawUsage ? JSON.parse(rawUsage) : null; } catch (_e) { parsedUsage = null; }
+        if (force || !parsedUsage || (Number(parsedUsage.resetEpoch) || 0) < epoch) {
+          writeCompanion('study_youtube_free_time_daily_usage_v1', {
+            schemaVersion: 1,
+            dateKey: localDateKey(nowTs),
+            morningMinutes: 0,
+            afternoonMinutes: 0,
+            resetEpoch: epoch,
+          });
+        }
+      }
+
+      if (typeof localStorage.removeItem === 'function') {
+        try { localStorage.removeItem('study_youtube_free_time_start_tx_v1'); } catch (_e) {}
+      }
+
+      if (typeof localStorage.length === 'number' && typeof localStorage.key === 'function' && typeof localStorage.removeItem === 'function') {
+        const receiptKeys = [];
+        for (let i = 0; i < localStorage.length; i += 1) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith('aiden_receipt_')) receiptKeys.push(k);
+        }
+        for (const rk of receiptKeys) {
+          try { localStorage.removeItem(rk); } catch (_e) {}
+        }
+      }
+
+      const rawGoal = localStorage.getItem('aiden_math_daily_goal_v1');
+      if (rawGoal) {
+        try {
+          const goal = JSON.parse(rawGoal);
+          if (goal && typeof goal === 'object' && (force || (Number(goal.resetEpoch) || 0) < epoch)) {
+            writeCompanion('aiden_math_daily_goal_v1', {
+              ...goal,
+              currentCount: 0,
+              completed: false,
+              completedAt: null,
+              rewardGranted: false,
+              resetEpoch: epoch,
+              lastUpdated: new Date(nowTs).toISOString(),
+            });
+          }
+        } catch (_e) {}
+      }
+
+      const rawStreak = localStorage.getItem('aiden_daily_streak');
+      if (rawStreak) {
+        try {
+          const streak = JSON.parse(rawStreak);
+          if (streak && typeof streak === 'object' && (force || (Number(streak.resetEpoch) || 0) < epoch)) {
+            writeCompanion('aiden_daily_streak', {
+              ...streak,
+              todayRecorded: false,
+              gemAwarded: {},
+              resetEpoch: epoch,
+            });
+          }
+        } catch (_e) {}
+      }
+
+      const rawDiv = localStorage.getItem('aiden_diversity');
+      if (rawDiv) {
+        try {
+          const div = JSON.parse(rawDiv);
+          if (div && typeof div === 'object' && (force || (Number(div.resetEpoch) || 0) < epoch)) {
+            writeCompanion('aiden_diversity', {
+              ...div,
+              subjectsWithCorrect: [],
+              gemAwarded: false,
+              resetEpoch: epoch,
+            });
+          }
+        } catch (_e) {}
+      }
+
+      const rawMile = localStorage.getItem('aiden_milestones');
+      if (rawMile) {
+        try {
+          const mile = JSON.parse(rawMile);
+          if (mile && typeof mile === 'object' && (force || (Number(mile.resetEpoch) || 0) < epoch)) {
+            writeCompanion('aiden_milestones', {
+              ...mile,
+              achieved: {},
+              session: { rocketStreak: 0, milestoneStreak: 0, sessionCorrect: 0 },
+              resetEpoch: epoch,
+            });
+          }
+        } catch (_e) {}
+      }
+    } catch (e) {
+      console.warn('[RewardSystem] syncCompanionEpoch partial failure:', e);
+    }
+
+    if (typeof DailyStreak !== 'undefined' && typeof DailyStreak.reload === 'function') {
+      try { DailyStreak.reload(); } catch (_e) {}
+    }
+    if (typeof DiversityReward !== 'undefined' && typeof DiversityReward.reload === 'function') {
+      try { DiversityReward.reload(); } catch (_e) {}
+    }
+    if (typeof MilestoneTracker !== 'undefined' && typeof MilestoneTracker.reload === 'function') {
+      try { MilestoneTracker.reload(); } catch (_e) {}
+    }
+
+    if (shouldPush) {
+      for (const [k, payload] of companionUpdates) {
+        pushKeyToCloud(k, payload);
+      }
+    }
+    reconcileFreeTimeSessionUI();
+  }
+
   function load() {
     const parsed = parseStorage();
     const L = ledger();
+    const prevMemoryEpoch = L && state ? L.getEpoch(state) : 0;
+    const prevDiskEpoch = L && parsed ? L.getEpoch(parsed) : 0;
     let base = parsed || {};
 
     if (L && parsed) {
@@ -152,8 +314,20 @@ const RewardSystem = (() => {
       }
     }
 
-    const normalized = normalizeRewardState(base, { adoptFields: true });
+    const nowTs = Date.now();
+    const normalized = normalizeRewardState(base, { adoptFields: true, at: nowTs });
     state = normalized;
+
+    const currentEpoch = L ? L.getEpoch(normalized) : 1;
+    const epochCutoverOccurred = Boolean(
+      L && (
+        (parsed && prevDiskEpoch < currentEpoch)
+        || (prevMemoryEpoch > 0 && prevMemoryEpoch < currentEpoch)
+      )
+    );
+    if (epochCutoverOccurred) {
+      syncCompanionEpoch(currentEpoch, { now: nowTs, pushCompanion: true });
+    }
 
     // 다른 경로(자유시간 트랜잭션 등)가 저장한 원장도 저널에 반영해 복구 기준을 최신으로 유지한다.
     if (L && normalized.reward_ledger) {
@@ -168,14 +342,18 @@ const RewardSystem = (() => {
       }
     }
 
-    // 원장 도입 이전 데이터는 현재 값이 곧 시작 잔액이 된다.
-    // 1회만 저장해 이후 세션이 같은 정규화를 반복하지 않게 한다.
-    const hadLedger = parsed && parsed.reward_ledger && parsed.reward_ledger.v === 1;
+    // 이전 epoch 데이터 초기화 또는 스냅샷 정규화가 발생한 경우 즉시 영속화 + 클라우드 푸시한다.
+    const hadCurrentEpochLedger = Boolean(
+      parsed
+      && parsed.reward_ledger
+      && parsed.reward_ledger.v === 1
+      && (!L || L.getEpoch(parsed) >= L.BASELINE_RESET_EPOCH)
+    );
     const balancesChanged = parsed
       ? JSON.stringify(balanceSnapshot(parsed)) !== JSON.stringify(balanceSnapshot(normalized))
       : false;
-    if (parsed && (!hadLedger || balancesChanged)) {
-      persist(normalized, { reason: 'migration' });
+    if (parsed && (!hadCurrentEpochLedger || balancesChanged)) {
+      persist(normalized, { reason: 'epoch_cutover_migration' });
     }
   }
 
@@ -311,6 +489,12 @@ const RewardSystem = (() => {
           type: opts.type,
           reason: opts.reason,
           receipt: opts.receipt,
+          group: opts.group,
+          source: opts.source,
+          actor: opts.actor,
+          surface: opts.surface,
+          client: opts.client,
+          detail: opts.detail,
         });
         next = applied.state;
         eventIds = applied.eventIds;
@@ -351,11 +535,23 @@ const RewardSystem = (() => {
     window.location.reload();
   }
 
-  function add(type, amount = 1) {
+  function add(type, amount = 1, options) {
     const safeAmount = Number.isFinite(Number(amount)) ? Number(amount) : 0;
     if (safeAmount <= 0) return;
 
+    const opts = options && typeof options === 'object' ? options : {};
     const before = balanceSnapshot(state);
+
+    let typeName = type;
+    if (type === 'gems') typeName = '💎 보석';
+    else if (type === 'youtube') typeName = '📺 유튜브 시간';
+    else if (type === 'snack') typeName = '🍪 간식';
+    else if (type === 'marble') typeName = '🎮 마블 게임';
+    else if (type === 'bubble') typeName = '🫧 비눗방울 게임';
+    else {
+      const item = state.shop_items.find(i => i.id === type);
+      if (item) typeName = `${item.icon} ${item.label}`;
+    }
 
     if (type === 'gems') {
       state.gems = (Number(state.gems) || 0) + safeAmount;
@@ -372,18 +568,17 @@ const RewardSystem = (() => {
       state.custom_inventory[type] = (Number(state.custom_inventory[type]) || 0) + safeAmount;
     }
 
-    commit(before, { type: 'grant', reason: 'add:' + type });
-
-    let typeName = type;
-    if (type === 'gems') typeName = '💎 보석';
-    else if (type === 'youtube') typeName = '📺 유튜브 시간';
-    else if (type === 'snack') typeName = '🍪 간식';
-    else if (type === 'marble') typeName = '🎮 마블 게임';
-    else if (type === 'bubble') typeName = '🫧 비눗방울 게임';
-    else {
-       const item = state.shop_items.find(i => i.id === type);
-       if (item) typeName = `${item.icon} ${item.label}`;
-    }
+    commit(before, {
+      type: 'grant',
+      reason: opts.reason || ('add:' + type),
+      receipt: opts.receipt,
+      source: opts.source || 'quiz',
+      actor: opts.actor || 'system',
+      surface: opts.surface,
+      client: opts.client,
+      detail: opts.detail || `${typeName} 획득`,
+      at: opts.now || opts.at,
+    });
 
     if (typeof RewardSystemUI !== 'undefined') {
       RewardSystemUI.showToast(`${typeName} 획득!`);
@@ -451,12 +646,19 @@ const RewardSystem = (() => {
       receiptId: receiptId,
       grantedAt: now,
       grants: list,
+      ...(opts.source ? { source: opts.source } : {}),
+      ...(opts.detail ? { detail: opts.detail } : {}),
     };
 
     const result = commit(before, {
       type: 'grant',
       reason: opts.reason || 'receipt',
       receipt: receiptId,
+      source: opts.source,
+      actor: opts.actor || 'system',
+      surface: opts.surface,
+      client: opts.client,
+      detail: opts.detail,
       at: now,
     });
 
@@ -520,7 +722,13 @@ const RewardSystem = (() => {
         return false;
       }
       state.youtube_minutes -= minutesToDeduct;
-      commit(before, { type: 'consume', reason: 'youtube_ticket' });
+      commit(before, {
+        type: 'consume',
+        reason: 'youtube_ticket',
+        source: 'youtube_modal',
+        actor: 'guardian',
+        detail: `유튜브 자유시간 모달 차감 (${safeAmount}개 · ${minutesToDeduct}분 사용)`,
+      });
       if (typeof RewardSystemUI !== 'undefined') {
         RewardSystemUI.showToast(
           safeAmount === 1
@@ -534,7 +742,13 @@ const RewardSystem = (() => {
         return false;
       }
       state.snacks -= safeAmount;
-      commit(before, { type: 'consume', reason: 'snack' });
+      commit(before, {
+        type: 'consume',
+        reason: 'snack',
+        source: 'snack_modal',
+        actor: 'guardian',
+        detail: `간식 사용 승인 차감 (${safeAmount}개 사용)`,
+      });
       if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.showToast(`🍪 간식 ${safeAmount}개 사용 완료`);
     } else if (type === 'marble') {
       if (state.marble_plays < safeAmount) {
@@ -542,7 +756,13 @@ const RewardSystem = (() => {
         return false;
       }
       state.marble_plays -= safeAmount;
-      commit(before, { type: 'consume', reason: 'marble_play' });
+      commit(before, {
+        type: 'consume',
+        reason: 'marble_play',
+        source: 'hub',
+        actor: 'child',
+        detail: `마블 게임 플레이권 사용 (${safeAmount}회)`,
+      });
       if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.showToast(`🎮 마블 게임 ${safeAmount}회 사용 완료`);
     } else if (type === 'bubble') {
       if (state.bubble_plays < safeAmount) {
@@ -550,7 +770,13 @@ const RewardSystem = (() => {
         return false;
       }
       state.bubble_plays -= safeAmount;
-      commit(before, { type: 'consume', reason: 'bubble_play' });
+      commit(before, {
+        type: 'consume',
+        reason: 'bubble_play',
+        source: 'hub',
+        actor: 'child',
+        detail: `버블 게임 플레이권 사용 (${safeAmount}회)`,
+      });
       if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.showToast(`🫧 비눗방울 게임 ${safeAmount}회 사용 완료`);
     } else {
       const available = Number(state.custom_inventory[type]) || 0;
@@ -558,10 +784,16 @@ const RewardSystem = (() => {
         if (typeof RewardSystemUI !== 'undefined') alert('보유 중인 보상이 부족합니다.');
         return false;
       }
-      state.custom_inventory[type] = available - safeAmount;
-      commit(before, { type: 'consume', reason: 'custom_reward' });
       const item = state.shop_items.find(i => i.id === type);
       const label = item ? item.label : '보상';
+      state.custom_inventory[type] = available - safeAmount;
+      commit(before, {
+        type: 'consume',
+        reason: 'custom_reward:' + type,
+        source: 'custom_modal',
+        actor: 'guardian',
+        detail: `${item && item.icon ? item.icon + ' ' : ''}${label} 사용 승인 (${safeAmount}개 차감)`,
+      });
       if (typeof RewardSystemUI !== 'undefined') RewardSystemUI.showToast(`${label} ${safeAmount}개 사용 완료`);
     }
 
@@ -584,16 +816,32 @@ const RewardSystem = (() => {
 
     const before = balanceSnapshot(state);
     state.gems -= price;
-    if (targetType === 'youtube') state.youtube_minutes += 10;
-    else if (targetType === 'snack') state.snacks += 1;
-    else if (targetType === 'marble') state.marble_plays += 1;
-    else if (targetType === 'bubble') state.bubble_plays += 1;
-    else {
+    let targetLabel = targetType;
+    if (targetType === 'youtube') {
+      state.youtube_minutes += 10;
+      targetLabel = '📺 유튜브 자유시간 10분';
+    } else if (targetType === 'snack') {
+      state.snacks += 1;
+      targetLabel = '🍪 간식 1개';
+    } else if (targetType === 'marble') {
+      state.marble_plays += 1;
+      targetLabel = '🎮 마블 게임 1회';
+    } else if (targetType === 'bubble') {
+      state.bubble_plays += 1;
+      targetLabel = '🫧 버블 게임 1회';
+    } else {
       if (!state.custom_inventory[targetType]) state.custom_inventory[targetType] = 0;
       state.custom_inventory[targetType] += 1;
+      targetLabel = item ? `${item.icon || '🎁'} ${item.label} 1개` : `${targetType} 1개`;
     }
 
-    commit(before, { type: 'exchange', reason: 'gem_exchange:' + targetType });
+    commit(before, {
+      type: 'exchange',
+      reason: 'gem_exchange:' + targetType,
+      source: 'shop',
+      actor: 'child',
+      detail: `보석 상점 교환 (💎 ${price}개 → ${targetLabel})`,
+    });
     if (typeof RewardSystemUI !== 'undefined') {
       RewardSystemUI.showToast('교환 성공! 보관함을 확인하세요.');
       const info = document.querySelector('.shop-inventory-info span');
@@ -765,7 +1013,59 @@ const RewardSystem = (() => {
   function getRecentActivity(limit) {
     const L = ledger();
     if (!L) return [];
-    return L.activity(state, { limit: limit === undefined ? 8 : limit });
+    return L.activity(state, { limit: limit === undefined ? 12 : limit });
+  }
+
+  /** 전체 감사 리포트(무결성 검증, 항목별 합계, 타임라인, 영수증, 초기화 이력)를 반환한다. */
+  function getAuditReport(filter) {
+    const L = ledger();
+    if (!L || typeof L.auditReport !== 'function') return null;
+    return L.auditReport(state, filter);
+  }
+
+  /** 감사 내역을 CSV 문자열로 내보낸다. */
+  function getAuditCsv(filter) {
+    const L = ledger();
+    if (!L || typeof L.auditCsv !== 'function') return '';
+    return L.auditCsv(state, filter);
+  }
+
+  /**
+   * 모든 획득된 보상을 0으로 초기화하고 새 감사 epoch를 시작한다(로컬·부속 키·클라우드 동기화 반영).
+   */
+  function resetAllRewards(options) {
+    const opts = options && typeof options === 'object' ? options : {};
+    const nowTs = Number.isFinite(Number(opts.now)) ? Number(opts.now) : Date.now();
+    const L = ledger();
+    let resetNext;
+    if (L && typeof L.resetState === 'function') {
+      const disk = normalizeRewardState(parseStorage() || state, { adoptFields: true, at: nowTs });
+      const memory = normalizeRewardState(state, { adoptFields: false, at: nowTs });
+      const combined = L.mergeStates(disk, memory, { adoptFields: false, at: nowTs });
+      resetNext = L.resetState(combined, {
+        at: nowTs,
+        reason: opts.reason || 'guardian_manual_reset',
+        actor: opts.actor || 'guardian',
+        note: opts.note || '보호자 전체 보상 초기화',
+        surface: opts.surface,
+        client: opts.client,
+      });
+    } else {
+      resetNext = {
+        ...state,
+        gems: 0,
+        youtube_minutes: 0,
+        snacks: 0,
+        marble_plays: 0,
+        bubble_plays: 0,
+        custom_inventory: {},
+        claimed_receipts: {},
+      };
+    }
+    const nextEpoch = L ? L.getEpoch(resetNext) : 1;
+    syncCompanionEpoch(nextEpoch, { now: nowTs, force: true, pushCompanion: true });
+    persist(resetNext, { reason: 'manual_reset' });
+    return resetNext;
   }
 
   /** 저장된 잔액과 원장 합계가 일치하는지 확인한다. */
@@ -777,7 +1077,8 @@ const RewardSystem = (() => {
 
   return {
     init, add, has, hasReceipt, grantWithReceipt, grantOnce, consume, consumeInternal, exchangeGem,
-    startYouTubeSession, normalizeYoutubeMinutes, getRecentActivity, verifyIntegrity,
+    startYouTubeSession, normalizeYoutubeMinutes, getRecentActivity, getAuditReport, getAuditCsv,
+    resetAllRewards, syncCompanionEpoch, verifyIntegrity,
     getState: () => state,
     setTheme,
     openShopModal: () => {
@@ -785,17 +1086,17 @@ const RewardSystem = (() => {
         RewardSystemUI.openShopModal(state);
       }
     },
-    playEntranceAndAddGem: (id) => {
+    playEntranceAndAddGem: (id, meta) => {
       // UI 연출 실패 여부와 무관하게 보석 지급은 코어에서 보장한다.
       try {
         if (typeof RewardSystemUI !== 'undefined' && typeof RewardSystemUI.playEntranceAndAddGem === 'function') {
-          RewardSystemUI.playEntranceAndAddGem(id);
+          RewardSystemUI.playEntranceAndAddGem(id, meta);
           return;
         }
       } catch (e) {
         console.error('RewardSystem animation failed, fallback to direct gem grant:', e);
       }
-      add('gems', 1);
+      add('gems', 1, meta);
     }
   };
 })();

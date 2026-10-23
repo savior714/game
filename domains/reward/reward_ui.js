@@ -532,7 +532,7 @@ const RewardSystemUI = (() => {
     }
   }
 
-  function playEntranceAndAddGem(sourceElId = 'rp-rocket') {
+  function playEntranceAndAddGem(sourceElId = 'rp-rocket', meta = null) {
     const src = document.getElementById(sourceElId);
     const startX = src ? src.getBoundingClientRect().left + src.offsetWidth / 2 : window.innerWidth / 2;
     const startY = src ? src.getBoundingClientRect().top + src.offsetHeight / 2 : window.innerHeight / 2;
@@ -559,11 +559,11 @@ const RewardSystemUI = (() => {
     setTimeout(() => {
       spawnExplosion(endX, endY);
       el.remove();
-      showGemAwarded(endX, endY);
+      showGemAwarded(endX, endY, meta);
     }, 1050);
   }
 
-  function showGemAwarded(cx, cy) {
+  function showGemAwarded(cx, cy, meta = null) {
     const overlay = document.createElement('div');
     overlay.className = 'reward-choice-overlay';
     overlay.innerHTML = `
@@ -578,7 +578,12 @@ const RewardSystemUI = (() => {
       </div>
     `;
     document.body.appendChild(overlay);
-    RewardSystem.add('gems', 1);
+    RewardSystem.add('gems', 1, meta || {
+      reason: 'rocket_launch',
+      source: 'quiz',
+      actor: 'system',
+      detail: '연속 정답 로켓 발사 보상',
+    });
   }
 
 
@@ -616,8 +621,26 @@ const RewardSystemUI = (() => {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return '';
     const pad = (num) => String(num).padStart(2, '0');
-    return `${pad(date.getMonth() + 1)}.${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
   }
+
+  function escapeActivityHtml(raw) {
+    return String(raw == null ? '' : raw)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function resolveGuardianAuditUrl() {
+    try {
+      const base = getGlobalBaseUrl();
+      if (base) return new URL('guardian/index.html#audit', base).href;
+    } catch (_e) {}
+    return './domains/reward/guardian/index.html#audit';
+  }
+
+  let currentActivityFilter = 'all';
 
   /**
    * 최근 획득/사용 기록을 렌더링한다.
@@ -629,16 +652,26 @@ const RewardSystemUI = (() => {
     }
     let entries = [];
     try {
-      entries = RewardSystem.getRecentActivity(8) || [];
+      entries = RewardSystem.getRecentActivity(20) || [];
     } catch (e) {
       entries = [];
+    }
+    if (currentActivityFilter !== 'all') {
+      entries = entries.filter((entry) => entry && entry.type === currentActivityFilter);
     }
     const integrityOk = (typeof RewardSystem.verifyIntegrity === 'function')
       ? Boolean(RewardSystem.verifyIntegrity().ok)
       : false;
+    const epochNum = state && state.reward_ledger && Number(state.reward_ledger.reset_epoch)
+      ? Number(state.reward_ledger.reset_epoch)
+      : 1;
+
+    const filterBtnStyle = (active) => (active
+      ? 'padding:3px 8px; border-radius:999px; border:1px solid #0f172a; background:#0f172a; color:#ffffff; font-size:0.7rem; font-weight:800; cursor:pointer;'
+      : 'padding:3px 8px; border-radius:999px; border:1px solid #cbd5e1; background:#ffffff; color:#475569; font-size:0.7rem; font-weight:700; cursor:pointer;');
 
     const rows = entries.length === 0
-      ? '<li style="color:#64748b; font-size:0.78rem; padding:6px 0;">아직 획득·사용 기록이 없어요.</li>'
+      ? '<li style="color:#64748b; font-size:0.78rem; padding:8px 0;">아직 획득·사용 기록이 없어요. (초기화 이후 모든 내역이 초 단위로 기록됩니다)</li>'
       : entries.map((entry) => {
         const isPositive = Number(entry.delta) > 0;
         const color = isPositive ? '#0f766e' : '#be123c';
@@ -646,24 +679,37 @@ const RewardSystemUI = (() => {
         const unit = entry.key === 'youtube_minutes' ? '분' : (entry.key === 'marble_plays' || entry.key === 'bubble_plays') ? '회' : '개';
         const typeLabel = ACTIVITY_TYPE_LABELS[entry.type] || '기록';
         const timeText = formatActivityTime(entry.at);
-        const metaText = `남은 ${entry.balanceAfter}${unit}${timeText ? ' · ' + timeText : ''}`;
-        return `<li style="display:flex; justify-content:space-between; gap:8px; padding:6px 0; border-bottom:1px dashed #e2e8f0; font-size:0.8rem; color:#334155;">
-          <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${describeActivityKey(entry.key, state)} <span style="color:#94a3b8; font-size:0.72rem;">${typeLabel}</span></span>
-          <span style="flex-shrink:0; font-weight:800; color:${color};">${sign}${Math.abs(Number(entry.delta) || 0)}${unit}</span>
-          <span style="flex-shrink:0; color:#64748b; font-size:0.72rem;">${metaText}</span>
+        const beforePart = typeof entry.balanceBefore === 'number' ? `${entry.balanceBefore}→` : '';
+        const metaText = `${beforePart}남은 ${entry.balanceAfter}${unit}${timeText ? ' · ' + timeText : ''}`;
+        const detailText = entry.detail ? escapeActivityHtml(entry.detail) : '';
+        return `<li style="display:flex; flex-direction:column; gap:2px; padding:7px 0; border-bottom:1px dashed #e2e8f0; font-size:0.8rem; color:#334155;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+            <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700;">${describeActivityKey(entry.key, state)} <span style="color:#64748b; font-size:0.72rem; font-weight:700;">${typeLabel}</span></span>
+            <span style="flex-shrink:0; font-weight:800; color:${color};">${sign}${Math.abs(Number(entry.delta) || 0)}${unit}</span>
+            <span style="flex-shrink:0; color:#475569; font-size:0.71rem; font-family:monospace;">${metaText}</span>
+          </div>
+          ${detailText ? `<div style="font-size:0.72rem; color:#64748b; line-height:1.3;">${detailText}${entry.surfaceLabel ? ' · ' + escapeActivityHtml(entry.surfaceLabel) : ''}</div>` : ''}
         </li>`;
       }).join('');
 
     return `
       <div class="reward-activity-log" style="margin: 0 0 14px; padding: 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:14px; text-align:left; color:#0f172a;">
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:4px;">
-          <strong style="font-size:0.9rem; color:#0f172a;">🧾 최근 보상 기록</strong>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;">
+          <strong style="font-size:0.9rem; color:#0f172a;">🧾 보상 획득·사용 감사 기록 <span style="font-size:0.7rem; color:#64748b; font-weight:700;">(Epoch #${epochNum})</span></strong>
           <span style="font-size:0.72rem; font-weight:800; color:${integrityOk ? '#0f766e' : '#b45309'};">
             ${integrityOk ? '✅ 기록 확인됨' : '⚠️ 확인 필요'}
           </span>
         </div>
-        <p style="margin:0 0 6px; font-size:0.72rem; color:#64748b;">보유량은 실제 획득(+)과 사용(−) 기록의 합계예요.</p>
-        <ul style="margin:0; padding:0; list-style:none; max-height:150px; overflow-y:auto;">${rows}</ul>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; margin:6px 0 8px; flex-wrap:wrap;">
+          <div style="display:flex; gap:4px; flex-wrap:wrap;">
+            <button type="button" data-action="filter-activity-log" data-filter-type="all" style="${filterBtnStyle(currentActivityFilter === 'all')}">전체</button>
+            <button type="button" data-action="filter-activity-log" data-filter-type="grant" style="${filterBtnStyle(currentActivityFilter === 'grant')}">획득(+)</button>
+            <button type="button" data-action="filter-activity-log" data-filter-type="consume" style="${filterBtnStyle(currentActivityFilter === 'consume')}">사용(−)</button>
+            <button type="button" data-action="filter-activity-log" data-filter-type="exchange" style="${filterBtnStyle(currentActivityFilter === 'exchange')}">교환</button>
+          </div>
+          <a href="${escapeActivityHtml(resolveGuardianAuditUrl())}" style="font-size:0.72rem; font-weight:800; color:#4f46e5; text-decoration:none;">🛡️ 전체 감사·초기화 →</a>
+        </div>
+        <ul style="margin:0; padding:0; list-style:none; max-height:175px; overflow-y:auto;">${rows}</ul>
       </div>
     `;
   }
@@ -1442,9 +1488,22 @@ const RewardSystemUI = (() => {
       case 'exchange-gem':
         if (typeof RewardSystem !== 'undefined' && RewardSystem.exchangeGem) {
           RewardSystem.exchangeGem(itemId);
+          const logContainer = document.querySelector('#reward-shop-overlay .reward-activity-log');
+          if (logContainer && typeof RewardSystem.getState === 'function') {
+            logContainer.outerHTML = renderActivityLog(RewardSystem.getState());
+          }
         }
         e.stopPropagation();
         break;
+      case 'filter-activity-log': {
+        currentActivityFilter = target.dataset.filterType || 'all';
+        const logContainer = target.closest('.reward-activity-log');
+        if (logContainer && typeof RewardSystem !== 'undefined' && typeof RewardSystem.getState === 'function') {
+          logContainer.outerHTML = renderActivityLog(RewardSystem.getState());
+        }
+        e.stopPropagation();
+        break;
+      }
       case 'close-overlay': {
         const overlay = target.closest('.reward-modal-overlay, .reward-choice-overlay');
         if (overlay) overlay.remove();

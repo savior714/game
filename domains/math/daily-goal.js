@@ -318,6 +318,17 @@
     if (!storage || typeof storage.setItem !== 'function' || !goal) return false;
 
     try {
+      if (typeof RewardLedger !== 'undefined' && typeof RewardLedger.BASELINE_RESET_EPOCH === 'number') {
+        let activeEpoch = RewardLedger.BASELINE_RESET_EPOCH;
+        try {
+          const rawRewards = storage.getItem('study_rewards');
+          if (rawRewards) {
+            const parsedRewards = JSON.parse(rawRewards);
+            activeEpoch = Math.max(activeEpoch, Number(parsedRewards?.reward_ledger?.reset_epoch) || 0);
+          }
+        } catch (_e) {}
+        goal.resetEpoch = Math.max(Number(goal.resetEpoch) || 0, activeEpoch);
+      }
       goal.lastUpdated = new Date().toISOString();
       storage.setItem(key, JSON.stringify(goal));
       return true;
@@ -489,6 +500,17 @@
     }
 
     // 보상 시스템 연동 (보석 2개 + 자유시간 10분)
+    const skillText = goal.shortName || goal.skillName || goal.skillId || '일일 목표';
+    const targetText = Number.isFinite(Number(goal.targetCount)) ? ` ${goal.targetCount}문제` : '';
+    const auditDetail = `수학 오늘의 목표 달성 (${skillText}${targetText})`;
+    const grantMeta = {
+      now: now,
+      reason: 'math_daily_goal',
+      source: 'math',
+      actor: 'system',
+      detail: auditDetail,
+    };
+
     if (rewardSystem) {
       if (typeof rewardSystem.grantWithReceipt === 'function') {
         const grantRes = rewardSystem.grantWithReceipt(
@@ -497,7 +519,7 @@
             { type: 'gems', amount: GOAL_REWARD_GEMS },
             { type: 'youtube', amount: 1 }, // 1단위 = 10분
           ],
-          { now: now }
+          grantMeta
         );
         if (!grantRes.success && grantRes.alreadyClaimed) {
           goal.rewardGranted = true;
@@ -505,8 +527,8 @@
           return { success: false, reason: 'already_claimed' };
         }
       } else if (typeof rewardSystem.add === 'function') {
-        rewardSystem.add('gems', GOAL_REWARD_GEMS);
-        rewardSystem.add('youtube', 1); // 1단위 = 10분
+        rewardSystem.add('gems', GOAL_REWARD_GEMS, grantMeta);
+        rewardSystem.add('youtube', 1, grantMeta); // 1단위 = 10분
       }
     }
 

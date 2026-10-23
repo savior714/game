@@ -294,112 +294,544 @@ body {
   z-index: 2;
   overflow: auto;
   box-sizing: border-box;
-  padding: 16px;
+  padding: 14px 18px 16px;
   border-top: 4px solid var(--ocean-rescue-selection-accent);
-  background: rgba(18, 32, 46, 0.94);
+  background: linear-gradient(180deg, #0b2d43 0%, #123c53 46%, #0c2a3d 100%);
   color: #eef5fb;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   text-align: center;
 }
 
 #ocean-rescue-profile-choice h2 {
-  margin: 0 0 4px;
-  font-size: 22px;
+  margin: 0;
+  font-size: clamp(18px, min(2.4vw, 3.7vh), 28px);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  color: #ffffff;
+  text-shadow: 0 2px 10px rgba(3, 18, 28, 0.6);
 }
 
-#ocean-rescue-profile-choice > p {
-  margin: 0 0 12px;
-  font-size: 14px;
-  color: #c6d8ea;
+/* ── Ocean scene behind the crew panel ───────────────────────────────── */
+
+.ocean-rescue-crew-scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
-#ocean-rescue-profile-player-name {
-  margin: 0 0 16px;
-  font-size: 18px;
-  font-weight: 700;
-  color: #ffd166;
+.ocean-rescue-crew-ray {
+  position: absolute;
+  top: -16%;
+  width: 12%;
+  height: 108%;
+  background: linear-gradient(
+    180deg,
+    rgba(174, 233, 245, 0.24) 0%,
+    rgba(129, 205, 226, 0.09) 55%,
+    rgba(129, 205, 226, 0) 100%
+  );
+  transform-origin: top center;
+  filter: blur(6px);
 }
 
-#ocean-rescue-profile-animal-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  justify-content: center;
-  align-items: stretch;
-  margin-bottom: 16px;
+.ocean-rescue-crew-ray-a {
+  left: 14%;
+  transform: rotate(9deg);
 }
 
-#ocean-rescue-profile-animal-list button {
-  flex: 1 1 180px;
-  max-width: 240px;
-  min-height: 120px;
+.ocean-rescue-crew-ray-b {
+  left: 45%;
+  width: 16%;
+  opacity: 0.8;
+  transform: rotate(-4deg);
+}
+
+.ocean-rescue-crew-ray-c {
+  right: 12%;
+  transform: rotate(-11deg);
+}
+
+.ocean-rescue-crew-bubble {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid rgba(198, 240, 250, 0.55);
+  background: radial-gradient(
+    circle at 32% 28%,
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(196, 238, 250, 0.16) 42%,
+    rgba(196, 238, 250, 0.04) 100%
+  );
+}
+
+.ocean-rescue-crew-bubble-a {
+  left: 6%;
+  top: 62%;
+  width: 16px;
+  height: 16px;
+}
+
+.ocean-rescue-crew-bubble-b {
+  left: 10%;
+  top: 44%;
+  width: 9px;
+  height: 9px;
+}
+
+.ocean-rescue-crew-bubble-c {
+  right: 7%;
+  top: 30%;
+  width: 22px;
+  height: 22px;
+}
+
+.ocean-rescue-crew-bubble-d {
+  right: 13%;
+  top: 56%;
+  width: 11px;
+  height: 11px;
+}
+
+.ocean-rescue-crew-bubble-e {
+  left: 48%;
+  top: 12%;
+  width: 8px;
+  height: 8px;
+}
+
+.ocean-rescue-crew-seabed {
+  position: absolute;
+  left: -4%;
+  right: -4%;
+  bottom: -46px;
+  height: 130px;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  background: linear-gradient(
+    180deg,
+    rgba(22, 96, 104, 0.55) 0%,
+    rgba(9, 48, 62, 0.9) 62%,
+    #07222f 100%
+  );
+}
+
+@keyframes ocean-rescue-crew-drift {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.75;
+  }
+  50% {
+    transform: translate3d(4px, -18px, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.75;
+  }
+}
+
+@keyframes ocean-rescue-crew-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.ocean-rescue-crew-bubble-a,
+.ocean-rescue-crew-bubble-b,
+.ocean-rescue-crew-bubble-c,
+.ocean-rescue-crew-bubble-d,
+.ocean-rescue-crew-bubble-e {
+  animation: ocean-rescue-crew-drift 13s ease-in-out infinite;
+}
+
+.ocean-rescue-crew-bubble-b {
+  animation-duration: 17s;
+  animation-delay: -4s;
+}
+
+.ocean-rescue-crew-bubble-c {
+  animation-duration: 15s;
+  animation-delay: -7s;
+}
+
+.ocean-rescue-crew-bubble-d {
+  animation-duration: 19s;
+  animation-delay: -2s;
+}
+
+.ocean-rescue-crew-bubble-e {
+  animation-duration: 11s;
+  animation-delay: -9s;
+}
+
+#ocean-rescue-profile-animal-list button[aria-pressed="true"]
+  .ocean-rescue-crew-card-portrait
+  svg {
+  animation: ocean-rescue-crew-bob 3.4s ease-in-out infinite;
+}
+
+/* ── Crew panel ──────────────────────────────────────────────────────── */
+
+.ocean-rescue-crew-panel {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 3px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1060px;
+  min-height: 100%;
+  margin: 0 auto;
+}
+
+#ocean-rescue-profile-choice .ocean-rescue-selection-step {
+  margin-bottom: 2px;
+}
+
+#ocean-rescue-profile-player-name {
+  position: relative;
+  margin: 2px 0 0;
+  padding: 3px 14px 3px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 209, 102, 0.55);
+  background: rgba(255, 209, 102, 0.12);
+  color: #ffd166;
+  font-size: clamp(12px, min(1.4vw, 2.1vh), 16px);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+}
+
+#ocean-rescue-profile-player-name::before {
+  content: "Diver";
+  margin-right: 7px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #ffd166;
+  color: #123246;
+  font-size: 0.78em;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ocean-rescue-crew-lead {
+  margin: 4px 0 0;
+  max-width: 620px;
+  color: #c6dff0;
+  font-size: clamp(12px, min(1.36vw, 2vh), 15px);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+/* ── Crew cards ──────────────────────────────────────────────────────── */
+
+#ocean-rescue-profile-animal-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(10px, 1.6vw, 20px);
+  width: 100%;
+  max-width: 1000px;
+  box-sizing: border-box;
+  margin: clamp(10px, min(1.8vw, 2.6vh), 22px) 0 0;
+  align-items: stretch;
+}
+
+#ocean-rescue-profile-animal-list button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 8px;
   box-sizing: border-box;
-  padding: 14px 16px;
-  border: 3px solid #3b6ea5;
-  border-radius: 14px;
-  background: #14304a;
+  min-height: 48px;
+  padding: clamp(10px, min(1.2vw, 2vh), 18px) 14px clamp(12px, min(1.4vw, 2.2vh), 20px);
+  border: 3px solid #2f6a8c;
+  border-radius: 22px;
+  background: linear-gradient(
+    180deg,
+    rgba(30, 86, 116, 0.96) 0%,
+    rgba(15, 50, 72, 0.98) 100%
+  );
+  box-shadow:
+    0 8px 20px rgba(2, 16, 26, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09);
   color: #eef5fb;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  font-size: 17px;
-  font-weight: 700;
-  line-height: 1.4;
   text-align: center;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.12s ease;
+}
+
+.ocean-rescue-crew-card-portrait {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: clamp(84px, min(15vw, 27vh), 196px);
+  height: clamp(84px, min(15vw, 27vh), 196px);
+  border-radius: 50%;
+  background: #0c2a3d;
+  box-shadow:
+    0 0 0 3px rgba(12, 42, 61, 0.75),
+    0 6px 16px rgba(2, 16, 26, 0.45);
+  overflow: hidden;
+  transition: box-shadow 0.16s ease, transform 0.12s ease;
+}
+
+.ocean-rescue-crew-card-portrait svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ocean-rescue-crew-card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.ocean-rescue-crew-card-name {
+  margin-top: 2px;
+  font-size: clamp(15px, min(1.6vw, 2.5vh), 21px);
+  font-weight: 800;
+  line-height: 1.2;
+  color: #ffffff;
+}
+
+.ocean-rescue-crew-card-role {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(61, 218, 215, 0.16);
+  border: 1px solid rgba(61, 218, 215, 0.45);
+  color: #9df1ee;
+  font-size: clamp(10px, min(1.05vw, 1.6vh), 12px);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+.ocean-rescue-crew-card-line {
+  color: #bdd6e6;
+  font-size: clamp(11px, min(1.15vw, 1.75vh), 14px);
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.ocean-rescue-crew-card-check {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2px solid #2f6a8c;
+  background: #0f3248;
+  color: transparent;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease,
+    transform 0.16s ease;
 }
 
 #ocean-rescue-profile-animal-list button[aria-pressed="true"] {
   border-color: #ffd166;
-  background: #1d4063;
-  transform: scale(1.04);
+  background: linear-gradient(180deg, #26648c 0%, #16415e 100%);
+  box-shadow:
+    0 0 0 3px rgba(255, 209, 102, 0.28),
+    0 10px 26px rgba(2, 16, 26, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  transform: translateY(-2px);
+}
+
+#ocean-rescue-profile-animal-list button[aria-pressed="true"]
+  .ocean-rescue-crew-card-portrait {
+  box-shadow:
+    0 0 0 3px #ffd166,
+    0 0 22px rgba(255, 209, 102, 0.36);
+}
+
+#ocean-rescue-profile-animal-list button[aria-pressed="true"]
+  .ocean-rescue-crew-card-check {
+  border-color: #ffd166;
+  background: #ffd166;
+  color: #123246;
+  transform: scale(1.06);
 }
 
 #ocean-rescue-profile-animal-list button:not(:disabled):hover {
-  border-color: #7fb3e8;
-  background: #1d4063;
+  border-color: #8ecdf0;
+  background: linear-gradient(180deg, #26648c 0%, #16415e 100%);
+}
+
+#ocean-rescue-profile-animal-list
+  button:not(:disabled):hover
+  .ocean-rescue-crew-card-portrait {
+  transform: scale(1.03);
 }
 
 #ocean-rescue-profile-animal-list button:not(:disabled):focus-visible {
   outline: 3px solid #ffd166;
-  outline-offset: 2px;
+  outline-offset: 3px;
+}
+
+/* ── Actions ─────────────────────────────────────────────────────────── */
+
+.ocean-rescue-crew-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: clamp(8px, min(1.4vw, 2.2vh), 18px) 0 0;
 }
 
 #ocean-rescue-profile-continue {
+  min-width: 220px;
   min-height: 48px;
-  min-width: 160px;
   box-sizing: border-box;
-  padding: 12px 24px;
-  border: 2px solid #3b6ea5;
-  border-radius: 12px;
-  background: #14304a;
-  color: #eef5fb;
+  padding: 11px 34px;
+  border: 2px solid #ffd166;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffd97a 0%, #f6b53a 100%);
+  color: #102a3c;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: clamp(15px, min(1.5vw, 2.3vh), 19px);
+  font-weight: 900;
+  letter-spacing: 0.01em;
   cursor: pointer;
+  box-shadow: 0 8px 18px rgba(2, 16, 26, 0.42);
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.16s ease,
+    background 0.16s ease;
 }
 
 #ocean-rescue-profile-continue:disabled {
   cursor: default;
-  opacity: 0.55;
-  border-color: #31465c;
-  background: #22303e;
-  color: #9fb3c7;
+  border-color: #35566d;
+  background: linear-gradient(180deg, #294a61 0%, #1d3648 100%);
+  color: #8ba7ba;
+  box-shadow: none;
 }
 
 #ocean-rescue-profile-continue:not(:disabled):hover {
-  border-color: #7fb3e8;
-  background: #1d4063;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(2, 16, 26, 0.5);
 }
 
 #ocean-rescue-profile-continue:not(:disabled):focus-visible {
-  outline: 3px solid #ffd166;
-  outline-offset: 2px;
+  outline: 3px solid #9df1ee;
+  outline-offset: 3px;
+}
+
+.ocean-rescue-crew-next {
+  margin: 0;
+  color: #8fb4c9;
+  font-size: clamp(10px, min(1.05vw, 1.6vh), 12px);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+/* ── Compact layouts ─────────────────────────────────────────────────── */
+
+@media (max-width: 900px), (max-height: 620px) {
+  #ocean-rescue-profile-choice {
+    padding: 10px 12px 12px;
+  }
+
+  #ocean-rescue-profile-animal-list {
+    gap: 10px;
+  }
+
+  .ocean-rescue-crew-card-portrait {
+    width: clamp(64px, min(13vw, 22vh), 132px);
+    height: clamp(64px, min(13vw, 22vh), 132px);
+  }
+
+  .ocean-rescue-crew-card-line {
+    display: none;
+  }
+}
+
+@media (orientation: portrait), (max-width: 560px) {
+  #ocean-rescue-profile-animal-list {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 380px;
+    gap: 10px;
+  }
+
+  #ocean-rescue-profile-animal-list button {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 10px 14px;
+    text-align: left;
+  }
+
+  .ocean-rescue-crew-card-portrait {
+    flex: 0 0 auto;
+    width: 68px;
+    height: 68px;
+  }
+
+  .ocean-rescue-crew-card-line {
+    display: none;
+  }
+
+  .ocean-rescue-crew-card-name,
+  .ocean-rescue-crew-card-role {
+    font-size: 14px;
+  }
+
+  .ocean-rescue-crew-card-body {
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #ocean-rescue-profile-animal-list button,
+  .ocean-rescue-crew-card-portrait,
+  .ocean-rescue-crew-card-check,
+  #ocean-rescue-profile-continue {
+    transition: none;
+  }
+
+  #ocean-rescue-profile-animal-list button[aria-pressed="true"],
+  #ocean-rescue-profile-continue:not(:disabled):hover {
+    transform: none;
+  }
+
+  .ocean-rescue-crew-bubble-a,
+  .ocean-rescue-crew-bubble-b,
+  .ocean-rescue-crew-bubble-c,
+  .ocean-rescue-crew-bubble-d,
+  .ocean-rescue-crew-bubble-e,
+  #ocean-rescue-profile-animal-list
+    button[aria-pressed="true"]
+    .ocean-rescue-crew-card-portrait
+    svg {
+    animation: none;
+  }
 }
 
 #ocean-rescue-mission-select {

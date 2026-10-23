@@ -18,6 +18,10 @@ def _read() -> str:
     return TRACKER.read_text(encoding="utf-8")
 
 
+def _read_rel(rel: str) -> str:
+    return (ROOT / rel).read_text(encoding="utf-8")
+
+
 # ── 구조 검증 ──────────────────────────────────────────────
 
 
@@ -67,22 +71,67 @@ def test_rocket_launch_resets_only_rocket_streak() -> None:
     ), "로켓 발사 시 milestoneStreak도 리셋됩니다. milestoneStreak는 유지되어야 합니다."
 
 
-def test_session_milestones_have_gems() -> None:
-    """session_5/10/20 마일스톤이 보석(gems)을 지급해야 함."""
+def test_session_milestones_do_not_grant_gems() -> None:
+    """세션 누적 마일스톤(session_3/5/10/20)은 격려 토스트만 제공해야 함 (보석 없음).
+
+    정답 개수 기반 보석은 20연속 정답의 로켓 발사 보상으로만 지급한다.
+    """
     code = _read()
-    # SESSION_MILESTONES 배열에서 gems > 0인 항목이 있어야 함
     session_match = re.search(r"SESSION_MILESTONES\s*=\s*\[([\s\S]*?)\]", code)
     assert session_match, "SESSION_MILESTONES 배열이 없습니다."
-    session_block = session_match.group(1)
-    gems_count = (
-        session_block.count('"gems":')
-        + session_block.count("'gems':")
-        + session_block.count("gems:")
+    entries = re.findall(r"\{[^{}]*\}", session_match.group(1))
+    assert entries, "SESSION_MILESTONES에 항목이 없습니다."
+    for entry in entries:
+        gems = re.search(r"gems:\s*(\d+)", entry)
+        assert gems, f"SESSION_MILESTONES 항목에 gems 필드가 없습니다: {entry}"
+        assert int(gems.group(1)) == 0, (
+            f"세션 누적 마일스톤이 보석을 지급합니다: {entry} — "
+            "정답 보석은 20연속 로켓 발사 보상으로만 지급해야 합니다."
+        )
+
+
+def test_streak_milestones_do_not_grant_gems() -> None:
+    """연속 정답 마일스톤(streak_3/5/10/15)도 격려 토스트만 제공해야 함 (보석 없음)."""
+    code = _read()
+    streak_match = re.search(r"STREAK_MILESTONES\s*=\s*\[([\s\S]*?)\]", code)
+    assert streak_match, "STREAK_MILESTONES 배열이 없습니다."
+    entries = re.findall(r"\{[^{}]*\}", streak_match.group(1))
+    assert entries, "STREAK_MILESTONES에 항목이 없습니다."
+    for entry in entries:
+        gems = re.search(r"gems:\s*(\d+)", entry)
+        assert gems, f"STREAK_MILESTONES 항목에 gems 필드가 없습니다: {entry}"
+        assert int(gems.group(1)) == 0, (
+            f"연속 정답 마일스톤이 보석을 지급합니다: {entry} — "
+            "정답 보석은 20연속 로켓 발사 보상으로만 지급해야 합니다."
+        )
+
+
+def test_quiz_gem_only_from_20_streak_rocket_launch() -> None:
+    """정답 기반 보석의 유일한 지급 경로는 20연속 정답 로켓 발사(+1)여야 함."""
+    # 마일스톤 트래커에는 보석 지급 마일스톤이 없어야 함
+    assert "gems: 1" not in _read(), (
+        "milestone-tracker.js에 gems: 1 마일스톤이 있습니다. "
+        "정답 보석은 rocket-core.js의 20연속 로켓 발사 보상으로만 지급합니다."
     )
-    assert gems_count >= 3, "SESSION_MILESTONES에 gems 필드가 없습니다."
-    # session_5/10/20이 gems > 0을 가져야 함
-    assert "gems: 1" in session_block, (
-        "session_5/10/20 마일스톤이 보석을 지급해야 합니다 (gems: 1)."
+
+    # 로켓은 연속 20정답에 발사한다
+    rocket = _read_rel("shared/ui/rocket-core.js")
+    assert re.search(r"target\.LAUNCH_STREAK\s*=\s*20\b", rocket), (
+        "로켓 발사 기준 연속 정답 수(LAUNCH_STREAK) 기본값이 20이 아닙니다."
+    )
+    for subject in ("math", "english", "korean", "science"):
+        engine = _read_rel(f"domains/{subject}/engine.js")
+        assert re.search(r"LAUNCH_STREAK\s*=\s*20\b", engine), (
+            f"{subject}/engine.js의 LAUNCH_STREAK가 20이 아닙니다."
+        )
+
+    # 발사 시 보석 1개를 지급한다
+    assert 'playEntranceAndAddGem("rp-rocket"' in rocket, (
+        "로켓 발사 시 보석 지급(playEntranceAndAddGem) 호출이 없습니다."
+    )
+    reward_ui = _read_rel("domains/reward/reward_ui.js")
+    assert re.search(r"add\('gems',\s*1\b", reward_ui), (
+        "로켓 발사 보석 지급량이 1개가 아닙니다."
     )
 
 

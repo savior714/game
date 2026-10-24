@@ -6397,6 +6397,37 @@ export async function createPowerWorld({
     });
   });
 
+  /* ── 셰이더 선컴파일 마감 시한 ─────────────────────────────────────
+   * three r163의 WebGLRenderer.compileAsync는 내부에서 10ms setTimeout으로
+   * 프로그램별 isReady()를 폴링한다. WebGL 컨텍스트가 유실되거나 폴링 중
+   * 재질이 해제되면 그 루프가 throw 또는 무한 회전해 반환 Promise가 영원히
+   * settle되지 않는다(try/catch로도 잡히지 않는다). 맨 await은 로딩 바를
+   * 74%에 영원히 멈추게 하므로, 마감 시한과 컨텍스트 유실 감시로 끊어 내고
+   * 실패 시 첫 프레임의 온디맨드(동기) 컴파일로 자연스럽게 폴백한다. */
+  const COMPILE_DEADLINE_MS = 8000;
+  const COMPILE_WATCHDOG_MS = 250;
+
+  function settleWithDeadline(promise, isDead) {
+    return new Promise((resolve) => {
+      let settled = false;
+      let watchdog = 0;
+      const finish = (ok) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(deadline);
+        if (watchdog) clearInterval(watchdog);
+        resolve(ok);
+      };
+      const deadline = setTimeout(() => finish(false), COMPILE_DEADLINE_MS);
+      if (typeof isDead === "function") {
+        watchdog = setInterval(() => {
+          if (isDead()) finish(false);
+        }, COMPILE_WATCHDOG_MS);
+      }
+      promise.then(() => finish(true), () => finish(false));
+    });
+  }
+
   async function prepare() {
     // Bake the starting environment and compile scene programs while the loading
     // cover is still visible, avoiding a shader/PMREM stall on the first frame.
@@ -6407,7 +6438,7 @@ export async function createPowerWorld({
       // 첫 렌더 전에 compileAsync로 미리 빌드할 수 있다.
       try {
         if (typeof renderer.compileAsync === "function") {
-          await renderer.compileAsync(scene, camera);
+          return await settleWithDeadline(renderer.compileAsync(scene, camera), null);
         }
         return true;
       } catch {
@@ -6418,8 +6449,20 @@ export async function createPowerWorld({
       typeof renderer.extensions.has === "function" &&
       renderer.extensions.has("KHR_parallel_shader_compile");
     if (softwareRenderer || !hasParallelCompile || typeof renderer.compileAsync !== "function") return false;
-    await renderer.compileAsync(scene, camera);
-    return true;
+    // 컨텍스트가 유실되면 compileAsync 폴링은 결코 끝나지 않는다 — 조기 탈출.
+    const isContextDead = () => {
+      try {
+        const gl = renderer.getContext();
+        return Boolean(gl && typeof gl.isContextLost === "function" && gl.isContextLost());
+      } catch {
+        return false;
+      }
+    };
+    try {
+      return await settleWithDeadline(renderer.compileAsync(scene, camera), isContextDead);
+    } catch {
+      return false;
+    }
   }
 
   if (typeof window !== "undefined") {

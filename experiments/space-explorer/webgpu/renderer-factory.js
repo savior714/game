@@ -7,8 +7,10 @@
 //   (three 0.185 WebGPUBackend.init 순서: requestAdapter → requestDevice →
 //   canvas.getContext("webgpu")), 초기 단계 실패는 canvas context를 오염시키지
 //   않는다. 늦은 단계 실패로 canvas가 오염된 경우에만 canvas를 복제해 교체한다.
+// - 안정성 우선: WebGPU는 명시적으로 켰을 때만 사용한다(`?webgpu=on` 또는
+//   localStorage `aiden.webgpu.enabled = "1"`). 모든 게임의 검증된 기본 경로는 WebGL이다.
 // - 정책/긴급 차단: `?webgpu=off` 쿼리 또는 localStorage
-//   `aiden.webgpu.disabled = "1"`으로 WebGPU를 강제로 끌 수 있다.
+//   `aiden.webgpu.disabled = "1"`로 명시적 활성화보다 우선해 WebGPU를 끈다.
 // - 이 모듈은 최상위에서 DOM에 접근하지 않아 Node 하니스에서도 그대로 적재된다.
 
 const WEBGPU_BUILD_URL = new URL(
@@ -30,10 +32,11 @@ export function loadWebGPUBundle() {
 }
 
 /**
- * 운영/정책 차단 스위치. 테스트나 긴급 대응으로 WebGPU를 강제 비활성화한다.
+ * WebGPU 명시적 활성화 및 운영 차단 정책을 확인한다. 기본값은 WebGL 안정 경로다.
  * @returns {{disabled: boolean, reason: string|null}}
  */
 export function webgpuPolicyState(globalRef = globalThis) {
+  let explicitlyEnabled = false;
   try {
     const loc = globalRef.location;
     if (loc && typeof loc.search === "string") {
@@ -42,19 +45,27 @@ export function webgpuPolicyState(globalRef = globalThis) {
       if (flag === "off" || flag === "0" || flag === "false") {
         return { disabled: true, reason: "url-flag" };
       }
+      explicitlyEnabled = flag === "on" || flag === "1" || flag === "true";
     }
   } catch {
-    /* location 없음(Node 등) — 계속 진행 */
+    /* location 없음(Node 등) — 저장소 설정 확인 */
   }
+
   try {
     const storage = globalRef.localStorage;
     if (storage && storage.getItem("aiden.webgpu.disabled") === "1") {
       return { disabled: true, reason: "local-storage-flag" };
     }
+    explicitlyEnabled ||= Boolean(
+      storage && storage.getItem("aiden.webgpu.enabled") === "1",
+    );
   } catch {
     /* 샌드박스 등에서 localStorage 접근 실패 — 무시 */
   }
-  return { disabled: false, reason: null };
+
+  return explicitlyEnabled
+    ? { disabled: false, reason: null }
+    : { disabled: true, reason: "opt-in-required" };
 }
 
 /**
@@ -85,7 +96,7 @@ function cloneCanvas(canvas) {
  * @param {object} options
  * @param {HTMLCanvasElement} [options.canvas] 대상 canvas(없으면 렌더러가 생성)
  * @param {object} [options.parameters] 양쪽 렌더러에 전달할 공통 파라미터
- * @param {boolean} [options.preferWebGPU=true]
+ * @param {boolean} [options.preferWebGPU=true] — WebGPU is still gated by explicit opt-in.
  * @param {typeof globalThis} [options.globalRef]
  * @returns {Promise<{renderer: object, backend: string, canvas: HTMLCanvasElement,
  *   three: object, tsl: object|null, fallbackReason: string|null}>}
@@ -94,8 +105,11 @@ export async function createBestRenderer(
   webglThree,
   { canvas, parameters = {}, preferWebGPU = true, globalRef = globalThis } = {},
 ) {
+  const policy = preferWebGPU
+    ? webgpuPolicyState(globalRef)
+    : { disabled: true, reason: "webgpu-not-preferred" };
+
   if (preferWebGPU) {
-    const policy = webgpuPolicyState(globalRef);
     if (!policy.disabled && (await probeWebGPU(globalRef))) {
       try {
         const bundle = await loadWebGPUBundle();
@@ -144,6 +158,10 @@ export async function createBestRenderer(
     canvas,
     three: webglThree,
     tsl: null,
-    fallbackReason: preferWebGPU ? "webgpu-unavailable" : null,
+    fallbackReason: !preferWebGPU
+      ? null
+      : policy.disabled
+        ? policy.reason
+        : "webgpu-unavailable",
   };
 }
